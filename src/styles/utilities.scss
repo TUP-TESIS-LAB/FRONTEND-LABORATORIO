@@ -1,8 +1,10 @@
+@use 'breakpoints' as bp;
+
 // Display helpers
 .ui-show-mobile  { display: none; }
 .ui-show-desktop { display: block; }
 
-@media (max-width: 767px) {
+@include bp.mobile-only {
   .ui-show-mobile  { display: block; }
   .ui-show-desktop { display: none; }
 }
