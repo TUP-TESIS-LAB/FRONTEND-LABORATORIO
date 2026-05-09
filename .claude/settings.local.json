@@ -5,7 +5,10 @@
       "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); print\\(p.get\\('version','?'\\)\\)\")",
       "Bash(node *)",
       "Bash(xargs grep -l \"aura\")",
-      "Bash(xargs grep -l \"aura\\\\|theme\\\\|preset\")"
+      "Bash(xargs grep -l \"aura\\\\|theme\\\\|preset\")",
+      "Bash(Select-String -Pattern \"tesis|TESIS|Tesis\" -i)",
+      "Bash(git checkout *)",
+      "Bash(git add *)"
     ]
   }
 }
