@@ -1,0 +1,20 @@
+// Display helpers
+.ui-show-mobile  { display: none; }
+.ui-show-desktop { display: block; }
+
+@media (max-width: 767px) {
+  .ui-show-mobile  { display: block; }
+  .ui-show-desktop { display: none; }
+}
+
+// Flex utilities
+.ui-flex         { display: flex; }
+.ui-flex-center  { display: flex; align-items: center; justify-content: center; }
+.ui-flex-between { display: flex; align-items: center; justify-content: space-between; }
+.ui-flex-gap-2   { gap: var(--space-2); }
+.ui-flex-gap-4   { gap: var(--space-4); }
+
+// Text utilities
+.ui-text-muted   { color: var(--ds-text-muted); }
+.ui-text-sm      { font-size: 12px; }
+.ui-text-label   { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }

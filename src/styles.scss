@@ -1,0 +1,12 @@
+// Design System
+@use 'styles/tokens';
+@use 'styles/breakpoints';
+@use 'styles/globals';
+@use 'styles/utilities';
+
+// Tailwind v4 + PrimeNG
+@import "primeicons/primeicons.css";
+@import "tailwindcss";
+@plugin "tailwindcss-primeui";
+
+@layer tailwind, primeng;
