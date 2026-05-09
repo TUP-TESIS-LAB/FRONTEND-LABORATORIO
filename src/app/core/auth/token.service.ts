@@ -32,6 +32,10 @@ export class TokenService {
     return this.getPayload()?.tenant_id ?? null;
   }
 
+  getRoles(): string[] {
+    return this.getPayload()?.roles ?? [];
+  }
+
   isTokenValid(): boolean {
     const payload = this.getPayload();
     if (!payload) return false;
