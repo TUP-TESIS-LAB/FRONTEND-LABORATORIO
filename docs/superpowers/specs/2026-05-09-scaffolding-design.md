@@ -13,7 +13,7 @@ Sistema SaaS multi-tenant para gestión administrativa de laboratorios clínicos
 **Decisiones clave acordadas:**
 - Standalone components (Angular 17+), sin NgModules
 - Lazy loading por feature con `loadChildren`
-- Multi-tenant vía subdominio (`acme.labcore.com` → `X-Tenant-ID: acme`)
+- Multi-tenant vía JWT claim: el `tenant_id` viaja en el token del usuario logueado; el interceptor lo extrae y lo envía como header `X-Tenant-ID` en cada request. Un usuario pertenece a un único tenant (sin selector de tenant en el MVP).
 - White-label dinámico: CSS Variables inyectadas desde el backend vía TypeScript, sin archivos SCSS estáticos por tenant
 - Estado global: NgRx Signal Store
 - UI: PrimeNG + Tailwind CSS
@@ -38,8 +38,9 @@ main.ts
 
 **Flujo de arranque:**
 1. `main.ts` bootstrapea la app
-2. `TenantInterceptor` lee el subdominio → añade `X-Tenant-ID` en cada request
-3. Al entrar al shell, `TenantResolver` llama al backend y carga la config del tenant
+2. El usuario hace login → el backend devuelve un JWT con claim `tenant_id`
+3. `AuthTokenInterceptor` adjunta el Bearer token; `TenantInterceptor` extrae el `tenant_id` del JWT decodificado y añade `X-Tenant-ID` en cada request
+4. Al entrar al shell, `TenantResolver` llama al backend y carga la config del tenant
 4. `TenantStore` (NgRx Signal Store) almacena la config en memoria
 5. `TenantThemeService` inyecta los CSS vars al `:root` con validación de zonas seguras
 6. `ModuleRegistry` expone `isActive(key)` y `activeRoutes()` al sidebar y las rutas
@@ -247,9 +248,10 @@ export interface TenantConfig {
 
 ### `tenant-id.interceptor.ts`
 ```typescript
-// Lee window.location.hostname
-// Extrae subdominio: "acme.labcore.com" → "acme"
-// Añade header X-Tenant-ID en cada HttpRequest
+// Lee el JWT almacenado en TokenService
+// Decodifica el payload y extrae el claim tenant_id
+// Añade header X-Tenant-ID: <tenant_id> en cada HttpRequest
+// No lee window.location.hostname — el tenant es propiedad del usuario, no de la URL
 ```
 
 ### `module-active.guard.ts`
