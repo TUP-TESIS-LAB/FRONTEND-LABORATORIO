@@ -24,22 +24,22 @@ const ACTIVABLE_ITEMS: NavItem[] = [
 ];
 
 @Component({
-  selector: 'app-sidebar',
+  selector: 'ui-sidebar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, RouterLinkActive],
   template: `
-    <nav class="sidebar">
-      <div class="sidebar__logo">
+    <nav class="ui-sidebar">
+      <div class="ui-sidebar__logo">
         <i class="pi pi-flask" style="font-size: 24px; color: var(--brand-primary)"></i>
-        <span class="sidebar__brand">LabCore</span>
+        <span class="ui-sidebar__brand">LabCore</span>
       </div>
 
-      <ul class="sidebar__menu">
+      <ul class="ui-sidebar__menu">
         @for (item of coreItems; track item.path) {
           <li>
-            <a [routerLink]="item.path" routerLinkActive="sidebar__item--active"
-               class="sidebar__item" (click)="itemClick.emit()">
+            <a [routerLink]="item.path" routerLinkActive="ui-sidebar__item--active"
+               class="ui-sidebar__item" (click)="itemClick.emit()">
               <i [class]="item.icon"></i>
               <span>{{ item.label }}</span>
             </a>
@@ -47,13 +47,13 @@ const ACTIVABLE_ITEMS: NavItem[] = [
         }
 
         @if (activableItems().length > 0) {
-          <li class="sidebar__separator"><span>Módulos</span></li>
+          <li class="ui-sidebar__separator"><span>Módulos</span></li>
         }
 
         @for (item of activableItems(); track item.path) {
           <li>
-            <a [routerLink]="item.path" routerLinkActive="sidebar__item--active"
-               class="sidebar__item" (click)="itemClick.emit()">
+            <a [routerLink]="item.path" routerLinkActive="ui-sidebar__item--active"
+               class="ui-sidebar__item" (click)="itemClick.emit()">
               <i [class]="item.icon"></i>
               <span>{{ item.label }}</span>
             </a>
@@ -63,24 +63,24 @@ const ACTIVABLE_ITEMS: NavItem[] = [
     </nav>
   `,
   styles: [`
-    .sidebar {
+    .ui-sidebar {
       height: 100%;
       display: flex;
       flex-direction: column;
       background: white;
       overflow-y: auto;
     }
-    .sidebar__logo {
+    .ui-sidebar__logo {
       display: flex;
       align-items: center;
       gap: var(--space-3);
       padding: var(--space-5) var(--space-4);
       border-bottom: 1px solid var(--ds-surface);
     }
-    .sidebar__brand { font-weight: 700; font-size: 16px; color: var(--ds-text); }
-    .sidebar__menu { list-style: none; margin: 0; padding: var(--space-3) 0; }
-    .sidebar__menu li { padding: 0 var(--space-2); }
-    .sidebar__item {
+    .ui-sidebar__brand { font-weight: 700; font-size: 16px; color: var(--ds-text); }
+    .ui-sidebar__menu { list-style: none; margin: 0; padding: var(--space-3) 0; }
+    .ui-sidebar__menu li { padding: 0 var(--space-2); }
+    .ui-sidebar__item {
       display: flex;
       align-items: center;
       gap: var(--space-3);
@@ -92,9 +92,9 @@ const ACTIVABLE_ITEMS: NavItem[] = [
       transition: background 150ms, color 150ms;
       min-height: var(--ds-touch-target);
     }
-    .sidebar__item:hover { background: var(--ds-surface); color: var(--ds-text); }
-    .sidebar__item--active { background: color-mix(in srgb, var(--brand-primary) 10%, transparent); color: var(--brand-primary); font-weight: 600; }
-    .sidebar__separator {
+    .ui-sidebar__item:hover { background: var(--ds-surface); color: var(--ds-text); }
+    .ui-sidebar__item--active { background: color-mix(in srgb, var(--brand-primary) 10%, transparent); color: var(--brand-primary); font-weight: 600; }
+    .ui-sidebar__separator {
       padding: var(--space-4) var(--space-5) var(--space-2);
       font-size: 11px;
       font-weight: 600;

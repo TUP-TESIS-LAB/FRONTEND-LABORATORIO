@@ -9,9 +9,3 @@ export interface TenantConfig {
   brandAccent: string;
   modules: ModuleKey[];
 }
-
-export interface TenantState {
-  config: TenantConfig | null;
-  loading: boolean;
-  error: string | null;
-}

@@ -1,10 +1,8 @@
 import { Routes } from '@angular/router';
-import { AnaliticaService } from './services/analitica.service';
 
 export const ANALITICA_ROUTES: Routes = [
   {
     path: '',
-    providers: [AnaliticaService],
     children: [
       { path: '', redirectTo: 'pacientes', pathMatch: 'full' },
       { path: 'pacientes',      loadComponent: () => import('./pages/pacientes/pacientes.component').then(m => m.PacientesComponent) },

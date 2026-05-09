@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Sucursal, Area } from '../models/sucursal.model';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class SucursalesService {
   private readonly http = inject(HttpClient);
   getSucursales(): Observable<Sucursal[]> { return this.http.get<Sucursal[]>('/api/sucursales'); }

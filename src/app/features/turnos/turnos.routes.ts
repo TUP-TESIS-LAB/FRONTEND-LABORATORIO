@@ -1,10 +1,8 @@
 import { Routes } from '@angular/router';
-import { TurnosService } from './services/turnos.service';
 
 export const TURNOS_ROUTES: Routes = [
   {
     path: '',
-    providers: [TurnosService],
     children: [
       { path: '', redirectTo: 'agenda', pathMatch: 'full' },
       { path: 'agenda',         loadComponent: () => import('./pages/agenda/agenda.component').then(m => m.AgendaComponent) },

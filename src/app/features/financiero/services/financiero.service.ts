@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Pago, Cobertura, Movimiento } from '../models/financiero.model';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class FinancieroService {
   private readonly http = inject(HttpClient);
   getPagos(): Observable<Pago[]>             { return this.http.get<Pago[]>('/api/financiero/pagos'); }

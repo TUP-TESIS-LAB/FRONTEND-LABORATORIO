@@ -1,7 +1,11 @@
-import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { TenantStore } from './tenant.store';
+import { HttpErrorResponse } from '@angular/common/http';
+import { tenantReducer } from './store/tenant.reducer';
+import { initialTenantState } from './store/tenant.state';
+import {
+  loadTenantConfig,
+  loadTenantConfigSuccess,
+  loadTenantConfigFailure,
+} from './store/tenant.actions';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { TenantConfig } from '@core/models/tenant.model';
 
@@ -15,42 +19,34 @@ const MOCK_CONFIG: TenantConfig = {
   modules: [ModuleKey.Turnos, ModuleKey.Financiero],
 };
 
-describe('TenantStore', () => {
-  let store: InstanceType<typeof TenantStore>;
-  let http: HttpTestingController;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [TenantStore, provideHttpClient(), provideHttpClientTesting()],
-    });
-    store = TestBed.inject(TenantStore);
-    http = TestBed.inject(HttpTestingController);
+describe('tenantReducer', () => {
+  it('should start with null config and pending false', () => {
+    const state = tenantReducer(undefined, { type: '@@init' });
+    expect(state.config).toBeNull();
+    expect(state.pending).toBe(false);
+    expect(state.error).toBeNull();
   });
 
-  afterEach(() => http.verify());
-
-  it('should start with null config', () => {
-    expect(store.config()).toBeNull();
-    expect(store.loading()).toBe(false);
+  it('loadTenantConfig sets pending true', () => {
+    const state = tenantReducer(initialTenantState, loadTenantConfig());
+    expect(state.pending).toBe(true);
+    expect(state.error).toBeNull();
   });
 
-  it('should load config and expose it', () => {
-    store.loadConfig();
-    expect(store.loading()).toBe(true);
-    http.expectOne('/api/tenant/config').flush(MOCK_CONFIG);
-    expect(store.config()).toEqual(MOCK_CONFIG);
-    expect(store.loading()).toBe(false);
+  it('loadTenantConfigSuccess stores config and clears pending', () => {
+    const pending = tenantReducer(initialTenantState, loadTenantConfig());
+    const state = tenantReducer(pending, loadTenantConfigSuccess({ config: MOCK_CONFIG }));
+    expect(state.config).toEqual(MOCK_CONFIG);
+    expect(state.pending).toBe(false);
+    expect(state.error).toBeNull();
   });
 
-  it('isActive returns true for active module', () => {
-    store.loadConfig();
-    http.expectOne('/api/tenant/config').flush(MOCK_CONFIG);
-    expect(store.isActive(ModuleKey.Turnos)).toBe(true);
-  });
-
-  it('isActive returns false for inactive module', () => {
-    store.loadConfig();
-    http.expectOne('/api/tenant/config').flush(MOCK_CONFIG);
-    expect(store.isActive(ModuleKey.Medicos)).toBe(false);
+  it('loadTenantConfigFailure stores error and clears pending', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const pending = tenantReducer(initialTenantState, loadTenantConfig());
+    const state = tenantReducer(pending, loadTenantConfigFailure({ error }));
+    expect(state.config).toBeNull();
+    expect(state.pending).toBe(false);
+    expect(state.error).toBe(error);
   });
 });

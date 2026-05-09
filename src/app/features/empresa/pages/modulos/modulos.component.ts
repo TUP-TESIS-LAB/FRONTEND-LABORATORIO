@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { TenantStore } from '@core/tenant/tenant.store';
+import { Store } from '@ngrx/store';
+import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
 
 @Component({
   selector: 'app-modulos',
@@ -8,12 +9,12 @@ import { TenantStore } from '@core/tenant/tenant.store';
   template: `
     <h2>Módulos activos</h2>
     <ul>
-      @for (mod of tenantStore.config()?.modules ?? []; track mod) {
+      @for (mod of tenantConfig()?.modules ?? []; track mod) {
         <li>{{ mod }}</li>
       }
     </ul>
   `,
 })
 export class ModulosComponent {
-  protected readonly tenantStore = inject(TenantStore);
+  protected readonly tenantConfig = inject(Store).selectSignal(selectTenantConfig);
 }

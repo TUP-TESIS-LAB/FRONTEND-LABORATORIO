@@ -1,12 +1,13 @@
 import { inject, Injectable } from '@angular/core';
-import { TenantStore } from './tenant.store';
+import { Store } from '@ngrx/store';
 import { ModuleKey } from '@core/models/module-key.enum';
+import { selectTenantConfig } from './store/tenant.selectors';
 
 @Injectable({ providedIn: 'root' })
 export class ModuleRegistry {
-  private readonly store = inject(TenantStore);
+  private readonly config = inject(Store).selectSignal(selectTenantConfig);
 
   isActive(key: ModuleKey): boolean {
-    return this.store.isActive(key);
+    return this.config()?.modules.includes(key) ?? false;
   }
 }

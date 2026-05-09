@@ -1,10 +1,8 @@
 import { Routes } from '@angular/router';
-import { EmpresaService } from './services/empresa.service';
 
 export const EMPRESA_ROUTES: Routes = [
   {
     path: '',
-    providers: [EmpresaService],
     children: [
       { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
       { path: 'usuarios',    loadComponent: () => import('./pages/usuarios/usuarios.component').then(m => m.UsuariosComponent) },

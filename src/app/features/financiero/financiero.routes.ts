@@ -1,10 +1,8 @@
 import { Routes } from '@angular/router';
-import { FinancieroService } from './services/financiero.service';
 
 export const FINANCIERO_ROUTES: Routes = [
   {
     path: '',
-    providers: [FinancieroService],
     children: [
       { path: '', redirectTo: 'pagos', pathMatch: 'full' },
       { path: 'pagos',         loadComponent: () => import('./pages/pagos/pagos.component').then(m => m.PagosComponent) },

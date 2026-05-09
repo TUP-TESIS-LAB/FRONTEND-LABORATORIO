@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Turno } from '../models/turno.model';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class TurnosService {
   private readonly http = inject(HttpClient);
   getTurnos(fecha: string): Observable<Turno[]> {

@@ -1,20 +1,21 @@
 import { inject } from '@angular/core';
 import { ResolveFn } from '@angular/router';
-import { tap, filter, take } from 'rxjs';
-import { toObservable } from '@angular/core/rxjs-interop';
-import { TenantStore } from './tenant.store';
-import { TenantThemeService } from './tenant-theme.service';
+import { Store } from '@ngrx/store';
+import { filter, take, tap } from 'rxjs';
 import { TenantConfig } from '@core/models/tenant.model';
+import { TenantThemeService } from './tenant-theme.service';
+import { loadTenantConfig } from './store/tenant.actions';
+import { selectTenantConfig } from './store/tenant.selectors';
 
 export const tenantResolver: ResolveFn<TenantConfig | null> = () => {
-  const store = inject(TenantStore);
+  const store = inject(Store);
   const themeService = inject(TenantThemeService);
 
-  store.loadConfig();
+  store.dispatch(loadTenantConfig());
 
-  return toObservable(store.config).pipe(
+  return store.select(selectTenantConfig).pipe(
     filter((config): config is TenantConfig => config !== null),
     take(1),
-    tap((config) => themeService.applyTheme(config)),
+    tap(config => themeService.applyTheme(config)),
   );
 };

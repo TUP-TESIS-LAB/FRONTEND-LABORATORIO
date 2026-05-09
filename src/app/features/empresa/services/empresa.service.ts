@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Usuario, Rol } from '../models/empresa.model';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class EmpresaService {
   private readonly http = inject(HttpClient);
 
