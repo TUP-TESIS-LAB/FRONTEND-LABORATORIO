@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(Select-String -Pattern \"tesis|TESIS|Tesis\" -i)"
-    ]
-  }
-}
