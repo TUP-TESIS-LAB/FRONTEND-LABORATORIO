@@ -23,6 +23,8 @@ mobile se siente como app nativa (bottom nav, full screen), desktop se ve como p
 
 **Alcance de esta skill:** únicamente diseño visual y componentes UI. Garantiza que toda la app tenga la misma apariencia y comportamiento de componentes en todos los tenants. Auth, arquitectura, servicios HTTP, guards, manejo de estado y errores **están fuera del alcance** y deben resolverse en otras skills/decisiones del equipo.
 
+> **Datos en componentes UI.** Cualquier dato que venga del backend (listas de turnos, pacientes, estudios, etc.) llega al componente **siempre vía `store.selectSignal(...)` según `ngrx-backend-request`**. Esta skill describe cómo se ven y comportan los componentes; nunca cómo se traen los datos. Si un patrón visual de esta skill muestra una lista o un detalle, asumir que el array o el objeto entró al componente como signal del store, no como `Observable` ni vía `resource()`.
+
 ---
 
 ## 1. White-label — qué es configurable por tenant
