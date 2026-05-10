@@ -1,0 +1,41 @@
+// ─── Tokens de marca (sobreescritos dinámicamente por TenantThemeService) ───
+:root {
+  --brand-primary:   #2563eb;
+  --brand-secondary: #0ea5a4;
+  --brand-accent:    #f97316;
+}
+
+// ─── Tokens fijos del Design System (NUNCA los toca el tenant) ───
+:root {
+  --ds-success:      #22c55e;
+  --ds-danger:       #e23a47;
+  --ds-warning:      #f59e0b;
+  --ds-info:         #3b82f6;
+  --ds-surface:      #eef0f4;
+  --ds-bg:           #f7f8fa;
+  --ds-text:         #1a1a2e;
+  --ds-text-muted:   #6b7280;
+  --ds-touch-target: 48px;
+  --ds-sidebar-w:    260px;
+  --ds-topbar-h:     64px;
+  --ds-bottom-nav-h: 64px;
+}
+
+// ─── Escala de espaciado (múltiplos de 4px) ───
+:root {
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+}
+
+// ─── Overrides PrimeNG ───
+:root {
+  --p-primary-color: var(--brand-primary);
+  --p-primary-contrast-color: #ffffff;
+}
