@@ -1,15 +1,376 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { TokenService } from '@core/auth/token.service';
+import { TenantConfig } from '@core/models/tenant.model';
+import { ModuleKey } from '@core/models/module-key.enum';
+import { loadTenantConfigSuccess } from '@core/tenant/store/tenant.actions';
+
+// DEV-ONLY: bypass auth. Replace with real auth flow when backend is wired.
+const DEV_TENANT: TenantConfig = {
+  id: 'dev-tenant',
+  name: 'LaboratoApp',
+  logoUrl: '',
+  brandPrimary:   '#1d4ed8',
+  brandSecondary: '#0ea5a4',
+  brandAccent:    '#f97316',
+  modules: [
+    ModuleKey.Turnos,
+    ModuleKey.Financiero,
+    ModuleKey.Medicos,
+    ModuleKey.Stock,
+    ModuleKey.Portal,
+  ],
+};
 
 @Component({
   selector: 'app-login',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ReactiveFormsModule],
   template: `
-    <div class="flex items-center justify-center h-screen bg-gray-50">
-      <div class="w-full max-w-sm p-8 bg-white rounded-xl shadow">
-        <h1 class="text-xl font-semibold mb-6 text-center">Iniciar sesión</h1>
-        <p class="text-sm text-gray-400 text-center">Formulario de login — en construcción</p>
-      </div>
+    <div class="auth-screen">
+      <div class="auth-bg"></div>
+      <div class="auth-grid"></div>
+
+      <form class="auth-card" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="auth-card__header">
+          <div class="auth-card__logo">LA</div>
+          <span class="auth-card__tenant-name">LaboratoApp</span>
+          <span class="auth-card__tenant-sub">Sistema de gestión de laboratorio clínico</span>
+        </div>
+
+        <div class="auth-card__body">
+          <h1 class="auth-card__title">Bienvenido</h1>
+          <p class="auth-card__subtitle">
+            Ingresá con tu cuenta para continuar. Si no tenés usuario, contactá al
+            administrador de tu laboratorio.
+          </p>
+
+          <div class="auth-field">
+            <label for="login-email">Correo electrónico</label>
+            <input
+              id="login-email"
+              type="email"
+              autocomplete="email"
+              formControlName="email"
+              placeholder="usuario@laboratorio.com"
+              class="auth-input" />
+          </div>
+
+          <div class="auth-field">
+            <label for="login-pass">Contraseña</label>
+            <div class="auth-input-wrap">
+              <input
+                id="login-pass"
+                [type]="passVisible() ? 'text' : 'password'"
+                autocomplete="current-password"
+                formControlName="password"
+                placeholder="••••••••"
+                class="auth-input" />
+              <button
+                type="button"
+                class="auth-eye"
+                (click)="togglePassVisible()"
+                [attr.aria-label]="passVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+                <i [class]="passVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="auth-row">
+            <label class="auth-check">
+              <input type="checkbox" formControlName="remember" />
+              <span>Recordarme</span>
+            </label>
+            <span class="auth-link" aria-disabled="true">¿Olvidaste tu contraseña?</span>
+          </div>
+
+          <button type="submit" class="auth-btn" [disabled]="submitting()">
+            @if (submitting()) {
+              <i class="pi pi-spin pi-spinner"></i> Ingresando…
+            } @else {
+              <i class="pi pi-sign-in"></i> Iniciar sesión
+            }
+          </button>
+
+          <p class="auth-helper">
+            ¿No tenés cuenta?
+            <span>Contactá al administrador de tu laboratorio.</span>
+          </p>
+        </div>
+
+        <div class="auth-card__footer">
+          LaboratoApp v2.4.1 · Términos de uso · Privacidad
+        </div>
+      </form>
     </div>
   `,
+  styles: [`
+    :host { display: block; }
+
+    .auth-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--ds-bg);
+      overflow-y: auto;
+      padding: var(--space-6);
+    }
+
+    .auth-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg,
+        var(--brand-shell-bg) 0%,
+        var(--brand-primary) 55%,
+        var(--brand-tint-strong) 100%);
+      opacity: .08;
+      pointer-events: none;
+    }
+    .auth-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(
+        circle,
+        color-mix(in srgb, var(--brand-primary) 20%, transparent) 1px,
+        transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      opacity: .35;
+    }
+
+    .auth-card {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow:
+        0 8px 40px rgba(0,0,0,.12),
+        0 2px 8px rgba(0,0,0,.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .auth-card__header {
+      background: var(--brand-shell-bg);
+      padding: var(--space-6) var(--space-6) var(--space-5);
+      text-align: center;
+      color: #fff;
+    }
+    .auth-card__logo {
+      width: 48px;
+      height: 48px;
+      background: #fff;
+      color: var(--brand-primary);
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: var(--space-2);
+      letter-spacing: -.5px;
+    }
+    .auth-card__tenant-name {
+      display: block;
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .auth-card__tenant-sub {
+      display: block;
+      font-size: 11px;
+      color: rgba(255,255,255,.65);
+      margin-top: 2px;
+    }
+
+    .auth-card__body { padding: var(--space-6); }
+    .auth-card__title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ds-text);
+      margin: 0 0 var(--space-1);
+    }
+    .auth-card__subtitle {
+      font-size: 12px;
+      color: var(--ds-text-muted);
+      line-height: 1.5;
+      margin: 0 0 var(--space-5);
+    }
+
+    .auth-field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      margin-bottom: var(--space-3);
+    }
+    .auth-field label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .auth-input {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #111827;
+      background: #fff;
+      width: 100%;
+      transition: border-color .15s, box-shadow .15s;
+      font-family: inherit;
+      min-height: var(--ds-touch-target);
+    }
+    .auth-input:focus {
+      outline: none;
+      border-color: var(--brand-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    }
+
+    .auth-input-wrap { position: relative; }
+    .auth-input-wrap .auth-input { padding-right: 38px; }
+    .auth-eye {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      border-radius: 6px;
+    }
+    .auth-eye:hover { color: #374151; }
+
+    .auth-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: var(--space-2) 0 var(--space-4);
+      font-size: 12px;
+    }
+    .auth-check {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      color: #374151;
+      cursor: pointer;
+    }
+    .auth-check input { accent-color: var(--brand-primary); }
+
+    .auth-link {
+      color: var(--brand-primary);
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .auth-link:hover { text-decoration: underline; }
+
+    .auth-btn {
+      width: 100%;
+      padding: 11px;
+      background: var(--brand-primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1);
+      transition: background .15s, box-shadow .15s, opacity .15s;
+      min-height: var(--ds-touch-target);
+      font-family: inherit;
+    }
+    .auth-btn:hover:not(:disabled) {
+      background: var(--brand-shell-bg);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--brand-primary) 30%, transparent);
+    }
+    .auth-btn:disabled { opacity: .7; cursor: progress; }
+
+    .auth-helper {
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+      margin: var(--space-3) 0 0;
+    }
+    .auth-helper span { color: #64748b; font-weight: 500; }
+
+    .auth-card__footer {
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+      padding: var(--space-3) var(--space-6);
+      border-top: 1px solid #f1f5f9;
+    }
+
+    @media (max-width: 480px) {
+      .auth-screen { padding: 0; }
+      .auth-card { border-radius: 0; max-width: none; min-height: 100dvh; }
+    }
+  `],
 })
-export class LoginComponent {}
+export class LoginComponent {
+  private readonly fb       = inject(FormBuilder);
+  private readonly router   = inject(Router);
+  private readonly tokens   = inject(TokenService);
+  private readonly store    = inject(Store);
+
+  protected readonly passVisible = signal(false);
+  protected readonly submitting  = signal(false);
+
+  protected readonly form = this.fb.nonNullable.group({
+    email:    ['aperez@laboratorioapp.com', [Validators.required, Validators.email]],
+    password: ['••••••••', [Validators.required]],
+    remember: [true],
+  });
+
+  protected togglePassVisible(): void {
+    this.passVisible.update(v => !v);
+  }
+
+  protected onSubmit(): void {
+    if (this.submitting()) return;
+    this.submitting.set(true);
+
+    // DEV BYPASS: skip backend, fabricate a JWT + seed tenant config.
+    this.tokens.setToken(buildDevToken(this.form.getRawValue().email));
+    this.store.dispatch(loadTenantConfigSuccess({ config: DEV_TENANT }));
+
+    this.router.navigate(['/home']);
+  }
+}
+
+function buildDevToken(email: string): string {
+  const header  = base64url(JSON.stringify({ alg: 'none', typ: 'JWT' }));
+  const payload = base64url(JSON.stringify({
+    sub:        'dev-user',
+    tenant_id:  DEV_TENANT.id,
+    email,
+    name:       'Dr. Alejandro Pérez',
+    roles:      ['admin'],
+    iat:        Math.floor(Date.now() / 1000),
+    exp:        Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365, // 1 year
+  }));
+  return `${header}.${payload}.dev-signature`;
+}
+
+function base64url(input: string): string {
+  return btoa(unescape(encodeURIComponent(input)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}

@@ -8,7 +8,22 @@
       "Bash(xargs grep -l \"aura\\\\|theme\\\\|preset\")",
       "Bash(Select-String -Pattern \"tesis|TESIS|Tesis\" -i)",
       "Bash(git checkout *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tobia\\\\Desktop\\\\TUP\\\\TESIS\\\\FRONTEND-LABORATORIO\" -Directory)",
+      "Bash(Select-Object Name)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\tobia\\\\Desktop\\\\TUP\\\\TESIS\\\\FRONTEND-LABORATORIO\\\\src\\\\app\\\\features\" -Directory | ForEach-Object { $_.Name })",
+      "Bash(C:\\\\Users\\\\tobia\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.1.0\\\\scripts\\\\start-server.sh *)",
+      "Bash(bash *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npm run *)",
+      "Bash(git commit *)",
+      "Bash(gh auth *)",
+      "Bash(git fetch *)",
+      "Bash(gh --version)",
+      "PowerShell(gh --version)",
+      "PowerShell(gh auth status)",
+      "PowerShell($gh = \"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\"; & $gh auth status)",
+      "Bash(git push *)"
     ]
   }
 }

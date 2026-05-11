@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Portal — Mockup Interactivo</title>
+<style>
+  /* ── Tenant CSS variable (white-label) ── */
+  :root {
+    --brand: #1d4ed8;
+    --brand-dark: #1e3a8a;
+    --brand-light: #eff6ff;
+    --brand-text: #ffffff;
+    --accent: #2563eb;
+    --sidebar-w: 230px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; color: #1e293b; height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-size: 13px; }
+
+  /* ── Topbar ── */
+  .topbar {
+    height: 52px; background: #1e293b; display: flex; align-items: center;
+    padding: 0 16px; gap: 12px; flex-shrink: 0; z-index: 100;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .topbar-logo { display: flex; align-items: center; gap: 8px; width: var(--sidebar-w); flex-shrink: 0; }
+  .topbar-logo .logo-box {
+    width: 28px; height: 28px; background: var(--brand); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px;
+  }
+  .topbar-logo .tenant-name { color: #f1f5f9; font-weight: 600; font-size: 13px; white-space: nowrap; }
+  .topbar-logo .tenant-badge { font-size: 9px; background: var(--brand); color: #fff; padding: 1px 5px; border-radius: 8px; margin-left: 2px; }
+  .topbar-search {
+    flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; padding: 6px 10px; color: #94a3b8; font-size: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
+  .topbar-btn {
+    width: 32px; height: 32px; background: rgba(255,255,255,0.08); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: #94a3b8; font-size: 14px;
+    border: 1px solid rgba(255,255,255,0.1); transition: background 0.15s;
+  }
+  .topbar-btn:hover { background: rgba(255,255,255,0.15); }
+  .notif-dot { position: relative; }
+  .notif-dot::after { content:'3'; position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; font-size:9px; width:14px; height:14px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .avatar { width: 32px; height: 32px; background: var(--brand); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+  /* ── Layout ── */
+  .app-body { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w); background: var(--brand-dark); display: flex; flex-direction: column;
+    flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+  .sidebar-section { padding: 12px 0 4px; }
+  .sidebar-section-label {
+    padding: 0 12px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.4); text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    cursor: pointer; border-radius: 0; color: rgba(255,255,255,0.65); font-size: 12.5px;
+    transition: background 0.12s, color 0.12s; margin: 1px 6px; border-radius: 6px;
+    position: relative;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .nav-item.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
+  .nav-item.active::before { content:''; position:absolute; left:0; top:4px; bottom:4px; width:3px; background:#fff; border-radius:0 2px 2px 0; left:-6px; }
+  .nav-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.9; }
+  .nav-badge { margin-left: auto; background: #ef4444; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 8px; font-weight: 700; }
+  .nav-badge.green { background: #10b981; }
+  .sidebar-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 6px 12px; }
+  .nav-item.disabled { opacity: 0.4; cursor: default; }
+  .nav-item.disabled:hover { background: transparent; }
+  .nav-chip { font-size: 8px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); padding: 1px 4px; border-radius: 3px; margin-left: auto; }
+
+  /* ── Main content ── */
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .page { display: none; flex-direction: column; flex: 1; }
+  .page.active { display: flex; }
+
+  /* ── Page header ── */
+  .page-header {
+    background: #fff; border-bottom: 1px solid #e2e8f0; padding: 16px 24px;
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .page-header h1 { font-size: 17px; font-weight: 700; color: #0f172a; }
+  .page-header .breadcrumb { font-size: 11px; color: #94a3b8; }
+  .page-header-actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn-primary {
+    background: var(--brand); color: #fff; border: none; padding: 7px 14px;
+    border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .btn-secondary {
+    background: #fff; color: #475569; border: 1px solid #cbd5e1; padding: 7px 14px;
+    border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
+  }
+
+  /* ── Page body ── */
+  .page-body { padding: 20px 24px; flex: 1; }
+
+  /* ── Stat cards ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-card {
+    background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #e2e8f0;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .stat-card .label { font-size: 11px; color: #64748b; font-weight: 500; }
+  .stat-card .value { font-size: 24px; font-weight: 700; color: #0f172a; }
+  .stat-card .delta { font-size: 11px; color: #10b981; display: flex; align-items: center; gap: 3px; }
+  .stat-card .delta.red { color: #ef4444; }
+  .stat-card .icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 4px; }
+  .icon-blue { background: #eff6ff; }
+  .icon-green { background: #f0fdf4; }
+  .icon-amber { background: #fffbeb; }
+  .icon-purple { background: #faf5ff; }
+  .icon-red { background: #fef2f2; }
+
+  /* ── Tables ── */
+  .card { background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; }
+  .card-header { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+  .card-header h3 { font-size: 13px; font-weight: 600; color: #0f172a; }
+  .card-header .count { font-size: 11px; color: #94a3b8; margin-left: 4px; }
+  .card-header-right { margin-left: auto; display: flex; gap: 6px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 8px 14px; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+  td { padding: 10px 14px; font-size: 12px; color: #334155; border-bottom: 1px solid #f1f5f9; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-amber { background: #fef9c3; color: #854d0e; }
+  .badge-red { background: #fee2e2; color: #dc2626; }
+  .badge-gray { background: #f1f5f9; color: #64748b; }
+  .badge-purple { background: #f3e8ff; color: #7e22ce; }
+
+  /* ── Grid layouts ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .mb-4 { margin-bottom: 14px; }
+  .mb-6 { margin-bottom: 20px; }
+
+  /* ── Placeholders ── */
+  .placeholder-block { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 40px; text-align: center; color: #94a3b8; }
+  .placeholder-block .ph-icon { font-size: 32px; margin-bottom: 8px; }
+  .placeholder-block .ph-title { font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+
+  /* ── Avatar / initials ── */
+  .user-cell { display: flex; align-items: center; gap: 8px; }
+  .user-avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+  /* ── Form fields ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-field { display: flex; flex-direction: column; gap: 5px; }
+  .form-field label { font-size: 11px; font-weight: 600; color: #374151; }
+  .form-input { border: 1px solid #d1d5db; border-radius: 6px; padding: 7px 10px; font-size: 12px; color: #111827; background: #fff; }
+  .form-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 2px rgba(29,78,216,0.15); }
+  .form-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .form-section h4 { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+
+  /* ── Agenda/Calendar ── */
+  .agenda-grid { display: grid; grid-template-columns: 200px 1fr; gap: 0; background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; }
+  .agenda-sidebar { border-right: 1px solid #e2e8f0; }
+  .agenda-sidebar-header { padding: 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 12px; font-weight: 600; }
+  .agenda-slot { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .agenda-slot:hover { background: #f8fafc; }
+  .agenda-slot .time { font-size: 11px; color: #64748b; width: 36px; }
+  .agenda-slot .patient { font-size: 11px; color: #1e293b; }
+  .agenda-slot .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .agenda-main { padding: 12px; }
+  .agenda-day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .day-cols { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .day-col-header { text-align: center; padding: 6px; font-size: 11px; }
+  .day-col-header .day-name { color: #64748b; font-weight: 500; }
+  .day-col-header .day-num { font-size: 20px; font-weight: 700; color: #0f172a; }
+  .day-col-header.today .day-num { background: var(--brand); color: #fff; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+  .event-block { background: #eff6ff; border-left: 3px solid var(--brand); border-radius: 4px; padding: 4px 6px; margin-bottom: 4px; font-size: 10px; }
+  .event-block .ev-time { color: #64748b; }
+  .event-block .ev-name { font-weight: 600; color: #1d4ed8; }
+  .event-block.green { background: #f0fdf4; border-color: #16a34a; }
+  .event-block.green .ev-name { color: #15803d; }
+  .event-block.amber { background: #fffbeb; border-color: #d97706; }
+  .event-block.amber .ev-name { color: #92400e; }
+
+  /* ── Charts (fake) ── */
+  .fake-chart { background: #f8fafc; border-radius: 6px; padding: 8px; position: relative; overflow: hidden; }
+  .bar-row { display: flex; align-items: flex-end; gap: 6px; height: 80px; padding: 0 4px; }
+  .bar { flex: 1; border-radius: 3px 3px 0 0; background: var(--brand); opacity: 0.7; transition: opacity 0.2s; }
+  .bar:hover { opacity: 1; }
+  .line-chart-svg { width: 100%; height: 70px; }
+
+  /* ── Module cards (home) ── */
+  .module-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .module-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;
+    cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .module-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: var(--brand); }
+  .module-card .mc-icon { font-size: 24px; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .module-card .mc-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+  .module-card .mc-desc { font-size: 11px; color: #64748b; line-height: 1.4; }
+  .module-card .mc-badge { font-size: 10px; }
+  .module-card.disabled { opacity: 0.5; cursor: default; }
+  .module-card.disabled:hover { box-shadow: none; border-color: #e2e8f0; }
+
+  /* ── Utility ── */
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .gap-3 { gap: 10px; }
+  .gap-4 { gap: 14px; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .text-sm { font-size: 11px; }
+  .text-muted { color: #94a3b8; }
+  .fw-600 { font-weight: 600; }
+  .search-bar { border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; font-size: 12px; background: #fff; width: 200px; }
+  .tag { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; }
+
+  /* ── Sucursales cards ── */
+  .sucursal-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .sucursal-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+  .sucursal-card .sc-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .sucursal-card .sc-meta { font-size: 11px; color: #64748b; margin-bottom: 10px; line-height: 1.5; }
+  .sc-stats { display: flex; gap: 12px; }
+  .sc-stat { text-align: center; }
+  .sc-stat .n { font-size: 18px; font-weight: 700; color: var(--brand); }
+  .sc-stat .l { font-size: 9px; color: #94a3b8; text-transform: uppercase; }
+
+  /* ── Financiero ── */
+  .caja-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .caja-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+  .caja-card .caja-name { font-size: 11px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  .caja-card .caja-amount { font-size: 20px; font-weight: 700; color: #0f172a; }
+  .caja-card .caja-meta { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+  .caja-card.open { border-top: 3px solid #10b981; }
+  .caja-card.closed { border-top: 3px solid #94a3b8; }
+
+  /* ── Empty / coming soon ── */
+  .coming-soon { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 12px; color: #94a3b8; padding: 60px; text-align: center; }
+  .coming-soon .cs-icon { font-size: 48px; }
+  .coming-soon h2 { font-size: 18px; font-weight: 700; color: #374151; }
+  .coming-soon p { font-size: 13px; max-width: 340px; line-height: 1.6; }
+
+  /* ── Toggle tabs ── */
+  .tabs { display: flex; gap: 2px; background: #f1f5f9; border-radius: 8px; padding: 3px; margin-bottom: 16px; width: fit-content; }
+  .tab { padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; color: #64748b; cursor: pointer; }
+  .tab.active { background: #fff; color: #0f172a; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  /* ── Analitica pipeline ── */
+  .pipeline { display: flex; gap: 0; margin-bottom: 14px; }
+  .pipeline-step {
+    flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 14px;
+    position: relative; display: flex; flex-direction: column; gap: 4px;
+  }
+  .pipeline-step:not(:last-child)::after {
+    content: '›'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+    font-size: 18px; color: #cbd5e1; z-index: 1; background: #f1f5f9; width: 18px; text-align: center;
+  }
+  .pipeline-step:first-child { border-radius: 8px 0 0 8px; }
+  .pipeline-step:last-child { border-radius: 0 8px 8px 0; }
+  .pipeline-step .ps-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; }
+  .pipeline-step .ps-count { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .pipeline-step .ps-sub { font-size: 10px; color: #64748b; }
+  .pipeline-step.active-step { background: #eff6ff; border-color: var(--brand); }
+  .pipeline-step.active-step .ps-count { color: var(--brand); }
+</style>
+</head>
+<body>
+
+<!-- ═══ TOPBAR ═══ -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-box">LA</div>
+    <span class="tenant-name">LaboratoApp</span>
+    <span class="tenant-badge">Admin</span>
+  </div>
+  <div class="topbar-search">
+    🔍 <span>Buscar pacientes, turnos, estudios…</span>
+  </div>
+  <div class="topbar-actions">
+    <div class="topbar-btn notif-dot" title="Notificaciones">🔔</div>
+    <div class="topbar-btn" title="Ayuda">❓</div>
+    <div class="avatar" title="Dr. Pérez">DP</div>
+  </div>
+</div>
+
+<!-- ═══ BODY ═══ -->
+<div class="app-body">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Principal</div>
+      <div class="nav-item active" onclick="navigate('home')">
+        <div class="nav-icon">🏠</div> Inicio
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Core</div>
+      <div class="nav-item" onclick="navigate('analitica')">
+        <div class="nav-icon">🧬</div> Analítica
+        <span class="nav-badge green">12</span>
+      </div>
+      <div class="nav-item" onclick="navigate('turnos')">
+        <div class="nav-icon">📅</div> Turnos
+        <span class="nav-badge">4</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Gestión</div>
+      <div class="nav-item" onclick="navigate('empresa')">
+        <div class="nav-icon">🏢</div> Empresa
+      </div>
+      <div class="nav-item" onclick="navigate('sucursales')">
+        <div class="nav-icon">📍</div> Sucursales
+      </div>
+      <div class="nav-item" onclick="navigate('financiero')">
+        <div class="nav-icon">💰</div> Financiero
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Módulos opcionales</div>
+      <div class="nav-item" onclick="navigate('medicos')">
+        <div class="nav-icon">👨‍⚕️</div> Médicos
+        <span class="nav-chip">Beta</span>
+      </div>
+      <div class="nav-item" onclick="navigate('stock')">
+        <div class="nav-icon">📦</div> Stock
+        <span class="nav-chip">Beta</span>
+      </div>
+      <div class="nav-item" onclick="navigate('portal')">
+        <div class="nav-icon">🌐</div> Portal Paciente
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Administración</div>
+      <div class="nav-item" onclick="navigate('saas')">
+        <div class="nav-icon">⚙️</div> SaaS Admin
+        <span class="nav-chip">Root</span>
+      </div>
+    </div>
+
+  </nav>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="main">
+
+    <!-- ── HOME ── -->
+    <div class="page active" id="page-home">
+      <div class="page-header">
+        <div>
+          <div class="breadcrumb">LaboratoApp</div>
+          <h1>¡Buen día, Dr. Pérez! 👋</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-secondary">📊 Reportes</button>
+          <button class="btn-primary">+ Nuevo turno</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="icon icon-blue">📅</div>
+            <div class="label">Turnos hoy</div>
+            <div class="value">24</div>
+            <div class="delta">▲ 3 más que ayer</div>
+          </div>
+          <div class="stat-card">
+            <div class="icon icon-green">🧬</div>
+            <div class="label">Estudios en proceso</div>
+            <div class="value">47</div>
+            <div class="delta">12 listos para entregar</div>
+          </div>
+          <div class="stat-card">
+            <div class="icon icon-amber">⏱️</div>
+            <div class="label">Tiempo espera prom.</div>
+            <div class="value">18 min</div>
+            <div class="delta red">▲ 4 min vs semana pasada</div>
+          </div>
+          <div class="stat-card">
+            <div class="icon icon-purple">💰</div>
+            <div class="label">Facturado hoy</div>
+            <div class="value">$142.500</div>
+            <div class="delta">▲ 8% vs ayer</div>
+          </div>
+        </div>
+
+        <div class="grid-2 mb-4">
+          <div class="card">
+            <div class="card-header">
+              <h3>Actividad semanal</h3>
+              <span class="count">turnos por día</span>
+            </div>
+            <div style="padding:14px">
+              <div class="fake-chart">
+                <div class="bar-row">
+                  <div class="bar" style="height:55%"></div>
+                  <div class="bar" style="height:70%"></div>
+                  <div class="bar" style="height:45%"></div>
+                  <div class="bar" style="height:90%"></div>
+                  <div class="bar" style="height:75%"></div>
+                  <div class="bar" style="height:30%"></div>
+                  <div class="bar" style="height:60%"></div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:#94a3b8">
+                <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Próximos turnos</h3>
+              <div class="card-header-right"><button class="btn-secondary" onclick="navigate('turnos')">Ver agenda →</button></div>
+            </div>
+            <table>
+              <thead><tr><th>Paciente</th><th>Hora</th><th>Estudios</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td><div class="user-cell"><div class="user-avatar" style="background:#eff6ff;color:#1d4ed8">MG</div>María García</div></td><td>09:00</td><td>Hemograma</td><td><span class="badge badge-green">Confirmado</span></td></tr>
+                <tr><td><div class="user-cell"><div class="user-avatar" style="background:#faf5ff;color:#7e22ce">JL</div>Juan López</div></td><td>09:20</td><td>Glucemia, Colesterol</td><td><span class="badge badge-amber">En sala</span></td></tr>
+                <tr><td><div class="user-cell"><div class="user-avatar" style="background:#f0fdf4;color:#15803d">AR</div>Ana Rodríguez</div></td><td>09:40</td><td>Orina completa</td><td><span class="badge badge-blue">Procesando</span></td></tr>
+                <tr><td><div class="user-cell"><div class="user-avatar" style="background:#fff1f2;color:#dc2626">CM</div>Carlos Méndez</div></td><td>10:00</td><td>TSH, T4</td><td><span class="badge badge-gray">Pendiente</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <div style="margin-bottom:10px;font-size:13px;font-weight:700;color:#374151">Módulos activos</div>
+          <div class="module-cards">
+            <div class="module-card" onclick="navigate('analitica')">
+              <div class="mc-icon icon-blue">🧬</div>
+              <div class="mc-title">Analítica</div>
+              <div class="mc-desc">47 estudios en pipeline. 12 listos para entrega.</div>
+              <span class="badge badge-blue mc-badge">Core</span>
+            </div>
+            <div class="module-card" onclick="navigate('turnos')">
+              <div class="mc-icon icon-green">📅</div>
+              <div class="mc-title">Turnos</div>
+              <div class="mc-desc">24 turnos hoy. 4 sin confirmar.</div>
+              <span class="badge badge-green mc-badge">Core</span>
+            </div>
+            <div class="module-card" onclick="navigate('financiero')">
+              <div class="mc-icon icon-amber">💰</div>
+              <div class="mc-title">Financiero</div>
+              <div class="mc-desc">3 cajas abiertas. $142.500 facturado.</div>
+              <span class="badge badge-blue mc-badge">Activo</span>
+            </div>
+            <div class="module-card" onclick="navigate('empresa')">
+              <div class="mc-icon icon-purple">🏢</div>
+              <div class="mc-title">Empresa</div>
+              <div class="mc-desc">Usuarios, roles y configuración.</div>
+              <span class="badge badge-blue mc-badge">Core</span>
+            </div>
+            <div class="module-card" onclick="navigate('sucursales')">
+              <div class="mc-icon" style="background:#fef2f2">📍</div>
+              <div class="mc-title">Sucursales</div>
+              <div class="mc-desc">3 sucursales activas, 12 áreas.</div>
+              <span class="badge badge-blue mc-badge">Core</span>
+            </div>
+            <div class="module-card disabled">
+              <div class="mc-icon" style="background:#f1f5f9">📦</div>
+              <div class="mc-title">Stock</div>
+              <div class="mc-desc">Módulo no habilitado para este tenant.</div>
+              <span class="badge badge-gray mc-badge">Inactivo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ANALÍTICA ── -->
+    <div class="page" id="page-analitica">
+      <div class="page-header">
+        <div>
+          <div class="breadcrumb">Core</div>
+          <h1>🧬 Analítica</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-secondary">📥 Importar</button>
+          <button class="btn-primary">+ Nuevo protocolo</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="tabs">
+          <div class="tab active">Dashboard</div>
+          <div class="tab">Pacientes</div>
+          <div class="tab">Protocolos</div>
+          <div class="tab">Pre-analítica</div>
+          <div class="tab">Trabajo</div>
+          <div class="tab">Post-analítica</div>
+          <div class="tab">NBU</div>
+        </div>
+
+        <div class="pipeline mb-6">
+          <div class="pipeline-step">
+            <div class="ps-label">Recepción</div>
+            <div class="ps-count">8</div>
+            <div class="ps-sub">aguardando</div>
+          </div>
+          <div class="pipeline-step active-step">
+            <div class="ps-label">Pre-analítica</div>
+            <div class="ps-count">15</div>
+            <div class="ps-sub">en proceso</div>
+          </div>
+          <div class="pipeline-step">
+            <div class="ps-label">Analítica</div>
+            <div class="ps-count">12</div>
+            <div class="ps-sub">en analizador</div>
+          </div>
+          <div class="pipeline-step">
+            <div class="ps-label">Post-analítica</div>
+            <div class="ps-count">7</div>
+            <div class="ps-sub">validando</div>
+          </div>
+          <div class="pipeline-step">
+            <div class="ps-label">Listos</div>
+            <div class="ps-count">5</div>
+            <div class="ps-sub">para entregar</div>
+          </div>
+        </div>
+
+        <div class="grid-2 mb-4">
+          <div class="card">
+            <div class="card-header">
+              <h3>Protocolos activos</h3>
+              <div class="card-header-right"><input class="search-bar" placeholder="Buscar paciente…"></div>
+            </div>
+            <table>
+              <thead><tr><th>Protocolo</th><th>Paciente</th><th>Estudios</th><th>Estado</th><th>Urgente</th></tr></thead>
+              <tbody>
+                <tr><td><span class="fw-600">#2401</span></td><td>García, María</td><td>Hemograma, VSG</td><td><span class="badge badge-blue">Analítica</span></td><td></td></tr>
+                <tr><td><span class="fw-600">#2402</span></td><td>López, Juan</td><td>Glucemia, HbA1c</td><td><span class="badge badge-amber">Pre-analítica</span></td><td><span class="badge badge-red">⚡ Urgente</span></td></tr>
+                <tr><td><span class="fw-600">#2403</span></td><td>Rodríguez, Ana</td><td>Orina C18</td><td><span class="badge badge-green">Listo</span></td><td></td></tr>
+                <tr><td><span class="fw-600">#2404</span></td><td>Fernández, Luis</td><td>TSH, T3, T4</td><td><span class="badge badge-gray">Recepción</span></td><td></td></tr>
+                <tr><td><span class="fw-600">#2405</span></td><td>Martínez, Sofía</td><td>Hepatitis B, Anti-HBs</td><td><span class="badge badge-blue">Analítica</span></td><td><span class="badge badge-red">⚡ Urgente</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Estudios por área</h3></div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:11px;width:90px;color:#374151">Hematología</div>
+                <div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px">
+                  <div style="width:72%;height:100%;background:var(--brand);border-radius:3px"></div>
+                </div>
+                <div style="font-size:11px;color:#64748b;width:20px;text-align:right">18</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:11px;width:90px;color:#374151">Bioquímica</div>
+                <div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px">
+                  <div style="width:58%;height:100%;background:#7c3aed;border-radius:3px"></div>
+                </div>
+                <div style="font-size:11px;color:#64748b;width:20px;text-align:right">14</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:11px;width:90px;color:#374151">Orina</div>
+                <div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px">
+                  <div style="width:36%;height:100%;background:#0891b2;border-radius:3px"></div>
+                </div>
+                <div style="font-size:11px;color:#64748b;width:20px;text-align:right">9</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:11px;width:90px;color:#374151">Endocrinología</div>
+                <div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px">
+                  <div style="width:24%;height:100%;background:#d97706;border-radius:3px"></div>
+                </div>
+                <div style="font-size:11px;color:#64748b;width:20px;text-align:right">6</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:11px;width:90px;color:#374151">Serología</div>
+                <div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px">
+                  <div style="width:16%;height:100%;background:#16a34a;border-radius:3px"></div>
+                </div>
+                <div style="font-size:11px;color:#64748b;width:20px;text-align:right">4</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TURNOS ── -->
+    <div class="page" id="page-turnos">
+      <div class="page-header">
+        <div>
+          <div class="breadcrumb">Core</div>
+          <h1>📅 Turnos</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-secondary">⚙️ Configuración</button>
+          <button class="btn-secondary">📺 Tótem</button>
+          <button class="btn-primary">+ Nuevo turno</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="tabs">
+          <div class="tab active">Agenda</div>
+          <div class="tab">Colas</div>
+          <div class="tab">Atención</div>
+          <div class="tab">Configuración</div>
+        </div>
+
+        <div class="stats-row mb-4" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card">
+            <div class="label">Turnos hoy</div>
+            <div class="value">24</div>
+            <div class="delta">8 completados</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">En sala de espera</div>
+            <div class="value">4</div>
+            <div class="delta">Llamar próximo</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Promedio espera</div>
+            <div class="value">18 min</div>
+            <div class="delta red">▲ Alto</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Sin confirmar</div>
+            <div class="value">4</div>
+            <div class="delta">Enviar recordatorio</div>
+          </div>
+        </div>
+
+        <div class="agenda-grid mb-4">
+          <div class="agenda-sidebar">
+            <div class="agenda-sidebar-header">🕐 Hoy — Lun 10 May</div>
+            <div class="agenda-slot"><div class="dot" style="background:#10b981"></div><div class="time">08:00</div><div class="patient">García, M.</div></div>
+            <div class="agenda-slot"><div class="dot" style="background:#f59e0b"></div><div class="time">08:20</div><div class="patient">López, J. ⚡</div></div>
+            <div class="agenda-slot" style="background:#eff6ff"><div class="dot" style="background:#1d4ed8"></div><div class="time">08:40</div><div class="patient fw-600">Rodríguez, A.</div></div>
+            <div class="agenda-slot"><div class="dot" style="background:#94a3b8"></div><div class="time">09:00</div><div class="patient">Méndez, C.</div></div>
+            <div class="agenda-slot"><div class="dot" style="background:#94a3b8"></div><div class="time">09:20</div><div class="patient">Sánchez, L.</div></div>
+            <div class="agenda-slot"><div class="dot" style="background:#94a3b8"></div><div class="time">09:40</div><div class="patient">Fernández, P.</div></div>
+            <div class="agenda-slot"><div class="dot" style="background:#94a3b8"></div><div class="time">10:00</div><div class="patient">Torres, M.</div></div>
+            <div class="agenda-slot"><div class="dot" style="background:#94a3b8"></div><div class="time">10:20</div><div class="patient">Díaz, R.</div></div>
+          </div>
+          <div class="agenda-main">
+            <div class="agenda-day-header">
+              <button class="btn-secondary">◀ Semana ant.</button>
+              <span style="font-size:13px;font-weight:700">Semana del 6 al 10 de Mayo 2025</span>
+              <button class="btn-secondary">Próx. semana ▶</button>
+            </div>
+            <div class="day-cols">
+              <div>
+                <div class="day-col-header"><div class="day-name">Lun</div><div class="day-num">6</div></div>
+                <div class="event-block"><div class="ev-time">08:00</div><div class="ev-name">García</div></div>
+                <div class="event-block green"><div class="ev-time">09:00</div><div class="ev-name">López</div></div>
+              </div>
+              <div>
+                <div class="day-col-header"><div class="day-name">Mar</div><div class="day-num">7</div></div>
+                <div class="event-block amber"><div class="ev-time">08:30</div><div class="ev-name">Rodríguez</div></div>
+                <div class="event-block"><div class="ev-time">10:00</div><div class="ev-name">Méndez</div></div>
+                <div class="event-block green"><div class="ev-time">11:00</div><div class="ev-name">Torres</div></div>
+              </div>
+              <div>
+                <div class="day-col-header"><div class="day-name">Mié</div><div class="day-num">8</div></div>
+                <div class="event-block"><div class="ev-time">09:00</div><div class="ev-name">Sánchez</div></div>
+              </div>
+              <div>
+                <div class="day-col-header"><div class="day-name">Jue</div><div class="day-num">9</div></div>
+                <div class="event-block green"><div class="ev-time">08:00</div><div class="ev-name">Fernández</div></div>
+                <div class="event-block amber"><div class="ev-time">09:30</div><div class="ev-name">Díaz ⚡</div></div>
+                <div class="event-block"><div class="ev-time">10:30</div><div class="ev-name">Ramírez</div></div>
+              </div>
+              <div>
+                <div class="day-col-header today"><div class="day-name">Vie</div><div class="day-num">10</div></div>
+                <div class="event-block"><div class="ev-time">08:40</div><div class="ev-name">Rodríguez</div></div>
+                <div class="event-block green"><div class="ev-time">09:20</div><div class="ev-name">López</div></div>
+                <div class="event-block amber"><div class="ev-time">11:00</div><div class="ev-name">Gómez</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EMPRESA ── -->
+    <div class="page" id="page-empresa">
+      <div class="page-header">
+        <div><div class="breadcrumb">Gestión</div><h1>🏢 Empresa</h1></div>
+        <div class="page-header-actions"><button class="btn-primary">💾 Guardar cambios</button></div>
+      </div>
+      <div class="page-body">
+        <div class="tabs">
+          <div class="tab active">Usuarios</div>
+          <div class="tab">Roles</div>
+          <div class="tab">White-label</div>
+          <div class="tab">Fiscal</div>
+          <div class="tab">SMTP / Docs</div>
+          <div class="tab">Módulos</div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="card mb-4">
+              <div class="card-header">
+                <h3>Usuarios <span class="count">6 activos</span></h3>
+                <div class="card-header-right"><button class="btn-primary">+ Invitar</button></div>
+              </div>
+              <table>
+                <thead><tr><th>Usuario</th><th>Rol</th><th>Sucursal</th><th>Estado</th></tr></thead>
+                <tbody>
+                  <tr><td><div class="user-cell"><div class="user-avatar" style="background:#eff6ff;color:#1d4ed8">DP</div>Dr. Pérez</div></td><td>Admin</td><td>Central</td><td><span class="badge badge-green">Activo</span></td></tr>
+                  <tr><td><div class="user-cell"><div class="user-avatar" style="background:#f0fdf4;color:#15803d">SR</div>Sec. Romero</div></td><td>Secretaría</td><td>Central</td><td><span class="badge badge-green">Activo</span></td></tr>
+                  <tr><td><div class="user-cell"><div class="user-avatar" style="background:#faf5ff;color:#7e22ce">BL</div>Bioquím. Lima</div></td><td>Laboratorista</td><td>Norte</td><td><span class="badge badge-green">Activo</span></td></tr>
+                  <tr><td><div class="user-cell"><div class="user-avatar" style="background:#fff1f2;color:#dc2626">JM</div>J. Morales</div></td><td>Caja</td><td>Central</td><td><span class="badge badge-amber">Inactivo</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="form-section">
+              <h4>⚙️ Datos de la empresa</h4>
+              <div class="form-grid">
+                <div class="form-field"><label>Razón social</label><input class="form-input" value="Laboratorio Central SA"></div>
+                <div class="form-field"><label>CUIT</label><input class="form-input" value="30-71234567-8"></div>
+                <div class="form-field"><label>Responsable</label><input class="form-input" value="Dr. Alejandro Pérez"></div>
+                <div class="form-field"><label>Teléfono</label><input class="form-input" value="(011) 4567-8900"></div>
+              </div>
+            </div>
+            <div class="form-section">
+              <h4>🎨 White-label — Colores del tenant</h4>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label>Color principal (sidebar)</label>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <input type="color" value="#1d4ed8" style="width:36px;height:28px;border:1px solid #d1d5db;border-radius:4px;padding:2px;cursor:pointer">
+                    <input class="form-input" value="#1d4ed8" style="flex:1">
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label>Color de acento</label>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <input type="color" value="#2563eb" style="width:36px;height:28px;border:1px solid #d1d5db;border-radius:4px;padding:2px;cursor:pointer">
+                    <input class="form-input" value="#2563eb" style="flex:1">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SUCURSALES ── -->
+    <div class="page" id="page-sucursales">
+      <div class="page-header">
+        <div><div class="breadcrumb">Gestión</div><h1>📍 Sucursales</h1></div>
+        <div class="page-header-actions"><button class="btn-primary">+ Nueva sucursal</button></div>
+      </div>
+      <div class="page-body">
+        <div class="tabs">
+          <div class="tab active">Sucursales</div>
+          <div class="tab">Áreas</div>
+        </div>
+        <div class="sucursal-cards mb-4">
+          <div class="sucursal-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="sc-name">Central — Sede Principal</div>
+              <span class="badge badge-green">Activa</span>
+            </div>
+            <div class="sc-meta">📍 Av. Corrientes 1234, CABA<br>📞 (011) 4567-8900</div>
+            <div class="sc-stats">
+              <div class="sc-stat"><div class="n">3</div><div class="l">Áreas</div></div>
+              <div class="sc-stat"><div class="n">4</div><div class="l">Usuarios</div></div>
+              <div class="sc-stat"><div class="n">24</div><div class="l">Turnos hoy</div></div>
+            </div>
+          </div>
+          <div class="sucursal-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="sc-name">Norte — Palermo</div>
+              <span class="badge badge-green">Activa</span>
+            </div>
+            <div class="sc-meta">📍 Thames 856, Palermo<br>📞 (011) 4832-1100</div>
+            <div class="sc-stats">
+              <div class="sc-stat"><div class="n">2</div><div class="l">Áreas</div></div>
+              <div class="sc-stat"><div class="n">2</div><div class="l">Usuarios</div></div>
+              <div class="sc-stat"><div class="n">11</div><div class="l">Turnos hoy</div></div>
+            </div>
+          </div>
+          <div class="sucursal-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="sc-name">Sur — Lomas</div>
+              <span class="badge badge-amber">Mantenimiento</span>
+            </div>
+            <div class="sc-meta">📍 Hipólito Yrigoyen 2100, Lomas<br>📞 (011) 4244-6700</div>
+            <div class="sc-stats">
+              <div class="sc-stat"><div class="n">2</div><div class="l">Áreas</div></div>
+              <div class="sc-stat"><div class="n">1</div><div class="l">Usuarios</div></div>
+              <div class="sc-stat"><div class="n">0</div><div class="l">Turnos hoy</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Áreas por sucursal</h3></div>
+          <table>
+            <thead><tr><th>Área</th><th>Sucursal</th><th>Responsable</th><th>Estudios activos</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td>Hematología</td><td>Central</td><td>Bioquím. Lima</td><td>18</td><td><span class="badge badge-green">Operativa</span></td></tr>
+              <tr><td>Bioquímica</td><td>Central</td><td>Bioquím. Torres</td><td>14</td><td><span class="badge badge-green">Operativa</span></td></tr>
+              <tr><td>Orina y Sedimento</td><td>Central</td><td>Tec. Gómez</td><td>9</td><td><span class="badge badge-green">Operativa</span></td></tr>
+              <tr><td>Hematología</td><td>Norte</td><td>Bioquím. Ruiz</td><td>7</td><td><span class="badge badge-green">Operativa</span></td></tr>
+              <tr><td>Bioquímica</td><td>Norte</td><td>Bioquím. Ruiz</td><td>5</td><td><span class="badge badge-amber">Reducida</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FINANCIERO ── -->
+    <div class="page" id="page-financiero">
+      <div class="page-header">
+        <div><div class="breadcrumb">Gestión</div><h1>💰 Financiero</h1></div>
+        <div class="page-header-actions">
+          <button class="btn-secondary">📊 Exportar</button>
+          <button class="btn-primary">+ Nuevo pago</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="tabs">
+          <div class="tab active">Cajas</div>
+          <div class="tab">Pagos</div>
+          <div class="tab">Movimientos</div>
+          <div class="tab">Coberturas</div>
+          <div class="tab">Liquidaciones</div>
+        </div>
+
+        <div class="caja-cards">
+          <div class="caja-card open">
+            <div class="caja-name">Caja Central — Mañana</div>
+            <div class="caja-amount">$58.400</div>
+            <div class="caja-meta">Resp: Sec. Romero · 14 movs.</div>
+          </div>
+          <div class="caja-card open">
+            <div class="caja-name">Caja Central — Tarde</div>
+            <div class="caja-amount">$44.100</div>
+            <div class="caja-meta">Resp: J. Morales · 9 movs.</div>
+          </div>
+          <div class="caja-card open">
+            <div class="caja-name">Caja Norte</div>
+            <div class="caja-amount">$40.000</div>
+            <div class="caja-meta">Resp: Sec. Paz · 8 movs.</div>
+          </div>
+          <div class="caja-card closed">
+            <div class="caja-name">Caja Sur</div>
+            <div class="caja-amount">$0</div>
+            <div class="caja-meta">Cerrada · Sucursal en mant.</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>Últimos pagos</h3></div>
+            <table>
+              <thead><tr><th>Paciente</th><th>Importe</th><th>Método</th><th>Cobertura</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td>García, María</td><td>$3.200</td><td>Efectivo</td><td>OSDE 310</td><td><span class="badge badge-green">Pagado</span></td></tr>
+                <tr><td>López, Juan</td><td>$7.800</td><td>Débito</td><td>Swiss Medical</td><td><span class="badge badge-green">Pagado</span></td></tr>
+                <tr><td>Rodríguez, Ana</td><td>$1.500</td><td>Efectivo</td><td>Particular</td><td><span class="badge badge-green">Pagado</span></td></tr>
+                <tr><td>Méndez, Carlos</td><td>$12.400</td><td>Transferencia</td><td>PAMI</td><td><span class="badge badge-amber">Pendiente</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Coberturas más usadas</h3></div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;width:110px">OSDE</div><div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px"><div style="width:65%;height:100%;background:var(--brand);border-radius:3px"></div></div><span style="font-size:11px;color:#64748b">32%</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;width:110px">Swiss Medical</div><div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px"><div style="width:48%;height:100%;background:#7c3aed;border-radius:3px"></div></div><span style="font-size:11px;color:#64748b">24%</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;width:110px">Particular</div><div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px"><div style="width:30%;height:100%;background:#0891b2;border-radius:3px"></div></div><span style="font-size:11px;color:#64748b">18%</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;width:110px">PAMI</div><div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px"><div style="width:24%;height:100%;background:#d97706;border-radius:3px"></div></div><span style="font-size:11px;color:#64748b">14%</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;width:110px">Otras</div><div style="flex:1;background:#f1f5f9;border-radius:3px;height:10px"><div style="width:14%;height:100%;background:#94a3b8;border-radius:3px"></div></div><span style="font-size:11px;color:#64748b">12%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MÉDICOS ── -->
+    <div class="page" id="page-medicos">
+      <div class="page-header">
+        <div><div class="breadcrumb">Módulos opcionales</div><h1>👨‍⚕️ Médicos</h1></div>
+      </div>
+      <div class="coming-soon">
+        <div class="cs-icon">👨‍⚕️</div>
+        <h2>Módulo Médicos</h2>
+        <p>Gestión de médicos derivantes, historia clínica por paciente y comunicación de resultados. Módulo en desarrollo — próximamente disponible.</p>
+        <span class="badge badge-amber" style="font-size:12px;padding:6px 14px">Beta — Próximamente</span>
+      </div>
+    </div>
+
+    <!-- ── STOCK ── -->
+    <div class="page" id="page-stock">
+      <div class="page-header">
+        <div><div class="breadcrumb">Módulos opcionales</div><h1>📦 Stock</h1></div>
+      </div>
+      <div class="coming-soon">
+        <div class="cs-icon">📦</div>
+        <h2>Módulo Stock</h2>
+        <p>Control de insumos, reactivos y equipamiento por sucursal. Alertas de stock mínimo y trazabilidad de lotes. Módulo en desarrollo.</p>
+        <span class="badge badge-amber" style="font-size:12px;padding:6px 14px">Beta — Próximamente</span>
+      </div>
+    </div>
+
+    <!-- ── PORTAL ── -->
+    <div class="page" id="page-portal">
+      <div class="page-header">
+        <div><div class="breadcrumb">Módulos opcionales</div><h1>🌐 Portal Paciente</h1></div>
+      </div>
+      <div class="page-body">
+        <div class="card">
+          <div class="card-header"><h3>Configuración del Portal</h3></div>
+          <div style="padding:16px">
+            <div class="form-grid">
+              <div class="form-field"><label>URL del portal</label><input class="form-input" value="https://resultados.laboratorioapp.com"></div>
+              <div class="form-field"><label>Estado</label><input class="form-input" value="Activo" style="color:#15803d;font-weight:600"></div>
+              <div class="form-field"><label>Descarga de resultados</label><input class="form-input" value="Habilitada"></div>
+              <div class="form-field"><label>Notificaciones email</label><input class="form-input" value="Habilitadas"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SAAS ADMIN ── -->
+    <div class="page" id="page-saas">
+      <div class="page-header">
+        <div><div class="breadcrumb">Administración global</div><h1>⚙️ SaaS Admin</h1></div>
+        <div class="page-header-actions"><button class="btn-primary">+ Nuevo tenant</button></div>
+      </div>
+      <div class="page-body">
+        <div class="stats-row">
+          <div class="stat-card"><div class="icon icon-blue">🏢</div><div class="label">Tenants activos</div><div class="value">12</div><div class="delta">2 en trial</div></div>
+          <div class="stat-card"><div class="icon icon-green">👤</div><div class="label">Usuarios totales</div><div class="value">87</div><div class="delta">▲ 5 este mes</div></div>
+          <div class="stat-card"><div class="icon icon-amber">💳</div><div class="label">MRR</div><div class="value">$3.240</div><div class="delta">▲ 12% vs mes ant.</div></div>
+          <div class="stat-card"><div class="icon icon-purple">📊</div><div class="label">Estudios/mes</div><div class="value">4.820</div><div class="delta">▲ 8%</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Tenants</h3><div class="card-header-right"><input class="search-bar" placeholder="Buscar tenant…"></div></div>
+          <table>
+            <thead><tr><th>Tenant</th><th>Plan</th><th>Módulos activos</th><th>Usuarios</th><th>Estado</th><th>Vencimiento</th></tr></thead>
+            <tbody>
+              <tr><td><div class="user-cell"><div class="user-avatar" style="background:#eff6ff;color:#1d4ed8">LA</div>LaboratoApp Demo</div></td><td>Pro</td><td>Turnos, Financiero, Portal</td><td>6</td><td><span class="badge badge-green">Activo</span></td><td>31/12/2025</td></tr>
+              <tr><td><div class="user-cell"><div class="user-avatar" style="background:#faf5ff;color:#7e22ce">BN</div>BioNorte Lab</div></td><td>Starter</td><td>Turnos</td><td>3</td><td><span class="badge badge-green">Activo</span></td><td>30/06/2025</td></tr>
+              <tr><td><div class="user-cell"><div class="user-avatar" style="background:#f0fdf4;color:#15803d">CS</div>ClinicSur</div></td><td>Pro</td><td>Turnos, Financiero, Médicos</td><td>8</td><td><span class="badge badge-amber">Trial</span></td><td>25/05/2025</td></tr>
+              <tr><td><div class="user-cell"><div class="user-avatar" style="background:#fff1f2;color:#dc2626">LR</div>Lab Rosario</div></td><td>Starter</td><td>—</td><td>2</td><td><span class="badge badge-red">Vencido</span></td><td>01/04/2025</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function navigate(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const target = document.getElementById('page-' + page);
+    if (target) target.classList.add('active');
+    const navMap = { home: 0, analitica: 1, turnos: 2, empresa: 3, sucursales: 4, financiero: 5, medicos: 6, stock: 7, portal: 8, saas: 9 };
+    const navItems = document.querySelectorAll('.nav-item');
+    const idx = navMap[page];
+    if (idx !== undefined && navItems[idx]) navItems[idx].classList.add('active');
+    window.scrollTo && window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
