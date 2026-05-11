@@ -235,9 +235,35 @@ Para cualquier vista que muestre una colección (pacientes, turnos, órdenes, se
 - Filtros: `p-toolbar` en desktop / `p-drawer` lateral en mobile.
 
 ### Formulario de creación o edición
-- **Desktop:** `p-dialog` (520px form simple, 720px extenso, 900px con tabla embebida).
-- **Mobile:** dialog full-screen, o pantalla completa con header propio si el formulario tiene 3+ secciones.
-- **Wizard de pasos** en mobile cuando el formulario es muy largo; el mismo formulario en desktop se ve completo.
+
+El patrón depende del **dominio de la operación**, no del conteo de campos.
+
+**Drawer lateral de ~50% (`p-drawer position="left"`)** — para crear o editar UNA entidad atómica con campos directamente suyos. Ejemplos: Paciente, Sucursal, Área, Usuario, Rol, Médico derivante, Obra Social, Insumo, configuración del tenant, plantilla de notificación. El payload del backend es un objeto plano (o con un par de IDs de relación). El usuario está editando una "ficha".
+
+**Full-page con stepper (`/feature/nuevo`)** — para componer una TRANSACCIÓN que ata múltiples entidades en un solo evento de negocio. Ejemplos: Registrar llegada (paciente + turno + estudios + cobro), Nuevo turno (paciente + horario + estudios + médico derivante), Carga de protocolo (muestra + estudios + área), Cierre de caja, Facturación. El payload es un aggregate (root + colecciones anidadas). El usuario está armando un caso, no editando una ficha.
+
+**Regla práctica:** si el endpoint termina en `POST /<entidad>` con un body simple → drawer. Si arma `POST /<evento>` con arrays anidados, o si requiere lookup/creación inline de entidades relacionadas (ej: crear un paciente en el medio del alta de un turno) → stepper full-page.
+
+#### Drawer — mecánicas obligatorias
+
+- `p-drawer position="left"`, `[modal]="true"`, `[dismissable]="true"`.
+- Ancho: `styleClass="ui-drawer-half"` → en desktop `width: 50vw; min-width: 480px; max-width: 720px`; en mobile `width: 100vw`.
+- Header sticky con título + botón cerrar (X).
+- Footer sticky abajo con `Cancelar` (secondary) + `Guardar`/`Crear` (primary). Submit por `Enter` cuando aplique.
+- `Esc` cierra (PrimeNG lo provee; no override).
+- Reactive Forms siempre. Validación on blur + on submit.
+- Skeleton mientras se cargan datos en edición.
+
+#### Stepper full-page — mecánicas obligatorias
+
+- Ruta dedicada (`/feature/nuevo`, `/feature/:id/editar` si la edición también es compleja).
+- Header con botón "Atrás" + título "Paso N de M".
+- `p-progressBar` o stepper visual arriba.
+- Body scrolleable, `max-width: 720px`, centrado.
+- Footer sticky con `Volver` + `Continuar` (o `Confirmar` en el último paso).
+- Validar solo el step actual antes de avanzar.
+- El estado del wizard se mantiene en memoria mientras dure la navegación; perderlo al salir es aceptable.
+- Confirmación si el usuario intenta salir con cambios sin guardar.
 
 ### Card expandible (acordeón)
 Para listas de items con detalle opcional:
