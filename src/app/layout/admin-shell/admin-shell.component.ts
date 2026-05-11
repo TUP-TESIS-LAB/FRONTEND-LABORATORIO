@@ -11,15 +11,16 @@ import { SidebarComponent } from '@layout/sidebar/sidebar.component';
   imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent],
   template: `
     <div class="ui-admin-shell">
-      <!-- Sidebar desktop -->
       <ui-sidebar class="ui-show-desktop ui-admin-shell__sidebar" />
 
-      <!-- Drawer mobile -->
-      <p-drawer [(visible)]="drawerOpen" position="left" [modal]="true">
+      <p-drawer
+        [(visible)]="drawerOpen"
+        position="left"
+        [modal]="true"
+        styleClass="ui-admin-shell__mobile-drawer">
         <ui-sidebar (itemClick)="drawerOpen.set(false)" />
       </p-drawer>
 
-      <!-- Main content -->
       <div class="ui-admin-shell__main">
         <ui-topbar (menuToggle)="drawerOpen.set(!drawerOpen())" />
         <main class="ui-admin-shell__content">
@@ -31,19 +32,20 @@ import { SidebarComponent } from '@layout/sidebar/sidebar.component';
   styles: [`
     .ui-admin-shell {
       display: flex;
-      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
+      background: var(--ds-bg);
     }
     .ui-admin-shell__sidebar {
       width: var(--ds-sidebar-w);
       flex-shrink: 0;
-      border-right: 1px solid var(--ds-surface);
     }
     .ui-admin-shell__main {
       flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-width: 0;
     }
     .ui-admin-shell__content {
       flex: 1;
@@ -53,6 +55,14 @@ import { SidebarComponent } from '@layout/sidebar/sidebar.component';
     }
     @media (max-width: 767px) {
       .ui-admin-shell__content { padding: var(--space-4); }
+    }
+
+    :host ::ng-deep .ui-admin-shell__mobile-drawer .p-drawer-content {
+      padding: 0;
+      background: var(--brand-shell-bg);
+    }
+    :host ::ng-deep .ui-admin-shell__mobile-drawer {
+      width: 280px;
     }
   `],
 })
