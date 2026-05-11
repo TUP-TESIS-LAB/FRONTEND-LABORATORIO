@@ -1,4 +1,9 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideStore, provideState } from '@ngrx/store';
@@ -10,6 +15,7 @@ import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
 import { authTokenInterceptor } from '@core/interceptors/auth-token.interceptor';
 import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
+import { TokenService } from '@core/auth/token.service';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
 import { tenantReducer } from '@core/tenant/store/tenant.reducer';
@@ -38,6 +44,11 @@ import { FinancieroEffects } from '@features/financiero/store/financiero.effects
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    // DEV-ONLY: clear any persisted token on each app load so the user always
+    // lands on the login screen. Remove once real auth is wired.
+    provideAppInitializer(() => {
+      inject(TokenService).removeToken();
+    }),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(
       withInterceptors([authTokenInterceptor, tenantIdInterceptor]),
