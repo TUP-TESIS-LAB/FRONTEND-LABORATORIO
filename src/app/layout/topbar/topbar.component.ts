@@ -10,7 +10,7 @@ import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
     <header class="ui-topbar">
       <button
         type="button"
-        class="ui-topbar__hamburger ui-show-mobile"
+        class="ui-topbar__hamburger"
         (click)="menuToggle.emit()"
         aria-label="Abrir menú">
         <i class="pi pi-bars"></i>
@@ -23,7 +23,7 @@ import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
       </div>
 
       <!-- TODO: implementar búsqueda global -->
-      <div class="ui-topbar__search ui-show-desktop" role="search" aria-disabled="true">
+      <div class="ui-topbar__search" role="search" aria-disabled="true">
         <i class="pi pi-search"></i>
         <span>Buscar pacientes, turnos, estudios…</span>
       </div>
@@ -61,9 +61,9 @@ import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
     }
 
     .ui-topbar__hamburger {
+      display: none;
       width: var(--ds-touch-target);
       height: var(--ds-touch-target);
-      display: flex;
       align-items: center;
       justify-content: center;
       background: transparent;
@@ -191,6 +191,8 @@ import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
 
     @media (max-width: 767px) {
       .ui-topbar { padding: 0 var(--space-3); }
+      .ui-topbar__hamburger { display: flex; }
+      .ui-topbar__search    { display: none; }
       .ui-topbar__icon-btn,
       .ui-topbar__avatar {
         width: var(--ds-touch-target);

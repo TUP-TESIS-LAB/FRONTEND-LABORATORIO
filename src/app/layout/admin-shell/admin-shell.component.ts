@@ -11,7 +11,7 @@ import { SidebarComponent } from '@layout/sidebar/sidebar.component';
   imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent],
   template: `
     <div class="ui-admin-shell">
-      <ui-sidebar class="ui-show-desktop ui-admin-shell__sidebar" />
+      <ui-sidebar class="ui-admin-shell__sidebar" />
 
       <p-drawer
         [(visible)]="drawerOpen"
@@ -39,6 +39,9 @@ import { SidebarComponent } from '@layout/sidebar/sidebar.component';
     .ui-admin-shell__sidebar {
       width: var(--ds-sidebar-w);
       flex-shrink: 0;
+    }
+    @media (max-width: 767px) {
+      .ui-admin-shell__sidebar { display: none; }
     }
     .ui-admin-shell__main {
       flex: 1;
