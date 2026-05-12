@@ -4,7 +4,6 @@ import { catchError, map, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AnaliticaService } from '../services/analitica.service';
 import {
-  loadPacientes, loadPacientesSuccess, loadPacientesFailure,
   loadProtocolos, loadProtocolosSuccess, loadProtocolosFailure,
   loadNbus, loadNbusSuccess, loadNbusFailure,
 } from './analitica.actions';
@@ -13,18 +12,6 @@ import {
 export class AnaliticaEffects {
   private readonly actions$ = inject(Actions);
   private readonly analiticaService = inject(AnaliticaService);
-
-  loadPacientes$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(loadPacientes),
-      switchMap(() =>
-        this.analiticaService.getPacientes().pipe(
-          map((pacientes) => loadPacientesSuccess({ pacientes })),
-          catchError((error) => of(loadPacientesFailure({ error })))
-        )
-      )
-    )
-  );
 
   loadProtocolos$ = createEffect(() =>
     this.actions$.pipe(

@@ -4,9 +4,8 @@ export const ANALITICA_ROUTES: Routes = [
   {
     path: '',
     children: [
-      { path: '', redirectTo: 'pacientes', pathMatch: 'full' },
-      { path: 'pacientes',      loadComponent: () => import('./pages/pacientes/pacientes.component').then(m => m.PacientesComponent) },
-      { path: 'atencion',       loadComponent: () => import('./pages/atencion/atencion.component').then(m => m.AtencionComponent) },
+      { path: '', redirectTo: 'atencion', pathMatch: 'full' },
+{ path: 'atencion',       loadComponent: () => import('./pages/atencion/atencion.component').then(m => m.AtencionComponent) },
       { path: 'protocolos',     loadComponent: () => import('./pages/protocolos/protocolos.component').then(m => m.ProtocolosComponent) },
       { path: 'rotulos',        loadComponent: () => import('./pages/rotulos/rotulos.component').then(m => m.RotulosComponent) },
       { path: 'pre-analitica',  loadComponent: () => import('./pages/pre-analitica/pre-analitica.component').then(m => m.PreAnaliticaComponent) },
