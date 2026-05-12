@@ -14,6 +14,7 @@ import { DatePipe } from '@angular/common';
 import { DniPipe } from '@shared/pipes/dni.pipe';
 import { AgePipe } from '@shared/pipes/age.pipe';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { Patient, PatientStatus } from '../../models/patient.model';
 import { PatientStateFilter } from '../../models/patient-page.model';
 import { getCoveragePlanLabel } from '../../models/coverage-plans.catalog';
@@ -44,7 +45,9 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
         </div>
         <div class="flex items-center gap-2">
           <p-button label="Exportar" icon="pi pi-file-export" severity="secondary" [outlined]="true" [disabled]="true" pTooltip="Próximamente" />
-          <p-button label="Nuevo paciente" icon="pi pi-plus" (onClick)="openCreate()" />
+          @if (canMutate()) {
+            <p-button label="Nuevo paciente" icon="pi pi-plus" (onClick)="openCreate()" />
+          }
         </div>
       </header>
 
@@ -111,15 +114,21 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
                 <a [routerLink]="['/pacientes', p.id]">
                   <p-button [text]="true" icon="pi pi-eye" pTooltip="Ver detalle" ariaLabel="Ver detalle" />
                 </a>
-                <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" (onClick)="openEdit(p)" />
-                <p-button [text]="true" icon="pi pi-times-circle" pTooltip="Activar/Desactivar" ariaLabel="Activar/Desactivar" (onClick)="confirmToggle(p)" />
+                @if (canMutate()) {
+                  <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" (onClick)="openEdit(p)" />
+                  <p-button [text]="true" icon="pi pi-times-circle" pTooltip="Activar/Desactivar" ariaLabel="Activar/Desactivar" (onClick)="confirmToggle(p)" />
+                }
               </td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
               <td colspan="7">
-                <ui-empty-state heading="Sin pacientes" icon="pi-users" ctaLabel="Nuevo paciente" (ctaClick)="openCreate()" />
+                @if (canMutate()) {
+                  <ui-empty-state heading="Sin pacientes" icon="pi-users" ctaLabel="Nuevo paciente" (ctaClick)="openCreate()" />
+                } @else {
+                  <ui-empty-state heading="Sin pacientes" icon="pi-users" />
+                }
               </td>
             </tr>
           </ng-template>
@@ -135,6 +144,8 @@ export class PatientListPage implements OnInit {
   private readonly store = inject(Store);
   private readonly confirm = inject(ConfirmationService);
   private readonly search$ = new Subject<string>();
+  private readonly perms = inject(PatientPermissionsService);
+  readonly canMutate = this.perms.canMutate;
 
   readonly items = this.store.selectSignal(selectAllPatients);
   readonly pending = this.store.selectSignal(selectPatientPending);

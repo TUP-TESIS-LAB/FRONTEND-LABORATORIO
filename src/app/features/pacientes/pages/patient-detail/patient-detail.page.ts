@@ -16,6 +16,7 @@ import {
 import {
   selectSelectedPatient, selectPatientPending,
 } from '../../store/patient.selectors';
+import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { getCoveragePlanLabel } from '../../models/coverage-plans.catalog';
 import { PatientFormDrawerComponent } from '../../components/patient-form-drawer/patient-form-drawer.component';
 
@@ -40,15 +41,17 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
             <p-tag [value]="p.status" severity="info" class="ml-2" />
             @if (!p.active) { <p-tag value="Inactivo" severity="danger" class="ml-1" /> }
           </h1>
-          <div class="flex gap-2">
-            <p-button severity="secondary" [outlined]="true" icon="pi pi-pencil" label="Editar" (onClick)="drawerOpen.set(true)" />
-            <p-button
-              severity="danger"
-              [outlined]="true"
-              [icon]="p.active ? 'pi pi-times-circle' : 'pi pi-refresh'"
-              [label]="p.active ? 'Desactivar' : 'Reactivar'"
-              (onClick)="confirmToggle()" />
-          </div>
+          @if (canMutate()) {
+            <div class="flex gap-2">
+              <p-button severity="secondary" [outlined]="true" icon="pi pi-pencil" label="Editar" (onClick)="drawerOpen.set(true)" />
+              <p-button
+                severity="danger"
+                [outlined]="true"
+                [icon]="p.active ? 'pi pi-times-circle' : 'pi pi-refresh'"
+                [label]="p.active ? 'Desactivar' : 'Reactivar'"
+                (onClick)="confirmToggle()" />
+            </div>
+          }
         </header>
 
         <div class="grid grid-cols-4 gap-3 mb-4">
@@ -140,6 +143,8 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   private readonly store = inject(Store);
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmationService);
+  private readonly perms = inject(PatientPermissionsService);
+  readonly canMutate = this.perms.canMutate;
 
   readonly patient = this.store.selectSignal(selectSelectedPatient);
   readonly pending = this.store.selectSignal(selectPatientPending);
