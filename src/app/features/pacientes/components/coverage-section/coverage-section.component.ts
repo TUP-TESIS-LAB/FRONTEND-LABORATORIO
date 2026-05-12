@@ -6,7 +6,7 @@ import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { Coverage } from '../../models/patient.model';
-import { COVERAGE_PLAN_CATALOG } from '../../models/coverage-plans.catalog';
+import { COVERAGE_PLAN_CATALOG, CoveragePlanOption } from '../../models/coverage-plans.catalog';
 
 @Component({
   selector: 'pat-coverage-section',
@@ -45,7 +45,7 @@ import { COVERAGE_PLAN_CATALOG } from '../../models/coverage-plans.catalog';
 export class CoverageSectionComponent {
   readonly array = input.required<FormArray<FormGroup>>();
   private readonly fb = inject(FormBuilder);
-  readonly planOptions = COVERAGE_PLAN_CATALOG;
+  readonly planOptions: CoveragePlanOption[] = [...COVERAGE_PLAN_CATALOG];
 
   primaryIndex(): number { return this.array().controls.findIndex((c) => c.value.isPrimary === true); }
 

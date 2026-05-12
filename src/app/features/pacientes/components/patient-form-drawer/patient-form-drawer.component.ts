@@ -56,7 +56,7 @@ function isoFromDate(d: unknown): string | null {
       (visibleChange)="onVisibleChange($event)"
       position="left"
       [modal]="true"
-      [dismissable]="true"
+      [dismissible]="true"
       styleClass="ui-drawer-half"
       [header]="isEdit() ? 'Editar paciente' : 'Nuevo paciente'">
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
