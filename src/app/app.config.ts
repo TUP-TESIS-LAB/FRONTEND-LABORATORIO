@@ -78,6 +78,10 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: Aura,
         options: {
+          // Force light mode — never auto-switch on prefers-color-scheme: dark.
+          // To opt back into dark mode later, change this to '.dark-mode' and
+          // toggle that class on <html> from a theme service.
+          darkModeSelector: false,
           cssLayer: {
             name: 'primeng',
             order: 'tailwind, primeng',

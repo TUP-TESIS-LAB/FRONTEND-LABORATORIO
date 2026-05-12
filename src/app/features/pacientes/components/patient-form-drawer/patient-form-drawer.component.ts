@@ -54,7 +54,7 @@ function isoFromDate(d: unknown): string | null {
     <p-drawer
       [visible]="open()"
       (visibleChange)="onVisibleChange($event)"
-      position="left"
+      position="right"
       [modal]="true"
       [dismissible]="true"
       styleClass="ui-drawer-half"
