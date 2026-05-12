@@ -143,7 +143,7 @@ describe('getCoveragePlanLabel', () => {
 
 - [ ] **Step 3: Run tests — expect 4 passed**
 
-Run: `npx vitest run src/app/features/pacientes/models/coverage-plans.catalog.spec.ts`
+Run: `npx ng test --no-watch --include='**/coverage-plans.catalog.spec.ts'`
 
 - [ ] **Step 4: Commit**
 
@@ -265,7 +265,7 @@ describe('PatientService', () => {
 
 - [ ] **Step 2: Run — expect FAIL**
 
-Run: `npx vitest run src/app/features/pacientes/services/patient.service.spec.ts`
+Run: `npx ng test --no-watch --include='**/patient.service.spec.ts'`
 
 - [ ] **Step 3: Implement the service**
 
@@ -361,7 +361,7 @@ describe('DniPipe', () => {
 
 - [ ] **Step 2: Run — expect FAIL**
 
-Run: `npx vitest run src/app/shared/pipes/dni.pipe.spec.ts`
+Run: `npx ng test --no-watch --include='**/dni.pipe.spec.ts'`
 
 - [ ] **Step 3: Implement**
 
@@ -2588,7 +2588,7 @@ const notify = { error: vi.fn(), success: vi.fn(), info: vi.fn(), warn: vi.fn() 
 { provide: NotificationService, useValue: notify },
 ```
 
-Re-run effects spec: `npx vitest run src/app/features/pacientes/store/patient.effects.spec.ts` — expect 4 passed.
+Re-run effects spec: `npx ng test --no-watch --include='**/patient.effects.spec.ts'` — expect 4 passed.
 
 - [ ] **Step 3: 404 redirect in detail page**
 
@@ -2735,7 +2735,7 @@ describe('PatientFormDrawerComponent (smoke)', () => {
 
 - [ ] **Step 3: Run — expect green**
 
-Run: `npx vitest run src/app/features/pacientes/pages/patient-list src/app/features/pacientes/components/patient-form-drawer`
+Run: `npx ng test --no-watch --include='**/patient-list.page.spec.ts' --include='**/patient-form-drawer.component.spec.ts'`
 
 - [ ] **Step 4: Commit**
 
@@ -2750,7 +2750,7 @@ git commit -m "test(pacientes): add list page and form drawer smoke tests"
 
 ### Task J1: Full unit-test run
 
-- [ ] **Step 1:** Run: `npx vitest run`
+- [ ] **Step 1:** Run: `npm test` (or `npx ng test --no-watch`)
 Expected: all green.
 
 - [ ] **Step 2:** If any failure, diagnose and fix in place. No skip-workarounds.
@@ -2812,7 +2812,7 @@ git commit -m "docs(pacientes): note backend coverage-plan seeding requirement"
 ## Definition of Done
 
 - [ ] All tasks above completed and committed
-- [ ] `npx vitest run` green
+- [ ] `npm test` green
 - [ ] `npm run build` green
 - [ ] Manual smoke test (J3) passes all 10 flows
 - [ ] Backend coverage-plans seeding documented (J4)
