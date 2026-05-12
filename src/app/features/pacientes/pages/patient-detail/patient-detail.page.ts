@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
@@ -11,7 +13,7 @@ import { DniPipe } from '@shared/pipes/dni.pipe';
 import { AgePipe } from '@shared/pipes/age.pipe';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import {
-  loadPatient, clearSelectedPatient, togglePatientActive,
+  loadPatient, loadPatientFailure, clearSelectedPatient, togglePatientActive,
 } from '../../store/patient.actions';
 import {
   selectSelectedPatient, selectPatientPending,
@@ -140,9 +142,16 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   /** Comes from the routed param via withComponentInputBinding(). */
   readonly id = input.required<string>();
 
+  constructor() {
+    this.actions$
+      .pipe(ofType(loadPatientFailure), takeUntilDestroyed())
+      .subscribe(() => this.router.navigate(['/pacientes']));
+  }
+
   private readonly store = inject(Store);
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmationService);
+  private readonly actions$ = inject(Actions);
   private readonly perms = inject(PatientPermissionsService);
   readonly canMutate = this.perms.canMutate;
 

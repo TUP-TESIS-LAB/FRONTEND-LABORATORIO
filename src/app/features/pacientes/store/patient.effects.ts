@@ -7,6 +7,7 @@ import {
   map, of, switchMap, withLatestFrom,
 } from 'rxjs';
 import { PatientService } from '../services/patient.service';
+import { NotificationService } from '@core/services/notification.service';
 import {
   loadPatients, loadPatientsSuccess, loadPatientsFailure,
   setPatientPageRequest,
@@ -23,6 +24,7 @@ export class PatientEffects {
   private readonly actions$ = inject(Actions);
   private readonly patientService = inject(PatientService);
   private readonly store = inject(Store);
+  private readonly notifications = inject(NotificationService);
 
   loadPatients$ = createEffect(() =>
     this.actions$.pipe(
@@ -30,7 +32,10 @@ export class PatientEffects {
       switchMap(({ req }) =>
         this.patientService.search(req).pipe(
           map((result) => loadPatientsSuccess({ result })),
-          catchError((error: HttpErrorResponse) => of(loadPatientsFailure({ error }))),
+          catchError((error: HttpErrorResponse) => {
+            this.notifications.error('No se pudieron cargar los pacientes');
+            return of(loadPatientsFailure({ error }));
+          }),
         ),
       ),
     ),
@@ -51,7 +56,10 @@ export class PatientEffects {
       switchMap(({ id }) =>
         this.patientService.getById(id).pipe(
           map((patient) => loadPatientSuccess({ patient })),
-          catchError((error: HttpErrorResponse) => of(loadPatientFailure({ error }))),
+          catchError((error: HttpErrorResponse) => {
+            this.notifications.error('No se pudo cargar el paciente');
+            return of(loadPatientFailure({ error }));
+          }),
         ),
       ),
     ),
@@ -87,7 +95,10 @@ export class PatientEffects {
       concatMap(({ id, deleted }) =>
         this.patientService.toggleActive(id, deleted).pipe(
           map(() => togglePatientActiveSuccess({ id, deleted })),
-          catchError((error: HttpErrorResponse) => of(togglePatientActiveFailure({ error }))),
+          catchError((error: HttpErrorResponse) => {
+            this.notifications.error('No se pudo actualizar el paciente');
+            return of(togglePatientActiveFailure({ error }));
+          }),
         ),
       ),
     ),

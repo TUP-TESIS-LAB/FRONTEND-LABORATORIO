@@ -6,6 +6,7 @@ import { Action } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PatientEffects } from './patient.effects';
 import { PatientService } from '../services/patient.service';
+import { NotificationService } from '@core/services/notification.service';
 import {
   loadPatients, loadPatientsSuccess, loadPatientsFailure,
   addPatient, addPatientSuccess,
@@ -23,6 +24,7 @@ const patient: Patient = {
 describe('PatientEffects', () => {
   let actions$: Observable<Action>;
   let svc: { search: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; toggleActive: ReturnType<typeof vi.fn>; existsByDni: ReturnType<typeof vi.fn> };
+  const notify = { error: vi.fn(), success: vi.fn(), info: vi.fn(), warn: vi.fn(), show: vi.fn(), dismiss: vi.fn(), clear: vi.fn() };
 
   beforeEach(() => {
     svc = { search: vi.fn(), getById: vi.fn(), create: vi.fn(), update: vi.fn(), toggleActive: vi.fn(), existsByDni: vi.fn() };
@@ -32,6 +34,7 @@ describe('PatientEffects', () => {
         provideMockActions(() => actions$),
         provideMockStore({ initialState: { [PATIENT_FEATURE_KEY]: initialPatientState } }),
         { provide: PatientService, useValue: svc },
+        { provide: NotificationService, useValue: notify },
       ],
     });
   });
