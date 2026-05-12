@@ -5,16 +5,11 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { RadioButtonModule } from 'primeng/radiobutton';
-import { Contact, ContactType } from '../../models/patient.model';
-
-const TYPE_OPTIONS: { value: ContactType; label: string }[] = [
-  { value: 'PHONE', label: 'Teléfono fijo' },
-  { value: 'MOBILE', label: 'Celular' },
-  { value: 'EMAIL', label: 'Email' },
-];
+import { Coverage } from '../../models/patient.model';
+import { COVERAGE_PLAN_CATALOG } from '../../models/coverage-plans.catalog';
 
 @Component({
-  selector: 'pat-contact-section',
+  selector: 'pat-coverage-section',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule, RadioButtonModule],
@@ -22,35 +17,35 @@ const TYPE_OPTIONS: { value: ContactType; label: string }[] = [
     <div class="space-y-3">
       @for (group of array().controls; track group; let i = $index) {
         <div [formGroup]="$any(group)" class="grid grid-cols-12 gap-2 items-end border border-surface-200 rounded p-2">
-          <div class="col-span-3">
-            <label class="block text-xs text-surface-500 mb-1">Tipo</label>
-            <p-select formControlName="contactType" [options]="typeOptions" optionLabel="label" optionValue="value" class="w-full" />
-          </div>
           <div class="col-span-5">
-            <label class="block text-xs text-surface-500 mb-1">Valor</label>
-            <input pInputText formControlName="contactValue" class="w-full" />
+            <label class="block text-xs text-surface-500 mb-1">Obra social / Plan</label>
+            <p-select formControlName="planId" [options]="planOptions" optionLabel="label" optionValue="planId" placeholder="Seleccionar plan" class="w-full" />
           </div>
-          <div class="col-span-2 text-center">
+          <div class="col-span-4">
+            <label class="block text-xs text-surface-500 mb-1">N° afiliado</label>
+            <input pInputText formControlName="memberNumber" class="w-full">
+          </div>
+          <div class="col-span-1 text-center">
             <label class="block text-xs text-surface-500 mb-1">Primario</label>
-            <p-radioButton name="contact-primary" [value]="i" [ngModel]="primaryIndex()" (ngModelChange)="setPrimary(i)" [ngModelOptions]="{ standalone: true }" />
+            <p-radioButton name="coverage-primary" [value]="i" [ngModel]="primaryIndex()" (ngModelChange)="setPrimary(i)" [ngModelOptions]="{ standalone: true }" />
           </div>
           <div class="col-span-1 text-center">
             <label class="block text-xs text-surface-500 mb-1">Activo</label>
             <p-toggleSwitch formControlName="active" />
           </div>
           <div class="col-span-1 text-right">
-            <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(i)" ariaLabel="Eliminar contacto" />
+            <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(i)" ariaLabel="Eliminar cobertura" />
           </div>
         </div>
       }
-      <p-button icon="pi pi-plus" label="Agregar contacto" severity="secondary" [outlined]="true" (onClick)="add()" />
+      <p-button icon="pi pi-plus" label="Agregar cobertura" severity="secondary" [outlined]="true" (onClick)="add()" />
     </div>
   `,
 })
-export class ContactSectionComponent {
+export class CoverageSectionComponent {
   readonly array = input.required<FormArray<FormGroup>>();
   private readonly fb = inject(FormBuilder);
-  readonly typeOptions = TYPE_OPTIONS;
+  readonly planOptions = COVERAGE_PLAN_CATALOG;
 
   primaryIndex(): number { return this.array().controls.findIndex((c) => c.value.isPrimary === true); }
 
@@ -58,10 +53,9 @@ export class ContactSectionComponent {
     const isPrimary = this.array().length === 0;
     this.array().push(this.fb.group({
       id: [null],
-      contactValue: ['', Validators.required],
-      contactType: ['PHONE' as ContactType, Validators.required],
-      isPrimary: [isPrimary],
-      active: [true],
+      planId: [null, Validators.required],
+      memberNumber: ['', Validators.required],
+      isPrimary: [isPrimary], active: [true],
     }));
   }
 
@@ -75,13 +69,12 @@ export class ContactSectionComponent {
     this.array().controls.forEach((ctrl, i) => ctrl.patchValue({ isPrimary: i === index }));
   }
 
-  static toFormGroup(fb: FormBuilder, c: Contact): FormGroup {
+  static toFormGroup(fb: FormBuilder, c: Coverage): FormGroup {
     return fb.group({
       id: [c.id ?? null],
-      contactValue: [c.contactValue, Validators.required],
-      contactType: [c.contactType, Validators.required],
-      isPrimary: [c.isPrimary],
-      active: [c.active],
+      planId: [c.planId, Validators.required],
+      memberNumber: [c.memberNumber, Validators.required],
+      isPrimary: [c.isPrimary], active: [c.active],
     });
   }
 }
