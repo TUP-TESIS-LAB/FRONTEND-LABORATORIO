@@ -29,6 +29,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/analitica/analitica.routes').then((m) => m.ANALITICA_ROUTES),
       },
+      {
+        path: 'pacientes',
+        loadChildren: () =>
+          import('./features/pacientes/pacientes.routes').then((m) => m.PACIENTES_ROUTES),
+      },
 
       // ACTIVABLES — requieren módulo habilitado para el tenant
       {
