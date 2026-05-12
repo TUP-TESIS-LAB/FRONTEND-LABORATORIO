@@ -19,27 +19,32 @@ const TYPE_OPTIONS: { value: ContactType; label: string }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule, RadioButtonModule],
   template: `
-    <div class="space-y-3">
+    <div class="flex flex-col gap-3">
       @for (group of array().controls; track group; let i = $index) {
-        <div [formGroup]="$any(group)" class="grid grid-cols-12 gap-2 items-end border border-surface-200 rounded p-2">
-          <div class="col-span-3">
-            <label class="block text-xs text-surface-500 mb-1">Tipo</label>
-            <p-select formControlName="contactType" [options]="typeOptions" optionLabel="label" optionValue="value" class="w-full" />
+        <div [formGroup]="$any(group)" class="pat-form__row">
+          <div class="pat-form__row-header">
+            <strong style="font-size:12px">Contacto #{{ i + 1 }}</strong>
+            <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="remove(i)" ariaLabel="Eliminar contacto" />
           </div>
-          <div class="col-span-5">
-            <label class="block text-xs text-surface-500 mb-1">Valor</label>
-            <input pInputText formControlName="contactValue" class="w-full" />
+          <div class="pat-form__grid">
+            <div class="pat-form__field">
+              <label class="pat-form__label">Tipo</label>
+              <p-select formControlName="contactType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">Valor</label>
+              <input pInputText formControlName="contactValue" class="pat-form__input" placeholder="Ej: 11 5555-1234 o email@dom.com" />
+            </div>
           </div>
-          <div class="col-span-2 text-center">
-            <label class="block text-xs text-surface-500 mb-1">Primario</label>
-            <p-radioButton name="contact-primary" [value]="i" [ngModel]="primaryIndex()" (ngModelChange)="setPrimary(i)" [ngModelOptions]="{ standalone: true }" />
-          </div>
-          <div class="col-span-1 text-center">
-            <label class="block text-xs text-surface-500 mb-1">Activo</label>
-            <p-toggleSwitch formControlName="active" />
-          </div>
-          <div class="col-span-1 text-right">
-            <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(i)" ariaLabel="Eliminar contacto" />
+          <div class="pat-form__row-flags">
+            <label class="pat-form__row-flag">
+              <p-radioButton name="contact-primary" [value]="i" [ngModel]="primaryIndex()" (ngModelChange)="setPrimary(i)" [ngModelOptions]="{ standalone: true }" />
+              <span>Primario</span>
+            </label>
+            <label class="pat-form__row-flag">
+              <p-toggleSwitch formControlName="active" />
+              <span>Activo</span>
+            </label>
           </div>
         </div>
       }

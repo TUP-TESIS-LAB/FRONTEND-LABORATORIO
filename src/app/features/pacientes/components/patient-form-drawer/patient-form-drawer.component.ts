@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
@@ -6,7 +6,6 @@ import { DrawerModule } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { AccordionModule } from 'primeng/accordion';
 import { TagModule } from 'primeng/tag';
 import { DatePickerModule } from 'primeng/datepicker';
 import {
@@ -47,7 +46,7 @@ function isoFromDate(d: unknown): string | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, SelectModule,
-    AccordionModule, TagModule, DatePickerModule,
+    TagModule, DatePickerModule,
     ContactSectionComponent, AddressSectionComponent, CoverageSectionComponent,
   ],
   template: `
@@ -60,77 +59,76 @@ function isoFromDate(d: unknown): string | null {
       styleClass="ui-drawer-half"
       [header]="isEdit() ? 'Editar paciente' : 'Nuevo paciente'">
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
-        <div class="flex-1 overflow-y-auto pr-2">
+        <div class="pat-form" style="flex:1; overflow-y:auto;">
           @if (saveError(); as err) {
-            <div class="mb-3 p-2 rounded text-sm" style="background:#fee2e2;border:1px solid var(--ds-danger);color:var(--ds-danger);">
+            <div class="pat-form__card" style="background:#fef2f2;border-color:var(--ds-danger);color:var(--ds-danger);">
               {{ saveErrorMessage(err) }}
             </div>
           }
-          <p-accordion [multiple]="true" [value]="['general','contacts']">
-            <p-accordion-panel value="general">
-              <p-accordion-header>
-                Datos generales
-                <p-tag [value]="statusEstimate()" severity="info" class="ml-2" />
-              </p-accordion-header>
-              <p-accordion-content>
-                <div class="grid grid-cols-2 gap-3" formGroupName="general">
-                  <div>
-                    <label class="block text-xs text-surface-500 mb-1">Apellido*</label>
-                    <input pInputText formControlName="lastName" class="w-full" />
-                  </div>
-                  <div>
-                    <label class="block text-xs text-surface-500 mb-1">Nombre*</label>
-                    <input pInputText formControlName="firstName" class="w-full" />
-                  </div>
-                  <div>
-                    <label class="block text-xs text-surface-500 mb-1">DNI*</label>
-                    <input pInputText formControlName="dni" class="w-full" />
-                    @if (dniDuplicate()) {
-                      <p class="text-xs mt-1" style="color:var(--ds-danger)" role="alert">
-                        Ya existe un paciente con ese DNI
-                      </p>
-                    }
-                  </div>
-                  <div>
-                    <label class="block text-xs text-surface-500 mb-1">Fecha de nacimiento*</label>
-                    <p-datepicker formControlName="birthDate" dateFormat="dd/mm/yy" appendTo="body" />
-                  </div>
-                  <div>
-                    <label class="block text-xs text-surface-500 mb-1">Género</label>
-                    <p-select formControlName="gender" [options]="genderOpts" optionLabel="label" optionValue="value" placeholder="—" class="w-full" />
-                  </div>
-                  <div>
-                    <label class="block text-xs text-surface-500 mb-1">Sexo registral</label>
-                    <p-select formControlName="sexAtBirth" [options]="sexOpts" optionLabel="label" optionValue="value" placeholder="—" class="w-full" />
-                  </div>
-                </div>
-              </p-accordion-content>
-            </p-accordion-panel>
 
-            <p-accordion-panel value="contacts">
-              <p-accordion-header>Contactos</p-accordion-header>
-              <p-accordion-content>
-                <pat-contact-section [array]="contactsArray" />
-              </p-accordion-content>
-            </p-accordion-panel>
+          <!-- Datos generales -->
+          <section class="pat-form__card">
+            <div class="pat-form__card-header">
+              <span><i class="pi pi-user" style="margin-right:6px"></i>Datos generales</span>
+              <p-tag [value]="statusEstimate()" severity="info" />
+            </div>
+            <div class="pat-form__grid" formGroupName="general">
+              <div class="pat-form__field">
+                <label class="pat-form__label">Apellido*</label>
+                <input pInputText formControlName="lastName" class="pat-form__input" placeholder="García" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">Nombre*</label>
+                <input pInputText formControlName="firstName" class="pat-form__input" placeholder="María Elena" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">DNI*</label>
+                <input pInputText formControlName="dni" class="pat-form__input" placeholder="32456789" />
+                @if (dniDuplicate()) {
+                  <p class="pat-form__error" role="alert">Ya existe un paciente con ese DNI</p>
+                }
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">Fecha de nacimiento*</label>
+                <p-datepicker formControlName="birthDate" dateFormat="dd/mm/yy" appendTo="body" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">Género</label>
+                <p-select formControlName="gender" [options]="genderOpts" optionLabel="label" optionValue="value" placeholder="—" appendTo="body" class="w-full" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">Sexo registral</label>
+                <p-select formControlName="sexAtBirth" [options]="sexOpts" optionLabel="label" optionValue="value" placeholder="—" appendTo="body" class="w-full" />
+              </div>
+            </div>
+          </section>
 
-            <p-accordion-panel value="addresses">
-              <p-accordion-header>Direcciones</p-accordion-header>
-              <p-accordion-content>
-                <pat-address-section [array]="addressesArray" />
-              </p-accordion-content>
-            </p-accordion-panel>
+          <!-- Contactos -->
+          <section class="pat-form__card">
+            <div class="pat-form__card-header">
+              <span><i class="pi pi-phone" style="margin-right:6px"></i>Contactos</span>
+            </div>
+            <pat-contact-section [array]="contactsArray" />
+          </section>
 
-            <p-accordion-panel value="coverages">
-              <p-accordion-header>Coberturas</p-accordion-header>
-              <p-accordion-content>
-                <pat-coverage-section [array]="coveragesArray" />
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
+          <!-- Direcciones -->
+          <section class="pat-form__card">
+            <div class="pat-form__card-header">
+              <span><i class="pi pi-map-marker" style="margin-right:6px"></i>Direcciones</span>
+            </div>
+            <pat-address-section [array]="addressesArray" />
+          </section>
+
+          <!-- Coberturas -->
+          <section class="pat-form__card">
+            <div class="pat-form__card-header">
+              <span><i class="pi pi-id-card" style="margin-right:6px"></i>Coberturas</span>
+            </div>
+            <pat-coverage-section [array]="coveragesArray" />
+          </section>
         </div>
 
-        <div class="flex justify-end gap-2 pt-3 border-t border-surface-200">
+        <div class="pat-form__footer">
           <p-button label="Cancelar" severity="secondary" [outlined]="true" (onClick)="onCancel()" />
           <p-button
             [label]="isEdit() ? 'Guardar cambios' : 'Registrar paciente'"
@@ -170,7 +168,6 @@ export class PatientFormDrawerComponent {
     coverages: this.fb.array<FormGroup>([]),
   });
 
-  // Form state mirrored as signals (per angular-conventions)
   readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
 
@@ -207,7 +204,6 @@ export class PatientFormDrawerComponent {
   get coveragesArray(): FormArray<FormGroup> { return this.form.get('coverages') as FormArray<FormGroup>; }
 
   constructor() {
-    // Hydrate / reset based on inputs
     effect(() => {
       const p = this.patient();
       const opened = this.open();
@@ -221,7 +217,6 @@ export class PatientFormDrawerComponent {
       }
     });
 
-    // Dispatch DNI check on user typing in create mode
     this.form.get('general.dni')?.valueChanges.subscribe((dni: string) => {
       if (this.isEdit()) return;
       const clean = (dni ?? '').toString().replace(/\D/g, '');

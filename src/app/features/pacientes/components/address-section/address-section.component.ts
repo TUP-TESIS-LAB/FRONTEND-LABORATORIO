@@ -12,26 +12,52 @@ import { Address } from '../../models/patient.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, ToggleSwitchModule, RadioButtonModule],
   template: `
-    <div class="space-y-3">
+    <div class="flex flex-col gap-3">
       @for (group of array().controls; track group; let i = $index) {
-        <div [formGroup]="$any(group)" class="grid grid-cols-12 gap-2 border border-surface-200 rounded p-2">
-          <div class="col-span-4"><label class="block text-xs text-surface-500 mb-1">Calle</label><input pInputText formControlName="street" class="w-full"></div>
-          <div class="col-span-2"><label class="block text-xs text-surface-500 mb-1">Número</label><input pInputText formControlName="streetNumber" class="w-full"></div>
-          <div class="col-span-2"><label class="block text-xs text-surface-500 mb-1">Depto</label><input pInputText formControlName="apartment" class="w-full"></div>
-          <div class="col-span-2"><label class="block text-xs text-surface-500 mb-1">CP</label><input pInputText formControlName="zipCode" class="w-full"></div>
-          <div class="col-span-2"><label class="block text-xs text-surface-500 mb-1">Barrio</label><input pInputText formControlName="neighborhood" class="w-full"></div>
-          <div class="col-span-4"><label class="block text-xs text-surface-500 mb-1">Ciudad</label><input pInputText formControlName="city" class="w-full"></div>
-          <div class="col-span-4"><label class="block text-xs text-surface-500 mb-1">Provincia</label><input pInputText formControlName="province" class="w-full"></div>
-          <div class="col-span-2 text-center">
-            <label class="block text-xs text-surface-500 mb-1">Primario</label>
-            <p-radioButton name="address-primary" [value]="i" [ngModel]="primaryIndex()" (ngModelChange)="setPrimary(i)" [ngModelOptions]="{ standalone: true }" />
+        <div [formGroup]="$any(group)" class="pat-form__row">
+          <div class="pat-form__row-header">
+            <strong style="font-size:12px">Dirección #{{ i + 1 }}</strong>
+            <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="remove(i)" ariaLabel="Eliminar dirección" />
           </div>
-          <div class="col-span-1 text-center">
-            <label class="block text-xs text-surface-500 mb-1">Activo</label>
-            <p-toggleSwitch formControlName="active" />
+          <div class="pat-form__grid">
+            <div class="pat-form__field">
+              <label class="pat-form__label">Calle</label>
+              <input pInputText formControlName="street" class="pat-form__input">
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">Número</label>
+              <input pInputText formControlName="streetNumber" class="pat-form__input">
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">Depto</label>
+              <input pInputText formControlName="apartment" class="pat-form__input">
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">Código postal</label>
+              <input pInputText formControlName="zipCode" class="pat-form__input">
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">Barrio</label>
+              <input pInputText formControlName="neighborhood" class="pat-form__input">
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">Ciudad</label>
+              <input pInputText formControlName="city" class="pat-form__input">
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">Provincia</label>
+              <input pInputText formControlName="province" class="pat-form__input">
+            </div>
           </div>
-          <div class="col-span-1 text-right">
-            <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(i)" ariaLabel="Eliminar dirección" />
+          <div class="pat-form__row-flags">
+            <label class="pat-form__row-flag">
+              <p-radioButton name="address-primary" [value]="i" [ngModel]="primaryIndex()" (ngModelChange)="setPrimary(i)" [ngModelOptions]="{ standalone: true }" />
+              <span>Primario</span>
+            </label>
+            <label class="pat-form__row-flag">
+              <p-toggleSwitch formControlName="active" />
+              <span>Activa</span>
+            </label>
           </div>
         </div>
       }

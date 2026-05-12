@@ -14,27 +14,32 @@ import { COVERAGE_PLAN_CATALOG, CoveragePlanOption } from '../../models/coverage
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule, RadioButtonModule],
   template: `
-    <div class="space-y-3">
+    <div class="flex flex-col gap-3">
       @for (group of array().controls; track group; let i = $index) {
-        <div [formGroup]="$any(group)" class="grid grid-cols-12 gap-2 items-end border border-surface-200 rounded p-2">
-          <div class="col-span-5">
-            <label class="block text-xs text-surface-500 mb-1">Obra social / Plan</label>
-            <p-select formControlName="planId" [options]="planOptions" optionLabel="label" optionValue="planId" placeholder="Seleccionar plan" class="w-full" />
+        <div [formGroup]="$any(group)" class="pat-form__row">
+          <div class="pat-form__row-header">
+            <strong style="font-size:12px">Cobertura #{{ i + 1 }}</strong>
+            <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="remove(i)" ariaLabel="Eliminar cobertura" />
           </div>
-          <div class="col-span-4">
-            <label class="block text-xs text-surface-500 mb-1">N° afiliado</label>
-            <input pInputText formControlName="memberNumber" class="w-full">
+          <div class="pat-form__grid">
+            <div class="pat-form__field">
+              <label class="pat-form__label">Obra social / Plan</label>
+              <p-select formControlName="planId" [options]="planOptions" optionLabel="label" optionValue="planId" placeholder="Seleccionar plan" appendTo="body" class="w-full" />
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">N° afiliado</label>
+              <input pInputText formControlName="memberNumber" class="pat-form__input">
+            </div>
           </div>
-          <div class="col-span-1 text-center">
-            <label class="block text-xs text-surface-500 mb-1">Primario</label>
-            <p-radioButton name="coverage-primary" [value]="i" [ngModel]="primaryIndex()" (ngModelChange)="setPrimary(i)" [ngModelOptions]="{ standalone: true }" />
-          </div>
-          <div class="col-span-1 text-center">
-            <label class="block text-xs text-surface-500 mb-1">Activo</label>
-            <p-toggleSwitch formControlName="active" />
-          </div>
-          <div class="col-span-1 text-right">
-            <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(i)" ariaLabel="Eliminar cobertura" />
+          <div class="pat-form__row-flags">
+            <label class="pat-form__row-flag">
+              <p-radioButton name="coverage-primary" [value]="i" [ngModel]="primaryIndex()" (ngModelChange)="setPrimary(i)" [ngModelOptions]="{ standalone: true }" />
+              <span>Primaria</span>
+            </label>
+            <label class="pat-form__row-flag">
+              <p-toggleSwitch formControlName="active" />
+              <span>Activa</span>
+            </label>
           </div>
         </div>
       }
