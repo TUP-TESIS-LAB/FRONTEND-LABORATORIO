@@ -506,3 +506,26 @@ Tareas de cleanup obligatorias en el plan de implementación:
 - [ ] Pipes `DniPipe` y `AgePipe` en `shared/pipes/`
 - [ ] Tests unitarios de service, reducer, effects, selector factory y smoke de componentes clave
 - [ ] `ng build` sin errores; `ng test` (Vitest) verde
+
+---
+
+## 16. Pre-launch dependency: backend coverage-plan seeding
+
+The frontend `COVERAGE_PLAN_CATALOG` (in `src/app/features/pacientes/models/coverage-plans.catalog.ts`) exposes the following planIds to end users:
+
+| planId | label |
+|---|---|
+| 1 | Particular |
+| 2 | OSDE 210 |
+| 3 | OSDE 310 |
+| 4 | Swiss Medical |
+| 5 | PAMI |
+| 6 | IOMA |
+| 7 | Galeno |
+
+Before this feature is enabled in any environment with real users, the backend **MUST** seed rows in the `coverage_plans` table (or its equivalent) using these exact `planId` values. The `Coverage.planId` field is validated against this table at alta time, so without the seed any registration that includes a cobertura will be rejected.
+
+Action items for the backend team:
+- Add a Flyway migration `V2__seed_coverage_plans.sql` (or equivalent versioned migration) that inserts the seven rows above
+- Confirm that the tenant scoping of `coverage_plans` matches the front: if plans are tenant-specific, seed per tenant; if global, seed once
+- Once a real coverage-plans catalog endpoint exists, the frontend stub will be replaced by a service consuming it (a follow-up task)
