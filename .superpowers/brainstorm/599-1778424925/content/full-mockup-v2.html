@@ -1,0 +1,2800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Portal — Mockup v2</title>
+<link rel="stylesheet" href="https://unpkg.com/primeicons@7.0.0/primeicons.css">
+<style>
+:root {
+  --brand:#1d4ed8; --brand-dark:#1e3a8a; --brand-light:#eff6ff;
+  --sidebar-w:236px; --topbar-h:52px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f1f5f9;color:#1e293b;height:100dvh;display:flex;flex-direction:column;overflow:hidden;font-size:13px}
+
+/* ── TOPBAR ── */
+.topbar{height:var(--topbar-h);background:var(--brand-dark);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;z-index:200;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.topbar-logo{display:flex;align-items:center;gap:8px;width:var(--sidebar-w);flex-shrink:0}
+.logo-box{width:28px;height:28px;background:var(--brand);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0}
+.tenant-name{color:#f1f5f9;font-weight:600;font-size:13px;white-space:nowrap}
+.tenant-badge{font-size:9px;background:var(--brand);color:#fff;padding:1px 6px;border-radius:8px;margin-left:2px}
+.topbar-search{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:7px 10px;color:#94a3b8;font-size:12px;display:flex;align-items:center;gap:6px;cursor:text}
+.topbar-actions{display:flex;align-items:center;gap:6px}
+.topbar-btn{width:32px;height:32px;background:rgba(255,255,255,.08);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;font-size:14px;border:1px solid rgba(255,255,255,.1);transition:background .15s;position:relative}
+.topbar-btn:hover{background:rgba(255,255,255,.16)}
+.notif-dot::after{content:'3';position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:9px;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.avatar{width:32px;height:32px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+.hamburger{display:none;color:#94a3b8;font-size:18px;cursor:pointer;padding:6px}
+
+/* ── LAYOUT ── */
+.app-body{display:flex;flex:1;overflow:hidden;position:relative}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);background:var(--brand-dark);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;overflow-x:hidden;transition:transform .25s ease;z-index:150}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:140}
+
+.sidebar-section{padding:10px 0 2px}
+.sidebar-section-label{padding:0 12px 4px;font-size:9px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.4);text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;cursor:pointer;color:rgba(255,255,255,.65);font-size:12.5px;transition:background .12s,color .12s;margin:1px 6px;border-radius:6px;position:relative;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:-6px;top:4px;bottom:4px;width:3px;background:#fff;border-radius:0 2px 2px 0}
+.nav-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.nav-badge{margin-left:auto;background:#ef4444;color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700}
+.nav-badge.green{background:#10b981}
+.nav-chip{font-size:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.6);padding:1px 4px;border-radius:3px;margin-left:auto}
+.nav-chevron{margin-left:auto;font-size:10px;transition:transform .2s;color:rgba(255,255,255,.4)}
+.nav-item.expanded .nav-chevron{transform:rotate(180deg)}
+.sidebar-divider{height:1px;background:rgba(255,255,255,.1);margin:5px 12px}
+
+/* sub-items */
+.sub-nav{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.sub-nav.open{max-height:200px}
+.sub-nav-item{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 34px;cursor:pointer;color:rgba(255,255,255,.55);font-size:12px;margin:1px 6px;border-radius:6px;transition:background .12s,color .12s}
+.sub-nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.sub-nav-item.active{background:rgba(255,255,255,.15);color:#fff;font-weight:600}
+.sub-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.4);flex-shrink:0}
+.sub-nav-item.active .sub-dot{background:#fff}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.page{display:none;flex-direction:column;flex:1;min-height:0}
+.page.active{display:flex}
+
+/* ── PAGE HEADER ── */
+.page-header{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.page-header h1{font-size:16px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px}
+.page-header h1 .pi{font-size:16px;color:var(--brand)}
+.page-header .breadcrumb{font-size:10px;color:#94a3b8;margin-bottom:1px}
+.page-header-actions{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-secondary{background:#fff;color:#475569;border:1px solid #cbd5e1}
+.btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+.btn-sm{padding:5px 10px;font-size:11px}
+
+/* ── PAGE BODY ── */
+.page-body{padding:18px 20px;flex:1;overflow-y:auto}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:10px;padding:14px;border:1px solid #e2e8f0;display:flex;flex-direction:column;gap:5px}
+.stat-card .s-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:2px}
+.stat-card .s-icon .pi{font-size:15px}
+.stat-card .s-label{font-size:11px;color:#64748b;font-weight:500}
+.stat-card .s-value{font-size:22px;font-weight:700;color:#0f172a;line-height:1.1}
+.stat-card .s-delta{font-size:10px;color:#10b981;display:flex;align-items:center;gap:2px}
+.stat-card .s-delta.red{color:#ef4444}
+.s-blue{background:#eff6ff;} .s-blue .pi{color:#1d4ed8}
+.s-green{background:#f0fdf4;} .s-green .pi{color:#16a34a}
+.s-amber{background:#fffbeb;} .s-amber .pi{color:#d97706}
+.s-purple{background:#faf5ff;} .s-purple .pi{color:#7e22ce}
+.s-red{background:#fef2f2;} .s-red .pi{color:#dc2626}
+.s-cyan{background:#ecfeff;} .s-cyan .pi{color:#0891b2}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden}
+.card-header{padding:13px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:8px}
+.card-header h3{font-size:13px;font-weight:600;color:#0f172a}
+.card-header .count{font-size:11px;color:#94a3b8}
+.card-header-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.card-body{padding:14px}
+
+/* ── TABLES ── */
+table{width:100%;border-collapse:collapse}
+th{padding:8px 13px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;text-align:left;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+td{padding:9px 13px;font-size:12px;color:#334155;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+.table-actions{display:flex;gap:4px}
+.action-btn{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:11px;transition:all .12s}
+.action-btn:hover{background:#f1f5f9;color:var(--brand)}
+.action-btn.danger:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+.b-green{background:#dcfce7;color:#15803d}
+.b-blue{background:#dbeafe;color:#1d4ed8}
+.b-amber{background:#fef9c3;color:#854d0e}
+.b-red{background:#fee2e2;color:#dc2626}
+.b-gray{background:#f1f5f9;color:#64748b}
+.b-purple{background:#f3e8ff;color:#7e22ce}
+.b-cyan{background:#cffafe;color:#0e7490}
+
+/* ── LAYOUT HELPERS ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.mb-3{margin-bottom:10px}.mb-4{margin-bottom:14px}.mb-5{margin-bottom:18px}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;background:#f1f5f9;border-radius:8px;padding:3px;margin-bottom:14px;width:fit-content;flex-wrap:wrap}
+.tab{padding:5px 13px;border-radius:6px;font-size:12px;font-weight:500;color:#64748b;cursor:pointer;white-space:nowrap}
+.tab.active{background:#fff;color:#0f172a;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* ── FORM ── */
+.form-section{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:14px}
+.form-section h4{font-size:12px;font-weight:700;color:#374151;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:6px}
+.form-section h4 .pi{color:var(--brand)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-field{display:flex;flex-direction:column;gap:4px}
+.form-field label{font-size:11px;font-weight:600;color:#374151}
+.form-field label.required::after{content:' *';color:#dc2626}
+.form-input{border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:12px;color:#111827;background:#fff;width:100%;transition:border-color .15s}
+.form-input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 2px rgba(29,78,216,.12)}
+.form-select{border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:12px;color:#111827;background:#fff;width:100%;appearance:none;cursor:pointer}
+.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9}
+.input-group{display:flex;gap:6px;align-items:center}
+.color-preview{width:28px;height:28px;border-radius:5px;border:1px solid #d1d5db;cursor:pointer}
+.form-hint{font-size:10px;color:#94a3b8;margin-top:2px}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;gap:0;margin-bottom:14px;overflow-x:auto}
+.pipeline-step{flex:1;min-width:90px;background:#fff;border:1px solid #e2e8f0;padding:12px 14px;position:relative;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:background .15s}
+.pipeline-step:not(:last-child)::after{content:'›';position:absolute;right:-9px;top:50%;transform:translateY(-50%);font-size:18px;color:#cbd5e1;z-index:1;background:#f1f5f9;width:16px;text-align:center;pointer-events:none}
+.pipeline-step:first-child{border-radius:8px 0 0 8px}
+.pipeline-step:last-child{border-radius:0 8px 8px 0}
+.pipeline-step .ps-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8}
+.pipeline-step .ps-count{font-size:22px;font-weight:700;color:#0f172a}
+.pipeline-step .ps-sub{font-size:10px;color:#64748b}
+.pipeline-step.active-step{background:#eff6ff;border-color:var(--brand)}
+.pipeline-step.active-step .ps-count{color:var(--brand)}
+.pipeline-step:hover{background:#f8fafc}
+
+/* ── BAR CHART ── */
+.bar-chart-wrap{padding:12px 14px}
+.bar-row{display:flex;align-items:flex-end;gap:5px;height:72px}
+.bar{flex:1;border-radius:3px 3px 0 0;background:var(--brand);opacity:.65;transition:opacity .2s;cursor:pointer}
+.bar:hover{opacity:1}
+.bar-labels{display:flex;justify-content:space-between;margin-top:4px}
+.bar-label{flex:1;text-align:center;font-size:9px;color:#94a3b8}
+.progress-list{display:flex;flex-direction:column;gap:9px;padding:12px 14px}
+.prog-row{display:flex;align-items:center;gap:8px}
+.prog-label{font-size:11px;width:100px;color:#374151;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-bar-wrap{flex:1;background:#f1f5f9;border-radius:3px;height:8px}
+.prog-bar{height:100%;border-radius:3px}
+.prog-val{font-size:10px;color:#64748b;width:28px;text-align:right}
+
+/* ── AGENDA ── */
+.agenda-wrap{display:grid;grid-template-columns:190px 1fr;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff}
+.agenda-list{border-right:1px solid #e2e8f0;overflow-y:auto;max-height:340px}
+.agenda-list-header{padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#374151;display:flex;align-items:center;gap:5px}
+.agenda-slot{padding:7px 12px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:7px;cursor:pointer;transition:background .12s}
+.agenda-slot:hover{background:#f8fafc}
+.agenda-slot.current{background:#eff6ff}
+.slot-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.slot-time{font-size:10px;color:#64748b;width:32px;flex-shrink:0}
+.slot-name{font-size:11px;color:#1e293b;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-badge{font-size:9px}
+.agenda-calendar{padding:12px}
+.cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cal-title{font-size:12px;font-weight:700;color:#0f172a}
+.day-cols{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.day-col-hdr{text-align:center;padding:5px 3px;margin-bottom:4px}
+.day-name{font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase}
+.day-num{font-size:16px;font-weight:700;color:#0f172a}
+.day-num.today-num{background:var(--brand);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:13px}
+.ev-block{border-left:3px solid var(--brand);background:#eff6ff;border-radius:0 4px 4px 0;padding:3px 5px;margin-bottom:3px;font-size:10px;cursor:pointer}
+.ev-block .ev-time{color:#64748b}
+.ev-block .ev-name{font-weight:600;color:#1d4ed8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-block.ev-green{background:#f0fdf4;border-color:#16a34a}.ev-block.ev-green .ev-name{color:#15803d}
+.ev-block.ev-amber{background:#fffbeb;border-color:#d97706}.ev-block.ev-amber .ev-name{color:#92400e}
+.ev-block.ev-red{background:#fef2f2;border-color:#dc2626}.ev-block.ev-red .ev-name{color:#dc2626}
+
+/* ── ATENCION ── */
+.queue-header{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:16px}
+.queue-number{font-size:48px;font-weight:800;color:var(--brand);line-height:1}
+.queue-info .q-label{font-size:11px;color:#94a3b8;font-weight:500}
+.queue-info .q-name{font-size:16px;font-weight:700;color:#0f172a}
+.queue-info .q-meta{font-size:11px;color:#64748b;margin-top:2px}
+.queue-actions{margin-left:auto;display:flex;gap:7px}
+.box-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.box-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.box-card .box-num{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8}
+.box-card .box-patient{font-size:12px;font-weight:600;color:#0f172a}
+.box-card .box-status{font-size:10px}
+.box-card.box-busy{border-top:3px solid var(--brand)}
+.box-card.box-free{border-top:3px solid #10b981}
+.box-card.box-break{border-top:3px solid #94a3b8}
+
+/* ── SUCURSALES ── */
+.suc-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.suc-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px}
+.suc-name{font-size:13px;font-weight:700;margin-bottom:3px}
+.suc-meta{font-size:11px;color:#64748b;margin-bottom:10px;line-height:1.5;display:flex;flex-direction:column;gap:2px}
+.suc-meta span{display:flex;align-items:center;gap:4px}
+.suc-stats{display:flex;gap:14px}
+.suc-stat .n{font-size:18px;font-weight:700;color:var(--brand)}
+.suc-stat .l{font-size:9px;color:#94a3b8;text-transform:uppercase}
+
+/* ── FINANCIERO ── */
+.caja-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.caja-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px}
+.caja-card.open{border-top:3px solid #10b981}
+.caja-card.closed{border-top:3px solid #94a3b8}
+.caja-name{font-size:11px;font-weight:600;color:#374151;margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.caja-amount{font-size:20px;font-weight:700;color:#0f172a}
+.caja-meta{font-size:10px;color:#94a3b8;margin-top:2px}
+
+/* ── OBRAS SOCIALES ── */
+.os-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s}
+.os-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.os-logo{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;letter-spacing:-.5px}
+.os-info .os-name{font-size:13px;font-weight:700;color:#0f172a}
+.os-info .os-meta{font-size:11px;color:#64748b;margin-top:1px}
+.os-actions{margin-left:auto;display:flex;gap:5px}
+
+/* ── MODULE CARDS (home) ── */
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.module-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;cursor:pointer;transition:box-shadow .15s,border-color .15s;display:flex;flex-direction:column;gap:7px}
+.module-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:var(--brand)}
+.module-card.inactive{opacity:.5;cursor:default}
+.module-card.inactive:hover{box-shadow:none;border-color:#e2e8f0}
+.mc-icon{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.mc-title{font-size:13px;font-weight:700;color:#0f172a}
+.mc-desc{font-size:11px;color:#64748b;line-height:1.4}
+
+/* ── USER CELL ── */
+.user-cell{display:flex;align-items:center;gap:7px}
+.user-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.search-input{border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;font-size:12px;background:#fff;width:190px;display:flex;align-items:center;gap:5px}
+
+/* ── COMING SOON ── */
+.coming-soon{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;color:#94a3b8;padding:60px;text-align:center}
+.coming-soon .cs-icon .pi{font-size:48px;color:#cbd5e1}
+.coming-soon h2{font-size:18px;font-weight:700;color:#374151}
+.coming-soon p{font-size:13px;max-width:340px;line-height:1.6}
+
+/* ── EMPTY STATE ── */
+.empty-state{padding:40px;text-align:center;color:#94a3b8;display:flex;flex-direction:column;align-items:center;gap:8px}
+.empty-state .pi{font-size:32px;color:#cbd5e1}
+.empty-state p{font-size:12px}
+
+/* ── PROFILE MENU ── */
+.avatar-wrap{position:relative;cursor:pointer}
+.avatar{width:32px;height:32px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;border:2px solid transparent;transition:border-color .15s}
+.avatar-wrap:hover .avatar{border-color:rgba(255,255,255,.4)}
+.profile-menu{position:absolute;top:calc(100% + 10px);right:0;width:280px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1);border:1px solid #e2e8f0;z-index:500;display:none;overflow:hidden;animation:fadeDown .15s ease}
+.profile-menu.open{display:block}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.profile-menu-header{padding:14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:10px}
+.pm-avatar{width:40px;height:40px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+.pm-info .pm-name{font-size:13px;font-weight:700;color:#0f172a}
+.pm-info .pm-role{font-size:10px;font-weight:600;color:var(--brand);text-transform:uppercase;letter-spacing:.04em;margin-top:1px}
+.pm-info .pm-email{font-size:10px;color:#94a3b8;margin-top:1px}
+.pm-tenant{display:flex;align-items:center;gap:7px;padding:8px 14px;font-size:11px;color:#475569;background:#f1f5f9;border-bottom:1px solid #e2e8f0}
+.pm-tenant .pi{color:#64748b;font-size:12px}
+.pm-divider{height:1px;background:#f1f5f9;margin:3px 0}
+.pm-section-label{padding:4px 14px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8}
+.pm-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:12px;color:#374151;cursor:pointer;transition:background .12s}
+.pm-item:hover{background:#f8fafc;color:#0f172a}
+.pm-item .pi{font-size:13px;color:#64748b;width:16px;text-align:center}
+.pm-item:hover .pi{color:var(--brand)}
+.pm-danger:hover{background:#fef2f2 !important;color:#dc2626 !important}
+.pm-danger:hover .pi{color:#dc2626 !important}
+.pm-branch{padding-left:14px}
+.active-branch{font-weight:600;color:var(--brand)}
+.active-branch .pi:first-child{color:var(--brand)}
+.pm-branch-disabled{opacity:.5;cursor:default}
+.pm-branch-disabled:hover{background:transparent;color:#374151}
+
+/* ── SIDE PANELS ── */
+.side-panel{position:fixed;top:0;right:-380px;width:380px;height:100vh;background:#fff;box-shadow:-4px 0 20px rgba(0,0,0,.12);z-index:600;display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.side-panel.open{right:0}
+.side-panel-header{height:52px;background:#1e293b;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;color:#f1f5f9;font-size:14px;font-weight:600}
+.side-panel-close{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;transition:background .15s}
+.side-panel-close:hover{background:rgba(255,255,255,.1);color:#fff}
+.side-panel-body{flex:1;overflow-y:auto;padding:16px}
+.pm-avatar-large{width:64px;height:64px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;margin:0 auto 10px}
+.panel-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:590}
+.panel-backdrop.open{display:block}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:700;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.modal-icon{width:56px;height:56px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.modal-icon .pi{font-size:22px;color:#dc2626}
+.modal h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px}
+.modal p{font-size:12px;color:#64748b;line-height:1.5;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:center}
+
+/* ── LOGIN / FORGOT SCREENS ── */
+.auth-screen{position:fixed;inset:0;z-index:900;display:none;align-items:center;justify-content:center;background:#f1f5f9;overflow-y:auto}
+.auth-screen.open{display:flex}
+.auth-bg{position:absolute;inset:0;background:linear-gradient(135deg,var(--brand-dark) 0%,var(--brand) 55%,#3b82f6 100%);opacity:.07;pointer-events:none}
+.auth-grid-pattern{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(29,78,216,.08) 1px,transparent 1px);background-size:28px 28px;pointer-events:none}
+.auth-card{background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);width:100%;max-width:400px;overflow:hidden;position:relative;margin:24px}
+.auth-card-header{background:var(--brand-dark);padding:28px 28px 24px;text-align:center}
+.auth-logo-box{width:48px;height:48px;background:#fff;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--brand);margin-bottom:10px}
+.auth-tenant-name{color:#fff;font-size:17px;font-weight:700;display:block}
+.auth-tenant-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px;display:block}
+.auth-card-body{padding:28px}
+.auth-title{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px}
+.auth-subtitle{font-size:12px;color:#64748b;margin-bottom:20px;line-height:1.5}
+.auth-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.auth-field label{font-size:11px;font-weight:600;color:#374151}
+.auth-input{border:1px solid #d1d5db;border-radius:8px;padding:10px 12px;font-size:13px;color:#111827;background:#fff;width:100%;transition:border-color .15s,box-shadow .15s}
+.auth-input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(29,78,216,.12)}
+.auth-input-wrap{position:relative}
+.auth-input-wrap .auth-input{padding-right:36px}
+.auth-input-wrap .eye-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:13px}
+.auth-input-wrap .eye-toggle:hover{color:#374151}
+.auth-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;font-size:12px}
+.auth-check-label{display:flex;align-items:center;gap:6px;color:#374151;cursor:pointer}
+.auth-link{color:var(--brand);cursor:pointer;font-weight:500;text-decoration:none}
+.auth-link:hover{text-decoration:underline}
+.auth-btn{width:100%;padding:11px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,box-shadow .15s;margin-bottom:12px}
+.auth-btn:hover{background:var(--brand-dark);box-shadow:0 4px 12px rgba(29,78,216,.3)}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:#94a3b8;font-size:11px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:#e2e8f0}
+.auth-footer{text-align:center;font-size:11px;color:#94a3b8;padding:14px 28px;border-top:1px solid #f1f5f9}
+.auth-success{text-align:center;padding:12px 0}
+.auth-success .success-icon{width:56px;height:56px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.auth-success .success-icon .pi{font-size:24px;color:#16a34a}
+.auth-success h3{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:6px}
+.auth-success p{font-size:12px;color:#64748b;line-height:1.6;margin-bottom:16px}
+.preview-login-btn{position:fixed;bottom:20px;right:20px;z-index:800;background:var(--brand-dark);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:box-shadow .15s}
+.preview-login-btn:hover{box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.auth-back-btn{display:flex;align-items:center;gap:6px;color:#64748b;font-size:12px;cursor:pointer;margin-bottom:16px;font-weight:500}
+.auth-back-btn:hover{color:var(--brand)}
+
+/* ── MODAL (dialog centrado) ── */
+.modal-full{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:800;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
+.modal-full.open{display:flex}
+.modal-dialog{background:#fff;border-radius:14px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,.2);display:flex;flex-direction:column;max-height:90vh;animation:scaleIn .18s ease}
+@keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.modal-dialog-header{padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.modal-dialog-header h3{font-size:14px;font-weight:700;color:#0f172a;flex:1;display:flex;align-items:center;gap:7px}
+.modal-dialog-header h3 .pi{color:var(--brand)}
+.modal-dialog-close{width:28px;height:28px;border-radius:6px;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;font-size:12px;flex-shrink:0}
+.modal-dialog-close:hover{background:#f1f5f9;color:#374151}
+.modal-dialog-body{padding:20px;overflow-y:auto;flex:1}
+.modal-dialog-footer{padding:14px 20px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;background:#f8fafc}
+.modal-tag{font-size:9px;background:var(--brand-light);color:var(--brand);padding:2px 7px;border-radius:4px;font-weight:700;letter-spacing:.04em}
+
+/* ── SLIDE-OVER (panel derecho) ── */
+/* already have .side-panel — reuse, just add specific width for forms */
+.slideover-wide{width:460px;right:-460px}
+.slideover-wide .side-panel-body{padding:0}
+.so-section{padding:16px 20px;border-bottom:1px solid #f1f5f9}
+.so-section:last-child{border-bottom:none}
+.so-section h4{font-size:12px;font-weight:700;color:#374151;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.so-section h4 .pi{color:var(--brand)}
+.so-patient-found{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.so-patient-found .spf-av{width:36px;height:36px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;color:#15803d;font-size:12px;font-weight:700;flex-shrink:0}
+.so-patient-found .spf-name{font-size:13px;font-weight:700;color:#0f172a}
+.so-patient-found .spf-meta{font-size:11px;color:#64748b;margin-top:1px}
+.so-steps-mini{display:flex;gap:0;margin-bottom:16px}
+.so-step-mini{flex:1;text-align:center;padding:6px;font-size:10px;color:#94a3b8;border-bottom:2px solid #e2e8f0;cursor:pointer}
+.so-step-mini.active{color:var(--brand);border-color:var(--brand);font-weight:600}
+.so-step-mini.done{color:#16a34a;border-color:#16a34a}
+.study-tag{display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:99px;padding:3px 8px;font-size:11px;font-weight:500;margin:2px}
+.study-tag .pi{font-size:10px;cursor:pointer;color:#93c5fd}
+.study-tag .pi:hover{color:#dc2626}
+
+/* ── FULL PAGE FORM (nueva pantalla) ── */
+.fullform-page{background:#f1f5f9;flex:1;display:flex;flex-direction:column;overflow-y:auto}
+.fullform-header{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.fullform-header .back-btn{display:flex;align-items:center;gap:5px;color:#64748b;font-size:12px;cursor:pointer;font-weight:500}
+.fullform-header .back-btn:hover{color:var(--brand)}
+.fullform-header h1{font-size:15px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:7px}
+.fullform-header h1 .pi{color:var(--brand)}
+.fullform-body{padding:24px;max-width:860px;margin:0 auto;width:100%}
+.fullform-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px}
+.fullform-card h3{font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:7px}
+.fullform-card h3 .pi{color:var(--brand)}
+.patient-search-result{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-top:6px}
+.psr-item{padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:12px;transition:background .12s}
+.psr-item:last-child{border-bottom:none}
+.psr-item:hover{background:#eff6ff}
+.psr-item .psr-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.psr-item .psr-name{font-weight:600;color:#0f172a}
+.psr-item .psr-meta{font-size:10px;color:#94a3b8}
+.study-chip{display:inline-flex;align-items:center;gap:5px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;padding:5px 10px;font-size:12px;margin:3px;cursor:pointer}
+.study-chip:hover{background:#dbeafe}
+.study-chip.selected{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.time-slots{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px}
+.time-slot{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:7px;text-align:center;font-size:11px;cursor:pointer;transition:all .12s}
+.time-slot:hover{border-color:var(--brand);color:var(--brand)}
+.time-slot.selected{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
+.time-slot.taken{background:#f1f5f9;color:#cbd5e1;cursor:default;text-decoration:line-through}
+.fullform-footer{background:#fff;border-top:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.fullform-footer .ml-auto{margin-left:auto}
+
+/* ── STEPPER ── */
+.stepper-header{background:#fff;border-bottom:1px solid #e2e8f0;padding:20px 24px;flex-shrink:0}
+.stepper-track{display:flex;align-items:flex-start;gap:0;position:relative;margin-top:4px}
+.stepper-track::before{content:'';position:absolute;top:16px;left:0;right:0;height:2px;background:#e2e8f0;z-index:0}
+.stepper-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+.step-circle{width:32px;height:32px;border-radius:50%;border:2px solid #e2e8f0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#94a3b8;transition:all .2s}
+.step-circle.active{border-color:var(--brand);background:var(--brand);color:#fff}
+.step-circle.done{border-color:#16a34a;background:#16a34a;color:#fff}
+.step-label{font-size:11px;color:#94a3b8;font-weight:500;text-align:center;white-space:nowrap}
+.step-label.active{color:var(--brand);font-weight:700}
+.step-label.done{color:#16a34a}
+.stepper-connector{flex:1;height:2px;background:#e2e8f0;margin-top:15px;transition:background .2s}
+.stepper-connector.done{background:#16a34a}
+.stepper-body{flex:1;overflow-y:auto;padding:24px;max-width:700px;margin:0 auto;width:100%}
+.stepper-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px}
+.stepper-card h3{font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:7px}
+.stepper-card h3 .pi{color:var(--brand)}
+.stepper-footer{background:#fff;border-top:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.step-indicator{font-size:11px;color:#94a3b8;margin-left:auto}
+.plan-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;margin-bottom:6px}
+.plan-row .plan-name{flex:1;font-size:12px;font-weight:600;color:#374151}
+.plan-row .plan-copago{font-size:11px;color:#64748b}
+.review-section{margin-bottom:16px}
+.review-section h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:8px}
+.review-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f8fafc;font-size:12px}
+.review-row .rv-label{color:#64748b}
+.review-row .rv-val{color:#0f172a;font-weight:500}
+
+/* ── PACIENTES ── */
+.patient-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.filter-chip{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #e2e8f0;border-radius:99px;padding:5px 12px;font-size:11px;color:#64748b;cursor:pointer;transition:all .12s}
+.filter-chip:hover,.filter-chip.active{background:var(--brand-light);border-color:#93c5fd;color:var(--brand)}
+
+/* ── ROLES PAGE ── */
+.role-selector{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}
+.role-card{background:#fff;border:2px solid #e2e8f0;border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .15s}
+.role-card:hover{border-color:#93c5fd;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.role-card.selected{border-color:var(--brand);box-shadow:0 0 0 3px rgba(29,78,216,.12)}
+.role-card .rc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:16px}
+.role-card .rc-name{font-size:12px;font-weight:700;color:#0f172a}
+.role-card .rc-desc{font-size:10px;color:#64748b;margin-top:2px;line-height:1.3}
+.role-card.selected .rc-name{color:var(--brand)}
+
+.role-detail{display:grid;grid-template-columns:200px 1fr;gap:16px;margin-bottom:20px}
+.role-sidebar-preview{background:var(--brand-dark);border-radius:10px;overflow:hidden;padding:8px 0}
+.rsp-section-label{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:6px 10px 2px}
+.rsp-item{display:flex;align-items:center;gap:7px;padding:6px 10px;margin:1px 5px;border-radius:5px;font-size:11px}
+.rsp-item .pi{font-size:11px;width:14px;text-align:center}
+.rsp-item.rsp-allowed{color:rgba(255,255,255,.85)}
+.rsp-item.rsp-allowed.rsp-active{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
+.rsp-item.rsp-denied{color:rgba(255,255,255,.2);cursor:default}
+.rsp-item.rsp-denied .pi{opacity:.3}
+.rsp-divider{height:1px;background:rgba(255,255,255,.1);margin:4px 10px}
+.rsp-sub{padding-left:28px;font-size:10px}
+
+.role-info{display:flex;flex-direction:column;gap:12px}
+.role-badge-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.role-summary{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;font-size:12px;color:#374151;line-height:1.6}
+.role-perms{display:flex;flex-direction:column;gap:6px}
+.role-perm{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 10px;border-radius:6px}
+.role-perm.allowed{background:#f0fdf4;color:#15803d}
+.role-perm.allowed .pi{color:#16a34a}
+.role-perm.denied{background:#f8fafc;color:#94a3b8;text-decoration:line-through}
+.role-perm.denied .pi{color:#cbd5e1}
+.role-perm.readonly{background:#fffbeb;color:#92400e}
+.role-perm.readonly .pi{color:#d97706}
+
+/* ── PERMISSION MATRIX ── */
+.perm-matrix{width:100%;border-collapse:collapse;font-size:11px}
+.perm-matrix th{padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;font-size:10px;font-weight:700;color:#64748b;text-align:center;white-space:nowrap}
+.perm-matrix th.feat-col{text-align:left;min-width:160px}
+.perm-matrix td{padding:7px 10px;border:1px solid #f1f5f9;text-align:center;vertical-align:middle}
+.perm-matrix tr:hover td{background:#f8fafc}
+.perm-matrix td.feat-name{text-align:left;font-weight:500;color:#374151}
+.perm-matrix td.feat-name .feat-group{font-size:9px;color:#94a3b8;font-weight:400}
+.pm-full{color:#16a34a;font-size:14px}
+.pm-none{color:#e2e8f0;font-size:14px}
+.pm-read{color:#d97706;font-size:12px}
+.pm-scope{font-size:9px;color:#64748b;display:block}
+.matrix-legend{display:flex;gap:16px;margin-bottom:10px;font-size:11px;color:#64748b;align-items:center}
+.matrix-legend span{display:flex;align-items:center;gap:4px}
+
+/* ── WHITE-LABEL CONFIG ── */
+.wl-preview{background:#1e3a8a;border-radius:10px;overflow:hidden;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.wl-preview-topbar{height:36px;display:flex;align-items:center;padding:0 12px;gap:10px;background:var(--brand-dark)}
+.wl-preview-logo{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
+.wl-preview-tenant{font-size:11px;color:#f1f5f9;font-weight:600}
+.wl-preview-actions{margin-left:auto;display:flex;gap:5px}
+.wl-preview-dot{width:20px;height:20px;border-radius:4px;background:rgba(255,255,255,.12)}
+.wl-preview-body{display:flex;height:90px}
+.wl-preview-sidebar{width:80px;padding:6px 4px;display:flex;flex-direction:column;gap:4px}
+.wl-preview-nav{display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:4px}
+.wl-preview-nav.active-nav{background:rgba(255,255,255,.2)}
+.wl-preview-nav .wl-icon{width:8px;height:8px;border-radius:1px;background:rgba(255,255,255,.7);flex-shrink:0}
+.wl-preview-nav.active-nav .wl-icon{background:#fff}
+.wl-preview-nav .wl-label{width:28px;height:3px;border-radius:1px;background:rgba(255,255,255,.4)}
+.wl-preview-nav.active-nav .wl-label{background:rgba(255,255,255,.8)}
+.wl-preview-content{flex:1;background:#f8fafc;padding:8px}
+.wl-preview-bar{height:4px;border-radius:2px;margin-bottom:6px}
+.wl-preview-cards{display:flex;gap:4px}
+.wl-preview-card{flex:1;height:24px;background:#fff;border-radius:3px;border:1px solid #e2e8f0}
+.wl-preview-card.accent{border-top:2px solid var(--brand)}
+.zone-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.zone-card{border-radius:8px;padding:12px;border:1px solid}
+.zone-card.branded{background:#eff6ff;border-color:#bfdbfe}
+.zone-card.protected{background:#fef9c3;border-color:#fde68a}
+.zone-card .zone-title{font-size:11px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.zone-card.branded .zone-title{color:#1d4ed8}
+.zone-card.protected .zone-title{color:#92400e}
+.zone-item{display:flex;align-items:center;gap:5px;font-size:11px;margin-bottom:3px;color:#374151}
+.zone-item .pi{font-size:10px;width:12px;text-align:center}
+.zone-card.branded .zone-item .pi{color:#3b82f6}
+.zone-card.protected .zone-item .pi{color:#d97706}
+.clinical-palette{display:flex;gap:6px;margin-top:8px}
+.cp-swatch{flex:1;border-radius:5px;padding:6px 8px;text-align:center;font-size:9px;font-weight:700}
+.cp-locked{font-size:9px;color:#92400e;margin-top:6px;display:flex;align-items:center;gap:4px}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px){
+  .hamburger{display:flex}
+  .topbar-logo{width:auto}
+  .topbar-search{display:none}
+  .sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .main{width:100%}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .grid-2{grid-template-columns:1fr}
+  .grid-3{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid-3{grid-template-columns:1fr}
+  .module-grid{grid-template-columns:1fr 1fr}
+  .suc-cards{grid-template-columns:1fr}
+  .caja-cards{grid-template-columns:1fr 1fr}
+  .box-cards{grid-template-columns:1fr 1fr}
+  .page-header{flex-wrap:wrap;gap:8px}
+  .page-header-actions{width:100%}
+  .agenda-wrap{grid-template-columns:1fr}
+  .agenda-list{max-height:180px;border-right:none;border-bottom:1px solid #e2e8f0}
+  .day-cols{grid-template-columns:repeat(3,1fr)}
+  .pipeline{overflow-x:auto}
+  table{display:block;overflow-x:auto;white-space:nowrap}
+  .tabs{overflow-x:auto;width:100%;max-width:100%}
+  .queue-header{flex-wrap:wrap}
+  .queue-actions{width:100%}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr}
+  .module-grid{grid-template-columns:1fr}
+  .caja-cards{grid-template-columns:1fr}
+  .box-cards{grid-template-columns:1fr}
+  .page-body{padding:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="hamburger" onclick="toggleSidebar()"><i class="pi pi-bars"></i></div>
+  <div class="topbar-logo">
+    <div class="logo-box">LA</div>
+    <span class="tenant-name">LaboratoApp</span>
+    <span class="tenant-badge">Admin</span>
+  </div>
+  <div class="topbar-search"><i class="pi pi-search" style="font-size:12px"></i> Buscar pacientes, turnos, estudios…</div>
+  <div class="topbar-actions">
+    <div class="topbar-btn notif-dot"><i class="pi pi-bell"></i></div>
+    <div class="topbar-btn"><i class="pi pi-question-circle"></i></div>
+    <div class="avatar-wrap" id="avatar-wrap" onclick="toggleProfileMenu(event)">
+      <div class="avatar">DP</div>
+      <div class="profile-menu" id="profile-menu">
+        <div class="profile-menu-header">
+          <div class="pm-avatar">DP</div>
+          <div class="pm-info">
+            <div class="pm-name">Dr. Alejandro Pérez</div>
+            <div class="pm-role">Administrador</div>
+            <div class="pm-email">aperez@laboratorioapp.com</div>
+          </div>
+        </div>
+        <div class="pm-tenant">
+          <i class="pi pi-building"></i>
+          <span>LaboratoApp — Central</span>
+          <span class="badge b-blue" style="margin-left:auto;font-size:9px">Admin</span>
+        </div>
+        <div class="pm-divider"></div>
+        <div class="pm-item" onclick="openProfilePanel()">
+          <i class="pi pi-user"></i> Mi perfil
+        </div>
+        <div class="pm-item" onclick="openPasswordPanel()">
+          <i class="pi pi-lock"></i> Cambiar contraseña
+        </div>
+        <div class="pm-item" onclick="navigate('empresa')">
+          <i class="pi pi-cog"></i> Configuración de empresa
+        </div>
+        <div class="pm-divider"></div>
+        <div class="pm-section-label">Cambiar sucursal</div>
+        <div class="pm-item pm-branch active-branch">
+          <i class="pi pi-map-marker"></i> Central — Sede Principal
+          <i class="pi pi-check" style="margin-left:auto;color:#10b981"></i>
+        </div>
+        <div class="pm-item pm-branch" onclick="switchBranch(this,'Norte — Palermo')">
+          <i class="pi pi-map-marker"></i> Norte — Palermo
+        </div>
+        <div class="pm-item pm-branch pm-branch-disabled">
+          <i class="pi pi-map-marker"></i> Sur — Lomas
+          <span class="badge b-amber" style="margin-left:auto;font-size:8px">Mant.</span>
+        </div>
+        <div class="pm-divider"></div>
+        <div class="pm-item pm-danger" onclick="confirmLogout()">
+          <i class="pi pi-sign-out"></i> Cerrar sesión
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE PANEL -->
+<div class="side-panel" id="profile-panel">
+  <div class="side-panel-header">
+    <span>Mi perfil</span>
+    <div class="side-panel-close" onclick="closePanel('profile-panel')"><i class="pi pi-times"></i></div>
+  </div>
+  <div class="side-panel-body">
+    <div class="pm-avatar-large">DP</div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:700;color:#0f172a">Dr. Alejandro Pérez</div>
+      <div style="font-size:12px;color:#64748b;margin-top:2px">Administrador · LaboratoApp</div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:10px"><i class="pi pi-camera"></i> Cambiar foto</button>
+    </div>
+    <div class="form-section" style="margin:0">
+      <h4><i class="pi pi-user"></i> Datos personales</h4>
+      <div class="form-grid">
+        <div class="form-field"><label>Nombre</label><input class="form-input" value="Alejandro"></div>
+        <div class="form-field"><label>Apellido</label><input class="form-input" value="Pérez"></div>
+        <div class="form-field" style="grid-column:span 2"><label>Email</label><input class="form-input" value="aperez@laboratorioapp.com"></div>
+        <div class="form-field"><label>Teléfono</label><input class="form-input" value="+54 9 11 5555-1234"></div>
+        <div class="form-field"><label>Matrícula (opcional)</label><input class="form-input" value="MN 55.123"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary"><i class="pi pi-save"></i> Guardar cambios</button></div>
+    </div>
+    <div class="form-section" style="margin-top:14px">
+      <h4><i class="pi pi-bell"></i> Notificaciones</h4>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" checked> Resultados críticos (inmediato)</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" checked> Resumen diario de turnos</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox"> Alertas de stock mínimo</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" checked> Vencimiento de convenios</label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PASSWORD PANEL -->
+<div class="side-panel" id="password-panel">
+  <div class="side-panel-header">
+    <span>Cambiar contraseña</span>
+    <div class="side-panel-close" onclick="closePanel('password-panel')"><i class="pi pi-times"></i></div>
+  </div>
+  <div class="side-panel-body">
+    <div class="form-section" style="margin:0">
+      <h4><i class="pi pi-lock"></i> Nueva contraseña</h4>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="form-field"><label class="required">Contraseña actual</label><input class="form-input" type="password" placeholder="••••••••"></div>
+        <div class="form-field"><label class="required">Nueva contraseña</label><input class="form-input" type="password" placeholder="••••••••"><div class="form-hint">Mínimo 8 caracteres, una mayúscula y un número.</div></div>
+        <div class="form-field"><label class="required">Confirmar contraseña</label><input class="form-input" type="password" placeholder="••••••••"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary"><i class="pi pi-check"></i> Actualizar contraseña</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGOUT CONFIRM -->
+<div class="modal-overlay" id="logout-overlay" onclick="closeLogout()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-icon"><i class="pi pi-sign-out"></i></div>
+    <h3>¿Cerrar sesión?</h3>
+    <p>Tu sesión se cerrará y serás redirigido al login.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeLogout()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doLogout()"><i class="pi pi-sign-out"></i> Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL BACKDROP -->
+<div class="panel-backdrop" id="panel-backdrop" onclick="closeAllPanels()"></div>
+
+<!-- ══ MODAL — NUEVO PACIENTE ══ -->
+<div class="modal-full" id="modal-paciente" onclick="closeModal('modal-paciente')">
+  <div class="modal-dialog" onclick="event.stopPropagation()">
+    <div class="modal-dialog-header">
+      <h3><i class="pi pi-user-plus"></i> Nuevo paciente <span class="modal-tag">MODAL</span></h3>
+      <div class="modal-dialog-close" onclick="closeModal('modal-paciente')"><i class="pi pi-times"></i></div>
+    </div>
+    <div class="modal-dialog-body">
+      <div class="form-grid mb-3">
+        <div class="form-field"><label class="required">Apellido</label><input class="form-input" placeholder="García"></div>
+        <div class="form-field"><label class="required">Nombre</label><input class="form-input" placeholder="María Elena"></div>
+        <div class="form-field"><label class="required">DNI / Documento</label><input class="form-input" placeholder="32.456.789" type="text"></div>
+        <div class="form-field"><label class="required">Fecha de nacimiento</label><input class="form-input" type="date"></div>
+        <div class="form-field"><label class="required">Sexo</label>
+          <select class="form-select"><option value="">Seleccioná…</option><option>Femenino</option><option>Masculino</option><option>Otro / No especificado</option></select>
+        </div>
+        <div class="form-field"><label>Teléfono</label><input class="form-input" placeholder="11 5555-1234" type="tel"></div>
+        <div class="form-field" style="grid-column:span 2"><label>Correo electrónico</label><input class="form-input" placeholder="paciente@email.com" type="email"></div>
+        <div class="form-field"><label>Obra social</label>
+          <select class="form-select"><option value="">Particular / Sin obra social</option><option>OSDE 210</option><option>OSDE 310</option><option>Swiss Medical</option><option>PAMI</option><option>IOMA</option><option>Galeno</option></select>
+        </div>
+        <div class="form-field"><label>N° afiliado</label><input class="form-input" placeholder="Ej: 12345678-00"></div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:10px 12px;font-size:11px;color:#92400e;display:flex;align-items:flex-start;gap:7px">
+        <i class="pi pi-info-circle" style="margin-top:1px"></i>
+        <span>Se verificará la cobertura automáticamente al guardar. El médico derivante puede completarse más tarde desde el historial del paciente.</span>
+      </div>
+    </div>
+    <div class="modal-dialog-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-paciente')"><i class="pi pi-times"></i> Cancelar</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-paciente')"><i class="pi pi-user-plus"></i> Registrar paciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE-OVER — REGISTRAR LLEGADA (Atención) ══ -->
+<div class="side-panel slideover-wide" id="atencion-so">
+  <div class="side-panel-header" style="background:var(--brand-dark)">
+    <span style="display:flex;align-items:center;gap:8px"><i class="pi pi-user-plus"></i> Registrar llegada <span style="font-size:9px;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:4px;font-weight:700;letter-spacing:.04em">SLIDE-OVER</span></span>
+    <div class="side-panel-close" onclick="closeSlideOver('atencion-so')"><i class="pi pi-times"></i></div>
+  </div>
+  <div class="so-steps-mini" style="padding:0 20px;padding-top:12px">
+    <div class="so-step-mini active" id="so-tab-1" onclick="soTab(1)">1. Paciente</div>
+    <div class="so-step-mini" id="so-tab-2" onclick="soTab(2)">2. Estudios</div>
+    <div class="so-step-mini" id="so-tab-3" onclick="soTab(3)">3. Pago</div>
+  </div>
+  <div class="side-panel-body" style="padding:0">
+
+    <!-- Paso 1: Paciente -->
+    <div id="so-step-1">
+      <div class="so-section">
+        <h4><i class="pi pi-search"></i> Buscar paciente</h4>
+        <div class="input-group mb-3">
+          <input class="form-input" id="so-search" placeholder="Nombre o DNI…" style="flex:1" oninput="soSearch(this.value)">
+          <button class="btn btn-secondary btn-sm"><i class="pi pi-qrcode"></i></button>
+        </div>
+        <div id="so-search-results" style="display:none" class="patient-search-result mb-3">
+          <div class="psr-item" onclick="soSelectPatient('García, María Elena','32.456.789','OSDE 310')">
+            <div class="psr-av" style="background:#eff6ff;color:#1d4ed8">MG</div>
+            <div><div class="psr-name">García, María Elena</div><div class="psr-meta">DNI 32.456.789 · OSDE 310</div></div>
+          </div>
+          <div class="psr-item" onclick="soSelectPatient('López, Juan Carlos','18.234.567','Swiss Medical')">
+            <div class="psr-av" style="background:#faf5ff;color:#7e22ce">JL</div>
+            <div><div class="psr-name">López, Juan Carlos</div><div class="psr-meta">DNI 18.234.567 · Swiss Medical</div></div>
+          </div>
+          <div class="psr-item" onclick="soSelectPatient('Rodríguez, Ana','41.789.012','Particular')">
+            <div class="psr-av" style="background:#f0fdf4;color:#15803d">AR</div>
+            <div><div class="psr-name">Rodríguez, Ana Beatriz</div><div class="psr-meta">DNI 41.789.012 · Particular</div></div>
+          </div>
+        </div>
+        <div id="so-patient-found" class="so-patient-found" style="display:none">
+          <div class="spf-av" id="so-pav">MG</div>
+          <div><div class="spf-name" id="so-pname">García, María Elena</div><div class="spf-meta" id="so-pmeta">DNI 32.456.789 · OSDE 310</div></div>
+          <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="soClearPatient()"><i class="pi pi-times"></i></button>
+        </div>
+        <div style="text-align:center;font-size:11px;color:#94a3b8;margin:8px 0">— o —</div>
+        <button class="btn btn-secondary" style="width:100%"><i class="pi pi-user-plus"></i> Registrar paciente nuevo</button>
+      </div>
+      <div class="so-section">
+        <h4><i class="pi pi-calendar"></i> Turno</h4>
+        <div class="form-grid">
+          <div class="form-field"><label>Turno asignado</label>
+            <select class="form-select"><option value="">Sin turno (espontáneo)</option><option>09:20 — Juan López</option><option>09:40 — Carlos Méndez</option></select>
+          </div>
+          <div class="form-field"><label>Box asignado</label>
+            <select class="form-select"><option>Box 3 (libre)</option><option>Box 1</option><option>Box 2</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="so-section" style="padding-bottom:20px">
+        <button class="btn btn-primary" style="width:100%" onclick="soTab(2)">Siguiente — Estudios <i class="pi pi-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- Paso 2: Estudios -->
+    <div id="so-step-2" style="display:none">
+      <div class="so-section">
+        <h4><i class="pi pi-list"></i> Estudios solicitados</h4>
+        <div style="margin-bottom:10px">
+          <div class="study-tag"><i class="pi pi-times"></i> Hemograma</div>
+          <div class="study-tag"><i class="pi pi-times"></i> Glucemia</div>
+        </div>
+        <div class="input-group">
+          <input class="form-input" placeholder="Agregar estudio…" style="flex:1">
+          <button class="btn btn-secondary btn-sm"><i class="pi pi-plus"></i></button>
+        </div>
+        <div style="margin-top:10px;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px">Frecuentes</div>
+        <div>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 9px;font-size:11px;margin:2px;cursor:pointer">Hemograma</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 9px;font-size:11px;margin:2px;cursor:pointer">Glucemia</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 9px;font-size:11px;margin:2px;cursor:pointer">Colesterol</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 9px;font-size:11px;margin:2px;cursor:pointer">TSH</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 9px;font-size:11px;margin:2px;cursor:pointer">Orina completa</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 9px;font-size:11px;margin:2px;cursor:pointer">HbA1c</span>
+        </div>
+      </div>
+      <div class="so-section">
+        <h4><i class="pi pi-file-edit"></i> Médico derivante</h4>
+        <div class="form-field">
+          <input class="form-input" placeholder="Ej: Dr. González">
+        </div>
+      </div>
+      <div class="so-section" style="display:flex;gap:8px;padding-bottom:20px">
+        <button class="btn btn-secondary" style="flex:1" onclick="soTab(1)"><i class="pi pi-arrow-left"></i> Volver</button>
+        <button class="btn btn-primary" style="flex:1" onclick="soTab(3)">Siguiente — Pago <i class="pi pi-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- Paso 3: Pago -->
+    <div id="so-step-3" style="display:none">
+      <div class="so-section">
+        <h4><i class="pi pi-wallet"></i> Cobertura y pago</h4>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12px">
+          <i class="pi pi-id-card" style="color:#16a34a;font-size:16px"></i>
+          <div><div style="font-weight:600;color:#0f172a">OSDE 310</div><div style="font-size:10px;color:#64748b">Cobertura verificada · Copago: $800</div></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-field"><label>Medio de pago</label>
+            <select class="form-select"><option>Efectivo</option><option>Débito</option><option>Crédito</option><option>Transferencia</option></select>
+          </div>
+          <div class="form-field"><label>Monto cobrado</label>
+            <input class="form-input" value="$800" type="text">
+          </div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:10px">
+          <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:8px">Resumen</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#64748b">Hemograma</span><span>$0 (cubierto)</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#64748b">Glucemia</span><span>$0 (cubierto)</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;padding-top:8px;border-top:1px solid #f1f5f9"><span style="font-weight:700;color:#0f172a">Copago total</span><span style="font-weight:700;color:#0f172a">$800</span></div>
+        </div>
+      </div>
+      <div class="so-section" style="display:flex;gap:8px;padding-bottom:20px">
+        <button class="btn btn-secondary" style="flex:1" onclick="soTab(2)"><i class="pi pi-arrow-left"></i> Volver</button>
+        <button class="btn btn-primary" style="flex:1" onclick="soConfirm()"><i class="pi pi-check"></i> Confirmar llegada</button>
+      </div>
+    </div>
+
+    <!-- Éxito -->
+    <div id="so-success" style="display:none;padding:40px 24px;text-align:center">
+      <div style="width:56px;height:56px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><i class="pi pi-check-circle" style="font-size:24px;color:#16a34a"></i></div>
+      <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:6px">Llegada registrada</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:4px">N° de turno asignado</div>
+      <div style="font-size:32px;font-weight:800;color:var(--brand);margin-bottom:16px">A-11</div>
+      <button class="btn btn-primary" style="width:100%" onclick="closeSlideOver('atencion-so')"><i class="pi pi-arrow-right"></i> Cerrar y volver</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div class="auth-screen" id="login-screen">
+  <div class="auth-bg"></div>
+  <div class="auth-grid-pattern"></div>
+  <div class="auth-card">
+    <div class="auth-card-header">
+      <div class="auth-logo-box" id="login-logo">LA</div>
+      <span class="auth-tenant-name" id="login-tenant-name">LaboratoApp</span>
+      <span class="auth-tenant-sub">Sistema de gestión de laboratorio clínico</span>
+    </div>
+    <div class="auth-card-body">
+      <div class="auth-title">Bienvenido</div>
+      <div class="auth-subtitle">Ingresá con tu cuenta para continuar. Si no tenés usuario, contactá al administrador de tu laboratorio.</div>
+
+      <div class="auth-field">
+        <label>Correo electrónico</label>
+        <input class="auth-input" type="email" placeholder="usuario@laboratorio.com" value="aperez@laboratorioapp.com">
+      </div>
+      <div class="auth-field">
+        <label>Contraseña</label>
+        <div class="auth-input-wrap">
+          <input class="auth-input" type="password" placeholder="••••••••" id="login-pass" value="••••••••">
+          <span class="eye-toggle" onclick="togglePass('login-pass',this)"><i class="pi pi-eye-slash"></i></span>
+        </div>
+      </div>
+
+      <div class="auth-row">
+        <label class="auth-check-label"><input type="checkbox" checked> Recordarme</label>
+        <span class="auth-link" onclick="showForgot()">¿Olvidaste tu contraseña?</span>
+      </div>
+
+      <button class="auth-btn" onclick="doLogin()">
+        <i class="pi pi-sign-in"></i> Iniciar sesión
+      </button>
+
+      <div style="text-align:center;font-size:11px;color:#94a3b8">
+        ¿No tenés cuenta? <span style="color:#64748b;font-weight:500">Contactá al administrador de tu laboratorio.</span>
+      </div>
+    </div>
+    <div class="auth-footer">
+      LaboratoApp v2.4.1 · <a href="#" style="color:#94a3b8;text-decoration:none">Términos de uso</a> · <a href="#" style="color:#94a3b8;text-decoration:none">Privacidad</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FORGOT PASSWORD SCREEN ══ -->
+<div class="auth-screen" id="forgot-screen">
+  <div class="auth-bg"></div>
+  <div class="auth-grid-pattern"></div>
+  <div class="auth-card">
+    <div class="auth-card-header">
+      <div class="auth-logo-box" id="forgot-logo">LA</div>
+      <span class="auth-tenant-name" id="forgot-tenant-name">LaboratoApp</span>
+      <span class="auth-tenant-sub">Sistema de gestión de laboratorio clínico</span>
+    </div>
+    <div class="auth-card-body" id="forgot-body">
+      <div class="auth-back-btn" onclick="showLogin()"><i class="pi pi-arrow-left"></i> Volver al login</div>
+      <div class="auth-title">Recuperar contraseña</div>
+      <div class="auth-subtitle">Ingresá tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</div>
+
+      <div class="auth-field">
+        <label>Correo electrónico</label>
+        <input class="auth-input" type="email" placeholder="usuario@laboratorio.com" id="forgot-email">
+      </div>
+
+      <button class="auth-btn" onclick="doForgot()">
+        <i class="pi pi-send"></i> Enviar enlace de recuperación
+      </button>
+
+      <div style="text-align:center;font-size:11px;color:#94a3b8;margin-top:4px">
+        Revisá también tu carpeta de spam. El enlace expira en <strong>30 minutos</strong>.
+      </div>
+    </div>
+    <div class="auth-footer">
+      LaboratoApp v2.4.1 · <a href="#" style="color:#94a3b8;text-decoration:none">Términos de uso</a>
+    </div>
+  </div>
+</div>
+
+<!-- FORGOT SUCCESS (hidden content) -->
+<template id="forgot-success-tpl">
+  <div class="auth-back-btn" onclick="showLogin()"><i class="pi pi-arrow-left"></i> Volver al login</div>
+  <div class="auth-success">
+    <div class="success-icon"><i class="pi pi-envelope"></i></div>
+    <h3>¡Correo enviado!</h3>
+    <p>Enviamos un enlace de recuperación a <strong id="forgot-sent-email"></strong>. Revisá tu bandeja de entrada y seguí las instrucciones.</p>
+    <p style="font-size:11px;color:#94a3b8">El enlace expira en 30 minutos. Si no recibís el correo, revisá spam o intentá nuevamente.</p>
+    <button class="auth-btn" onclick="showLogin()" style="margin-top:8px"><i class="pi pi-sign-in"></i> Volver al inicio de sesión</button>
+  </div>
+</template>
+
+<!-- Floating preview button -->
+<button class="preview-login-btn" onclick="showLogin()">
+  <i class="pi pi-sign-in"></i> Preview Login
+</button>
+
+<!-- OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="app-body">
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Principal</div>
+    <div class="nav-item active" id="nav-home" onclick="navigate('home')">
+      <div class="nav-icon"><i class="pi pi-home"></i></div> Inicio
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Core clínico</div>
+
+    <!-- Analítica expandable -->
+    <div class="nav-item" id="nav-analitica-parent" onclick="toggleAnalitica(event)">
+      <div class="nav-icon"><i class="pi pi-wave-pulse"></i></div>
+      Analítica
+      <i class="pi pi-chevron-down nav-chevron" id="analitica-chevron"></i>
+    </div>
+    <div class="sub-nav" id="sub-analitica">
+      <div class="sub-nav-item" id="nav-pre" onclick="navigate('pre')">
+        <div class="sub-dot"></div> Pre-analítica
+      </div>
+      <div class="sub-nav-item" id="nav-analitica" onclick="navigate('analitica')">
+        <div class="sub-dot"></div> Analítica
+      </div>
+      <div class="sub-nav-item" id="nav-post" onclick="navigate('post')">
+        <div class="sub-dot"></div> Post-analítica
+      </div>
+    </div>
+
+    <div class="nav-item" id="nav-pacientes" onclick="navigate('pacientes')">
+      <div class="nav-icon"><i class="pi pi-address-book"></i></div>
+      Pacientes
+    </div>
+    <div class="nav-item" id="nav-turnos" onclick="navigate('turnos')">
+      <div class="nav-icon"><i class="pi pi-calendar"></i></div>
+      Turnos
+      <span class="nav-badge">4</span>
+    </div>
+    <div class="nav-item" id="nav-atencion" onclick="navigate('atencion')">
+      <div class="nav-icon"><i class="pi pi-users"></i></div>
+      Atención
+      <span class="nav-badge green">3</span>
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Gestión</div>
+    <div class="nav-item" id="nav-empresa" onclick="navigate('empresa')">
+      <div class="nav-icon"><i class="pi pi-building"></i></div> Empresa
+    </div>
+    <div class="nav-item" id="nav-roles" onclick="navigate('roles')">
+      <div class="nav-icon"><i class="pi pi-shield"></i></div> Roles y permisos
+    </div>
+    <div class="nav-item" id="nav-sucursales" onclick="navigate('sucursales')">
+      <div class="nav-icon"><i class="pi pi-map-marker"></i></div> Sucursales
+    </div>
+    <div class="nav-item" id="nav-financiero" onclick="navigate('financiero')">
+      <div class="nav-icon"><i class="pi pi-wallet"></i></div> Financiero
+    </div>
+    <div class="nav-item" id="nav-obras" onclick="navigate('obras')">
+      <div class="nav-icon"><i class="pi pi-id-card"></i></div> Obras Sociales
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Servicios clínicos</div>
+    <div class="nav-item" id="nav-medicos" onclick="navigate('medicos')">
+      <div class="nav-icon"><i class="pi pi-heart"></i></div>
+      Médicos derivantes
+      <span class="nav-chip">Beta</span>
+    </div>
+    <div class="nav-item" id="nav-stock" onclick="navigate('stock')">
+      <div class="nav-icon"><i class="pi pi-box"></i></div>
+      Stock e insumos
+      <span class="nav-chip">Beta</span>
+    </div>
+    <div class="nav-item" id="nav-portal" onclick="navigate('portal')">
+      <div class="nav-icon"><i class="pi pi-globe"></i></div> Portal paciente
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Administración</div>
+    <div class="nav-item" id="nav-saas" onclick="navigate('saas')">
+      <div class="nav-icon"><i class="pi pi-cog"></i></div>
+      SaaS Admin
+      <span class="nav-chip">Root</span>
+    </div>
+  </div>
+
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ══ HOME ══ -->
+<div class="page active" id="page-home">
+  <div class="page-header">
+    <div><div class="breadcrumb">LaboratoApp</div><h1><i class="pi pi-home"></i> ¡Buen día, Dr. Pérez!</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-chart-bar"></i> Reportes</button>
+      <button class="btn btn-primary"><i class="pi pi-plus"></i> Nuevo turno</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="stats-row">
+      <div class="stat-card"><div class="s-icon s-blue"><i class="pi pi-calendar"></i></div><div class="s-label">Turnos hoy</div><div class="s-value">24</div><div class="s-delta"><i class="pi pi-arrow-up"></i> 3 más que ayer</div></div>
+      <div class="stat-card"><div class="s-icon s-green"><i class="pi pi-wave-pulse"></i></div><div class="s-label">Estudios en proceso</div><div class="s-value">47</div><div class="s-delta">12 listos para entregar</div></div>
+      <div class="stat-card"><div class="s-icon s-amber"><i class="pi pi-stopwatch"></i></div><div class="s-label">Espera promedio</div><div class="s-value">18 min</div><div class="s-delta red"><i class="pi pi-arrow-up"></i> 4 min vs semana</div></div>
+      <div class="stat-card"><div class="s-icon s-purple"><i class="pi pi-wallet"></i></div><div class="s-label">Facturado hoy</div><div class="s-value">$142.500</div><div class="s-delta"><i class="pi pi-arrow-up"></i> 8% vs ayer</div></div>
+    </div>
+    <div class="grid-2 mb-4">
+      <div class="card">
+        <div class="card-header"><h3>Actividad semanal</h3><span class="count">turnos por día</span></div>
+        <div class="bar-chart-wrap">
+          <div class="bar-row">
+            <div class="bar" style="height:55%"></div><div class="bar" style="height:70%"></div>
+            <div class="bar" style="height:45%"></div><div class="bar" style="height:90%"></div>
+            <div class="bar" style="height:75%"></div><div class="bar" style="height:30%"></div>
+            <div class="bar" style="height:60%"></div>
+          </div>
+          <div class="bar-labels"><span class="bar-label">Lun</span><span class="bar-label">Mar</span><span class="bar-label">Mié</span><span class="bar-label">Jue</span><span class="bar-label">Vie</span><span class="bar-label">Sáb</span><span class="bar-label">Dom</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Próximos turnos</h3><div class="card-header-right"><button class="btn btn-secondary btn-sm" onclick="navigate('turnos')">Ver agenda</button></div></div>
+        <table>
+          <thead><tr><th>Paciente</th><th>Hora</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#eff6ff;color:#1d4ed8">MG</div>María García</div></td><td>09:00</td><td><span class="badge b-green">Confirmado</span></td></tr>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#faf5ff;color:#7e22ce">JL</div>Juan López</div></td><td>09:20</td><td><span class="badge b-amber">En sala</span></td></tr>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#f0fdf4;color:#15803d">AR</div>Ana Rodríguez</div></td><td>09:40</td><td><span class="badge b-blue">Procesando</span></td></tr>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#fff1f2;color:#dc2626">CM</div>Carlos Méndez</div></td><td>10:00</td><td><span class="badge b-gray">Pendiente</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mb-3" style="font-size:13px;font-weight:700;color:#374151">Módulos activos</div>
+    <div class="module-grid">
+      <div class="module-card" onclick="navigate('pre')"><div class="mc-icon s-blue"><i class="pi pi-wave-pulse" style="color:#1d4ed8"></i></div><div class="mc-title">Analítica</div><div class="mc-desc">47 estudios en pipeline. 12 listos.</div><span class="badge b-blue">Core</span></div>
+      <div class="module-card" onclick="navigate('turnos')"><div class="mc-icon s-green"><i class="pi pi-calendar" style="color:#16a34a"></i></div><div class="mc-title">Turnos</div><div class="mc-desc">24 turnos hoy. 4 sin confirmar.</div><span class="badge b-green">Core</span></div>
+      <div class="module-card" onclick="navigate('atencion')"><div class="mc-icon s-cyan"><i class="pi pi-users" style="color:#0891b2"></i></div><div class="mc-title">Atención</div><div class="mc-desc">3 pacientes en sala de espera.</div><span class="badge b-cyan">Core</span></div>
+      <div class="module-card" onclick="navigate('financiero')"><div class="mc-icon s-amber"><i class="pi pi-wallet" style="color:#d97706"></i></div><div class="mc-title">Financiero</div><div class="mc-desc">3 cajas abiertas. $142.500 facturado.</div><span class="badge b-blue">Activo</span></div>
+      <div class="module-card" onclick="navigate('obras')"><div class="mc-icon s-purple"><i class="pi pi-id-card" style="color:#7e22ce"></i></div><div class="mc-title">Obras Sociales</div><div class="mc-desc">18 coberturas configuradas.</div><span class="badge b-blue">Activo</span></div>
+      <div class="module-card inactive"><div class="mc-icon" style="background:#f1f5f9"><i class="pi pi-box" style="color:#94a3b8"></i></div><div class="mc-title">Stock</div><div class="mc-desc">Módulo no habilitado.</div><span class="badge b-gray">Inactivo</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PRE-ANALÍTICA ══ -->
+<div class="page" id="page-pre">
+  <div class="page-header">
+    <div><div class="breadcrumb">Core clínico › Analítica</div><h1><i class="pi pi-arrow-right-arrow-left"></i> Pre-analítica</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-filter"></i> Filtrar</button>
+      <button class="btn btn-primary"><i class="pi pi-plus"></i> Registrar muestra</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="pipeline mb-4">
+      <div class="pipeline-step active-step" onclick="navigate('pre')"><div class="ps-label">Pre-analítica</div><div class="ps-count">15</div><div class="ps-sub">en proceso</div></div>
+      <div class="pipeline-step" onclick="navigate('analitica')"><div class="ps-label">Analítica</div><div class="ps-count">12</div><div class="ps-sub">en analizador</div></div>
+      <div class="pipeline-step" onclick="navigate('post')"><div class="ps-label">Post-analítica</div><div class="ps-count">7</div><div class="ps-sub">validando</div></div>
+      <div class="pipeline-step"><div class="ps-label">Listos</div><div class="ps-count">5</div><div class="ps-sub">para entregar</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3>Muestras en pre-analítica</h3>
+        <div class="card-header-right">
+          <div class="search-input"><i class="pi pi-search" style="font-size:11px;color:#94a3b8"></i> <input style="border:none;outline:none;font-size:12px;width:130px" placeholder="Buscar protocolo…"></div>
+          <button class="btn btn-secondary btn-sm"><i class="pi pi-sliders-h"></i> Filtros</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Protocolo</th><th>Paciente</th><th>Muestra</th><th>Recepción</th><th>Área destino</th><th>Urgente</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b>#2401</b></td><td>García, María</td><td>Sangre EDTA</td><td>08:12</td><td>Hematología</td><td></td><td><span class="badge b-amber">Centrifugando</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-arrow-right"></i></div></div></td></tr>
+          <tr><td><b>#2402</b></td><td>López, Juan</td><td>Suero</td><td>08:34</td><td>Bioquímica</td><td><span class="badge b-red"><i class="pi pi-bolt"></i> Urgente</span></td><td><span class="badge b-blue">Rotulando</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-arrow-right"></i></div></div></td></tr>
+          <tr><td><b>#2403</b></td><td>Rodríguez, Ana</td><td>Orina 1ª micción</td><td>08:55</td><td>Orina</td><td></td><td><span class="badge b-gray">En espera</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-arrow-right"></i></div></div></td></tr>
+          <tr><td><b>#2404</b></td><td>Fernández, Luis</td><td>Sangre EDTA</td><td>09:02</td><td>Endocrinología</td><td></td><td><span class="badge b-amber">Centrifugando</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-arrow-right"></i></div></div></td></tr>
+          <tr><td><b>#2405</b></td><td>Martínez, Sofía</td><td>Suero + LCR</td><td>09:10</td><td>Serología</td><td><span class="badge b-red"><i class="pi pi-bolt"></i> Urgente</span></td><td><span class="badge b-blue">Rotulando</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-arrow-right"></i></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ANALÍTICA ══ -->
+<div class="page" id="page-analitica">
+  <div class="page-header">
+    <div><div class="breadcrumb">Core clínico › Analítica</div><h1><i class="pi pi-wave-pulse"></i> Trabajo analítico</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-file-import"></i> Importar resultados</button>
+      <button class="btn btn-primary"><i class="pi pi-plus"></i> Cargar resultado</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="pipeline mb-4">
+      <div class="pipeline-step" onclick="navigate('pre')"><div class="ps-label">Pre-analítica</div><div class="ps-count">15</div><div class="ps-sub">en proceso</div></div>
+      <div class="pipeline-step active-step" onclick="navigate('analitica')"><div class="ps-label">Analítica</div><div class="ps-count">12</div><div class="ps-sub">en analizador</div></div>
+      <div class="pipeline-step" onclick="navigate('post')"><div class="ps-label">Post-analítica</div><div class="ps-count">7</div><div class="ps-sub">validando</div></div>
+      <div class="pipeline-step"><div class="ps-label">Listos</div><div class="ps-count">5</div><div class="ps-sub">para entregar</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Estudios en analizador</h3></div>
+        <table>
+          <thead><tr><th>Protocolo</th><th>Estudio</th><th>Área</th><th>Resultado</th><th>Referencia</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td><b>#2401</b></td><td>Hemograma</td><td>Hematología</td><td>—</td><td>—</td><td><span class="badge b-blue">Procesando</span></td></tr>
+            <tr><td><b>#2402</b></td><td>Glucemia</td><td>Bioquímica</td><td style="color:#dc2626;font-weight:700">310 mg/dl</td><td>70–100</td><td><span class="badge b-red">Crítico</span></td></tr>
+            <tr><td><b>#2402</b></td><td>HbA1c</td><td>Bioquímica</td><td>8.2 %</td><td>4.0–5.6</td><td><span class="badge b-amber">Alterado</span></td></tr>
+            <tr><td><b>#2401</b></td><td>VSG</td><td>Hematología</td><td>14 mm/h</td><td>0–20</td><td><span class="badge b-green">Normal</span></td></tr>
+            <tr><td><b>#2404</b></td><td>TSH</td><td>Endocrinología</td><td>—</td><td>—</td><td><span class="badge b-blue">Procesando</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Carga por área</h3></div>
+        <div class="progress-list">
+          <div class="prog-row"><span class="prog-label">Hematología</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:72%;background:var(--brand)"></div></div><span class="prog-val">18</span></div>
+          <div class="prog-row"><span class="prog-label">Bioquímica</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:58%;background:#7c3aed"></div></div><span class="prog-val">14</span></div>
+          <div class="prog-row"><span class="prog-label">Orina</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:36%;background:#0891b2"></div></div><span class="prog-val">9</span></div>
+          <div class="prog-row"><span class="prog-label">Endocrinología</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:24%;background:#d97706"></div></div><span class="prog-val">6</span></div>
+          <div class="prog-row"><span class="prog-label">Serología</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:16%;background:#16a34a"></div></div><span class="prog-val">4</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ POST-ANALÍTICA ══ -->
+<div class="page" id="page-post">
+  <div class="page-header">
+    <div><div class="breadcrumb">Core clínico › Analítica</div><h1><i class="pi pi-file-export"></i> Post-analítica</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-print"></i> Imprimir lote</button>
+      <button class="btn btn-primary"><i class="pi pi-send"></i> Enviar resultados</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="pipeline mb-4">
+      <div class="pipeline-step" onclick="navigate('pre')"><div class="ps-label">Pre-analítica</div><div class="ps-count">15</div><div class="ps-sub">en proceso</div></div>
+      <div class="pipeline-step" onclick="navigate('analitica')"><div class="ps-label">Analítica</div><div class="ps-count">12</div><div class="ps-sub">en analizador</div></div>
+      <div class="pipeline-step active-step" onclick="navigate('post')"><div class="ps-label">Post-analítica</div><div class="ps-count">7</div><div class="ps-sub">validando</div></div>
+      <div class="pipeline-step"><div class="ps-label">Listos</div><div class="ps-count">5</div><div class="ps-sub">para entregar</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Resultados pendientes de validación</h3></div>
+      <table>
+        <thead><tr><th>Protocolo</th><th>Paciente</th><th>Estudios</th><th>Médico derivante</th><th>Entrega</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td><b>#2398</b></td><td>Romero, Pablo</td><td>Hemograma, Glucemia</td><td>Dr. Suárez</td><td>Portal + impreso</td><td><div class="table-actions"><button class="btn btn-secondary btn-sm">Validar</button><div class="action-btn"><i class="pi pi-print"></i></div></div></td></tr>
+          <tr><td><b>#2399</b></td><td>Torres, Claudia</td><td>TSH, T4 libre</td><td>Dra. Herrera</td><td>Portal</td><td><div class="table-actions"><button class="btn btn-secondary btn-sm">Validar</button><div class="action-btn"><i class="pi pi-send"></i></div></div></td></tr>
+          <tr><td><b>#2400</b></td><td>Díaz, Roberto</td><td>Orina C18, sedimento</td><td>—</td><td>Impreso</td><td><div class="table-actions"><button class="btn btn-primary btn-sm">Validar</button></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TURNOS ══ -->
+<div class="page" id="page-turnos">
+  <div class="page-header">
+    <div><div class="breadcrumb">Core clínico</div><h1><i class="pi pi-calendar"></i> Turnos</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-sliders-h"></i> Configuración</button>
+      <button class="btn btn-secondary"><i class="pi pi-desktop"></i> Tótem</button>
+      <button class="btn btn-primary" onclick="navigate('nuevo-turno')"><i class="pi pi-plus"></i> Nuevo turno</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="tabs"><div class="tab active">Agenda</div><div class="tab">Colas</div><div class="tab">Atención</div><div class="tab">Configuración</div></div>
+    <div class="stats-row mb-4">
+      <div class="stat-card"><div class="s-label">Turnos hoy</div><div class="s-value">24</div><div class="s-delta">8 completados</div></div>
+      <div class="stat-card"><div class="s-label">En sala</div><div class="s-value">4</div><div class="s-delta">Llamar próximo</div></div>
+      <div class="stat-card"><div class="s-label">Espera prom.</div><div class="s-value">18 min</div><div class="s-delta red">Alto</div></div>
+      <div class="stat-card"><div class="s-label">Sin confirmar</div><div class="s-value">4</div><div class="s-delta red">Enviar recordatorio</div></div>
+    </div>
+    <div class="agenda-wrap mb-4">
+      <div class="agenda-list">
+        <div class="agenda-list-header"><i class="pi pi-clock"></i> Hoy — Lun 10 May</div>
+        <div class="agenda-slot"><div class="slot-dot" style="background:#10b981"></div><span class="slot-time">08:00</span><span class="slot-name">García, M.</span><span class="badge b-green slot-badge">OK</span></div>
+        <div class="agenda-slot"><div class="slot-dot" style="background:#f59e0b"></div><span class="slot-time">08:20</span><span class="slot-name">López, J.</span><span class="badge b-red slot-badge">Urg</span></div>
+        <div class="agenda-slot current"><div class="slot-dot" style="background:#1d4ed8"></div><span class="slot-time">08:40</span><span class="slot-name" style="font-weight:700">Rodríguez, A.</span></div>
+        <div class="agenda-slot"><div class="slot-dot" style="background:#94a3b8"></div><span class="slot-time">09:00</span><span class="slot-name">Méndez, C.</span></div>
+        <div class="agenda-slot"><div class="slot-dot" style="background:#94a3b8"></div><span class="slot-time">09:20</span><span class="slot-name">Sánchez, L.</span></div>
+        <div class="agenda-slot"><div class="slot-dot" style="background:#94a3b8"></div><span class="slot-time">09:40</span><span class="slot-name">Fernández, P.</span></div>
+        <div class="agenda-slot"><div class="slot-dot" style="background:#94a3b8"></div><span class="slot-time">10:00</span><span class="slot-name">Torres, M.</span></div>
+      </div>
+      <div class="agenda-calendar">
+        <div class="cal-nav">
+          <button class="btn btn-secondary btn-sm"><i class="pi pi-chevron-left"></i></button>
+          <span class="cal-title">Semana 6–10 Mayo 2025</span>
+          <button class="btn btn-secondary btn-sm"><i class="pi pi-chevron-right"></i></button>
+        </div>
+        <div class="day-cols">
+          <div><div class="day-col-hdr"><div class="day-name">Lun</div><div class="day-num">6</div></div><div class="ev-block"><div class="ev-time">08:00</div><div class="ev-name">García</div></div><div class="ev-block ev-green"><div class="ev-time">09:00</div><div class="ev-name">López</div></div></div>
+          <div><div class="day-col-hdr"><div class="day-name">Mar</div><div class="day-num">7</div></div><div class="ev-block ev-amber"><div class="ev-time">08:30</div><div class="ev-name">Rodríguez</div></div><div class="ev-block"><div class="ev-time">10:00</div><div class="ev-name">Méndez</div></div></div>
+          <div><div class="day-col-hdr"><div class="day-name">Mié</div><div class="day-num">8</div></div><div class="ev-block"><div class="ev-time">09:00</div><div class="ev-name">Sánchez</div></div><div class="ev-block ev-red"><div class="ev-time">10:30</div><div class="ev-name">Díaz ⚡</div></div></div>
+          <div><div class="day-col-hdr"><div class="day-name">Jue</div><div class="day-num">9</div></div><div class="ev-block ev-green"><div class="ev-time">08:00</div><div class="ev-name">Fernández</div></div><div class="ev-block"><div class="ev-time">10:30</div><div class="ev-name">Ramírez</div></div></div>
+          <div><div class="day-col-hdr"><div class="day-name">Vie</div><div class="day-num today-num">10</div></div><div class="ev-block"><div class="ev-time">08:40</div><div class="ev-name">Rodríguez</div></div><div class="ev-block ev-green"><div class="ev-time">09:20</div><div class="ev-name">López</div></div><div class="ev-block ev-amber"><div class="ev-time">11:00</div><div class="ev-name">Gómez</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ATENCIÓN ══ -->
+<div class="page" id="page-atencion">
+  <div class="page-header">
+    <div><div class="breadcrumb">Core clínico</div><h1><i class="pi pi-users"></i> Atención</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-refresh"></i> Actualizar</button>
+      <button class="btn btn-primary" onclick="openSlideOver('atencion-so')"><i class="pi pi-user-plus"></i> Registrar llegada</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="queue-header">
+      <div class="queue-number">A-07</div>
+      <div class="queue-info">
+        <div class="q-label">Paciente en atención ahora</div>
+        <div class="q-name">Ana Rodríguez</div>
+        <div class="q-meta">Hemograma + Orina · Extracción Box 2 · <span class="badge b-blue">En extracción</span></div>
+      </div>
+      <div class="queue-actions">
+        <button class="btn btn-secondary"><i class="pi pi-check"></i> Finalizar</button>
+        <button class="btn btn-primary"><i class="pi pi-angle-double-right"></i> Llamar siguiente</button>
+      </div>
+    </div>
+
+    <div class="box-cards mb-4">
+      <div class="box-card box-busy"><div class="box-num"><i class="pi pi-map-marker"></i> Box 1</div><div class="box-patient">María García</div><div class="box-status"><span class="badge b-blue">En extracción</span></div></div>
+      <div class="box-card box-busy"><div class="box-num"><i class="pi pi-map-marker"></i> Box 2</div><div class="box-patient">Ana Rodríguez</div><div class="box-status"><span class="badge b-blue">En extracción</span></div></div>
+      <div class="box-card box-free"><div class="box-num"><i class="pi pi-map-marker"></i> Box 3</div><div class="box-patient" style="color:#94a3b8">Libre</div><div class="box-status"><span class="badge b-green">Disponible</span></div></div>
+      <div class="box-card box-break"><div class="box-num"><i class="pi pi-map-marker"></i> Box 4</div><div class="box-patient" style="color:#94a3b8">—</div><div class="box-status"><span class="badge b-gray">Descanso</span></div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Sala de espera</h3><span class="count">3 pacientes</span></div>
+        <table>
+          <thead><tr><th>#</th><th>Paciente</th><th>Turno</th><th>Estudios</th><th>OS</th><th>Acción</th></tr></thead>
+          <tbody>
+            <tr><td><b style="color:var(--brand)">A-08</b></td><td>Juan López</td><td>09:20</td><td>Glucemia, HbA1c</td><td>OSDE</td><td><div class="table-actions"><button class="btn btn-primary btn-sm">Llamar</button></div></td></tr>
+            <tr><td><b style="color:var(--brand)">A-09</b></td><td>Carlos Méndez</td><td>09:40</td><td>TSH, T4</td><td>PAMI</td><td><div class="table-actions"><button class="btn btn-secondary btn-sm">Llamar</button></div></td></tr>
+            <tr><td><b style="color:var(--brand)">A-10</b></td><td>Laura Sánchez</td><td>10:00</td><td>Hemograma</td><td>Swiss Medical</td><td><div class="table-actions"><button class="btn btn-secondary btn-sm">Llamar</button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;border:2px dashed #e2e8f0;background:#f8fafc;cursor:pointer" onclick="openSlideOver('atencion-so')">
+        <div style="width:52px;height:52px;border-radius:12px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+          <i class="pi pi-user-plus" style="font-size:22px;color:var(--brand)"></i>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:4px">Registrar llegada espontánea</div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:14px">Paciente sin turno previo o llegada anticipada</div>
+        <button class="btn btn-primary" onclick="event.stopPropagation();openSlideOver('atencion-so')">
+          <i class="pi pi-arrow-right"></i> Abrir panel de registro
+        </button>
+        <div style="margin-top:12px;font-size:10px;color:#94a3b8;display:flex;align-items:center;gap:4px">
+          <i class="pi pi-info-circle"></i> Se abre como panel lateral — patrón Slide-over
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EMPRESA ══ -->
+<div class="page" id="page-empresa">
+  <div class="page-header">
+    <div><div class="breadcrumb">Gestión</div><h1><i class="pi pi-building"></i> Empresa</h1></div>
+    <div class="page-header-actions"><button class="btn btn-primary"><i class="pi pi-save"></i> Guardar cambios</button></div>
+  </div>
+  <div class="page-body">
+    <div class="tabs"><div class="tab active">Usuarios</div><div class="tab">Roles</div><div class="tab">White-label</div><div class="tab">Fiscal</div><div class="tab">SMTP / Docs</div><div class="tab">Módulos</div></div>
+    <div class="grid-2">
+      <div class="card mb-4">
+        <div class="card-header"><h3>Usuarios <span class="count">6 activos</span></h3><div class="card-header-right"><button class="btn btn-primary btn-sm"><i class="pi pi-plus"></i> Invitar</button></div></div>
+        <table>
+          <thead><tr><th>Usuario</th><th>Rol</th><th>Sucursal</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#eff6ff;color:#1d4ed8">DP</div>Dr. Pérez</div></td><td>Admin</td><td>Central</td><td><span class="badge b-green">Activo</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn danger"><i class="pi pi-trash"></i></div></div></td></tr>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#f0fdf4;color:#15803d">SR</div>Sec. Romero</div></td><td>Secretaría</td><td>Central</td><td><span class="badge b-green">Activo</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#faf5ff;color:#7e22ce">BL</div>Bioquím. Lima</div></td><td>Laboratorista</td><td>Norte</td><td><span class="badge b-green">Activo</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#fff1f2;color:#dc2626">JM</div>J. Morales</div></td><td>Caja</td><td>Central</td><td><span class="badge b-amber">Inactivo</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="form-section">
+          <h4><i class="pi pi-building"></i> Datos de la empresa</h4>
+          <div class="form-grid">
+            <div class="form-field"><label class="required">Razón social</label><input class="form-input" value="Laboratorio Central SA"></div>
+            <div class="form-field"><label class="required">CUIT</label><input class="form-input" value="30-71234567-8"></div>
+            <div class="form-field"><label>Responsable</label><input class="form-input" value="Dr. Alejandro Pérez"></div>
+            <div class="form-field"><label>Teléfono</label><input class="form-input" value="(011) 4567-8900"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h4><i class="pi pi-palette"></i> White-label — Identidad visual</h4>
+
+          <!-- Live preview -->
+          <div style="font-size:10px;font-weight:600;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Vista previa en tiempo real</div>
+          <div class="wl-preview" id="wl-preview-box">
+            <div class="wl-preview-topbar">
+              <div class="wl-preview-logo" id="wl-logo-box" style="background:var(--brand)">LA</div>
+              <span class="wl-preview-tenant" id="wl-tenant-label">LaboratoApp</span>
+              <div class="wl-preview-actions"><div class="wl-preview-dot"></div><div class="wl-preview-dot"></div></div>
+            </div>
+            <div class="wl-preview-body">
+              <div class="wl-preview-sidebar" id="wl-sidebar-preview" style="background:var(--brand-dark)">
+                <div class="wl-preview-nav active-nav"><div class="wl-icon"></div><div class="wl-label"></div></div>
+                <div class="wl-preview-nav"><div class="wl-icon"></div><div class="wl-label"></div></div>
+                <div class="wl-preview-nav"><div class="wl-icon"></div><div class="wl-label"></div></div>
+                <div class="wl-preview-nav"><div class="wl-icon"></div><div class="wl-label"></div></div>
+              </div>
+              <div class="wl-preview-content">
+                <div class="wl-preview-bar" id="wl-bar" style="background:var(--brand);width:40%"></div>
+                <div class="wl-preview-cards">
+                  <div class="wl-preview-card accent" id="wl-card-accent"></div>
+                  <div class="wl-preview-card"></div>
+                  <div class="wl-preview-card"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Color config -->
+          <div class="form-grid mb-3">
+            <div class="form-field">
+              <label>Color principal (sidebar)</label>
+              <div class="input-group">
+                <input type="color" value="#1e3a8a" class="color-preview" id="wl-color-dark" oninput="updateWLPreview()">
+                <input class="form-input" value="#1e3a8a" id="wl-color-dark-text" style="flex:1">
+              </div>
+              <div class="form-hint">Sidebar y topbar — chrome de navegación unificado</div>
+            </div>
+            <div class="form-field">
+              <label>Color de acento (botones y links)</label>
+              <div class="input-group">
+                <input type="color" value="#1d4ed8" class="color-preview" id="wl-color-accent" oninput="updateWLPreview()">
+                <input class="form-input" value="#1d4ed8" id="wl-color-accent-text" style="flex:1">
+              </div>
+              <div class="form-hint">Botones primarios, íconos activos, links</div>
+            </div>
+          </div>
+
+          <!-- Logo -->
+          <div class="form-field mb-3">
+            <label>Nombre del tenant (aparece en sidebar y login)</label>
+            <input class="form-input" id="wl-name-input" value="LaboratoApp" oninput="document.getElementById('wl-tenant-label').textContent=this.value; document.getElementById('wl-logo-box').textContent=this.value.slice(0,2).toUpperCase()">
+          </div>
+          <div class="form-field mb-3">
+            <label>Logo (PNG o SVG, fondo transparente)</label>
+            <div style="border:1.5px dashed #cbd5e1;border-radius:8px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;cursor:pointer" onclick="alert('Carga de logo — funcionalidad real conecta con el backend')">
+              <i class="pi pi-image" style="font-size:20px;display:block;margin-bottom:6px"></i>
+              Arrastrá o hacé click para subir el logo
+              <div style="font-size:10px;margin-top:3px">Recomendado: 200×60px, PNG transparente</div>
+            </div>
+          </div>
+
+          <!-- Zone map -->
+          <div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">¿A qué zonas aplica la identidad visual?</div>
+          <div class="zone-grid">
+            <div class="zone-card branded">
+              <div class="zone-title"><i class="pi pi-check-circle"></i> Zonas con branding del tenant</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Sidebar + Topbar (chrome unificado)</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Pantalla de login</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Portal de resultados (paciente)</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Botones primarios</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Encabezados de PDF y emails</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Avatar / iniciales de usuario</div>
+            </div>
+            <div class="zone-card protected">
+              <div class="zone-title"><i class="pi pi-shield"></i> Zonas clínicas protegidas <br><span style="font-weight:400;font-size:10px">(paleta fija — no se sobreescribe)</span></div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Semáforos de resultados</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Indicadores del pipeline analítico</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Badges de resultados críticos</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Alertas de urgencia en turnos</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Alertas de stock mínimo</div>
+              <div class="zone-item"><i class="pi pi-angle-right"></i> Indicadores de boxes (atención)</div>
+            </div>
+          </div>
+
+          <!-- Clinical palette locked -->
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-top:0">
+            <div class="cp-locked mb-3"><i class="pi pi-lock" style="color:#dc2626"></i><span style="color:#7f1d1d;font-weight:700;font-size:11px">Paleta clínica — siempre fija, independiente del tenant</span></div>
+            <div class="clinical-palette">
+              <div class="cp-swatch" style="background:#dcfce7;color:#15803d">Normal<br>✓</div>
+              <div class="cp-swatch" style="background:#fef9c3;color:#854d0e">Alterado<br>⚠</div>
+              <div class="cp-swatch" style="background:#fee2e2;color:#dc2626">Crítico<br>⛔</div>
+              <div class="cp-swatch" style="background:#eff6ff;color:#1d4ed8">Procesando<br>⏳</div>
+              <div class="cp-swatch" style="background:#f1f5f9;color:#475569">Pendiente<br>–</div>
+            </div>
+            <div style="font-size:10px;color:#92400e;margin-top:8px;line-height:1.5">Estos colores no pueden ser modificados por la configuración del tenant. Garantizan que el personal clínico interprete correctamente los resultados sin importar el laboratorio en el que trabajen.</div>
+          </div>
+
+          <div class="form-actions"><button class="btn btn-primary"><i class="pi pi-save"></i> Guardar identidad visual</button><button class="btn btn-secondary" onclick="navigate('login-preview')"><i class="pi pi-eye"></i> Ver pantalla de login</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ROLES ══ -->
+<div class="page" id="page-roles">
+  <div class="page-header">
+    <div><div class="breadcrumb">Gestión › Empresa</div><h1><i class="pi pi-shield"></i> Roles y permisos</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-plus"></i> Nuevo rol</button>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <!-- Role selector -->
+    <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Seleccioná un rol para ver su acceso</div>
+    <div class="role-selector" id="role-selector">
+      <div class="role-card selected" onclick="selectRole('sysadmin',this)">
+        <div class="rc-icon" style="background:#faf5ff"><i class="pi pi-crown" style="color:#7e22ce"></i></div>
+        <div class="rc-name">SysAdmin</div>
+        <div class="rc-desc">Acceso global a todos los tenants</div>
+      </div>
+      <div class="role-card" onclick="selectRole('admin',this)">
+        <div class="rc-icon" style="background:#eff6ff"><i class="pi pi-building" style="color:#1d4ed8"></i></div>
+        <div class="rc-name">Admin</div>
+        <div class="rc-desc">Todo el tenant, sin SaaS Admin</div>
+      </div>
+      <div class="role-card" onclick="selectRole('secretaria',this)">
+        <div class="rc-icon" style="background:#f0fdf4"><i class="pi pi-users" style="color:#16a34a"></i></div>
+        <div class="rc-name">Secretaría</div>
+        <div class="rc-desc">Turnos y atención al paciente</div>
+      </div>
+      <div class="role-card" onclick="selectRole('tecnico',this)">
+        <div class="rc-icon" style="background:#ecfeff"><i class="pi pi-wave-pulse" style="color:#0891b2"></i></div>
+        <div class="rc-name">Técnico Lab</div>
+        <div class="rc-desc">Pipeline analítico completo</div>
+      </div>
+      <div class="role-card" onclick="selectRole('contador',this)">
+        <div class="rc-icon" style="background:#fffbeb"><i class="pi pi-wallet" style="color:#d97706"></i></div>
+        <div class="rc-name">Contador</div>
+        <div class="rc-desc">Financiero y obras sociales</div>
+      </div>
+      <div class="role-card" onclick="selectRole('cajero',this)">
+        <div class="rc-icon" style="background:#fef2f2"><i class="pi pi-dollar" style="color:#dc2626"></i></div>
+        <div class="rc-name">Cajero</div>
+        <div class="rc-desc">Atención, pagos y caja</div>
+      </div>
+    </div>
+
+    <!-- Role detail -->
+    <div class="role-detail" id="role-detail">
+      <!-- Sidebar preview -->
+      <div class="role-sidebar-preview" id="role-sidebar-preview">
+        <!-- rendered by JS -->
+      </div>
+      <!-- Role info -->
+      <div class="role-info" id="role-info">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Permission matrix -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="pi pi-table" style="color:var(--brand)"></i> Matriz de permisos completa</h3>
+      </div>
+      <div style="padding:14px;overflow-x:auto">
+        <div class="matrix-legend">
+          <span><i class="pi pi-check-circle pm-full"></i> Acceso completo</span>
+          <span><i class="pi pi-eye pm-read"></i> Solo lectura</span>
+          <span><i class="pi pi-times-circle pm-none" style="color:#94a3b8"></i> Sin acceso</span>
+        </div>
+        <table class="perm-matrix">
+          <thead>
+            <tr>
+              <th class="feat-col">Sección</th>
+              <th><i class="pi pi-crown" style="color:#7e22ce"></i><br>SysAdmin</th>
+              <th><i class="pi pi-building" style="color:#1d4ed8"></i><br>Admin</th>
+              <th><i class="pi pi-users" style="color:#16a34a"></i><br>Secretaría</th>
+              <th><i class="pi pi-wave-pulse" style="color:#0891b2"></i><br>Téc. Lab</th>
+              <th><i class="pi pi-wallet" style="color:#d97706"></i><br>Contador</th>
+              <th><i class="pi pi-dollar" style="color:#dc2626"></i><br>Cajero</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feat-name"><i class="pi pi-home" style="color:#94a3b8;margin-right:5px"></i>Inicio / Dashboard<div class="feat-group">KPIs según módulos visibles</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i><span class="pm-scope">Global</span></td>
+              <td><i class="pi pi-check-circle pm-full"></i><span class="pm-scope">Su tenant</span></td>
+              <td><i class="pi pi-check-circle pm-full"></i><span class="pm-scope">Parcial</span></td>
+              <td><i class="pi pi-check-circle pm-full"></i><span class="pm-scope">Parcial</span></td>
+              <td><i class="pi pi-check-circle pm-full"></i><span class="pm-scope">Parcial</span></td>
+              <td><i class="pi pi-check-circle pm-full"></i><span class="pm-scope">Parcial</span></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-arrow-right-arrow-left" style="color:#94a3b8;margin-right:5px"></i>Pre-analítica<div class="feat-group">Core clínico</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-wave-pulse" style="color:#94a3b8;margin-right:5px"></i>Analítica (trabajo)<div class="feat-group">Core clínico</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-file-export" style="color:#94a3b8;margin-right:5px"></i>Post-analítica<div class="feat-group">Core clínico</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-calendar" style="color:#94a3b8;margin-right:5px"></i>Turnos<div class="feat-group">Core clínico</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-eye pm-read"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-users" style="color:#94a3b8;margin-right:5px"></i>Atención<div class="feat-group">Core clínico</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-building" style="color:#94a3b8;margin-right:5px"></i>Empresa<div class="feat-group">Gestión</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-eye pm-read"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-map-marker" style="color:#94a3b8;margin-right:5px"></i>Sucursales<div class="feat-group">Gestión</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-wallet" style="color:#94a3b8;margin-right:5px"></i>Financiero<div class="feat-group">Gestión</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-eye pm-read"></i><span class="pm-scope">Solo caja</span></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-id-card" style="color:#94a3b8;margin-right:5px"></i>Obras Sociales<div class="feat-group">Gestión</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-heart" style="color:#94a3b8;margin-right:5px"></i>Médicos derivantes<div class="feat-group">Servicios clínicos</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-eye pm-read"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-box" style="color:#94a3b8;margin-right:5px"></i>Stock e insumos<div class="feat-group">Servicios clínicos</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr>
+              <td class="feat-name"><i class="pi pi-globe" style="color:#94a3b8;margin-right:5px"></i>Portal paciente<div class="feat-group">Servicios clínicos</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+            <tr style="background:#faf5ff">
+              <td class="feat-name"><i class="pi pi-cog" style="color:#7e22ce;margin-right:5px"></i><strong>SaaS Admin</strong><div class="feat-group">Solo acceso root</div></td>
+              <td><i class="pi pi-check-circle pm-full"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+              <td><i class="pi pi-times-circle pm-none"></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUCURSALES ══ -->
+<div class="page" id="page-sucursales">
+  <div class="page-header">
+    <div><div class="breadcrumb">Gestión</div><h1><i class="pi pi-map-marker"></i> Sucursales</h1></div>
+    <div class="page-header-actions"><button class="btn btn-primary"><i class="pi pi-plus"></i> Nueva sucursal</button></div>
+  </div>
+  <div class="page-body">
+    <div class="tabs"><div class="tab active">Sucursales</div><div class="tab">Áreas</div></div>
+    <div class="suc-cards mb-4">
+      <div class="suc-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div class="suc-name">Central — Sede Principal</div><span class="badge b-green">Activa</span></div><div class="suc-meta"><span><i class="pi pi-map-marker"></i> Av. Corrientes 1234, CABA</span><span><i class="pi pi-phone"></i> (011) 4567-8900</span></div><div class="suc-stats"><div class="suc-stat"><div class="n">3</div><div class="l">Áreas</div></div><div class="suc-stat"><div class="n">4</div><div class="l">Usuarios</div></div><div class="suc-stat"><div class="n">24</div><div class="l">Turnos hoy</div></div></div></div>
+      <div class="suc-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div class="suc-name">Norte — Palermo</div><span class="badge b-green">Activa</span></div><div class="suc-meta"><span><i class="pi pi-map-marker"></i> Thames 856, Palermo</span><span><i class="pi pi-phone"></i> (011) 4832-1100</span></div><div class="suc-stats"><div class="suc-stat"><div class="n">2</div><div class="l">Áreas</div></div><div class="suc-stat"><div class="n">2</div><div class="l">Usuarios</div></div><div class="suc-stat"><div class="n">11</div><div class="l">Turnos hoy</div></div></div></div>
+      <div class="suc-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div class="suc-name">Sur — Lomas</div><span class="badge b-amber">Mantenimiento</span></div><div class="suc-meta"><span><i class="pi pi-map-marker"></i> H. Yrigoyen 2100, Lomas</span><span><i class="pi pi-phone"></i> (011) 4244-6700</span></div><div class="suc-stats"><div class="suc-stat"><div class="n">2</div><div class="l">Áreas</div></div><div class="suc-stat"><div class="n">1</div><div class="l">Usuarios</div></div><div class="suc-stat"><div class="n">0</div><div class="l">Turnos hoy</div></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Áreas por sucursal</h3><div class="card-header-right"><button class="btn btn-primary btn-sm"><i class="pi pi-plus"></i> Nueva área</button></div></div>
+      <table>
+        <thead><tr><th>Área</th><th>Sucursal</th><th>Responsable</th><th>Estudios activos</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Hematología</td><td>Central</td><td>Bioquím. Lima</td><td>18</td><td><span class="badge b-green">Operativa</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+          <tr><td>Bioquímica</td><td>Central</td><td>Bioquím. Torres</td><td>14</td><td><span class="badge b-green">Operativa</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+          <tr><td>Orina y Sedimento</td><td>Central</td><td>Tec. Gómez</td><td>9</td><td><span class="badge b-green">Operativa</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+          <tr><td>Hematología</td><td>Norte</td><td>Bioquím. Ruiz</td><td>7</td><td><span class="badge b-green">Operativa</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+          <tr><td>Bioquímica</td><td>Norte</td><td>Bioquím. Ruiz</td><td>5</td><td><span class="badge b-amber">Reducida</span></td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FINANCIERO ══ -->
+<div class="page" id="page-financiero">
+  <div class="page-header">
+    <div><div class="breadcrumb">Gestión</div><h1><i class="pi pi-wallet"></i> Financiero</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-file-export"></i> Exportar</button>
+      <button class="btn btn-primary"><i class="pi pi-plus"></i> Nuevo pago</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="tabs"><div class="tab active">Cajas</div><div class="tab">Pagos</div><div class="tab">Movimientos</div><div class="tab">Coberturas</div><div class="tab">Liquidaciones</div></div>
+    <div class="caja-cards">
+      <div class="caja-card open"><div class="caja-name"><i class="pi pi-inbox" style="color:#10b981"></i> Caja Central — Mañana</div><div class="caja-amount">$58.400</div><div class="caja-meta">Resp: Sec. Romero · 14 movs.</div></div>
+      <div class="caja-card open"><div class="caja-name"><i class="pi pi-inbox" style="color:#10b981"></i> Caja Central — Tarde</div><div class="caja-amount">$44.100</div><div class="caja-meta">Resp: J. Morales · 9 movs.</div></div>
+      <div class="caja-card open"><div class="caja-name"><i class="pi pi-inbox" style="color:#10b981"></i> Caja Norte</div><div class="caja-amount">$40.000</div><div class="caja-meta">Resp: Sec. Paz · 8 movs.</div></div>
+      <div class="caja-card closed"><div class="caja-name"><i class="pi pi-lock" style="color:#94a3b8"></i> Caja Sur</div><div class="caja-amount">$0</div><div class="caja-meta">Cerrada · Sucursal en mant.</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Últimos pagos</h3></div>
+        <table>
+          <thead><tr><th>Paciente</th><th>Importe</th><th>Método</th><th>OS</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>García, María</td><td>$3.200</td><td>Efectivo</td><td>OSDE 310</td><td><span class="badge b-green">Pagado</span></td></tr>
+            <tr><td>López, Juan</td><td>$7.800</td><td>Débito</td><td>Swiss Medical</td><td><span class="badge b-green">Pagado</span></td></tr>
+            <tr><td>Rodríguez, Ana</td><td>$1.500</td><td>Efectivo</td><td>Particular</td><td><span class="badge b-green">Pagado</span></td></tr>
+            <tr><td>Méndez, Carlos</td><td>$12.400</td><td>Transferencia</td><td>PAMI</td><td><span class="badge b-amber">Pendiente</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Coberturas más usadas</h3></div>
+        <div class="progress-list">
+          <div class="prog-row"><span class="prog-label">OSDE</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:65%;background:var(--brand)"></div></div><span class="prog-val">32%</span></div>
+          <div class="prog-row"><span class="prog-label">Swiss Medical</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:48%;background:#7c3aed"></div></div><span class="prog-val">24%</span></div>
+          <div class="prog-row"><span class="prog-label">Particular</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:30%;background:#0891b2"></div></div><span class="prog-val">18%</span></div>
+          <div class="prog-row"><span class="prog-label">PAMI</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:24%;background:#d97706"></div></div><span class="prog-val">14%</span></div>
+          <div class="prog-row"><span class="prog-label">Otras</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:14%;background:#94a3b8"></div></div><span class="prog-val">12%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OBRAS SOCIALES ══ -->
+<div class="page" id="page-obras">
+  <div class="page-header">
+    <div><div class="breadcrumb">Gestión</div><h1><i class="pi pi-id-card"></i> Obras Sociales</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-file-import"></i> Importar</button>
+      <button class="btn btn-primary" onclick="navigate('nueva-os')"><i class="pi pi-plus"></i> Nueva obra social</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="tabs"><div class="tab active">Listado</div><div class="tab">Planes y aranceles</div><div class="tab">Liquidaciones</div></div>
+
+    <div class="stats-row mb-4">
+      <div class="stat-card"><div class="s-icon s-blue"><i class="pi pi-id-card"></i></div><div class="s-label">OS activas</div><div class="s-value">18</div><div class="s-delta">3 en revisión</div></div>
+      <div class="stat-card"><div class="s-icon s-green"><i class="pi pi-users"></i></div><div class="s-label">Afiliados atendidos (mes)</div><div class="s-value">342</div><div class="s-delta"><i class="pi pi-arrow-up"></i> 12%</div></div>
+      <div class="stat-card"><div class="s-icon s-amber"><i class="pi pi-dollar"></i></div><div class="s-label">A liquidar (mes)</div><div class="s-value">$284.000</div><div class="s-delta">Vence 20/05</div></div>
+      <div class="stat-card"><div class="s-icon s-red"><i class="pi pi-exclamation-circle"></i></div><div class="s-label">Con convenio vencido</div><div class="s-value">2</div><div class="s-delta red">Renovar</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="os-card">
+          <div class="os-logo" style="background:#eff6ff;color:#1d4ed8">OSDE</div>
+          <div class="os-info"><div class="os-name">OSDE</div><div class="os-meta">RNOS 390 · 7 planes · Copago variable</div></div>
+          <span class="badge b-green">Convenio vigente</span>
+          <div class="os-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn"><i class="pi pi-eye"></i></div></div>
+        </div>
+        <div class="os-card">
+          <div class="os-logo" style="background:#f0fdf4;color:#15803d">PAMI</div>
+          <div class="os-info"><div class="os-name">PAMI</div><div class="os-meta">RNOS 500 · 2 planes · Sin copago</div></div>
+          <span class="badge b-green">Convenio vigente</span>
+          <div class="os-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn"><i class="pi pi-eye"></i></div></div>
+        </div>
+        <div class="os-card">
+          <div class="os-logo" style="background:#faf5ff;color:#7e22ce">SM</div>
+          <div class="os-info"><div class="os-name">Swiss Medical</div><div class="os-meta">RNOS 110 · 5 planes · Copago fijo $800</div></div>
+          <span class="badge b-green">Convenio vigente</span>
+          <div class="os-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn"><i class="pi pi-eye"></i></div></div>
+        </div>
+        <div class="os-card">
+          <div class="os-logo" style="background:#fff1f2;color:#dc2626">GAL</div>
+          <div class="os-info"><div class="os-name">Galeno</div><div class="os-meta">RNOS 220 · 4 planes · Copago variable</div></div>
+          <span class="badge b-red">Convenio vencido</span>
+          <div class="os-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn"><i class="pi pi-refresh"></i></div></div>
+        </div>
+        <div class="os-card">
+          <div class="os-logo" style="background:#fffbeb;color:#d97706">OSD</div>
+          <div class="os-info"><div class="os-name">OSPEDYC</div><div class="os-meta">RNOS 481 · 3 planes · Copago $600</div></div>
+          <span class="badge b-amber">En revisión</span>
+          <div class="os-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div>
+        </div>
+      </div>
+
+      <!-- Alta de nueva OS -->
+      <div class="form-section" style="height:fit-content">
+        <h4><i class="pi pi-plus-circle"></i> Alta de obra social</h4>
+        <div class="form-grid mb-3">
+          <div class="form-field"><label class="required">Nombre</label><input class="form-input" placeholder="Ej: OSDE"></div>
+          <div class="form-field"><label class="required">Código RNOS</label><input class="form-input" placeholder="Ej: 390"></div>
+          <div class="form-field"><label>Tipo</label><select class="form-select"><option>Obra social nacional</option><option>Medicina prepaga</option><option>Mutual</option><option>Gremial</option></select></div>
+          <div class="form-field"><label>Modalidad de facturación</label><select class="form-select"><option>Mensual</option><option>Quincenal</option><option>Por práctica</option></select></div>
+          <div class="form-field"><label>Copago</label><select class="form-select"><option>Sin copago</option><option>Copago fijo</option><option>Porcentaje</option></select></div>
+          <div class="form-field"><label>Monto copago</label><input class="form-input" placeholder="$0.00"></div>
+        </div>
+        <div class="form-field mb-3"><label>Observaciones / condiciones</label><input class="form-input" placeholder="Notas internas del convenio..."></div>
+        <div class="form-field mb-3"><label>Vencimiento del convenio</label><input class="form-input" type="date"></div>
+        <div class="form-actions"><button class="btn btn-secondary">Limpiar</button><button class="btn btn-primary"><i class="pi pi-check"></i> Registrar OS</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MÉDICOS DERIVANTES ══ -->
+<div class="page" id="page-medicos">
+  <div class="page-header">
+    <div><div class="breadcrumb">Servicios clínicos</div><h1><i class="pi pi-heart"></i> Médicos derivantes</h1></div>
+    <div class="page-header-actions"><button class="btn btn-primary"><i class="pi pi-plus"></i> Nuevo médico</button></div>
+  </div>
+  <div class="page-body">
+    <div class="stats-row mb-4">
+      <div class="stat-card"><div class="s-icon s-red"><i class="pi pi-heart"></i></div><div class="s-label">Médicos activos</div><div class="s-value">24</div><div class="s-delta">3 nuevos este mes</div></div>
+      <div class="stat-card"><div class="s-icon s-blue"><i class="pi pi-send"></i></div><div class="s-label">Derivaciones (mes)</div><div class="s-value">156</div><div class="s-delta"><i class="pi pi-arrow-up"></i> 8%</div></div>
+      <div class="stat-card"><div class="s-icon s-green"><i class="pi pi-file-check"></i></div><div class="s-label">Resultados enviados</div><div class="s-value">148</div><div class="s-delta">Tasa envío 95%</div></div>
+      <div class="stat-card"><div class="s-icon s-amber"><i class="pi pi-clock"></i></div><div class="s-label">Tiempo resp. prom.</div><div class="s-value">2.4 hs</div><div class="s-delta">Dentro del umbral</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Médicos registrados</h3></div>
+        <table>
+          <thead><tr><th>Médico</th><th>Especialidad</th><th>Matrícula</th><th>Derivaciones</th><th>Envío</th></tr></thead>
+          <tbody>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#fef2f2;color:#dc2626">HS</div>Dr. Hugo Suárez</div></td><td>Clínica médica</td><td>MN 45.231</td><td>28</td><td><span class="badge b-green">Email</span></td></tr>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#f0fdf4;color:#15803d">MH</div>Dra. María Herrera</div></td><td>Endocrinología</td><td>MN 38.910</td><td>19</td><td><span class="badge b-blue">Portal</span></td></tr>
+            <tr><td><div class="user-cell"><div class="user-av" style="background:#eff6ff;color:#1d4ed8">JR</div>Dr. Jorge Ruiz</div></td><td>Cardiología</td><td>MN 52.004</td><td>14</td><td><span class="badge b-green">Email</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="form-section">
+        <h4><i class="pi pi-user-plus"></i> Registrar médico derivante</h4>
+        <div class="form-grid mb-3">
+          <div class="form-field"><label class="required">Apellido y nombre</label><input class="form-input" placeholder="Dr/Dra."></div>
+          <div class="form-field"><label class="required">Matrícula</label><input class="form-input" placeholder="MN / MP"></div>
+          <div class="form-field"><label>Especialidad</label><input class="form-input" placeholder="Ej: Cardiología"></div>
+          <div class="form-field"><label>Email de envío</label><input class="form-input" placeholder="resultados@..."></div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary"><i class="pi pi-check"></i> Registrar médico</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STOCK ══ -->
+<div class="page" id="page-stock">
+  <div class="page-header">
+    <div><div class="breadcrumb">Servicios clínicos</div><h1><i class="pi pi-box"></i> Stock e insumos</h1></div>
+    <div class="page-header-actions"><button class="btn btn-primary"><i class="pi pi-plus"></i> Nuevo insumo</button></div>
+  </div>
+  <div class="page-body">
+    <div class="stats-row mb-4">
+      <div class="stat-card"><div class="s-icon s-blue"><i class="pi pi-box"></i></div><div class="s-label">Insumos registrados</div><div class="s-value">143</div></div>
+      <div class="stat-card"><div class="s-icon s-red"><i class="pi pi-exclamation-triangle"></i></div><div class="s-label">Stock crítico</div><div class="s-value">7</div><div class="s-delta red">Reabastecer</div></div>
+      <div class="stat-card"><div class="s-icon s-amber"><i class="pi pi-clock"></i></div><div class="s-label">Por vencer (30 días)</div><div class="s-value">3</div></div>
+      <div class="stat-card"><div class="s-icon s-green"><i class="pi pi-warehouse"></i></div><div class="s-label">Sucursales activas</div><div class="s-value">3</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Insumos con stock crítico</h3></div>
+        <table>
+          <thead><tr><th>Insumo</th><th>Área</th><th>Stock actual</th><th>Mínimo</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>Tubos EDTA 5ml</td><td>Hematología</td><td>12 u.</td><td>50 u.</td><td><span class="badge b-red">Crítico</span></td></tr>
+            <tr><td>Reactivo Glucemia</td><td>Bioquímica</td><td>8 u.</td><td>20 u.</td><td><span class="badge b-red">Crítico</span></td></tr>
+            <tr><td>Lancetas estériles</td><td>Extracción</td><td>45 u.</td><td>100 u.</td><td><span class="badge b-amber">Bajo</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="form-section">
+        <h4><i class="pi pi-plus-circle"></i> Registrar insumo</h4>
+        <div class="form-grid mb-3">
+          <div class="form-field"><label class="required">Nombre del insumo</label><input class="form-input" placeholder="Ej: Tubo EDTA 5ml"></div>
+          <div class="form-field"><label>Código / SKU</label><input class="form-input" placeholder="Ej: TUB-EDTA-5"></div>
+          <div class="form-field"><label>Área destino</label><select class="form-select"><option>Hematología</option><option>Bioquímica</option><option>Orina</option><option>Extracción</option></select></div>
+          <div class="form-field"><label>Stock mínimo</label><input class="form-input" type="number" placeholder="0"></div>
+          <div class="form-field"><label>Unidad de medida</label><select class="form-select"><option>Unidad</option><option>Caja</option><option>Litro</option><option>mL</option></select></div>
+          <div class="form-field"><label>Fecha de vencimiento</label><input class="form-input" type="date"></div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary"><i class="pi pi-check"></i> Registrar</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PORTAL PACIENTE ══ -->
+<div class="page" id="page-portal">
+  <div class="page-header">
+    <div><div class="breadcrumb">Servicios clínicos</div><h1><i class="pi pi-globe"></i> Portal paciente</h1></div>
+    <div class="page-header-actions"><button class="btn btn-secondary"><i class="pi pi-external-link"></i> Ver portal</button><button class="btn btn-primary"><i class="pi pi-save"></i> Guardar</button></div>
+  </div>
+  <div class="page-body">
+    <div class="stats-row mb-4">
+      <div class="stat-card"><div class="s-icon s-blue"><i class="pi pi-globe"></i></div><div class="s-label">Pacientes registrados</div><div class="s-value">1.248</div></div>
+      <div class="stat-card"><div class="s-icon s-green"><i class="pi pi-download"></i></div><div class="s-label">Descargas este mes</div><div class="s-value">892</div></div>
+      <div class="stat-card"><div class="s-icon s-amber"><i class="pi pi-bell"></i></div><div class="s-label">Notificaciones enviadas</div><div class="s-value">734</div></div>
+      <div class="stat-card"><div class="s-icon s-purple"><i class="pi pi-mobile"></i></div><div class="s-label">Accesos móvil</div><div class="s-value">68%</div></div>
+    </div>
+    <div class="form-section">
+      <h4><i class="pi pi-cog"></i> Configuración del portal</h4>
+      <div class="form-grid">
+        <div class="form-field"><label>URL del portal</label><input class="form-input" value="https://resultados.laboratorioapp.com"></div>
+        <div class="form-field"><label>Estado</label><select class="form-select"><option>Activo</option><option>Mantenimiento</option><option>Inactivo</option></select></div>
+        <div class="form-field"><label>Descarga de resultados</label><select class="form-select"><option>Habilitada</option><option>Deshabilitada</option></select></div>
+        <div class="form-field"><label>Notificaciones email</label><select class="form-select"><option>Habilitadas</option><option>Deshabilitadas</option></select></div>
+        <div class="form-field"><label>Notificaciones SMS</label><select class="form-select"><option>Deshabilitadas</option><option>Habilitadas</option></select></div>
+        <div class="form-field"><label>Días disponibilidad resultados</label><input class="form-input" type="number" value="30"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SAAS ADMIN ══ -->
+<div class="page" id="page-saas">
+  <div class="page-header">
+    <div><div class="breadcrumb">Administración global</div><h1><i class="pi pi-cog"></i> SaaS Admin</h1></div>
+    <div class="page-header-actions"><button class="btn btn-primary"><i class="pi pi-plus"></i> Nuevo tenant</button></div>
+  </div>
+  <div class="page-body">
+    <div class="stats-row mb-4">
+      <div class="stat-card"><div class="s-icon s-blue"><i class="pi pi-building"></i></div><div class="s-label">Tenants activos</div><div class="s-value">12</div><div class="s-delta">2 en trial</div></div>
+      <div class="stat-card"><div class="s-icon s-green"><i class="pi pi-user"></i></div><div class="s-label">Usuarios totales</div><div class="s-value">87</div><div class="s-delta"><i class="pi pi-arrow-up"></i> 5 este mes</div></div>
+      <div class="stat-card"><div class="s-icon s-amber"><i class="pi pi-dollar"></i></div><div class="s-label">MRR</div><div class="s-value">$3.240</div><div class="s-delta"><i class="pi pi-arrow-up"></i> 12%</div></div>
+      <div class="stat-card"><div class="s-icon s-purple"><i class="pi pi-chart-bar"></i></div><div class="s-label">Estudios/mes</div><div class="s-value">4.820</div><div class="s-delta"><i class="pi pi-arrow-up"></i> 8%</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Tenants</h3><div class="card-header-right"><div class="search-input"><i class="pi pi-search" style="font-size:11px;color:#94a3b8"></i> <input style="border:none;outline:none;font-size:12px;width:130px" placeholder="Buscar tenant…"></div></div></div>
+      <table>
+        <thead><tr><th>Tenant</th><th>Plan</th><th>Módulos</th><th>Usuarios</th><th>Estado</th><th>Vencimiento</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><div class="user-cell"><div class="user-av" style="background:#eff6ff;color:#1d4ed8">LA</div>LaboratoApp Demo</div></td><td>Pro</td><td>Turnos, Financiero, Portal</td><td>6</td><td><span class="badge b-green">Activo</span></td><td>31/12/2025</td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn"><i class="pi pi-sign-in"></i></div></div></td></tr>
+          <tr><td><div class="user-cell"><div class="user-av" style="background:#faf5ff;color:#7e22ce">BN</div>BioNorte Lab</div></td><td>Starter</td><td>Turnos</td><td>3</td><td><span class="badge b-green">Activo</span></td><td>30/06/2025</td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn"><i class="pi pi-sign-in"></i></div></div></td></tr>
+          <tr><td><div class="user-cell"><div class="user-av" style="background:#f0fdf4;color:#15803d">CS</div>ClinicSur</div></td><td>Pro</td><td>Turnos, Financiero, Médicos</td><td>8</td><td><span class="badge b-amber">Trial</span></td><td>25/05/2025</td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-pencil"></i></div></div></td></tr>
+          <tr><td><div class="user-cell"><div class="user-av" style="background:#fff1f2;color:#dc2626">LR</div>Lab Rosario</div></td><td>Starter</td><td>—</td><td>2</td><td><span class="badge b-red">Vencido</span></td><td>01/04/2025</td><td><div class="table-actions"><div class="action-btn"><i class="pi pi-refresh"></i></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PACIENTES (patrón: MODAL) ══ -->
+<div class="page" id="page-pacientes">
+  <div class="page-header">
+    <div><div class="breadcrumb">Core clínico</div><h1><i class="pi pi-address-book"></i> Pacientes</h1></div>
+    <div class="page-header-actions">
+      <button class="btn btn-secondary"><i class="pi pi-file-export"></i> Exportar</button>
+      <button class="btn btn-primary" onclick="openModal('modal-paciente')"><i class="pi pi-plus"></i> Nuevo paciente</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-size:12px;color:#1d4ed8">
+      <i class="pi pi-info-circle"></i>
+      <strong>Patrón de registro:</strong> Modal (dialog centrado) — ideal para formularios cortos y operaciones rápidas sin perder el contexto de la pantalla actual.
+    </div>
+    <div class="patient-filters mb-4">
+      <div class="search-input" style="width:240px"><i class="pi pi-search" style="font-size:11px;color:#94a3b8"></i><input style="border:none;outline:none;font-size:12px;width:180px;margin-left:4px" placeholder="Buscar por nombre o DNI…"></div>
+      <div class="filter-chip active"><i class="pi pi-circle-fill" style="font-size:8px"></i> Todos</div>
+      <div class="filter-chip">Con turno hoy</div>
+      <div class="filter-chip">Sin turno</div>
+      <div class="filter-chip"><i class="pi pi-filter"></i> Obra social</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Listado de pacientes <span class="count">1.248 registrados</span></h3></div>
+      <table>
+        <thead><tr><th>Paciente</th><th>DNI</th><th>Fecha nac.</th><th>Obra social</th><th>Teléfono</th><th>Último turno</th><th></th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="user-cell"><div class="user-av" style="background:#eff6ff;color:#1d4ed8">MG</div><div><div style="font-weight:600">García, María Elena</div><div style="font-size:10px;color:#94a3b8">F · 34 años</div></div></div></td>
+            <td>32.456.789</td><td>15/03/1991</td><td>OSDE 310</td><td>11 5555-1234</td><td>10/05/2025</td>
+            <td><div class="table-actions"><div class="action-btn" title="Ver historial"><i class="pi pi-eye"></i></div><div class="action-btn" title="Editar"><i class="pi pi-pencil"></i></div><div class="action-btn" title="Nuevo turno" onclick="navigate('nuevo-turno')"><i class="pi pi-calendar-plus"></i></div></div></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-av" style="background:#faf5ff;color:#7e22ce">JL</div><div><div style="font-weight:600">López, Juan Carlos</div><div style="font-size:10px;color:#94a3b8">M · 52 años</div></div></div></td>
+            <td>18.234.567</td><td>07/11/1972</td><td>Swiss Medical</td><td>11 6666-4321</td><td>10/05/2025</td>
+            <td><div class="table-actions"><div class="action-btn"><i class="pi pi-eye"></i></div><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn" onclick="navigate('nuevo-turno')"><i class="pi pi-calendar-plus"></i></div></div></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-av" style="background:#f0fdf4;color:#15803d">AR</div><div><div style="font-weight:600">Rodríguez, Ana Beatriz</div><div style="font-size:10px;color:#94a3b8">F · 28 años</div></div></div></td>
+            <td>41.789.012</td><td>22/08/1996</td><td>Particular</td><td>11 4444-8765</td><td>08/05/2025</td>
+            <td><div class="table-actions"><div class="action-btn"><i class="pi pi-eye"></i></div><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn" onclick="navigate('nuevo-turno')"><i class="pi pi-calendar-plus"></i></div></div></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-av" style="background:#fff1f2;color:#dc2626">CM</div><div><div style="font-weight:600">Méndez, Carlos Alberto</div><div style="font-size:10px;color:#94a3b8">M · 61 años</div></div></div></td>
+            <td>14.567.890</td><td>30/01/1964</td><td>PAMI</td><td>11 3333-5678</td><td>05/05/2025</td>
+            <td><div class="table-actions"><div class="action-btn"><i class="pi pi-eye"></i></div><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn" onclick="navigate('nuevo-turno')"><i class="pi pi-calendar-plus"></i></div></div></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-av" style="background:#fffbeb;color:#d97706">LS</div><div><div style="font-weight:600">Sánchez, Laura Inés</div><div style="font-size:10px;color:#94a3b8">F · 45 años</div></div></div></td>
+            <td>27.890.123</td><td>14/06/1980</td><td>OSDE 210</td><td>11 7777-2345</td><td>02/05/2025</td>
+            <td><div class="table-actions"><div class="action-btn"><i class="pi pi-eye"></i></div><div class="action-btn"><i class="pi pi-pencil"></i></div><div class="action-btn" onclick="navigate('nuevo-turno')"><i class="pi pi-calendar-plus"></i></div></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NUEVO TURNO (patrón: PANTALLA COMPLETA) ══ -->
+<div class="page" id="page-nuevo-turno">
+  <div class="fullform-page">
+    <div class="fullform-header">
+      <div class="back-btn" onclick="navigate('turnos')"><i class="pi pi-arrow-left"></i> Volver a Turnos</div>
+      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+      <h1><i class="pi pi-calendar-plus"></i> Nuevo turno</h1>
+      <div style="margin-left:10px"><span class="modal-tag">Pantalla completa</span></div>
+      <div style="margin-left:auto;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px"><i class="pi pi-info-circle"></i> Patrón: nueva pantalla — ideal para flujos con múltiples secciones</div>
+    </div>
+    <div style="flex:1;overflow-y:auto">
+      <div class="fullform-body">
+        <!-- Paciente -->
+        <div class="fullform-card">
+          <h3><i class="pi pi-user"></i> Paciente</h3>
+          <div class="form-field mb-3">
+            <label class="required">Buscar paciente por nombre o DNI</label>
+            <input class="form-input" placeholder="Ej: García o 32.456.789" id="nt-patient-search" oninput="showPatientResults(this.value)">
+          </div>
+          <div id="nt-patient-results" style="display:none" class="patient-search-result">
+            <div class="psr-item" onclick="selectPatient('García, María Elena','32.456.789','OSDE 310')">
+              <div class="psr-av" style="background:#eff6ff;color:#1d4ed8">MG</div>
+              <div><div class="psr-name">García, María Elena</div><div class="psr-meta">DNI 32.456.789 · F · 34 años · OSDE 310</div></div>
+            </div>
+            <div class="psr-item" onclick="selectPatient('Gómez, Roberto','35.123.456','Swiss Medical')">
+              <div class="psr-av" style="background:#f0fdf4;color:#15803d">GR</div>
+              <div><div class="psr-name">Gómez, Roberto</div><div class="psr-meta">DNI 35.123.456 · M · 38 años · Swiss Medical</div></div>
+            </div>
+          </div>
+          <div id="nt-patient-selected" style="display:none" class="so-patient-found">
+            <div class="spf-av" id="nt-pat-av">MG</div>
+            <div><div class="spf-name" id="nt-pat-name">García, María Elena</div><div class="spf-meta" id="nt-pat-meta">DNI 32.456.789 · OSDE 310</div></div>
+            <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="clearPatient()"><i class="pi pi-times"></i></button>
+          </div>
+        </div>
+        <!-- Fecha y hora -->
+        <div class="fullform-card">
+          <h3><i class="pi pi-calendar"></i> Fecha y horario</h3>
+          <div class="form-grid mb-3">
+            <div class="form-field"><label class="required">Fecha</label><input class="form-input" type="date" value="2025-05-12"></div>
+            <div class="form-field"><label class="required">Sucursal</label><select class="form-select"><option>Central — Sede Principal</option><option>Norte — Palermo</option></select></div>
+          </div>
+          <div class="form-field">
+            <label>Horario disponible — Lunes 12 Mayo</label>
+            <div class="time-slots">
+              <div class="time-slot taken">08:00</div><div class="time-slot taken">08:20</div>
+              <div class="time-slot" onclick="selectSlot(this)">08:40</div>
+              <div class="time-slot" onclick="selectSlot(this)">09:00</div>
+              <div class="time-slot selected" onclick="selectSlot(this)">09:20</div>
+              <div class="time-slot" onclick="selectSlot(this)">09:40</div>
+              <div class="time-slot" onclick="selectSlot(this)">10:00</div>
+              <div class="time-slot taken">10:20</div>
+              <div class="time-slot" onclick="selectSlot(this)">10:40</div>
+              <div class="time-slot" onclick="selectSlot(this)">11:00</div>
+              <div class="time-slot" onclick="selectSlot(this)">11:20</div>
+              <div class="time-slot" onclick="selectSlot(this)">11:40</div>
+            </div>
+          </div>
+        </div>
+        <!-- Estudios -->
+        <div class="fullform-card">
+          <h3><i class="pi pi-list-check"></i> Estudios solicitados</h3>
+          <div class="form-field mb-3">
+            <label>Buscar y agregar estudios</label>
+            <input class="form-input" placeholder="Ej: Hemograma, Glucemia…">
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;color:#64748b;margin-bottom:6px">Estudios frecuentes:</div>
+            <div>
+              <span class="study-chip selected">Hemograma</span>
+              <span class="study-chip" onclick="this.classList.toggle('selected')">Glucemia</span>
+              <span class="study-chip selected" onclick="this.classList.toggle('selected')">Colesterol total</span>
+              <span class="study-chip" onclick="this.classList.toggle('selected')">TSH</span>
+              <span class="study-chip" onclick="this.classList.toggle('selected')">Orina C18</span>
+              <span class="study-chip" onclick="this.classList.toggle('selected')">VSG</span>
+              <span class="study-chip" onclick="this.classList.toggle('selected')">HbA1c</span>
+              <span class="study-chip" onclick="this.classList.toggle('selected')">Hepatitis B</span>
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Médico solicitante</label>
+            <input class="form-input" placeholder="Ej: Dr. Suárez">
+          </div>
+        </div>
+        <!-- Cobertura -->
+        <div class="fullform-card">
+          <h3><i class="pi pi-id-card"></i> Cobertura</h3>
+          <div class="form-grid">
+            <div class="form-field"><label>Obra social</label><select class="form-select"><option>OSDE 310</option><option>Particular</option><option>PAMI</option><option>Swiss Medical</option></select></div>
+            <div class="form-field"><label>Nro. afiliado</label><input class="form-input" placeholder="Opcional"></div>
+            <div class="form-field"><label>Modalidad de pago</label><select class="form-select"><option>Cobertura OS</option><option>Efectivo</option><option>Débito</option><option>Transferencia</option></select></div>
+            <div class="form-field"><label>Observaciones</label><input class="form-input" placeholder="Ayuno, indicaciones especiales…"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fullform-footer">
+      <button class="btn btn-secondary" onclick="navigate('turnos')"><i class="pi pi-times"></i> Cancelar</button>
+      <div class="ml-auto" style="display:flex;gap:8px">
+        <button class="btn btn-secondary"><i class="pi pi-send"></i> Guardar y enviar confirmación</button>
+        <button class="btn btn-primary"><i class="pi pi-check"></i> Confirmar turno</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NUEVA OBRA SOCIAL (patrón: STEPPER) ══ -->
+<div class="page" id="page-nueva-os">
+  <div style="display:flex;flex-direction:column;height:100%">
+    <div class="stepper-header">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div class="back-btn" style="display:flex;align-items:center;gap:5px;color:#64748b;font-size:12px;cursor:pointer;font-weight:500" onclick="navigate('obras')"><i class="pi pi-arrow-left"></i> Volver a Obras Sociales</div>
+        <div style="width:1px;height:16px;background:#e2e8f0"></div>
+        <span style="font-size:14px;font-weight:700;color:#0f172a">Alta de obra social</span>
+        <span class="modal-tag" style="margin-left:4px">Stepper</span>
+        <span style="margin-left:auto;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px"><i class="pi pi-info-circle"></i> Patrón: stepper — ideal para flujos de alta con múltiples pasos dependientes</span>
+      </div>
+      <div class="stepper-track">
+        <div class="stepper-step" id="os-step-1">
+          <div class="step-circle active" id="os-circle-1">1</div>
+          <div class="step-label active" id="os-label-1">Identificación</div>
+        </div>
+        <div class="stepper-connector" id="os-conn-1"></div>
+        <div class="stepper-step" id="os-step-2">
+          <div class="step-circle" id="os-circle-2">2</div>
+          <div class="step-label" id="os-label-2">Planes</div>
+        </div>
+        <div class="stepper-connector" id="os-conn-2"></div>
+        <div class="stepper-step" id="os-step-3">
+          <div class="step-circle" id="os-circle-3">3</div>
+          <div class="step-label" id="os-label-3">Facturación</div>
+        </div>
+        <div class="stepper-connector" id="os-conn-3"></div>
+        <div class="stepper-step" id="os-step-4">
+          <div class="step-circle" id="os-circle-4">4</div>
+          <div class="step-label" id="os-label-4">Revisión</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1: Identificación -->
+    <div class="stepper-body" id="os-body-1">
+      <div class="stepper-card">
+        <h3><i class="pi pi-id-card"></i> Datos de identificación</h3>
+        <div class="form-grid mb-3">
+          <div class="form-field"><label class="required">Nombre de la obra social</label><input class="form-input" id="os-nombre" placeholder="Ej: OSDE" oninput="syncReview()"></div>
+          <div class="form-field"><label class="required">Código RNOS</label><input class="form-input" id="os-rnos" placeholder="Ej: 390" oninput="syncReview()"></div>
+          <div class="form-field"><label class="required">Tipo</label><select class="form-select" id="os-tipo" onchange="syncReview()"><option value="">Seleccioná…</option><option>Obra social nacional</option><option>Medicina prepaga</option><option>Mutual</option><option>Gremial</option><option>Provincial</option></select></div>
+          <div class="form-field"><label>Estado inicial</label><select class="form-select"><option>Activa</option><option>En revisión</option></select></div>
+        </div>
+        <div class="form-field mb-3"><label>Observaciones generales</label><input class="form-input" placeholder="Condiciones especiales del convenio…"></div>
+        <div class="form-field"><label>Vencimiento del convenio</label><input class="form-input" type="date" id="os-vto" onchange="syncReview()"></div>
+      </div>
+    </div>
+
+    <!-- Step 2: Planes -->
+    <div class="stepper-body" id="os-body-2" style="display:none">
+      <div class="stepper-card">
+        <h3><i class="pi pi-list"></i> Planes y copagos</h3>
+        <div id="os-planes-list">
+          <div class="plan-row"><span class="plan-name">Plan 210</span><span class="plan-copago">Copago: $800</span><div class="action-btn danger" style="margin-left:auto"><i class="pi pi-trash"></i></div></div>
+          <div class="plan-row"><span class="plan-name">Plan 310</span><span class="plan-copago">Sin copago</span><div class="action-btn danger" style="margin-left:auto"><i class="pi pi-trash"></i></div></div>
+          <div class="plan-row"><span class="plan-name">Plan 410 — Premium</span><span class="plan-copago">Copago: $300</span><div class="action-btn danger" style="margin-left:auto"><i class="pi pi-trash"></i></div></div>
+        </div>
+        <div style="border:1px dashed #e2e8f0;border-radius:8px;padding:14px;margin-top:12px">
+          <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:10px"><i class="pi pi-plus-circle" style="color:var(--brand)"></i> Agregar plan</div>
+          <div class="form-grid">
+            <div class="form-field"><label>Nombre del plan</label><input class="form-input" placeholder="Ej: Plan 210"></div>
+            <div class="form-field"><label>Tipo de copago</label><select class="form-select"><option>Sin copago</option><option>Monto fijo</option><option>Porcentaje</option></select></div>
+            <div class="form-field"><label>Valor copago</label><input class="form-input" placeholder="$0.00"></div>
+            <div class="form-field" style="display:flex;align-items:flex-end"><button class="btn btn-secondary" style="width:100%"><i class="pi pi-plus"></i> Agregar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Facturación -->
+    <div class="stepper-body" id="os-body-3" style="display:none">
+      <div class="stepper-card">
+        <h3><i class="pi pi-wallet"></i> Configuración de facturación</h3>
+        <div class="form-grid mb-3">
+          <div class="form-field"><label class="required">Modalidad</label><select class="form-select" id="os-modal" onchange="syncReview()"><option>Mensual</option><option>Quincenal</option><option>Por práctica</option></select></div>
+          <div class="form-field"><label>Día de cierre</label><input class="form-input" type="number" min="1" max="31" placeholder="Ej: 20" id="os-cierre" oninput="syncReview()"></div>
+          <div class="form-field"><label>Email de facturación</label><input class="form-input" placeholder="facturacion@osde.com.ar"></div>
+          <div class="form-field"><label>Teléfono de contacto</label><input class="form-input" placeholder="(011) 4000-0000"></div>
+        </div>
+        <div class="form-field mb-3"><label>Nombre del contacto en OS</label><input class="form-input" placeholder="Responsable de convenio en la OS"></div>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;font-size:11px;color:#92400e;display:flex;gap:8px;align-items:flex-start">
+          <i class="pi pi-exclamation-triangle" style="margin-top:1px;flex-shrink:0"></i>
+          <span>Los datos de facturación se usarán para generar las liquidaciones mensuales automáticamente. Verificá el email antes de continuar.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Revisión -->
+    <div class="stepper-body" id="os-body-4" style="display:none">
+      <div class="stepper-card">
+        <h3><i class="pi pi-check-circle"></i> Revisión final</h3>
+        <div class="review-section">
+          <h4>Identificación</h4>
+          <div class="review-row"><span class="rv-label">Nombre</span><span class="rv-val" id="rv-nombre">—</span></div>
+          <div class="review-row"><span class="rv-label">RNOS</span><span class="rv-val" id="rv-rnos">—</span></div>
+          <div class="review-row"><span class="rv-label">Tipo</span><span class="rv-val" id="rv-tipo">—</span></div>
+          <div class="review-row"><span class="rv-label">Vencimiento</span><span class="rv-val" id="rv-vto">—</span></div>
+        </div>
+        <div class="review-section">
+          <h4>Planes</h4>
+          <div class="review-row"><span class="rv-label">Planes cargados</span><span class="rv-val">3 planes</span></div>
+          <div class="review-row"><span class="rv-label">Copagos</span><span class="rv-val">Variables según plan</span></div>
+        </div>
+        <div class="review-section">
+          <h4>Facturación</h4>
+          <div class="review-row"><span class="rv-label">Modalidad</span><span class="rv-val" id="rv-modal">Mensual</span></div>
+          <div class="review-row"><span class="rv-label">Día de cierre</span><span class="rv-val" id="rv-cierre">—</span></div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:12px;color:#15803d;display:flex;gap:8px;align-items:center;margin-top:4px">
+          <i class="pi pi-check-circle" style="font-size:16px;flex-shrink:0"></i>
+          Todo listo para registrar la obra social. Podés volver a cualquier paso anterior para corregir datos.
+        </div>
+      </div>
+    </div>
+
+    <div class="stepper-footer">
+      <button class="btn btn-secondary" id="os-btn-back" onclick="osStep(-1)" style="display:none"><i class="pi pi-arrow-left"></i> Anterior</button>
+      <button class="btn btn-secondary" onclick="navigate('obras')"><i class="pi pi-times"></i> Cancelar</button>
+      <div class="step-indicator" id="os-step-indicator">Paso 1 de 4</div>
+      <button class="btn btn-primary" id="os-btn-next" onclick="osStep(1)">Siguiente <i class="pi pi-arrow-right"></i></button>
+      <button class="btn btn-primary" id="os-btn-save" onclick="navigate('obras')" style="display:none"><i class="pi pi-check"></i> Confirmar alta</button>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+const NAV_MAP = {
+  home:'home', pre:'analitica-parent', analitica:'analitica-parent', post:'analitica-parent',
+  pacientes:'pacientes', turnos:'turnos', atencion:'atencion',
+  empresa:'empresa', roles:'roles', sucursales:'sucursales',
+  financiero:'financiero', obras:'obras', medicos:'medicos', stock:'stock', portal:'portal', saas:'saas',
+  'nuevo-turno':'turnos', 'nueva-os':'obras'
+};
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .sub-nav-item').forEach(n => n.classList.remove('active'));
+  const target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+  // auto-expand analítica group
+  if (['pre','analitica','post'].includes(page)) {
+    document.getElementById('nav-analitica-parent').classList.add('expanded');
+    document.getElementById('sub-analitica').classList.add('open');
+  }
+  // close sidebar on mobile
+  if (window.innerWidth <= 768) closeSidebar();
+}
+
+function toggleAnalitica(e) {
+  e.stopPropagation();
+  const parent = document.getElementById('nav-analitica-parent');
+  const sub = document.getElementById('sub-analitica');
+  const isOpen = sub.classList.contains('open');
+  if (!isOpen) {
+    parent.classList.add('expanded');
+    sub.classList.add('open');
+  } else {
+    parent.classList.remove('expanded');
+    sub.classList.remove('open');
+  }
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+/* ── PROFILE MENU ── */
+function toggleProfileMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('profile-menu');
+  menu.classList.toggle('open');
+}
+document.addEventListener('click', () => {
+  document.getElementById('profile-menu').classList.remove('open');
+});
+
+function openProfilePanel() {
+  document.getElementById('profile-menu').classList.remove('open');
+  document.getElementById('profile-panel').classList.add('open');
+  document.getElementById('panel-backdrop').classList.add('open');
+}
+function openPasswordPanel() {
+  document.getElementById('profile-menu').classList.remove('open');
+  document.getElementById('password-panel').classList.add('open');
+  document.getElementById('panel-backdrop').classList.add('open');
+}
+function closePanel(id) {
+  document.getElementById(id).classList.remove('open');
+  document.getElementById('panel-backdrop').classList.remove('open');
+}
+function closeAllPanels() {
+  ['profile-panel','password-panel'].forEach(id => document.getElementById(id).classList.remove('open'));
+  document.getElementById('panel-backdrop').classList.remove('open');
+}
+
+function switchBranch(el, name) {
+  document.querySelectorAll('.pm-branch').forEach(b => {
+    b.classList.remove('active-branch');
+    const check = b.querySelector('.pi-check');
+    if (check) check.remove();
+  });
+  el.classList.add('active-branch');
+  const check = document.createElement('i');
+  check.className = 'pi pi-check';
+  check.style.cssText = 'margin-left:auto;color:#10b981';
+  el.appendChild(check);
+  document.querySelector('.pm-tenant span:last-of-type') && (document.querySelector('.pm-tenant span:last-of-type').textContent = name);
+  document.getElementById('profile-menu').classList.remove('open');
+}
+
+function confirmLogout() {
+  document.getElementById('profile-menu').classList.remove('open');
+  document.getElementById('logout-overlay').classList.add('open');
+}
+function closeLogout() {
+  document.getElementById('logout-overlay').classList.remove('open');
+}
+/* ── ROLES ── */
+const ROLES = {
+  sysadmin: {
+    name:'SysAdmin', icon:'pi-crown', color:'#7e22ce', bg:'#faf5ff',
+    badge:'Global · Todos los tenants',
+    summary:'Acceso irrestricto a toda la plataforma, incluyendo el panel de administración global (SaaS Admin). Puede gestionar tenants, planes, módulos y usuarios de cualquier laboratorio. Este rol es exclusivo del equipo de la plataforma.',
+    perms:[
+      {label:'Todos los módulos del tenant',icon:'pi-check-circle',type:'allowed'},
+      {label:'SaaS Admin (gestión de tenants)',icon:'pi-check-circle',type:'allowed'},
+      {label:'Impersonar cualquier tenant',icon:'pi-check-circle',type:'allowed'},
+      {label:'Configuración de planes y facturación',icon:'pi-check-circle',type:'allowed'},
+    ],
+    sidebar:[
+      {section:'Principal', items:[{icon:'pi-home',label:'Inicio',ok:true}]},
+      {section:'Core clínico', items:[{icon:'pi-wave-pulse',label:'Analítica',ok:true,sub:['Pre-analítica','Analítica','Post-analítica']},{icon:'pi-calendar',label:'Turnos',ok:true},{icon:'pi-users',label:'Atención',ok:true}]},
+      {section:'Gestión', items:[{icon:'pi-building',label:'Empresa',ok:true},{icon:'pi-map-marker',label:'Sucursales',ok:true},{icon:'pi-wallet',label:'Financiero',ok:true},{icon:'pi-id-card',label:'Obras Sociales',ok:true}]},
+      {section:'Servicios clínicos', items:[{icon:'pi-heart',label:'Médicos derivantes',ok:true},{icon:'pi-box',label:'Stock',ok:true},{icon:'pi-globe',label:'Portal paciente',ok:true}]},
+      {section:'Administración', items:[{icon:'pi-cog',label:'SaaS Admin',ok:true}]},
+    ]
+  },
+  admin: {
+    name:'Admin', icon:'pi-building', color:'#1d4ed8', bg:'#eff6ff',
+    badge:'Tenant · Acceso completo al laboratorio',
+    summary:'Administrador del laboratorio. Tiene acceso completo a todos los módulos habilitados para su tenant: puede gestionar usuarios, roles, sucursales, white-label, y configuración. No puede acceder al panel SaaS Admin ni a datos de otros tenants.',
+    perms:[
+      {label:'Todos los módulos del tenant',icon:'pi-check-circle',type:'allowed'},
+      {label:'Gestión de usuarios y roles',icon:'pi-check-circle',type:'allowed'},
+      {label:'Configuración white-label',icon:'pi-check-circle',type:'allowed'},
+      {label:'SaaS Admin',icon:'pi-times-circle',type:'denied'},
+    ],
+    sidebar:[
+      {section:'Principal', items:[{icon:'pi-home',label:'Inicio',ok:true}]},
+      {section:'Core clínico', items:[{icon:'pi-wave-pulse',label:'Analítica',ok:true,sub:['Pre-analítica','Analítica','Post-analítica']},{icon:'pi-calendar',label:'Turnos',ok:true},{icon:'pi-users',label:'Atención',ok:true}]},
+      {section:'Gestión', items:[{icon:'pi-building',label:'Empresa',ok:true},{icon:'pi-map-marker',label:'Sucursales',ok:true},{icon:'pi-wallet',label:'Financiero',ok:true},{icon:'pi-id-card',label:'Obras Sociales',ok:true}]},
+      {section:'Servicios clínicos', items:[{icon:'pi-heart',label:'Médicos derivantes',ok:true},{icon:'pi-box',label:'Stock',ok:true},{icon:'pi-globe',label:'Portal paciente',ok:true}]},
+      {section:'Administración', items:[{icon:'pi-cog',label:'SaaS Admin',ok:false}]},
+    ]
+  },
+  secretaria: {
+    name:'Secretaría', icon:'pi-users', color:'#16a34a', bg:'#f0fdf4',
+    badge:'Operativo · Atención al paciente',
+    summary:'Gestiona la recepción de pacientes, turnos y atención diaria. Puede registrar llegadas, llamar pacientes, gestionar la agenda y consultar datos de médicos derivantes. No accede a resultados de laboratorio, datos financieros ni configuración del sistema.',
+    perms:[
+      {label:'Turnos — agenda completa',icon:'pi-check-circle',type:'allowed'},
+      {label:'Atención — sala de espera y boxes',icon:'pi-check-circle',type:'allowed'},
+      {label:'Médicos derivantes (solo lectura)',icon:'pi-eye',type:'readonly'},
+      {label:'Inicio (KPIs de turnos)',icon:'pi-check-circle',type:'allowed'},
+      {label:'Analítica (resultados)',icon:'pi-times-circle',type:'denied'},
+      {label:'Financiero y Obras Sociales',icon:'pi-times-circle',type:'denied'},
+      {label:'Empresa y configuración',icon:'pi-times-circle',type:'denied'},
+    ],
+    sidebar:[
+      {section:'Principal', items:[{icon:'pi-home',label:'Inicio',ok:true}]},
+      {section:'Core clínico', items:[{icon:'pi-wave-pulse',label:'Analítica',ok:false},{icon:'pi-calendar',label:'Turnos',ok:true},{icon:'pi-users',label:'Atención',ok:true}]},
+      {section:'Gestión', items:[{icon:'pi-building',label:'Empresa',ok:false},{icon:'pi-map-marker',label:'Sucursales',ok:false},{icon:'pi-wallet',label:'Financiero',ok:false},{icon:'pi-id-card',label:'Obras Sociales',ok:false}]},
+      {section:'Servicios clínicos', items:[{icon:'pi-heart',label:'Médicos (lectura)',ok:true},{icon:'pi-box',label:'Stock',ok:false},{icon:'pi-globe',label:'Portal paciente',ok:false}]},
+      {section:'Administración', items:[{icon:'pi-cog',label:'SaaS Admin',ok:false}]},
+    ]
+  },
+  tecnico: {
+    name:'Técnico Lab', icon:'pi-wave-pulse', color:'#0891b2', bg:'#ecfeff',
+    badge:'Clínico · Pipeline analítico',
+    summary:'Bioquímico o técnico de laboratorio. Trabaja exclusivamente en el pipeline analítico: recepción de muestras, procesamiento, carga de resultados y post-analítica. También puede gestionar insumos de stock y consultar médicos derivantes para envío de resultados.',
+    perms:[
+      {label:'Pre-analítica, Analítica, Post-analítica',icon:'pi-check-circle',type:'allowed'},
+      {label:'Stock e insumos',icon:'pi-check-circle',type:'allowed'},
+      {label:'Médicos derivantes',icon:'pi-check-circle',type:'allowed'},
+      {label:'Turnos (solo lectura)',icon:'pi-eye',type:'readonly'},
+      {label:'Inicio (KPIs analíticos)',icon:'pi-check-circle',type:'allowed'},
+      {label:'Atención al paciente',icon:'pi-times-circle',type:'denied'},
+      {label:'Financiero y Obras Sociales',icon:'pi-times-circle',type:'denied'},
+    ],
+    sidebar:[
+      {section:'Principal', items:[{icon:'pi-home',label:'Inicio',ok:true}]},
+      {section:'Core clínico', items:[{icon:'pi-wave-pulse',label:'Analítica',ok:true,sub:['Pre-analítica','Analítica','Post-analítica']},{icon:'pi-calendar',label:'Turnos (lectura)',ok:true},{icon:'pi-users',label:'Atención',ok:false}]},
+      {section:'Gestión', items:[{icon:'pi-building',label:'Empresa',ok:false},{icon:'pi-map-marker',label:'Sucursales',ok:false},{icon:'pi-wallet',label:'Financiero',ok:false},{icon:'pi-id-card',label:'Obras Sociales',ok:false}]},
+      {section:'Servicios clínicos', items:[{icon:'pi-heart',label:'Médicos derivantes',ok:true},{icon:'pi-box',label:'Stock',ok:true},{icon:'pi-globe',label:'Portal paciente',ok:false}]},
+      {section:'Administración', items:[{icon:'pi-cog',label:'SaaS Admin',ok:false}]},
+    ]
+  },
+  contador: {
+    name:'Contador', icon:'pi-wallet', color:'#d97706', bg:'#fffbeb',
+    badge:'Administrativo · Gestión económica',
+    summary:'Acceso exclusivo a las secciones financieras del laboratorio. Puede gestionar cajas, pagos, movimientos, coberturas, liquidaciones y obras sociales. Puede ver los datos de empresa en modo lectura para verificar información fiscal. No accede al proceso clínico.',
+    perms:[
+      {label:'Financiero — cajas, pagos, liquidaciones',icon:'pi-check-circle',type:'allowed'},
+      {label:'Obras Sociales — convenios y aranceles',icon:'pi-check-circle',type:'allowed'},
+      {label:'Empresa (solo lectura fiscal)',icon:'pi-eye',type:'readonly'},
+      {label:'Inicio (KPIs financieros)',icon:'pi-check-circle',type:'allowed'},
+      {label:'Analítica, Turnos, Atención',icon:'pi-times-circle',type:'denied'},
+      {label:'Sucursales y configuración',icon:'pi-times-circle',type:'denied'},
+    ],
+    sidebar:[
+      {section:'Principal', items:[{icon:'pi-home',label:'Inicio',ok:true}]},
+      {section:'Core clínico', items:[{icon:'pi-wave-pulse',label:'Analítica',ok:false},{icon:'pi-calendar',label:'Turnos',ok:false},{icon:'pi-users',label:'Atención',ok:false}]},
+      {section:'Gestión', items:[{icon:'pi-building',label:'Empresa (lectura)',ok:true},{icon:'pi-map-marker',label:'Sucursales',ok:false},{icon:'pi-wallet',label:'Financiero',ok:true},{icon:'pi-id-card',label:'Obras Sociales',ok:true}]},
+      {section:'Servicios clínicos', items:[{icon:'pi-heart',label:'Médicos derivantes',ok:false},{icon:'pi-box',label:'Stock',ok:false},{icon:'pi-globe',label:'Portal paciente',ok:false}]},
+      {section:'Administración', items:[{icon:'pi-cog',label:'SaaS Admin',ok:false}]},
+    ]
+  },
+  cajero: {
+    name:'Cajero', icon:'pi-dollar', color:'#dc2626', bg:'#fef2f2',
+    badge:'Operativo · Caja y cobro',
+    summary:'Operador de caja. Puede registrar llegadas de pacientes, gestionar el cobro en ventanilla y consultar su caja del día. Acceso limitado a la parte de atención para registrar pacientes y a financiero solo para su turno de caja. No ve resultados ni configuración.',
+    perms:[
+      {label:'Atención — registro de llegadas',icon:'pi-check-circle',type:'allowed'},
+      {label:'Financiero — su caja del día',icon:'pi-eye',type:'readonly'},
+      {label:'Inicio (KPIs de caja)',icon:'pi-check-circle',type:'allowed'},
+      {label:'Analítica y resultados',icon:'pi-times-circle',type:'denied'},
+      {label:'Turnos (sin gestión de agenda)',icon:'pi-times-circle',type:'denied'},
+      {label:'Obras Sociales y configuración',icon:'pi-times-circle',type:'denied'},
+    ],
+    sidebar:[
+      {section:'Principal', items:[{icon:'pi-home',label:'Inicio',ok:true}]},
+      {section:'Core clínico', items:[{icon:'pi-wave-pulse',label:'Analítica',ok:false},{icon:'pi-calendar',label:'Turnos',ok:false},{icon:'pi-users',label:'Atención',ok:true}]},
+      {section:'Gestión', items:[{icon:'pi-building',label:'Empresa',ok:false},{icon:'pi-map-marker',label:'Sucursales',ok:false},{icon:'pi-wallet',label:'Financiero (caja)',ok:true},{icon:'pi-id-card',label:'Obras Sociales',ok:false}]},
+      {section:'Servicios clínicos', items:[{icon:'pi-heart',label:'Médicos derivantes',ok:false},{icon:'pi-box',label:'Stock',ok:false},{icon:'pi-globe',label:'Portal paciente',ok:false}]},
+      {section:'Administración', items:[{icon:'pi-cog',label:'SaaS Admin',ok:false}]},
+    ]
+  }
+};
+
+function selectRole(key, cardEl) {
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  cardEl.classList.add('selected');
+  const r = ROLES[key];
+
+  // Sidebar preview
+  const sbp = document.getElementById('role-sidebar-preview');
+  let sbHtml = '';
+  r.sidebar.forEach(section => {
+    sbHtml += `<div class="rsp-section-label">${section.section}</div>`;
+    section.items.forEach((item,i) => {
+      const cls = item.ok ? 'rsp-allowed' + (i===0 && section.section==='Principal' ? ' rsp-active':'') : 'rsp-denied';
+      sbHtml += `<div class="rsp-item ${cls}"><i class="pi ${item.icon}"></i> ${item.label}</div>`;
+      if (item.ok && item.sub) {
+        item.sub.forEach(s => {
+          sbHtml += `<div class="rsp-item rsp-sub ${cls}"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0;display:inline-block"></span> ${s}</div>`;
+        });
+      }
+    });
+    sbHtml += `<div class="rsp-divider"></div>`;
+  });
+  sbp.innerHTML = sbHtml;
+
+  // Role info
+  const ri = document.getElementById('role-info');
+  const permHtml = r.perms.map(p =>
+    `<div class="role-perm ${p.type}"><i class="pi ${p.icon}"></i> ${p.label}</div>`
+  ).join('');
+  ri.innerHTML = `
+    <div class="role-badge-row">
+      <div style="width:44px;height:44px;border-radius:10px;background:${r.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="pi ${r.icon}" style="font-size:18px;color:${r.color}"></i>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#0f172a">${r.name}</div>
+        <span class="badge" style="background:${r.bg};color:${r.color};font-size:10px;margin-top:2px">${r.badge}</span>
+      </div>
+    </div>
+    <div class="role-summary">${r.summary}</div>
+    <div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Permisos clave</div>
+    <div class="role-perms">${permHtml}</div>`;
+}
+
+// Init roles page with sysadmin selected
+document.addEventListener('DOMContentLoaded', () => {
+  const firstCard = document.querySelector('.role-card');
+  if (firstCard) selectRole('sysadmin', firstCard);
+});
+
+/* ── LOGIN / FORGOT ── */
+function showLogin() {
+  document.getElementById('forgot-screen').classList.remove('open');
+  document.getElementById('login-screen').classList.add('open');
+  syncAuthBranding();
+}
+function showForgot() {
+  document.getElementById('login-screen').classList.remove('open');
+  // reset forgot to initial state
+  const body = document.getElementById('forgot-body');
+  body.innerHTML = `
+    <div class="auth-back-btn" onclick="showLogin()"><i class="pi pi-arrow-left"></i> Volver al login</div>
+    <div class="auth-title">Recuperar contraseña</div>
+    <div class="auth-subtitle">Ingresá tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</div>
+    <div class="auth-field"><label>Correo electrónico</label><input class="auth-input" type="email" placeholder="usuario@laboratorio.com" id="forgot-email"></div>
+    <button class="auth-btn" onclick="doForgot()"><i class="pi pi-send"></i> Enviar enlace de recuperación</button>
+    <div style="text-align:center;font-size:11px;color:#94a3b8;margin-top:4px">Revisá también tu carpeta de spam. El enlace expira en <strong>30 minutos</strong>.</div>`;
+  document.getElementById('forgot-screen').classList.add('open');
+  syncAuthBranding();
+}
+function doLogin() {
+  document.getElementById('login-screen').classList.remove('open');
+}
+function doForgot() {
+  const email = document.getElementById('forgot-email')?.value || 'tu correo';
+  const body = document.getElementById('forgot-body');
+  body.innerHTML = `
+    <div class="auth-back-btn" onclick="showLogin()"><i class="pi pi-arrow-left"></i> Volver al login</div>
+    <div class="auth-success">
+      <div class="success-icon"><i class="pi pi-envelope"></i></div>
+      <h3>¡Correo enviado!</h3>
+      <p>Enviamos un enlace de recuperación a <strong>${email}</strong>. Revisá tu bandeja de entrada y seguí las instrucciones.</p>
+      <p style="font-size:11px;color:#94a3b8;margin-top:6px">El enlace expira en 30 minutos. Si no recibís el correo revisá spam o intentá nuevamente.</p>
+      <button class="auth-btn" onclick="showLogin()" style="margin-top:12px"><i class="pi pi-sign-in"></i> Volver al inicio de sesión</button>
+    </div>`;
+}
+function togglePass(id, el) {
+  const input = document.getElementById(id);
+  if (input.type === 'password') { input.type = 'text'; el.innerHTML = '<i class="pi pi-eye"></i>'; }
+  else { input.type = 'password'; el.innerHTML = '<i class="pi pi-eye-slash"></i>'; }
+}
+function syncAuthBranding() {
+  const name = document.getElementById('wl-name-input')?.value || 'LaboratoApp';
+  const initials = name.slice(0,2).toUpperCase();
+  ['login-logo','forgot-logo'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = initials; });
+  ['login-tenant-name','forgot-tenant-name'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = name; });
+}
+
+/* ── WHITE-LABEL PREVIEW ── */
+function updateWLPreview() {
+  const dark = document.getElementById('wl-color-dark').value;
+  const accent = document.getElementById('wl-color-accent').value;
+  document.getElementById('wl-color-dark-text').value = dark;
+  document.getElementById('wl-color-accent-text').value = accent;
+  const sidebar = document.getElementById('wl-sidebar-preview');
+  if (sidebar) sidebar.style.background = dark;
+  const topbar = document.querySelector('.topbar');
+  if (topbar) topbar.style.background = dark;
+  const wlTopbar = document.querySelector('.wl-preview-topbar');
+  if (wlTopbar) wlTopbar.style.background = dark;
+  const logoBox = document.getElementById('wl-logo-box');
+  if (logoBox) logoBox.style.background = accent;
+  const bar = document.getElementById('wl-bar');
+  if (bar) bar.style.background = accent;
+  document.documentElement.style.setProperty('--brand', accent);
+  document.documentElement.style.setProperty('--brand-dark', dark);
+}
+
+/* ── MODAL (dialog centrado) ── */
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ── SLIDE-OVER (panel derecho) ── */
+function openSlideOver(id) {
+  document.getElementById(id).classList.add('open');
+  document.getElementById('panel-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Reset to step 1
+  if (id === 'atencion-so') {
+    soTab(1);
+    document.getElementById('so-success').style.display = 'none';
+    document.getElementById('so-step-1').style.display = '';
+    document.getElementById('so-search').value = '';
+    document.getElementById('so-search-results').style.display = 'none';
+    document.getElementById('so-patient-found').style.display = 'none';
+  }
+}
+function closeSlideOver(id) {
+  document.getElementById(id).classList.remove('open');
+  document.getElementById('panel-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ── SLIDE-OVER STEPS ── */
+function soTab(n) {
+  [1,2,3].forEach(i => {
+    const step = document.getElementById('so-step-' + i);
+    const tab = document.getElementById('so-tab-' + i);
+    if (step) step.style.display = i === n ? '' : 'none';
+    if (tab) { tab.classList.toggle('active', i === n); tab.classList.toggle('done', i < n); }
+  });
+}
+function soSearch(val) {
+  const results = document.getElementById('so-search-results');
+  const found = document.getElementById('so-patient-found');
+  if (found.style.display !== 'none') return;
+  results.style.display = val.length >= 2 ? '' : 'none';
+}
+function soSelectPatient(name, dni, os) {
+  const initials = name.split(',').map(p => p.trim()[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('so-pav').textContent = initials;
+  document.getElementById('so-pname').textContent = name;
+  document.getElementById('so-pmeta').textContent = 'DNI ' + dni + ' · ' + os;
+  document.getElementById('so-search-results').style.display = 'none';
+  document.getElementById('so-patient-found').style.display = '';
+  document.getElementById('so-search').value = name;
+}
+function soClearPatient() {
+  document.getElementById('so-patient-found').style.display = 'none';
+  document.getElementById('so-search').value = '';
+}
+function soConfirm() {
+  [1,2,3].forEach(i => { const s = document.getElementById('so-step-' + i); if (s) s.style.display = 'none'; });
+  document.querySelector('.so-steps-mini').style.display = 'none';
+  document.getElementById('so-success').style.display = '';
+}
+
+/* ── STEPPER — NUEVA OBRA SOCIAL ── */
+let osCurrentStep = 1;
+const OS_TOTAL = 4;
+
+function osStep(dir) {
+  const next = osCurrentStep + dir;
+  if (next < 1 || next > OS_TOTAL) return;
+  document.getElementById('os-body-' + osCurrentStep).style.display = 'none';
+  osCurrentStep = next;
+  document.getElementById('os-body-' + osCurrentStep).style.display = '';
+  updateOsUI();
+  if (osCurrentStep === OS_TOTAL) syncReview();
+}
+
+function updateOsUI() {
+  for (let i = 1; i <= OS_TOTAL; i++) {
+    const circle = document.getElementById('os-circle-' + i);
+    const label = document.getElementById('os-label-' + i);
+    const conn = document.getElementById('os-conn-' + i);
+    if (!circle) continue;
+    circle.classList.remove('active','done');
+    if (label) label.classList.remove('active','done');
+    if (i < osCurrentStep) { circle.classList.add('done'); circle.innerHTML = '<i class="pi pi-check"></i>'; if (label) label.classList.add('done'); }
+    else if (i === osCurrentStep) { circle.classList.add('active'); circle.textContent = i; if (label) label.classList.add('active'); }
+    else { circle.textContent = i; }
+    if (conn) conn.classList.toggle('done', i < osCurrentStep);
+  }
+  const btnBack = document.getElementById('os-btn-back');
+  const btnNext = document.getElementById('os-btn-next');
+  const btnSave = document.getElementById('os-btn-save');
+  if (btnBack) btnBack.style.display = osCurrentStep > 1 ? '' : 'none';
+  if (btnNext) btnNext.style.display = osCurrentStep < OS_TOTAL ? '' : 'none';
+  if (btnSave) btnSave.style.display = osCurrentStep === OS_TOTAL ? '' : 'none';
+  const ind = document.getElementById('os-step-indicator');
+  if (ind) ind.textContent = 'Paso ' + osCurrentStep + ' de ' + OS_TOTAL;
+}
+
+function syncReview() {
+  const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+  set('rv-nombre', get('os-nombre'));
+  set('rv-rnos', get('os-rnos'));
+  set('rv-tipo', get('os-tipo'));
+  set('rv-vto', get('os-vto') ? new Date(get('os-vto') + 'T00:00').toLocaleDateString('es-AR') : '');
+  set('rv-modal', get('os-modal'));
+  set('rv-cierre', get('os-cierre') ? 'Día ' + get('os-cierre') : '');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('os-circle-1')) updateOsUI();
+});
+
+/* ── NUEVO TURNO — patient search & slot selection ── */
+function showPatientResults(val) {
+  const box = document.getElementById('nt-patient-results');
+  const sel = document.getElementById('nt-patient-selected');
+  if (!box) return;
+  if (sel && sel.style.display !== 'none') return;
+  box.style.display = val.length >= 2 ? '' : 'none';
+}
+
+function selectPatient(name, dni, os) {
+  const box = document.getElementById('nt-patient-results');
+  const sel = document.getElementById('nt-patient-selected');
+  const input = document.getElementById('nt-patient-search');
+  if (box) box.style.display = 'none';
+  if (input) input.value = name;
+  if (sel) {
+    sel.style.display = '';
+    const nameEl = document.getElementById('nt-pat-name');
+    const metaEl = document.getElementById('nt-pat-meta');
+    const avEl = document.getElementById('nt-pat-av');
+    if (nameEl) nameEl.textContent = name;
+    if (metaEl) metaEl.textContent = 'DNI ' + dni + ' · ' + os;
+    if (avEl) { const parts = name.split(','); avEl.textContent = (parts[0]?.[0] || '') + (parts[1]?.trim()?.[0] || ''); }
+  }
+}
+
+function clearPatient() {
+  ['nt-patient-results','nt-patient-selected'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  const input = document.getElementById('nt-patient-search');
+  if (input) { input.value = ''; input.focus(); }
+}
+
+function selectSlot(el) {
+  if (el.classList.contains('taken')) return;
+  document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function doLogout() {
+  document.getElementById('logout-overlay').classList.remove('open');
+  document.body.innerHTML = `
+    <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f1f5f9;gap:16px">
+      <div style="width:48px;height:48px;background:var(--brand,#1d4ed8);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:800">LA</div>
+      <div style="font-size:16px;font-weight:700;color:#0f172a">Sesión cerrada</div>
+      <div style="font-size:12px;color:#64748b">Redirigiendo al login…</div>
+      <div style="width:200px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden;margin-top:4px">
+        <div style="height:100%;background:#1d4ed8;border-radius:2px;animation:prog 1.5s ease forwards" id="prog"></div>
+      </div>
+    </div>
+    <style>@keyframes prog{from{width:0}to{width:100%}}</style>`;
+  setTimeout(() => location.reload(), 1600);
+}
+</script>
+</body>
+</html>

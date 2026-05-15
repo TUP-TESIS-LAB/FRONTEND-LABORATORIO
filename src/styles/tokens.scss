@@ -39,3 +39,22 @@
   --p-primary-color: var(--brand-primary);
   --p-primary-contrast-color: #ffffff;
 }
+
+// ─── Derivados de --brand-primary (chrome del shell) ───
+// Recalculados automáticamente por el navegador al cambiar la primaria del tenant.
+:root {
+  --brand-shell-bg:    color-mix(in srgb, var(--brand-primary) 70%, black);
+  --brand-shell-bg-2:  color-mix(in srgb, var(--brand-primary) 55%, black);
+  --brand-tint:        color-mix(in srgb, var(--brand-primary) 12%, white);
+  --brand-tint-strong: color-mix(in srgb, var(--brand-primary) 18%, white);
+}
+
+// Fallback para navegadores muy viejos sin color-mix.
+@supports not (color: color-mix(in srgb, red, blue)) {
+  :root {
+    --brand-shell-bg:    #1e293b;
+    --brand-shell-bg-2:  #0f172a;
+    --brand-tint:        #eff6ff;
+    --brand-tint-strong: #dbeafe;
+  }
+}

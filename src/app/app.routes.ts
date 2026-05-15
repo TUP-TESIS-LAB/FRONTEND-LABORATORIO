@@ -62,7 +62,24 @@ export const routes: Routes = [
           import('./features/stock/stock.routes').then((m) => m.STOCK_ROUTES),
       },
 
-      { path: '', redirectTo: 'empresa', pathMatch: 'full' },
+      // NUEVAS RUTAS
+      {
+        path: 'home',
+        loadChildren: () =>
+          import('./features/home/home.routes').then((m) => m.HOME_ROUTES),
+      },
+      {
+        path: 'roles',
+        loadChildren: () =>
+          import('./features/roles/roles.routes').then((m) => m.ROLES_ROUTES),
+      },
+      {
+        path: 'obras-sociales',
+        loadChildren: () =>
+          import('./features/obras-sociales/obras-sociales.routes').then((m) => m.OBRAS_SOCIALES_ROUTES),
+      },
+
+      { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
   },
 
