@@ -203,18 +203,25 @@ export class PatientFormDrawerComponent {
   get addressesArray(): FormArray<FormGroup> { return this.form.get('addresses') as FormArray<FormGroup>; }
   get coveragesArray(): FormArray<FormGroup> { return this.form.get('coverages') as FormArray<FormGroup>; }
 
+  private wasOpen = false;
+
   constructor() {
     effect(() => {
-      const p = this.patient();
       const opened = this.open();
-      if (!opened) return;
-      if (p) {
-        this.hydrate(p);
-        this.form.get('general.dni')?.disable({ emitEvent: false });
-      } else {
-        this.resetForCreate();
-        this.form.get('general.dni')?.enable({ emitEvent: false });
+      const p = this.patient();
+      // Only (re)initialize on closed → open transition. The effect can re-run on
+      // unrelated CD cycles in Angular 21 signal inputs; without this guard, any
+      // dropdown click would wipe user input via resetForCreate().
+      if (opened && !this.wasOpen) {
+        if (p) {
+          this.hydrate(p);
+          this.form.get('general.dni')?.disable({ emitEvent: false });
+        } else {
+          this.resetForCreate();
+          this.form.get('general.dni')?.enable({ emitEvent: false });
+        }
       }
+      this.wasOpen = opened;
     });
 
     this.form.get('general.dni')?.valueChanges.subscribe((dni: string) => {

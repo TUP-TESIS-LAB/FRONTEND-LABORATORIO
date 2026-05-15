@@ -9,7 +9,6 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { SkeletonModule } from 'primeng/skeleton';
 import { DatePipe } from '@angular/common';
 import { DniPipe } from '@shared/pipes/dni.pipe';
 import { AgePipe } from '@shared/pipes/age.pipe';
@@ -19,7 +18,7 @@ import { Patient, PatientStatus } from '../../models/patient.model';
 import { PatientStateFilter } from '../../models/patient-page.model';
 import { getCoveragePlanLabel } from '../../models/coverage-plans.catalog';
 import {
-  loadPatients, setPatientPageRequest, togglePatientActive,
+  setPatientPageRequest, togglePatientActive,
 } from '../../store/patient.actions';
 import {
   selectAllPatients, selectPatientPending, selectPatientPageRequest, selectPatientTotalElements,
@@ -33,7 +32,7 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
   providers: [ConfirmationService],
   imports: [
     RouterLink, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule,
-    ConfirmDialogModule, SkeletonModule, DatePipe, DniPipe, AgePipe,
+    ConfirmDialogModule, DatePipe, DniPipe, AgePipe,
     EmptyStateComponent, PatientFormDrawerComponent,
   ],
   template: `
@@ -73,23 +72,16 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
           (onClick)="toggleCompleteFilter()" />
       </div>
 
-      @if (pending() && items().length === 0) {
-        <div class="space-y-2">
-          @for (i of [1,2,3,4,5]; track i) {
-            <p-skeleton height="3rem" />
-          }
-        </div>
-      } @else {
-        <p-table
-          [value]="items()"
-          [lazy]="true"
-          [paginator]="true"
-          [rows]="pageRequest().size"
-          [totalRecords]="total()"
-          [first]="pageRequest().page * pageRequest().size"
-          [loading]="pending()"
-          (onLazyLoad)="onPage($event)"
-          dataKey="id">
+      <p-table
+        [value]="items()"
+        [lazy]="true"
+        [paginator]="true"
+        [rows]="pageRequest().size"
+        [totalRecords]="total()"
+        [first]="pageRequest().page * pageRequest().size"
+        [loading]="pending()"
+        (onLazyLoad)="onPage($event)"
+        dataKey="id">
           <ng-template pTemplate="header">
             <tr>
               <th>Paciente</th><th>DNI</th><th>Fecha nac.</th><th>Obra social</th>
@@ -133,7 +125,6 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
             </tr>
           </ng-template>
         </p-table>
-      }
 
       <p-confirmDialog />
       <pat-form-drawer [open]="drawerOpen()" [patient]="editing()" (closed)="onDrawerClosed()" />
@@ -165,7 +156,6 @@ export class PatientListPage implements OnInit {
     this.search$.pipe(debounceTime(300)).subscribe((q) =>
       this.store.dispatch(setPatientPageRequest({ patch: { q, page: 0 } })),
     );
-    this.store.dispatch(loadPatients({ req: this.pageRequest() }));
   }
 
   onSearch(q: string): void { this.search$.next(q); }

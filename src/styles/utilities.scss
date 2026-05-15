@@ -21,9 +21,9 @@
 .ui-text-sm      { font-size: 12px; }
 .ui-text-label   { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 
-// ─── Drawer ancho medio (laboratory-ui pattern) ───
-// Aplicar en `styleClass="ui-drawer-half"` sobre <p-drawer>.
-// Desktop: 50vw, clamp 480..720. Mobile: full width.
+/* Drawer ancho medio (laboratory-ui pattern)
+   Aplicar en styleClass="ui-drawer-half" sobre <p-drawer>.
+   Desktop: 50vw, clamp 480..720. Mobile: full width. */
 :root .p-drawer.ui-drawer-half {
   width: clamp(480px, 50vw, 720px);
 }
@@ -33,7 +33,7 @@
   }
 }
 
-// ─── Patient form: card containers + dense field layout ───
+/* Patient form: card containers + dense field layout */
 .pat-form {
   display: flex;
   flex-direction: column;
