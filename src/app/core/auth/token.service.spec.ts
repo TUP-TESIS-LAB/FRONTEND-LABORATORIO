@@ -46,4 +46,24 @@ describe('TokenService', () => {
     service.removeToken();
     expect(service.getToken()).toBeNull();
   });
+
+  it('should decode userId from JWT sub claim', () => {
+    service.setToken(MOCK_JWT);
+    expect(service.getUserId()).toBe(1);
+  });
+
+  it('should return null for userId when no token', () => {
+    expect(service.getUserId()).toBeNull();
+  });
+
+  it('should return null for userId when sub is not numeric', () => {
+    const nonNumericSubJwt = [
+      'eyJhbGciOiJIUzI1NiJ9',
+      // payload: { sub: 'abc', tenant_id: 'lab1', ..., exp: 9999999999, iat: 1 }
+      'eyJzdWIiOiJhYmMiLCJ0ZW5hbnRfaWQiOiJsYWIxIiwiZW1haWwiOiJhQGIuY29tIiwibmFtZSI6IkFuYSIsInJvbGVzIjpbImFkbWluIl0sImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxfQ',
+      'sig',
+    ].join('.');
+    service.setToken(nonNumericSubJwt);
+    expect(service.getUserId()).toBeNull();
+  });
 });

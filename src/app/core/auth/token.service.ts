@@ -32,6 +32,13 @@ export class TokenService {
     return this.getPayload()?.tenant_id ?? null;
   }
 
+  getUserId(): number | null {
+    const sub = this.getPayload()?.sub;
+    if (sub == null) return null;
+    const id = Number(sub);
+    return Number.isFinite(id) ? id : null;
+  }
+
   getRoles(): string[] {
     return this.getPayload()?.roles ?? [];
   }
