@@ -1,42 +1,103 @@
 import { createReducer, on } from '@ngrx/store';
 import { EmpresaState, initialEmpresaState } from './empresa.state';
 import {
-  loadUsuarios,
-  loadUsuariosSuccess,
-  loadUsuariosFailure,
-  loadRoles,
-  loadRolesSuccess,
-  loadRolesFailure,
+  loadUsuarios, loadUsuariosSuccess, loadUsuariosFailure,
+  setUsuariosFilters,
+  loadUsuario, loadUsuarioSuccess, loadUsuarioFailure, clearUsuarioSelected,
+  addUsuario, addUsuarioSuccess, addUsuarioFailure,
+  updateUsuario, updateUsuarioSuccess, updateUsuarioFailure,
+  toggleUsuarioStatus, toggleUsuarioStatusSuccess, toggleUsuarioStatusFailure,
+  resendUsuarioInvite, resendUsuarioInviteSuccess, resendUsuarioInviteFailure,
+  regenerateFirstLoginToken, regenerateFirstLoginTokenSuccess, regenerateFirstLoginTokenFailure,
+  loadRoles, loadRolesSuccess, loadRolesFailure,
+  loadWhiteLabel, loadWhiteLabelSuccess, loadWhiteLabelFailure,
+  saveWhiteLabel, saveWhiteLabelSuccess, saveWhiteLabelFailure,
+  loadModulos, loadModulosSuccess, loadModulosFailure,
+  toggleModulo, toggleModuloSuccess, toggleModuloFailure,
 } from './empresa.actions';
+
+const setPending = (state: EmpresaState): EmpresaState => ({
+  ...state,
+  pending: true,
+  error: null,
+});
+const setFailure = (state: EmpresaState, error: EmpresaState['error']): EmpresaState => ({
+  ...state,
+  pending: false,
+  error,
+});
 
 export const empresaReducer = createReducer(
   initialEmpresaState,
 
-  on(loadUsuarios, (state): EmpresaState => ({
-    ...state,
-    pending: true,
-    error: null,
-  })),
+  // ---- intent → pending ----
+  on(loadUsuarios, setPending),
+  on(loadUsuario, setPending),
+  on(addUsuario, setPending),
+  on(updateUsuario, setPending),
+  on(toggleUsuarioStatus, setPending),
+  on(resendUsuarioInvite, setPending),
+  on(regenerateFirstLoginToken, setPending),
+  on(loadRoles, setPending),
+  on(loadWhiteLabel, setPending),
+  on(saveWhiteLabel, setPending),
+  on(loadModulos, setPending),
+  on(toggleModulo, setPending),
 
-  on(loadUsuariosSuccess, (state, { usuarios }): EmpresaState => ({
+  // ---- usuarios success ----
+  on(loadUsuariosSuccess, (state, { result }): EmpresaState => ({
     ...state,
-    usuarios,
+    usuarios: result.content,
+    usuariosPage: result.page,
+    usuariosSize: result.size,
+    usuariosTotalElements: result.totalElements,
+    usuariosTotalPages: result.totalPages,
     pending: false,
     error: null,
   })),
-
-  on(loadUsuariosFailure, (state, { error }): EmpresaState => ({
+  on(setUsuariosFilters, (state, { patch }): EmpresaState => ({
     ...state,
-    pending: false,
-    error,
+    usuariosFilters: { ...state.usuariosFilters, ...patch },
   })),
-
-  on(loadRoles, (state): EmpresaState => ({
+  on(loadUsuarioSuccess, (state, { usuario }): EmpresaState => ({
     ...state,
-    pending: true,
+    usuarioSelected: usuario,
+    pending: false,
     error: null,
   })),
+  on(clearUsuarioSelected, (state): EmpresaState => ({
+    ...state,
+    usuarioSelected: null,
+  })),
+  on(addUsuarioSuccess, (state, { result }): EmpresaState => ({
+    ...state,
+    usuarios: [result.user, ...state.usuarios],
+    usuariosTotalElements: state.usuariosTotalElements + 1,
+    pending: false,
+    error: null,
+  })),
+  on(updateUsuarioSuccess, (state, { usuario }): EmpresaState => ({
+    ...state,
+    usuarios: state.usuarios.map((u) => (u.id === usuario.id ? usuario : u)),
+    usuarioSelected: state.usuarioSelected?.id === usuario.id ? usuario : state.usuarioSelected,
+    pending: false,
+    error: null,
+  })),
+  on(toggleUsuarioStatusSuccess, (state, { usuario }): EmpresaState => ({
+    ...state,
+    usuarios: state.usuarios.map((u) => (u.id === usuario.id ? usuario : u)),
+    usuarioSelected: state.usuarioSelected?.id === usuario.id ? usuario : state.usuarioSelected,
+    pending: false,
+    error: null,
+  })),
+  on(resendUsuarioInviteSuccess, (state): EmpresaState => ({
+    ...state, pending: false, error: null,
+  })),
+  on(regenerateFirstLoginTokenSuccess, (state): EmpresaState => ({
+    ...state, pending: false, error: null,
+  })),
 
+  // ---- roles success ----
   on(loadRolesSuccess, (state, { roles }): EmpresaState => ({
     ...state,
     roles,
@@ -44,9 +105,38 @@ export const empresaReducer = createReducer(
     error: null,
   })),
 
-  on(loadRolesFailure, (state, { error }): EmpresaState => ({
-    ...state,
-    pending: false,
-    error,
+  // ---- white label success ----
+  on(loadWhiteLabelSuccess, (state, { whiteLabel }): EmpresaState => ({
+    ...state, whiteLabel, pending: false, error: null,
   })),
+  on(saveWhiteLabelSuccess, (state, { whiteLabel }): EmpresaState => ({
+    ...state, whiteLabel, pending: false, error: null,
+  })),
+
+  // ---- modulos success ----
+  on(loadModulosSuccess, (state, { modulos }): EmpresaState => ({
+    ...state, modulos, pending: false, error: null,
+  })),
+  on(toggleModuloSuccess, (state, { code, enable }): EmpresaState => ({
+    ...state,
+    modulos: state.modulos.map((m) =>
+      m.moduleCode === code ? { ...m, enabled: enable } : m,
+    ),
+    pending: false,
+    error: null,
+  })),
+
+  // ---- failures ----
+  on(loadUsuariosFailure, (s, { error }) => setFailure(s, error)),
+  on(loadUsuarioFailure, (s, { error }) => setFailure(s, error)),
+  on(addUsuarioFailure, (s, { error }) => setFailure(s, error)),
+  on(updateUsuarioFailure, (s, { error }) => setFailure(s, error)),
+  on(toggleUsuarioStatusFailure, (s, { error }) => setFailure(s, error)),
+  on(resendUsuarioInviteFailure, (s, { error }) => setFailure(s, error)),
+  on(regenerateFirstLoginTokenFailure, (s, { error }) => setFailure(s, error)),
+  on(loadRolesFailure, (s, { error }) => setFailure(s, error)),
+  on(loadWhiteLabelFailure, (s, { error }) => setFailure(s, error)),
+  on(saveWhiteLabelFailure, (s, { error }) => setFailure(s, error)),
+  on(loadModulosFailure, (s, { error }) => setFailure(s, error)),
+  on(toggleModuloFailure, (s, { error }) => setFailure(s, error)),
 );
