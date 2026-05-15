@@ -2,15 +2,20 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
+import { vi } from 'vitest';
 import { TokenService } from '@core/auth/token.service';
 import { ChangePasswordComponent } from './change-password.component';
 
 describe('ChangePasswordComponent', () => {
   let fixture: ComponentFixture<ChangePasswordComponent>;
   let http: HttpTestingController;
-  const tokenStub = { getUserId: () => null as number | null };
+  const tokenStub = {
+    getUserId: () => null as number | null,
+    removeToken: () => {},
+  };
 
   beforeEach(() => {
+    vi.useFakeTimers();
     TestBed.configureTestingModule({
       imports: [ChangePasswordComponent],
       providers: [
@@ -24,7 +29,10 @@ describe('ChangePasswordComponent', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    vi.useRealTimers();
+  });
 
   it('does nothing when no userId', async () => {
     tokenStub.getUserId = () => null;

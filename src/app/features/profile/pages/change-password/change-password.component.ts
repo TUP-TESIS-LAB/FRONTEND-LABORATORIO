@@ -1,17 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Password } from 'primeng/password';
-import { Message } from 'primeng/message';
 import { TokenService } from '@core/auth/token.service';
 import { passwordsMatch } from '@shared/validators/passwords-match.validator';
 import { ProfileApiService } from '../../services/profile-api.service';
 
+const LOGOUT_DELAY_MS = 2000;
+
 @Component({
   selector: 'app-change-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, Button, Password, Message],
+  imports: [ReactiveFormsModule, Button, Password],
   template: `
     <section class="ui-page">
       <div class="ui-page-header">
@@ -21,16 +23,16 @@ import { ProfileApiService } from '../../services/profile-api.service';
 
       <div class="ui-card">
         @if (success()) {
-          <p-message
-            severity="success"
-            text="Contraseña actualizada correctamente."
-            styleClass="ui-banner" />
+          <div class="ui-alert ui-alert--success" role="status">
+            <i class="pi pi-check-circle"></i>
+            <span>Contraseña actualizada. Cerrando tu sesión para que ingreses con la nueva…</span>
+          </div>
         }
         @if (error()) {
-          <p-message
-            severity="error"
-            [text]="error()!"
-            styleClass="ui-banner" />
+          <div class="ui-alert ui-alert--error" role="alert">
+            <i class="pi pi-exclamation-circle"></i>
+            <span>{{ error() }}</span>
+          </div>
         }
 
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="ui-form-grid">
@@ -148,9 +150,26 @@ import { ProfileApiService } from '../../services/profile-api.service';
       border-top: 1px solid #f1f5f9;
     }
 
-    :host ::ng-deep .ui-banner {
-      display: block;
+    .ui-alert {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 12px 14px;
       margin-bottom: var(--space-4);
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .ui-alert .pi { font-size: 16px; flex-shrink: 0; }
+    .ui-alert--success {
+      background: color-mix(in srgb, var(--ds-success) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--ds-success) 35%, transparent);
+      color: #15803d;
+    }
+    .ui-alert--error {
+      background: color-mix(in srgb, var(--ds-danger) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--ds-danger) 30%, transparent);
+      color: #b91c1c;
     }
 
     /* PrimeNG v21 — forzar styling consistente del p-password en este componente.
@@ -194,6 +213,7 @@ import { ProfileApiService } from '../../services/profile-api.service';
 export class ChangePasswordComponent {
   private readonly profileApi = inject(ProfileApiService);
   private readonly tokens = inject(TokenService);
+  private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -218,6 +238,14 @@ export class ChangePasswordComponent {
       await this.profileApi.changePassword(userId, currentPassword, newPassword);
       this.success.set(true);
       this.form.reset();
+      // Force re-authentication with the new password. The old JWT remains
+      // technically valid until it expires (backend doesn't invalidate it),
+      // so we clear it client-side and bounce to /login after a brief pause
+      // that lets the user read the confirmation.
+      setTimeout(() => {
+        this.tokens.removeToken();
+        this.router.navigate(['/login']);
+      }, LOGOUT_DELAY_MS);
     } catch (err) {
       if (err instanceof HttpErrorResponse && (err.status === 400 || err.status === 401)) {
         this.error.set('La contraseña actual es incorrecta.');
