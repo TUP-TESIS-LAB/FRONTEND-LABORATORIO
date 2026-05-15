@@ -1,5 +1,5 @@
 export interface WhiteLabel {
-  id: number | null;
+  id: number;
   targetTenantId: number;
   systemName: string;
   primaryColor: string;

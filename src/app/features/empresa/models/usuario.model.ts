@@ -25,7 +25,7 @@ export interface CrearUsuarioPayload {
   roleIds: number[];
 }
 
-export interface ActualizarUsuarioPayload extends CrearUsuarioPayload {}
+export type ActualizarUsuarioPayload = CrearUsuarioPayload;
 
 export interface BuscarUsuariosParams {
   search?: string;
