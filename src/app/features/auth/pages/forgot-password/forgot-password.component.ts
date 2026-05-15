@@ -1,66 +1,63 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
-import { InputText } from 'primeng/inputtext';
-import { FloatLabel } from 'primeng/floatlabel';
-import { Message } from 'primeng/message';
+import { AuthLayoutComponent } from '@shared/ui/auth-layout/auth-layout.component';
 import { AuthApiService } from '../../services/auth-api.service';
 
 @Component({
   selector: 'app-forgot-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, Button, InputText, FloatLabel, Message, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AuthLayoutComponent],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-[var(--ds-bg)] px-4">
-      <div class="w-full max-w-sm bg-white rounded-2xl shadow-md p-8">
-        <h1 class="text-2xl font-bold text-[var(--ds-text)] mb-2 text-center">Olvidé mi contraseña</h1>
-        <p class="text-sm text-[var(--ds-text-muted)] text-center mb-8">
-          Ingresá tu email y te enviaremos un link para restablecer tu contraseña.
+    <ui-auth-layout>
+      <h1 class="auth-card__title">Olvidé mi contraseña</h1>
+      <p class="auth-card__subtitle">
+        Ingresá tu email y te enviaremos un link para restablecer tu contraseña.
+      </p>
+
+      @if (sent()) {
+        <div class="auth-success" role="status">
+          <i class="pi pi-check-circle"></i>
+          <span>Si el email existe en el sistema, recibirás un link para restablecer tu contraseña.</span>
+        </div>
+        <p class="auth-helper">
+          <a routerLink="/login">Volver al login</a>
         </p>
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <div class="auth-field">
+            <label for="forgot-email">Correo electrónico</label>
+            <input
+              id="forgot-email"
+              type="email"
+              autocomplete="email"
+              inputmode="email"
+              formControlName="email"
+              placeholder="usuario@laboratorio.com"
+              class="auth-input" />
+          </div>
 
-        @if (sent()) {
-          <p-message
-            severity="success"
-            text="Si el email existe en el sistema, recibirás un link para restablecer tu contraseña."
-            styleClass="w-full mb-6"
-          />
-          <a routerLink="/login" class="block text-center text-sm text-[var(--brand-primary)] hover:underline">
-            Volver al login
-          </a>
-        } @else {
-          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
-            <p-floatlabel>
-              <input
-                pInputText
-                id="email"
-                formControlName="email"
-                inputmode="email"
-                autocomplete="email"
-                class="w-full"
-              />
-              <label for="email">Email</label>
-            </p-floatlabel>
+          @if (error()) {
+            <div class="auth-error" role="alert">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>{{ error() }}</span>
+            </div>
+          }
 
-            @if (error()) {
-              <p-message severity="error" [text]="error()!" styleClass="w-full" />
+          <button type="submit" class="auth-btn" [disabled]="form.invalid || loading()">
+            @if (loading()) {
+              <i class="pi pi-spin pi-spinner"></i> Enviando…
+            } @else {
+              <i class="pi pi-send"></i> Enviar link
             }
+          </button>
 
-            <p-button
-              type="submit"
-              label="Enviar link"
-              [loading]="loading()"
-              [disabled]="form.invalid || loading()"
-              styleClass="w-full"
-            />
-
-            <a routerLink="/login" class="text-center text-sm text-[var(--brand-primary)] hover:underline">
-              Volver al login
-            </a>
-          </form>
-        }
-      </div>
-    </div>
+          <p class="auth-helper">
+            <a routerLink="/login">Volver al login</a>
+          </p>
+        </form>
+      }
+    </ui-auth-layout>
   `,
 })
 export class ForgotPasswordComponent {

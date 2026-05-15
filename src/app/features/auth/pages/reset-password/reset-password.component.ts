@@ -1,60 +1,74 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
-import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
-import { Password } from 'primeng/password';
-import { FloatLabel } from 'primeng/floatlabel';
-import { Message } from 'primeng/message';
-import { AuthApiService } from '../../services/auth-api.service';
+import { AuthLayoutComponent } from '@shared/ui/auth-layout/auth-layout.component';
+import { UiPasswordFieldComponent } from '@shared/ui/password-field/password-field.component';
 import { passwordsMatch } from '@shared/validators/passwords-match.validator';
+import { AuthApiService } from '../../services/auth-api.service';
 
 @Component({
   selector: 'app-reset-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, Button, Password, FloatLabel, Message, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AuthLayoutComponent, UiPasswordFieldComponent],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-[var(--ds-bg)] px-4">
-      <div class="w-full max-w-sm bg-white rounded-2xl shadow-md p-8">
-        <h1 class="text-2xl font-bold text-[var(--ds-text)] mb-8 text-center">Nueva contraseña</h1>
+    <ui-auth-layout>
+      <h1 class="auth-card__title">Nueva contraseña</h1>
 
-        @if (tokenInvalid()) {
-          <div class="flex flex-col items-center gap-4">
-            <p-message severity="error" text="El link expiró o ya fue utilizado." styleClass="w-full" />
-            <a routerLink="/forgot-password" class="text-sm text-[var(--brand-primary)] hover:underline">
-              Solicitar nuevo link
-            </a>
-          </div>
-        } @else if (success()) {
-          <div class="flex flex-col items-center gap-4">
-            <p-message severity="success" text="Contraseña actualizada. Ya podés ingresar con tu nueva contraseña." styleClass="w-full" />
-            <a routerLink="/login" class="text-sm text-[var(--brand-primary)] hover:underline">Ir al login</a>
-          </div>
-        } @else {
-          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
-            <p-floatlabel>
-              <p-password formControlName="newPassword" [toggleMask]="true" inputId="newPassword"
-                styleClass="w-full" inputStyleClass="w-full" autocomplete="new-password" />
-              <label for="newPassword">Nueva contraseña</label>
-            </p-floatlabel>
+      @if (tokenInvalid()) {
+        <div class="auth-error" role="alert">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>El link expiró o ya fue utilizado.</span>
+        </div>
+        <p class="auth-helper">
+          <a routerLink="/forgot-password">Solicitar nuevo link</a>
+        </p>
+      } @else if (success()) {
+        <div class="auth-success" role="status">
+          <i class="pi pi-check-circle"></i>
+          <span>Contraseña actualizada. Ya podés ingresar con tu nueva contraseña.</span>
+        </div>
+        <p class="auth-helper">
+          <a routerLink="/login">Ir al login</a>
+        </p>
+      } @else {
+        <p class="auth-card__subtitle">
+          Ingresá tu nueva contraseña. Mínimo 8 caracteres.
+        </p>
 
-            <p-floatlabel>
-              <p-password formControlName="confirmPassword" [feedback]="false" [toggleMask]="true"
-                inputId="confirmPassword" styleClass="w-full" inputStyleClass="w-full" autocomplete="new-password" />
-              <label for="confirmPassword">Confirmar contraseña</label>
-            </p-floatlabel>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <ui-password-field
+            label="Nueva contraseña"
+            inputId="reset-new-password"
+            [control]="form.controls.newPassword" />
 
-            @if (form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.dirty) {
-              <p-message severity="error" text="Las contraseñas no coinciden." styleClass="w-full" />
+          <ui-password-field
+            label="Confirmar contraseña"
+            inputId="reset-confirm-password"
+            [control]="form.controls.confirmPassword" />
+
+          @if (form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.dirty) {
+            <div class="auth-error" role="alert">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>Las contraseñas no coinciden.</span>
+            </div>
+          }
+          @if (error()) {
+            <div class="auth-error" role="alert">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>{{ error() }}</span>
+            </div>
+          }
+
+          <button type="submit" class="auth-btn" [disabled]="form.invalid || loading()">
+            @if (loading()) {
+              <i class="pi pi-spin pi-spinner"></i> Guardando…
+            } @else {
+              <i class="pi pi-save"></i> Guardar contraseña
             }
-
-            @if (error()) { <p-message severity="error" [text]="error()!" styleClass="w-full" /> }
-
-            <p-button type="submit" label="Guardar contraseña" [loading]="loading()"
-              [disabled]="form.invalid || loading()" styleClass="w-full" />
-          </form>
-        }
-      </div>
-    </div>
+          </button>
+        </form>
+      }
+    </ui-auth-layout>
   `,
 })
 export class ResetPasswordComponent implements OnInit {

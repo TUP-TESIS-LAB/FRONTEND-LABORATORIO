@@ -1,54 +1,62 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
-import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Button } from 'primeng/button';
-import { Password } from 'primeng/password';
-import { FloatLabel } from 'primeng/floatlabel';
-import { Message } from 'primeng/message';
-import { AuthApiService } from '../../services/auth-api.service';
+import { AuthLayoutComponent } from '@shared/ui/auth-layout/auth-layout.component';
+import { UiPasswordFieldComponent } from '@shared/ui/password-field/password-field.component';
 import { passwordsMatch } from '@shared/validators/passwords-match.validator';
+import { AuthApiService } from '../../services/auth-api.service';
 
 @Component({
   selector: 'app-first-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, Button, Password, FloatLabel, Message],
+  imports: [ReactiveFormsModule, AuthLayoutComponent, UiPasswordFieldComponent],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-[var(--ds-bg)] px-4">
-      <div class="w-full max-w-sm bg-white rounded-2xl shadow-md p-8">
-        <h1 class="text-2xl font-bold text-[var(--ds-text)] mb-2 text-center">Primer acceso</h1>
-        <p class="text-sm text-[var(--ds-text-muted)] text-center mb-8">
-          Configurá tu contraseña para continuar.
-        </p>
+    <ui-auth-layout>
+      <h1 class="auth-card__title">Primer acceso</h1>
+      <p class="auth-card__subtitle">
+        Configurá tu contraseña para continuar. Mínimo 8 caracteres.
+      </p>
 
-        @if (!token()) {
-          <p-message severity="error"
-            text="El link de primer acceso no es válido. Solicitá uno nuevo al administrador."
-            styleClass="w-full" />
-        } @else {
-          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
-            <p-floatlabel>
-              <p-password formControlName="newPassword" [toggleMask]="true" inputId="newPassword"
-                styleClass="w-full" inputStyleClass="w-full" autocomplete="new-password" />
-              <label for="newPassword">Nueva contraseña</label>
-            </p-floatlabel>
+      @if (!token()) {
+        <div class="auth-error" role="alert">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>El link de primer acceso no es válido. Solicitá uno nuevo al administrador.</span>
+        </div>
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <ui-password-field
+            label="Nueva contraseña"
+            inputId="first-login-new-password"
+            [control]="form.controls.newPassword" />
 
-            <p-floatlabel>
-              <p-password formControlName="confirmPassword" [feedback]="false" [toggleMask]="true"
-                inputId="confirmPassword" styleClass="w-full" inputStyleClass="w-full" autocomplete="new-password" />
-              <label for="confirmPassword">Confirmar contraseña</label>
-            </p-floatlabel>
+          <ui-password-field
+            label="Confirmar contraseña"
+            inputId="first-login-confirm-password"
+            [control]="form.controls.confirmPassword" />
 
-            @if (form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.dirty) {
-              <p-message severity="error" text="Las contraseñas no coinciden." styleClass="w-full" />
+          @if (form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.dirty) {
+            <div class="auth-error" role="alert">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>Las contraseñas no coinciden.</span>
+            </div>
+          }
+          @if (error()) {
+            <div class="auth-error" role="alert">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>{{ error() }}</span>
+            </div>
+          }
+
+          <button type="submit" class="auth-btn" [disabled]="form.invalid || loading()">
+            @if (loading()) {
+              <i class="pi pi-spin pi-spinner"></i> Guardando…
+            } @else {
+              <i class="pi pi-save"></i> Guardar contraseña
             }
-            @if (error()) { <p-message severity="error" [text]="error()!" styleClass="w-full" /> }
-
-            <p-button type="submit" label="Guardar contraseña" [loading]="loading()"
-              [disabled]="form.invalid || loading()" styleClass="w-full" />
-          </form>
-        }
-      </div>
-    </div>
+          </button>
+        </form>
+      }
+    </ui-auth-layout>
   `,
 })
 export class FirstLoginComponent implements OnInit {
