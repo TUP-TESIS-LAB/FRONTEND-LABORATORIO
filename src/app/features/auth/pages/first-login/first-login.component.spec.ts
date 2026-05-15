@@ -18,18 +18,20 @@ describe('FirstLoginComponent', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    window.history.replaceState({}, '');
+  });
 
   it('shows error placeholder when no firstLoginToken in navigation state', () => {
+    window.history.replaceState({}, '');
     fixture.detectChanges();
     expect((fixture.componentInstance as any).token()).toBeNull();
   });
 
   it('submits set-password with token from navigation state', async () => {
     const router = TestBed.inject(Router);
-    vi.spyOn(router, 'getCurrentNavigation').mockReturnValue({
-      extras: { state: { firstLoginToken: 'tok12345' } },
-    } as unknown as ReturnType<Router['getCurrentNavigation']>);
+    window.history.replaceState({ firstLoginToken: 'tok12345' }, '');
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
     fixture.detectChanges();

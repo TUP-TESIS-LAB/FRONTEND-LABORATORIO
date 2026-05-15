@@ -65,8 +65,7 @@ export class FirstLoginComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const nav = this.router.getCurrentNavigation();
-    const state = nav?.extras?.state as { firstLoginToken?: string } | undefined;
+    const state = window.history.state as { firstLoginToken?: string } | null;
     this.token.set(state?.firstLoginToken ?? null);
   }
 
