@@ -81,6 +81,11 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: Aura,
         options: {
+          // Disable PrimeNG's automatic dark-mode selector. By default it
+          // toggles on `.p-dark` or matches the OS preference, which paints
+          // labels and inputs with a dark fill on Windows users running in
+          // dark mode. Pin to a selector that never applies.
+          darkModeSelector: '.app-dark-mode-disabled',
           cssLayer: {
             name: 'primeng',
             order: 'tailwind, primeng',
