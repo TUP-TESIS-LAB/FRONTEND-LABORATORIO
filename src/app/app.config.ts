@@ -1,10 +1,12 @@
 import {
   ApplicationConfig,
+  inject,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideStore, provideState } from '@ngrx/store';
+import { provideStore, provideState, Store } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideRouterStore } from '@ngrx/router-store';
 import { providePrimeNG } from 'primeng/config';
@@ -13,6 +15,9 @@ import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
 import { authTokenInterceptor } from '@core/interceptors/auth-token.interceptor';
 import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
+import { TokenService } from '@core/auth/token.service';
+import { DEV_TENANT } from '@core/tenant/dev-tenant.config';
+import { loadTenantConfigSuccess } from '@core/tenant/store/tenant.actions';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
 import { tenantReducer } from '@core/tenant/store/tenant.reducer';
@@ -41,6 +46,18 @@ import { FinancieroEffects } from '@features/financiero/store/financiero.effects
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    // DEV fallback: seed the tenant store at bootstrap when a valid token
+    // is already present in localStorage (e.g. after a page refresh). The
+    // tenant resolver at `/` blocks navigation until tenant config arrives,
+    // and the real `GET /api/tenant/config` endpoint doesn't exist yet.
+    // Remove once that endpoint is implemented.
+    provideAppInitializer(() => {
+      const tokens = inject(TokenService);
+      const store = inject(Store);
+      if (tokens.isTokenValid()) {
+        store.dispatch(loadTenantConfigSuccess({ config: DEV_TENANT }));
+      }
+    }),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(
       withInterceptors([authTokenInterceptor, tenantIdInterceptor]),

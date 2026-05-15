@@ -4,29 +4,9 @@ import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TokenService } from '@core/auth/token.service';
-import { TenantConfig } from '@core/models/tenant.model';
-import { ModuleKey } from '@core/models/module-key.enum';
 import { loadTenantConfigSuccess } from '@core/tenant/store/tenant.actions';
+import { DEV_TENANT } from '@core/tenant/dev-tenant.config';
 import { AuthApiService } from '@features/auth/services/auth-api.service';
-
-// DEV fallback: backend has no `GET /api/tenant/config` endpoint yet. After a
-// successful login we seed the tenant store with this config so the tenant
-// resolver at `/` doesn't hang. Remove once the endpoint is implemented.
-const DEV_TENANT: TenantConfig = {
-  id: 'dev-tenant',
-  name: 'LaboratoApp',
-  logoUrl: '',
-  brandPrimary:   '#1d4ed8',
-  brandSecondary: '#0ea5a4',
-  brandAccent:    '#f97316',
-  modules: [
-    ModuleKey.Turnos,
-    ModuleKey.Financiero,
-    ModuleKey.Medicos,
-    ModuleKey.Stock,
-    ModuleKey.Portal,
-  ],
-};
 
 @Component({
   selector: 'app-login',
