@@ -1,12 +1,25 @@
 import { TestBed } from '@angular/core/testing';
 import { TokenService } from './token.service';
 
-// JWT with payload: { sub: '1', tenant_id: 'lab1', email: 'a@b.com', name: 'Ana', roles: ['admin'], exp: 9999999999, iat: 1 }
-const MOCK_JWT = [
-  'eyJhbGciOiJIUzI1NiJ9',
-  'eyJzdWIiOiIxIiwidGVuYW50X2lkIjoibGFiMSIsImVtYWlsIjoiYUBiLmNvbSIsIm5hbWUiOiJBbmEiLCJyb2xlcyI6WyJhZG1pbiJdLCJleHAiOjk5OTk5OTk5OTksImlhdCI6MX0',
-  'signature',
-].join('.');
+function makeJwt(payload: Record<string, unknown>): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256' }));
+  const body = btoa(JSON.stringify(payload));
+  return [header, body, 'sig']
+    .join('.')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+const MOCK_JWT = makeJwt({
+  sub: 'admin',
+  tenantId: 1,
+  userId: 42,
+  roles: ['ADMINISTRADOR'],
+  isExternal: false,
+  exp: 9999999999,
+  iat: 1,
+});
 
 describe('TokenService', () => {
   let service: TokenService;
@@ -22,21 +35,25 @@ describe('TokenService', () => {
     expect(service.getToken()).toBe(MOCK_JWT);
   });
 
-  it('should decode tenant_id from JWT payload', () => {
+  it('should decode tenantId from JWT payload as string', () => {
     service.setToken(MOCK_JWT);
-    expect(service.getTenantId()).toBe('lab1');
+    expect(service.getTenantId()).toBe('1');
   });
 
-  it('should return null for tenant_id when no token', () => {
+  it('should return null for tenantId when no token', () => {
     expect(service.getTenantId()).toBeNull();
   });
 
   it('should detect expired token', () => {
-    const expiredJwt = [
-      'eyJhbGciOiJIUzI1NiJ9',
-      'eyJzdWIiOiIxIiwidGVuYW50X2lkIjoibGFiMSIsImVtYWlsIjoiYUBiLmNvbSIsIm5hbWUiOiJBbmEiLCJyb2xlcyI6WyJhZG1pbiJdLCJleHAiOjEsImlhdCI6MX0',
-      'sig',
-    ].join('.');
+    const expiredJwt = makeJwt({
+      sub: 'admin',
+      tenantId: 1,
+      userId: 42,
+      roles: ['ADMINISTRADOR'],
+      isExternal: false,
+      exp: 1,
+      iat: 1,
+    });
     service.setToken(expiredJwt);
     expect(service.isTokenValid()).toBe(false);
   });
@@ -47,23 +64,25 @@ describe('TokenService', () => {
     expect(service.getToken()).toBeNull();
   });
 
-  it('should decode userId from JWT sub claim', () => {
+  it('should decode userId from JWT userId claim', () => {
     service.setToken(MOCK_JWT);
-    expect(service.getUserId()).toBe(1);
+    expect(service.getUserId()).toBe(42);
   });
 
   it('should return null for userId when no token', () => {
     expect(service.getUserId()).toBeNull();
   });
 
-  it('should return null for userId when sub is not numeric', () => {
-    const nonNumericSubJwt = [
-      'eyJhbGciOiJIUzI1NiJ9',
-      // payload: { sub: 'abc', tenant_id: 'lab1', ..., exp: 9999999999, iat: 1 }
-      'eyJzdWIiOiJhYmMiLCJ0ZW5hbnRfaWQiOiJsYWIxIiwiZW1haWwiOiJhQGIuY29tIiwibmFtZSI6IkFuYSIsInJvbGVzIjpbImFkbWluIl0sImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxfQ',
-      'sig',
-    ].join('.');
-    service.setToken(nonNumericSubJwt);
+  it('should return null for userId when payload missing userId claim', () => {
+    const jwtWithoutUserId = makeJwt({
+      sub: 'admin',
+      tenantId: 1,
+      roles: ['ADMINISTRADOR'],
+      isExternal: false,
+      exp: 9999999999,
+      iat: 1,
+    });
+    service.setToken(jwtWithoutUserId);
     expect(service.getUserId()).toBeNull();
   });
 });
