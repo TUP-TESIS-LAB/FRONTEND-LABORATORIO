@@ -1,13 +1,17 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TokenService } from '@core/auth/token.service';
 import { TenantConfig } from '@core/models/tenant.model';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { loadTenantConfigSuccess } from '@core/tenant/store/tenant.actions';
+import { AuthApiService } from '@features/auth/services/auth-api.service';
 
-// DEV-ONLY: bypass auth. Replace with real auth flow when backend is wired.
+// DEV fallback: backend has no `GET /api/tenant/config` endpoint yet. After a
+// successful login we seed the tenant store with this config so the tenant
+// resolver at `/` doesn't hang. Remove once the endpoint is implemented.
 const DEV_TENANT: TenantConfig = {
   id: 'dev-tenant',
   name: 'LaboratoApp',
@@ -28,7 +32,7 @@ const DEV_TENANT: TenantConfig = {
   selector: 'app-login',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `
     <div class="auth-screen">
       <div class="auth-bg"></div>
@@ -84,8 +88,15 @@ const DEV_TENANT: TenantConfig = {
               <input type="checkbox" formControlName="remember" />
               <span>Recordarme</span>
             </label>
-            <span class="auth-link" aria-disabled="true">¿Olvidaste tu contraseña?</span>
+            <a class="auth-link" routerLink="/forgot-password">¿Olvidaste tu contraseña?</a>
           </div>
+
+          @if (error()) {
+            <div class="auth-error" role="alert">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>{{ error() }}</span>
+            </div>
+          }
 
           <button type="submit" class="auth-btn" [disabled]="submitting()">
             @if (submitting()) {
@@ -301,6 +312,20 @@ const DEV_TENANT: TenantConfig = {
     }
     .auth-btn:disabled { opacity: .7; cursor: progress; }
 
+    .auth-error {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 10px 12px;
+      margin-bottom: var(--space-3);
+      background: color-mix(in srgb, #ef4444 8%, transparent);
+      border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
+      border-radius: 8px;
+      color: #b91c1c;
+      font-size: 12px;
+    }
+    .auth-error .pi { font-size: 14px; }
+
     .auth-helper {
       text-align: center;
       font-size: 11px;
@@ -328,13 +353,15 @@ export class LoginComponent {
   private readonly router   = inject(Router);
   private readonly tokens   = inject(TokenService);
   private readonly store    = inject(Store);
+  private readonly authApi  = inject(AuthApiService);
 
   protected readonly passVisible = signal(false);
   protected readonly submitting  = signal(false);
+  protected readonly error       = signal<string | null>(null);
 
   protected readonly form = this.fb.nonNullable.group({
-    email:    ['aperez@laboratorioapp.com', [Validators.required, Validators.email]],
-    password: ['••••••••', [Validators.required]],
+    email:    ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required]],
     remember: [true],
   });
 
@@ -342,35 +369,39 @@ export class LoginComponent {
     this.passVisible.update(v => !v);
   }
 
-  protected onSubmit(): void {
-    if (this.submitting()) return;
+  protected async onSubmit(): Promise<void> {
+    if (this.submitting() || this.form.invalid) return;
     this.submitting.set(true);
+    this.error.set(null);
 
-    // DEV BYPASS: skip backend, fabricate a JWT + seed tenant config.
-    this.tokens.setToken(buildDevToken(this.form.getRawValue().email));
-    this.store.dispatch(loadTenantConfigSuccess({ config: DEV_TENANT }));
+    try {
+      const { email, password } = this.form.getRawValue();
+      const response = await this.authApi.loginInternal(email, password);
 
-    this.router.navigate(['/home']);
+      if (response.isFirstLogin && response.firstLoginToken) {
+        await this.router.navigate(['/first-login'], {
+          state: { firstLoginToken: response.firstLoginToken },
+        });
+        return;
+      }
+
+      if (response.token) {
+        this.tokens.setToken(response.token);
+        // DEV fallback (see comment near DEV_TENANT). Remove once tenant config endpoint exists.
+        this.store.dispatch(loadTenantConfigSuccess({ config: DEV_TENANT }));
+        await this.router.navigate(['/home']);
+        return;
+      }
+
+      this.error.set('No se pudo iniciar sesión. Intentá de nuevo.');
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && (err.status === 400 || err.status === 401)) {
+        this.error.set('Email o contraseña incorrectos.');
+      } else {
+        this.error.set('Ocurrió un error. Intentá de nuevo más tarde.');
+      }
+    } finally {
+      this.submitting.set(false);
+    }
   }
-}
-
-function buildDevToken(email: string): string {
-  const header  = base64url(JSON.stringify({ alg: 'none', typ: 'JWT' }));
-  const payload = base64url(JSON.stringify({
-    sub:        'dev-user',
-    tenant_id:  DEV_TENANT.id,
-    email,
-    name:       'Dr. Alejandro Pérez',
-    roles:      ['admin'],
-    iat:        Math.floor(Date.now() / 1000),
-    exp:        Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365, // 1 year
-  }));
-  return `${header}.${payload}.dev-signature`;
-}
-
-function base64url(input: string): string {
-  return btoa(unescape(encodeURIComponent(input)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
 }
