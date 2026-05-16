@@ -1,11 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { Store } from '@ngrx/store';
+import { Popover } from 'primeng/popover';
 import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
+import { TokenService } from '@core/auth/token.service';
+import { UserSessionService } from '@features/profile/services/user-session.service';
+import { ProfileMenuComponent } from '@features/profile/components/profile-menu/profile-menu.component';
 
 @Component({
   selector: 'ui-topbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Popover, ProfileMenuComponent],
   template: `
     <header class="ui-topbar">
       <button
@@ -39,10 +44,17 @@ import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
         <button type="button" class="ui-topbar__icon-btn" aria-label="Ayuda">
           <i class="pi pi-question-circle"></i>
         </button>
-        <!-- TODO: dropdown del menú de usuario -->
-        <button type="button" class="ui-topbar__avatar" aria-label="Menú de usuario">
-          DP
+        <button
+          type="button"
+          class="ui-topbar__avatar"
+          aria-label="Menú de usuario"
+          (click)="profilePopover.toggle($event)">
+          {{ userInitials() }}
         </button>
+
+        <p-popover #profilePopover styleClass="ui-profile-popover">
+          <ui-profile-menu (close)="profilePopover.hide()" />
+        </p-popover>
       </div>
     </header>
   `,
@@ -199,15 +211,37 @@ import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
         height: var(--ds-touch-target);
       }
     }
+
+    :host ::ng-deep .ui-profile-popover {
+      padding: 0 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 30px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.1) !important;
+      border: 1px solid #e2e8f0 !important;
+      overflow: hidden;
+    }
+    :host ::ng-deep .ui-profile-popover .p-popover-content {
+      padding: 0 !important;
+    }
   `],
 })
 export class TopbarComponent {
   readonly menuToggle = output<void>();
 
   private readonly tenantConfig = inject(Store).selectSignal(selectTenantConfig);
+  private readonly userSession = inject(UserSessionService);
+  private readonly tokens = inject(TokenService);
 
   protected readonly tenantName     = computed(() => this.tenantConfig()?.name ?? 'LabCore');
   protected readonly tenantInitials = computed(() => initials(this.tenantName()));
+
+  protected readonly userInitials = computed(() => {
+    const u = this.userSession.currentUser();
+    if (u?.firstName && u?.lastName) {
+      return (u.firstName[0] + u.lastName[0]).toUpperCase();
+    }
+    const sub = this.tokens.getPayload()?.sub ?? '';
+    return sub.slice(0, 2).toUpperCase() || '?';
+  });
 }
 
 function initials(name: string): string {
