@@ -69,10 +69,10 @@ export const empresaReducer = createReducer(
     ...state,
     usuarioSelected: null,
   })),
-  on(addUsuarioSuccess, (state, { result }): EmpresaState => ({
+  // No tocamos la lista — un effect dispara loadUsuarios con los filtros
+  // actuales para refrescar la página activa.
+  on(addUsuarioSuccess, (state): EmpresaState => ({
     ...state,
-    usuarios: [result.user, ...state.usuarios],
-    usuariosTotalElements: state.usuariosTotalElements + 1,
     pending: false,
     error: null,
   })),

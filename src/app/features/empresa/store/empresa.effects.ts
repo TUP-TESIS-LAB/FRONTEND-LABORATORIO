@@ -101,6 +101,17 @@ export class EmpresaEffects {
     { dispatch: false },
   );
 
+  /** After creating a user, refetch the current page so the list and total
+   *  reflect the server's truth (avoids inserting a new user into a paginated
+   *  view where it doesn't belong by sort order or page boundary). */
+  refreshUsuariosOnAdd$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(addUsuarioSuccess),
+      withLatestFrom(this.store.select(selectUsuariosFilters)),
+      map(([, filters]) => loadUsuarios({ filters })),
+    ),
+  );
+
   updateUsuario$ = createEffect(() =>
     this.actions$.pipe(
       ofType(updateUsuario),
