@@ -29,7 +29,13 @@ export class TokenService {
   }
 
   getTenantId(): string | null {
-    return this.getPayload()?.tenant_id ?? null;
+    const id = this.getPayload()?.tenantId;
+    return id == null ? null : String(id);
+  }
+
+  getUserId(): number | null {
+    const id = this.getPayload()?.userId;
+    return typeof id === 'number' && Number.isFinite(id) ? id : null;
   }
 
   getRoles(): string[] {
