@@ -9,6 +9,6 @@ export class RolesApiService {
   private readonly baseUrl = '/api/v1/role';
 
   list(): Observable<Rol[]> {
-    return this.http.get<Rol[]>(`${this.baseUrl}/`);
+    return this.http.get<Rol[]>(this.baseUrl);
   }
 }

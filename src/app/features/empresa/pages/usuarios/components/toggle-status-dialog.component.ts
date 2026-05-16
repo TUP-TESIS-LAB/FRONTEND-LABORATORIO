@@ -68,9 +68,18 @@ export class ToggleStatusDialogComponent implements OnChanges {
     return this.status() === 'VALID';
   });
 
+  private wasVisible = false;
+
   ngOnChanges(changes: SimpleChanges): void {
-    if ('visible' in changes) this.visibleInternal = this.visible;
-    if ('usuario' in changes) this.form.reset({ reason: '' });
+    if ('visible' in changes) {
+      this.visibleInternal = this.visible;
+      // Reset only on closed→open transition to avoid wiping a typed reason
+      // if the parent re-emits the same usuario while the dialog is open.
+      if (this.visible && !this.wasVisible) {
+        this.form.reset({ reason: '' });
+      }
+      this.wasVisible = this.visible;
+    }
   }
 
   onConfirm(): void {

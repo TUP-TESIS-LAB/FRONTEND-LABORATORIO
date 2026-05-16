@@ -17,9 +17,9 @@ describe('RolesApiService', () => {
 
   afterEach(() => http.verify());
 
-  it('list GET /api/v1/role/', () => {
+  it('list GET /api/v1/role', () => {
     service.list().subscribe();
-    const req = http.expectOne('/api/v1/role/');
+    const req = http.expectOne('/api/v1/role');
     expect(req.request.method).toBe('GET');
     req.flush([]);
   });
