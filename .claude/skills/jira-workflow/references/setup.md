@@ -61,6 +61,8 @@ jira version
 
 ## 3. Configurar `jira init`
 
+> ⚠️ **Importante:** Hay un detalle no obvio que valida este equipo end-to-end: `jira init` **NO guarda el token en el archivo de config**. Solo guarda server/login/project/board. El token se lee siempre de la env var `JIRA_API_TOKEN`. Por eso el paso 4 (persistir el token) es obligatorio — sin ese paso, `jira me` falla "silencioso" después de reiniciar la terminal.
+
 Corré:
 ```
 jira init
@@ -71,38 +73,92 @@ Te va a preguntar:
 | Prompt | Qué poner |
 |---|---|
 | **Installation type** | `Cloud` |
-| **Link to Jira server** | `https://<site>.atlassian.net` (tu URL completa de Jira; ej. `https://tup-tesis-lab.atlassian.net`) |
+| **Link to Jira server** | `https://exequielsantoro.atlassian.net` — URL del Jira del equipo (es la misma para todos los compañeros del TUP-TESIS-LAB) |
 | **Login email** | El email con el que entrás a Jira (no el username) |
-| **Default project** | La key del proyecto principal del equipo (ej. `LAB`, `TUP`). Si tienen varios, elegí el que más usen — se puede sobreescribir por comando con `-p`. |
-| **Default board** | Si el proyecto tiene un solo board, dejá el sugerido. Si no, el del sprint activo. |
+| **Auth type** | `basic` |
+| **Default project** | La key del proyecto principal (al momento de escribir esto: `KAN`). Confirmá con tu PM si tu equipo agregó otros proyectos. Se puede sobreescribir por comando con `-p`. |
+| **Default board** | Aceptá el sugerido (`<project> board`). Si tu proyecto tiene varios, elegí el del sprint activo. |
 
-Después de eso te va a pedir el API token (no se muestra al escribir). Pegalo del password manager.
+Después te va a pedir el API token vía prompt enmascarado. **No se muestra al tipear** (es seguro). Pegalo del password manager.
 
 Esto guarda la config en:
-- Windows: `%USERPROFILE%\AppData\Roaming\.config\.jira\.config.yml`
+- Windows: `%USERPROFILE%\.config\.jira\.config.yml`
 - macOS/Linux: `~/.config/.jira/.config.yml`
 
-El archivo tiene el token en plano. Asegurate de que los permisos sean restrictivos (en Linux/macOS: `chmod 600`).
+**Atajo no-interactivo** — si querés saltearte los prompts (útil para automation o si te equivocás y necesitás re-correr `init`):
 
-## 4. Verificar que funciona
+```powershell
+jira init `
+  --installation cloud `
+  --server "https://exequielsantoro.atlassian.net" `
+  --login "tu-email@example.com" `
+  --project "KAN" `
+  --auth-type basic
+```
+Solo te va a pedir el token (todo el resto va por flags). Y board, si no hay uno detectable.
+
+## 4. Persistir el token (CRÍTICO — sin esto la skill no funciona)
+
+`jira init` no escribe el token en ningún archivo del config; lo busca en la env var `JIRA_API_TOKEN` cada vez que corrés `jira`. Si solo lo seteás en la sesión actual, al cerrar la terminal se pierde.
+
+### Windows — env var permanente en el user environment
+
+```powershell
+# Pega token con prompt oculto (no se muestra ni queda en historial)
+$sec = Read-Host "Pegá el API token (input oculto)" -AsSecureString
+$bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+$tok = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+
+# Escribe el token al user environment del registro (HKCU\Environment)
+[Environment]::SetEnvironmentVariable("JIRA_API_TOKEN", $tok, "User")
+# Setealo también en la sesión actual (sin esto, hasta no reabrir PowerShell, jira no lo ve)
+$env:JIRA_API_TOKEN = $tok
+
+Remove-Variable sec, bstr, tok -ErrorAction SilentlyContinue
+```
+
+Esto deja el token en `HKCU\Environment\JIRA_API_TOKEN` — solo accesible para tu usuario de Windows, persistente entre sesiones. Para revocar después: `[Environment]::SetEnvironmentVariable("JIRA_API_TOKEN", $null, "User")`.
+
+### macOS / Linux — agregalo al shell rc
+
+Para bash:
+```bash
+echo 'export JIRA_API_TOKEN="<pegá_el_token_acá>"' >> ~/.bashrc
+chmod 600 ~/.bashrc
+source ~/.bashrc
+```
+Para zsh, mismo concepto pero con `~/.zshrc`. Para fish, `~/.config/fish/config.fish` y syntax `set -gx JIRA_API_TOKEN ...`.
+
+Alternativa más limpia (cross-shell): usar [`.netrc`](https://everything.curl.dev/usingcurl/netrc). En ese caso jira-cli lee de `~/.netrc`:
+```
+machine exequielsantoro.atlassian.net
+  login tu-email@example.com
+  password <tu-api-token>
+```
+Y `chmod 600 ~/.netrc`.
+
+## 5. Verificar que funciona
 
 ```
 jira me
 ```
-Debería devolver tu email. Si dice `not authenticated` o `401`, el token está mal — repetí desde el paso 2.
+Debería devolver tu email. Si dice `not authenticated` o `401`, repetí desde el paso 2 (token mal pegado) o paso 4 (env var no persistió).
 
 ```
-jira issue list --plain --limit 3
+jira issue list --plain --paginate 3
 ```
 Debería mostrarte los últimos 3 issues del proyecto default. Si dice "no issues" pero no falla, está OK (proyecto vacío).
 
-## 5. Revocar tokens viejos
+> Nota: usá `--paginate N`, **no** `--limit N`. `--limit` no existe en jira-cli y tira `Error: unknown flag`.
+
+## 6. Revocar tokens viejos
 
 Si cambiás de laptop o sospechás que el token se filtró:
 
 1. https://id.atlassian.com/manage-profile/security/api-tokens
 2. Click en el ícono de tacho al lado del token viejo.
-3. Generá uno nuevo y corré `jira init` de nuevo (o editá `.config.yml` directamente, campo `api_token`).
+3. Generá uno nuevo, copialo, y volvé a correr el snippet del paso 4 con el nuevo (el `SetEnvironmentVariable` con scope `User` **sobrescribe** el valor anterior).
 
 ## 6. Troubleshooting
 

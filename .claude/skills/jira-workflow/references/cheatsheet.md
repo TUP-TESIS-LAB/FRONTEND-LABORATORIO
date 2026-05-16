@@ -32,11 +32,13 @@ jira issue create -p LAB -t Task -s "X" -l backend,migration -a $(jira me) --no-
 ```bash
 jira issue view LAB-42                   # vista completa
 jira issue view LAB-42 --plain           # sin colores, parseable
-jira issue list --plain --limit 10       # últimos 10 del default project
+jira issue list --plain --paginate 10    # últimos 10 del default project
 jira issue list -a $(jira me) --plain    # asignados a mí
 jira issue list -s "To Do" --plain       # filtrar por estado
 jira issue list -q 'project = LAB AND status != Done ORDER BY updated DESC' --plain
 ```
+
+> ⚠️ El flag de paginación es `--paginate N` (o `--paginate FROM:TO` para offset). `--limit N` **no existe** y tira `Error: unknown flag`.
 
 ## Editar
 

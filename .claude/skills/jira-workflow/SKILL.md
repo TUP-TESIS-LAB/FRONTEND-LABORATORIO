@@ -62,18 +62,33 @@ El CLI no está instalado. **NO crear el ticket "más tarde", NO improvisar con 
 > - **Copiá el token AHORA** — no se vuelve a mostrar. Guardalo en tu password manager.
 > - El token es equivalente a tu password: nunca lo pegues en chat, nunca lo commitees.
 >
-> **3. Configurar el CLI:**
-> ```
-> jira init
-> ```
-> Te va a preguntar:
-> - **Installation type:** `Cloud`
-> - **Link to Jira server:** la URL completa (ej. `https://tup-tesis-lab.atlassian.net`)
-> - **Login email:** el email con el que entrás a Jira
-> - **API token:** pegá el que copiaste
-> - **Default project:** la key del proyecto principal (ej. `LAB`)
+> **3. Configurar el CLI** (pegá esto en PowerShell, hace todo de una con el token en prompt oculto):
+> ```powershell
+> $sec = Read-Host "Pegá el API token (input oculto)" -AsSecureString
+> $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+> $env:JIRA_API_TOKEN = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+> [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
 >
-> **4. Verificá:** corré `jira me` — tiene que devolver tu email. Si dice `not authenticated`, el token está mal, repetí el paso 2.
+> jira init `
+>   --installation cloud `
+>   --server "https://exequielsantoro.atlassian.net" `
+>   --login "<tu-email>" `
+>   --project "KAN" `
+>   --auth-type basic
+> ```
+> Cuando te pida el token, ya está en `$env:JIRA_API_TOKEN`; aceptá el board sugerido con Enter.
+>
+> > **URL y project key son los del equipo TUP-TESIS-LAB**, no cambiarlos sin avisar. Si tu equipo agrega otro proyecto, el `--project` se sobreescribe con el que corresponda.
+>
+> **4. Persistir el token** (CRÍTICO — sin esto deja de funcionar al cerrar la terminal):
+> ```powershell
+> # Repetí el snippet del paso 3 para volver a poner el token en $env:JIRA_API_TOKEN
+> # (no se guarda en disk por seguridad), después:
+> [Environment]::SetEnvironmentVariable("JIRA_API_TOKEN", $env:JIRA_API_TOKEN, "User")
+> ```
+> Esto deja el token en `HKCU\Environment\JIRA_API_TOKEN` (solo lo lee tu usuario de Windows). En macOS/Linux, agregalo a tu shell rc: `echo 'export JIRA_API_TOKEN="..."' >> ~/.bashrc`.
+>
+> **5. Verificá:** corré `jira me` — tiene que devolver tu email. Si dice `not authenticated` o `401`, repetí desde el paso 2 (token mal pegado) o paso 4 (env var no persistió).
 >
 > Cuando termines, decime "listo" y retomo desde donde quedamos: te creo el ticket de este plan automáticamente.
 
@@ -127,7 +142,15 @@ Probablemente la URL de Jira no es la del tenant del usuario. Pedile que verifiq
    - `Story` si es feature/funcionalidad nueva visible al usuario.
    - `Task` si es refactor, infra, migración, deuda técnica.
    - `Bug` solo si arregla un bug reportado (referenciá el ticket original o el report).
-   - `Spike` si es investigación con timebox (raro porque normalmente esos no llegan acá).
+   - `Spike` si es investigación con timebox.
+
+   > ⚠️ **Sobre `Spike`:** **no es un issue type universal**. Atlassian Cloud projects creados con templates default (Scrum, Kanban) solo incluyen `Task`, `Story`, `Bug`, `Epic`, `Subtask`. Si el proyecto no tiene `Spike` configurado, `jira issue create -t Spike` falla con `Invalid issue type`.
+   >
+   > **Fallback automático:** si necesitás crear un spike y el tipo no existe, usá `-t Task --label spike` en su lugar. Verificá los tipos disponibles con:
+   > ```bash
+   > jira issue list -t Story --paginate 1 --plain  # falla rápido si Story no existe
+   > ```
+   > o consultá en la UI de Jira: Project Settings → Issue Types.
 
 5. **Crear el issue** (auto-asignado al usuario actual del CLI):
    ```bash
