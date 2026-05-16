@@ -38,4 +38,38 @@ describe('PatientFormPage', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Editar paciente');
   });
+
+  it('dispatches checkPatientDni when a valid dni is typed in create mode', async () => {
+    const { checkPatientDni } = await import('../../store/patient.actions');
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.form.get('general.dni')?.setValue('32456789');
+    expect(spy).toHaveBeenCalledWith(checkPatientDni({ dni: '32456789' }));
+  });
+
+  it('dispatches addPatient on submit in create mode', async () => {
+    const { addPatient } = await import('../../store/patient.actions');
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    cmp.form.patchValue({
+      general: {
+        firstName: 'Ana', lastName: 'Pérez', dni: '12345678',
+        birthDate: new Date('1990-01-01'),
+        gender: 'FEMALE', sexAtBirth: 'FEMALE',
+      },
+    });
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onSubmit();
+    expect(spy).toHaveBeenCalled();
+    const dispatched = spy.mock.calls[0][0] as unknown as { type: string; req: { firstName: string; lastName: string; dni: string; birthDate: string | null } };
+    expect(dispatched.type).toBe('[Patient Form] Add Patient');
+    expect(dispatched.req.firstName).toBe('Ana');
+    expect(dispatched.req.dni).toBe('12345678');
+  });
 });
