@@ -80,14 +80,6 @@ export const routes: Routes = [
           import('./features/obras-sociales/obras-sociales.routes').then((m) => m.OBRAS_SOCIALES_ROUTES),
       },
 
-      {
-        path: 'profile/change-password',
-        loadComponent: () =>
-          import('./features/profile/pages/change-password/change-password.component').then(
-            (m) => m.ChangePasswordComponent,
-          ),
-      },
-
       { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
   },
