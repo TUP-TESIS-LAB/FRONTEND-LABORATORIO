@@ -6,15 +6,25 @@ Esta skill usa el CLI [`jira`](https://github.com/ankitpokhrel/jira-cli) de anki
 
 ### Windows (recomendado: Scoop)
 
+> ⚠️ **Importante:** Scoop tiene **dos** paquetes con nombre parecido y son CLIs distintos:
+> - `jira` en el bucket `main` → Netflix `go-jira` (NO sirve para esta skill).
+> - `jira-cli` en el bucket `extras` → `ankitpokhrel/jira-cli` (este es el que necesitamos).
+>
+> Usá siempre `jira-cli` desde `extras`, NO `jira` desde `main`.
+
 ```powershell
-scoop install jira
+scoop bucket add extras
+scoop install jira-cli
 ```
 
 Si no tenés Scoop:
 ```powershell
 Invoke-RestMethod get.scoop.sh | Invoke-Expression
-scoop install jira
+scoop bucket add extras
+scoop install jira-cli
 ```
+
+(El binario se llama `jira.exe` aunque el paquete se llame `jira-cli` — el comando que vas a usar es `jira`.)
 
 ### Windows (alternativa sin Scoop)
 

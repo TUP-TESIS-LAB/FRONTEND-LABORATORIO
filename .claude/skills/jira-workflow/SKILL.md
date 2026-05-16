@@ -36,15 +36,18 @@ El CLI no está instalado. **NO crear el ticket "más tarde", NO improvisar con 
 >
 > **1. Instalar el binario** (elegí según tu SO):
 >
-> - **Windows con Scoop** (recomendado):
+> - **Windows con Scoop** (recomendado). Importante: `jira-cli` está en el bucket `extras`, NO en `main` (en `main` hay otro CLI con el mismo nombre que NO sirve):
 >   ```powershell
->   scoop install jira
+>   scoop bucket add extras
+>   scoop install jira-cli
 >   ```
 >   Si no tenés Scoop:
 >   ```powershell
 >   Invoke-RestMethod get.scoop.sh | Invoke-Expression
->   scoop install jira
+>   scoop bucket add extras
+>   scoop install jira-cli
 >   ```
+>   El binario instalado se llama `jira` (aunque el paquete sea `jira-cli`).
 > - **macOS**:
 >   ```bash
 >   brew tap ankitpokhrel/jira-cli && brew install jira-cli
