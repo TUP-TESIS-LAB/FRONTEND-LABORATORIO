@@ -1,7 +1,8 @@
 import {
   ChangeDetectionStrategy, Component, computed, effect, inject, input, OnDestroy,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Actions, ofType } from '@ngrx/effects';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -14,7 +15,8 @@ import {
   CreatePatientRequest, Gender, Patient, SexAtBirth, UpdatePatientRequest,
 } from '../../models/patient.model';
 import {
-  addPatient, updatePatient, checkPatientDni, loadPatient, clearSelectedPatient,
+  addPatient, addPatientSuccess, updatePatient, updatePatientSuccess,
+  checkPatientDni, loadPatient, clearSelectedPatient,
 } from '../../store/patient.actions';
 import {
   selectPatientPending, selectPatientError, selectPatientState, selectSelectedPatient,
@@ -163,6 +165,7 @@ export class PatientFormPage implements OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly store = inject(Store);
   private readonly router = inject(Router);
+  private readonly actions$ = inject(Actions);
 
   readonly genderOpts = GENDER_OPTS;
   readonly sexOpts = SEX_OPTS;
@@ -266,6 +269,10 @@ export class PatientFormPage implements OnDestroy {
       const clean = (dni ?? '').toString().replace(/\D/g, '');
       if (/^\d{7,}$/.test(clean)) this.store.dispatch(checkPatientDni({ dni: clean }));
     });
+
+    this.actions$
+      .pipe(ofType(addPatientSuccess, updatePatientSuccess), takeUntilDestroyed())
+      .subscribe(() => this.router.navigate(['/pacientes']));
   }
 
   private resetForCreate(): void {

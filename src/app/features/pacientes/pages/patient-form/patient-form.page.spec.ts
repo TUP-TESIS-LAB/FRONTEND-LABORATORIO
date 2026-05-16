@@ -72,4 +72,38 @@ describe('PatientFormPage', () => {
     expect(dispatched.req.firstName).toBe('Ana');
     expect(dispatched.req.dni).toBe('12345678');
   });
+
+  it('navigates to /pacientes after addPatientSuccess', async () => {
+    const { addPatientSuccess } = await import('../../store/patient.actions');
+    const { Router } = await import('@angular/router');
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const router = TestBed.inject(Router);
+    const navSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const patient = {
+      id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
+      birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
+      status: 'COMPLETE' as const, contacts: [], addresses: [], coverages: [], active: true,
+    };
+    actions$.next(addPatientSuccess({ patient }));
+    expect(navSpy).toHaveBeenCalledWith(['/pacientes']);
+  });
+
+  it('navigates to /pacientes after updatePatientSuccess', async () => {
+    const { updatePatientSuccess } = await import('../../store/patient.actions');
+    const { Router } = await import('@angular/router');
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', '1');
+    fixture.detectChanges();
+    const router = TestBed.inject(Router);
+    const navSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const patient = {
+      id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
+      birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
+      status: 'COMPLETE' as const, contacts: [], addresses: [], coverages: [], active: true,
+    };
+    actions$.next(updatePatientSuccess({ patient }));
+    expect(navSpy).toHaveBeenCalledWith(['/pacientes']);
+  });
 });
