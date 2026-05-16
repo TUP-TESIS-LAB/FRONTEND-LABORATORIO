@@ -1,9 +1,9 @@
 import {
-  ChangeDetectionStrategy, Component, computed, effect, inject, input,
+  ChangeDetectionStrategy, Component, computed, effect, inject, input, OnDestroy,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -47,7 +47,7 @@ function isoFromDate(d: unknown): string | null {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, SelectModule,
+    ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule,
     TagModule, DatePickerModule,
     ContactSectionComponent, AddressSectionComponent, CoverageSectionComponent,
   ],
@@ -157,7 +157,7 @@ function isoFromDate(d: unknown): string | null {
     </form>
   `,
 })
-export class PatientFormPage {
+export class PatientFormPage implements OnDestroy {
   readonly id = input<string | undefined>(undefined);
 
   private readonly fb = inject(FormBuilder);
