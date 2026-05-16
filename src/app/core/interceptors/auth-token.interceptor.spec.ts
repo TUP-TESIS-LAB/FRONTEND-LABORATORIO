@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { vi } from 'vitest';
 import { authTokenInterceptor } from './auth-token.interceptor';
 import { TokenService } from '@core/auth/token.service';
+import { UserSessionService } from '@features/profile/services/user-session.service';
 
 describe('authTokenInterceptor', () => {
   let http: HttpClient;
@@ -50,6 +51,8 @@ describe('authTokenInterceptor', () => {
   it('clears token and redirects to /login on 401', async () => {
     const router = TestBed.inject(Router);
     const removeSpy = vi.spyOn(tokenService, 'removeToken');
+    const userSession = TestBed.inject(UserSessionService);
+    const clearSpy = vi.spyOn(userSession, 'clear');
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     vi.spyOn(tokenService, 'getToken').mockReturnValue('some.jwt.token');
 
@@ -61,6 +64,7 @@ describe('authTokenInterceptor', () => {
     const err = await errorPromise as { status: number };
     expect(err.status).toBe(401);
     expect(removeSpy).toHaveBeenCalled();
+    expect(clearSpy).toHaveBeenCalled();
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
   });
 });

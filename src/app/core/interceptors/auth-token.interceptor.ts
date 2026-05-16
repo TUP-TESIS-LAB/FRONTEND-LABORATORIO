@@ -3,9 +3,11 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { TokenService } from '@core/auth/token.service';
+import { UserSessionService } from '@features/profile/services/user-session.service';
 
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const tokens = inject(TokenService);
+  const userSession = inject(UserSessionService);
   const router = inject(Router);
   const token = tokens.getToken();
 
@@ -17,6 +19,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse && err.status === 401) {
         tokens.removeToken();
+        userSession.clear();
         router.navigate(['/login']);
       }
       return throwError(() => err);
