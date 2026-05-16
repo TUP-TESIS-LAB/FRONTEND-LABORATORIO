@@ -1,9 +1,16 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { EmptyStatePlaceholderComponent } from '../../shared/empty-state-placeholder.component';
 
 @Component({
   selector: 'app-fiscal',
   standalone: true,
+  imports: [EmptyStatePlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<h2>Configuración Fiscal (ARCA)</h2><p style="color:var(--ds-text-muted)">Pendiente de implementación.</p>`,
+  template: `
+    <emp-empty-placeholder
+      icon="pi pi-file"
+      title="Próximamente"
+      description="Esta sección requiere endpoints que aún no están disponibles en el backend." />
+  `,
 })
 export class FiscalComponent {}
