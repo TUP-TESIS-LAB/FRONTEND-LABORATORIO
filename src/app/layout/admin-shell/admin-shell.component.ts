@@ -3,12 +3,14 @@ import { RouterOutlet } from '@angular/router';
 import { DrawerModule } from 'primeng/drawer';
 import { TopbarComponent } from '@layout/topbar/topbar.component';
 import { SidebarComponent } from '@layout/sidebar/sidebar.component';
+import { ChangePasswordDrawerComponent } from '@features/profile/components/change-password-drawer/change-password-drawer.component';
+import { LogoutConfirmComponent } from '@features/profile/components/logout-confirm/logout-confirm.component';
 
 @Component({
   selector: 'ui-admin-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent],
+  imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent, ChangePasswordDrawerComponent, LogoutConfirmComponent],
   template: `
     <div class="ui-admin-shell">
       <ui-sidebar class="ui-admin-shell__sidebar" />
@@ -27,6 +29,9 @@ import { SidebarComponent } from '@layout/sidebar/sidebar.component';
           <router-outlet />
         </main>
       </div>
+
+      <ui-change-password-drawer />
+      <ui-logout-confirm />
     </div>
   `,
   styles: [`
