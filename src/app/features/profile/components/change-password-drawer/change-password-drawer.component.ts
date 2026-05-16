@@ -85,7 +85,7 @@ const LOGOUT_DELAY_MS = 2000;
                 [fluid]="true"
                 placeholder="Repetí la nueva contraseña"
                 autocomplete="new-password" />
-              @if (form.get('confirmPassword')?.dirty && form.get('confirmPassword')?.errors?.['mismatch']) {
+              @if (form.get('confirmPassword')?.dirty && form.errors?.['mismatch']) {
                 <small class="ui-field__error">Las contraseñas no coinciden.</small>
               }
             </div>
@@ -244,11 +244,14 @@ export class ChangePasswordDrawerComponent {
   protected readonly error = signal<string | null>(null);
   protected readonly success = signal(false);
 
-  protected readonly form = new FormGroup({
-    currentPassword: new FormControl('', { validators: [Validators.required], nonNullable: true }),
-    newPassword: new FormControl('', { validators: [Validators.required, Validators.minLength(8)], nonNullable: true }),
-    confirmPassword: new FormControl('', { validators: [Validators.required, passwordsMatch], nonNullable: true }),
-  });
+  protected readonly form = new FormGroup(
+    {
+      currentPassword: new FormControl('', { validators: [Validators.required], nonNullable: true }),
+      newPassword: new FormControl('', { validators: [Validators.required, Validators.minLength(8)], nonNullable: true }),
+      confirmPassword: new FormControl('', { validators: [Validators.required], nonNullable: true }),
+    },
+    { validators: passwordsMatch },
+  );
 
   constructor() {
     effect(() => {

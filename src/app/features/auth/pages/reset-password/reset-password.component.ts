@@ -46,7 +46,7 @@ import { AuthApiService } from '../../services/auth-api.service';
             inputId="reset-confirm-password"
             [control]="form.controls.confirmPassword" />
 
-          @if (form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.dirty) {
+          @if (form.get('confirmPassword')?.dirty && form.errors?.['mismatch']) {
             <div class="auth-error" role="alert">
               <i class="pi pi-exclamation-circle"></i>
               <span>Las contraseñas no coinciden.</span>
@@ -83,10 +83,13 @@ export class ResetPasswordComponent implements OnInit {
   private resetToken = '';
   private tenantId = '';
 
-  protected readonly form = new FormGroup({
-    newPassword: new FormControl('', { validators: [Validators.required, Validators.minLength(8)], nonNullable: true }),
-    confirmPassword: new FormControl('', { validators: [Validators.required, passwordsMatch], nonNullable: true }),
-  });
+  protected readonly form = new FormGroup(
+    {
+      newPassword: new FormControl('', { validators: [Validators.required, Validators.minLength(8)], nonNullable: true }),
+      confirmPassword: new FormControl('', { validators: [Validators.required], nonNullable: true }),
+    },
+    { validators: passwordsMatch },
+  );
 
   async ngOnInit(): Promise<void> {
     this.resetToken = this.route.snapshot.queryParamMap.get('token') ?? '';

@@ -1,7 +1,12 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
-export const passwordsMatch: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
-  const parent = control.parent;
-  if (!parent) return null;
-  return parent.get('newPassword')?.value === control.value ? null : { mismatch: true };
+// Group-level validator: must be attached to a FormGroup containing
+// `newPassword` and `confirmPassword`. The error lives on the group
+// (`form.errors?.['mismatch']`) so it re-evaluates whenever EITHER
+// control changes, not only when `confirmPassword` is touched.
+export const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
+  const newPw = group.get('newPassword')?.value;
+  const confirmPw = group.get('confirmPassword')?.value;
+  if (newPw == null || confirmPw == null) return null;
+  return newPw === confirmPw ? null : { mismatch: true };
 };

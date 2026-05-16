@@ -34,7 +34,7 @@ import { AuthApiService } from '../../services/auth-api.service';
             inputId="first-login-confirm-password"
             [control]="form.controls.confirmPassword" />
 
-          @if (form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.dirty) {
+          @if (form.get('confirmPassword')?.dirty && form.errors?.['mismatch']) {
             <div class="auth-error" role="alert">
               <i class="pi pi-exclamation-circle"></i>
               <span>Las contraseñas no coinciden.</span>
@@ -67,10 +67,13 @@ export class FirstLoginComponent implements OnInit {
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly form = new FormGroup({
-    newPassword: new FormControl('', { validators: [Validators.required, Validators.minLength(8)], nonNullable: true }),
-    confirmPassword: new FormControl('', { validators: [Validators.required, passwordsMatch], nonNullable: true }),
-  });
+  protected readonly form = new FormGroup(
+    {
+      newPassword: new FormControl('', { validators: [Validators.required, Validators.minLength(8)], nonNullable: true }),
+      confirmPassword: new FormControl('', { validators: [Validators.required], nonNullable: true }),
+    },
+    { validators: passwordsMatch },
+  );
 
   ngOnInit(): void {
     const state = window.history.state as { firstLoginToken?: string } | null;
