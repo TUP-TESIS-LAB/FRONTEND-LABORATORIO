@@ -4,9 +4,10 @@
 @use 'styles/globals';
 @use 'styles/utilities';
 
-// Tailwind v4 + PrimeNG
+// Tailwind v4 + PrimeNG.
+// Tailwind se envuelve en su propia layer para que el order
+// declarado por providePrimeNG ({ order: 'tailwind, primeng' })
+// pueda hacer que PrimeNG gane sobre el preflight de Tailwind.
 @import "primeicons/primeicons.css";
-@import "tailwindcss";
+@import "tailwindcss" layer(tailwind);
 @plugin "tailwindcss-primeui";
-
-@layer tailwind, primeng;

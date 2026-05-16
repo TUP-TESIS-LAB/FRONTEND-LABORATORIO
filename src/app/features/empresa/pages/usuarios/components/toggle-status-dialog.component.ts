@@ -22,12 +22,16 @@ import { Usuario, CambiarEstadoPayload } from '../../../models/usuario.model';
       [style]="{ width: '32rem' }"
       [header]="usuario?.active ? 'Desactivar usuario' : 'Activar usuario'"
       (onHide)="cancel.emit()">
-      <p>{{ usuario?.firstName }} {{ usuario?.lastName }} ({{ usuario?.email }})</p>
+      <p style="margin: 0 0 var(--space-3)">
+        {{ usuario?.firstName }} {{ usuario?.lastName }}
+        <span class="ui-text-muted">({{ usuario?.email }})</span>
+      </p>
 
       @if (usuario?.active) {
-        <form [formGroup]="form">
-          <label for="reason">Motivo (obligatorio)</label>
+        <form [formGroup]="form" class="pat-form__field">
+          <label class="pat-form__label" for="reason">Motivo (obligatorio)*</label>
           <textarea pTextarea id="reason" rows="4" formControlName="reason"
+                    class="pat-form__input"
                     placeholder="Indicá el motivo de la desactivación"></textarea>
         </form>
       } @else {

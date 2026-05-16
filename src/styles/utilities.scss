@@ -20,3 +20,78 @@
 .ui-text-muted   { color: var(--ds-text-muted); }
 .ui-text-sm      { font-size: 12px; }
 .ui-text-label   { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Drawer ancho medio (laboratory-ui pattern)
+   Aplicar en styleClass="ui-drawer-half" sobre <p-drawer>.
+   Desktop: 50vw, clamp 480..720. Mobile: full width. */
+:root .p-drawer.ui-drawer-half {
+  width: clamp(480px, 50vw, 720px);
+}
+@media (max-width: 768px) {
+  :root .p-drawer.ui-drawer-half {
+    width: 100vw;
+  }
+}
+
+/* Form helpers (card containers + dense field layout)
+   Pattern: stacked label-above-input inside light gray cards.
+   Originalmente usado por pacientes; reutilizado por empresa. */
+.pat-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-2);
+}
+.pat-form__card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: var(--space-4);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.pat-form__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ds-text);
+}
+.pat-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.pat-form__grid--full {
+  grid-template-columns: 1fr;
+}
+.pat-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.pat-form__label {
+  font-size: 11px;
+  color: var(--ds-text-muted);
+  font-weight: 500;
+}
+.pat-form__input {
+  width: 100%;
+}
+.pat-form__error {
+  color: var(--ds-danger);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.pat-form__footer {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  padding: var(--space-3) var(--space-2);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}

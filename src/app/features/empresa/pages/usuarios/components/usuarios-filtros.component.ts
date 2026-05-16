@@ -15,9 +15,10 @@ import { BuscarUsuariosParams } from '../../../models/usuario.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="emp-filtros">
-      <p-iconField iconPosition="left">
+      <p-iconField iconPosition="left" class="w-full">
         <p-inputIcon><i class="pi pi-search"></i></p-inputIcon>
         <input pInputText
+          class="w-full"
           placeholder="Buscar por nombre, email, documento..."
           [ngModel]="filters.search"
           (ngModelChange)="patch.emit({ search: $event || undefined, page: 0 })" />
@@ -26,12 +27,16 @@ import { BuscarUsuariosParams } from '../../../models/usuario.model';
       <p-multiSelect
         [options]="roles" optionLabel="description" optionValue="id"
         placeholder="Filtrar por rol"
+        appendTo="body"
+        class="w-full"
         [ngModel]="filters.roleIds"
         (ngModelChange)="patch.emit({ roleIds: $event?.length ? $event : undefined, page: 0 })" />
 
       <p-select
         [options]="estados" optionLabel="label" optionValue="value"
         placeholder="Estado"
+        appendTo="body"
+        class="w-full"
         [ngModel]="filters.isActive"
         (ngModelChange)="patch.emit({ isActive: $event, page: 0 })" />
     </div>

@@ -8,7 +8,6 @@ import { DrawerModule } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
-import { FloatLabelModule } from 'primeng/floatlabel';
 import { Rol } from '../../../models/rol.model';
 import { ActualizarUsuarioPayload, CrearUsuarioPayload, Usuario } from '../../../models/usuario.model';
 
@@ -16,67 +15,81 @@ import { ActualizarUsuarioPayload, CrearUsuarioPayload, Usuario } from '../../..
   selector: 'emp-usuario-form-drawer',
   standalone: true,
   imports: [
-    ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, MultiSelectModule, FloatLabelModule,
+    ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, MultiSelectModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-drawer
-      [(visible)]="visibleInternal"
+      [visible]="visibleInternal"
+      (visibleChange)="onVisibleChange($event)"
       position="right"
       styleClass="ui-drawer-half"
       [modal]="true"
       [dismissible]="true"
-      (onHide)="cancel.emit()">
-      <ng-template pTemplate="header">
-        <h3>{{ editing() ? 'Editar usuario' : 'Invitar usuario' }}</h3>
-      </ng-template>
+      [header]="editing() ? 'Editar usuario' : 'Invitar usuario'">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
+        <div class="pat-form" style="flex:1; overflow-y:auto;">
+          <section class="pat-form__card">
+            <div class="pat-form__card-header">
+              <span><i class="pi pi-user" style="margin-right:6px"></i>Datos del usuario</span>
+            </div>
+            <div class="pat-form__grid">
+              <div class="pat-form__field">
+                <label class="pat-form__label">Nombre*</label>
+                <input pInputText formControlName="firstName" class="pat-form__input" placeholder="María" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">Apellido*</label>
+                <input pInputText formControlName="lastName" class="pat-form__input" placeholder="García" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">Email*</label>
+                <input pInputText type="email" formControlName="email" class="pat-form__input" placeholder="maria@laboratorio.com" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">Documento*</label>
+                <input pInputText formControlName="document" class="pat-form__input" placeholder="32456789" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label">Usuario*</label>
+                <input pInputText formControlName="username" class="pat-form__input" placeholder="mgarcia" />
+              </div>
+            </div>
+          </section>
 
-      <form [formGroup]="form" class="emp-form" (ngSubmit)="onSubmit()">
-        <p-floatlabel>
-          <input pInputText id="firstName" formControlName="firstName" />
-          <label for="firstName">Nombre</label>
-        </p-floatlabel>
-        <p-floatlabel>
-          <input pInputText id="lastName" formControlName="lastName" />
-          <label for="lastName">Apellido</label>
-        </p-floatlabel>
-        <p-floatlabel>
-          <input pInputText id="email" type="email" formControlName="email" />
-          <label for="email">Email</label>
-        </p-floatlabel>
-        <p-floatlabel>
-          <input pInputText id="document" formControlName="document" />
-          <label for="document">Documento</label>
-        </p-floatlabel>
-        <p-floatlabel>
-          <input pInputText id="username" formControlName="username" />
-          <label for="username">Usuario</label>
-        </p-floatlabel>
-        <p-floatlabel>
-          <p-multiSelect id="roleIds" [options]="roles"
-            optionLabel="description" optionValue="id"
-            formControlName="roleIds" display="chip" />
-          <label for="roleIds">Roles</label>
-        </p-floatlabel>
-      </form>
+          <section class="pat-form__card">
+            <div class="pat-form__card-header">
+              <span><i class="pi pi-id-card" style="margin-right:6px"></i>Roles</span>
+            </div>
+            <div class="pat-form__grid pat-form__grid--full">
+              <div class="pat-form__field">
+                <label class="pat-form__label">Asignar roles*</label>
+                <p-multiSelect
+                  [options]="roles"
+                  optionLabel="description"
+                  optionValue="id"
+                  formControlName="roleIds"
+                  display="chip"
+                  appendTo="body"
+                  class="w-full"
+                  placeholder="Seleccionar uno o más roles" />
+              </div>
+            </div>
+          </section>
+        </div>
 
-      <ng-template pTemplate="footer">
-        <div class="emp-form__footer">
-          <p-button label="Cancelar" severity="secondary" text (onClick)="cancel.emit()" />
+        <div class="pat-form__footer">
+          <p-button label="Cancelar" severity="secondary" text type="button" (onClick)="cancel.emit()" />
           <p-button
             [label]="editing() ? 'Guardar' : 'Invitar'"
             severity="primary"
+            type="submit"
             [disabled]="!canSubmit() || saving"
-            [loading]="saving"
-            (onClick)="onSubmit()" />
+            [loading]="saving" />
         </div>
-      </ng-template>
+      </form>
     </p-drawer>
   `,
-  styles: [`
-    .emp-form { display: flex; flex-direction: column; gap: var(--space-5); padding-top: var(--space-3); }
-    .emp-form__footer { display: flex; justify-content: flex-end; gap: var(--space-3); }
-  `],
 })
 export class UsuarioFormDrawerComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);
@@ -110,7 +123,6 @@ export class UsuarioFormDrawerComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if ('visible' in changes) {
       this.visibleInternal = this.visible;
-      // Reset/hydrate only on closed→open transition.
       if (this.visible && !this.wasVisible) {
         if (this.usuario) {
           this.form.reset({
@@ -127,6 +139,11 @@ export class UsuarioFormDrawerComponent implements OnChanges {
       }
       this.wasVisible = this.visible;
     }
+  }
+
+  onVisibleChange(open: boolean): void {
+    this.visibleInternal = open;
+    if (!open) this.cancel.emit();
   }
 
   onSubmit(): void {

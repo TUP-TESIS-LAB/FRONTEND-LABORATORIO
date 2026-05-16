@@ -7,8 +7,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ColorPickerModule } from 'primeng/colorpicker';
-import { FloatLabelModule } from 'primeng/floatlabel';
-import { Message } from 'primeng/message';
 
 import { loadWhiteLabel, saveWhiteLabel } from '../../store/empresa.actions';
 import { selectWhiteLabel, selectEmpresaPending } from '../../store/empresa.selectors';
@@ -21,47 +19,66 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
   standalone: true,
   imports: [
     ReactiveFormsModule, ButtonModule, InputTextModule, ColorPickerModule,
-    FloatLabelModule, Message, WhiteLabelPreviewComponent,
+    WhiteLabelPreviewComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="emp-wl">
-      <form [formGroup]="form" class="emp-wl__form" (ngSubmit)="save()">
-        <p-floatlabel>
-          <input pInputText id="systemName" formControlName="systemName" />
-          <label for="systemName">Nombre del sistema</label>
-        </p-floatlabel>
+      <form [formGroup]="form" class="pat-form" (ngSubmit)="save()" style="padding:0">
+        <section class="pat-form__card">
+          <div class="pat-form__card-header">
+            <span><i class="pi pi-cog" style="margin-right:6px"></i>Identidad del sistema</span>
+          </div>
+          <div class="pat-form__grid pat-form__grid--full">
+            <div class="pat-form__field">
+              <label class="pat-form__label">Nombre del sistema*</label>
+              <input pInputText formControlName="systemName" class="pat-form__input" placeholder="LaboratoApp" />
+            </div>
+          </div>
+        </section>
 
-        <div class="emp-wl__row">
-          <p-floatlabel>
-            <input pInputText id="primary" formControlName="primaryColor" />
-            <label for="primary">Color principal (#RRGGBB)</label>
-          </p-floatlabel>
-          <p-colorPicker formControlName="primaryColor" />
-        </div>
+        <section class="pat-form__card">
+          <div class="pat-form__card-header">
+            <span><i class="pi pi-palette" style="margin-right:6px"></i>Paleta de marca</span>
+          </div>
+          <div class="pat-form__grid">
+            <div class="pat-form__field">
+              <label class="pat-form__label">Color principal (#RRGGBB)*</label>
+              <div style="display:flex; gap:var(--space-2); align-items:center;">
+                <input pInputText formControlName="primaryColor" class="pat-form__input" placeholder="#1d4ed8" />
+                <p-colorPicker formControlName="primaryColor" />
+              </div>
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">Color de acento (#RRGGBB)*</label>
+              <div style="display:flex; gap:var(--space-2); align-items:center;">
+                <input pInputText formControlName="secondaryColor" class="pat-form__input" placeholder="#0ea5a4" />
+                <p-colorPicker formControlName="secondaryColor" />
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <div class="emp-wl__row">
-          <p-floatlabel>
-            <input pInputText id="secondary" formControlName="secondaryColor" />
-            <label for="secondary">Color de acento (#RRGGBB)</label>
-          </p-floatlabel>
-          <p-colorPicker formControlName="secondaryColor" />
-        </div>
+        <section class="pat-form__card">
+          <div class="pat-form__card-header">
+            <span><i class="pi pi-image" style="margin-right:6px"></i>Logos</span>
+          </div>
+          <div class="pat-form__grid">
+            <div class="pat-form__field">
+              <label class="pat-form__label">URL logo claro</label>
+              <input pInputText formControlName="lightLogoUrl" class="pat-form__input" placeholder="https://..." />
+            </div>
+            <div class="pat-form__field">
+              <label class="pat-form__label">URL logo oscuro</label>
+              <input pInputText formControlName="darkLogoUrl" class="pat-form__input" placeholder="https://..." />
+            </div>
+          </div>
+          <p class="ui-text-sm ui-text-muted" style="margin-top: var(--space-2)">
+            Próximamente vas a poder subir el logo directamente en lugar de pegar la URL.
+          </p>
+        </section>
 
-        <p-floatlabel>
-          <input pInputText id="lightLogo" formControlName="lightLogoUrl" />
-          <label for="lightLogo">URL logo claro</label>
-        </p-floatlabel>
-
-        <p-floatlabel>
-          <input pInputText id="darkLogo" formControlName="darkLogoUrl" />
-          <label for="darkLogo">URL logo oscuro</label>
-        </p-floatlabel>
-
-        <p-message severity="info"
-          text="Próximamente vas a poder subir el logo directamente en lugar de pegar la URL." />
-
-        <div class="emp-wl__actions">
+        <div class="pat-form__footer">
           <p-button
             type="submit" label="Guardar cambios" severity="primary"
             [disabled]="!canSave() || pending()"
@@ -86,12 +103,9 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
   styles: [`
     .emp-wl {
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: var(--space-6);
+      gap: var(--space-6); align-items: start;
     }
     @media (max-width: 1024px) { .emp-wl { grid-template-columns: 1fr; } }
-    .emp-wl__form { display: flex; flex-direction: column; gap: var(--space-5); }
-    .emp-wl__row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-3); align-items: end; }
-    .emp-wl__actions { display: flex; justify-content: flex-end; }
     .emp-wl__preview h4 { margin: 0 0 var(--space-3); }
   `],
 })
