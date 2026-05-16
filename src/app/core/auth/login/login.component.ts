@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TokenService } from '@core/auth/token.service';
+import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadTenantConfigSuccess } from '@core/tenant/store/tenant.actions';
 import { DEV_TENANT } from '@core/tenant/dev-tenant.config';
 import { AuthApiService } from '@features/auth/services/auth-api.service';
@@ -334,6 +335,7 @@ export class LoginComponent {
   private readonly tokens   = inject(TokenService);
   private readonly store    = inject(Store);
   private readonly authApi  = inject(AuthApiService);
+  private readonly userSession = inject(UserSessionService);
 
   protected readonly passVisible = signal(false);
   protected readonly submitting  = signal(false);
@@ -367,6 +369,7 @@ export class LoginComponent {
 
       if (response.token) {
         this.tokens.setToken(response.token);
+        this.userSession.set(response.user);
         // DEV fallback (see comment near DEV_TENANT). Remove once tenant config endpoint exists.
         this.store.dispatch(loadTenantConfigSuccess({ config: DEV_TENANT }));
         await this.router.navigate(['/home']);
