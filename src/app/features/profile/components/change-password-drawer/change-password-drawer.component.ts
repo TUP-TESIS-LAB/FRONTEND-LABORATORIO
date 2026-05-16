@@ -26,7 +26,7 @@ const LOGOUT_DELAY_MS = 2000;
       styleClass="ui-cp-drawer"
       [modal]="true"
       [dismissible]="true">
-      <ng-template pTemplate="headless">
+      <ng-template #headless>
         <div class="ui-cp-drawer__header">
           <span>Cambiar contraseña</span>
           <button type="button" class="ui-cp-drawer__close" (click)="close()" aria-label="Cerrar">
