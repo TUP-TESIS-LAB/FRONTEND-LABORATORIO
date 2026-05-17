@@ -8,10 +8,10 @@ export interface User {
 
 export interface JwtPayload {
   sub: string;
-  tenant_id: string;
-  email: string;
-  name: string;
+  tenantId: number;
+  userId: number;
   roles: string[];
+  isExternal: boolean;
   exp: number;
   iat: number;
 }

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from '@core/guards/auth.guard';
 import { rootGuard } from '@core/guards/root.guard';
 import { moduleActiveGuard } from '@core/guards/module-active.guard';
+import { guestGuard } from '@core/guards/guest.guard';
 import { tenantResolver } from '@core/tenant/tenant.resolver';
 import { ModuleKey } from '@core/models/module-key.enum';
 
@@ -75,8 +76,8 @@ export const routes: Routes = [
       },
       {
         path: 'roles',
-        loadChildren: () =>
-          import('./features/roles/roles.routes').then((m) => m.ROLES_ROUTES),
+        loadComponent: () =>
+          import('./features/empresa/pages/roles/roles.page').then((m) => m.RolesPage),
       },
       {
         path: 'obras-sociales',
@@ -90,8 +91,34 @@ export const routes: Routes = [
 
   {
     path: 'login',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('./core/auth/login/login.component').then((m) => m.LoginComponent),
+  },
+
+  {
+    path: 'first-login',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/pages/first-login/first-login.component').then(
+        (m) => m.FirstLoginComponent,
+      ),
+  },
+  {
+    path: 'forgot-password',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/pages/forgot-password/forgot-password.component').then(
+        (m) => m.ForgotPasswordComponent,
+      ),
+  },
+  {
+    path: 'reset-password',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/pages/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent,
+      ),
   },
 
   {
