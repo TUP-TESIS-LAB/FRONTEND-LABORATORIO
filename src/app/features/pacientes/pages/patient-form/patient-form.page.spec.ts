@@ -154,4 +154,20 @@ describe('PatientFormPage', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(backSpy).toHaveBeenCalled();
   });
+
+  it('does not go back on Escape while a PrimeNG overlay is open', () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const overlay = document.createElement('div');
+    overlay.className = 'p-datepicker-panel';
+    document.body.appendChild(overlay);
+    try {
+      const backSpy = vi.spyOn(fixture.componentInstance, 'onBack');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(backSpy).not.toHaveBeenCalled();
+    } finally {
+      overlay.remove();
+    }
+  });
 });

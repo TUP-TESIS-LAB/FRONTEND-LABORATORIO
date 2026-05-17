@@ -318,6 +318,8 @@ export class PatientFormPage implements OnDestroy {
       return;
     }
     if (e.key === 'Escape') {
+      const overlayOpen = document.querySelector('.p-overlay-mask, .p-datepicker-panel, .p-select-overlay');
+      if (overlayOpen) return;
       e.preventDefault();
       this.onBack();
     }
