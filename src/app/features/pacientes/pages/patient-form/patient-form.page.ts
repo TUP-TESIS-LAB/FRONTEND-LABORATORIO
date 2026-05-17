@@ -11,6 +11,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { DatePickerModule } from 'primeng/datepicker';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 import {
   CreatePatientRequest, Gender, Patient, SexAtBirth, UpdatePatientRequest,
 } from '../../models/patient.model';
@@ -50,9 +52,10 @@ function isoFromDate(d: unknown): string | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule,
-    TagModule, DatePickerModule,
+    TagModule, DatePickerModule, ConfirmDialogModule,
     ContactSectionComponent, AddressSectionComponent, CoverageSectionComponent,
   ],
+  providers: [ConfirmationService],
   template: `
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
       <header class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-b sticky top-0 z-10">
@@ -156,6 +159,7 @@ function isoFromDate(d: unknown): string | null {
             [disabled]="!canSubmit()" />
         </div>
       </footer>
+      <p-confirmDialog />
     </form>
   `,
 })
@@ -166,6 +170,7 @@ export class PatientFormPage implements OnDestroy {
   private readonly store = inject(Store);
   private readonly router = inject(Router);
   private readonly actions$ = inject(Actions);
+  private readonly confirm = inject(ConfirmationService);
 
   readonly genderOpts = GENDER_OPTS;
   readonly sexOpts = SEX_OPTS;
@@ -328,7 +333,17 @@ export class PatientFormPage implements OnDestroy {
   }
 
   onBack(): void {
-    this.router.navigate(['/pacientes']);
+    if (!this.form.dirty) {
+      this.router.navigate(['/pacientes']);
+      return;
+    }
+    this.confirm.confirm({
+      header: '¿Descartar cambios?',
+      message: 'Vas a perder los cambios sin guardar.',
+      acceptLabel: 'Descartar',
+      rejectLabel: 'Seguir editando',
+      accept: () => this.router.navigate(['/pacientes']),
+    });
   }
 
   ngOnDestroy(): void {

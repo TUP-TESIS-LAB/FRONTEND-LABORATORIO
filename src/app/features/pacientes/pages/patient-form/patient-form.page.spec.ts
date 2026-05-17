@@ -106,4 +106,34 @@ describe('PatientFormPage', () => {
     actions$.next(updatePatientSuccess({ patient }));
     expect(navSpy).toHaveBeenCalledWith(['/pacientes']);
   });
+
+  it('navigates back without confirmation when the form is pristine', async () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const { Router } = await import('@angular/router');
+    const router = TestBed.inject(Router);
+    const navSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    fixture.componentInstance.onBack();
+    expect(navSpy).toHaveBeenCalledWith(['/pacientes']);
+  });
+
+  it('opens confirmation when the form is dirty, navigates only on accept', async () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    fixture.componentInstance.form.get('general.firstName')?.setValue('Ana');
+    fixture.componentInstance.form.markAsDirty();
+    const { Router } = await import('@angular/router');
+    const { ConfirmationService } = await import('primeng/api');
+    const router = TestBed.inject(Router);
+    const navSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const confirmSvc = fixture.debugElement.injector.get(ConfirmationService);
+    const confirmSpy = vi.spyOn(confirmSvc, 'confirm')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .mockImplementation((opts: any) => { opts.accept?.(); return confirmSvc; });
+    fixture.componentInstance.onBack();
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(navSpy).toHaveBeenCalledWith(['/pacientes']);
+  });
 });
