@@ -12,6 +12,7 @@ import { Rol } from '../models/rol.model';
 import { PaginatedResponse } from '../models/paginated.model';
 import { WhiteLabel, GuardarWhiteLabelPayload } from '../models/white-label.model';
 import { ModuloTenant, ModuleCode } from '../models/modulo.model';
+import { SmtpConfig, GuardarSmtpConfigPayload, EnviarTestEmailPayload, TestEmailResult } from '../models/smtp-config.model';
 
 // =========================
 // Usuarios — search/list
@@ -194,3 +195,44 @@ export const toggleModuloFailure = createAction(
   '[Empresa API] Toggle Modulo Failure',
   props<{ error: HttpErrorResponse }>(),
 );
+
+// =========================
+// SMTP — load / save / test
+// =========================
+export const loadSmtpConfig = createAction('[Empresa Email Page] Load SmtpConfig');
+export const loadSmtpConfigSuccess = createAction(
+  '[Empresa API] Load SmtpConfig Success',
+  props<{ config: SmtpConfig }>(),
+);
+export const loadSmtpConfigFailure = createAction(
+  '[Empresa API] Load SmtpConfig Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+export const saveSmtpConfig = createAction(
+  '[Empresa Email Form] Save SmtpConfig',
+  props<{ payload: GuardarSmtpConfigPayload }>(),
+);
+export const saveSmtpConfigSuccess = createAction(
+  '[Empresa API] Save SmtpConfig Success',
+  props<{ config: SmtpConfig }>(),
+);
+export const saveSmtpConfigFailure = createAction(
+  '[Empresa API] Save SmtpConfig Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+export const sendTestEmail = createAction(
+  '[Empresa Email Page] Send Test Email',
+  props<{ payload: EnviarTestEmailPayload }>(),
+);
+export const sendTestEmailSuccess = createAction(
+  '[Empresa API] Send Test Email Success',
+  props<{ result: TestEmailResult }>(),
+);
+export const sendTestEmailFailure = createAction(
+  '[Empresa API] Send Test Email Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+export const clearTestEmailResult = createAction('[Empresa Email Page] Clear Test Result');
