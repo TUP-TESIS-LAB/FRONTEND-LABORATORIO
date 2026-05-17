@@ -60,3 +60,20 @@ export const selectAllModulos = createSelector(
   selectEmpresaState,
   (state) => state.modulos,
 );
+
+// SMTP
+export const selectSmtpConfig = createSelector(
+  selectEmpresaState, s => s.smtpConfig,
+);
+export const selectSmtpPending = createSelector(
+  selectEmpresaState, s => s.smtpPending,
+);
+export const selectSmtpTesting = createSelector(
+  selectEmpresaState, s => s.smtpTesting,
+);
+export const selectSmtpTestResult = createSelector(
+  selectEmpresaState, s => s.smtpTestResult,
+);
+export const selectSmtpTestError = createSelector(
+  selectEmpresaState, s => s.smtpTestError,
+);
