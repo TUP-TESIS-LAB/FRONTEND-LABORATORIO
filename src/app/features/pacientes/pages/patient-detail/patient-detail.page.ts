@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
@@ -20,7 +20,6 @@ import {
 } from '../../store/patient.selectors';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { getCoveragePlanLabel } from '../../models/coverage-plans.catalog';
-import { PatientFormDrawerComponent } from '../../components/patient-form-drawer/patient-form-drawer.component';
 
 @Component({
   selector: 'pat-patient-detail-page',
@@ -29,7 +28,7 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
   providers: [ConfirmationService],
   imports: [
     RouterLink, ButtonModule, TabsModule, TagModule, ConfirmDialogModule,
-    DatePipe, DniPipe, AgePipe, EmptyStateComponent, PatientFormDrawerComponent,
+    DatePipe, DniPipe, AgePipe, EmptyStateComponent,
   ],
   template: `
     @if (patient(); as p) {
@@ -45,7 +44,9 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
           </h1>
           @if (canMutate()) {
             <div class="flex gap-2">
-              <p-button severity="secondary" [outlined]="true" icon="pi pi-pencil" label="Editar" (onClick)="drawerOpen.set(true)" />
+              <a [routerLink]="['/pacientes', p.id, 'editar']">
+                <p-button severity="secondary" [outlined]="true" icon="pi pi-pencil" label="Editar" />
+              </a>
               <p-button
                 severity="danger"
                 [outlined]="true"
@@ -131,7 +132,6 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
         </p-tabs>
 
         <p-confirmDialog />
-        <pat-form-drawer [open]="drawerOpen()" [patient]="p" (closed)="drawerOpen.set(false)" />
       </div>
     } @else {
       <div class="p-6">{{ pending() ? 'Cargando…' : 'Paciente no encontrado.' }}</div>
@@ -157,7 +157,6 @@ export class PatientDetailPage implements OnInit, OnDestroy {
 
   readonly patient = this.store.selectSignal(selectSelectedPatient);
   readonly pending = this.store.selectSignal(selectPatientPending);
-  readonly drawerOpen = signal(false);
 
   ngOnInit(): void {
     const numericId = Number(this.id());
