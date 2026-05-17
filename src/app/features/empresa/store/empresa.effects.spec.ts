@@ -12,6 +12,7 @@ import { RolesApiService } from '../services/roles-api.service';
 import { AuthAdminApiService } from '../services/auth-admin-api.service';
 import { WhiteLabelApiService } from '../services/white-label-api.service';
 import { ModulosApiService } from '../services/modulos-api.service';
+import { SmtpConfigApiService } from '../services/smtp-config-api.service';
 import { NotificationService } from '@core/services/notification.service';
 import { TenantThemeService } from '@core/tenant/tenant-theme.service';
 
@@ -19,6 +20,9 @@ import {
   loadUsuarios, loadUsuariosSuccess, loadUsuariosFailure,
   loadRoles, loadRolesSuccess,
   toggleModulo, toggleModuloSuccess,
+  loadSmtpConfig, loadSmtpConfigSuccess,
+  saveSmtpConfig, saveSmtpConfigSuccess,
+  sendTestEmail, sendTestEmailSuccess,
 } from './empresa.actions';
 import { initialEmpresaState } from './empresa.state';
 
@@ -27,11 +31,17 @@ describe('EmpresaEffects', () => {
   let usuariosApi: { search: ReturnType<typeof vi.fn> };
   let rolesApi: { list: ReturnType<typeof vi.fn> };
   let modulosApi: { toggle: ReturnType<typeof vi.fn> };
+  let smtpApi: {
+    get: ReturnType<typeof vi.fn>;
+    save: ReturnType<typeof vi.fn>;
+    sendTest: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     usuariosApi = { search: vi.fn() };
     rolesApi = { list: vi.fn() };
     modulosApi = { toggle: vi.fn() };
+    smtpApi = { get: vi.fn(), save: vi.fn(), sendTest: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -43,6 +53,7 @@ describe('EmpresaEffects', () => {
         { provide: AuthAdminApiService, useValue: { resendEmailVerification: vi.fn(), generateFirstLoginToken: vi.fn() } },
         { provide: WhiteLabelApiService, useValue: { get: vi.fn(), save: vi.fn() } },
         { provide: ModulosApiService, useValue: modulosApi },
+        { provide: SmtpConfigApiService, useValue: smtpApi },
         { provide: NotificationService, useValue: { success: vi.fn(), error: vi.fn() } },
         { provide: TenantThemeService, useValue: { applyTheme: vi.fn() } },
       ],
@@ -86,5 +97,35 @@ describe('EmpresaEffects', () => {
 
     const action = await firstValueFrom(effects.toggleModulo$);
     expect(action).toEqual(toggleModuloSuccess({ code: 'PORTAL', enable: true }));
+  });
+
+  it('loadSmtpConfig$ dispatches success', async () => {
+    const config = { configured: false, gmailUsername: null, fromName: null, active: false, updatedAt: null };
+    smtpApi.get.mockReturnValue(of(config));
+    actions$ = of(loadSmtpConfig());
+    const effects = TestBed.inject(EmpresaEffects);
+
+    const action = await firstValueFrom(effects.loadSmtpConfig$);
+    expect(action).toEqual(loadSmtpConfigSuccess({ config }));
+  });
+
+  it('saveSmtpConfig$ dispatches success', async () => {
+    const config = { configured: true, gmailUsername: 'x', fromName: null, active: true, updatedAt: null };
+    smtpApi.save.mockReturnValue(of(config));
+    actions$ = of(saveSmtpConfig({ payload: { gmailUsername: 'x', appPassword: 'abcdefghijklmnop' } }));
+    const effects = TestBed.inject(EmpresaEffects);
+
+    const action = await firstValueFrom(effects.saveSmtpConfig$);
+    expect(action).toEqual(saveSmtpConfigSuccess({ config }));
+  });
+
+  it('sendTestEmail$ dispatches success', async () => {
+    const result = { delivered: true, sentAt: '2026-05-16T14:00Z' };
+    smtpApi.sendTest.mockReturnValue(of(result));
+    actions$ = of(sendTestEmail({ payload: { to: 'a@b.com' } }));
+    const effects = TestBed.inject(EmpresaEffects);
+
+    const action = await firstValueFrom(effects.sendTestEmail$);
+    expect(action).toEqual(sendTestEmailSuccess({ result }));
   });
 });

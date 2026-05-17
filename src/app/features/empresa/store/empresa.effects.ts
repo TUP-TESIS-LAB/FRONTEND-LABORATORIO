@@ -16,6 +16,7 @@ import { RolesApiService } from '../services/roles-api.service';
 import { AuthAdminApiService } from '../services/auth-admin-api.service';
 import { WhiteLabelApiService } from '../services/white-label-api.service';
 import { ModulosApiService } from '../services/modulos-api.service';
+import { SmtpConfigApiService } from '../services/smtp-config-api.service';
 
 import {
   loadUsuarios, loadUsuariosSuccess, loadUsuariosFailure,
@@ -31,6 +32,9 @@ import {
   saveWhiteLabel, saveWhiteLabelSuccess, saveWhiteLabelFailure,
   loadModulos, loadModulosSuccess, loadModulosFailure,
   toggleModulo, toggleModuloSuccess, toggleModuloFailure,
+  loadSmtpConfig, loadSmtpConfigSuccess, loadSmtpConfigFailure,
+  saveSmtpConfig, saveSmtpConfigSuccess, saveSmtpConfigFailure,
+  sendTestEmail, sendTestEmailSuccess, sendTestEmailFailure,
 } from './empresa.actions';
 
 @Injectable()
@@ -45,6 +49,7 @@ export class EmpresaEffects {
   private readonly authAdminApi = inject(AuthAdminApiService);
   private readonly whiteLabelApi = inject(WhiteLabelApiService);
   private readonly modulosApi = inject(ModulosApiService);
+  private readonly smtpApi = inject(SmtpConfigApiService);
 
   // ---- Usuarios ----
   loadUsuarios$ = createEffect(() =>
@@ -271,6 +276,31 @@ export class EmpresaEffects {
       ),
     ),
   );
+
+  // ---- SMTP ----
+  loadSmtpConfig$ = createEffect(() => this.actions$.pipe(
+    ofType(loadSmtpConfig),
+    exhaustMap(() => this.smtpApi.get().pipe(
+      map(config => loadSmtpConfigSuccess({ config })),
+      catchError((error: HttpErrorResponse) => of(loadSmtpConfigFailure({ error }))),
+    )),
+  ));
+
+  saveSmtpConfig$ = createEffect(() => this.actions$.pipe(
+    ofType(saveSmtpConfig),
+    exhaustMap(({ payload }) => this.smtpApi.save(payload).pipe(
+      map(config => saveSmtpConfigSuccess({ config })),
+      catchError((error: HttpErrorResponse) => of(saveSmtpConfigFailure({ error }))),
+    )),
+  ));
+
+  sendTestEmail$ = createEffect(() => this.actions$.pipe(
+    ofType(sendTestEmail),
+    exhaustMap(({ payload }) => this.smtpApi.sendTest(payload).pipe(
+      map(result => sendTestEmailSuccess({ result })),
+      catchError((error: HttpErrorResponse) => of(sendTestEmailFailure({ error }))),
+    )),
+  ));
 
   // ---- Global error toast ----
   /** Cualquier *Failure del feature dispara un toast con el mensaje del back. */
