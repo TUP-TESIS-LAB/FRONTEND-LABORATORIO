@@ -14,6 +14,10 @@ import {
   saveWhiteLabel, saveWhiteLabelSuccess, saveWhiteLabelFailure,
   loadModulos, loadModulosSuccess, loadModulosFailure,
   toggleModulo, toggleModuloSuccess, toggleModuloFailure,
+  loadSmtpConfig, loadSmtpConfigSuccess, loadSmtpConfigFailure,
+  saveSmtpConfig, saveSmtpConfigSuccess, saveSmtpConfigFailure,
+  sendTestEmail, sendTestEmailSuccess, sendTestEmailFailure,
+  clearTestEmailResult,
 } from './empresa.actions';
 
 const setPending = (state: EmpresaState): EmpresaState => ({
@@ -139,4 +143,39 @@ export const empresaReducer = createReducer(
   on(saveWhiteLabelFailure, (s, { error }) => setFailure(s, error)),
   on(loadModulosFailure, (s, { error }) => setFailure(s, error)),
   on(toggleModuloFailure, (s, { error }) => setFailure(s, error)),
+
+  // ---- SMTP pending markers ----
+  on(loadSmtpConfig, (state) => ({ ...state, smtpPending: true, error: null })),
+  on(saveSmtpConfig, (state) => ({ ...state, smtpPending: true, error: null })),
+  on(sendTestEmail, (state) => ({
+    ...state, smtpTesting: true, smtpTestResult: null, smtpTestError: null,
+  })),
+
+  // ---- SMTP success ----
+  on(loadSmtpConfigSuccess, (state, { config }) => ({
+    ...state, smtpConfig: config, smtpPending: false,
+  })),
+  on(saveSmtpConfigSuccess, (state, { config }) => ({
+    ...state, smtpConfig: config, smtpPending: false,
+  })),
+  on(sendTestEmailSuccess, (state, { result }) => ({
+    ...state, smtpTesting: false, smtpTestResult: result, smtpTestError: null,
+  })),
+
+  // ---- SMTP failures ----
+  on(loadSmtpConfigFailure, (state, { error }) => ({
+    ...state, smtpPending: false, error,
+  })),
+  on(saveSmtpConfigFailure, (state, { error }) => ({
+    ...state, smtpPending: false, error,
+  })),
+  on(sendTestEmailFailure, (state, { error }) => ({
+    ...state, smtpTesting: false,
+    smtpTestError: error?.error?.message || error?.message || 'Error desconocido',
+  })),
+
+  // ---- clear test result ----
+  on(clearTestEmailResult, (state) => ({
+    ...state, smtpTestResult: null, smtpTestError: null,
+  })),
 );

@@ -17,6 +17,12 @@ import { Usuario } from '../models/usuario.model';
 import { Rol } from '../models/rol.model';
 import { WhiteLabel } from '../models/white-label.model';
 import { ModuloTenant } from '../models/modulo.model';
+import { SmtpConfig } from '../models/smtp-config.model';
+import {
+  loadSmtpConfigSuccess, saveSmtpConfigSuccess,
+  sendTestEmail, sendTestEmailSuccess, sendTestEmailFailure,
+  clearTestEmailResult,
+} from './empresa.actions';
 
 const usuario = (over: Partial<Usuario> = {}): Usuario => ({
   id: 1, firstName: 'Ana', lastName: 'Lopez', username: 'alopez',
@@ -114,5 +120,51 @@ describe('empresaReducer — roles / white-label / modulos', () => {
     expect(s1.modulos).toEqual(mods);
     const s2 = empresaReducer(s1, toggleModuloSuccess({ code: 'PORTAL', enable: true }));
     expect(s2.modulos.find((m) => m.moduleCode === 'PORTAL')!.enabled).toBe(true);
+  });
+});
+
+describe('SMTP reducer', () => {
+  const baseConfig: SmtpConfig = {
+    configured: true, gmailUsername: 'lab@gmail.com',
+    fromName: 'Lab', active: true, updatedAt: null,
+  };
+
+  it('loadSmtpConfigSuccess sets config and clears pending', () => {
+    const next = empresaReducer(initialEmpresaState, loadSmtpConfigSuccess({ config: baseConfig }));
+    expect(next.smtpConfig).toEqual(baseConfig);
+    expect(next.smtpPending).toBe(false);
+  });
+
+  it('saveSmtpConfigSuccess replaces config', () => {
+    const next = empresaReducer(initialEmpresaState, saveSmtpConfigSuccess({ config: baseConfig }));
+    expect(next.smtpConfig).toEqual(baseConfig);
+  });
+
+  it('sendTestEmail clears prior result + sets testing', () => {
+    const state = { ...initialEmpresaState, smtpTestResult: { delivered: true, sentAt: '..' } };
+    const next = empresaReducer(state, sendTestEmail({ payload: { to: 'a@b.com' } }));
+    expect(next.smtpTesting).toBe(true);
+    expect(next.smtpTestResult).toBeNull();
+  });
+
+  it('sendTestEmailSuccess stores result', () => {
+    const result = { delivered: true, sentAt: '2026-05-16T14:00Z' };
+    const next = empresaReducer(initialEmpresaState, sendTestEmailSuccess({ result }));
+    expect(next.smtpTestResult).toEqual(result);
+    expect(next.smtpTesting).toBe(false);
+  });
+
+  it('sendTestEmailFailure stores message', () => {
+    const error = new HttpErrorResponse({ error: { message: 'bad creds' }, status: 422 });
+    const next = empresaReducer(initialEmpresaState, sendTestEmailFailure({ error }));
+    expect(next.smtpTestError).toBe('bad creds');
+    expect(next.smtpTesting).toBe(false);
+  });
+
+  it('clearTestEmailResult resets', () => {
+    const state = { ...initialEmpresaState, smtpTestResult: { delivered: true, sentAt: 'x' }, smtpTestError: 'x' };
+    const next = empresaReducer(state, clearTestEmailResult());
+    expect(next.smtpTestResult).toBeNull();
+    expect(next.smtpTestError).toBeNull();
   });
 });
