@@ -230,8 +230,9 @@ export class PatientFormPage implements OnDestroy {
 
   readonly formStatusLabel = computed(() => {
     if (this.pending()) return 'Guardando…';
-    if (this.form.dirty) return '● Cambios sin guardar';
-    return 'Sin cambios';
+    // Re-evaluate on every form change so form.dirty is read fresh.
+    void this.value();
+    return this.form.dirty ? '● Cambios sin guardar' : 'Sin cambios';
   });
 
   get contactsArray(): FormArray<FormGroup> { return this.form.get('contacts') as FormArray<FormGroup>; }

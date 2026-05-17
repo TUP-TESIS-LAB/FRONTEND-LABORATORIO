@@ -170,4 +170,15 @@ describe('PatientFormPage', () => {
       overlay.remove();
     }
   });
+
+  it('updates formStatusLabel to "Cambios sin guardar" when a field becomes dirty', () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    expect(cmp.formStatusLabel()).toBe('Sin cambios');
+    cmp.form.get('general.firstName')?.setValue('Ana');
+    cmp.form.markAsDirty();
+    expect(cmp.formStatusLabel()).toBe('● Cambios sin guardar');
+  });
 });
