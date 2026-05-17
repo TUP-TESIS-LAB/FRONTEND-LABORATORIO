@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Subject, debounceTime } from 'rxjs';
@@ -23,7 +23,6 @@ import {
 import {
   selectAllPatients, selectPatientPending, selectPatientPageRequest, selectPatientTotalElements,
 } from '../../store/patient.selectors';
-import { PatientFormDrawerComponent } from '../../components/patient-form-drawer/patient-form-drawer.component';
 
 @Component({
   selector: 'pat-patient-list-page',
@@ -33,7 +32,7 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
   imports: [
     RouterLink, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule,
     ConfirmDialogModule, DatePipe, DniPipe, AgePipe,
-    EmptyStateComponent, PatientFormDrawerComponent,
+    EmptyStateComponent,
   ],
   template: `
     <div class="p-6">
@@ -45,7 +44,9 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
         <div class="flex items-center gap-2">
           <p-button label="Exportar" icon="pi pi-file-export" severity="secondary" [outlined]="true" [disabled]="true" pTooltip="Próximamente" />
           @if (canMutate()) {
-            <p-button label="Nuevo paciente" icon="pi pi-plus" (onClick)="openCreate()" />
+            <a [routerLink]="['/pacientes', 'nuevo']">
+              <p-button label="Nuevo paciente" icon="pi pi-plus" />
+            </a>
           }
         </div>
       </header>
@@ -107,7 +108,9 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
                   <p-button [text]="true" icon="pi pi-eye" pTooltip="Ver detalle" ariaLabel="Ver detalle" />
                 </a>
                 @if (canMutate()) {
-                  <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" (onClick)="openEdit(p)" />
+                  <a [routerLink]="['/pacientes', p.id, 'editar']">
+                    <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" />
+                  </a>
                   <p-button [text]="true" icon="pi pi-times-circle" pTooltip="Activar/Desactivar" ariaLabel="Activar/Desactivar" (onClick)="confirmToggle(p)" />
                 }
               </td>
@@ -117,7 +120,9 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
             <tr>
               <td colspan="7">
                 @if (canMutate()) {
-                  <ui-empty-state heading="Sin pacientes" icon="pi-users" ctaLabel="Nuevo paciente" (ctaClick)="openCreate()" />
+                  <a [routerLink]="['/pacientes', 'nuevo']">
+                    <ui-empty-state heading="Sin pacientes" icon="pi-users" ctaLabel="Nuevo paciente" />
+                  </a>
                 } @else {
                   <ui-empty-state heading="Sin pacientes" icon="pi-users" />
                 }
@@ -127,7 +132,6 @@ import { PatientFormDrawerComponent } from '../../components/patient-form-drawer
         </p-table>
 
       <p-confirmDialog />
-      <pat-form-drawer [open]="drawerOpen()" [patient]="editing()" (closed)="onDrawerClosed()" />
     </div>
   `,
 })
@@ -142,9 +146,6 @@ export class PatientListPage implements OnInit {
   readonly pending = this.store.selectSignal(selectPatientPending);
   readonly total = this.store.selectSignal(selectPatientTotalElements);
   readonly pageRequest = this.store.selectSignal(selectPatientPageRequest);
-
-  readonly drawerOpen = signal(false);
-  readonly editing = signal<Patient | null>(null);
 
   readonly stateOptions: { value: PatientStateFilter; label: string }[] = [
     { value: 'active', label: 'Activos' },
@@ -171,10 +172,6 @@ export class PatientListPage implements OnInit {
     const page = Math.floor((e.first ?? 0) / rows);
     this.store.dispatch(setPatientPageRequest({ patch: { page, size: rows } }));
   }
-
-  openCreate(): void { this.editing.set(null); this.drawerOpen.set(true); }
-  openEdit(p: Patient): void { this.editing.set(p); this.drawerOpen.set(true); }
-  onDrawerClosed(): void { this.drawerOpen.set(false); this.editing.set(null); }
 
   confirmToggle(p: Patient): void {
     const deleted = p.active;
