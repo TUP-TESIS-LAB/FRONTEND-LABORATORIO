@@ -18,7 +18,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
       <a routerLink="white-label" routerLinkActive="is-active" role="tab">White-label</a>
       <a routerLink="modulos" routerLinkActive="is-active" role="tab">Módulos</a>
       <a routerLink="fiscal" routerLinkActive="is-active" role="tab">Fiscal</a>
-      <a routerLink="smtp-docs" routerLinkActive="is-active" role="tab">SMTP / Docs</a>
+      <a routerLink="email" routerLinkActive="is-active" role="tab">Email</a>
     </nav>
 
     <section class="emp-dashboard__body">
