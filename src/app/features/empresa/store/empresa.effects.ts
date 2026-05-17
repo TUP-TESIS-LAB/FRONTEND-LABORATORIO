@@ -314,6 +314,7 @@ export class EmpresaEffects {
           loadRolesFailure,
           loadWhiteLabelFailure, saveWhiteLabelFailure,
           loadModulosFailure, toggleModuloFailure,
+          loadSmtpConfigFailure, saveSmtpConfigFailure, sendTestEmailFailure,
         ),
         map(({ error }) => {
           const detail =

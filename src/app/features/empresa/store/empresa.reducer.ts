@@ -171,7 +171,7 @@ export const empresaReducer = createReducer(
   })),
   on(sendTestEmailFailure, (state, { error }) => ({
     ...state, smtpTesting: false,
-    smtpTestError: error?.error?.message || error?.message || 'Error desconocido',
+    smtpTestError: error?.error?.message || error?.message || 'Error inesperado',
   })),
 
   // ---- clear test result ----

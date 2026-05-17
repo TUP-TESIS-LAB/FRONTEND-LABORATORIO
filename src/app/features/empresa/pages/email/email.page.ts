@@ -32,7 +32,7 @@ import {
           </div>
 
           <p class="ui-text-sm ui-text-muted" *ngIf="config()?.configured; else notConfiguredLabel">
-            ● Configurado <span *ngIf="config()?.updatedAt">(actualizado {{ config()?.updatedAt }})</span>
+            ● Configurado <span *ngIf="config()?.updatedAt">(actualizado {{ config()?.updatedAt | date:'medium' }})</span>
           </p>
           <ng-template #notConfiguredLabel>
             <p class="ui-text-sm ui-text-muted">○ No configurado todavía</p>
@@ -109,10 +109,10 @@ import {
                     (click)="sendTest()" />
         </div>
 
-        <p *ngIf="testResult()" class="ui-text-sm" style="color:#16a34a;">
+        <p *ngIf="testResult()" class="ui-text-sm emp-email__result-success">
           ✓ Enviado a {{ testForm.value }} (sentAt {{ testResult()?.sentAt }})
         </p>
-        <p *ngIf="testError()" class="ui-text-sm" style="color:#dc2626;">
+        <p *ngIf="testError()" class="ui-text-sm emp-email__result-error">
           ✗ Error: {{ testError() }}
         </p>
       </section>
@@ -121,6 +121,8 @@ import {
   styles: [`
     .emp-email { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
     @media (min-width: 1024px) { .emp-email { max-width: 720px; } }
+    .emp-email__result-success { color: var(--ds-success); }
+    .emp-email__result-error   { color: var(--ds-danger); }
   `],
 })
 export class EmailPage implements OnInit {
@@ -157,9 +159,10 @@ export class EmailPage implements OnInit {
           appPassword: '',
           fromName: cfg.fromName ?? '',
           active: cfg.active,
-        });
-        this.form.controls.appPassword.clearValidators();
-        this.form.controls.appPassword.addValidators([Validators.minLength(16), Validators.maxLength(64)]);
+        }, { emitEvent: false });
+        this.form.controls.appPassword.setValidators([
+          Validators.minLength(16), Validators.maxLength(64),
+        ]);
         this.form.controls.appPassword.updateValueAndValidity({ emitEvent: false });
       } else if (cfg && !cfg.configured) {
         this.form.controls.appPassword.setValidators([
