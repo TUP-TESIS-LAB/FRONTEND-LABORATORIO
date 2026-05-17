@@ -85,6 +85,34 @@
   font-size: 11px;
   margin-top: 2px;
 }
+// Row item inside a repeatable list (contact / address / coverage)
+.pat-form__row {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: var(--space-3);
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pat-form__row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.pat-form__row-flags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 11px;
+  color: var(--ds-text-muted);
+}
+.pat-form__row-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 .pat-form__footer {
   position: sticky;
   bottom: 0;

@@ -1,17 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Paciente, Protocolo, Nbu } from '../models/analitica.model';
-
-// Pacientes
-export const loadPacientes = createAction('[Analitica Page] Load Pacientes');
-export const loadPacientesSuccess = createAction(
-  '[Analitica API] Load Pacientes Success',
-  props<{ pacientes: Paciente[] }>()
-);
-export const loadPacientesFailure = createAction(
-  '[Analitica API] Load Pacientes Failure',
-  props<{ error: HttpErrorResponse }>()
-);
+import { Protocolo, Nbu } from '../models/analitica.model';
 
 // Protocolos
 export const loadProtocolos = createAction('[Analitica Page] Load Protocolos');

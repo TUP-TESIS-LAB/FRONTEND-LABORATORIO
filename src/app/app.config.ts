@@ -43,6 +43,10 @@ import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.st
 import { financieroReducer } from '@features/financiero/store/financiero.reducer';
 import { FinancieroEffects } from '@features/financiero/store/financiero.effects';
 
+import { PATIENT_FEATURE_KEY } from '@features/pacientes/store/patient.state';
+import { patientReducer } from '@features/pacientes/store/patient.reducer';
+import { PatientEffects } from '@features/pacientes/store/patient.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -77,6 +81,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(TurnosEffects),
     provideState(FINANCIERO_FEATURE_KEY, financieroReducer),
     provideEffects(FinancieroEffects),
+    provideState(PATIENT_FEATURE_KEY, patientReducer),
+    provideEffects(PatientEffects),
     providePrimeNG({
       theme: {
         preset: Aura,

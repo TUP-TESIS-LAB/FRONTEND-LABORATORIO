@@ -1,8 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Paciente, Protocolo, Nbu } from '../models/analitica.model';
+import { Protocolo, Nbu } from '../models/analitica.model';
 
 export interface AnaliticaState {
-  pacientes: Paciente[];
   protocolos: Protocolo[];
   nbus: Nbu[];
   pending: boolean;
@@ -10,7 +9,6 @@ export interface AnaliticaState {
 }
 
 export const initialAnaliticaState: AnaliticaState = {
-  pacientes: [],
   protocolos: [],
   nbus: [],
   pending: false,
