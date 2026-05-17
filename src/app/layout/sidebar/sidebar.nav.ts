@@ -47,7 +47,7 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: 'Post-analítica', path: '/analitica/post-analitica' },
         ],
       },
-      { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/analitica/pacientes' },
+      { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes' },
       {
         kind: 'link',
         label: 'Turnos',

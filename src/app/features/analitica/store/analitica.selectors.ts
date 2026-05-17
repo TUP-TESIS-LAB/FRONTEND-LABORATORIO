@@ -3,11 +3,6 @@ import { AnaliticaState, ANALITICA_FEATURE_KEY } from './analitica.state';
 
 export const selectAnaliticaState = createFeatureSelector<AnaliticaState>(ANALITICA_FEATURE_KEY);
 
-export const selectAllPacientes = createSelector(
-  selectAnaliticaState,
-  (state) => state.pacientes
-);
-
 export const selectAllProtocolos = createSelector(
   selectAnaliticaState,
   (state) => state.protocolos

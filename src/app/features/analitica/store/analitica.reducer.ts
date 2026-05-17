@@ -1,31 +1,12 @@
 import { createReducer, on } from '@ngrx/store';
 import { AnaliticaState, initialAnaliticaState } from './analitica.state';
 import {
-  loadPacientes, loadPacientesSuccess, loadPacientesFailure,
   loadProtocolos, loadProtocolosSuccess, loadProtocolosFailure,
   loadNbus, loadNbusSuccess, loadNbusFailure,
 } from './analitica.actions';
 
 export const analiticaReducer = createReducer(
   initialAnaliticaState,
-
-  // Pacientes
-  on(loadPacientes, (state): AnaliticaState => ({
-    ...state,
-    pending: true,
-    error: null,
-  })),
-  on(loadPacientesSuccess, (state, { pacientes }): AnaliticaState => ({
-    ...state,
-    pacientes,
-    pending: false,
-    error: null,
-  })),
-  on(loadPacientesFailure, (state, { error }): AnaliticaState => ({
-    ...state,
-    pending: false,
-    error,
-  })),
 
   // Protocolos
   on(loadProtocolos, (state): AnaliticaState => ({

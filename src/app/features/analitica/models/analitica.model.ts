@@ -1,13 +1,3 @@
-export interface Paciente {
-  id: string;
-  nombre: string;
-  apellido: string;
-  dni: string;
-  fechaNacimiento: string;
-  email?: string;
-  telefono?: string;
-}
-
 export interface Protocolo {
   id: string;
   numero: string;
