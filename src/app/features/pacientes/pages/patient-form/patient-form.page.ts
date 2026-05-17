@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, computed, effect, inject, input, OnDestroy,
+  ChangeDetectionStrategy, Component, computed, effect, HostListener, inject, input, OnDestroy,
 } from '@angular/core';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Actions, ofType } from '@ngrx/effects';
@@ -308,6 +308,19 @@ export class PatientFormPage implements OnDestroy {
   saveErrorMessage(err: { status?: number; error?: { message?: string } }): string {
     if (err.status === 409) return 'Ya existe un paciente con ese DNI.';
     return err.error?.message ?? 'No se pudo guardar el paciente.';
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(e: KeyboardEvent): void {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      this.onSubmit();
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      this.onBack();
+    }
   }
 
   onSubmit(): void {

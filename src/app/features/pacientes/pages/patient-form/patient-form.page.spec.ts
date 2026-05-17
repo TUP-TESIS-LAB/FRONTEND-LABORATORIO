@@ -136,4 +136,22 @@ describe('PatientFormPage', () => {
     expect(confirmSpy).toHaveBeenCalled();
     expect(navSpy).toHaveBeenCalledWith(['/pacientes']);
   });
+
+  it('submits on Ctrl+S', () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const submitSpy = vi.spyOn(fixture.componentInstance, 'onSubmit');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
+    expect(submitSpy).toHaveBeenCalled();
+  });
+
+  it('goes back on Escape', () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const backSpy = vi.spyOn(fixture.componentInstance, 'onBack');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(backSpy).toHaveBeenCalled();
+  });
 });
