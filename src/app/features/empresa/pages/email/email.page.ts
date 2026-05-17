@@ -6,7 +6,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { CheckboxModule } from 'primeng/checkbox';
 import { CommonModule } from '@angular/common';
 
 import {
@@ -20,7 +19,7 @@ import {
 @Component({
   selector: 'emp-email-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, CheckboxModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="emp-email">
@@ -72,11 +71,6 @@ import {
               </small>
             </div>
 
-            <div class="pat-form__field">
-              <label class="pat-form__label">
-                <p-checkbox formControlName="active" [binary]="true" /> Activo
-              </label>
-            </div>
           </div>
 
           <div class="pat-form__footer">
@@ -141,14 +135,14 @@ export class EmailPage implements OnInit {
     gmailUsername: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
     appPassword: ['', [Validators.minLength(16), Validators.maxLength(64)]],
     fromName: ['', [Validators.maxLength(120)]],
-    active: [true],
   });
 
   testForm = this.fb.control('', { validators: [Validators.required, Validators.email], nonNullable: true });
 
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
+  readonly testStatus = toSignal(this.testForm.statusChanges, { initialValue: this.testForm.status });
   readonly canSave = computed(() => this.status() === 'VALID' && this.form.dirty);
-  readonly canTest = computed(() => this.testForm.valid && !this.form.dirty && this.config()?.configured === true);
+  readonly canTest = computed(() => this.testStatus() === 'VALID' && !this.form.dirty && this.config()?.configured === true);
 
   constructor() {
     effect(() => {
@@ -158,7 +152,6 @@ export class EmailPage implements OnInit {
           gmailUsername: cfg.gmailUsername ?? '',
           appPassword: '',
           fromName: cfg.fromName ?? '',
-          active: cfg.active,
         }, { emitEvent: false });
         this.form.controls.appPassword.setValidators([
           Validators.minLength(16), Validators.maxLength(64),
@@ -184,7 +177,6 @@ export class EmailPage implements OnInit {
       gmailUsername: v.gmailUsername!,
       ...(v.appPassword ? { appPassword: v.appPassword } : {}),
       fromName: v.fromName || null,
-      active: v.active ?? true,
     };
     this.store.dispatch(saveSmtpConfig({ payload }));
   }
