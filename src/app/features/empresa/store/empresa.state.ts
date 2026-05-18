@@ -3,6 +3,7 @@ import { Usuario, BuscarUsuariosParams } from '../models/usuario.model';
 import { Rol } from '../models/rol.model';
 import { WhiteLabel } from '../models/white-label.model';
 import { ModuloTenant } from '../models/modulo.model';
+import { SmtpConfig, TestEmailResult } from '../models/smtp-config.model';
 
 export interface EmpresaState {
   // Usuarios
@@ -23,6 +24,13 @@ export interface EmpresaState {
   // Modulos
   modulos: ModuloTenant[];
 
+  // SMTP / Email
+  smtpConfig: SmtpConfig | null;
+  smtpPending: boolean;
+  smtpTesting: boolean;
+  smtpTestResult: TestEmailResult | null;
+  smtpTestError: string | null;
+
   // Compartidos
   pending: boolean;
   error: HttpErrorResponse | null;
@@ -40,6 +48,12 @@ export const initialEmpresaState: EmpresaState = {
   roles: [],
   whiteLabel: null,
   modulos: [],
+
+  smtpConfig: null,
+  smtpPending: false,
+  smtpTesting: false,
+  smtpTestResult: null,
+  smtpTestError: null,
 
   pending: false,
   error: null,
