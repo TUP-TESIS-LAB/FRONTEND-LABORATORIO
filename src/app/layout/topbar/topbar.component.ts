@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Popover } from 'primeng/popover';
 import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
@@ -22,7 +22,11 @@ import { ProfileMenuComponent } from '@features/profile/components/profile-menu/
       </button>
 
       <div class="ui-topbar__brand">
-        <div class="ui-topbar__logo-box" aria-hidden="true">{{ tenantInitials() }}</div>
+        <img
+          class="ui-topbar__logo"
+          [src]="logoSrc()"
+          [alt]="tenantName()"
+          (error)="onLogoError()" />
         <span class="ui-topbar__tenant-name">{{ tenantName() }}</span>
         <span class="ui-topbar__tenant-badge">Admin</span>
       </div>
@@ -92,19 +96,15 @@ import { ProfileMenuComponent } from '@features/profile/components/profile-menu/
       gap: var(--space-2);
       min-width: 0;
     }
-    .ui-topbar__logo-box {
+    .ui-topbar__logo {
       width: 28px;
       height: 28px;
-      background: var(--brand-primary);
       border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: 700;
-      font-size: 11px;
+      object-fit: contain;
+      background: rgba(255,255,255,.08);
+      color: var(--brand-primary);
       flex-shrink: 0;
-      letter-spacing: -.5px;
+      display: block;
     }
     .ui-topbar__tenant-name {
       color: #f1f5f9;
@@ -233,6 +233,15 @@ export class TopbarComponent {
 
   protected readonly tenantName     = computed(() => this.tenantConfig()?.name ?? 'LabCore');
   protected readonly tenantInitials = computed(() => initials(this.tenantName()));
+
+  private readonly defaultLogo = 'logo.svg';
+  private readonly logoFallback = signal(false);
+  protected readonly logoSrc = computed(() => {
+    if (this.logoFallback()) return this.defaultLogo;
+    const url = this.tenantConfig()?.logoUrl;
+    return url && url.length > 0 ? url : this.defaultLogo;
+  });
+  protected onLogoError(): void { this.logoFallback.set(true); }
 
   protected readonly userInitials = computed(() => {
     const u = this.userSession.currentUser();
