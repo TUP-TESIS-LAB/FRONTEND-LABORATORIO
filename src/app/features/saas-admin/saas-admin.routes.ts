@@ -5,19 +5,16 @@ import { saasAdminGuard } from '@core/guards/saas-admin.guard';
 @Component({
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<p>SaaS login placeholder (Task 6)</p>`,
-})
-class SaasLoginPlaceholder {}
-
-@Component({
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<p>Dashboard placeholder (Task 14)</p>`,
 })
 class SaasDashboardPlaceholder {}
 
 export const SAAS_ADMIN_ROUTES: Routes = [
-  { path: 'login', component: SaasLoginPlaceholder },
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./pages/saas-login/saas-login.page').then((m) => m.SaasLoginPage),
+  },
   {
     path: '',
     canActivate: [saasAdminGuard],
