@@ -50,7 +50,7 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
               </div>
             </div>
             <div class="pat-form__field">
-              <label class="pat-form__label">Color de acento (#RRGGBB)*</label>
+              <label class="pat-form__label">Color secundario (#RRGGBB)*</label>
               <div style="display:flex; gap:var(--space-2); align-items:center;">
                 <input pInputText formControlName="secondaryColor" class="pat-form__input" placeholder="#0ea5a4" />
                 <p-colorPicker formControlName="secondaryColor" />
@@ -126,7 +126,7 @@ export class WhiteLabelPage implements OnInit {
 
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
   readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
-  readonly canSave = computed(() => this.status() === 'VALID' && this.form.dirty);
+  readonly canSave = computed(() => this.status() === 'VALID');
 
   constructor() {
     // Hidratar el form cuando llega data del store.

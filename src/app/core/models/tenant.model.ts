@@ -4,8 +4,7 @@ export interface TenantConfig {
   id: string;
   name: string;
   logoUrl: string;
-  brandPrimary: string;
-  brandSecondary: string;
-  brandAccent: string;
+  primaryColor: string;
+  secondaryColor: string;
   modules: ModuleKey[];
 }

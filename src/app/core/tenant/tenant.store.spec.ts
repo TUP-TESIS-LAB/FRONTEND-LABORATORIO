@@ -13,9 +13,8 @@ const MOCK_CONFIG: TenantConfig = {
   id: 'lab1',
   name: 'Laboratorio Central',
   logoUrl: '/logo.png',
-  brandPrimary: '#2563eb',
-  brandSecondary: '#0ea5a4',
-  brandAccent: '#f97316',
+  primaryColor: '#2563eb',
+  secondaryColor: '#0ea5a4',
   modules: [ModuleKey.Turnos, ModuleKey.Financiero],
 };
 

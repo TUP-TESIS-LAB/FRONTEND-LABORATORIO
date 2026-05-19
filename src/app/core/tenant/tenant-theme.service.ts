@@ -5,10 +5,9 @@ import { TenantConfig } from '@core/models/tenant.model';
 export class TenantThemeService {
   applyTheme(config: TenantConfig): void {
     const root = document.documentElement;
-    root.style.setProperty('--brand-primary',   this.safeColor(config.brandPrimary));
-    root.style.setProperty('--brand-secondary', config.brandSecondary);
-    root.style.setProperty('--brand-accent',    config.brandAccent);
-    root.style.setProperty('--p-primary-color', this.safeColor(config.brandPrimary));
+    root.style.setProperty('--brand-primary',   this.safeColor(config.primaryColor));
+    root.style.setProperty('--brand-secondary', config.secondaryColor);
+    root.style.setProperty('--p-primary-color', this.safeColor(config.primaryColor));
   }
 
   private safeColor(hex: string): string {

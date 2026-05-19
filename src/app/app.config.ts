@@ -16,8 +16,7 @@ import { routes } from './app.routes';
 import { authTokenInterceptor } from '@core/interceptors/auth-token.interceptor';
 import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
 import { TokenService } from '@core/auth/token.service';
-import { DEV_TENANT } from '@core/tenant/dev-tenant.config';
-import { loadTenantConfigSuccess } from '@core/tenant/store/tenant.actions';
+import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
 import { tenantReducer } from '@core/tenant/store/tenant.reducer';
@@ -50,16 +49,14 @@ import { PatientEffects } from '@features/pacientes/store/patient.effects';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    // DEV fallback: seed the tenant store at bootstrap when a valid token
-    // is already present in localStorage (e.g. after a page refresh). The
-    // tenant resolver at `/` blocks navigation until tenant config arrives,
-    // and the real `GET /api/tenant/config` endpoint doesn't exist yet.
-    // Remove once that endpoint is implemented.
+    // On bootstrap, if there's already a valid token (e.g. page refresh),
+    // kick off tenant config loading so the resolver at `/` doesn't block
+    // waiting for a dispatch.
     provideAppInitializer(() => {
       const tokens = inject(TokenService);
       const store = inject(Store);
       if (tokens.isTokenValid()) {
-        store.dispatch(loadTenantConfigSuccess({ config: DEV_TENANT }));
+        store.dispatch(loadTenantConfig());
       }
     }),
     provideRouter(routes, withComponentInputBinding()),

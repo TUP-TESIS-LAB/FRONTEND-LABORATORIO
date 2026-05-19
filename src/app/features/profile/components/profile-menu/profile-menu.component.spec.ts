@@ -29,7 +29,7 @@ describe('ProfileMenuComponent', () => {
           initialState: {
             [TENANT_FEATURE_KEY]: {
               config: tenantName
-                ? { id: 'lab1', name: tenantName, logoUrl: '', brandPrimary: '#000', brandSecondary: '#000', brandAccent: '#000', modules: [] }
+                ? { id: 'lab1', name: tenantName, logoUrl: '', primaryColor: '#000', secondaryColor: '#000', modules: [] }
                 : null,
               pending: false,
               error: null,
