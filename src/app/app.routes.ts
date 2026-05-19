@@ -122,6 +122,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'saas',
+    loadChildren: () =>
+      import('./features/saas-admin/saas-admin.routes').then((m) => m.SAAS_ADMIN_ROUTES),
+  },
+
+  {
     path: 'admin',
     canActivate: [rootGuard],
     loadChildren: () =>
