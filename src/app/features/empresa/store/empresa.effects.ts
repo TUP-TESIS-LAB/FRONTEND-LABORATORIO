@@ -235,8 +235,8 @@ export class EmpresaEffects {
           if (!tenantCfg) return;
           this.tenantTheme.applyTheme({
             ...tenantCfg,
-            brandPrimary: whiteLabel.primaryColor,
-            brandSecondary: whiteLabel.secondaryColor,
+            primaryColor: whiteLabel.primaryColor,
+            secondaryColor: whiteLabel.secondaryColor,
           });
         }),
       ),

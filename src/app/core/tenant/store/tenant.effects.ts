@@ -18,7 +18,7 @@ export class TenantEffects {
     this.actions$.pipe(
       ofType(loadTenantConfig),
       switchMap(() =>
-        this.http.get<TenantConfig>('/api/tenant/config').pipe(
+        this.http.get<TenantConfig>('/api/v1/empresa/tenant-config').pipe(
           map(config => loadTenantConfigSuccess({ config })),
           catchError((error: HttpErrorResponse) =>
             of(loadTenantConfigFailure({ error })),

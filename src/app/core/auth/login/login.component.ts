@@ -5,8 +5,7 @@ import { Store } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
-import { loadTenantConfigSuccess } from '@core/tenant/store/tenant.actions';
-import { DEV_TENANT } from '@core/tenant/dev-tenant.config';
+import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
 import { AuthApiService } from '@features/auth/services/auth-api.service';
 
 @Component({
@@ -370,8 +369,7 @@ export class LoginComponent {
       if (response.token) {
         this.tokens.setToken(response.token);
         this.userSession.set(response.user);
-        // DEV fallback (see comment near DEV_TENANT). Remove once tenant config endpoint exists.
-        this.store.dispatch(loadTenantConfigSuccess({ config: DEV_TENANT }));
+        this.store.dispatch(loadTenantConfig());
         await this.router.navigate(['/home']);
         return;
       }

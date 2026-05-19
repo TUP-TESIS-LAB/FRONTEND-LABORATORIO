@@ -4,9 +4,8 @@ import { TenantConfig } from '@core/models/tenant.model';
 
 const baseConfig: TenantConfig = {
   id: 'lab1', name: 'Lab', logoUrl: '', modules: [],
-  brandPrimary: '#2563eb',
-  brandSecondary: '#0ea5a4',
-  brandAccent: '#f97316',
+  primaryColor: '#2563eb',
+  secondaryColor: '#0ea5a4',
 };
 
 describe('TenantThemeService', () => {
@@ -25,7 +24,7 @@ describe('TenantThemeService', () => {
 
   it('should NOT modify --ds-danger', () => {
     document.documentElement.style.setProperty('--ds-danger', '#e23a47');
-    service.applyTheme({ ...baseConfig, brandPrimary: '#e23a47' });
+    service.applyTheme({ ...baseConfig, primaryColor: '#e23a47' });
     expect(document.documentElement.style.getPropertyValue('--ds-danger')).toBe('#e23a47');
   });
 

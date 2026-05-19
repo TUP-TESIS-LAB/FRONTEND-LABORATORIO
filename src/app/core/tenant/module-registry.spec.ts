@@ -10,9 +10,8 @@ const MOCK_CONFIG: TenantConfig = {
   id: 'lab1',
   name: 'Lab',
   logoUrl: '',
-  brandPrimary: '#000',
-  brandSecondary: '#000',
-  brandAccent: '#000',
+  primaryColor: '#000',
+  secondaryColor: '#000',
   modules: [ModuleKey.Turnos],
 };
 
