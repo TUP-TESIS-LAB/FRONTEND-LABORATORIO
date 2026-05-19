@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { saasAdminGuard } from '@core/guards/saas-admin.guard';
 
 @Component({
   standalone: true,
@@ -11,11 +12,19 @@ class SaasLoginPlaceholder {}
 @Component({
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<p>SaaS shell placeholder (Task 5)</p>`,
+  template: `<p>Dashboard placeholder (Task 14)</p>`,
 })
-class SaasShellPlaceholder {}
+class SaasDashboardPlaceholder {}
 
 export const SAAS_ADMIN_ROUTES: Routes = [
   { path: 'login', component: SaasLoginPlaceholder },
-  { path: '', component: SaasShellPlaceholder },
+  {
+    path: '',
+    canActivate: [saasAdminGuard],
+    loadComponent: () =>
+      import('@layout/saas-shell/saas-shell.component').then((m) => m.SaasShellComponent),
+    children: [
+      { path: '', component: SaasDashboardPlaceholder },
+    ],
+  },
 ];
