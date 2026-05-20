@@ -10,12 +10,13 @@ import {
 import { selectSaasAdminPending, selectSelectedTenant } from '../../store/saas-admin.selectors';
 import { TenantInfoTabComponent } from './tabs/tenant-info-tab.component';
 import { TenantModulesTabComponent } from './tabs/tenant-modules-tab.component';
+import { TenantWhiteLabelTabComponent } from './tabs/tenant-white-label-tab.component';
 
 @Component({
   selector: 'saas-tenant-detail-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonModule, TabsModule, TagModule, TenantInfoTabComponent, TenantModulesTabComponent],
+  imports: [RouterLink, ButtonModule, TabsModule, TagModule, TenantInfoTabComponent, TenantModulesTabComponent, TenantWhiteLabelTabComponent],
   template: `
     <header class="detail-header">
       <a routerLink="/saas/tenants" class="back">
@@ -49,7 +50,9 @@ import { TenantModulesTabComponent } from './tabs/tenant-modules-tab.component';
           <p-tabpanel value="modules">
             <tenant-modules-tab [tenantId]="numericId()" />
           </p-tabpanel>
-          <p-tabpanel value="white-label"><p class="muted">Tab White-label (Task 20)</p></p-tabpanel>
+          <p-tabpanel value="white-label">
+            <tenant-white-label-tab [tenantId]="numericId()" />
+          </p-tabpanel>
         </p-tabpanels>
       </p-tabs>
     }
