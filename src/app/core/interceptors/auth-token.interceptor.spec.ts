@@ -67,4 +67,25 @@ describe('authTokenInterceptor', () => {
     expect(clearSpy).toHaveBeenCalled();
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
   });
+
+  it('clears token and redirects to /saas/login on 401 when inside /saas/*', async () => {
+    const router = TestBed.inject(Router);
+    const removeSpy = vi.spyOn(tokenService, 'removeToken');
+    const userSession = TestBed.inject(UserSessionService);
+    const clearSpy = vi.spyOn(userSession, 'clear');
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    vi.spyOn(tokenService, 'getToken').mockReturnValue('some.jwt.token');
+    vi.spyOn(router, 'url', 'get').mockReturnValue('/saas/tenants');
+
+    const errorPromise = firstValueFrom(http.get('/api/v1/anything')).catch((e: unknown) => e);
+
+    const req = httpMock.expectOne('/api/v1/anything');
+    req.flush({ message: 'unauthorized' }, { status: 401, statusText: 'Unauthorized' });
+
+    const err = await errorPromise as { status: number };
+    expect(err.status).toBe(401);
+    expect(removeSpy).toHaveBeenCalled();
+    expect(clearSpy).toHaveBeenCalled();
+    expect(navigateSpy).toHaveBeenCalledWith(['/saas/login']);
+  });
 });
