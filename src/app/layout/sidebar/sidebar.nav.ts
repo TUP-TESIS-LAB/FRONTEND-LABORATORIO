@@ -109,10 +109,4 @@ export const NAV_SECTIONS: NavSection[] = [
       },
     ],
   },
-  {
-    label: 'Administración',
-    items: [
-      { kind: 'link', label: 'SaaS Admin', icon: 'pi pi-cog', path: '/admin', chip: 'Root' },
-    ],
-  },
 ];

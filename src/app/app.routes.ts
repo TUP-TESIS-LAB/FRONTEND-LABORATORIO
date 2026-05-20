@@ -127,12 +127,5 @@ export const routes: Routes = [
       import('./features/saas-admin/saas-admin.routes').then((m) => m.SAAS_ADMIN_ROUTES),
   },
 
-  {
-    path: 'admin',
-    canActivate: [rootGuard],
-    loadChildren: () =>
-      import('./features/saas-admin/admin.routes').then((m) => m.ADMIN_ROUTES),
-  },
-
   { path: '**', redirectTo: '' },
 ];
