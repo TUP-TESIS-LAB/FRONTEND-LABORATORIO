@@ -23,7 +23,8 @@ export class TenantEffects {
         this.http.get<TenantConfig>('/api/v1/empresa/tenant-config').pipe(
           map(config => loadTenantConfigSuccess({ config })),
           catchError((error: HttpErrorResponse) => {
-            if (this.router.url.startsWith('/saas')) return EMPTY;
+            const inSaas = this.router.url === '/saas/login' || this.router.url.startsWith('/saas/');
+            if (inSaas) return EMPTY;
             return of(loadTenantConfigFailure({ error }));
           }),
         ),

@@ -20,7 +20,8 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       if (err instanceof HttpErrorResponse && err.status === 401) {
         tokens.removeToken();
         userSession.clear();
-        const target = router.url.startsWith('/saas') ? '/saas/login' : '/login';
+        const inSaas = router.url === '/saas/login' || router.url.startsWith('/saas/');
+        const target = inSaas ? '/saas/login' : '/login';
         router.navigate([target]);
       }
       return throwError(() => err);

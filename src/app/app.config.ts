@@ -59,7 +59,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const tokens = inject(TokenService);
       const store = inject(Store);
-      if (tokens.isTokenValid()) {
+      if (tokens.isTokenValid() && !tokens.getRoles().includes('SAAS_ADMIN')) {
         store.dispatch(loadTenantConfig());
       }
     }),
