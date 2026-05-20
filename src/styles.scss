@@ -11,3 +11,69 @@
 @import "primeicons/primeicons.css";
 @import "tailwindcss" layer(tailwind);
 @plugin "tailwindcss-primeui";
+
+// ── SaaS Admin dark-theme palette (available globally so portaled overlays can reach them) ──
+:root {
+  --saas-bg-page:      #1a1b3a;
+  --saas-bg-card:      #232447;
+  --saas-bg-card-alt:  #2a2c52;
+  --saas-border:       rgba(255,255,255,.08);
+  --saas-text:         #e2e8f0;
+  --saas-text-muted:   #94a3b8;
+  --saas-text-on-card: #fde68a;
+  --saas-accent:       #fbbf24;
+}
+
+// ── SaaS-themed p-dialog / p-confirmDialog (portaled to document.body) ──
+.p-dialog.saas-themed {
+  background: var(--saas-bg-card, #232447);
+  color: var(--saas-text, #e2e8f0);
+
+  .p-dialog-header {
+    background: var(--saas-bg-card-alt, #2a2c52);
+    color: var(--saas-text-on-card, #fde68a);
+    border-bottom: 1px solid var(--saas-border, rgba(255,255,255,.08));
+  }
+
+  .p-dialog-content {
+    background: var(--saas-bg-card, #232447);
+    color: var(--saas-text, #e2e8f0);
+  }
+
+  .p-inputtext,
+  input.p-inputtext {
+    background: var(--saas-bg-card-alt, #2a2c52);
+    color: var(--saas-text, #e2e8f0);
+    border-color: var(--saas-border, rgba(255,255,255,.08));
+  }
+
+  .p-dialog-footer {
+    background: var(--saas-bg-card, #232447);
+    border-top: 1px solid var(--saas-border, rgba(255,255,255,.08));
+  }
+
+  label, span {
+    color: var(--saas-text-muted, #94a3b8);
+  }
+}
+
+.p-confirmdialog.saas-themed {
+  background: var(--saas-bg-card, #232447);
+  color: var(--saas-text, #e2e8f0);
+
+  .p-dialog-header {
+    background: var(--saas-bg-card-alt, #2a2c52);
+    color: var(--saas-text-on-card, #fde68a);
+    border-bottom: 1px solid var(--saas-border, rgba(255,255,255,.08));
+  }
+
+  .p-dialog-content {
+    background: var(--saas-bg-card, #232447);
+    color: var(--saas-text, #e2e8f0);
+  }
+
+  .p-dialog-footer {
+    background: var(--saas-bg-card, #232447);
+    border-top: 1px solid var(--saas-border, rgba(255,255,255,.08));
+  }
+}

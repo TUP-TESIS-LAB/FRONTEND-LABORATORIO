@@ -14,6 +14,7 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, ButtonModule, InputTextModule],
   template: `
+    <div class="saas-card">
     <form [formGroup]="form" (ngSubmit)="save()" class="wl-form">
       <div class="wl-grid">
         <label class="field">
@@ -70,14 +71,16 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
                   [loading]="pending()" [disabled]="form.invalid || form.pristine || pending()" />
       </div>
     </form>
+    </div>
   `,
   styles: [`
+    .saas-card { background: var(--saas-bg-card, #232447); padding: 16px; border-radius: 8px; border: 1px solid var(--saas-border, rgba(255,255,255,.08)); }
     .wl-form { display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start; }
     .wl-grid { display: grid; gap: 12px; }
     .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #c7d2fe; }
     .color-input { display: flex; gap: 8px; align-items: center; }
     .color-native { width: 40px; height: 36px; padding: 2px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: transparent; cursor: pointer; }
-    .preview { background: rgba(255,255,255,.03); padding: 12px; border-radius: 8px; }
+    .preview { background: var(--saas-bg-card-alt, #2a2c52); padding: 12px; border-radius: 8px; }
     .preview h3 { color: #fde68a; font-size: 12px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
     .preview__name { font-weight: 600; color: #e2e8f0; }
     .preview__colors { display: flex; gap: 6px; margin-top: 8px; }

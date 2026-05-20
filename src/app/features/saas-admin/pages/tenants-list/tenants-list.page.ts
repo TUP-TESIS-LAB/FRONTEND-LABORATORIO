@@ -85,7 +85,7 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
       </ng-template>
     </p-table>
 
-    <p-confirmDialog />
+    <p-confirmDialog styleClass="saas-themed" />
     <tenant-form-dialog [open]="dialogOpen()" [editing]="editing()" (closed)="onDialogClosed()" />
   `,
   styles: [`

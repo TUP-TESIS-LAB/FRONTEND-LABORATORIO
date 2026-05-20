@@ -19,6 +19,7 @@ import {
   imports: [ReactiveFormsModule, ButtonModule, InputTextModule, TagModule, ConfirmDialogModule],
   template: `
     @if (tenant(); as t) {
+      <div class="saas-card">
       <form [formGroup]="form" class="info-form">
         <label class="field">
           <span>Código</span>
@@ -49,10 +50,12 @@ import {
           }
         </div>
       </form>
-      <p-confirmDialog />
+      <p-confirmDialog styleClass="saas-themed" />
+      </div>
     }
   `,
   styles: [`
+    .saas-card { background: var(--saas-bg-card, #232447); padding: 16px; border-radius: 8px; border: 1px solid var(--saas-border, rgba(255,255,255,.08)); }
     .info-form { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
     .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #c7d2fe; }
     .info-form__status { display: flex; gap: 6px; }

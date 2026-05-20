@@ -23,7 +23,7 @@ import { selectSaasAdminPending } from '../../store/saas-admin.selectors';
   imports: [ReactiveFormsModule, DialogModule, ButtonModule, InputTextModule],
   template: `
     <p-dialog [(visible)]="visible" [modal]="true" [closable]="!pending()" [header]="dialogTitle()"
-              [style]="{ width: '420px' }" (onHide)="onHide()">
+              [style]="{ width: '420px' }" styleClass="saas-themed" (onHide)="onHide()">
       <form [formGroup]="form" (ngSubmit)="submit()" class="tfd-form">
         @if (errorMessage(); as msg) {
           <div class="tfd-error" role="alert">{{ msg }}</div>
@@ -50,9 +50,9 @@ import { selectSaasAdminPending } from '../../store/saas-admin.selectors';
   `,
   styles: [`
     .tfd-form { display: flex; flex-direction: column; gap: 12px; }
-    .tfd-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #475569; }
-    .tfd-field-error { color: #dc2626; font-size: 11px; }
-    .tfd-error { background: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 6px; font-size: 12px; }
+    .tfd-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--saas-text-muted, #94a3b8); }
+    .tfd-field-error { color: #f87171; font-size: 11px; }
+    .tfd-error { background: rgba(239,68,68,.15); color: #fca5a5; padding: 8px 12px; border-radius: 6px; font-size: 12px; border: 1px solid rgba(239,68,68,.3); }
     .tfd-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
   `],
 })

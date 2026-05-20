@@ -65,9 +65,9 @@ import { selectDashboardCounts, selectTenantsList } from '../../store/saas-admin
     .stat__label { font-size: 12px; color: #94a3b8; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
     .quick { margin-bottom: 24px; }
     .quick h2, .recent h2 { color: #c7d2fe; font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
-    .recent__table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,.03); border-radius: 8px; overflow: hidden; }
-    .recent__table th, .recent__table td { padding: 10px 14px; font-size: 13px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.04); }
-    .recent__table th { color: #94a3b8; font-weight: 600; }
+    .recent__table { width: 100%; border-collapse: collapse; background: var(--saas-bg-card, rgba(255,255,255,.03)); border-radius: 8px; overflow: hidden; }
+    .recent__table th, .recent__table td { padding: 10px 14px; font-size: 13px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--saas-text, #e2e8f0); }
+    .recent__table th { color: var(--saas-text-muted, #94a3b8); font-weight: 600; background: var(--saas-bg-card-alt, #2a2c52); }
     .recent__table tbody tr:last-child td { border-bottom: none; }
     .empty { text-align: center; color: #64748b; padding: 18px; font-style: italic; }
     .text-right { text-align: right; }
