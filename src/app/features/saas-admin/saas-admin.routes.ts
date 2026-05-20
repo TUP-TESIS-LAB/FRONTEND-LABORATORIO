@@ -18,6 +18,11 @@ export const SAAS_ADMIN_ROUTES: Routes = [
         loadComponent: () =>
           import('./pages/dashboard/dashboard.page').then((m) => m.DashboardPage),
       },
+      {
+        path: 'tenants',
+        loadComponent: () =>
+          import('./pages/tenants-list/tenants-list.page').then((m) => m.TenantsListPage),
+      },
     ],
   },
 ];
