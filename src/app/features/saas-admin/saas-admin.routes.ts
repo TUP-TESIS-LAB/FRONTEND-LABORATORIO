@@ -24,6 +24,16 @@ export const SAAS_ADMIN_ROUTES: Routes = [
           import('./pages/tenants-list/tenants-list.page').then((m) => m.TenantsListPage),
       },
       {
+        path: 'tenants/nuevo',
+        loadComponent: () =>
+          import('./pages/tenant-wizard/tenant-wizard.page').then((m) => m.TenantWizardPage),
+      },
+      {
+        path: 'tenants/:id/editar',
+        loadComponent: () =>
+          import('./pages/tenant-wizard/tenant-wizard.page').then((m) => m.TenantWizardPage),
+      },
+      {
         path: 'tenants/:id',
         loadComponent: () =>
           import('./pages/tenant-detail/tenant-detail.page').then((m) => m.TenantDetailPage),

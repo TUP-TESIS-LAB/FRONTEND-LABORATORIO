@@ -9,8 +9,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { TenantFormDialogComponent } from '../../components/tenant-form-dialog/tenant-form-dialog.component';
-import { TenantCreateWizardComponent } from '../../components/tenant-create-wizard/tenant-create-wizard.component';
 import { Tenant } from '../../models/tenant.model';
 import { TenantStatusPipe } from '../../models/tenant-status.pipe';
 import {
@@ -27,12 +25,14 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
   providers: [ConfirmationService],
   imports: [
     RouterLink, TableModule, ButtonModule, TagModule, InputTextModule,
-    TooltipModule, ConfirmDialogModule, TenantFormDialogComponent, TenantCreateWizardComponent, TenantStatusPipe,
+    TooltipModule, ConfirmDialogModule, TenantStatusPipe,
   ],
   template: `
     <header class="page-header">
       <h1>Tenants</h1>
-      <p-button label="Nuevo tenant" icon="pi pi-plus" (onClick)="openCreate()" />
+      <a routerLink="/saas/tenants/nuevo">
+        <p-button label="Nuevo tenant" icon="pi pi-plus" />
+      </a>
     </header>
 
     <div class="toolbar">
@@ -70,7 +70,9 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
             <a [routerLink]="['/saas/tenants', t.id]">
               <p-button [text]="true" icon="pi pi-eye" pTooltip="Ver detalle" ariaLabel="Ver detalle" />
             </a>
-            <p-button [text]="true" icon="pi pi-pencil" pTooltip="Renombrar" (onClick)="openRename(t)" />
+            <a [routerLink]="['/saas/tenants', t.id, 'editar']">
+              <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" />
+            </a>
             @if (t.status === 'ACTIVE') {
               <p-button [text]="true" icon="pi pi-pause" pTooltip="Desactivar" (onClick)="confirmDeactivate(t)" />
             } @else if (!t.deletedAt) {
@@ -88,17 +90,17 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
     </p-table>
 
     <p-confirmDialog styleClass="saas-themed" />
-    <tenant-form-dialog [open]="dialogOpen()" [editing]="editing()" (closed)="onDialogClosed()" />
-    <tenant-create-wizard [open]="wizardOpen()" (closed)="onWizardClosed()" />
   `,
   styles: [`
     :host { display: block; color: #e2e8f0; }
     .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .page-header h1 { color: #fde68a; margin: 0; font-size: 22px; }
+    .page-header a { text-decoration: none; }
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .toolbar__search input { min-width: 280px; }
     .row-deleted td { text-decoration: line-through; color: #94a3b8; }
     .text-right { text-align: right; }
+    .text-right a { text-decoration: none; }
     .empty { text-align: center; color: #94a3b8; padding: 24px; font-style: italic; }
   `],
 })
@@ -130,27 +132,8 @@ export class TenantsListPage implements OnInit {
     });
   });
 
-  protected readonly dialogOpen = signal(false);
-  protected readonly editing = signal<Tenant | null>(null);
-  protected readonly wizardOpen = signal(false);
-
   ngOnInit(): void {
     this.store.dispatch(loadTenants());
-  }
-
-  openCreate(): void {
-    this.wizardOpen.set(true);
-  }
-  openRename(t: Tenant): void {
-    this.editing.set(t);
-    this.dialogOpen.set(true);
-  }
-  onDialogClosed(): void {
-    this.dialogOpen.set(false);
-    this.editing.set(null);
-  }
-  onWizardClosed(): void {
-    this.wizardOpen.set(false);
   }
 
   confirmActivate(t: Tenant): void {

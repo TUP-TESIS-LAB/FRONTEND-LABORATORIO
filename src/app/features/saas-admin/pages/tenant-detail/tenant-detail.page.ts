@@ -35,6 +35,9 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
       } @else {
         <span class="muted">Tenant no encontrado.</span>
       }
+      <a [routerLink]="['/saas/tenants', numericId(), 'editar']" style="margin-left: auto;">
+        <p-button label="Editar" icon="pi pi-pencil" [outlined]="true" />
+      </a>
     </header>
 
     @if (tenant()) {
@@ -61,6 +64,7 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
   styles: [`
     :host { display: block; color: #e2e8f0; }
     .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .detail-header a { text-decoration: none; }
     .detail-header__title { display: flex; align-items: center; gap: 8px; }
     .detail-header h1 { margin: 0; color: #fde68a; font-size: 20px; }
     .detail-header code { color: #94a3b8; font-size: 12px; }
