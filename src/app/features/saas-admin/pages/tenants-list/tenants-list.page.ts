@@ -10,6 +10,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { TenantFormDialogComponent } from '../../components/tenant-form-dialog/tenant-form-dialog.component';
+import { TenantCreateWizardComponent } from '../../components/tenant-create-wizard/tenant-create-wizard.component';
 import { Tenant } from '../../models/tenant.model';
 import { TenantStatusPipe } from '../../models/tenant-status.pipe';
 import {
@@ -26,7 +27,7 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
   providers: [ConfirmationService],
   imports: [
     RouterLink, TableModule, ButtonModule, TagModule, InputTextModule,
-    TooltipModule, ConfirmDialogModule, TenantFormDialogComponent, TenantStatusPipe,
+    TooltipModule, ConfirmDialogModule, TenantFormDialogComponent, TenantCreateWizardComponent, TenantStatusPipe,
   ],
   template: `
     <header class="page-header">
@@ -88,6 +89,7 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
 
     <p-confirmDialog styleClass="saas-themed" />
     <tenant-form-dialog [open]="dialogOpen()" [editing]="editing()" (closed)="onDialogClosed()" />
+    <tenant-create-wizard [open]="wizardOpen()" (closed)="onWizardClosed()" />
   `,
   styles: [`
     :host { display: block; color: #e2e8f0; }
@@ -130,14 +132,14 @@ export class TenantsListPage implements OnInit {
 
   protected readonly dialogOpen = signal(false);
   protected readonly editing = signal<Tenant | null>(null);
+  protected readonly wizardOpen = signal(false);
 
   ngOnInit(): void {
     this.store.dispatch(loadTenants());
   }
 
   openCreate(): void {
-    this.editing.set(null);
-    this.dialogOpen.set(true);
+    this.wizardOpen.set(true);
   }
   openRename(t: Tenant): void {
     this.editing.set(t);
@@ -146,6 +148,9 @@ export class TenantsListPage implements OnInit {
   onDialogClosed(): void {
     this.dialogOpen.set(false);
     this.editing.set(null);
+  }
+  onWizardClosed(): void {
+    this.wizardOpen.set(false);
   }
 
   confirmActivate(t: Tenant): void {
