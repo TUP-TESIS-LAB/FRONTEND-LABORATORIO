@@ -112,6 +112,17 @@ import { SaasTopbarComponent } from './saas-topbar/saas-topbar.component';
     :host ::ng-deep .p-datepicker-input {
       background: var(--saas-bg-card-alt); color: var(--saas-text); border-color: var(--saas-border);
     }
+
+    /* Toggle switch (blue when checked, regardless of system theme) */
+    :host ::ng-deep .p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider,
+    :host ::ng-deep .p-toggleswitch[data-p-checked="true"] .p-toggleswitch-slider,
+    :host ::ng-deep .p-toggleswitch.p-highlight .p-toggleswitch-slider {
+      background: #2563eb !important;
+      border-color: #2563eb !important;
+    }
+    :host ::ng-deep .p-toggleswitch:not(.p-disabled).p-focus .p-toggleswitch-slider {
+      box-shadow: 0 0 0 2px rgba(37,99,235,.35);
+    }
   `],
 })
 export class SaasShellComponent {}

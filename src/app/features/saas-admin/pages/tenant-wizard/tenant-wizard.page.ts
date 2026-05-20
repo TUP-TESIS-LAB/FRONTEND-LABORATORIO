@@ -56,15 +56,26 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
     </header>
 
     <div class="wizard-steps">
-      <div class="wizard-step" [class.wizard-step--active]="step() === 1" [class.wizard-step--done]="step() > 1 || canSkipToStep(2)">
+      <button class="wizard-step" type="button"
+              [class.wizard-step--active]="step() === 1"
+              [class.wizard-step--done]="step() > 1 || canSkipToStep(2)"
+              [disabled]="!isStepNavigable(1)"
+              (click)="goToStep(1)">
         <span class="wizard-step__num">1</span> Información
-      </div>
-      <div class="wizard-step" [class.wizard-step--active]="step() === 2" [class.wizard-step--done]="step() > 2 || (mode() === 'edit' && canSkipToStep(3))">
+      </button>
+      <button class="wizard-step" type="button"
+              [class.wizard-step--active]="step() === 2"
+              [class.wizard-step--done]="step() > 2 || (mode() === 'edit' && canSkipToStep(3))"
+              [disabled]="!isStepNavigable(2)"
+              (click)="goToStep(2)">
         <span class="wizard-step__num">2</span> Módulos
-      </div>
-      <div class="wizard-step" [class.wizard-step--active]="step() === 3">
+      </button>
+      <button class="wizard-step" type="button"
+              [class.wizard-step--active]="step() === 3"
+              [disabled]="!isStepNavigable(3)"
+              (click)="goToStep(3)">
         <span class="wizard-step__num">3</span> White label
-      </div>
+      </button>
     </div>
 
     <main class="wizard-body">
@@ -210,7 +221,12 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
       padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;
       background: var(--saas-bg-card, #232447);
     }
-    .wizard-step { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--saas-text-muted, #94a3b8); }
+    .wizard-step {
+      display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--saas-text-muted, #94a3b8);
+      background: transparent; border: none; cursor: pointer; font: inherit; padding: 0;
+    }
+    .wizard-step:disabled { cursor: default; opacity: 0.7; }
+    .wizard-step:not(:disabled):hover { color: var(--saas-text-on-card, #fde68a); }
     .wizard-step__num {
       width: 26px; height: 26px; border-radius: 50%;
       background: rgba(255,255,255,.06); display: inline-flex; align-items: center; justify-content: center;
@@ -262,6 +278,7 @@ export class TenantWizardPage implements OnInit, OnDestroy {
   protected readonly createdTenantId = signal<number | null>(null);
   protected readonly enabledModules = signal<Set<ModuleCode>>(new Set());
   protected readonly errorMessage = signal<string | null>(null);
+  private readonly pendingNav = signal<Step | null>(null);
 
   protected readonly pending = this.store.selectSignal(selectSaasAdminPending);
   protected readonly tenant = this.store.selectSignal(selectSelectedTenant);
@@ -338,22 +355,34 @@ export class TenantWizardPage implements OnInit, OnDestroy {
         this.errorMessage.set(error.status === 409 ? 'Ese código ya existe.' : 'No se pudo crear el tenant.');
       });
 
-    // Edit-mode: rename success → advance to step 2
+    // Edit-mode: rename success → honor pendingNav or advance to step 2
     this.actions$
       .pipe(ofType(renameTenantSuccess), takeUntilDestroyed())
       .subscribe(() => {
         this.errorMessage.set(null);
-        this.step.set(2);
+        this.infoForm.markAsPristine();
+        const target = this.pendingNav();
+        this.pendingNav.set(null);
+        this.step.set(target ?? 2);
       });
 
     this.actions$
       .pipe(ofType(renameTenantFailure), takeUntilDestroyed())
       .subscribe(() => this.errorMessage.set('No se pudo renombrar el tenant.'));
 
-    // White-label save → navigate back to list
+    // White-label save → honor pendingNav or navigate back to list
     this.actions$
       .pipe(ofType(upsertTenantWhiteLabelSuccess), takeUntilDestroyed())
-      .subscribe(() => this.router.navigate(['/saas/tenants']));
+      .subscribe(() => {
+        this.wlForm.markAsPristine();
+        const target = this.pendingNav();
+        this.pendingNav.set(null);
+        if (target != null) {
+          this.step.set(target);
+        } else {
+          this.router.navigate(['/saas/tenants']);
+        }
+      });
 
     this.actions$
       .pipe(ofType(upsertTenantWhiteLabelFailure), takeUntilDestroyed())
@@ -385,6 +414,58 @@ export class TenantWizardPage implements OnInit, OnDestroy {
       if (s === 3) return !!this.tenant() && this.modulesFromStore() != null;
     }
     return false;
+  }
+
+  goToStep(target: Step): void {
+    if (target === this.step()) return;
+
+    // Create mode: only allow backwards navigation
+    if (this.mode() === 'create') {
+      if (target < this.step()) this.step.set(target);
+      return;
+    }
+
+    // Edit mode: save current step if dirty, then navigate
+    if (this.step() === 1 && this.infoForm.dirty && this.infoForm.valid) {
+      const id = this.workingTenantId();
+      if (id != null) {
+        const raw = this.infoForm.getRawValue();
+        if (raw.name !== this.tenant()?.name) {
+          this.pendingNav.set(target);
+          this.store.dispatch(renameTenant({ id, req: { name: raw.name } }));
+          return;
+        }
+      }
+    }
+
+    if (this.step() === 3 && this.wlForm.dirty && this.wlForm.valid) {
+      const id = this.workingTenantId();
+      if (id != null) {
+        const v = this.wlForm.getRawValue();
+        this.pendingNav.set(target);
+        this.store.dispatch(upsertTenantWhiteLabel({
+          tenantId: id,
+          req: {
+            systemName: v.systemName,
+            primaryColor: v.primaryColor,
+            secondaryColor: v.secondaryColor,
+            lightLogoUrl: v.lightLogoUrl || null,
+            darkLogoUrl: v.darkLogoUrl || null,
+          },
+        }));
+        return;
+      }
+    }
+
+    // No save needed
+    this.step.set(target);
+  }
+
+  isStepNavigable(target: Step): boolean {
+    if (target === this.step()) return false; // already there
+    if (this.mode() === 'edit') return this.workingTenantId() != null;
+    // create mode: only previous steps
+    return target < this.step();
   }
 
   isEnabled(code: ModuleCode): boolean {

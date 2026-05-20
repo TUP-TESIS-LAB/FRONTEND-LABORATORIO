@@ -57,6 +57,14 @@
   }
 }
 
+// ── Toggle switch: always blue when checked (global, covers portaled contexts) ──
+.p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider,
+.p-toggleswitch[data-p-checked="true"] .p-toggleswitch-slider,
+.p-toggleswitch.p-highlight .p-toggleswitch-slider {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
 .p-confirmdialog.saas-themed {
   background: var(--saas-bg-card, #232447);
   color: var(--saas-text, #e2e8f0);
