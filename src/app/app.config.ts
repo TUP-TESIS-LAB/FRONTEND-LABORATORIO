@@ -46,6 +46,10 @@ import { PATIENT_FEATURE_KEY } from '@features/pacientes/store/patient.state';
 import { patientReducer } from '@features/pacientes/store/patient.reducer';
 import { PatientEffects } from '@features/pacientes/store/patient.effects';
 
+import { SAAS_ADMIN_FEATURE_KEY } from '@features/saas-admin/store/saas-admin.state';
+import { saasAdminReducer } from '@features/saas-admin/store/saas-admin.reducer';
+import { SaasAdminEffects } from '@features/saas-admin/store/saas-admin.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -80,6 +84,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(FinancieroEffects),
     provideState(PATIENT_FEATURE_KEY, patientReducer),
     provideEffects(PatientEffects),
+    provideState(SAAS_ADMIN_FEATURE_KEY, saasAdminReducer),
+    provideEffects(SaasAdminEffects),
     providePrimeNG({
       theme: {
         preset: Aura,
