@@ -7,6 +7,7 @@ import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { Tenant } from '../../../models/tenant.model';
+import { TenantStatusPipe } from '../../../models/tenant-status.pipe';
 import {
   activateTenant, deactivateTenant, renameTenant, softDeleteTenant,
 } from '../../../store/saas-admin.actions';
@@ -16,7 +17,7 @@ import {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, TagModule, ConfirmDialogModule],
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, TagModule, ConfirmDialogModule, TenantStatusPipe],
   template: `
     @if (tenant(); as t) {
       <div class="saas-card">
@@ -30,7 +31,7 @@ import {
           <input pInputText formControlName="name" />
         </label>
         <div class="info-form__status">
-          <p-tag [value]="t.status" [severity]="t.status === 'ACTIVE' ? 'success' : 'warn'" />
+          <p-tag [value]="t.status | tenantStatus" [severity]="t.status === 'ACTIVE' ? 'success' : 'warn'" />
           @if (t.deletedAt) { <p-tag value="Eliminado" severity="danger" /> }
         </div>
 

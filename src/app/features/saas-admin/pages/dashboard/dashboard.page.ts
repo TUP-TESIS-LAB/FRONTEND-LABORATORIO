@@ -5,12 +5,13 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { loadTenants } from '../../store/saas-admin.actions';
 import { selectDashboardCounts, selectTenantsList } from '../../store/saas-admin.selectors';
+import { TenantStatusPipe } from '../../models/tenant-status.pipe';
 
 @Component({
   selector: 'saas-dashboard-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonModule, TagModule],
+  imports: [RouterLink, ButtonModule, TagModule, TenantStatusPipe],
   template: `
     <header class="page-header">
       <h1>Dashboard</h1>
@@ -42,7 +43,7 @@ import { selectDashboardCounts, selectTenantsList } from '../../store/saas-admin
             <tr>
               <td><code>{{ t.code }}</code></td>
               <td>{{ t.name }}</td>
-              <td><p-tag [value]="t.status" [severity]="t.status === 'ACTIVE' ? 'success' : 'warn'" /></td>
+              <td><p-tag [value]="t.status | tenantStatus" [severity]="t.status === 'ACTIVE' ? 'success' : 'warn'" /></td>
               <td class="text-right">
                 <a [routerLink]="['/saas/tenants', t.id]">Ver detalle</a>
               </td>

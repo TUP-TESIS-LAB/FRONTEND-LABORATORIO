@@ -11,6 +11,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { TenantFormDialogComponent } from '../../components/tenant-form-dialog/tenant-form-dialog.component';
 import { Tenant } from '../../models/tenant.model';
+import { TenantStatusPipe } from '../../models/tenant-status.pipe';
 import {
   loadTenants, activateTenant, deactivateTenant, softDeleteTenant,
 } from '../../store/saas-admin.actions';
@@ -25,7 +26,7 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
   providers: [ConfirmationService],
   imports: [
     RouterLink, TableModule, ButtonModule, TagModule, InputTextModule,
-    TooltipModule, ConfirmDialogModule, TenantFormDialogComponent,
+    TooltipModule, ConfirmDialogModule, TenantFormDialogComponent, TenantStatusPipe,
   ],
   template: `
     <header class="page-header">
@@ -58,7 +59,7 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
         <tr [class.row-deleted]="!!t.deletedAt">
           <td><code>{{ t.code }}</code></td>
           <td>{{ t.name }}</td>
-          <td><p-tag [value]="t.status" [severity]="t.status === 'ACTIVE' ? 'success' : 'warn'" /></td>
+          <td><p-tag [value]="t.status | tenantStatus" [severity]="t.status === 'ACTIVE' ? 'success' : 'warn'" /></td>
           <td>
             @if (t.deletedAt) { <p-tag value="Eliminado" severity="danger" /> }
             @else if (!t.active) { <p-tag value="Inactivo" severity="warn" /> }

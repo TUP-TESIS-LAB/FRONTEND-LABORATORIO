@@ -11,12 +11,13 @@ import { selectSaasAdminPending, selectSelectedTenant } from '../../store/saas-a
 import { TenantInfoTabComponent } from './tabs/tenant-info-tab.component';
 import { TenantModulesTabComponent } from './tabs/tenant-modules-tab.component';
 import { TenantWhiteLabelTabComponent } from './tabs/tenant-white-label-tab.component';
+import { TenantStatusPipe } from '../../models/tenant-status.pipe';
 
 @Component({
   selector: 'saas-tenant-detail-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonModule, TabsModule, TagModule, TenantInfoTabComponent, TenantModulesTabComponent, TenantWhiteLabelTabComponent],
+  imports: [RouterLink, ButtonModule, TabsModule, TagModule, TenantInfoTabComponent, TenantModulesTabComponent, TenantWhiteLabelTabComponent, TenantStatusPipe],
   template: `
     <header class="detail-header">
       <a routerLink="/saas/tenants" class="back">
@@ -26,7 +27,7 @@ import { TenantWhiteLabelTabComponent } from './tabs/tenant-white-label-tab.comp
         <div class="detail-header__title">
           <h1>{{ t.name }}</h1>
           <code>{{ t.code }}</code>
-          <p-tag [value]="t.status" [severity]="t.status === 'ACTIVE' ? 'success' : 'warn'" />
+          <p-tag [value]="t.status | tenantStatus" [severity]="t.status === 'ACTIVE' ? 'success' : 'warn'" />
           @if (t.deletedAt) { <p-tag value="Eliminado" severity="danger" /> }
         </div>
       } @else if (pending()) {
