@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { SkeletonModule } from 'primeng/skeleton';
+import { ToastModule } from 'primeng/toast';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadBranchTotemConfig } from '../../store/branch-totem-config/branch-totem-config.actions';
 import {
@@ -13,7 +14,7 @@ import { RecepcionSinTotemComponent } from './recepcion-sin-totem.component';
 @Component({
   selector: 'app-recepcion-page',
   standalone: true,
-  imports: [SkeletonModule, RecepcionConTotemComponent, RecepcionSinTotemComponent],
+  imports: [SkeletonModule, ToastModule, RecepcionConTotemComponent, RecepcionSinTotemComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion.page.html',
   styleUrl: './recepcion.page.scss',
