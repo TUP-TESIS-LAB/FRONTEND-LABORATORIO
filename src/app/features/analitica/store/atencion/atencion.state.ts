@@ -1,11 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 
+/**
+ * Filtros del dashboard. Solo incluyen lo que efectivamente filtramos en el cliente.
+ * `dateFrom/dateTo` se retiraron (FE-1) porque `AttentionResponse` aún no expone una
+ * fecha y la UI mostraba inputs no funcionales. Si en el futuro el DTO incluye
+ * createdAt / scheduledAt, agregar acá y en `selectFilteredAtenciones`.
+ */
 export interface AtencionFilters {
   search: string;
   states: AttentionState[];
-  dateFrom: string; // ISO date (yyyy-mm-dd)
-  dateTo: string;
 }
 
 export interface AtencionFeatureState {
@@ -19,8 +23,6 @@ export interface AtencionFeatureState {
   mutating: boolean;
 }
 
-const today = (): string => new Date().toISOString().slice(0, 10);
-
 export const initialAtencionState: AtencionFeatureState = {
   list: [],
   listLoading: false,
@@ -28,8 +30,6 @@ export const initialAtencionState: AtencionFeatureState = {
   filters: {
     search: '',
     states: [],
-    dateFrom: today(),
-    dateTo: today(),
   },
   detail: null,
   detailLoading: false,

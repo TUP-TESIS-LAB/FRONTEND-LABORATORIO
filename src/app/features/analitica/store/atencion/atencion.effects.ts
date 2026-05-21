@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, map, of, switchMap, tap } from 'rxjs';
+import { catchError, concatMap, exhaustMap, map, of, switchMap, tap } from 'rxjs';
 import { AtencionApiService } from '../../services/atencion-api.service';
 import {
   addAnalysisList,
@@ -26,6 +26,17 @@ import {
   returnPhase,
 } from './atencion.actions';
 
+/**
+ * Política de operadores RxJS:
+ * - GET (load list, load detail): `switchMap` — la última pedida cancela las previas
+ *   (el usuario quiere el resultado más reciente).
+ * - Mutaciones (PATCH/POST): `concatMap` — encolamos para preservar el orden y evitar
+ *   que un doble-click cancele una mutación en vuelo. Esto es crítico para los chains
+ *   del wizard (addPayment → endCollection, addAnalysisList → endSecretaryPhase).
+ *   `exhaustMap` también previene doble-click pero ignora los click extra; `concatMap`
+ *   los procesa secuencialmente, que es lo que necesita el wizard.
+ * Aborda FE-9 del review.
+ */
 @Injectable()
 export class AtencionEffects {
   private readonly actions$ = inject(Actions);
@@ -59,7 +70,7 @@ export class AtencionEffects {
   createBlank$ = createEffect(() =>
     this.actions$.pipe(
       ofType(createBlankAtencion),
-      switchMap(({ payload }) =>
+      exhaustMap(({ payload }) =>
         this.api.createBlank(payload).pipe(
           tap(item => this.router.navigate(['/analitica/atencion', item.id])),
           map(item => atencionMutationSuccess({ item })),
@@ -72,7 +83,7 @@ export class AtencionEffects {
   createPrefilled$ = createEffect(() =>
     this.actions$.pipe(
       ofType(createPreFilledAtencion),
-      switchMap(({ payload }) =>
+      exhaustMap(({ payload }) =>
         this.api.createPreFilled(payload).pipe(
           tap(item => this.router.navigate(['/analitica/atencion', item.id])),
           map(item => atencionMutationSuccess({ item })),
@@ -85,7 +96,7 @@ export class AtencionEffects {
   assignGeneralData$ = createEffect(() =>
     this.actions$.pipe(
       ofType(assignGeneralData),
-      switchMap(({ id, payload }) => this.api.assignGeneralData(id, payload).pipe(
+      concatMap(({ id, payload }) => this.api.assignGeneralData(id, payload).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
@@ -95,7 +106,7 @@ export class AtencionEffects {
   addAnalysis$ = createEffect(() =>
     this.actions$.pipe(
       ofType(addAnalysisList),
-      switchMap(({ id, payload }) => this.api.addAnalysis(id, payload).pipe(
+      concatMap(({ id, payload }) => this.api.addAnalysis(id, payload).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
@@ -105,7 +116,7 @@ export class AtencionEffects {
   addPayment$ = createEffect(() =>
     this.actions$.pipe(
       ofType(addPayment),
-      switchMap(({ id, payload }) => this.api.addPayment(id, payload).pipe(
+      concatMap(({ id, payload }) => this.api.addPayment(id, payload).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
@@ -115,7 +126,7 @@ export class AtencionEffects {
   endCollection$ = createEffect(() =>
     this.actions$.pipe(
       ofType(endCollection),
-      switchMap(({ id }) => this.api.endCollection(id).pipe(
+      concatMap(({ id }) => this.api.endCollection(id).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
@@ -125,7 +136,7 @@ export class AtencionEffects {
   endBilling$ = createEffect(() =>
     this.actions$.pipe(
       ofType(endBilling),
-      switchMap(({ id }) => this.api.endBilling(id).pipe(
+      concatMap(({ id }) => this.api.endBilling(id).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
@@ -135,7 +146,7 @@ export class AtencionEffects {
   endSecretaryPhase$ = createEffect(() =>
     this.actions$.pipe(
       ofType(endSecretaryPhase),
-      switchMap(({ id }) => this.api.endSecretaryPhase(id).pipe(
+      concatMap(({ id }) => this.api.endSecretaryPhase(id).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
@@ -145,7 +156,7 @@ export class AtencionEffects {
   returnPhase$ = createEffect(() =>
     this.actions$.pipe(
       ofType(returnPhase),
-      switchMap(({ id }) => this.api.returnPhase(id).pipe(
+      exhaustMap(({ id }) => this.api.returnPhase(id).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
@@ -155,7 +166,7 @@ export class AtencionEffects {
   cancel$ = createEffect(() =>
     this.actions$.pipe(
       ofType(cancelAtencion),
-      switchMap(({ id, payload }) => this.api.cancel(id, payload).pipe(
+      exhaustMap(({ id, payload }) => this.api.cancel(id, payload).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
@@ -165,7 +176,7 @@ export class AtencionEffects {
   addObservations$ = createEffect(() =>
     this.actions$.pipe(
       ofType(addObservations),
-      switchMap(({ id, payload }) => this.api.addObservations(id, payload).pipe(
+      concatMap(({ id, payload }) => this.api.addObservations(id, payload).pipe(
         map(item => atencionMutationSuccess({ item })),
         catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
       ))
