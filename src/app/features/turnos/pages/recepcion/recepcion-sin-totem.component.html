@@ -1,0 +1,22 @@
+<div class="header">
+  <h2>Turnos de hoy</h2>
+  <p-button label="Atención nueva (walk-in)" icon="pi pi-plus" (onClick)="onWalkIn()" />
+</div>
+
+<p-table [value]="appointments()" [loading]="loading()">
+  <ng-template pTemplate="header">
+    <tr><th>Hora</th><th>Paciente</th><th></th></tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-row>
+    <tr>
+      <td>{{ row.appointmentTime | date: 'HH:mm' }}</td>
+      <td>{{ row.patientName }}</td>
+      <td>
+        <p-button label="Atender" size="small" (onClick)="onAtender(row.id)" />
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="3">Sin turnos para hoy</td></tr>
+  </ng-template>
+</p-table>
