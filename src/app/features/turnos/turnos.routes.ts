@@ -8,6 +8,7 @@ import { appointmentsReducer } from './store/appointments/appointments.reducer';
 import { AppointmentsEffects } from './store/appointments/appointments.effects';
 import { branchTotemConfigReducer } from './store/branch-totem-config/branch-totem-config.reducer';
 import { BranchTotemConfigEffects } from './store/branch-totem-config/branch-totem-config.effects';
+import { recepcionAccessGuard } from './guards/recepcion-access.guard';
 
 export const TURNOS_ROUTES: Routes = [
   {
@@ -25,7 +26,11 @@ export const TURNOS_ROUTES: Routes = [
       { path: 'configuracion',  loadComponent: () => import('./pages/configuracion/configuracion.component').then(m => m.ConfiguracionComponent) },
       { path: 'totem',          loadComponent: () => import('./pages/totem/totem.component').then(m => m.TotemComponent) },
       { path: 'atencion-turno', loadComponent: () => import('./pages/atencion-turno/atencion-turno.component').then(m => m.AtencionTurnoComponent) },
-      // recepcion va a sumarse en Task 22.
+      {
+        path: 'recepcion',
+        canActivate: [recepcionAccessGuard],
+        loadComponent: () => import('./pages/recepcion/recepcion.page').then(m => m.RecepcionPage),
+      },
       // colas se elimina.
     ],
   },
