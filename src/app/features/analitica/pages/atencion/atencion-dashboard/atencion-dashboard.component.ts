@@ -4,12 +4,14 @@ import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
-import { AttentionResponse, isTerminal } from '../../../models/atencion.model';
+import { AttentionResponse, AttentionState, isTerminal } from '../../../models/atencion.model';
 import {
+  ATTENTION_STATE_LABELS,
   attentionStateLabel,
   attentionStateSeverity,
 } from '../../../models/atencion-state-label';
@@ -35,7 +37,7 @@ interface KpiTile {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    TableModule, ButtonModule, InputTextModule, TagModule,
+    TableModule, ButtonModule, InputTextModule, MultiSelectModule, TagModule,
     StatCardComponent, EmptyStateComponent,
   ],
   template: `
@@ -62,6 +64,17 @@ interface KpiTile {
                    (ngModelChange)="updateSearch($event)"
                    class="w-full" />
           </span>
+          <p-multiSelect
+            [options]="stateOptions"
+            [ngModel]="filters().states"
+            (ngModelChange)="updateStates($event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Filtrar por estado"
+            display="chip"
+            [maxSelectedLabels]="3"
+            selectedItemsLabel="{0} estados"
+            styleClass="min-w-[220px]" />
           <p-button label="Limpiar" severity="secondary" [text]="true" (onClick)="clearFilters()" />
         </div>
 
@@ -118,6 +131,10 @@ export class AtencionDashboardComponent implements OnInit {
   protected readonly stateLabel    = attentionStateLabel;
   protected readonly stateSeverity = attentionStateSeverity;
 
+  protected readonly stateOptions: Array<{ label: string; value: AttentionState }> =
+    (Object.keys(ATTENTION_STATE_LABELS) as AttentionState[])
+      .map(value => ({ value, label: ATTENTION_STATE_LABELS[value] }));
+
   protected kpiTiles(): KpiTile[] {
     const k = this.kpis();
     return [
@@ -136,6 +153,11 @@ export class AtencionDashboardComponent implements OnInit {
   updateSearch(search: string): void {
     // FE-3: payload tipado como Partial<AtencionFilters> en lugar de `as any`.
     const patch: Partial<AtencionFilters> = { search };
+    this.store.dispatch(setAtencionFilters({ filters: patch }));
+  }
+
+  updateStates(states: AttentionState[]): void {
+    const patch: Partial<AtencionFilters> = { states };
     this.store.dispatch(setAtencionFilters({ filters: patch }));
   }
 
