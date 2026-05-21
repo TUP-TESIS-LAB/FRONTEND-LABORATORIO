@@ -170,20 +170,27 @@ Sigue patrón de `TenantSmtpConfigJpaEntity`.
 
 ```sql
 CREATE TABLE branch_totem_config (
-    id BIGSERIAL PRIMARY KEY,
-    target_branch_id BIGINT NOT NULL UNIQUE,
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    target_branch_id BIGINT NOT NULL,
     tenant_id BIGINT NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP(6) NOT NULL,
+    updated_at TIMESTAMP(6) NOT NULL,
+    created_by VARCHAR(120) NOT NULL,
+    updated_by VARCHAR(120) NOT NULL,
+    deleted_at TIMESTAMP(6),
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_by BIGINT,
-    created_at TIMESTAMP NOT NULL,
-    updated_by BIGINT,
-    updated_at TIMESTAMP,
     version BIGINT NOT NULL DEFAULT 0,
-    CONSTRAINT fk_btc_branch FOREIGN KEY (target_branch_id) REFERENCES branch(id)
+    CONSTRAINT pk_branch_totem_config PRIMARY KEY (id),
+    CONSTRAINT uk_branch_totem_config_branch UNIQUE (target_branch_id),
+    CONSTRAINT fk_branch_totem_config_branch FOREIGN KEY (target_branch_id) REFERENCES branch(id)
 );
-CREATE INDEX idx_btc_tenant ON branch_totem_config(tenant_id);
+CREATE INDEX idx_branch_totem_config_tenant ON branch_totem_config(tenant_id);
 ```
+
+> Estilo SQL alineado con `V54__create_queue_sequences.sql` (MySQL/H2):
+> `BIGINT AUTO_INCREMENT` en vez de `BIGSERIAL`, `created_by/updated_by` como
+> `VARCHAR(120)` (username), `TIMESTAMP(6)` para precisión.
 
 **Archivos nuevos** (en `modules/sucursales/`):
 
@@ -220,7 +227,7 @@ PUT  /api/v1/sucursales/branches/{branchId}/totem-config
 
 ```sql
 ALTER TABLE queue_entries
-    ADD COLUMN last_called_at TIMESTAMP NULL,
+    ADD COLUMN last_called_at TIMESTAMP(6) NULL,
     ADD COLUMN call_count INT NOT NULL DEFAULT 0;
 ```
 
