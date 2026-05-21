@@ -4,8 +4,14 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
+import { SKIP_AUTH } from '@features/turnos/services/public-display.service';
 
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
+  // Public endpoints opt-out via HttpContext (e.g. display TV snapshot).
+  if (req.context.get(SKIP_AUTH)) {
+    return next(req);
+  }
+
   const tokens = inject(TokenService);
   const userSession = inject(UserSessionService);
   const router = inject(Router);
