@@ -127,5 +127,11 @@ export const routes: Routes = [
       import('./features/saas-admin/saas-admin.routes').then((m) => m.SAAS_ADMIN_ROUTES),
   },
 
+  {
+    path: 'display/:tenantSlug/:branchId',
+    loadComponent: () =>
+      import('./features/turnos/pages/sala-espera/sala-espera.page').then((m) => m.SalaEsperaPage),
+  },
+
   { path: '**', redirectTo: '' },
 ];
