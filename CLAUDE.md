@@ -38,7 +38,7 @@ Cuando creás el ticket, agregalo al header del plan como `> **Jira:** [KAN-N](U
 
 ## Stack del repo
 
-Angular 21 + standalone components, signals, NgRx clásico, PrimeNG, Tailwind. Tests con Vitest. Build con `npx --no ng build` o `npm run build`.
+Angular 21 + standalone components, signals, NgRx clásico, PrimeNG, Tailwind. Tests con Vitest. Build con `ng build` o `npm run build`.
 
 ## Skills relevantes
 
