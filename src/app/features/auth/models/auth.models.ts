@@ -19,6 +19,7 @@ export interface UserResponse {
   isFirstLogin: boolean;
   active: boolean;
   roles: RoleResponse[];
+  tenantSlug: string | null;
 }
 
 export interface LoginResponse {

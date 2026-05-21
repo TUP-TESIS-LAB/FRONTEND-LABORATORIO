@@ -285,25 +285,18 @@ export class SidebarComponent implements OnInit {
   );
 
   // ---- Sala de espera (TV) link condicional ----
-  // Requisitos del plan: visible solo si la sucursal del usuario tiene tótem ON
-  // Y conocemos `tenantSlug` para armar la URL pública `/display/:slug/:branchId`.
-  //
-  // CONCERN: `UserResponse` actual NO expone `tenantSlug` (ver
-  // src/app/features/auth/models/auth.models.ts). Mientras eso siga así, esta
-  // URL queda en null y el ítem nunca se renderiza. Cuando backend agregue
-  // `tenantSlug` (o equivalente) al `/me`/`/login` response y al UserResponse,
-  // descomentar la línea correspondiente abajo.
+  // Visible solo si la sucursal del usuario tiene tótem ON y conocemos el
+  // `tenantSlug` (necesario para armar la URL pública `/display/:slug/:branchId`).
+  // El backend expone `tenantSlug` en `UserResponse` desde la respuesta de login.
   private readonly totemEnabled = this.store.selectSignal(selectBranchTotemEnabled);
 
   private readonly branchId = computed<number | null>(
     () => this.session.currentUser()?.branch ?? null,
   );
 
-  private readonly tenantSlug = computed<string | null>(() => {
-    // const user = this.session.currentUser() as UserResponse & { tenantSlug?: string } | null;
-    // return user?.tenantSlug ?? null;
-    return null; // TODO: backend debe agregar tenantSlug al UserResponse.
-  });
+  private readonly tenantSlug = computed<string | null>(
+    () => this.session.currentUser()?.tenantSlug ?? null,
+  );
 
   readonly salaEsperaUrl = computed<string | null>(() => {
     if (!this.totemEnabled()) return null;
