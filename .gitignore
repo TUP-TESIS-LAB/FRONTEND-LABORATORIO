@@ -46,3 +46,9 @@ Thumbs.db
 # Claude Code — local settings per machine
 .claude/settings.local.json
 .claude/*.local.json
+
+
+# Brainstorm session artifacts
+.superpowers/
+test-output.txt
+test_output.txt
