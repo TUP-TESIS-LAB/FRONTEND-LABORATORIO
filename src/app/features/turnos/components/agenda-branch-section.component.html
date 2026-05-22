@@ -1,0 +1,75 @@
+@if (canWrite) {
+  <div class="branch-section__actions">
+    <p-button
+      label="Agregar agenda"
+      icon="pi pi-plus"
+      severity="secondary"
+      size="small"
+      (onClick)="agregar.emit()"
+    />
+  </div>
+}
+
+@if (filtered.length === 0) {
+  <div class="branch-section__empty">
+    @if (agendas.length === 0) {
+      <span>Sin agendas configuradas.</span>
+      @if (canWrite) {
+        <p-button
+          label="Crear primera agenda"
+          severity="secondary"
+          size="small"
+          (onClick)="agregar.emit()"
+        />
+      }
+    } @else {
+      <span>Ninguna agenda coincide con tu búsqueda.</span>
+    }
+  </div>
+} @else {
+  <p-table [value]="filtered" [responsiveLayout]="'stack'" [breakpoint]="'768px'">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Horario</th>
+        <th>Días</th>
+        <th>Slot</th>
+        <th>Cap.</th>
+        <th>Vigencia</th>
+        @if (canWrite) {
+          <th>Acciones</th>
+        }
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-a>
+      <tr>
+        <td>{{ formatRange(a) }}</td>
+        <td>{{ formatDays(a.recurringDaysOfWeek) }}</td>
+        <td>{{ a.slotDurationMinutes }} min</td>
+        <td>{{ a.patientsPerSlot }}</td>
+        <td>{{ formatVigencia(a) }}</td>
+        @if (canWrite) {
+          <td class="branch-section__actions-cell">
+            <p-button
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              [rounded]="true"
+              [text]="true"
+              ariaLabel="Editar agenda"
+              (onClick)="editar.emit(a.id)"
+            />
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              size="small"
+              [rounded]="true"
+              [text]="true"
+              ariaLabel="Eliminar agenda"
+              (onClick)="eliminar.emit({ id: a.id })"
+            />
+          </td>
+        }
+      </tr>
+    </ng-template>
+  </p-table>
+}

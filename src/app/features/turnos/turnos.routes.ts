@@ -26,7 +26,19 @@ export const TURNOS_ROUTES: Routes = [
     children: [
       { path: '', redirectTo: 'agenda', pathMatch: 'full' },
       { path: 'agenda',         loadComponent: () => import('./pages/agenda/agenda.component').then(m => m.AgendaComponent) },
-      { path: 'configuracion',  loadComponent: () => import('./pages/configuracion/configuracion.component').then(m => m.ConfiguracionComponent) },
+      {
+        path: 'configuracion',
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/configuracion/configuracion-list.page').then(
+                m => m.ConfiguracionListPage,
+              ),
+          },
+          // Pendiente: wizard routes (Tasks 12-16)
+        ],
+      },
       { path: 'totem',          loadComponent: () => import('./pages/totem/totem.component').then(m => m.TotemComponent) },
       { path: 'atencion-turno', loadComponent: () => import('./pages/atencion-turno/atencion-turno.component').then(m => m.AtencionTurnoComponent) },
       {
