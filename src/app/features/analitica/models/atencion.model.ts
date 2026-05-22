@@ -92,3 +92,20 @@ export interface CancelAttentionRequest {
 export interface AddObservationsRequest {
   observations: string;
 }
+
+// Catalog model (CORE) — used by the analysis picker in the atención wizard
+export interface Analysis {
+  id: number;
+  shortCode: number;
+  name: string;
+  familyName: string | null;
+  ubCount: number | null; // unidades bioquímicas; null si no configurado
+}
+
+export interface AnalysisDetail extends Analysis {
+  description: string | null;
+  determinations: ReadonlyArray<{ id: number; name: string }>;
+  processingTime: number | null;
+  processingTimeUnit: string | null; // 'MINUTES' | 'HOURS' | 'DAYS' | ...
+  nbuCode: string | null;
+}
