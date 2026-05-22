@@ -11,6 +11,8 @@ import { BranchTotemConfigEffects } from './store/branch-totem-config/branch-tot
 import { agendasReducer } from './store/agendas/agendas.reducer';
 import { AgendasEffects } from './store/agendas/agendas.effects';
 import { recepcionAccessGuard } from './guards/recepcion-access.guard';
+import { agendaWriteGuard } from './guards/agenda-write.guard';
+import { agendaConfigResolver } from './resolvers/agenda-config.resolver';
 
 export const TURNOS_ROUTES: Routes = [
   {
@@ -36,7 +38,19 @@ export const TURNOS_ROUTES: Routes = [
                 m => m.ConfiguracionListPage,
               ),
           },
-          // Pendiente: wizard routes (Tasks 12-16)
+          {
+            path: 'nueva',
+            canActivate: [agendaWriteGuard],
+            loadComponent: () =>
+              import('./pages/configuracion/agenda-wizard.page').then(m => m.AgendaWizardPage),
+          },
+          {
+            path: ':id/editar',
+            canActivate: [agendaWriteGuard],
+            resolve: { agenda: agendaConfigResolver },
+            loadComponent: () =>
+              import('./pages/configuracion/agenda-wizard.page').then(m => m.AgendaWizardPage),
+          },
         ],
       },
       { path: 'totem',          loadComponent: () => import('./pages/totem/totem.component').then(m => m.TotemComponent) },
