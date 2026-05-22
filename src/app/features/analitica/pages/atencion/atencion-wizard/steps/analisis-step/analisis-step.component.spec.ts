@@ -35,14 +35,17 @@ describe('AnalisisStepComponent', () => {
     expect(dispatched).toHaveLength(0);
   });
 
-  it('onContinue with Financiero OFF dispatches addAnalysisList + endSecretaryPhase', () => {
+  it('onContinue with Financiero OFF dispatches addAnalysisList and emits stepAdvanced', () => {
+    let stepAdvanced = false;
+    fixture.componentInstance.stepAdvanced.subscribe(() => (stepAdvanced = true));
     fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: 1001, name: 'X', familyName: null, ubCount: null });
     fixture.componentInstance.onContinue();
     expect(dispatched[0].type).toBe(A.addAnalysisList.type);
-    expect(dispatched[1].type).toBe(A.endSecretaryPhase.type);
+    expect(dispatched.find((a) => a.type === A.endSecretaryPhase.type)).toBeUndefined();
+    expect(stepAdvanced).toBe(true);
   });
 
-  it('onContinue with Financiero ON dispatches only addAnalysisList and emits stepAdvanced', () => {
+  it('onContinue with Financiero ON dispatches addAnalysisList and emits stepAdvanced', () => {
     registry.isActive.mockReturnValue(true);
     let stepAdvanced = false;
     fixture.componentInstance.stepAdvanced.subscribe(() => (stepAdvanced = true));

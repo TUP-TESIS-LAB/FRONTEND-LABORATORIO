@@ -4,7 +4,6 @@ import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { CheckboxModule } from 'primeng/checkbox';
 import { Patient } from '@features/pacientes/models/patient.model';
 import { PatientSearchComponent } from '../../../../../components/patient-search/patient-search.component';
 import { assignGeneralData } from '../../../../../store/atencion/atencion.actions';
@@ -19,7 +18,7 @@ import {
   selector: 'lab-datos-generales-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonModule, InputTextModule, CheckboxModule, PatientSearchComponent],
+  imports: [FormsModule, ButtonModule, InputTextModule, PatientSearchComponent],
   template: `
     <div class="space-y-4">
       <lab-patient-search
@@ -31,10 +30,6 @@ import {
         <label class="block text-sm">Indicaciones</label>
         <input pInputText [(ngModel)]="form.indications" class="w-full" />
       </div>
-
-      <label class="flex items-center gap-2 text-sm">
-        <p-checkbox [(ngModel)]="form.isUrgent" [binary]="true" /> Urgente
-      </label>
 
       <div class="flex justify-end">
         <p-button label="Continuar →" [disabled]="!canContinue()" (onClick)="onContinue()" />
@@ -49,7 +44,7 @@ export class DatosGeneralesStepComponent {
   readonly atencionId = input.required<number>();
 
   readonly patient = signal<Patient | null>(null);
-  form = { indications: '', isUrgent: false };
+  form = { indications: '' };
 
   initialDni(): string | null {
     const pending = readPendingDni();

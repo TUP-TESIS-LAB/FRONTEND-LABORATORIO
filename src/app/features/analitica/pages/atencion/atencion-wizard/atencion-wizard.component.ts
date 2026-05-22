@@ -189,7 +189,12 @@ export class AtencionWizardComponent {
     this.store.dispatch(cancelAtencion({ id: d.id, payload: { cancellationReason: reason } }));
     clearAtencionSession();
   }
-  onAnalysisAdvanced(): void { this.uiStepOverride.set('cobro'); }
+  onAnalysisAdvanced(): void {
+    const steps = this.visibleSteps();
+    const idx = steps.findIndex((s) => s.key === 'analisis');
+    const next = steps[idx + 1]?.key;
+    if (next) this.uiStepOverride.set(next);
+  }
   onFinished(): void { this.router.navigate(['/analitica/atencion']); }
   back(): void { this.router.navigate(['/analitica/atencion']); }
   isPostSecretary(): boolean {

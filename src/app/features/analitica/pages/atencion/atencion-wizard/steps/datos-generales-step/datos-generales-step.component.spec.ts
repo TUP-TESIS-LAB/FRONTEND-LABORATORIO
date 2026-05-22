@@ -46,7 +46,6 @@ describe('DatosGeneralesStepComponent', () => {
     const p = samplePatient();
     fixture.componentInstance.onPatientSelected(p);
     fixture.componentInstance.form.indications = 'Ayuno 8hs';
-    fixture.componentInstance.form.isUrgent = true;
     fixture.componentInstance.onContinue();
     const action = dispatched.find((a) => a.type === A.assignGeneralData.type);
     expect(action.id).toBe(42);

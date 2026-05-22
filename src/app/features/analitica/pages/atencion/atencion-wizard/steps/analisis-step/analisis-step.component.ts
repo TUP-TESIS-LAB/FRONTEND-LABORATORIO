@@ -5,21 +5,26 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { AnalysisDetailModalComponent } from '../../../../../components/analysis-detail-modal/analysis-detail-modal.component';
 import { AnalysisPickerComponent } from '../../../../../components/analysis-picker/analysis-picker.component';
 import { Analysis } from '../../../../../models/atencion.model';
 import { NbuService } from '../../../../../services/nbu.service';
-import { addAnalysisList, endSecretaryPhase } from '../../../../../store/atencion/atencion.actions';
+import { addAnalysisList } from '../../../../../store/atencion/atencion.actions';
 
 @Component({
   selector: 'lab-analisis-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
+  imports: [FormsModule, ButtonModule, CheckboxModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
   template: `
     <div class="space-y-4">
+      <label class="flex items-center gap-2 text-sm">
+        <p-checkbox [(ngModel)]="isUrgentValue" [binary]="true" /> Urgente
+      </label>
+
       <lab-analysis-picker
         [initialItems]="[]"
         [ubValue]="ubValue()"
@@ -29,7 +34,7 @@ import { addAnalysisList, endSecretaryPhase } from '../../../../../store/atencio
 
       @if (!financieroActive()) {
         <p class="text-xs opacity-70">
-          El módulo Financiero no está activo. Al continuar, la atención pasa directamente a la cola de extracción.
+          El módulo Financiero no está activo. Pasarás directo al paso de confirmación.
         </p>
       }
 
@@ -57,13 +62,14 @@ export class AnalisisStepComponent {
   readonly items      = signal<Analysis[]>([]);
   readonly detailId   = signal<number | null>(null);
   readonly detailOpen = signal(false);
+  isUrgentValue = false;
 
   readonly financieroActive = computed(() => this.registry.isActive(ModuleKey.Financiero));
   private readonly nbuCurrent = toSignal(this.nbu.getCurrent(), { initialValue: null });
   readonly ubValue = computed(() => this.nbuCurrent()?.ubValue ?? null);
 
   continueLabel(): string {
-    return this.financieroActive() ? 'Continuar →' : 'Finalizar fase';
+    return 'Continuar →';
   }
 
   onAnalysisAdded(a: Analysis): void { this.items.update((arr) => [...arr, a]); }
@@ -76,12 +82,8 @@ export class AnalisisStepComponent {
     const ids = this.items().map((x) => x.id);
     this.store.dispatch(addAnalysisList({
       id: this.atencionId(),
-      payload: { analysisIds: ids, isUrgent: false, authorizationNumber: null },
+      payload: { analysisIds: ids, isUrgent: this.isUrgentValue, authorizationNumber: null },
     }));
-    if (this.registry.isActive(ModuleKey.Financiero)) {
-      this.stepAdvanced.emit();
-    } else {
-      this.store.dispatch(endSecretaryPhase({ id: this.atencionId() }));
-    }
+    this.stepAdvanced.emit();
   }
 }
