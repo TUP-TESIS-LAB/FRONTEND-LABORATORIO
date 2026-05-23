@@ -5,9 +5,14 @@ import {
 import { ButtonModule } from 'primeng/button';
 
 /**
- * Floating action button that appears after scrolling down ~400px and jumps
- * to the bottom of the page when clicked. Use on any page with long lists
- * or tables to give the user a fast "jump to end" affordance.
+ * Floating action button that appears after a small scroll (~100px) and
+ * jumps to the bottom of the page when clicked. Use on any page with long
+ * lists or tables to give the user a fast "jump to end" affordance.
+ *
+ * Threshold is low on purpose: 400px was high enough that on tables that
+ * fit the viewport the FAB never appeared, defeating the purpose. 100px
+ * means the FAB shows up as soon as the user starts scrolling — natural
+ * "I'm browsing a list" signal without being pushy on top-of-page.
  *
  * Usage: drop `<ui-scroll-to-bottom-fab />` at the end of any page template.
  * The FAB positions itself fixed in the bottom-right corner via Tailwind.
@@ -37,9 +42,11 @@ export class ScrollToBottomFabComponent {
   readonly visible = signal(false);
   private readonly destroyRef = inject(DestroyRef);
 
+  private static readonly SHOW_AFTER_PX = 100;
+
   @HostListener('window:scroll')
   onScroll(): void {
-    this.visible.set(window.scrollY > 400);
+    this.visible.set(window.scrollY > ScrollToBottomFabComponent.SHOW_AFTER_PX);
   }
 
   scrollToBottom(): void {
