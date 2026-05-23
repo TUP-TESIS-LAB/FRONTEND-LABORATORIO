@@ -122,6 +122,7 @@ interface KpiTile {
                    [rows]="20"
                    [paginator]="true"
                    [rowsPerPageOptions]="[10, 20, 50, 100]"
+                   [pageLinks]="5"
                    [showCurrentPageReport]="true"
                    currentPageReportTemplate="{first}-{last} de {totalRecords}">
             <ng-template pTemplate="header">
