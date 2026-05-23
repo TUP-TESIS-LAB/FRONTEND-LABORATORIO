@@ -46,3 +46,9 @@ Thumbs.db
 # Claude Code — local settings per machine
 .claude/settings.local.json
 .claude/*.local.json
+
+# Worktrees
+.worktrees/
+
+# Superpowers brainstorm
+.superpowers/
