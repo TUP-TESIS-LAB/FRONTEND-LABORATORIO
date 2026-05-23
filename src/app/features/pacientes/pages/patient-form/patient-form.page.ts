@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, computed, effect, HostListener, inject, input, OnDestroy,
+  ChangeDetectionStrategy, Component, computed, effect, HostListener, inject, input, OnDestroy, signal,
 } from '@angular/core';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Actions, ofType } from '@ngrx/effects';
@@ -7,10 +7,6 @@ import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } fr
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TagModule } from 'primeng/tag';
-import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import {
@@ -26,18 +22,11 @@ import {
 import { ContactSectionComponent } from '../../components/contact-section/contact-section.component';
 import { AddressSectionComponent } from '../../components/address-section/address-section.component';
 import { CoverageSectionComponent } from '../../components/coverage-section/coverage-section.component';
-
-const GENDER_OPTS: { value: Gender; label: string }[] = [
-  { value: 'FEMALE', label: 'Femenino' },
-  { value: 'MALE', label: 'Masculino' },
-  { value: 'OTHER', label: 'Otro' },
-  { value: 'NOT_SPECIFIED', label: 'No especificado' },
-];
-const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
-  { value: 'FEMALE', label: 'Femenino' },
-  { value: 'MALE', label: 'Masculino' },
-  { value: 'INTERSEX', label: 'Intersex' },
-];
+import { FormStepperHeaderComponent } from './components/form-stepper-header/form-stepper-header.component';
+import { GeneralStepComponent } from './steps/general-step/general-step.component';
+import { CoveragesStepComponent } from './steps/coverages-step/coverages-step.component';
+import { ContactAddressStepComponent } from './steps/contact-address-step/contact-address-step.component';
+import { PATIENT_FORM_STEPS } from './patient-form-steps';
 
 function isoFromDate(d: unknown): string | null {
   if (!d) return null;
@@ -51,16 +40,14 @@ function isoFromDate(d: unknown): string | null {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule,
-    TagModule, DatePickerModule, ConfirmDialogModule,
-    ContactSectionComponent, AddressSectionComponent, CoverageSectionComponent,
+    ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
+    FormStepperHeaderComponent, GeneralStepComponent, CoveragesStepComponent, ContactAddressStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
       <header class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-b sticky top-0 z-10">
-        <p-button [text]="true" icon="pi pi-arrow-left" label="Volver"
-                  type="button" (onClick)="onBack()" />
+        <p-button [text]="true" icon="pi pi-arrow-left" label="Volver" type="button" (onClick)="onBack()" />
         <h1 class="text-base font-semibold m-0">
           {{ isEdit() ? 'Editar paciente' : 'Nuevo paciente' }}
           @if (isEdit() && patient(); as p) {
@@ -72,91 +59,66 @@ function isoFromDate(d: unknown): string | null {
         </nav>
       </header>
 
+      <pat-form-stepper-header
+        [steps]="steps"
+        [currentIndex]="currentStep()"
+        [visited]="visited()"
+        (stepSelected)="goToStep($event)" />
+
       <div class="flex-1 overflow-y-auto p-6">
-        <div class="max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="max-w-screen-md mx-auto">
           @if (saveError(); as err) {
-            <div class="lg:col-span-2 pat-form__card"
-                 style="background:#fef2f2;border-color:var(--ds-danger);color:var(--ds-danger);">
+            <div class="pat-form__card"
+                 style="background:#fef2f2;border-color:var(--ds-danger);color:var(--ds-danger);margin-bottom:12px;">
               {{ saveErrorMessage(err) }}
             </div>
           }
 
-          <section class="pat-form__card">
-            <div class="pat-form__card-header">
-              <span><i class="pi pi-user" style="margin-right:6px"></i>Datos generales</span>
-              <p-tag [value]="statusEstimate()" severity="info" />
-            </div>
-            <div class="pat-form__grid" formGroupName="general">
-              <div class="pat-form__field">
-                <label class="pat-form__label">Apellido*</label>
-                <input pInputText formControlName="lastName" class="pat-form__input" placeholder="García" />
-              </div>
-              <div class="pat-form__field">
-                <label class="pat-form__label">Nombre*</label>
-                <input pInputText formControlName="firstName" class="pat-form__input" placeholder="María Elena" />
-              </div>
-              <div class="pat-form__field">
-                <label class="pat-form__label">DNI*</label>
-                <input pInputText formControlName="dni" class="pat-form__input" placeholder="32456789" />
-                @if (dniDuplicate()) {
-                  <p class="pat-form__error" role="alert">Ya existe un paciente con ese DNI</p>
-                }
-              </div>
-              <div class="pat-form__field">
-                <label class="pat-form__label">Fecha de nacimiento*</label>
-                <p-datepicker formControlName="birthDate" dateFormat="dd/mm/yy" appendTo="body" />
-              </div>
-              <div class="pat-form__field">
-                <label class="pat-form__label">Género</label>
-                <p-select formControlName="gender" [options]="genderOpts" optionLabel="label"
-                          optionValue="value" placeholder="—" appendTo="body" class="w-full" />
-              </div>
-              <div class="pat-form__field">
-                <label class="pat-form__label">Sexo registral</label>
-                <p-select formControlName="sexAtBirth" [options]="sexOpts" optionLabel="label"
-                          optionValue="value" placeholder="—" appendTo="body" class="w-full" />
-              </div>
-            </div>
-          </section>
-
-          <section class="pat-form__card">
-            <div class="pat-form__card-header">
-              <span><i class="pi pi-id-card" style="margin-right:6px"></i>Coberturas</span>
-            </div>
-            <pat-coverage-section [array]="coveragesArray" />
-          </section>
-
-          <section class="pat-form__card">
-            <div class="pat-form__card-header">
-              <span><i class="pi pi-phone" style="margin-right:6px"></i>Contactos</span>
-            </div>
-            <pat-contact-section [array]="contactsArray" />
-          </section>
-
-          <section class="pat-form__card">
-            <div class="pat-form__card-header">
-              <span><i class="pi pi-map-marker" style="margin-right:6px"></i>Direcciones</span>
-            </div>
-            <pat-address-section [array]="addressesArray" />
-          </section>
+          @switch (currentStep()) {
+            @case (0) {
+              <pat-general-step
+                [group]="generalGroup"
+                [dniDuplicate]="dniDuplicate()"
+                [editMode]="isEdit()" />
+            }
+            @case (1) {
+              <pat-coverages-step [array]="coveragesArray" />
+            }
+            @case (2) {
+              <pat-contact-address-step
+                [contacts]="contactsArray"
+                [addresses]="addressesArray" />
+            }
+          }
         </div>
       </div>
 
       <footer class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-t sticky bottom-0">
-        <span class="text-xs text-surface-500">
-          {{ formStatusLabel() }}
-        </span>
+        <span class="text-xs text-surface-500">{{ formStatusLabel() }}</span>
         <span class="text-xs text-surface-400 ml-2">
+          Paso {{ currentStep() + 1 }} de {{ steps.length }} ·
           <kbd>Ctrl</kbd>+<kbd>S</kbd> para guardar · <kbd>Esc</kbd> para volver
         </span>
         <div class="ml-auto flex gap-2">
-          <p-button label="Cancelar" severity="secondary" [outlined]="true"
-                    type="button" (onClick)="onBack()" />
-          <p-button
-            [label]="isEdit() ? 'Guardar cambios' : 'Registrar paciente'"
-            type="submit"
-            [loading]="pending()"
-            [disabled]="!canSubmit()" />
+          <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
+          @if (!isFirstStep()) {
+            <p-button label="← Atrás" [text]="true" type="button" (onClick)="goBack()" />
+          }
+          @if (showContinueButton()) {
+            <p-button
+              label="Continuar →"
+              type="button"
+              [disabled]="!canContinue()"
+              (onClick)="goNext()" />
+          }
+          @if (showSubmitButton()) {
+            <p-button
+              [label]="isEdit() ? 'Guardar cambios' : 'Registrar paciente'"
+              type="submit"
+              severity="success"
+              [loading]="pending()"
+              [disabled]="!canSubmit()" />
+          }
         </div>
       </footer>
       <p-confirmDialog />
@@ -172,8 +134,7 @@ export class PatientFormPage implements OnDestroy {
   private readonly actions$ = inject(Actions);
   private readonly confirm = inject(ConfirmationService);
 
-  readonly genderOpts = GENDER_OPTS;
-  readonly sexOpts = SEX_OPTS;
+  readonly steps = PATIENT_FORM_STEPS;
 
   readonly pending = this.store.selectSignal(selectPatientPending);
   readonly saveError = this.store.selectSignal(selectPatientError);
@@ -212,29 +173,35 @@ export class PatientFormPage implements OnDestroy {
     return check.dni === clean && check.exists === true;
   });
 
-  readonly canSubmit = computed(() => !this.invalid() && !this.dniDuplicate() && !this.pending());
-
-  readonly statusEstimate = computed<'MIN' | 'COMPLETE'>(() => {
-    const v = this.value() as {
-      general: { firstName?: string; lastName?: string; dni?: string; birthDate?: unknown; gender?: string | null; sexAtBirth?: string | null };
-      contacts: { active?: boolean }[];
-      coverages: { active?: boolean }[];
-    };
-    const hasContact = v.contacts.some((c) => c.active);
-    const hasCoverage = v.coverages.some((c) => c.active);
-    const ok = !!v.general.firstName && !!v.general.lastName && !!v.general.dni
-      && !!v.general.birthDate && !!v.general.gender && !!v.general.sexAtBirth
-      && hasContact && hasCoverage;
-    return ok ? 'COMPLETE' : 'MIN';
+  readonly step0Valid = computed(() => {
+    void this.value(); void this.status();
+    const g = this.form.get('general');
+    return !!g && g.valid && !this.dniDuplicate();
   });
+
+  readonly currentStep = signal(0);
+  readonly visited = signal<ReadonlySet<number>>(new Set([0]));
+
+  readonly isFirstStep = computed(() => this.currentStep() === 0);
+  readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
+
+  readonly canContinue = computed(() => {
+    if (this.currentStep() === 0) return this.step0Valid();
+    return true;
+  });
+
+  readonly canSubmit = computed(() => this.step0Valid() && !this.pending());
+
+  readonly showContinueButton = computed(() => !this.isLastStep() && !this.isEdit());
+  readonly showSubmitButton = computed(() => this.isEdit() || this.isLastStep());
 
   readonly formStatusLabel = computed(() => {
     if (this.pending()) return 'Guardando…';
-    // Re-evaluate on every form change so form.dirty is read fresh.
     void this.value();
     return this.form.dirty ? '● Cambios sin guardar' : 'Sin cambios';
   });
 
+  get generalGroup(): FormGroup { return this.form.get('general') as FormGroup; }
   get contactsArray(): FormArray<FormGroup> { return this.form.get('contacts') as FormArray<FormGroup>; }
   get addressesArray(): FormArray<FormGroup> { return this.form.get('addresses') as FormArray<FormGroup>; }
   get coveragesArray(): FormArray<FormGroup> { return this.form.get('coverages') as FormArray<FormGroup>; }
@@ -266,7 +233,7 @@ export class PatientFormPage implements OnDestroy {
       const p = this.patient();
       if (this.isEdit() && p && String(p.id) === this.id()) {
         this.hydrate(p);
-        this.form.get('general.dni')?.disable({ emitEvent: false });
+        this.visited.set(new Set([0, 1, 2]));
       }
     });
 
@@ -281,12 +248,33 @@ export class PatientFormPage implements OnDestroy {
       .subscribe(() => this.router.navigate(['/pacientes']));
   }
 
+  goNext(): void {
+    if (!this.canContinue()) {
+      this.form.get('general')?.markAllAsTouched();
+      return;
+    }
+    const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
+    this.currentStep.set(next);
+    this.visited.update((s) => new Set(s).add(next));
+  }
+
+  goBack(): void {
+    const prev = Math.max(this.currentStep() - 1, 0);
+    this.currentStep.set(prev);
+  }
+
+  goToStep(i: number): void {
+    if (!this.visited().has(i)) return;
+    this.currentStep.set(i);
+  }
+
   private resetForCreate(): void {
     this.form.reset({ general: { firstName: '', lastName: '', dni: '', birthDate: null, gender: null, sexAtBirth: null } });
     this.contactsArray.clear();
     this.addressesArray.clear();
     this.coveragesArray.clear();
-    this.form.get('general.dni')?.enable({ emitEvent: false });
+    this.currentStep.set(0);
+    this.visited.set(new Set([0]));
   }
 
   private hydrate(p: Patient): void {
