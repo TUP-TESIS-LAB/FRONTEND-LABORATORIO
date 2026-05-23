@@ -4,21 +4,31 @@ import {
 } from '@angular/core';
 
 /**
- * Floating action button that jumps to the bottom of the scrollable container.
+ * Floating action button that jumps to the bottom of the scrollable container
+ * the user is currently scrolling.
  *
- * Currently rendering **always visible** (no scroll-based hiding) to debug
- * positioning. To re-enable scroll-triggered visibility set `alwaysVisible`
- * to `false` and uncomment the visibility logic in `ngOnInit`.
+ * Why the implementation looks like this:
  *
- * Architecture: the admin shell uses an inner `overflow-y: auto` container
- * (`.ui-admin-shell__content`), not window-level scrolling. We walk up from
- * the host to find the nearest scrollable ancestor and use it for
- * `scrollToBottom()`. If nothing scrollable is found we fall back to window.
+ * 1. The admin shell scrolls inside `.ui-admin-shell__content`, not window.
+ *    So we can't use `window.scrollY` or `@HostListener('window:scroll')`.
  *
- * Why a native `<button>` instead of `<p-button>`: PrimeNG wraps p-button in
- * its own template, and positional Tailwind classes on the host don't always
- * apply to the inner rendered element. Native button + inline styles gives
- * us a deterministic 56×56 pill in the bottom-right corner.
+ * 2. The component mounts BEFORE the list renders. If we cache the scroll
+ *    target in ngOnInit, the candidate container's scrollHeight equals its
+ *    clientHeight at that moment, so the walk-up skips it. By the time the
+ *    table has 100 rows, our cached reference is stale (we fell back to
+ *    window). That's why caching breaks the click.
+ *
+ *    Solution: don't cache. Re-resolve the scroll target every time —
+ *    on each scroll event (cheap, just reads the event target) and on
+ *    click (walks the DOM once, ~3-4 nodes).
+ *
+ * 3. Visibility: the FAB shows up as soon as the user scrolls AT ALL
+ *    (scrollTop > 0). No pixel threshold. Listener uses `capture: true`
+ *    on document so any scrolling element triggers it.
+ *
+ * Native <button> + CSS in component because PrimeNG's <p-button> wraps
+ * the element in its own template and positional classes on the host
+ * don't reliably reach the inner button.
  */
 @Component({
   selector: 'ui-scroll-to-bottom-fab',
@@ -58,31 +68,34 @@ import {
       background: var(--brand-primary, #1565c0);
       transform: translateY(-2px);
     }
-    .ui-fab:active {
-      transform: translateY(0);
-    }
-    .ui-fab i {
-      font-size: 18px;
-    }
+    .ui-fab:active { transform: translateY(0); }
+    .ui-fab i { font-size: 18px; }
   `],
 })
 export class ScrollToBottomFabComponent implements OnInit {
-  /** Always on for now — debugging visibility. */
-  readonly visible = signal(true);
+  readonly visible = signal(false);
 
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
 
-  /** The element whose scroll we'll target. Resolved in ngOnInit. */
-  private scrollEl: HTMLElement | Window | null = null;
-
   ngOnInit(): void {
-    this.scrollEl = this.findScrollableAncestor(this.host.nativeElement) ?? window;
+    // Capture phase = catch scroll on ANY descendant of document, not just window.
+    const handler = (e: Event) => {
+      const top = this.scrollTopOf(e.target);
+      this.visible.set(top > 0);
+    };
+    document.addEventListener('scroll', handler, true);
+    this.destroyRef.onDestroy(() => document.removeEventListener('scroll', handler, true));
   }
 
-  /** Walk up the DOM looking for the closest ancestor with overflow-y auto/scroll. */
-  private findScrollableAncestor(start: HTMLElement | null): HTMLElement | null {
-    let el: HTMLElement | null = start?.parentElement ?? null;
+  private scrollTopOf(target: EventTarget | null): number {
+    if (target instanceof HTMLElement) return target.scrollTop;
+    return window.scrollY || document.documentElement.scrollTop;
+  }
+
+  /** Walk up the DOM from the host looking for the closest ancestor that actually scrolls. */
+  private findScrollableAncestor(): HTMLElement | null {
+    let el: HTMLElement | null = this.host.nativeElement.parentElement;
     while (el && el !== document.body) {
       const overflowY = getComputedStyle(el).overflowY;
       if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
@@ -94,11 +107,12 @@ export class ScrollToBottomFabComponent implements OnInit {
   }
 
   scrollToBottom(): void {
-    if (this.scrollEl instanceof Window) {
+    // Re-resolve on every click. The list might have grown since mount.
+    const target = this.findScrollableAncestor();
+    if (target) {
+      target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' });
+    } else {
       window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-    } else if (this.scrollEl) {
-      const el = this.scrollEl as HTMLElement;
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }
 }
