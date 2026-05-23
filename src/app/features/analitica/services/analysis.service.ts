@@ -37,6 +37,18 @@ export class AnalysisService {
     });
   }
 
+  /** Sugerencias por prefijo numérico del shortCode — usado por el autocomplete del picker. */
+  searchByShortCodePrefix(prefix: string, limit = 10): Observable<Analysis[]> {
+    if (this.demoMode()) {
+      return of(
+        ANALYSIS_DEMO_INDEX.filter((a) => String(a.shortCode).startsWith(prefix)).slice(0, limit),
+      );
+    }
+    return this.http.get<Analysis[]>(this.baseUrl, {
+      params: { shortCodePrefix: prefix, limit: String(limit) },
+    });
+  }
+
   searchByName(nameLike: string, limit = 10): Observable<Analysis[]> {
     if (this.demoMode()) {
       const q = nameLike.toLowerCase();

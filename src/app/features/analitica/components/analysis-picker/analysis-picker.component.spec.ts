@@ -10,10 +10,14 @@ const a = (over: Partial<Analysis>): Analysis => ({
 
 describe('AnalysisPickerComponent', () => {
   let fixture: ComponentFixture<AnalysisPickerComponent>;
-  let api: { findByShortCode: ReturnType<typeof vi.fn>; searchByName: ReturnType<typeof vi.fn> };
+  let api: {
+    findByShortCode: ReturnType<typeof vi.fn>;
+    searchByShortCodePrefix: ReturnType<typeof vi.fn>;
+    searchByName: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
-    api = { findByShortCode: vi.fn(), searchByName: vi.fn() };
+    api = { findByShortCode: vi.fn(), searchByShortCodePrefix: vi.fn(), searchByName: vi.fn() };
     await TestBed.configureTestingModule({
       imports: [AnalysisPickerComponent],
       providers: [{ provide: AnalysisService, useValue: api }],
@@ -29,10 +33,18 @@ describe('AnalysisPickerComponent', () => {
     expect(fixture.componentInstance.items()).toHaveLength(1);
   });
 
-  it('detects text input as name and uses searchByName for suggestions', () => {
+  it('text input → uses searchByName for suggestions', () => {
     api.searchByName.mockReturnValue(of([a({ id: 5 }), a({ id: 6, shortCode: 1002, name: 'Glucemia' })]));
     fixture.componentInstance.onAutoCompleteSearch({ query: 'gluc' } as any);
     expect(api.searchByName).toHaveBeenCalledWith('gluc');
+    expect(fixture.componentInstance.suggestions().length).toBe(2);
+  });
+
+  it('numeric input → uses searchByShortCodePrefix for suggestions (autocomplete by code)', () => {
+    api.searchByShortCodePrefix.mockReturnValue(of([a({ id: 5, shortCode: 1001 }), a({ id: 6, shortCode: 1002 })]));
+    fixture.componentInstance.onAutoCompleteSearch({ query: '100' } as any);
+    expect(api.searchByShortCodePrefix).toHaveBeenCalledWith('100');
+    expect(api.searchByName).not.toHaveBeenCalled();
     expect(fixture.componentInstance.suggestions().length).toBe(2);
   });
 

@@ -113,7 +113,12 @@ export class AnalysisPickerComponent implements OnInit {
   onAutoCompleteSearch(e: AutoCompleteCompleteEvent): void {
     const q = (e.query ?? '').trim();
     if (!q) { this.suggestions.set([]); return; }
-    this.api.searchByName(q).subscribe({
+    // Si el usuario tipea solo dígitos → autocomplete por prefijo de shortCode.
+    // Si tipea letras → autocomplete por nombre / familia.
+    const obs = /^\d+$/.test(q)
+      ? this.api.searchByShortCodePrefix(q)
+      : this.api.searchByName(q);
+    obs.subscribe({
       next: (list) => this.suggestions.set(list ?? []),
       error: () => this.suggestions.set([]),
     });

@@ -1,87 +1,129 @@
 import { Analysis, AnalysisDetail } from '../models/atencion.model';
 
 /**
- * Catálogo demo de análisis. Se usa cuando `AnalysisService.demoMode()` es true
- * (toggle en localStorage `analysis:demoMode = '1'`). Útil para probar el wizard
- * mientras el módulo Analysis no está implementado en el backend.
+ * Catálogo demo de 100 análisis. Se usa cuando `AnalysisService.demoMode()` es
+ * true (toggle en localStorage `analysis:demoMode = '1'`). Útil para probar el
+ * wizard mientras el módulo Analysis no existe en el backend.
+ *
+ * NOTA tenant-awareness: el catálogo es tenant-agnóstico — la misma data
+ * aparece para cualquier tenant logueado. Si en el futuro necesitás demo data
+ * distinta por tenant, el AnalysisService puede leer `TenantContext` y filtrar
+ * desde acá; por ahora todos los tenants ven los 100 análisis.
  */
-export const ANALYSIS_DEMO_CATALOG: ReadonlyArray<AnalysisDetail> = [
+
+interface FamilyDef {
+  prefix: number;     // shortCodes empiezan en este número (10 análisis cada familia)
+  name: string;
+  shortcodeBase: number;
+  practiceNames: string[]; // 10 nombres por familia
+  nbuPrefix: string;
+  baseUb: number;     // UBs base (cada análisis va sumando)
+  processingHours: number;
+}
+
+const FAMILIES: FamilyDef[] = [
   {
-    id: 1001, shortCode: 1001, name: 'Hemograma completo', familyName: 'Hematología',
-    ubCount: 3, description: 'Recuento de glóbulos rojos, blancos y plaquetas',
-    determinations: [
-      { id: 1, name: 'Glóbulos rojos' },
-      { id: 2, name: 'Glóbulos blancos' },
-      { id: 3, name: 'Hemoglobina' },
-      { id: 4, name: 'Hematocrito' },
-      { id: 5, name: 'Plaquetas' },
+    prefix: 10, name: 'Hematología', shortcodeBase: 1000, nbuPrefix: 'NBU-1', baseUb: 2, processingHours: 4,
+    practiceNames: [
+      'Hemograma completo', 'Recuento de plaquetas', 'VSG (eritrosedimentación)', 'Reticulocitos',
+      'Frotis de sangre periférica', 'Grupo sanguíneo y factor Rh', 'Coombs directo', 'Coombs indirecto',
+      'Coagulograma básico', 'Dímero D',
     ],
-    processingTime: 4, processingTimeUnit: 'HOURS', nbuCode: 'NBU-101',
   },
   {
-    id: 1002, shortCode: 1002, name: 'Glucemia en ayunas', familyName: 'Química clínica',
-    ubCount: 2, description: 'Glucosa en sangre con ayuno mínimo de 8 hs',
-    determinations: [{ id: 6, name: 'Glucosa' }],
-    processingTime: 2, processingTimeUnit: 'HOURS', nbuCode: 'NBU-205',
-  },
-  {
-    id: 1003, shortCode: 1003, name: 'Orina completa', familyName: 'Uroanálisis',
-    ubCount: 2, description: 'Análisis físico, químico y sedimento urinario',
-    determinations: [
-      { id: 7, name: 'Densidad' }, { id: 8, name: 'pH' },
-      { id: 9, name: 'Proteínas' }, { id: 10, name: 'Glucosa' }, { id: 11, name: 'Sedimento' },
+    prefix: 20, name: 'Química clínica', shortcodeBase: 2000, nbuPrefix: 'NBU-2', baseUb: 2, processingHours: 4,
+    practiceNames: [
+      'Glucemia en ayunas', 'Hemoglobina glicosilada (HbA1c)', 'Colesterol total', 'HDL colesterol',
+      'LDL colesterol', 'Triglicéridos', 'Perfil lipídico completo', 'Ácido úrico',
+      'Calcio sérico', 'Fósforo sérico',
     ],
-    processingTime: 3, processingTimeUnit: 'HOURS', nbuCode: 'NBU-310',
   },
   {
-    id: 1004, shortCode: 1004, name: 'Colesterol total', familyName: 'Química clínica',
-    ubCount: 2, description: 'Colesterol sérico total',
-    determinations: [{ id: 12, name: 'Colesterol' }],
-    processingTime: 4, processingTimeUnit: 'HOURS', nbuCode: 'NBU-211',
-  },
-  {
-    id: 1005, shortCode: 1005, name: 'Perfil lipídico', familyName: 'Química clínica',
-    ubCount: 6, description: 'Colesterol total, HDL, LDL, triglicéridos',
-    determinations: [
-      { id: 13, name: 'Colesterol total' }, { id: 14, name: 'HDL' },
-      { id: 15, name: 'LDL' }, { id: 16, name: 'Triglicéridos' },
+    prefix: 30, name: 'Función hepática', shortcodeBase: 3000, nbuPrefix: 'NBU-3', baseUb: 3, processingHours: 6,
+    practiceNames: [
+      'Hepatograma completo', 'GOT (AST)', 'GPT (ALT)', 'Fosfatasa alcalina (FAL)',
+      'Gamma GT (GGT)', 'Bilirrubina total', 'Bilirrubina directa', 'Albúmina sérica',
+      'Proteínas totales', 'Tiempo de protrombina',
     ],
-    processingTime: 6, processingTimeUnit: 'HOURS', nbuCode: 'NBU-220',
   },
   {
-    id: 1006, shortCode: 1006, name: 'TSH', familyName: 'Endocrinología',
-    ubCount: 5, description: 'Hormona estimulante de la tiroides',
-    determinations: [{ id: 17, name: 'TSH' }],
-    processingTime: 1, processingTimeUnit: 'DAYS', nbuCode: 'NBU-410',
-  },
-  {
-    id: 1007, shortCode: 1007, name: 'Hepatograma', familyName: 'Química clínica',
-    ubCount: 8, description: 'Función hepática: GOT, GPT, FAL, bilirrubina',
-    determinations: [
-      { id: 18, name: 'GOT' }, { id: 19, name: 'GPT' },
-      { id: 20, name: 'FAL' }, { id: 21, name: 'Bilirrubina total' },
+    prefix: 40, name: 'Función renal', shortcodeBase: 4000, nbuPrefix: 'NBU-4', baseUb: 2, processingHours: 4,
+    practiceNames: [
+      'Urea sérica', 'Creatinina sérica', 'Clearance de creatinina', 'Microalbuminuria',
+      'Proteinuria 24 horas', 'Ionograma sérico', 'Magnesio sérico', 'Cistatina C',
+      'Beta-2 microglobulina', 'Filtrado glomerular estimado',
     ],
-    processingTime: 6, processingTimeUnit: 'HOURS', nbuCode: 'NBU-230',
   },
   {
-    id: 1008, shortCode: 1008, name: 'Urea y creatinina', familyName: 'Función renal',
-    ubCount: 3, description: 'Marcadores de función renal',
-    determinations: [{ id: 22, name: 'Urea' }, { id: 23, name: 'Creatinina' }],
-    processingTime: 4, processingTimeUnit: 'HOURS', nbuCode: 'NBU-240',
+    prefix: 50, name: 'Endocrinología', shortcodeBase: 5000, nbuPrefix: 'NBU-5', baseUb: 5, processingHours: 24,
+    practiceNames: [
+      'TSH (tirotrofina)', 'T4 libre', 'T3 libre', 'Anticuerpos antitiroideos (TPO)',
+      'Insulina basal', 'Cortisol matutino', 'Testosterona total', 'Estradiol',
+      'Progesterona', 'Prolactina',
+    ],
   },
   {
-    id: 1009, shortCode: 1009, name: 'PCR cuantitativa', familyName: 'Inflamación',
-    ubCount: 4, description: 'Proteína C reactiva',
-    determinations: [{ id: 24, name: 'PCR' }],
-    processingTime: 4, processingTimeUnit: 'HOURS', nbuCode: 'NBU-510',
+    prefix: 60, name: 'Inmunología', shortcodeBase: 6000, nbuPrefix: 'NBU-6', baseUb: 4, processingHours: 12,
+    practiceNames: [
+      'PCR cuantitativa', 'Factor reumatoideo', 'ANA (anticuerpos antinucleares)', 'Anti-DNA',
+      'C3 (complemento)', 'C4 (complemento)', 'Inmunoglobulina IgG', 'Inmunoglobulina IgA',
+      'Inmunoglobulina IgM', 'ASLO (antiestreptolisina O)',
+    ],
   },
   {
-    id: 1010, shortCode: 1010, name: 'VSG (eritrosedimentación)', familyName: 'Hematología',
-    ubCount: 1, description: 'Velocidad de sedimentación globular',
-    determinations: [{ id: 25, name: 'VSG' }],
-    processingTime: 2, processingTimeUnit: 'HOURS', nbuCode: 'NBU-105',
+    prefix: 70, name: 'Microbiología', shortcodeBase: 7000, nbuPrefix: 'NBU-7', baseUb: 4, processingHours: 48,
+    practiceNames: [
+      'Urocultivo con antibiograma', 'Hemocultivo', 'Coprocultivo', 'Cultivo de fauces',
+      'Cultivo de heridas', 'Examen directo de hongos', 'Test rápido de Streptococcus', 'Antígeno fecal H. pylori',
+      'Búsqueda de parásitos en heces', 'Cultivo de esputo',
+    ],
+  },
+  {
+    prefix: 80, name: 'Serología viral', shortcodeBase: 8000, nbuPrefix: 'NBU-8', baseUb: 5, processingHours: 24,
+    practiceNames: [
+      'HIV (ELISA)', 'Hepatitis B (HBsAg)', 'Hepatitis B (anti-HBs)', 'Hepatitis C (anti-HCV)',
+      'VDRL (sífilis)', 'IgG Toxoplasmosis', 'IgM Toxoplasmosis', 'IgG Citomegalovirus',
+      'IgG Rubéola', 'IgG Sarampión',
+    ],
+  },
+  {
+    prefix: 90, name: 'Uroanálisis', shortcodeBase: 9000, nbuPrefix: 'NBU-9', baseUb: 2, processingHours: 3,
+    practiceNames: [
+      'Orina completa', 'Sedimento urinario', 'pH urinario', 'Densidad urinaria',
+      'Glucosuria', 'Cetonuria', 'Bilirrubina en orina', 'Urobilinógeno',
+      'Microalbúmina/creatinina urinaria', 'Calciuria 24 horas',
+    ],
+  },
+  {
+    prefix: 100, name: 'Marcadores tumorales', shortcodeBase: 10000, nbuPrefix: 'NBU-T', baseUb: 6, processingHours: 24,
+    practiceNames: [
+      'PSA total', 'PSA libre', 'CEA (antígeno carcinoembrionario)', 'CA 19-9',
+      'CA 125', 'CA 15-3', 'Alfa-fetoproteína (AFP)', 'Beta-hCG cuantitativa',
+      'Calcitonina', 'Tiroglobulina',
+    ],
   },
 ];
+
+/** Catálogo completo (100 análisis con detalle). */
+export const ANALYSIS_DEMO_CATALOG: ReadonlyArray<AnalysisDetail> = FAMILIES.flatMap((fam) =>
+  fam.practiceNames.map((name, idx) => {
+    const shortCode = fam.shortcodeBase + idx + 1;
+    const id = shortCode; // mismos IDs para que getById trabaje con shortCode también
+    const ubCount = fam.baseUb + (idx % 4); // varía un poco para que los precios no sean uniformes
+    return {
+      id,
+      shortCode,
+      name,
+      familyName: fam.name,
+      ubCount,
+      description: `Determinación bioquímica de ${name.toLowerCase()}.`,
+      determinations: [{ id: id * 10 + 1, name }],
+      processingTime: fam.processingHours + (idx % 3) * 2,
+      processingTimeUnit: 'HOURS',
+      nbuCode: `${fam.nbuPrefix}${String(idx + 1).padStart(3, '0')}`,
+    } satisfies AnalysisDetail;
+  }),
+);
 
 /** Versión liviana del catálogo (sin description/determinations) para listados. */
 export const ANALYSIS_DEMO_INDEX: ReadonlyArray<Analysis> = ANALYSIS_DEMO_CATALOG.map(
