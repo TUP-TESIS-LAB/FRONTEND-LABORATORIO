@@ -9,12 +9,14 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { ScrollToBottomFabComponent } from '@shared/ui/components/scroll-to-bottom-fab/scroll-to-bottom-fab.component';
 import { AttentionResponse, AttentionState, isTerminal } from '../../../models/atencion.model';
 import {
   ATTENTION_STATE_LABELS,
   attentionStateLabel,
   attentionStateSeverity,
 } from '../../../models/atencion-state-label';
+import { AnalysisService } from '../../../services/analysis.service';
 import { loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
@@ -38,7 +40,7 @@ interface KpiTile {
   imports: [
     FormsModule,
     TableModule, ButtonModule, InputTextModule, MultiSelectModule, TagModule,
-    StatCardComponent, EmptyStateComponent,
+    StatCardComponent, EmptyStateComponent, ScrollToBottomFabComponent,
   ],
   template: `
     <div class="p-6">
@@ -46,6 +48,15 @@ interface KpiTile {
         <div>
           <h2 class="text-xl font-semibold">Atenciones</h2>
           <div class="text-sm text-[var(--ds-text-muted)]">Pendientes para retomar y resumen del día</div>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="opacity-60">Modo demo análisis</span>
+          <p-button
+            [label]="analysisService.demoMode() ? 'ON' : 'OFF'"
+            [severity]="analysisService.demoMode() ? 'success' : 'secondary'"
+            size="small"
+            [outlined]="!analysisService.demoMode()"
+            (onClick)="toggleDemoMode()" />
         </div>
       </header>
 
@@ -83,7 +94,12 @@ interface KpiTile {
         } @else if (rows().length === 0) {
           <ui-empty-state heading="Sin atenciones para los filtros aplicados" icon="pi-inbox" />
         } @else {
-          <p-table [value]="rows()" [rows]="20" [paginator]="rows().length > 20">
+          <p-table [value]="rows()"
+                   [rows]="20"
+                   [paginator]="true"
+                   [rowsPerPageOptions]="[10, 20, 50, 100]"
+                   [showCurrentPageReport]="true"
+                   currentPageReportTemplate="{first}-{last} de {totalRecords}">
             <ng-template pTemplate="header">
               <tr>
                 <th>Nº</th>
@@ -115,12 +131,16 @@ interface KpiTile {
           </p-table>
         }
       </section>
+
+      <ui-scroll-to-bottom-fab />
     </div>
   `,
 })
 export class AtencionDashboardComponent implements OnInit {
   private readonly store  = inject(Store);
   private readonly router = inject(Router);
+  // Public — used directly in the template for the demo-mode toggle.
+  readonly analysisService = inject(AnalysisService);
 
   protected readonly rows    = this.store.selectSignal(selectFilteredAtenciones);
   protected readonly filters = this.store.selectSignal(selectFilters);
@@ -168,5 +188,9 @@ export class AtencionDashboardComponent implements OnInit {
 
   open(row: AttentionResponse): void {
     this.router.navigate(['/analitica/atencion', row.id]);
+  }
+
+  toggleDemoMode(): void {
+    this.analysisService.setDemoMode(!this.analysisService.demoMode());
   }
 }

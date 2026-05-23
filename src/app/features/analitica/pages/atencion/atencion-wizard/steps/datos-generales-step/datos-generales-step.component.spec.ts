@@ -34,10 +34,10 @@ describe('DatosGeneralesStepComponent', () => {
     (fixture.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((a: any) => dispatched.push(a));
   });
 
-  it('onPatientNotFound writes pending DNI + session, then navigates to /pacientes/form', () => {
+  it('onPatientNotFound writes pending DNI + session, then navigates to /pacientes/nuevo', () => {
     fixture.componentInstance.onPatientNotFound('32456789');
     expect(readPendingDni()).toBe('32456789');
-    expect(router.navigate).toHaveBeenCalledWith(['/pacientes/form'], {
+    expect(router.navigate).toHaveBeenCalledWith(['/pacientes/nuevo'], {
       queryParams: { dni: '32456789', returnTo: '/analitica/atencion/42' },
     });
   });

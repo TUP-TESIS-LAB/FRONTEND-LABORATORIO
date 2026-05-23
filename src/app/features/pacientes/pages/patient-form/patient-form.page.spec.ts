@@ -80,14 +80,14 @@ describe('PatientFormPage', () => {
     fixture.componentRef.setInput('id', undefined);
     fixture.detectChanges();
     const router = TestBed.inject(Router);
-    const navSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const navSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     const patient = {
       id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
       birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
       status: 'COMPLETE' as const, contacts: [], addresses: [], coverages: [], active: true,
     };
     actions$.next(addPatientSuccess({ patient }));
-    expect(navSpy).toHaveBeenCalledWith(['/pacientes']);
+    expect(navSpy).toHaveBeenCalledWith('/pacientes');
   });
 
   it('navigates to /pacientes after updatePatientSuccess', async () => {
@@ -97,14 +97,14 @@ describe('PatientFormPage', () => {
     fixture.componentRef.setInput('id', '1');
     fixture.detectChanges();
     const router = TestBed.inject(Router);
-    const navSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const navSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     const patient = {
       id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
       birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
       status: 'COMPLETE' as const, contacts: [], addresses: [], coverages: [], active: true,
     };
     actions$.next(updatePatientSuccess({ patient }));
-    expect(navSpy).toHaveBeenCalledWith(['/pacientes']);
+    expect(navSpy).toHaveBeenCalledWith('/pacientes');
   });
 
   it('navigates back without confirmation when the form is pristine', async () => {

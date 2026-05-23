@@ -165,6 +165,10 @@ function isoFromDate(d: unknown): string | null {
 })
 export class PatientFormPage implements OnDestroy {
   readonly id = input<string | undefined>(undefined);
+  // Query params (bound automatically by withComponentInputBinding). Used when the
+  // wizard de Atención redirige acá tras no encontrar paciente por DNI.
+  readonly dni = input<string | undefined>(undefined);
+  readonly returnTo = input<string | undefined>(undefined);
 
   private readonly fb = inject(FormBuilder);
   private readonly store = inject(Store);
@@ -278,7 +282,21 @@ export class PatientFormPage implements OnDestroy {
 
     this.actions$
       .pipe(ofType(addPatientSuccess, updatePatientSuccess), takeUntilDestroyed())
-      .subscribe(() => this.router.navigate(['/pacientes']));
+      .subscribe(() => {
+        const target = this.returnTo();
+        this.router.navigateByUrl(target && target.startsWith('/') ? target : '/pacientes');
+      });
+
+    // Precarga el DNI desde queryParam cuando llegamos por redirect del wizard de atención.
+    effect(() => {
+      const incomingDni = this.dni();
+      if (incomingDni && !this.isEdit()) {
+        const clean = String(incomingDni).replace(/\D/g, '');
+        if (clean) {
+          this.form.get('general.dni')?.setValue(clean);
+        }
+      }
+    });
   }
 
   private resetForCreate(): void {

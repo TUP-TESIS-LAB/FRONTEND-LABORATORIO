@@ -59,7 +59,7 @@ export class DatosGeneralesStepComponent {
   onPatientNotFound(dni: string): void {
     writeAtencionSession({ atencionId: this.atencionId(), uiStep: 'datos' });
     writePendingDni(dni);
-    this.router.navigate(['/pacientes/form'], {
+    this.router.navigate(['/pacientes/nuevo'], {
       queryParams: { dni, returnTo: `/analitica/atencion/${this.atencionId()}` },
     });
   }
