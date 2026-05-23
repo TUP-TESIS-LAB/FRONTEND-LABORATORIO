@@ -65,8 +65,8 @@ function isoFromDate(d: unknown): string | null {
         [visited]="visited()"
         (stepSelected)="goToStep($event)" />
 
-      <div class="flex-1 overflow-y-auto p-6">
-        <div class="max-w-screen-md mx-auto">
+      <div class="flex-1 overflow-y-auto px-8 py-6">
+        <div class="w-full">
           @if (saveError(); as err) {
             <div class="pat-form__card"
                  style="background:#fef2f2;border-color:var(--ds-danger);color:var(--ds-danger);margin-bottom:12px;">
@@ -256,6 +256,7 @@ export class PatientFormPage implements OnDestroy {
     const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
     this.currentStep.set(next);
     this.visited.update((s) => new Set(s).add(next));
+    this.ensureStepDefaults(next);
   }
 
   goBack(): void {
@@ -266,6 +267,38 @@ export class PatientFormPage implements OnDestroy {
   goToStep(i: number): void {
     if (!this.visited().has(i)) return;
     this.currentStep.set(i);
+    this.ensureStepDefaults(i);
+  }
+
+  private ensureStepDefaults(stepIndex: number): void {
+    if (stepIndex === 1 && this.coveragesArray.length === 0) {
+      this.coveragesArray.push(this.fb.group({
+        id: [null],
+        planId: [null, Validators.required],
+        memberNumber: ['', Validators.required],
+        isPrimary: [true],
+        active: [true],
+      }));
+    }
+    if (stepIndex === 2) {
+      if (this.contactsArray.length === 0) {
+        this.contactsArray.push(this.fb.group({
+          id: [null],
+          contactValue: ['', Validators.required],
+          contactType: ['PHONE', Validators.required],
+          isPrimary: [true],
+          active: [true],
+        }));
+      }
+      if (this.addressesArray.length === 0) {
+        this.addressesArray.push(this.fb.group({
+          id: [null],
+          city: [''], province: [''], street: [''], streetNumber: [''],
+          apartment: [''], neighborhood: [''], zipCode: [''],
+          isPrimary: [true], active: [true],
+        }));
+      }
+    }
   }
 
   private resetForCreate(): void {

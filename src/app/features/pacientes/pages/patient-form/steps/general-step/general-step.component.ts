@@ -23,7 +23,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, InputTextModule, SelectModule, DatePickerModule],
   template: `
-    <div class="pat-form__grid" [formGroup]="group()">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" [formGroup]="group()">
       <div class="pat-form__field">
         <label class="pat-form__label">Apellido*</label>
         <input pInputText formControlName="lastName" class="pat-form__input" placeholder="García" />

@@ -30,21 +30,24 @@ import { PatientFormStep } from '../../patient-form-steps';
     </ol>
   `,
   styles: [`
-    .pat-stepper { display:flex; align-items:center; gap:6px; list-style:none; margin:0; padding:14px 24px; border-bottom:1px solid var(--surface-300); background:var(--surface-0); }
-    .pat-stepper__item { display:flex; align-items:center; gap:8px; color:var(--surface-500); cursor:default; padding:4px 6px; border-radius:6px; }
+    :host { --pat-step-line: #e2e8f0; --pat-step-muted: #64748b; --pat-step-mute2: #94a3b8; --pat-step-hover: #f1f5f9; --pat-step-text: var(--ds-text, #1a1a2e); --pat-step-primary: var(--brand-primary, #2563eb); --pat-step-success: var(--ds-success, #22c55e); }
+    .pat-stepper { display:flex; align-items:center; gap:10px; list-style:none; margin:0; padding:16px 28px; border-bottom:1px solid var(--pat-step-line); background:#fff; }
+    .pat-stepper__item { display:flex; align-items:center; gap:10px; color:var(--pat-step-muted); cursor:default; padding:6px 10px; border-radius:8px; transition:background 120ms ease; }
     .pat-stepper__item.is-clickable { cursor:pointer; }
-    .pat-stepper__item.is-clickable:hover { background:var(--surface-100); }
-    .pat-stepper__num { width:22px; height:22px; border-radius:50%; border:1.5px solid var(--surface-300); display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; background:var(--surface-0); }
-    .pat-stepper__item.is-done .pat-stepper__num { background:var(--ds-success, #10b981); border-color:var(--ds-success, #10b981); color:#fff; }
-    .pat-stepper__item.is-done { color:var(--text-color); }
-    .pat-stepper__item.is-current .pat-stepper__num { background:var(--primary-color); border-color:var(--primary-color); color:var(--primary-contrast-color); }
-    .pat-stepper__item.is-current { color:var(--primary-color); font-weight:600; }
-    .pat-stepper__item.is-locked { color:var(--surface-400); }
-    .pat-stepper__lbl { display:inline-flex; flex-direction:column; line-height:1.15; }
-    .pat-stepper__title { font-size:12px; }
-    .pat-stepper__sub { font-size:10px; color:var(--surface-500); }
-    .pat-stepper__connector { flex:1; height:2px; background:var(--surface-300); margin:0 2px; }
-    .pat-stepper__connector.is-done { background:var(--ds-success, #10b981); }
+    .pat-stepper__item.is-clickable:hover { background:var(--pat-step-hover); }
+    .pat-stepper__num { width:28px; height:28px; flex:0 0 28px; border-radius:50%; border:1.5px solid var(--pat-step-line); display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:#fff; color:var(--pat-step-muted); }
+    .pat-stepper__item.is-done .pat-stepper__num { background:var(--pat-step-success); border-color:var(--pat-step-success); color:#fff; }
+    .pat-stepper__item.is-done { color:var(--pat-step-text); }
+    .pat-stepper__item.is-current .pat-stepper__num { background:var(--pat-step-primary); border-color:var(--pat-step-primary); color:#fff; box-shadow:0 0 0 4px color-mix(in srgb, var(--pat-step-primary) 18%, transparent); }
+    .pat-stepper__item.is-current { color:var(--pat-step-primary); font-weight:600; }
+    .pat-stepper__item.is-locked { color:var(--pat-step-mute2); }
+    .pat-stepper__item.is-locked .pat-stepper__num { color:var(--pat-step-mute2); }
+    .pat-stepper__lbl { display:inline-flex; flex-direction:column; line-height:1.2; }
+    .pat-stepper__title { font-size:13px; font-weight:600; }
+    .pat-stepper__sub { font-size:11px; font-weight:400; color:var(--pat-step-muted); }
+    .pat-stepper__item.is-locked .pat-stepper__sub { color:var(--pat-step-mute2); }
+    .pat-stepper__connector { flex:1; height:2px; background:var(--pat-step-line); margin:0 2px; border-radius:2px; transition:background 200ms ease; }
+    .pat-stepper__connector.is-done { background:var(--pat-step-success); }
   `],
 })
 export class FormStepperHeaderComponent {
