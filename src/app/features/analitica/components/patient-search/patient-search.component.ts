@@ -55,11 +55,19 @@ export class PatientSearchComponent implements OnInit {
     const dni = this.initialDni();
     if (dni) {
       this.dniInput = dni;
-      this.searchByDni(dni);
+      // Auto-search on mount (came from "/pacientes/nuevo" redirect). NO emit notFound
+      // — si el paciente sigue sin existir limpiamos silenciosamente y dejamos que el
+      // usuario re-tipee. Emitir notFound acá re-dispararía el redirect en loop.
+      this.doSearch(dni, /* emitNotFound */ false);
     }
   }
 
+  /** Manual search via Buscar button / Enter. Sí emite notFound (dispara el redirect). */
   searchByDni(dni: string): void {
+    this.doSearch(dni, /* emitNotFound */ true);
+  }
+
+  private doSearch(dni: string, emitNotFound: boolean): void {
     const cleaned = (dni ?? '').replace(/\D/g, '');
     if (!cleaned) {
       this.error.set('Ingresá un DNI');
@@ -78,7 +86,9 @@ export class PatientSearchComponent implements OnInit {
             this.patientSelected.emit(match);
           } else {
             this.patient.set(null);
-            this.notFound.emit(cleaned);
+            if (emitNotFound) {
+              this.notFound.emit(cleaned);
+            }
           }
         },
         error: () => {

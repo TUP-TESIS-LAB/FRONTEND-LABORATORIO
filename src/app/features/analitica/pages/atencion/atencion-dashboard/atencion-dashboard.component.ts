@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TableModule } from 'primeng/table';
@@ -17,11 +16,8 @@ import {
   attentionStateLabel,
   attentionStateSeverity,
 } from '../../../models/atencion-state-label';
-import { Patient } from '@features/pacientes/models/patient.model';
-import { PatientSearchComponent } from '../../../components/patient-search/patient-search.component';
 import { AnalysisService } from '../../../services/analysis.service';
-import { createBlankAtencion, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
-import { writeAtencionSession, writePendingDni } from '../../../utils/atencion-session-store';
+import { loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
   selectAtencionKpis,
@@ -43,8 +39,8 @@ interface KpiTile {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    TableModule, ButtonModule, DialogModule, InputTextModule, MultiSelectModule, TagModule,
-    StatCardComponent, EmptyStateComponent, ScrollToBottomFabComponent, PatientSearchComponent,
+    TableModule, ButtonModule, InputTextModule, MultiSelectModule, TagModule,
+    StatCardComponent, EmptyStateComponent, ScrollToBottomFabComponent,
   ],
   template: `
     <div class="p-6">
@@ -71,18 +67,6 @@ interface KpiTile {
         </div>
       </header>
 
-      <p-dialog
-        header="Nueva atención"
-        [visible]="newAttentionDialog()"
-        (onHide)="closeNewAttention()"
-        [modal]="true"
-        [style]="{ width: '480px' }">
-        <p class="text-sm opacity-70 mb-3">
-          Buscá el paciente. Si no existe, te llevamos al alta y volvés acá.
-        </p>
-        <lab-patient-search (patientSelected)="onPatientForNewAttention($event)"
-                            (notFound)="onPatientNotFoundForNewAttention($event)" />
-      </p-dialog>
 
       <section class="grid grid-cols-5 gap-3 mb-5">
         @for (k of kpiTiles(); track k.label) {
@@ -219,41 +203,13 @@ export class AtencionDashboardComponent implements OnInit {
     this.analysisService.setDemoMode(!this.analysisService.demoMode());
   }
 
-  // ---- "Nueva atención" flow ----
-  readonly newAttentionDialog = signal(false);
-
-  openNewAttention(): void { this.newAttentionDialog.set(true); }
-  closeNewAttention(): void { this.newAttentionDialog.set(false); }
-
   /**
-   * Selección de paciente desde el dialog de "Nueva atención": dispara la
-   * creación de la atención en blanco. El effect del store navega solo a
-   * /analitica/atencion/{id} al recibir el success.
-   * TODO: leer branchId del usuario logueado cuando exista esa fuente.
+   * Nueva atención = navegar al paso 1 del wizard. La búsqueda de paciente y la
+   * creación de la atención pasan a vivir dentro del wizard mismo (más natural
+   * que un modal aparte). El wizard detecta /atencion/nueva via la signal
+   * `creating()` y renderiza DatosGeneralesStep en modo "crear nueva".
    */
-  onPatientForNewAttention(p: Patient): void {
-    this.closeNewAttention();
-    this.store.dispatch(createBlankAtencion({
-      payload: {
-        branchId: 1,
-        patientId: p.id,
-        attentionNumber: `A-${Date.now().toString().slice(-6)}`,
-        deskAttentionBox: null,
-      },
-    }));
-  }
-
-  /**
-   * Paciente no existe → redirect al alta con returnTo a la bandeja, igual
-   * que hace el wizard. Cuando el alta termine, vuelve al dashboard y la
-   * secretaria reabre el dialog para encontrar el paciente recién creado.
-   */
-  onPatientNotFoundForNewAttention(dni: string): void {
-    this.closeNewAttention();
-    writeAtencionSession({ atencionId: -1, uiStep: 'datos' });
-    writePendingDni(dni);
-    this.router.navigate(['/pacientes/nuevo'], {
-      queryParams: { dni, returnTo: '/analitica/atencion' },
-    });
+  openNewAttention(): void {
+    this.router.navigate(['/analitica/atencion/nueva']);
   }
 }

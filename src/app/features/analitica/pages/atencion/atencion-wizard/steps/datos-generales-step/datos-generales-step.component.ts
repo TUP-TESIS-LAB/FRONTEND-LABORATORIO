@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { Patient } from '@features/pacientes/models/patient.model';
 import { PatientSearchComponent } from '../../../../../components/patient-search/patient-search.component';
-import { assignGeneralData } from '../../../../../store/atencion/atencion.actions';
+import { assignGeneralData, createBlankAtencion } from '../../../../../store/atencion/atencion.actions';
 import {
   clearPendingDni,
   readPendingDni,
@@ -41,7 +41,13 @@ export class DatosGeneralesStepComponent {
   private readonly store  = inject(Store);
   private readonly router = inject(Router);
 
-  readonly atencionId = input.required<number>();
+  /**
+   * Atención id. Null = modo "crear nueva atención" (en `/analitica/atencion/nueva`):
+   * cuando el usuario clickea Continuar disparamos createBlankAtencion en lugar de
+   * assignGeneralData. El effect del store ya navega a `/analitica/atencion/{newId}`
+   * tras el success, así que el wizard re-monta con la atención recién creada.
+   */
+  readonly atencionId = input<number | null>(null);
 
   readonly patient = signal<Patient | null>(null);
   form = { indications: '' };
@@ -57,10 +63,16 @@ export class DatosGeneralesStepComponent {
   }
 
   onPatientNotFound(dni: string): void {
-    writeAtencionSession({ atencionId: this.atencionId(), uiStep: 'datos' });
+    const id = this.atencionId();
+    // Si estamos creando una nueva atención (id null), returnTo apunta a `/nueva`
+    // para que el wizard arranque en modo crear de nuevo tras dar de alta el paciente.
+    const returnTo = id != null
+      ? `/analitica/atencion/${id}`
+      : '/analitica/atencion/nueva';
+    writeAtencionSession({ atencionId: id ?? -1, uiStep: 'datos' });
     writePendingDni(dni);
     this.router.navigate(['/pacientes/nuevo'], {
-      queryParams: { dni, returnTo: `/analitica/atencion/${this.atencionId()}` },
+      queryParams: { dni, returnTo },
     });
   }
 
@@ -71,8 +83,23 @@ export class DatosGeneralesStepComponent {
   onContinue(): void {
     const p = this.patient();
     if (!p) return;
+    const id = this.atencionId();
+    if (id == null) {
+      // Modo "crear nueva atención" — disparamos createBlank. El effect del store
+      // ya hace navigate a `/analitica/atencion/{newId}` al recibir success.
+      // TODO: leer branchId del usuario logueado cuando exista session-bound branch.
+      this.store.dispatch(createBlankAtencion({
+        payload: {
+          branchId: 1,
+          patientId: p.id,
+          attentionNumber: `A-${Date.now().toString().slice(-6)}`,
+          deskAttentionBox: null,
+        },
+      }));
+      return;
+    }
     this.store.dispatch(assignGeneralData({
-      id: this.atencionId(),
+      id,
       payload: {
         patientId: p.id,
         doctorId: null,

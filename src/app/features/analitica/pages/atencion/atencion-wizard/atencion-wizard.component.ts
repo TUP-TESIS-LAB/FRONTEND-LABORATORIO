@@ -17,7 +17,7 @@ import {
   selectDetail, selectDetailLoading, selectMutating,
 } from '../../../store/atencion/atencion.selectors';
 import {
-  clearAtencionSession, readAtencionSession, writeAtencionSession,
+  clearAtencionSession, clearPendingDni, readAtencionSession, writeAtencionSession,
 } from '../../../utils/atencion-session-store';
 import { DatosGeneralesStepComponent } from './steps/datos-generales-step/datos-generales-step.component';
 import { AnalisisStepComponent } from './steps/analisis-step/analisis-step.component';
@@ -51,6 +51,16 @@ const ALL_STEPS: WizardStepDef[] = [
     <div class="p-6 max-w-4xl mx-auto">
       @if (loading()) {
         <div class="text-center py-12 opacity-70">Cargando atención…</div>
+      } @else if (creating()) {
+        <!-- Modo "crear nueva atención" — sin detail todavía, solo el paso 1 -->
+        <header class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl font-semibold">Nueva atención</h2>
+            <div class="text-sm opacity-70">Buscá el paciente para empezar</div>
+          </div>
+          <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
+        </header>
+        <lab-datos-generales-step [atencionId]="null" />
       } @else if (!detail()) {
         <ui-empty-state heading="Atención no encontrada" icon="pi-exclamation-circle" />
       } @else {
@@ -116,6 +126,18 @@ export class AtencionWizardComponent {
   readonly id            = input<string | undefined>(undefined);
   readonly appointmentId = input<string | undefined>(undefined);
 
+  /**
+   * "creating" = estamos en la ruta /atencion/nueva y todavía no se creó la atención.
+   * El template renderiza solo el paso de datos generales sin requerir detail().
+   * En cuanto el usuario complete el paso 1, createBlank dispatcha y el effect del
+   * store navega a /atencion/{newId}, dejando el modo "creating" automáticamente.
+   */
+  protected readonly creating = computed(() =>
+    this.id() == null
+      && this.appointmentId() == null
+      && (this.router.url ?? '').endsWith('/atencion/nueva'),
+  );
+
   protected readonly detail   = this.store.selectSignal(selectDetail);
   protected readonly loading  = this.store.selectSignal(selectDetailLoading);
   protected readonly mutating = this.store.selectSignal(selectMutating);
@@ -147,15 +169,25 @@ export class AtencionWizardComponent {
       const apptId = this.appointmentId();
       this.uiStepOverride.set(null);
       if (idv) {
+        // Retomar una atención existente: cualquier pending DNI viejo en sessionStorage
+        // pertenece a otro flow — limpiarlo evita el auto-search y el redirect-loop
+        // al paciente-form si ese DNI no existía.
+        clearPendingDni();
         this.store.dispatch(loadAtencion({ id: Number(idv) }));
         writeAtencionSession({ atencionId: Number(idv), uiStep: 'datos' });
       } else if (apptId) {
         this.store.dispatch(createPreFilledAtencion({
           payload: { appointmentId: Number(apptId), attentionNumber: `A-${Date.now().toString().slice(-6)}` },
         }));
+      } else if (this.creating()) {
+        // Modo crear nueva: el step de datos arranca en blanco sin loadAtencion.
+        // Si veníamos de /pacientes/nuevo, el pending DNI sobrevive y el patient-search
+        // auto-pre-fillea (sin emitir notFound en el silent path).
       } else {
         const restored = readAtencionSession();
-        if (restored) this.store.dispatch(loadAtencion({ id: restored.atencionId }));
+        if (restored && restored.atencionId > 0) {
+          this.store.dispatch(loadAtencion({ id: restored.atencionId }));
+        }
       }
     });
   }
