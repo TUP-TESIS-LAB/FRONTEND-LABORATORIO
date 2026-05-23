@@ -1,5 +1,7 @@
 # Patient Form Stepper Implementation Plan
 
+> **Jira:** [KAN-37](https://exequielsantoro.atlassian.net/browse/KAN-37)
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Convertir la pantalla `patient-form.page.ts` (alta y edición de paciente) de un grid de 4 cards en una sola vista a un stepper horizontal de 3 pasos (Datos generales → Coberturas → Contacto & Dirección), con sólo el paso 1 obligatorio y submit únicamente en el último paso (o cualquier paso en edición).
