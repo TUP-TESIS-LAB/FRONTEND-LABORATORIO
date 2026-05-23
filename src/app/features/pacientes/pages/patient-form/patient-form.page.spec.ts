@@ -50,7 +50,7 @@ describe('PatientFormPage', () => {
     expect(spy).toHaveBeenCalledWith(checkPatientDni({ dni: '32456789' }));
   });
 
-  it('dispatches addPatient on submit in create mode', async () => {
+  it('dispatches addPatient on submit only after advancing to the last step', async () => {
     const { addPatient } = await import('../../store/patient.actions');
     const fixture = TestBed.createComponent(PatientFormPage);
     fixture.componentRef.setInput('id', undefined);
@@ -65,9 +65,16 @@ describe('PatientFormPage', () => {
     });
     const store = TestBed.inject(MockStore);
     const spy = vi.spyOn(store, 'dispatch');
+    // En alta, el botón Registrar no se muestra hasta llegar al último paso
+    expect(cmp.showSubmitButton()).toBe(false);
+    // Avanzar a paso 2
+    cmp.goNext();
+    cmp.goNext();
+    fixture.detectChanges();
+    expect(cmp.showSubmitButton()).toBe(true);
     cmp.onSubmit();
     expect(spy).toHaveBeenCalled();
-    const dispatched = spy.mock.calls[0][0] as unknown as { type: string; req: { firstName: string; lastName: string; dni: string; birthDate: string | null } };
+    const dispatched = spy.mock.calls[0][0] as unknown as { type: string; req: { firstName: string; dni: string } };
     expect(dispatched.type).toBe('[Patient Form] Add Patient');
     expect(dispatched.req.firstName).toBe('Ana');
     expect(dispatched.req.dni).toBe('12345678');
@@ -180,5 +187,60 @@ describe('PatientFormPage', () => {
     cmp.form.get('general.firstName')?.setValue('Ana');
     cmp.form.markAsDirty();
     expect(cmp.formStatusLabel()).toBe('● Cambios sin guardar');
+  });
+
+  it('starts edit mode with all steps visited and submit button visible from step 0', async () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', '1');
+    fixture.detectChanges();
+    const store = TestBed.inject(MockStore);
+    const { initialPatientState, PATIENT_FEATURE_KEY: KEY } = await import('../../store/patient.state');
+    const patient = {
+      id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
+      birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
+      status: 'COMPLETE' as const, contacts: [], addresses: [], coverages: [], active: true,
+    };
+    store.setState({ [KEY]: { ...initialPatientState, selected: patient } });
+    store.refreshState();
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    expect([...cmp.visited()].sort()).toEqual([0, 1, 2]);
+    expect(cmp.showSubmitButton()).toBe(true);
+    expect(cmp.showContinueButton()).toBe(false);
+  });
+
+  it('disables Continuar on step 0 when general subgroup is invalid', () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    expect(cmp.canContinue()).toBe(false);
+    cmp.form.patchValue({
+      general: {
+        firstName: 'Ana', lastName: 'Pérez', dni: '12345678',
+        birthDate: new Date('1990-01-01'),
+        gender: 'FEMALE', sexAtBirth: 'FEMALE',
+      },
+    });
+    expect(cmp.canContinue()).toBe(true);
+  });
+
+  it('goNext on step 0 with invalid general does not advance and marks touched', () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    cmp.goNext();
+    expect(cmp.currentStep()).toBe(0);
+    expect(cmp.form.get('general.firstName')?.touched).toBe(true);
+  });
+
+  it('goToStep ignores indexes that are not yet visited', () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    cmp.goToStep(2);
+    expect(cmp.currentStep()).toBe(0);
   });
 });
