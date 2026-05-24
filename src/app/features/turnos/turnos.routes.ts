@@ -10,6 +10,8 @@ import { branchTotemConfigReducer } from './store/branch-totem-config/branch-tot
 import { BranchTotemConfigEffects } from './store/branch-totem-config/branch-totem-config.effects';
 import { agendasReducer } from './store/agendas/agendas.reducer';
 import { AgendasEffects } from './store/agendas/agendas.effects';
+import { totemReducer } from './store/totem/totem.reducer';
+import { TotemEffects } from './store/totem/totem.effects';
 import { recepcionAccessGuard } from './guards/recepcion-access.guard';
 import { agendaWriteGuard } from './guards/agenda-write.guard';
 import { agendaConfigResolver } from './resolvers/agenda-config.resolver';
@@ -23,7 +25,8 @@ export const TURNOS_ROUTES: Routes = [
       provideState('appointments', appointmentsReducer),
       provideState('branchTotemConfig', branchTotemConfigReducer),
       provideState('agendas', agendasReducer),
-      provideEffects([QueueEffects, AppointmentsEffects, BranchTotemConfigEffects, AgendasEffects]),
+      provideState('totem', totemReducer),
+      provideEffects([QueueEffects, AppointmentsEffects, BranchTotemConfigEffects, AgendasEffects, TotemEffects]),
     ],
     children: [
       { path: '', redirectTo: 'agenda', pathMatch: 'full' },
