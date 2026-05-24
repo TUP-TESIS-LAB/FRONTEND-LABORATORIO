@@ -13,6 +13,8 @@ interface BackendAppointment {
   scheduledAt: string;
   confirmationNumber: string;
   status: string;
+  patientFirstName?: string | null;
+  patientLastName?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -26,15 +28,12 @@ export class AppointmentService {
       .set('branchId', String(branchId))
       .set('date', today);
     return this.http.get<BackendAppointment[]>(this.base, { params }).pipe(
-      // TODO: backend AppointmentResponse debería incluir patientFirstName +
-      // patientLastName (hoy hay que hacer una segunda llamada por paciente
-      // o mostrar el confirmationNumber). Mientras tanto usamos el número
-      // de confirmación como identificador visible — Spec B no se diseñó
-      // pensando en este endpoint cross-spec.
       map(rows => rows.map(r => ({
         id: r.id,
         patientId: r.patientId,
-        patientName: `Turno ${r.confirmationNumber}`,
+        patientName: r.patientFirstName && r.patientLastName
+          ? `${r.patientFirstName} ${r.patientLastName}`
+          : `Turno ${r.confirmationNumber}`,
         appointmentTime: r.scheduledAt,
         branchId: r.branchId,
         status: r.status,
