@@ -21,3 +21,9 @@ export interface SucursalCreateInput {
 }
 
 export type SucursalUpdateInput = SucursalCreateInput;
+
+export interface Area {
+  id: string;
+  nombre: string;
+  sucursalId: string;
+}
