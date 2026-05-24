@@ -26,6 +26,7 @@ import { AddressStepComponent } from './steps/address-step/address-step.componen
 import { CoveragesStepComponent } from './steps/coverages-step/coverages-step.component';
 import { SummaryStepComponent, SummaryView } from './steps/summary-step/summary-step.component';
 import { PATIENT_FORM_STEPS } from './patient-form-steps';
+import { humanizeBackendError } from '@shared/utils/error-messages';
 
 function isoFromDate(d: unknown): string | null {
   if (!d) return null;
@@ -380,8 +381,16 @@ export class PatientFormPage implements OnDestroy {
   }
 
   saveErrorMessage(err: { status?: number; error?: { message?: string } }): string {
-    if (err.status === 409) return 'Ya existe un paciente con ese DNI.';
-    return err.error?.message ?? 'No se pudo guardar el paciente.';
+    // Pasa por humanizeBackendError para no leakear FQCN / texto en inglés (regla #4).
+    return humanizeBackendError(err, {
+      fallback: 'No se pudo guardar el paciente.',
+      byStatus: {
+        409: 'Ya existe un paciente con ese DNI.',
+        400: 'Algunos datos del paciente no son válidos. Revisalos e intentá de nuevo.',
+        422: 'Algunos datos del paciente no son válidos. Revisalos e intentá de nuevo.',
+        500: 'No se pudo guardar el paciente. Intentá de nuevo en unos minutos.',
+      },
+    });
   }
 
   @HostListener('document:keydown', ['$event'])

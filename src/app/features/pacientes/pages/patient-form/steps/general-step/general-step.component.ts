@@ -60,11 +60,11 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
         <p-select formControlName="sexAtBirth" [options]="sexOpts" optionLabel="label" optionValue="value" placeholder="—" appendTo="body" class="w-full" />
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label">📱 Celular</label>
+        <label class="pat-form__label"><i class="pi pi-phone mr-1"></i>Celular</label>
         <input pInputText formControlName="mobile" class="pat-form__input" placeholder="11 5555-1234" />
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label">✉ Email</label>
+        <label class="pat-form__label"><i class="pi pi-envelope mr-1"></i>Email</label>
         <input pInputText formControlName="email" type="email" class="pat-form__input" placeholder="maria@dominio.com" />
       </div>
     </div>
