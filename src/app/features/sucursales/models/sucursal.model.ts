@@ -1,12 +1,23 @@
+import { Address } from './address.model';
+
+export type SucursalStatus = 'ACTIVE' | 'INACTIVE';
+
 export interface Sucursal {
-  id: string;
-  nombre: string;
-  direccion: string;
-  activa: boolean;
+  id: number;
+  code: string;
+  description: string;
+  status: SucursalStatus;
+  address: Address | null;
+  responsibleUserId: number | null;
+  active: boolean;
 }
 
-export interface Area {
-  id: string;
-  nombre: string;
-  sucursalId: string;
+export interface SucursalCreateInput {
+  code: string;
+  description: string;
+  status: SucursalStatus;
+  address?: Address;
+  responsibleUserId?: number | null;
 }
+
+export type SucursalUpdateInput = SucursalCreateInput;
