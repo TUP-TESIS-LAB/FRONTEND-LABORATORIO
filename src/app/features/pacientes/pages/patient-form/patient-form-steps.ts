@@ -1,4 +1,4 @@
-export type PatientFormStepKey = 'general' | 'coverages' | 'contact-address';
+export type PatientFormStepKey = 'general' | 'address' | 'coverages' | 'summary';
 
 export interface PatientFormStep {
   readonly key: PatientFormStepKey;
@@ -8,7 +8,8 @@ export interface PatientFormStep {
 }
 
 export const PATIENT_FORM_STEPS: readonly PatientFormStep[] = [
-  { key: 'general', title: 'Datos generales', subtitle: 'Identidad del paciente', required: true },
+  { key: 'general', title: 'Datos generales', subtitle: 'Identidad + contacto', required: true },
+  { key: 'address', title: 'Dirección', subtitle: 'Domicilio del paciente · opcional', required: false },
   { key: 'coverages', title: 'Coberturas', subtitle: 'Obras sociales · opcional', required: false },
-  { key: 'contact-address', title: 'Contacto & Dirección', subtitle: 'Cómo ubicarlo · opcional', required: false },
+  { key: 'summary', title: 'Resumen', subtitle: 'Revisar y confirmar', required: false },
 ] as const;

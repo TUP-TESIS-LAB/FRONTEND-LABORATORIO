@@ -10,7 +10,7 @@ import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import {
-  CreatePatientRequest, Gender, Patient, SexAtBirth, UpdatePatientRequest,
+  Address, Contact, CreatePatientRequest, Gender, Patient, SexAtBirth, UpdatePatientRequest,
 } from '../../models/patient.model';
 import {
   addPatient, addPatientSuccess, updatePatient, updatePatientSuccess,
@@ -20,12 +20,11 @@ import {
   selectPatientPending, selectPatientError, selectPatientState, selectSelectedPatient,
 } from '../../store/patient.selectors';
 import { ContactSectionComponent } from '../../components/contact-section/contact-section.component';
-import { AddressSectionComponent } from '../../components/address-section/address-section.component';
-import { CoverageSectionComponent } from '../../components/coverage-section/coverage-section.component';
 import { FormStepperHeaderComponent } from './components/form-stepper-header/form-stepper-header.component';
 import { GeneralStepComponent } from './steps/general-step/general-step.component';
+import { AddressStepComponent } from './steps/address-step/address-step.component';
 import { CoveragesStepComponent } from './steps/coverages-step/coverages-step.component';
-import { ContactAddressStepComponent } from './steps/contact-address-step/contact-address-step.component';
+import { SummaryStepComponent, SummaryView } from './steps/summary-step/summary-step.component';
 import { PATIENT_FORM_STEPS } from './patient-form-steps';
 
 function isoFromDate(d: unknown): string | null {
@@ -35,13 +34,19 @@ function isoFromDate(d: unknown): string | null {
   return null;
 }
 
+function isAddressFilled(a: Partial<Address>): boolean {
+  return !!(a.street || a.streetNumber || a.apartment || a.city || a.province
+    || a.neighborhood || a.zipCode);
+}
+
 @Component({
   selector: 'pat-patient-form-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    FormStepperHeaderComponent, GeneralStepComponent, CoveragesStepComponent, ContactAddressStepComponent,
+    FormStepperHeaderComponent, GeneralStepComponent, AddressStepComponent,
+    CoveragesStepComponent, SummaryStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
@@ -78,16 +83,18 @@ function isoFromDate(d: unknown): string | null {
             @case (0) {
               <pat-general-step
                 [group]="generalGroup"
+                [extraContacts]="contactsArray"
                 [dniDuplicate]="dniDuplicate()"
                 [editMode]="isEdit()" />
             }
             @case (1) {
-              <pat-coverages-step [array]="coveragesArray" />
+              <pat-address-step [group]="addressGroup" />
             }
             @case (2) {
-              <pat-contact-address-step
-                [contacts]="contactsArray"
-                [addresses]="addressesArray" />
+              <pat-coverages-step [array]="coveragesArray" />
+            }
+            @case (3) {
+              <pat-summary-step [data]="summaryView()" (editStep)="goToStep($event)" />
             }
           }
         </div>
@@ -149,9 +156,14 @@ export class PatientFormPage implements OnDestroy {
       birthDate: [null, Validators.required],
       gender: [null],
       sexAtBirth: [null],
+      mobile: [''],
+      email: [''],
+    }),
+    address: this.fb.group({
+      street: [''], streetNumber: [''], apartment: [''], neighborhood: [''],
+      city: [''], province: [''], zipCode: [''],
     }),
     contacts: this.fb.array<FormGroup>([]),
-    addresses: this.fb.array<FormGroup>([]),
     coverages: this.fb.array<FormGroup>([]),
   });
 
@@ -201,9 +213,39 @@ export class PatientFormPage implements OnDestroy {
     return this.form.dirty ? '● Cambios sin guardar' : 'Sin cambios';
   });
 
+  readonly summaryView = computed<SummaryView>(() => {
+    void this.value();
+    const raw = this.form.getRawValue() as {
+      general: {
+        firstName: string; lastName: string; dni: string;
+        birthDate: Date | string | null;
+        gender: Gender | null; sexAtBirth: SexAtBirth | null;
+        mobile: string; email: string;
+      };
+      address: Partial<Address>;
+      contacts: { contactType: 'PHONE' | 'MOBILE' | 'EMAIL'; contactValue: string }[];
+      coverages: { planId: number | null; memberNumber: string; isPrimary: boolean }[];
+    };
+    return {
+      firstName: raw.general.firstName,
+      lastName: raw.general.lastName,
+      dni: raw.general.dni,
+      birthDate: raw.general.birthDate,
+      gender: raw.general.gender,
+      sexAtBirth: raw.general.sexAtBirth,
+      mobile: raw.general.mobile,
+      email: raw.general.email,
+      extraContacts: raw.contacts
+        .filter((c) => !!c.contactValue)
+        .map((c) => ({ contactType: c.contactType, contactValue: c.contactValue })),
+      address: raw.address,
+      coverages: raw.coverages.filter((c) => c.planId != null),
+    };
+  });
+
   get generalGroup(): FormGroup { return this.form.get('general') as FormGroup; }
+  get addressGroup(): FormGroup { return this.form.get('address') as FormGroup; }
   get contactsArray(): FormArray<FormGroup> { return this.form.get('contacts') as FormArray<FormGroup>; }
-  get addressesArray(): FormArray<FormGroup> { return this.form.get('addresses') as FormArray<FormGroup>; }
   get coveragesArray(): FormArray<FormGroup> { return this.form.get('coverages') as FormArray<FormGroup>; }
 
   private hydratedForId: string | undefined = undefined;
@@ -233,7 +275,7 @@ export class PatientFormPage implements OnDestroy {
       const p = this.patient();
       if (this.isEdit() && p && String(p.id) === this.id()) {
         this.hydrate(p);
-        this.visited.set(new Set([0, 1, 2]));
+        this.visited.set(new Set([0, 1, 2, 3]));
       }
     });
 
@@ -271,7 +313,8 @@ export class PatientFormPage implements OnDestroy {
   }
 
   private ensureStepDefaults(stepIndex: number): void {
-    if (stepIndex === 1 && this.coveragesArray.length === 0) {
+    // Step 2 = Coberturas: seed 1 empty primary coverage if empty.
+    if (stepIndex === 2 && this.coveragesArray.length === 0) {
       this.coveragesArray.push(this.fb.group({
         id: [null],
         planId: [null, Validators.required],
@@ -280,50 +323,52 @@ export class PatientFormPage implements OnDestroy {
         active: [true],
       }));
     }
-    if (stepIndex === 2) {
-      if (this.contactsArray.length === 0) {
-        this.contactsArray.push(this.fb.group({
-          id: [null],
-          contactValue: ['', Validators.required],
-          contactType: ['PHONE', Validators.required],
-          isPrimary: [true],
-          active: [true],
-        }));
-      }
-      if (this.addressesArray.length === 0) {
-        this.addressesArray.push(this.fb.group({
-          id: [null],
-          city: [''], province: [''], street: [''], streetNumber: [''],
-          apartment: [''], neighborhood: [''], zipCode: [''],
-          isPrimary: [true], active: [true],
-        }));
-      }
-    }
   }
 
   private resetForCreate(): void {
-    this.form.reset({ general: { firstName: '', lastName: '', dni: '', birthDate: null, gender: null, sexAtBirth: null } });
+    this.form.reset({
+      general: { firstName: '', lastName: '', dni: '', birthDate: null, gender: null, sexAtBirth: null, mobile: '', email: '' },
+      address: { street: '', streetNumber: '', apartment: '', neighborhood: '', city: '', province: '', zipCode: '' },
+    });
     this.contactsArray.clear();
-    this.addressesArray.clear();
     this.coveragesArray.clear();
     this.currentStep.set(0);
     this.visited.set(new Set([0]));
   }
 
   private hydrate(p: Patient): void {
+    const primaryMobile = p.contacts.find((c) => c.contactType === 'MOBILE');
+    const primaryEmail  = p.contacts.find((c) => c.contactType === 'EMAIL');
+    const extras = p.contacts.filter((c) => c !== primaryMobile && c !== primaryEmail);
+    const primaryAddress = p.addresses[0];
+
     this.form.patchValue({
       general: {
         firstName: p.firstName, lastName: p.lastName, dni: p.dni,
         birthDate: p.birthDate ? new Date(p.birthDate) : null,
         gender: p.gender, sexAtBirth: p.sexAtBirth,
+        mobile: primaryMobile?.contactValue ?? '',
+        email: primaryEmail?.contactValue ?? '',
+      },
+      address: {
+        street: primaryAddress?.street ?? '',
+        streetNumber: primaryAddress?.streetNumber ?? '',
+        apartment: primaryAddress?.apartment ?? '',
+        neighborhood: primaryAddress?.neighborhood ?? '',
+        city: primaryAddress?.city ?? '',
+        province: primaryAddress?.province ?? '',
+        zipCode: primaryAddress?.zipCode ?? '',
       },
     });
     this.contactsArray.clear();
-    p.contacts.forEach((c) => this.contactsArray.push(ContactSectionComponent.toFormGroup(this.fb, c)));
-    this.addressesArray.clear();
-    p.addresses.forEach((a) => this.addressesArray.push(AddressSectionComponent.toFormGroup(this.fb, a)));
+    extras.forEach((c) => this.contactsArray.push(ContactSectionComponent.toFormGroup(this.fb, c)));
     this.coveragesArray.clear();
-    p.coverages.forEach((c) => this.coveragesArray.push(CoverageSectionComponent.toFormGroup(this.fb, c)));
+    p.coverages.forEach((c) => this.coveragesArray.push(this.fb.group({
+      id: [c.id ?? null],
+      planId: [c.planId, Validators.required],
+      memberNumber: [c.memberNumber, Validators.required],
+      isPrimary: [c.isPrimary], active: [c.active],
+    })));
     this.form.markAsPristine();
   }
 
@@ -350,14 +395,43 @@ export class PatientFormPage implements OnDestroy {
   onSubmit(): void {
     if (!this.canSubmit()) return;
     const raw = this.form.getRawValue() as {
-      general: { firstName: string; lastName: string; dni: string; birthDate: Date | string | null; gender: Gender | null; sexAtBirth: SexAtBirth | null };
-      contacts: never[]; addresses: never[]; coverages: never[];
+      general: {
+        firstName: string; lastName: string; dni: string;
+        birthDate: Date | string | null;
+        gender: Gender | null; sexAtBirth: SexAtBirth | null;
+        mobile: string; email: string;
+      };
+      address: Partial<Address>;
+      contacts: Contact[];
+      coverages: { id?: number; planId: number; memberNumber: string; isPrimary: boolean; active: boolean }[];
     };
+
+    const contacts: Contact[] = [];
+    if (raw.general.mobile?.trim()) {
+      contacts.push({ contactType: 'MOBILE', contactValue: raw.general.mobile.trim(), isPrimary: true, active: true });
+    }
+    if (raw.general.email?.trim()) {
+      contacts.push({
+        contactType: 'EMAIL', contactValue: raw.general.email.trim(),
+        isPrimary: !contacts.length, active: true,
+      });
+    }
+    contacts.push(...raw.contacts.filter((c) => !!c.contactValue));
+
+    const addresses: Address[] = isAddressFilled(raw.address)
+      ? [{
+          street: raw.address.street ?? '', streetNumber: raw.address.streetNumber ?? '',
+          apartment: raw.address.apartment ?? '', neighborhood: raw.address.neighborhood ?? '',
+          city: raw.address.city ?? '', province: raw.address.province ?? '',
+          zipCode: raw.address.zipCode ?? '', isPrimary: true, active: true,
+        }]
+      : [];
+
     const common = {
       firstName: raw.general.firstName, lastName: raw.general.lastName,
       birthDate: isoFromDate(raw.general.birthDate),
       gender: raw.general.gender, sexAtBirth: raw.general.sexAtBirth,
-      contacts: raw.contacts, addresses: raw.addresses, coverages: raw.coverages,
+      contacts, addresses, coverages: raw.coverages,
     };
     const editId = this.id();
     if (editId) {

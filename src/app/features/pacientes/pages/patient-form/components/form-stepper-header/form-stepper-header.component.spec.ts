@@ -28,8 +28,9 @@ describe('FormStepperHeaderComponent', () => {
     fx.detectChanges();
     const html = (fx.nativeElement as HTMLElement).textContent ?? '';
     expect(html).toContain('Datos generales');
+    expect(html).toContain('Dirección');
     expect(html).toContain('Coberturas');
-    expect(html).toContain('Contacto & Dirección');
+    expect(html).toContain('Resumen');
   });
 
   it('marks the current step with the "current" class', () => {

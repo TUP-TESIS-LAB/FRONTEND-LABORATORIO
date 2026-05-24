@@ -1,9 +1,11 @@
-import { ChangeDetectionStrategy, Component, effect, input } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, effect, input, signal } from '@angular/core';
+import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
+import { ButtonModule } from 'primeng/button';
 import { Gender, SexAtBirth } from '../../../../models/patient.model';
+import { ContactSectionComponent } from '../../../../components/contact-section/contact-section.component';
 
 const GENDER_OPTS: { value: Gender; label: string }[] = [
   { value: 'FEMALE', label: 'Femenino' },
@@ -21,7 +23,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   selector: 'pat-general-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, InputTextModule, SelectModule, DatePickerModule],
+  imports: [ReactiveFormsModule, InputTextModule, SelectModule, DatePickerModule, ButtonModule, ContactSectionComponent],
   template: `
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" [formGroup]="group()">
       <div class="pat-form__field">
@@ -51,16 +53,44 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
         <label class="pat-form__label">Sexo registral</label>
         <p-select formControlName="sexAtBirth" [options]="sexOpts" optionLabel="label" optionValue="value" placeholder="—" appendTo="body" class="w-full" />
       </div>
+      <div class="pat-form__field">
+        <label class="pat-form__label">📱 Celular</label>
+        <input pInputText formControlName="mobile" class="pat-form__input" placeholder="11 5555-1234" />
+      </div>
+      <div class="pat-form__field">
+        <label class="pat-form__label">✉ Email</label>
+        <input pInputText formControlName="email" type="email" class="pat-form__input" placeholder="maria@dominio.com" />
+      </div>
+    </div>
+
+    <div class="mt-6 border-t pt-4">
+      <button type="button"
+              class="flex items-center gap-2 text-sm font-medium text-surface-700 hover:text-primary-600"
+              (click)="extrasOpen.set(!extrasOpen())">
+        <i class="pi" [class.pi-chevron-right]="!extrasOpen()" [class.pi-chevron-down]="extrasOpen()"></i>
+        Otros contactos
+        <span class="text-xs text-surface-500 font-normal">(teléfonos fijos, contactos adicionales)</span>
+        @if (extraContacts().length > 0) {
+          <span class="ml-1 text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{{ extraContacts().length }}</span>
+        }
+      </button>
+      @if (extrasOpen()) {
+        <div class="mt-3">
+          <pat-contact-section [array]="extraContacts()" />
+        </div>
+      }
     </div>
   `,
 })
 export class GeneralStepComponent {
   readonly group = input.required<FormGroup>();
+  readonly extraContacts = input.required<FormArray<FormGroup>>();
   readonly dniDuplicate = input<boolean>(false);
   readonly editMode = input<boolean>(false);
 
   readonly genderOpts = GENDER_OPTS;
   readonly sexOpts = SEX_OPTS;
+  readonly extrasOpen = signal(false);
 
   constructor() {
     effect(() => {
@@ -68,6 +98,9 @@ export class GeneralStepComponent {
       if (!dniCtrl) return;
       if (this.editMode()) dniCtrl.disable({ emitEvent: false });
       else dniCtrl.enable({ emitEvent: false });
+    });
+    effect(() => {
+      if (this.extraContacts().length > 0) this.extrasOpen.set(true);
     });
   }
 }

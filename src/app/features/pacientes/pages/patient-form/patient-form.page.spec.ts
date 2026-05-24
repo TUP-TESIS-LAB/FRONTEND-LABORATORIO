@@ -65,9 +65,10 @@ describe('PatientFormPage', () => {
     });
     const store = TestBed.inject(MockStore);
     const spy = vi.spyOn(store, 'dispatch');
-    // En alta, el botón Registrar no se muestra hasta llegar al último paso
+    // En alta, el botón Registrar no se muestra hasta llegar al último paso (Resumen)
     expect(cmp.showSubmitButton()).toBe(false);
-    // Avanzar a paso 2
+    // Avanzar hasta paso 3 (Resumen)
+    cmp.goNext();
     cmp.goNext();
     cmp.goNext();
     fixture.detectChanges();
@@ -204,7 +205,7 @@ describe('PatientFormPage', () => {
     store.refreshState();
     fixture.detectChanges();
     const cmp = fixture.componentInstance;
-    expect([...cmp.visited()].sort()).toEqual([0, 1, 2]);
+    expect([...cmp.visited()].sort()).toEqual([0, 1, 2, 3]);
     expect(cmp.showSubmitButton()).toBe(true);
     expect(cmp.showContinueButton()).toBe(false);
   });

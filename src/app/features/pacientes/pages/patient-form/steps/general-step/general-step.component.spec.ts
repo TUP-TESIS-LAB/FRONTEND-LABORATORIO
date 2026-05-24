@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Component, signal } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { describe, it, expect } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { GeneralStepComponent } from './general-step.component';
@@ -9,7 +9,7 @@ import { GeneralStepComponent } from './general-step.component';
   standalone: true,
   imports: [GeneralStepComponent],
   template: `
-    <pat-general-step [group]="group" [dniDuplicate]="dup()" [editMode]="edit" />
+    <pat-general-step [group]="group" [extraContacts]="extras" [dniDuplicate]="dup()" [editMode]="edit" />
   `,
 })
 class HostCmp {
@@ -21,7 +21,10 @@ class HostCmp {
     birthDate: [null],
     gender: [null],
     sexAtBirth: [null],
+    mobile: [''],
+    email: [''],
   });
+  extras: FormArray<FormGroup> = this.fb.array<FormGroup>([]);
   dup = signal(false);
   edit = false;
 }
@@ -35,7 +38,7 @@ describe('GeneralStepComponent', () => {
     return fx;
   }
 
-  it('renders the 6 general fields', () => {
+  it('renders the 6 identity fields + celular + email', () => {
     const fx = setup();
     const html = (fx.nativeElement as HTMLElement).textContent ?? '';
     expect(html).toContain('Apellido');
@@ -44,6 +47,15 @@ describe('GeneralStepComponent', () => {
     expect(html).toContain('Fecha de nacimiento');
     expect(html).toContain('Género');
     expect(html).toContain('Sexo registral');
+    expect(html).toContain('Celular');
+    expect(html).toContain('Email');
+  });
+
+  it('keeps the "Otros contactos" accordion collapsed by default', () => {
+    const fx = setup();
+    const html = (fx.nativeElement as HTMLElement).textContent ?? '';
+    expect(html).toContain('Otros contactos');
+    expect((fx.nativeElement as HTMLElement).querySelector('pat-contact-section')).toBeNull();
   });
 
   it('shows the duplicate-DNI error when dniDuplicate is true', () => {
