@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { SelectModule } from 'primeng/select';
+import { SucursalesService } from '../../../../sucursales/services/sucursales.service';
 
 @Component({
   selector: 'app-step-sucursal',
@@ -13,7 +15,7 @@ import { SelectModule } from 'primeng/select';
       <label for="branchId">Sucursal</label>
       <p-select
         inputId="branchId"
-        [options]="branches"
+        [options]="branches()"
         optionLabel="name"
         optionValue="id"
         placeholder="Seleccioná una sucursal"
@@ -29,10 +31,15 @@ import { SelectModule } from 'primeng/select';
 })
 export class StepSucursalComponent {
   @Input({ required: true }) form!: FormGroup;
-  // Pendiente: cuando exista store de sucursales, inyectar el selector real
-  protected branches = [
-    { id: 1, name: 'CENTRAL — Sede Principal' },
-    { id: 2, name: 'NORTE — Palermo' },
-    { id: 3, name: 'SUR — Lomas' },
-  ];
+
+  private readonly sucursalesSvc = inject(SucursalesService);
+
+  // Trae las branches reales del tenant del JWT vía
+  // GET /api/v1/sucursales/branches. Mientras el endpoint responde, la lista
+  // queda en [] y el p-select muestra el placeholder. La regla de validación
+  // del FormControl ya cubre el "no seleccionar nada".
+  protected readonly branches = toSignal(
+    this.sucursalesSvc.listBranchesForSelector(),
+    { initialValue: [] as { id: number; name: string }[] },
+  );
 }
