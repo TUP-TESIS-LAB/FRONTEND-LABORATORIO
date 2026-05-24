@@ -42,13 +42,29 @@
     </ng-template>
     <ng-template pTemplate="body" let-a>
       <tr>
-        <td>{{ formatRange(a) }}</td>
-        <td>{{ formatDays(a.recurringDaysOfWeek) }}</td>
-        <td>{{ a.slotDurationMinutes }} min</td>
-        <td>{{ a.patientsPerSlot }}</td>
-        <td>{{ formatVigencia(a) }}</td>
+        <td>
+          <span class="p-column-title">Horario</span>
+          {{ formatRange(a) }}
+        </td>
+        <td>
+          <span class="p-column-title">Días</span>
+          {{ formatDays(a.recurringDaysOfWeek) }}
+        </td>
+        <td>
+          <span class="p-column-title">Slot</span>
+          {{ a.slotDurationMinutes }} min
+        </td>
+        <td>
+          <span class="p-column-title">Cap.</span>
+          {{ a.patientsPerSlot }}
+        </td>
+        <td>
+          <span class="p-column-title">Vigencia</span>
+          {{ formatVigencia(a) }}
+        </td>
         @if (canWrite) {
           <td class="branch-section__actions-cell">
+            <span class="p-column-title">Acciones</span>
             <p-button
               icon="pi pi-pencil"
               severity="secondary"
