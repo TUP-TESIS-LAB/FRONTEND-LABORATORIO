@@ -15,7 +15,7 @@ export class TotemEffects {
       switchMap(({ dni, branchId }) =>
         this.totemService.lookupPatientByDni(dni).pipe(
           switchMap((patient) =>
-            this.totemService.registerQueueEntry({ patientId: patient.id, branchId }).pipe(
+            this.totemService.registerQueueEntry({ nationalId: patient.dni, patientId: patient.id, branchId }).pipe(
               map((reg) =>
                 A.submitTotemEntrySuccess({
                   queueNumber: reg.queueNumber,

@@ -37,7 +37,7 @@ describe('TotemEffects.submitTotemEntry$', () => {
           patientLastName: 'Pérez',
         }));
         expect(totemService.lookupPatientByDni).toHaveBeenCalledWith('12345678');
-        expect(totemService.registerQueueEntry).toHaveBeenCalledWith({ patientId: 500, branchId: 10 });
+        expect(totemService.registerQueueEntry).toHaveBeenCalledWith({ nationalId: '12345678', patientId: 500, branchId: 10 });
         resolve();
       });
     });

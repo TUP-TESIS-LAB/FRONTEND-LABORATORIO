@@ -23,10 +23,10 @@ export class TotemService {
     return this.http.get<PatientLookup>(`/api/v1/analitica/patients/by-dni/${dni}`);
   }
 
-  registerQueueEntry(input: { patientId: number; branchId: number }): Observable<QueueRegistrationResponse> {
+  registerQueueEntry(input: { nationalId: string; patientId: number; branchId: number }): Observable<QueueRegistrationResponse> {
     return this.http
       .post<{ publicCode: string }>('/api/v1/turnos/queue', {
-        nationalId: null,
+        nationalId: input.nationalId,
         patientId: input.patientId,
         branchId: input.branchId,
         hasAppointment: false,
