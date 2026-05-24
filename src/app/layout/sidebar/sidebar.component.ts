@@ -13,6 +13,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { ModuleRegistry } from '@core/tenant/module-registry';
+import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadBranchTotemConfig } from '@features/turnos/store/branch-totem-config/branch-totem-config.actions';
 import { selectBranchTotemEnabled } from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
@@ -263,6 +264,7 @@ export class SidebarComponent implements OnInit {
   private readonly router   = inject(Router);
   private readonly store    = inject(Store);
   private readonly session  = inject(UserSessionService);
+  private readonly token    = inject(TokenService);
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -331,7 +333,9 @@ export class SidebarComponent implements OnInit {
 
   protected isItemVisible(item: NavItem): boolean {
     if (item.kind === 'expandable') return true;
-    return !item.moduleKey || this.registry.isActive(item.moduleKey);
+    if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
+    if (item.roleKey && !this.token.getRoles().includes(item.roleKey)) return false;
+    return true;
   }
 
   protected isExpanded(label: string): boolean {
