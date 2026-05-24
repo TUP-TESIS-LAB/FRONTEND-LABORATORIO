@@ -56,7 +56,6 @@ export const TURNOS_ROUTES: Routes = [
           },
         ],
       },
-      { path: 'totem',          loadComponent: () => import('./pages/totem/totem.component').then(m => m.TotemComponent) },
       { path: 'atencion-turno', loadComponent: () => import('./pages/atencion-turno/atencion-turno.component').then(m => m.AtencionTurnoComponent) },
       {
         path: 'recepcion',
