@@ -7,7 +7,7 @@ export interface SummaryAddressView {
   neighborhood?: string; city?: string; province?: string; zipCode?: string;
 }
 export interface SummaryContactView {
-  contactType?: 'PHONE' | 'MOBILE' | 'EMAIL';
+  contactType?: 'PHONE' | 'EMAIL';
   contactValue?: string;
 }
 export interface SummaryCoverageView {
@@ -35,8 +35,13 @@ const GENDER_LABEL: Record<string, string> = {
 const SEX_LABEL: Record<string, string> = {
   FEMALE: 'Femenino', MALE: 'Masculino', INTERSEX: 'Intersex',
 };
-const CONTACT_ICON: Record<string, string> = {
-  PHONE: '☎', MOBILE: '📱', EMAIL: '✉',
+/**
+ * Iconos PrimeIcons (NO emojis Unicode). Mapeo de ContactType al nombre de la
+ * clase pi-*. Se usa para renderizar el ícono al lado del valor en el resumen.
+ */
+const CONTACT_ICON_CLASS: Record<string, string> = {
+  PHONE: 'pi-phone',
+  EMAIL: 'pi-envelope',
 };
 
 @Component({
@@ -68,12 +73,14 @@ const CONTACT_ICON: Record<string, string> = {
           }
         </div>
         <div class="pat-summary__body pat-summary__body--muted">
-          @if (data().mobile) { {{ '📱 ' + data().mobile }} } @else { 📱 — }
+          <span class="pat-summary__contact"><i class="pi pi-phone"></i>{{ data().mobile || '—' }}</span>
           <span class="pat-summary__sep">·</span>
-          @if (data().email) { {{ '✉ ' + data().email }} } @else { ✉ — }
+          <span class="pat-summary__contact"><i class="pi pi-envelope"></i>{{ data().email || '—' }}</span>
           @for (c of data().extraContacts; track $index) {
             <span class="pat-summary__sep">·</span>
-            <span>{{ contactIcon(c.contactType) }} {{ c.contactValue }}</span>
+            <span class="pat-summary__contact">
+              <i class="pi" [class]="contactIconClass(c.contactType)"></i>{{ c.contactValue }}
+            </span>
           }
         </div>
       </section>
@@ -115,6 +122,8 @@ const CONTACT_ICON: Record<string, string> = {
     .pat-summary__body { font-size:14px; color:var(--ds-text, #1a1a2e); display:flex; flex-wrap:wrap; gap:4px; align-items:baseline; }
     .pat-summary__body--muted { color:var(--ds-text-muted, #6b7280); font-size:13px; }
     .pat-summary__sep { color:var(--ds-text-muted, #6b7280); opacity:0.5; }
+    .pat-summary__contact { display:inline-flex; align-items:center; gap:6px; }
+    .pat-summary__contact .pi { color: var(--brand-secondary, #1976d2); font-size: 13px; }
   `],
 })
 export class SummaryStepComponent {
@@ -161,7 +170,8 @@ export class SummaryStepComponent {
     });
   });
 
-  contactIcon(type?: 'PHONE' | 'MOBILE' | 'EMAIL'): string {
-    return CONTACT_ICON[type ?? 'PHONE'] ?? '·';
+  /** Devuelve la clase pi-* correspondiente al tipo de contacto. */
+  contactIconClass(type?: 'PHONE' | 'EMAIL'): string {
+    return CONTACT_ICON_CLASS[type ?? 'PHONE'] ?? 'pi-circle';
   }
 }

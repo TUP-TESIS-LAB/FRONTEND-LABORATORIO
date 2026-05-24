@@ -106,18 +106,13 @@ function isAddressFilled(a: Partial<Address>): boolean {
           Paso {{ currentStep() + 1 }} de {{ steps.length }} ·
           <kbd>Ctrl</kbd>+<kbd>S</kbd> para guardar · <kbd>Esc</kbd> para volver
         </span>
-        <div class="ml-auto flex gap-2">
-          <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
-          @if (!isFirstStep()) {
-            <p-button label="← Atrás" [text]="true" type="button" (onClick)="goBack()" />
-          }
-          @if (showContinueButton()) {
-            <p-button
-              label="Continuar →"
-              type="button"
-              [disabled]="!canContinue()"
-              (onClick)="goNext()" />
-          }
+        <!--
+          flex-row-reverse: DOM order Registrar → Atrás → Cancelar (acción primaria
+          primero en tab order), pero visualmente queda Cancelar | Atrás | Registrar
+          como pidió la convención. Así Tab desde el último campo del form aterriza
+          directo en el CTA principal y no en Cancelar.
+        -->
+        <div class="ml-auto flex flex-row-reverse gap-2">
           @if (showSubmitButton()) {
             <p-button
               [label]="isEdit() ? 'Guardar cambios' : 'Registrar paciente'"
@@ -126,6 +121,17 @@ function isAddressFilled(a: Partial<Address>): boolean {
               [loading]="pending()"
               [disabled]="!canSubmit()" />
           }
+          @if (showContinueButton()) {
+            <p-button
+              label="Continuar →"
+              type="button"
+              [disabled]="!canContinue()"
+              (onClick)="goNext()" />
+          }
+          @if (!isFirstStep()) {
+            <p-button label="← Atrás" [text]="true" type="button" (onClick)="goBack()" />
+          }
+          <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
         </div>
       </footer>
       <p-confirmDialog />
@@ -223,7 +229,7 @@ export class PatientFormPage implements OnDestroy {
         mobile: string; email: string;
       };
       address: Partial<Address>;
-      contacts: { contactType: 'PHONE' | 'MOBILE' | 'EMAIL'; contactValue: string }[];
+      contacts: { contactType: 'PHONE' | 'EMAIL'; contactValue: string }[];
       coverages: { planId: number | null; memberNumber: string; isPrimary: boolean }[];
     };
     return {
@@ -337,7 +343,8 @@ export class PatientFormPage implements OnDestroy {
   }
 
   private hydrate(p: Patient): void {
-    const primaryMobile = p.contacts.find((c) => c.contactType === 'MOBILE');
+    // Backend solo conoce PHONE / EMAIL — el primer PHONE primary es el "móvil principal" del general-step.
+    const primaryMobile = p.contacts.find((c) => c.contactType === 'PHONE' && c.isPrimary);
     const primaryEmail  = p.contacts.find((c) => c.contactType === 'EMAIL');
     const extras = p.contacts.filter((c) => c !== primaryMobile && c !== primaryEmail);
     const primaryAddress = p.addresses[0];
@@ -408,7 +415,10 @@ export class PatientFormPage implements OnDestroy {
 
     const contacts: Contact[] = [];
     if (raw.general.mobile?.trim()) {
-      contacts.push({ contactType: 'MOBILE', contactValue: raw.general.mobile.trim(), isPrimary: true, active: true });
+      // Backend (analitica.domain.ContactType) sólo conoce PHONE / EMAIL.
+      // El campo "mobile" del general-step se mapea a PHONE en el modelo persistido.
+      // Si en el futuro se agrega MOBILE al enum del back, cambiar acá y en contact-section.
+      contacts.push({ contactType: 'PHONE', contactValue: raw.general.mobile.trim(), isPrimary: true, active: true });
     }
     if (raw.general.email?.trim()) {
       contacts.push({

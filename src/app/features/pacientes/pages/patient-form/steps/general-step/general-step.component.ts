@@ -6,6 +6,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { ButtonModule } from 'primeng/button';
 import { Gender, SexAtBirth } from '../../../../models/patient.model';
 import { ContactSectionComponent } from '../../../../components/contact-section/contact-section.component';
+import { DateAutoFormatDirective } from '@shared/directives/date-auto-format.directive';
 
 const GENDER_OPTS: { value: Gender; label: string }[] = [
   { value: 'FEMALE', label: 'Femenino' },
@@ -23,7 +24,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   selector: 'pat-general-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, InputTextModule, SelectModule, DatePickerModule, ButtonModule, ContactSectionComponent],
+  imports: [ReactiveFormsModule, InputTextModule, SelectModule, DatePickerModule, ButtonModule, ContactSectionComponent, DateAutoFormatDirective],
   template: `
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" [formGroup]="group()">
       <div class="pat-form__field">
@@ -43,7 +44,12 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       </div>
       <div class="pat-form__field">
         <label class="pat-form__label">Fecha de nacimiento*</label>
-        <p-datepicker formControlName="birthDate" dateFormat="dd/mm/yy" appendTo="body" />
+        <p-datepicker formControlName="birthDate"
+                      dateFormat="dd/mm/yy"
+                      appendTo="body"
+                      [showIcon]="true"
+                      placeholder="dd/mm/aaaa"
+                      appDateAutoFormat />
       </div>
       <div class="pat-form__field">
         <label class="pat-form__label">Género</label>
