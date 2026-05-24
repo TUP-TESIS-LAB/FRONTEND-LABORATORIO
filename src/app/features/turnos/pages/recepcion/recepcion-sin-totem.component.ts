@@ -18,6 +18,7 @@ import {
   selectAppointmentsLoading,
   selectTodayAppointments,
 } from '../../store/appointments/appointments.selectors';
+import { callAppointmentForAttention } from '../../store/queue/queue.actions';
 
 @Component({
   selector: 'app-recepcion-sin-totem',
@@ -45,7 +46,7 @@ export class RecepcionSinTotemComponent implements OnInit {
   }
 
   protected onAtender(appointmentId: number): void {
-    this.router.navigate(['/turnos/atencion-turno'], { queryParams: { appointmentId } });
+    this.store.dispatch(callAppointmentForAttention({ appointmentId }));
   }
 
   protected onWalkIn(): void {

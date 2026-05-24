@@ -26,3 +26,16 @@ export const callQueueEntryFailure = createAction(
   '[Queue] Call Entry Failure',
   props<{ error: unknown }>()
 );
+
+export const callAppointmentForAttention = createAction(
+  '[Queue] Call Appointment For Attention',
+  props<{ appointmentId: number }>()
+);
+export const callAppointmentForAttentionSuccess = createAction(
+  '[Queue] Call Appointment For Attention Success',
+  props<{ appointmentId: number }>()
+);
+export const callAppointmentForAttentionFailure = createAction(
+  '[Queue] Call Appointment For Attention Failure',
+  props<{ error: unknown }>()
+);

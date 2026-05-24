@@ -16,4 +16,8 @@ export class QueueService {
   call(id: number): Observable<CallQueueEntryResponse> {
     return this.http.post<CallQueueEntryResponse>(`${this.base}/${id}/call`, {});
   }
+
+  callByAppointment(appointmentId: number): Observable<unknown> {
+    return this.http.post(`/api/v1/turnos/queue/by-appointment/${appointmentId}/call`, {});
+  }
 }
