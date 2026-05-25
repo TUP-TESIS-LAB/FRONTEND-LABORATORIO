@@ -15,6 +15,7 @@ import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
 import { authTokenInterceptor } from '@core/interceptors/auth-token.interceptor';
 import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
+import { etagInterceptor } from '@core/refresh';
 import { TokenService } from '@core/auth/token.service';
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
 
@@ -54,6 +55,10 @@ import { SAAS_ADMIN_FEATURE_KEY } from '@features/saas-admin/store/saas-admin.st
 import { saasAdminReducer } from '@features/saas-admin/store/saas-admin.reducer';
 import { SaasAdminEffects } from '@features/saas-admin/store/saas-admin.effects';
 
+import { EXTRACTION_FEATURE_KEY } from '@features/analitica/store/extraction/extraction.state';
+import { extractionReducer } from '@features/analitica/store/extraction/extraction.reducer';
+import { ExtractionEffects } from '@features/analitica/store/extraction/extraction.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -69,7 +74,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(
-      withInterceptors([authTokenInterceptor, tenantIdInterceptor]),
+      withInterceptors([etagInterceptor, authTokenInterceptor, tenantIdInterceptor]),
     ),
     provideStore({}),
     provideEffects([]),
@@ -92,6 +97,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(PatientEffects),
     provideState(SAAS_ADMIN_FEATURE_KEY, saasAdminReducer),
     provideEffects(SaasAdminEffects),
+    provideState(EXTRACTION_FEATURE_KEY, extractionReducer),
+    provideEffects(ExtractionEffects),
     providePrimeNG({
       theme: {
         preset: Aura,

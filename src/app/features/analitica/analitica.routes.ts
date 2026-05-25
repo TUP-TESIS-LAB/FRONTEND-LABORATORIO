@@ -1,10 +1,18 @@
 import { Routes } from '@angular/router';
+import { hasRoleGuard } from '@core/guards/has-role.guard';
 
 export const ANALITICA_ROUTES: Routes = [
   {
     path: '',
     children: [
       { path: '', redirectTo: 'atencion', pathMatch: 'full' },
+      {
+        path: 'extraccion',
+        loadComponent: () => import('./pages/extraction-queue/extraction-queue.page')
+          .then(m => m.ExtractionQueuePage),
+        canMatch: [hasRoleGuard(['ROLE_EXTRACTOR', 'ROLE_ADMINISTRADOR'])],
+        title: 'Cola de extracción',
+      },
       {
         path: 'atencion',
         loadComponent: () => import('./pages/atencion/atencion-dashboard/atencion-dashboard.component')

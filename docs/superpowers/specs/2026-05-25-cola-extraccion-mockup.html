@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cola de Extracción — Mockup</title>
+<style>
+  :root{
+    --bg:#f8fafc;--surface:#fff;--border:#e2e8f0;--muted:#64748b;--text:#0f172a;
+    --primary:#2563eb;--primary-soft:#dbeafe;--success:#10b981;--success-soft:#d1fae5;
+    --warn:#f59e0b;--warn-soft:#fef3c7;--danger:#dc2626;--danger-soft:#fee2e2;
+    --info:#0891b2;--info-soft:#cffafe;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 24px;background:var(--bg);color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px}
+  h2{font-size:18px;margin:32px 0 8px}
+  h3{font-size:15px;margin:24px 0 8px}
+  .lead{color:var(--muted);font-size:13px;margin:0 0 24px}
+  .summary{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:13px}
+  .summary ul{margin:6px 0 0 18px;padding:0}
+  .summary li{margin-bottom:3px}
+  code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px}
+
+  /* App shell mockup */
+  .app{background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px;box-shadow:0 1px 3px rgba(15,23,42,0.06);position:relative}
+  .topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);background:#fafbfc;font-size:12px}
+  .topbar .brand{font-weight:600}
+  .topbar .crumb{color:var(--muted)}
+  .topbar .user{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .topbar .user .avatar{width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:11px}
+
+  .page{padding:20px 24px}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:16px}
+  .page-head .title{font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px;margin:0}
+  .page-head .title .ico{color:var(--info)}
+  .page-head .subtitle{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
+
+  /* Refresh indicator (THE key element) */
+  .refresh{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--border);border-radius:20px;background:#fff;font-size:11px;color:var(--muted)}
+  .refresh .dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+  .refresh.paused .dot{background:var(--muted);animation:none}
+  .refresh.paused{background:#f8fafc}
+  .refresh .ts{color:var(--text);font-weight:500}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  /* Stats strip */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .stat{border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:#fff}
+  .stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+  .stat .val{font-size:22px;font-weight:600;line-height:1}
+  .stat .delta{font-size:10px;color:var(--muted);margin-top:4px}
+  .stat.warn .val{color:var(--warn)}
+  .stat.success .val{color:var(--success)}
+  .stat.info .val{color:var(--info)}
+
+  /* Section blocks */
+  .section{background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:20px;overflow:hidden}
+  .section-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:#fafbfc}
+  .section-head h3{margin:0;font-size:14px;font-weight:600}
+  .section-head .badge{background:var(--primary-soft);color:var(--primary);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .section-head .actions{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .section-body{padding:8px}
+
+  /* Filters bar */
+  .filters{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);background:#fff;flex-wrap:wrap}
+  .filters .search{flex:1;min-width:220px;display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;background:#f8fafc;font-size:12px;color:var(--muted)}
+  .chip{padding:4px 10px;border-radius:14px;border:1px solid var(--border);background:#fff;font-size:11px;cursor:default}
+  .chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+  /* Queue card row */
+  .row{display:grid;grid-template-columns:60px 1fr 130px 100px 160px;gap:12px;padding:10px 12px;border-radius:6px;align-items:center;border:1px solid transparent;margin-bottom:6px}
+  .row:hover{background:#f8fafc;border-color:var(--border)}
+  .row .pos{font-size:11px;color:var(--muted);font-weight:600;text-align:center}
+  .row .pos .num{display:block;font-size:18px;color:var(--text)}
+  .row .pat .name{font-weight:600;font-size:13px}
+  .row .pat .meta{font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center;margin-top:2px}
+  .row .pat .meta .sep{color:#cbd5e1}
+  .row .order{font-size:11px;color:var(--muted)}
+  .row .order .code{color:var(--text);font-weight:600;font-size:12px;display:block}
+  .row .wait{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px}
+  .row .wait .min{font-size:14px;font-weight:600;color:var(--warn)}
+  .row .wait .lbl{font-size:9px;color:var(--muted);text-transform:uppercase}
+  .row .acts{display:flex;gap:6px;justify-content:flex-end}
+
+  /* In-progress card (mine) */
+  .myrow{display:grid;grid-template-columns:1fr 100px 140px 220px;gap:12px;padding:12px;border-radius:6px;align-items:center;border:1px solid var(--info-soft);background:#f0fbff;margin-bottom:6px}
+  .myrow .pat .name{font-weight:600;font-size:13px}
+  .myrow .pat .meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .myrow .box{font-size:11px;color:var(--muted)}
+  .myrow .box .v{display:block;font-weight:600;color:var(--text);font-size:13px}
+  .myrow .elapsed{font-size:11px;color:var(--muted)}
+  .myrow .elapsed .v{display:block;font-weight:600;color:var(--text);font-size:13px}
+  .myrow .acts{display:flex;gap:6px;justify-content:flex-end}
+
+  /* Buttons */
+  .btn{padding:6px 12px;border-radius:4px;font-size:11px;font-weight:500;border:1px solid var(--border);background:#fff;color:var(--text);cursor:default;display:inline-flex;align-items:center;gap:4px}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn.success{background:var(--success);color:#fff;border-color:var(--success)}
+  .btn.danger-outline{color:var(--danger);border-color:var(--danger)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+  .btn.sm{padding:4px 8px;font-size:10px}
+
+  /* Tags */
+  .tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+  .tag.urg{background:var(--danger-soft);color:var(--danger)}
+  .tag.norm{background:var(--info-soft);color:var(--info)}
+  .tag.fast{background:var(--warn-soft);color:var(--warn)}
+
+  /* Empty state */
+  .empty{padding:48px 24px;text-align:center;color:var(--muted)}
+  .empty .ico{font-size:32px;display:block;margin-bottom:8px;opacity:0.5}
+
+  /* Drawer */
+  .scene{position:relative;background:#f1f5f9;border:1px solid var(--border);border-radius:8px;padding:0;margin-bottom:24px;overflow:hidden;min-height:560px}
+  .scene-mask{position:absolute;inset:0;background:rgba(15,23,42,0.4);z-index:2}
+  .scene-app{filter:blur(0.5px) brightness(0.95)}
+  .drawer{position:absolute;top:0;right:0;width:440px;height:100%;background:#fff;box-shadow:-4px 0 16px rgba(15,23,42,0.15);z-index:3;display:flex;flex-direction:column}
+  .drawer-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .drawer-head h4{margin:0;font-size:15px;font-weight:600}
+  .drawer-head .close{color:var(--muted);font-size:18px;cursor:default}
+  .drawer-body{flex:1;padding:20px;overflow:auto}
+  .drawer-body .group{margin-bottom:18px}
+  .drawer-body .group label{display:block;font-size:11px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px}
+  .drawer-body .group .v{font-size:13px;font-weight:500}
+  .drawer-body .group .v-muted{font-size:11px;color:var(--muted);margin-top:2px}
+  .drawer-body .inp{height:34px;border:1px solid var(--border);border-radius:4px;padding:6px 10px;background:#fff;font-size:13px;display:flex;align-items:center}
+  .drawer-body .inp.focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+  .drawer-body .hint{font-size:10px;color:var(--muted);margin-top:4px}
+  .drawer-body .alist{border:1px solid var(--border);border-radius:4px}
+  .drawer-body .alist .a{padding:6px 10px;border-bottom:1px solid var(--border);font-size:12px;display:flex;justify-content:space-between;align-items:center}
+  .drawer-body .alist .a:last-child{border-bottom:0}
+  .drawer-body .alist .a .code{color:var(--muted);font-size:11px}
+  .drawer-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:#fafbfc}
+
+  /* Note callout */
+  .note{background:var(--warn-soft);border:1px solid #fde68a;border-radius:6px;padding:10px 14px;font-size:12px;margin:12px 0;color:#92400e}
+  .note strong{color:#78350f}
+
+  /* Annotation tags floating */
+  .anno{position:absolute;background:#0f172a;color:#fff;font-size:10px;padding:3px 8px;border-radius:4px;font-weight:500;z-index:4;pointer-events:none}
+  .anno::after{content:"";position:absolute;width:0;height:0;border-style:solid}
+  .anno.l::after{left:-6px;top:50%;transform:translateY(-50%);border-width:5px 6px 5px 0;border-color:transparent #0f172a transparent transparent}
+
+  .scene-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 8px;display:flex;align-items:center;gap:8px}
+  .scene-label::before{content:"";flex:0 0 16px;height:1px;background:var(--border)}
+  .scene-label::after{content:"";flex:1;height:1px;background:var(--border)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Cola de Extracción — Mockups</h1>
+<p class="lead">Nueva pantalla <code>/analitica/extraccion</code> para el rol <strong>EXTRACTOR</strong>. Cierra el módulo de atención: paciente atendido → análisis cargados → <strong>cola de extracción</strong> → muestra tomada.</p>
+
+<div class="summary">
+  <strong>Decisiones ya cerradas</strong>
+  <ul>
+    <li><strong>Ruta:</strong> <code>/analitica/extraccion</code>. Una sola página, sin tabs.</li>
+    <li><strong>Sección 1 — Cola:</strong> atenciones en estado <code>AWAITING_EXTRACTION</code> del tenant.</li>
+    <li><strong>Sección 2 — Mis extracciones en curso:</strong> atenciones <code>IN_EXTRACTION</code> asignadas al extractor logueado (<code>extractorId</code> del JWT).</li>
+    <li><strong>Acción "Tomar":</strong> drawer lateral (no modal) — pide / autocompleta <strong>box</strong> (localStorage editable) y dispara <code>PATCH /assign/extractor</code>.</li>
+    <li><strong>Refresco:</strong> polling con ETag/304 cada <strong>5s</strong> (estándar del proyecto, regla #5). Pausa con pestaña oculta.</li>
+    <li><strong>Sin drag &amp; drop.</strong> Toma manual con confirmación.</li>
+    <li><strong>Permisos:</strong> visible solo si el JWT incluye <code>ROLE_EXTRACTOR</code> (o admin/owner del tenant).</li>
+  </ul>
+</div>
+
+<!-- ================================================================
+     ESCENA A — Vista normal con cola + mis extracciones
+     ================================================================ -->
+
+<div class="scene-label">Escena A — Vista por defecto (extractor con 2 extracciones en curso)</div>
+
+<div class="app">
+  <div class="topbar">
+    <span class="brand">Laboratorio</span>
+    <span class="crumb">Analítica · Cola de extracción</span>
+    <span class="user"><span class="avatar">MR</span> María Rodríguez · Extractora</span>
+  </div>
+
+  <div class="page">
+    <div class="page-head">
+      <div>
+        <div class="subtitle">Analítica</div>
+        <h2 class="title"><i class="ico">⚕</i> Cola de extracción</h2>
+      </div>
+      <div class="refresh">
+        <span class="dot"></span>
+        <span>Actualizado hace <span class="ts">2s</span></span>
+        <span style="color:#cbd5e1">·</span>
+        <span>cada 5s</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat warn">
+        <div class="lbl">En cola</div>
+        <div class="val">12</div>
+        <div class="delta">+3 en últimos 10 min</div>
+      </div>
+      <div class="stat info">
+        <div class="lbl">Mis extracciones</div>
+        <div class="val">2</div>
+        <div class="delta">en curso</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">Espera promedio</div>
+        <div class="val">14<span style="font-size:14px;color:var(--muted);font-weight:400">min</span></div>
+        <div class="delta">objetivo &lt; 20</div>
+      </div>
+      <div class="stat success">
+        <div class="lbl">Hoy finalizadas</div>
+        <div class="val">28</div>
+        <div class="delta">por mí</div>
+      </div>
+    </div>
+
+    <!-- Mis extracciones en curso -->
+    <div class="section">
+      <div class="section-head">
+        <h3>Mis extracciones en curso</h3>
+        <span class="badge">2</span>
+      </div>
+      <div class="section-body">
+
+        <div class="myrow">
+          <div class="pat">
+            <div class="name">Pérez, Juan Carlos</div>
+            <div class="meta">DNI 32.456.789 · 41 años · M · OS: OSDE 410</div>
+          </div>
+          <div class="box">
+            <span class="v">Box 3</span>
+          </div>
+          <div class="elapsed">
+            <span class="v">4 min</span>
+            <span style="font-size:10px;color:var(--muted)">desde 10:32</span>
+          </div>
+          <div class="acts">
+            <button class="btn danger-outline sm">Cancelar</button>
+            <button class="btn success sm">Finalizar extracción</button>
+          </div>
+        </div>
+
+        <div class="myrow">
+          <div class="pat">
+            <div class="name">García, Lucía María</div>
+            <div class="meta">DNI 28.114.502 · 47 años · F · OS: Swiss Medical SMG30</div>
+          </div>
+          <div class="box">
+            <span class="v">Box 3</span>
+          </div>
+          <div class="elapsed">
+            <span class="v">11 min</span>
+            <span style="font-size:10px;color:var(--muted)">desde 10:25</span>
+          </div>
+          <div class="acts">
+            <button class="btn danger-outline sm">Cancelar</button>
+            <button class="btn success sm">Finalizar extracción</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Cola -->
+    <div class="section">
+      <div class="section-head">
+        <h3>Cola de extracción</h3>
+        <span class="badge">12</span>
+        <div class="actions">
+          <span style="font-size:11px;color:var(--muted)">Orden: llegada</span>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="search"><span>🔎</span><span>Buscar por paciente, DNI u orden…</span></div>
+        <span class="chip active">Todas</span>
+        <span class="chip">Urgentes</span>
+        <span class="chip">En ayunas</span>
+      </div>
+
+      <div class="section-body">
+
+        <div class="row">
+          <div class="pos"><span class="num">1</span>posición</div>
+          <div class="pat">
+            <div class="name">Sosa, Mariana</div>
+            <div class="meta">
+              <span>DNI 35.220.118</span><span class="sep">·</span>
+              <span>33 años · F</span><span class="sep">·</span>
+              <span class="tag urg">URGENTE</span>
+              <span class="tag fast">En ayunas</span>
+            </div>
+          </div>
+          <div class="order">
+            <span class="code">#ORD-1247</span>
+            <span>4 análisis</span>
+          </div>
+          <div class="wait">
+            <span class="min">23'</span>
+            <span class="lbl">espera</span>
+          </div>
+          <div class="acts">
+            <button class="btn ghost sm">Ver</button>
+            <button class="btn primary sm">Tomar</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="pos"><span class="num">2</span>posición</div>
+          <div class="pat">
+            <div class="name">Fernández, Roberto</div>
+            <div class="meta">
+              <span>DNI 22.118.405</span><span class="sep">·</span>
+              <span>58 años · M</span><span class="sep">·</span>
+              <span class="tag norm">Particular</span>
+            </div>
+          </div>
+          <div class="order">
+            <span class="code">#ORD-1248</span>
+            <span>2 análisis</span>
+          </div>
+          <div class="wait">
+            <span class="min">18'</span>
+            <span class="lbl">espera</span>
+          </div>
+          <div class="acts">
+            <button class="btn ghost sm">Ver</button>
+            <button class="btn primary sm">Tomar</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="pos"><span class="num">3</span>posición</div>
+          <div class="pat">
+            <div class="name">Molina, Camila Andrea</div>
+            <div class="meta">
+              <span>DNI 41.567.012</span><span class="sep">·</span>
+              <span>22 años · F</span><span class="sep">·</span>
+              <span class="tag norm">OSDE 210</span>
+              <span class="tag fast">En ayunas</span>
+            </div>
+          </div>
+          <div class="order">
+            <span class="code">#ORD-1249</span>
+            <span>6 análisis</span>
+          </div>
+          <div class="wait">
+            <span class="min">14'</span>
+            <span class="lbl">espera</span>
+          </div>
+          <div class="acts">
+            <button class="btn ghost sm">Ver</button>
+            <button class="btn primary sm">Tomar</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="pos"><span class="num">4</span>posición</div>
+          <div class="pat">
+            <div class="name">Torres, Diego</div>
+            <div class="meta">
+              <span>DNI 30.998.221</span><span class="sep">·</span>
+              <span>39 años · M</span><span class="sep">·</span>
+              <span class="tag norm">IOMA</span>
+            </div>
+          </div>
+          <div class="order">
+            <span class="code">#ORD-1250</span>
+            <span>3 análisis</span>
+          </div>
+          <div class="wait">
+            <span class="min">9'</span>
+            <span class="lbl">espera</span>
+          </div>
+          <div class="acts">
+            <button class="btn ghost sm">Ver</button>
+            <button class="btn primary sm">Tomar</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="pos"><span class="num">5</span>posición</div>
+          <div class="pat">
+            <div class="name">Ramírez, Sofía</div>
+            <div class="meta">
+              <span>DNI 39.011.488</span><span class="sep">·</span>
+              <span>27 años · F</span><span class="sep">·</span>
+              <span class="tag norm">Swiss Medical</span>
+            </div>
+          </div>
+          <div class="order">
+            <span class="code">#ORD-1251</span>
+            <span>1 análisis</span>
+          </div>
+          <div class="wait">
+            <span class="min">5'</span>
+            <span class="lbl">espera</span>
+          </div>
+          <div class="acts">
+            <button class="btn ghost sm">Ver</button>
+            <button class="btn primary sm">Tomar</button>
+          </div>
+        </div>
+
+        <div style="text-align:center;padding:10px;color:var(--muted);font-size:11px">7 atenciones más · paginado 5/pág</div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="note">
+  <strong>Indicador de refresco (arriba a la derecha):</strong> el punto verde indica polling activo, "Actualizado hace Xs" cuenta el tiempo desde la última respuesta exitosa (sea 200 o 304). Cuando el ETag responde 304 no se reescribe la tabla — solo se actualiza el timestamp. Si el browser detecta <code>visibilityState=hidden</code> el dot pasa a gris y el texto cambia a "Pausado · pestaña inactiva".
+</div>
+
+<!-- ================================================================
+     ESCENA B — Drawer "Tomar" abierto
+     ================================================================ -->
+
+<div class="scene-label">Escena B — Drawer lateral "Tomar" (clic en Tomar de Sosa, Mariana)</div>
+
+<div class="scene">
+  <div class="scene-app">
+    <div class="topbar">
+      <span class="brand">Laboratorio</span>
+      <span class="crumb">Analítica · Cola de extracción</span>
+      <span class="user"><span class="avatar">MR</span> María Rodríguez · Extractora</span>
+    </div>
+    <div class="page" style="padding-bottom:8px">
+      <div class="page-head">
+        <div>
+          <div class="subtitle">Analítica</div>
+          <h2 class="title"><i class="ico">⚕</i> Cola de extracción</h2>
+        </div>
+        <div class="refresh paused">
+          <span class="dot"></span>
+          <span>Pausado · drawer abierto</span>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h3>Cola de extracción</h3><span class="badge">12</span></div>
+        <div class="section-body">
+          <div class="row" style="opacity:0.6">
+            <div class="pos"><span class="num">1</span>posición</div>
+            <div class="pat"><div class="name">Sosa, Mariana</div><div class="meta">DNI 35.220.118 · 33 años</div></div>
+            <div class="order"><span class="code">#ORD-1247</span></div>
+            <div class="wait"><span class="min">23'</span></div>
+            <div class="acts"><button class="btn primary sm">Tomando…</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene-mask"></div>
+
+  <div class="drawer">
+    <div class="drawer-head">
+      <h4>Tomar paciente</h4>
+      <span class="close">✕</span>
+    </div>
+    <div class="drawer-body">
+
+      <div class="group">
+        <label>Paciente</label>
+        <div class="v">Sosa, Mariana</div>
+        <div class="v-muted">DNI 35.220.118 · 33 años · Femenino</div>
+      </div>
+
+      <div class="group">
+        <label>Orden</label>
+        <div class="v">#ORD-1247</div>
+        <div class="v-muted">Espera: 23 min · Marcada urgente · En ayunas confirmado</div>
+      </div>
+
+      <div class="group">
+        <label>Análisis incluidos (4)</label>
+        <div class="alist">
+          <div class="a"><span>Hemograma completo</span><span class="code">HC-001</span></div>
+          <div class="a"><span>Glucemia</span><span class="code">QM-014</span></div>
+          <div class="a"><span>Perfil tiroideo</span><span class="code">HM-022</span></div>
+          <div class="a"><span>Vitamina D total</span><span class="code">HM-031</span></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <label>Box de atención <span style="color:var(--danger)">*</span></label>
+        <div class="inp focus" style="display:flex;justify-content:space-between">
+          <span>Box 3</span>
+          <span style="color:var(--muted);font-size:11px">(autocompletado)</span>
+        </div>
+        <div class="hint">Recordamos tu último box. Editalo si cambiaste de puesto — se guarda en este navegador.</div>
+      </div>
+
+      <div class="group" style="background:#f8fafc;padding:10px 12px;border-radius:6px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Vas a quedar registrada como extractora de esta atención.</div>
+        <div style="font-size:12px"><strong>Extractor:</strong> María Rodríguez (vos)</div>
+      </div>
+
+    </div>
+    <div class="drawer-foot">
+      <button class="btn">Cancelar</button>
+      <button class="btn primary">Confirmar y tomar</button>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Por qué drawer y no modal:</strong> el drawer ocupa ~440px a la derecha y deja visible la cola — si llega una urgente más prioritaria mientras decidís, la ves. El modal centrado tapa todo. Además el drawer escala mejor si después agregamos sub-acciones (cambiar análisis, agregar nota), un modal se hace incómodo. <strong>El polling se pausa con el drawer abierto</strong> para evitar que el paciente "desaparezca" de la cola justo cuando estás confirmando.
+</div>
+
+<!-- ================================================================
+     ESCENA C — Cola vacía
+     ================================================================ -->
+
+<div class="scene-label">Escena C — Cola vacía + sin extracciones en curso</div>
+
+<div class="app">
+  <div class="topbar">
+    <span class="brand">Laboratorio</span>
+    <span class="crumb">Analítica · Cola de extracción</span>
+    <span class="user"><span class="avatar">MR</span> María Rodríguez · Extractora</span>
+  </div>
+  <div class="page">
+    <div class="page-head">
+      <div>
+        <div class="subtitle">Analítica</div>
+        <h2 class="title"><i class="ico">⚕</i> Cola de extracción</h2>
+      </div>
+      <div class="refresh">
+        <span class="dot"></span>
+        <span>Actualizado hace <span class="ts">1s</span></span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="lbl">En cola</div><div class="val" style="color:var(--success)">0</div></div>
+      <div class="stat"><div class="lbl">Mis extracciones</div><div class="val">0</div></div>
+      <div class="stat"><div class="lbl">Espera promedio</div><div class="val">—</div></div>
+      <div class="stat success"><div class="lbl">Hoy finalizadas</div><div class="val">28</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h3>Cola de extracción</h3><span class="badge" style="background:var(--success-soft);color:var(--success)">0</span></div>
+      <div class="empty">
+        <span class="ico">✓</span>
+        <div style="font-weight:600;color:var(--text);margin-bottom:4px">No hay pacientes esperando extracción</div>
+        <div style="font-size:12px">La pantalla se actualiza sola cada 5 segundos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     Resumen de interacciones / estados
+     ================================================================ -->
+
+<h2>Resumen de interacciones</h2>
+
+<div class="summary">
+  <strong>Acciones del usuario y endpoints involucrados</strong>
+  <ul>
+    <li><strong>Carga inicial:</strong> <code>GET /api/v1/attentions/awaiting-extraction</code> + <code>GET /api/v1/attentions/in-extraction?extractorId=me</code>.</li>
+    <li><strong>Polling cada 5s:</strong> ambos endpoints con <code>If-None-Match</code>. Si los dos vuelven 304 → solo se actualiza "hace Xs", no se redibuja la tabla (preservar scroll y foco).</li>
+    <li><strong>Tomar →</strong> drawer abre con datos de la atención, box autocompletado desde <code>localStorage['extractor.box']</code>. Confirmar dispara <code>PATCH /api/v1/attentions/{id}/assign/extractor</code> con <code>{ box, extractorId }</code> (extractorId del JWT, se valida en backend).</li>
+    <li><strong>Cancelar (mi extracción) →</strong> confirm dialog → <code>PATCH /api/v1/attentions/{id}/cancel-extraction</code>. Vuelve a <code>AWAITING_EXTRACTION</code>.</li>
+    <li><strong>Finalizar extracción →</strong> confirm dialog → <code>PATCH /api/v1/attentions/{id}/end-extraction</code>. Pasa a <code>EXTRACTED</code>, sale de "mis".</li>
+    <li><strong>Ver:</strong> link a <code>/analitica/atencion/{id}</code> (read-only, vista existente).</li>
+    <li><strong>Pausa de polling:</strong> drawer abierto + <code>visibilityState=hidden</code>. Al reanudar dispara un poll inmediato fuera de ciclo.</li>
+  </ul>
+</div>
+
+<div class="summary">
+  <strong>Lo que necesita el backend</strong>
+  <ul>
+    <li><code>GET /awaiting-extraction</code> y <code>GET /in-extraction</code> deben soportar <code>If-None-Match</code> y responder <code>304</code> cuando el ETag coincide (regla #5 backend CLAUDE.md).</li>
+    <li>ETag por endpoint = hash de <code>(tenantId, max(updated_at), count)</code>; cachear en Caffeine; invalidar al ejecutar cualquier mutación de la atención.</li>
+    <li><code>PATCH /assign/extractor</code> debe tomar <code>extractorId</code> del JWT (no del body) y aceptar <code>box</code> en el body.</li>
+    <li>Validar transición de estado server-side (no confiar en el cliente).</li>
+  </ul>
+</div>
+
+<h2>Puntos abiertos para discutir</h2>
+<ol>
+  <li><strong>Stats strip arriba:</strong> ¿la dejamos en MVP o la posponemos? Es lindo pero suma carga al endpoint.</li>
+  <li><strong>Filtros (Todas / Urgentes / En ayunas):</strong> ¿los necesitamos en MVP o vienen después?</li>
+  <li><strong>Tag "URGENTE" / "En ayunas":</strong> ¿el backend ya tiene esos flags en la atención? Si no, sale del scope.</li>
+  <li><strong>Posición en cola (columna izquierda):</strong> ¿usamos posición FIFO simple o priorizamos urgentes arriba?</li>
+  <li><strong>Cantidad de "mis extracciones" en paralelo:</strong> ¿hay límite (ej. máx 3 a la vez) o el extractor decide?</li>
+  <li><strong>Box: persistencia:</strong> localStorage por navegador alcanza, o lo queremos en el perfil del usuario en backend?</li>
+</ol>
+
+</div>
+</body>
+</html>

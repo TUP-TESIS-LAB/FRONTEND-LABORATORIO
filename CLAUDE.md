@@ -44,6 +44,20 @@ Cualquier mensaje que se muestre en la UI (toast, alert, inline error, modal) de
 
 Aplica también a los emojis: NO usar emojis Unicode (📱 ✉ ☎ etc.) — usar PrimeIcons (`<i class="pi pi-mobile">`, `pi-envelope`, `pi-phone`) que están alineados con el design system y se renderizan consistentes en todos los browsers.
 
+### 5. Refresco en tiempo real — estándar del proyecto
+
+Pantallas que requieren ver cambios sin recargar (colas, dashboards, listas en curso) usan **HTTP polling con ETag/304** vía el helper `createPollingEffect` (ubicado en `core/refresh/`). Es el estándar único — no improvisar `setInterval` en componentes, ni introducir SSE/WebSockets sin discusión previa.
+
+Reglas:
+- **Intervalo por defecto: 5 segundos.** Solo bajarlo con justificación explícita (latencia inaceptable comprobada en uso real, no en hipótesis).
+- El polling **debe pausarse cuando la pestaña no está visible** (`document.visibilityState === 'hidden'`) para no gastar ancho de banda ni cuota del usuario.
+- Al volver visible: reanudar + disparar un poll extra inmediato.
+- El effect debe respetar el flag `pending` del feature para no encolar peticiones si hay una en vuelo (dedup).
+- El cliente debe enviar `If-None-Match` con el ETag del último response exitoso, y NO disparar acción de éxito si la respuesta es `304` (mantener el estado actual).
+- Cuando agregues una pantalla nueva con refresco, reusá el helper — no copies la lógica.
+
+Si una pantalla específica requiere latencia <2s comprobada (no asumida), abrir issue para evaluar SSE puntualmente; no migrar el estándar global por un caso.
+
 ---
 
 ## Stack del repo
