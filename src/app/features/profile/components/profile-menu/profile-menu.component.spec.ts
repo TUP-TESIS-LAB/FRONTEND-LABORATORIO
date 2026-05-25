@@ -13,6 +13,7 @@ const mockUser: UserResponse = {
   phone: null, document: null, isEmailVerified: true, isExternal: false,
   branch: null, isFirstLogin: false, active: true,
   roles: [{ id: 1, code: 'ADMINISTRADOR', description: 'Administrador', hierarchy: 0 }],
+  tenantSlug: null,
 };
 
 describe('ProfileMenuComponent', () => {

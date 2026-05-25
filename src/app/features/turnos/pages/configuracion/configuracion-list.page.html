@@ -1,0 +1,81 @@
+<p-toast />
+<p-confirmDialog />
+
+<div class="config-page">
+  <header class="config-page__header">
+    <div>
+      <h1>Configuración de turnos</h1>
+      <p>Definí horarios y capacidad por sucursal.</p>
+    </div>
+    @if (canWrite()) {
+      <p-button
+        label="Nueva agenda"
+        icon="pi pi-plus"
+        severity="primary"
+        (onClick)="router.navigate(['/turnos/configuracion/nueva'])"
+      />
+    }
+  </header>
+
+  <section class="config-page__toolbar">
+    <p-select
+      [options]="branches()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Todas las sucursales"
+      [(ngModel)]="filterBranchId"
+      [showClear]="true"
+    />
+    <input
+      pInputText
+      type="text"
+      placeholder="Buscar agenda..."
+      [(ngModel)]="searchTerm"
+    />
+  </section>
+
+  @if (error(); as err) {
+    <div class="config-page__banner config-page__banner--error">
+      <span>No pudimos cargar las agendas.</span>
+      <p-button label="Reintentar" severity="secondary" (onClick)="ngOnInit()" />
+    </div>
+  }
+
+  @if (pending()) {
+    <p-skeleton height="6rem" />
+    <p-skeleton height="6rem" />
+  } @else {
+    @if (visibleBranches().length === 0) {
+      <div class="config-page__empty">
+        <i class="pi pi-calendar"></i>
+        <p>No hay sucursales para mostrar.</p>
+      </div>
+    } @else {
+      <p-accordion [multiple]="true">
+        @for (branch of visibleBranches(); track branch.id) {
+          <p-accordion-panel [value]="branch.id">
+            <p-accordion-header>
+              <div class="branch-header">
+                <strong>{{ branch.name }}</strong>
+                <span class="branch-header__count">
+                  {{ configsByBranch()[branch.id]?.length ?? 0 }} agenda{{ (configsByBranch()[branch.id]?.length ?? 0) === 1 ? '' : 's' }}
+                </span>
+              </div>
+            </p-accordion-header>
+            <p-accordion-content>
+              <app-agenda-branch-section
+                [branch]="branch"
+                [agendas]="configsByBranch()[branch.id] || []"
+                [searchTerm]="searchTerm"
+                [canWrite]="canWrite()"
+                (agregar)="onAgregarPara(branch.id)"
+                (editar)="onEditar($event)"
+                (eliminar)="onEliminar($event.id, branch.id)"
+              />
+            </p-accordion-content>
+          </p-accordion-panel>
+        }
+      </p-accordion>
+    }
+  }
+</div>

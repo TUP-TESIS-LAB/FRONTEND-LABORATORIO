@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  OnInit,
   output,
   signal,
 } from '@angular/core';
@@ -10,7 +11,12 @@ import { NgClass } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
+import { Store } from '@ngrx/store';
 import { ModuleRegistry } from '@core/tenant/module-registry';
+import { TokenService } from '@core/auth/token.service';
+import { UserSessionService } from '@features/profile/services/user-session.service';
+import { loadBranchTotemConfig } from '@features/turnos/store/branch-totem-config/branch-totem-config.actions';
+import { selectBranchTotemEnabled } from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
 import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
 
 @Component({
@@ -71,6 +77,22 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
         @if (!last) {
           <div class="ui-sidebar__divider"></div>
         }
+      }
+
+      @if (salaEsperaUrl(); as url) {
+        <div class="ui-sidebar__divider"></div>
+        <div class="ui-sidebar__section">
+          <a
+            [href]="url"
+            target="_blank"
+            rel="noopener"
+            class="ui-sidebar__item"
+            (click)="itemClick.emit()">
+            <span class="ui-sidebar__icon"><i class="pi pi-desktop"></i></span>
+            <span class="ui-sidebar__label">Sala de espera</span>
+            <i class="pi pi-external-link ui-sidebar__chevron"></i>
+          </a>
+        </div>
       }
     </nav>
   `,
@@ -235,11 +257,14 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
     }
   `],
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   readonly itemClick = output<void>();
 
   private readonly registry = inject(ModuleRegistry);
   private readonly router   = inject(Router);
+  private readonly store    = inject(Store);
+  private readonly session  = inject(UserSessionService);
+  private readonly token    = inject(TokenService);
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -261,6 +286,27 @@ export class SidebarComponent {
       .filter(section => section.items.length > 0),
   );
 
+  // ---- Sala de espera (TV) link condicional ----
+  // Visible solo si la sucursal del usuario tiene tótem ON y conocemos el
+  // `tenantSlug` (necesario para armar la URL pública `/display/:slug/:branchId`).
+  // El backend expone `tenantSlug` en `UserResponse` desde la respuesta de login.
+  private readonly totemEnabled = this.store.selectSignal(selectBranchTotemEnabled);
+
+  private readonly branchId = computed<number | null>(
+    () => this.session.currentUser()?.branch ?? null,
+  );
+
+  private readonly tenantSlug = computed<string | null>(
+    () => this.session.currentUser()?.tenantSlug ?? null,
+  );
+
+  readonly salaEsperaUrl = computed<string | null>(() => {
+    if (!this.totemEnabled()) return null;
+    const slug = this.tenantSlug();
+    const id = this.branchId();
+    return slug && id ? `/display/${slug}/${id}` : null;
+  });
+
   constructor() {
     const sync = () => {
       const url = this.url();
@@ -280,9 +326,16 @@ export class SidebarComponent {
       .subscribe(sync);
   }
 
+  ngOnInit(): void {
+    const id = this.branchId();
+    if (id != null) this.store.dispatch(loadBranchTotemConfig({ branchId: id }));
+  }
+
   protected isItemVisible(item: NavItem): boolean {
     if (item.kind === 'expandable') return true;
-    return !item.moduleKey || this.registry.isActive(item.moduleKey);
+    if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
+    if (item.roleKey && !this.token.getRoles().includes(item.roleKey)) return false;
+    return true;
   }
 
   protected isExpanded(label: string): boolean {
