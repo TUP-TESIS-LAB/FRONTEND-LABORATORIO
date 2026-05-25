@@ -61,6 +61,11 @@ const ALL_STEPS: WizardStepDef[] = [
           <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
         </header>
         <lab-datos-generales-step [atencionId]="null" />
+      } @else if (mutating() && !detail()) {
+        <!-- Caso: createPreFilledAtencion en vuelo (?appointmentId=X). Mientras la
+             creación va, detail() es null pero mutating() es true. Mostramos un
+             estado neutro de "Creando…" en lugar del empty-state engañoso. -->
+        <div class="text-center py-12 opacity-70">Creando atención…</div>
       } @else if (!detail()) {
         <ui-empty-state heading="Atención no encontrada" icon="pi-exclamation-circle" />
       } @else {

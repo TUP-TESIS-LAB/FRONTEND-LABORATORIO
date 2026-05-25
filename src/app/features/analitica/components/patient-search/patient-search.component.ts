@@ -70,10 +70,16 @@ export class PatientSearchComponent implements OnInit {
   private doSearch(dni: string, emitNotFound: boolean): void {
     const cleaned = (dni ?? '').replace(/\D/g, '');
     if (!cleaned) {
+      // Limpio la card del paciente anterior para que el template no muestre selección stale
+      // mientras el usuario tipea algo inválido encima.
+      this.patient.set(null);
       this.error.set('Ingresá un DNI');
       return;
     }
     this.error.set(null);
+    // Reseteo la selección anterior al inicio de una nueva búsqueda — evita que la UI
+    // muestre el paciente viejo mientras la HTTP está en vuelo.
+    this.patient.set(null);
     this.loading.set(true);
     this.patients
       .search({ state: 'active', page: 0, size: 1, q: cleaned })
@@ -93,6 +99,9 @@ export class PatientSearchComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
+          // Si la HTTP falla limpio la card vieja también, para que la UI no muestre
+          // selección obsoleta mientras se ve el mensaje de error.
+          this.patient.set(null);
           this.error.set('Error al buscar el paciente');
         },
       });

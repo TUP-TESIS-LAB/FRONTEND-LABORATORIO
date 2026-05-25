@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { provideMockActions } from '@ngrx/effects/testing';
+import { Action } from '@ngrx/store';
 import { provideMockStore } from '@ngrx/store/testing';
-import { of } from 'rxjs';
+import { ReplaySubject, of } from 'rxjs';
 import { AtencionWizardComponent } from './atencion-wizard.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { NbuService } from '../../../services/nbu.service';
@@ -38,6 +40,10 @@ describe('AtencionWizardComponent (CORE flow)', () => {
             { selector: selectMutating, value: false },
           ],
         }),
+        // El wizard renderiza step components que ahora inyectan Actions
+        // para esperar atencionMutationSuccess (FE-13/FE-14). Necesitan
+        // un stream mock o falla la DI con NG0201.
+        provideMockActions(() => new ReplaySubject<Action>(1)),
         { provide: ModuleRegistry, useValue: registry },
         { provide: NbuService, useValue: { getCurrent: vi.fn().mockReturnValue(of(null)) } },
         { provide: Router, useValue: { navigate: vi.fn() } },

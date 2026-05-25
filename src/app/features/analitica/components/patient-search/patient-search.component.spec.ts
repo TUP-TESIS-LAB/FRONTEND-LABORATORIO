@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { PatientSearchComponent } from './patient-search.component';
 import { PatientService } from '@features/pacientes/services/patient.service';
 import { Patient } from '@features/pacientes/models/patient.model';
@@ -55,6 +55,27 @@ describe('PatientSearchComponent', () => {
     fixture.componentInstance.setPatient(sample());
     expect(fixture.componentInstance.patient()).not.toBeNull();
     fixture.componentInstance.clear();
+    expect(fixture.componentInstance.patient()).toBeNull();
+  });
+
+  it('searchByDni with empty DNI clears stale patient + shows error', () => {
+    // Pre-condición: hay un paciente ya seleccionado (búsqueda previa).
+    fixture.componentInstance.setPatient(sample());
+    expect(fixture.componentInstance.patient()).not.toBeNull();
+    // Acción: el usuario tipea algo sin dígitos (DNI inválido).
+    fixture.componentInstance.searchByDni('abc');
+    // Verificación: la card vieja se limpió, no quedó selección stale.
+    expect(fixture.componentInstance.patient()).toBeNull();
+  });
+
+  it('searchByDni with HTTP error clears stale patient', () => {
+    // Pre-condición: hay un paciente ya seleccionado (búsqueda previa exitosa).
+    fixture.componentInstance.setPatient(sample());
+    expect(fixture.componentInstance.patient()).not.toBeNull();
+    // Acción: nueva búsqueda que falla con HTTP error.
+    patientService.search.mockReturnValue(throwError(() => new Error('network')));
+    fixture.componentInstance.searchByDni('32456789');
+    // Verificación: la card vieja se limpió aunque el back fallara.
     expect(fixture.componentInstance.patient()).toBeNull();
   });
 });

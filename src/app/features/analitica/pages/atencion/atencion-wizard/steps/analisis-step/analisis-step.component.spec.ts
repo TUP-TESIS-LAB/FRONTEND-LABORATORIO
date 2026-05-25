@@ -1,24 +1,32 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideMockActions } from '@ngrx/effects/testing';
 import { provideMockStore } from '@ngrx/store/testing';
-import { of } from 'rxjs';
+import { Action } from '@ngrx/store';
+import { ReplaySubject, of } from 'rxjs';
 import { AnalisisStepComponent } from './analisis-step.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { NbuService } from '../../../../../services/nbu.service';
 import * as A from '../../../../../store/atencion/atencion.actions';
+import { selectMutating } from '../../../../../store/atencion/atencion.selectors';
 
 describe('AnalisisStepComponent', () => {
   let fixture: ComponentFixture<AnalisisStepComponent>;
   let dispatched: any[];
+  let actions$: ReplaySubject<Action>;
   let registry: { isActive: ReturnType<typeof vi.fn> };
   let nbu: { getCurrent: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     registry = { isActive: vi.fn().mockReturnValue(false) };
     nbu = { getCurrent: vi.fn().mockReturnValue(of(null)) };
+    actions$ = new ReplaySubject<Action>(1);
     await TestBed.configureTestingModule({
       imports: [AnalisisStepComponent],
       providers: [
-        provideMockStore(),
+        provideMockStore({
+          selectors: [{ selector: selectMutating, value: false }],
+        }),
+        provideMockActions(() => actions$),
         { provide: ModuleRegistry, useValue: registry },
         { provide: NbuService, useValue: nbu },
       ],
@@ -35,25 +43,32 @@ describe('AnalisisStepComponent', () => {
     expect(dispatched).toHaveLength(0);
   });
 
-  it('onContinue with Financiero OFF dispatches addAnalysisList and emits stepAdvanced', () => {
-    let stepAdvanced = false;
-    fixture.componentInstance.stepAdvanced.subscribe(() => (stepAdvanced = true));
+  it('onContinue dispatches addAnalysisList immediately', () => {
     fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: 1001, name: 'X', familyName: null, ubCount: null });
     fixture.componentInstance.onContinue();
     expect(dispatched[0].type).toBe(A.addAnalysisList.type);
     expect(dispatched.find((a) => a.type === A.endSecretaryPhase.type)).toBeUndefined();
-    expect(stepAdvanced).toBe(true);
   });
 
-  it('onContinue with Financiero ON dispatches addAnalysisList and emits stepAdvanced', () => {
-    registry.isActive.mockReturnValue(true);
+  it('stepAdvanced emits ONLY after atencionMutationSuccess (pessimistic)', () => {
     let stepAdvanced = false;
     fixture.componentInstance.stepAdvanced.subscribe(() => (stepAdvanced = true));
     fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: 1001, name: 'X', familyName: null, ubCount: null });
     fixture.componentInstance.onContinue();
-    expect(dispatched.find((a) => a.type === A.addAnalysisList.type)).toBeDefined();
-    expect(dispatched.find((a) => a.type === A.endSecretaryPhase.type)).toBeUndefined();
+    // Antes del success: no avanza
+    expect(stepAdvanced).toBe(false);
+    // Llega el success → avanza
+    actions$.next(A.atencionMutationSuccess({ item: {} as any }));
     expect(stepAdvanced).toBe(true);
+  });
+
+  it('stepAdvanced does NOT emit when mutation fails', () => {
+    let stepAdvanced = false;
+    fixture.componentInstance.stepAdvanced.subscribe(() => (stepAdvanced = true));
+    fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: 1001, name: 'X', familyName: null, ubCount: null });
+    fixture.componentInstance.onContinue();
+    actions$.next(A.atencionMutationFailure({ error: {} as any }));
+    expect(stepAdvanced).toBe(false);
   });
 
   it('exposes the NBU ubValue when service returns a version', () => {
