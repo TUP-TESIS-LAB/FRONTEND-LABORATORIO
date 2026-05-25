@@ -2,7 +2,10 @@
 export type PatientStatus = 'MIN' | 'COMPLETE' | 'VERIFIED';
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'NOT_SPECIFIED';
 export type SexAtBirth = 'MALE' | 'FEMALE' | 'INTERSEX';
-export type ContactType = 'EMAIL' | 'PHONE' | 'MOBILE';
+// Tipos soportados por el backend (analitica.domain.ContactType). NO agregar
+// valores sin haberlos sumado primero al enum del back — el alta de paciente
+// fallaría con 400 al postear.
+export type ContactType = 'EMAIL' | 'PHONE';
 
 export interface Contact {
   id?: number;

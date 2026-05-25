@@ -193,7 +193,7 @@ export class PatientListPage implements OnInit {
   }
 
   primaryPhone(p: Patient): string {
-    const c = p.contacts.find((x) => (x.contactType === 'PHONE' || x.contactType === 'MOBILE') && x.active);
+    const c = p.contacts.find((x) => x.contactType === 'PHONE' && x.active);
     return c?.contactValue ?? '—';
   }
 }
