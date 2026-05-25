@@ -34,6 +34,16 @@ Cualquier cambio no trivial necesita los tres antes de tocar código: spec o des
 
 Cuando creás el ticket, agregalo al header del plan como `> **Jira:** [KAN-N](URL)`. Esa línea es el contrato de trazabilidad entre el repo y Jira.
 
+### 4. Mensajes de error al usuario — siempre en español, jamás leak de código
+
+Cualquier mensaje que se muestre en la UI (toast, alert, inline error, modal) debe cumplir:
+- **Español.** Nada en inglés en la UI final, ni siquiera los defaults de Angular/PrimeNG/RxJS.
+- **User-friendly.** Describe el problema en términos del dominio (paciente, atención, análisis), no en términos técnicos.
+- **Sin leak de internals.** Prohibido mostrar al usuario: FQCN (`lab.laboratorio.*`, `org.springframework.*`), nombres de clase Java, stack traces, SQL, nombres de tabla/columna, textos tipo `No enum constant`, `NullPointerException`, `ConstraintViolationException`, `Cannot deserialize`. Si la API devuelve un mensaje raw que contiene cualquiera de esos, NO lo mostremos verbatim — mostrar un mensaje genérico o mapear según el código HTTP / código de error.
+- Cualquier handler que reciba un `HttpErrorResponse` debe pasar por un mapeo (toast service o helper) que aplique las 3 reglas.
+
+Aplica también a los emojis: NO usar emojis Unicode (📱 ✉ ☎ etc.) — usar PrimeIcons (`<i class="pi pi-mobile">`, `pi-envelope`, `pi-phone`) que están alineados con el design system y se renderizan consistentes en todos los browsers.
+
 ---
 
 ## Stack del repo

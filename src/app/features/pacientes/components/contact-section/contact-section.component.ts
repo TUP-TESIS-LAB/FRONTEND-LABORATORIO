@@ -7,9 +7,10 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { Contact, ContactType } from '../../models/patient.model';
 
+// Backend solo conoce PHONE / EMAIL. Si en el futuro se agrega MOBILE al enum
+// del back (analitica.domain.ContactType), volver a sumarlo acá + en patient.model.ts.
 const TYPE_OPTIONS: { value: ContactType; label: string }[] = [
-  { value: 'PHONE', label: 'Teléfono fijo' },
-  { value: 'MOBILE', label: 'Celular' },
+  { value: 'PHONE', label: 'Teléfono' },
   { value: 'EMAIL', label: 'Email' },
 ];
 
