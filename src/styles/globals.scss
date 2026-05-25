@@ -30,3 +30,68 @@ h4 { font-size: 16px; font-weight: 600; line-height: 1.3; }
     min-width: var(--ds-touch-target);
   }
 }
+
+/* ============================================================
+ * PrimeNG Paginator — estilo estándar del proyecto.
+ * - Página activa: cuadrado lleno con el número centrado.
+ * - Más espacio entre botones para que respire.
+ * - El conteo de páginas visibles se limita vía [pageLinks]="5"
+ *   en el <p-table> (NO acá; esto es solo estilo).
+ * ============================================================ */
+.p-paginator {
+  gap: 6px;                                  // espacio entre todos los controles
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.p-paginator .p-paginator-pages {
+  gap: 4px;                                  // espacio entre los números
+}
+
+.p-paginator .p-paginator-page,
+.p-paginator .p-paginator-first,
+.p-paginator .p-paginator-prev,
+.p-paginator .p-paginator-next,
+.p-paginator .p-paginator-last {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ds-text);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.p-paginator .p-paginator-page:not(.p-disabled):hover,
+.p-paginator .p-paginator-first:not(.p-disabled):hover,
+.p-paginator .p-paginator-prev:not(.p-disabled):hover,
+.p-paginator .p-paginator-next:not(.p-disabled):hover,
+.p-paginator .p-paginator-last:not(.p-disabled):hover {
+  background: var(--ds-surface-2, #f1f5f9);
+  border-color: var(--ds-surface-2, #f1f5f9);
+}
+
+/* Página activa: cuadrado lleno con el color de marca */
+.p-paginator .p-paginator-page.p-paginator-page-selected,
+.p-paginator .p-paginator-page.p-highlight {
+  background: var(--brand-secondary, #1976d2);
+  color: white;
+  border-color: var(--brand-secondary, #1976d2);
+  font-weight: 600;
+}
+
+/* Texto del "1-10 de 100" y dropdown de rows */
+.p-paginator .p-paginator-current {
+  color: var(--ds-text-muted);
+  font-size: 12px;
+  margin-right: 8px;
+}
+
+.p-paginator .p-paginator-rpp-dropdown,
+.p-paginator .p-dropdown {
+  margin-left: 8px;
+}

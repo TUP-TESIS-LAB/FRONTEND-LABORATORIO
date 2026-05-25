@@ -13,13 +13,18 @@ import {
 export const patientReducer = createReducer(
   initialPatientState,
 
-  // Intent actions: pending=true, clear error
+  // Intent actions: pending=true, clear error.
+  // NOTA: checkPatientDni es una validación pasiva que se dispara mientras el usuario
+  // tipea el DNI o cuando viene precargado por queryParam. NO debe activar `pending`
+  // global — eso deshabilita el botón Registrar y parece que la pantalla está
+  // congelada. Solo seteamos pending para acciones que son mutaciones reales o
+  // cargas explícitas del usuario.
   on(loadPatients, (state): PatientState => ({ ...state, pending: true, error: null })),
   on(loadPatient, (state): PatientState => ({ ...state, pending: true, error: null })),
   on(addPatient, (state): PatientState => ({ ...state, pending: true, error: null })),
   on(updatePatient, (state): PatientState => ({ ...state, pending: true, error: null })),
   on(togglePatientActive, (state): PatientState => ({ ...state, pending: true, error: null })),
-  on(checkPatientDni, (state): PatientState => ({ ...state, pending: true, error: null })),
+  on(checkPatientDni, (state): PatientState => ({ ...state, error: null })),
 
   // Success / data updates
   on(loadPatientsSuccess, (state, { result }): PatientState => ({
@@ -54,7 +59,7 @@ export const patientReducer = createReducer(
     error: null,
   })),
   on(checkPatientDniSuccess, (state, { dni, exists }): PatientState => ({
-    ...state, dniCheck: { dni, exists }, pending: false, error: null,
+    ...state, dniCheck: { dni, exists }, error: null,
   })),
 
   // Failures
@@ -63,7 +68,7 @@ export const patientReducer = createReducer(
   on(addPatientFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
   on(updatePatientFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
   on(togglePatientActiveFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
-  on(checkPatientDniFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
+  on(checkPatientDniFailure, (state, { error }): PatientState => ({ ...state, error })),
 
   // Misc UI state
   on(setPatientPageRequest, (state, { patch }): PatientState => ({

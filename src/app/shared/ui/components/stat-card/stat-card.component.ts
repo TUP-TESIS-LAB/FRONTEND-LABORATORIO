@@ -14,13 +14,20 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     </div>
   `,
   styles: [`
+    :host { display: flex; }
     .ui-stat-card {
       background: white;
       border-radius: 10px;
       padding: var(--space-4) var(--space-5);
       border-left: 4px solid var(--brand-secondary);
       box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
+    /* El value crece para empujar el sub al pie y todas las cards quedan
+       de la misma altura aunque algunas no tengan sub. */
+    .ui-stat-card__value { flex: 1; }
     .ui-stat-card__label { font-size: 12px; color: var(--ds-text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: var(--space-1); }
     .ui-stat-card__value { font-size: 28px; font-weight: 700; color: var(--ds-text); }
     .ui-stat-card__sub   { font-size: 12px; color: var(--ds-text-muted); margin-top: var(--space-1); }

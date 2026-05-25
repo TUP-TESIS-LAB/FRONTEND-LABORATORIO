@@ -1,0 +1,62 @@
+import { createReducer, on } from '@ngrx/store';
+import {
+  addAnalysisList,
+  addObservations,
+  addPayment,
+  assignGeneralData,
+  atencionMutationFailure,
+  atencionMutationSuccess,
+  cancelAtencion,
+  createBlankAtencion,
+  createPreFilledAtencion,
+  endBilling,
+  endCollection,
+  endSecretaryPhase,
+  loadAtencion,
+  loadAtencionFailure,
+  loadAtencionSuccess,
+  loadAtenciones,
+  loadAtencionesFailure,
+  loadAtencionesSuccess,
+  returnPhase,
+  setAtencionFilters,
+} from './atencion.actions';
+import { AtencionFeatureState, initialAtencionState } from './atencion.state';
+
+export const atencionReducer = createReducer(
+  initialAtencionState,
+
+  on(loadAtenciones, (s): AtencionFeatureState => ({ ...s, listLoading: true, listError: null })),
+  on(loadAtencionesSuccess, (s, { items }): AtencionFeatureState => ({ ...s, listLoading: false, list: items })),
+  on(loadAtencionesFailure, (s, { error }): AtencionFeatureState => ({ ...s, listLoading: false, listError: error })),
+
+  on(setAtencionFilters, (s, { filters }): AtencionFeatureState => ({ ...s, filters: { ...s.filters, ...filters } })),
+
+  on(loadAtencion, (s): AtencionFeatureState => ({ ...s, detailLoading: true, detailError: null })),
+  on(loadAtencionSuccess, (s, { item }): AtencionFeatureState => ({ ...s, detailLoading: false, detail: item })),
+  on(loadAtencionFailure, (s, { error }): AtencionFeatureState => ({ ...s, detailLoading: false, detailError: error })),
+
+  on(
+    createBlankAtencion, createPreFilledAtencion,
+    assignGeneralData, addAnalysisList, addPayment,
+    endCollection, endBilling, endSecretaryPhase,
+    returnPhase, cancelAtencion, addObservations,
+    (s): AtencionFeatureState => ({ ...s, mutating: true, detailError: null })
+  ),
+
+  on(atencionMutationSuccess, (s, { item }): AtencionFeatureState => ({
+    ...s,
+    mutating: false,
+    detail: item,
+    list: replaceInList(s.list, item),
+  })),
+  on(atencionMutationFailure, (s, { error }): AtencionFeatureState => ({ ...s, mutating: false, detailError: error })),
+);
+
+function replaceInList<T extends { id: number }>(list: T[], item: T): T[] {
+  const idx = list.findIndex(x => x.id === item.id);
+  if (idx === -1) return [item, ...list];
+  const next = list.slice();
+  next[idx] = item;
+  return next;
+}
