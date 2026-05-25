@@ -72,8 +72,12 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
     <div class="mt-6 border-t pt-4">
       <button type="button"
               class="flex items-center gap-2 text-sm font-medium text-surface-700 hover:text-primary-600"
+              [attr.aria-expanded]="extrasOpen()"
+              aria-controls="pat-extras-panel"
               (click)="extrasOpen.set(!extrasOpen())">
-        <i class="pi" [class.pi-chevron-right]="!extrasOpen()" [class.pi-chevron-down]="extrasOpen()"></i>
+        <i class="pi" aria-hidden="true"
+           [class.pi-chevron-right]="!extrasOpen()"
+           [class.pi-chevron-down]="extrasOpen()"></i>
         Otros contactos
         <span class="text-xs text-surface-500 font-normal">(teléfonos fijos, contactos adicionales)</span>
         @if (extraContacts().length > 0) {
@@ -81,7 +85,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
         }
       </button>
       @if (extrasOpen()) {
-        <div class="mt-3">
+        <div id="pat-extras-panel" class="mt-3" role="region" aria-label="Otros contactos">
           <pat-contact-section [array]="extraContacts()" />
         </div>
       }

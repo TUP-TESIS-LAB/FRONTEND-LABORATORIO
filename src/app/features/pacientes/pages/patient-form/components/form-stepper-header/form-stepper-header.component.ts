@@ -6,9 +6,11 @@ import { PatientFormStep } from '../../patient-form-steps';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ol class="pat-stepper">
+    <ol class="pat-stepper" role="list">
       @for (step of steps(); track step.key; let i = $index) {
-        @if (i > 0) { <li class="pat-stepper__connector" [class.is-done]="isDone(i - 1)"></li> }
+        @if (i > 0) {
+          <li class="pat-stepper__connector" [class.is-done]="isDone(i - 1)" aria-hidden="true"></li>
+        }
         <li
           class="pat-stepper__item"
           [class.is-current]="i === currentIndex()"
@@ -16,9 +18,15 @@ import { PatientFormStep } from '../../patient-form-steps';
           [class.is-locked]="isLocked(i)"
           [class.is-clickable]="isClickable(i)"
           [attr.data-step]="i"
+          [attr.aria-current]="i === currentIndex() ? 'step' : null"
+          [attr.role]="isClickable(i) ? 'button' : null"
+          [attr.tabindex]="isClickable(i) ? 0 : null"
+          [attr.aria-label]="ariaLabelFor(step, i)"
           (click)="onClick(i)"
+          (keydown.enter)="onKey($event, i)"
+          (keydown.space)="onKey($event, i)"
         >
-          <span class="pat-stepper__num">
+          <span class="pat-stepper__num" aria-hidden="true">
             @if (isDone(i)) { ✓ } @else { {{ i + 1 }} }
           </span>
           <span class="pat-stepper__lbl">
@@ -62,5 +70,19 @@ export class FormStepperHeaderComponent {
 
   onClick(i: number): void {
     if (this.isClickable(i)) this.stepSelected.emit(i);
+  }
+
+  onKey(event: Event, i: number): void {
+    if (!this.isClickable(i)) return;
+    event.preventDefault();
+    this.stepSelected.emit(i);
+  }
+
+  ariaLabelFor(step: PatientFormStep, i: number): string {
+    const total = this.steps().length;
+    const status = i === this.currentIndex() ? 'actual'
+      : this.isDone(i) ? 'completado'
+      : 'bloqueado';
+    return `Paso ${i + 1} de ${total}: ${step.title} (${status})`;
   }
 }

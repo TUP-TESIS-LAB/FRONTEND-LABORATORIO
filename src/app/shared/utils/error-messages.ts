@@ -5,9 +5,17 @@
  * puede contener FQCN, stack traces, SQL, ni texto técnico en inglés. Cualquier
  * handler que reciba un `HttpErrorResponse` debe pasar por acá.
  *
- * El criterio es "fail safe": si el texto crudo huele a leak técnico, se
- * descarta y se devuelve `fallback`. Sólo se muestra el texto del back si pasa
- * todos los chequeos (parece español, corto, sin patrones de leak).
+ * El criterio es "fail safe": se descarta cualquier texto crudo que matchee
+ * alguno de los patrones de leak conocidos (FQCN tipo `org.x.Y` / `lab.x.Y`,
+ * nombres de Exception, stack frames Java, SQL, mensajes en inglés obvios) o
+ * que sea excesivamente largo. Cuando se descarta, se devuelve `fallback` o el
+ * mensaje específico de `byStatus` si aplica.
+ *
+ * IMPORTANTE: la heurística sólo bloquea inglés que matchee `ENGLISH_TELLS`.
+ * NO valida que el texto sea genuinamente español — es un blocklist, no un
+ * allowlist. Si en el futuro el back devuelve texto en otro idioma sin esos
+ * tells (ej. portugués, alemán) podría colarse. Si el equipo necesita
+ * allowlisting estricto por idioma, reforzar acá.
  */
 const LEAK_PATTERNS: RegExp[] = [
   /\b(?:org|com|java|lab|net)\.[a-z0-9_.]+\.[A-Z][A-Za-z0-9_]+/, // FQCN tipo lab.laboratorio.modules.X.Y
@@ -44,9 +52,11 @@ export interface HumanizeOptions {
 /**
  * Convierte un error del back en un mensaje listo para mostrar al usuario.
  *
- * - Si el status matchea `byStatus`, devuelve ese mensaje (prioridad máxima).
- * - Si el body trae un mensaje "limpio" (corto y sin leak), lo devuelve.
- * - En cualquier otro caso, devuelve `fallback`.
+ * Orden de prioridad:
+ * 1. `byStatus[err.status]` si está definido (vence al body siempre).
+ * 2. El mensaje del body si pasa `isSafeToShow` (no matchea ningún
+ *    `LEAK_PATTERNS` ni `ENGLISH_TELLS` y mide menos de 240 chars).
+ * 3. `fallback`.
  *
  * NUNCA devuelve `err.error.message` verbatim sin pasarlo por los filtros.
  */

@@ -42,6 +42,25 @@ describe('FormStepperHeaderComponent', () => {
     expect(items[2].classList.contains('is-locked')).toBe(true);
   });
 
+  it('sets a11y attributes on the current and clickable steps', () => {
+    const fx = TestBed.createComponent(HostCmp);
+    fx.detectChanges();
+    const items = (fx.nativeElement as HTMLElement).querySelectorAll('[data-step]');
+    expect(items[1].getAttribute('aria-current')).toBe('step');
+    expect(items[0].getAttribute('role')).toBe('button');
+    expect(items[0].getAttribute('tabindex')).toBe('0');
+    expect(items[2].getAttribute('role')).toBeNull();
+    expect(items[2].getAttribute('tabindex')).toBeNull();
+  });
+
+  it('emits stepSelected on Enter/Space in a clickable step', () => {
+    const fx = TestBed.createComponent(HostCmp);
+    fx.detectChanges();
+    const done = (fx.nativeElement as HTMLElement).querySelector('[data-step="0"]') as HTMLElement;
+    done.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(fx.componentInstance.onStep).toHaveBeenCalledWith(0);
+  });
+
   it('emits stepSelected when clicking a done step', () => {
     const fx = TestBed.createComponent(HostCmp);
     fx.detectChanges();

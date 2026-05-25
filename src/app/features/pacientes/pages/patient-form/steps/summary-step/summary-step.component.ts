@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { COVERAGE_PLAN_CATALOG } from '../../../../models/coverage-plans.catalog';
+import { AgePipe } from '@shared/pipes/age.pipe';
 
 export interface SummaryAddressView {
   street?: string; streetNumber?: string; apartment?: string;
@@ -50,6 +51,7 @@ const CONTACT_ICON_CLASS: Record<string, string> = {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ButtonModule, NgClass],
+  providers: [AgePipe],
   template: `
     <div class="flex flex-col gap-3 max-w-4xl">
       <h2 class="pat-step__title">Resumen</h2>
@@ -131,6 +133,8 @@ export class SummaryStepComponent {
   readonly data = input.required<SummaryView>();
   readonly editStep = output<number>();
 
+  private readonly agePipe = inject(AgePipe);
+
   readonly fullName = computed(() => {
     const d = this.data();
     const parts = [d.lastName, d.firstName].filter(Boolean);
@@ -145,8 +149,11 @@ export class SummaryStepComponent {
     const day = String(d.getDate()).padStart(2, '0');
     const mon = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
-    const age = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
-    return `${day}/${mon}/${year} (${age}a)`;
+    // Reusa el AgePipe del proyecto (calcula edad exacta comparando mes/dia,
+    // sin off-by-one cerca del cumple como pasaba con 365.25 dias).
+    const iso = `${year}-${mon}-${day}`;
+    const age = this.agePipe.transform(iso);
+    return age != null ? `${day}/${mon}/${year} (${age}a)` : `${day}/${mon}/${year}`;
   });
 
   readonly genderLabel = computed(() => GENDER_LABEL[this.data().gender ?? ''] ?? '—');
