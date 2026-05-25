@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { provideState } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { roleGuard } from '@core/guards/role.guard';
 import { sucursalReducer } from './store/sucursal.reducer';
@@ -23,6 +24,8 @@ export const SUCURSALES_ROUTES: Routes = [
         providers: [
           provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
           provideEffects([SucursalEffects]),
+          MessageService,
+          ConfirmationService,
         ],
       },
     ],
