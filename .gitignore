@@ -47,8 +47,10 @@ Thumbs.db
 .claude/settings.local.json
 .claude/*.local.json
 
+# Brainstorm session artifacts
+.superpowers/
+test-output.txt
+test_output.txt
+
 # Worktrees
 .worktrees/
-
-# Superpowers brainstorm
-.superpowers/
