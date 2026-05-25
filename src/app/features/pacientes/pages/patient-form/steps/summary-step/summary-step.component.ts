@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { COVERAGE_PLAN_CATALOG } from '../../../../models/coverage-plans.catalog';
 
@@ -48,7 +49,7 @@ const CONTACT_ICON_CLASS: Record<string, string> = {
   selector: 'pat-summary-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule],
+  imports: [ButtonModule, NgClass],
   template: `
     <div class="flex flex-col gap-3 max-w-4xl">
       <h2 class="pat-step__title">Resumen</h2>
@@ -79,7 +80,7 @@ const CONTACT_ICON_CLASS: Record<string, string> = {
           @for (c of data().extraContacts; track $index) {
             <span class="pat-summary__sep">·</span>
             <span class="pat-summary__contact">
-              <i class="pi" [class]="contactIconClass(c.contactType)"></i>{{ c.contactValue }}
+              <i class="pi" [ngClass]="contactIconClass(c.contactType)"></i>{{ c.contactValue }}
             </span>
           }
         </div>

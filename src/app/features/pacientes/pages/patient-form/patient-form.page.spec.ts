@@ -154,6 +154,28 @@ describe('PatientFormPage', () => {
     expect(submitSpy).toHaveBeenCalled();
   });
 
+  it('Ctrl+S en alta desde paso 0 NO dispatcha addPatient (canSubmit chequea isLastStep)', () => {
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    cmp.form.patchValue({
+      general: {
+        firstName: 'Ana', lastName: 'Pérez', dni: '12345678',
+        birthDate: new Date('1990-01-01'),
+        gender: 'FEMALE', sexAtBirth: 'FEMALE',
+      },
+    });
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    expect(cmp.canSubmit()).toBe(false); // paso 0 != last step
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
+    const addCalls = spy.mock.calls.filter(
+      (c) => (c[0] as { type?: string }).type === '[Patient Form] Add Patient'
+    );
+    expect(addCalls.length).toBe(0);
+  });
+
   it('goes back on Escape', () => {
     const fixture = TestBed.createComponent(PatientFormPage);
     fixture.componentRef.setInput('id', undefined);

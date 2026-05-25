@@ -209,7 +209,12 @@ export class PatientFormPage implements OnDestroy {
     return true;
   });
 
-  readonly canSubmit = computed(() => this.step0Valid() && !this.pending());
+  // Submit habilitado solo cuando el boton Registrar/Guardar esta visible:
+  // en edicion en cualquier paso, en alta unicamente en el paso Resumen.
+  // Asi Ctrl+S desde paso 0/1/2 en alta no dispara onSubmit en silencio.
+  readonly canSubmit = computed(() =>
+    this.step0Valid() && !this.pending() && (this.isEdit() || this.isLastStep())
+  );
 
   readonly showContinueButton = computed(() => !this.isLastStep() && !this.isEdit());
   readonly showSubmitButton = computed(() => this.isEdit() || this.isLastStep());
@@ -446,11 +451,19 @@ export class PatientFormPage implements OnDestroy {
         }]
       : [];
 
+    // Filtrar coberturas incompletas — el seed automatico al entrar al paso
+    // crea una fila vacia con planId/memberNumber requeridos; si el usuario
+    // no la toca, la dejamos afuera del payload para que el alta con datos
+    // minimos funcione (paso es opcional).
+    const coverages = raw.coverages.filter(
+      (c) => c.planId != null && !!c.memberNumber?.trim()
+    );
+
     const common = {
       firstName: raw.general.firstName, lastName: raw.general.lastName,
       birthDate: isoFromDate(raw.general.birthDate),
       gender: raw.general.gender, sexAtBirth: raw.general.sexAtBirth,
-      contacts, addresses, coverages: raw.coverages,
+      contacts, addresses, coverages,
     };
     const editId = this.id();
     if (editId) {
