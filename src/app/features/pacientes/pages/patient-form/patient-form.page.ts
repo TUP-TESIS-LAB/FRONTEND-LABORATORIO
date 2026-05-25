@@ -20,6 +20,7 @@ import {
   selectPatientPending, selectPatientError, selectPatientState, selectSelectedPatient,
 } from '../../store/patient.selectors';
 import { ContactSectionComponent } from '../../components/contact-section/contact-section.component';
+import { CoverageSectionComponent } from '../../components/coverage-section/coverage-section.component';
 import { FormStepperHeaderComponent } from './components/form-stepper-header/form-stepper-header.component';
 import { GeneralStepComponent } from './steps/general-step/general-step.component';
 import { AddressStepComponent } from './steps/address-step/address-step.component';
@@ -325,12 +326,15 @@ export class PatientFormPage implements OnDestroy {
   }
 
   private ensureStepDefaults(stepIndex: number): void {
-    // Step 2 = Coberturas: seed 1 empty primary coverage if empty.
+    // Step 2 = Coberturas (paso opcional). Seed 1 fila vacia primaria SIN
+    // Validators.required: el paso es opcional, no debe forzar form-INVALID.
+    // El submit filtra las filas con planId nulo o memberNumber vacio para
+    // no postear coberturas a medias.
     if (stepIndex === 2 && this.coveragesArray.length === 0) {
       this.coveragesArray.push(this.fb.group({
         id: [null],
-        planId: [null, Validators.required],
-        memberNumber: ['', Validators.required],
+        planId: [null],
+        memberNumber: [''],
         isPrimary: [true],
         active: [true],
       }));
@@ -349,9 +353,18 @@ export class PatientFormPage implements OnDestroy {
   }
 
   private hydrate(p: Patient): void {
-    // Backend solo conoce PHONE / EMAIL — el primer PHONE primary es el "móvil principal" del general-step.
-    const primaryMobile = p.contacts.find((c) => c.contactType === 'PHONE' && c.isPrimary);
-    const primaryEmail  = p.contacts.find((c) => c.contactType === 'EMAIL');
+    // Backend solo conoce PHONE / EMAIL — para los inputs "Celular" y "Email"
+    // del general-step se elige el activo + primario; si no hay, fallback al
+    // primer activo; si no, al primero sin filtro (consistente con como
+    // patient-list lee el contacto principal del paciente).
+    const findPrimary = (type: 'PHONE' | 'EMAIL') => {
+      const sameType = p.contacts.filter((c) => c.contactType === type);
+      return sameType.find((c) => c.active && c.isPrimary)
+          ?? sameType.find((c) => c.active)
+          ?? sameType[0];
+    };
+    const primaryMobile = findPrimary('PHONE');
+    const primaryEmail  = findPrimary('EMAIL');
     const extras = p.contacts.filter((c) => c !== primaryMobile && c !== primaryEmail);
     const primaryAddress = p.addresses[0];
 
@@ -376,12 +389,7 @@ export class PatientFormPage implements OnDestroy {
     this.contactsArray.clear();
     extras.forEach((c) => this.contactsArray.push(ContactSectionComponent.toFormGroup(this.fb, c)));
     this.coveragesArray.clear();
-    p.coverages.forEach((c) => this.coveragesArray.push(this.fb.group({
-      id: [c.id ?? null],
-      planId: [c.planId, Validators.required],
-      memberNumber: [c.memberNumber, Validators.required],
-      isPrimary: [c.isPrimary], active: [c.active],
-    })));
+    p.coverages.forEach((c) => this.coveragesArray.push(CoverageSectionComponent.toFormGroup(this.fb, c)));
     this.form.markAsPristine();
   }
 

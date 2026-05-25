@@ -105,8 +105,19 @@ export class GeneralStepComponent {
       if (this.editMode()) dniCtrl.disable({ emitEvent: false });
       else dniCtrl.enable({ emitEvent: false });
     });
-    effect(() => {
-      if (this.extraContacts().length > 0) this.extrasOpen.set(true);
+
+    // El FormArray no cambia de referencia cuando se hace push/clear, asi que
+    // un effect que solo lee .length no se entera. Nos suscribimos a sus
+    // valueChanges para abrir el acordeon cuando aparecen extras (incluido el
+    // caso de edicion: el shell hydrate-empuja extras despues de mount y
+    // sin esto el panel quedaba colapsado).
+    effect((onCleanup) => {
+      const arr = this.extraContacts();
+      if (arr.length > 0) this.extrasOpen.set(true);
+      const sub = arr.valueChanges.subscribe(() => {
+        if (arr.length > 0) this.extrasOpen.set(true);
+      });
+      onCleanup(() => sub.unsubscribe());
     });
   }
 }
