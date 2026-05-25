@@ -1,5 +1,7 @@
 # SaaS Admin MVP A — Implementation Plan
 
+> **Jira:** [KAN-27](https://exequielsantoro.atlassian.net/browse/KAN-27)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a SaaS Admin panel under `/saas/**` with its own login, dashboard, tenants CRUD, and per-tenant module + white-label management — completely isolated from the lab's tenant shell.
