@@ -1,17 +1,29 @@
 :host { display: block; }
 
-.kiosk-card {
-  max-width: 480px;
-  margin: 10vh auto;
-  padding: var(--space-5);
-  display: grid;
-  gap: var(--space-3);
-  background: var(--ds-surface);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+.totem-input-dni {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 3rem 1rem;
 
-  h1 { margin: 0; color: var(--ds-text); }
-  p { color: var(--ds-text-muted); margin: 0; }
+  h1 {
+    font-size: 2.5rem;
+    margin: 0;
+    text-align: center;
+  }
+}
 
-  input { font-size: 1.5rem; padding: 1rem; }
+.dni-display {
+  font-size: 3.5rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5rem;
+  background: var(--surface-card);
+  border: 2px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  min-width: 20rem;
+  text-align: center;
+  min-height: 5rem;
 }
