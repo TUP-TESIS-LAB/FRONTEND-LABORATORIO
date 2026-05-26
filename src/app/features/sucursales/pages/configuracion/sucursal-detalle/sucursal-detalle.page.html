@@ -1,0 +1,55 @@
+<div class="detalle-page">
+  <header class="page-header">
+    <button class="back-btn" (click)="goBack()" type="button" aria-label="Volver al listado">
+      <i class="pi pi-arrow-left"></i>
+    </button>
+    @if (current(); as s) {
+      <h1>{{ s.code }} — {{ s.description }}</h1>
+    } @else if (loading()) {
+      <h1 class="muted">Cargando...</h1>
+    } @else {
+      <h1 class="muted">Sucursal #{{ branchId() }}</h1>
+    }
+  </header>
+
+  @if (branchId() != null) {
+    <p-tabs value="datos" class="detalle-tabs">
+      <p-tablist>
+        <p-tab value="datos">Datos</p-tab>
+        <p-tab value="horarios">Horarios</p-tab>
+        <p-tab value="contactos">Contactos</p-tab>
+        <p-tab value="workspaces">Workspaces</p-tab>
+        <p-tab value="totem">Tótem</p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <p-tabpanel value="datos">
+          <div class="tab-placeholder">
+            <p>Tab de datos — implementación pendiente en T15.</p>
+          </div>
+        </p-tabpanel>
+        <p-tabpanel value="horarios">
+          <div class="tab-placeholder">
+            <p>Tab de horarios — implementación pendiente en T16.</p>
+          </div>
+        </p-tabpanel>
+        <p-tabpanel value="contactos">
+          <div class="tab-placeholder">
+            <p>Tab de contactos — implementación pendiente en T17.</p>
+          </div>
+        </p-tabpanel>
+        <p-tabpanel value="workspaces">
+          <div class="tab-placeholder">
+            <p>Tab de workspaces — implementación pendiente en T18.</p>
+          </div>
+        </p-tabpanel>
+        <p-tabpanel value="totem">
+          <div class="tab-placeholder">
+            <p>Tab de tótem — implementación pendiente en T19.</p>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  }
+
+  <p-toast />
+</div>

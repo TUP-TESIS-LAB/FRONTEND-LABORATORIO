@@ -53,6 +53,19 @@ export const SUCURSALES_ROUTES: Routes = [
           MessageService,
         ],
       },
+      {
+        path: 'configuracion/:id',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/configuracion/sucursal-detalle/sucursal-detalle.page')
+            .then(m => m.SucursalDetallePage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+          ConfirmationService,
+        ],
+      },
     ],
   },
 ];
