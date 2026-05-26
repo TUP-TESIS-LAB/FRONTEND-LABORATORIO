@@ -8,12 +8,13 @@ import { MessageService } from 'primeng/api';
 
 import { selectCurrentSucursal, selectLoadingDetail } from '../../../store/sucursal.selectors';
 import { loadDetail } from '../../../store/sucursal.actions';
+import { DatosTabComponent } from './tabs/datos-tab.component';
 
 @Component({
   selector: 'app-sucursal-detalle',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TabsModule, ButtonModule, ToastModule],
+  imports: [TabsModule, ButtonModule, ToastModule, DatosTabComponent],
   templateUrl: './sucursal-detalle.page.html',
   styleUrl: './sucursal-detalle.page.scss',
   providers: [MessageService],

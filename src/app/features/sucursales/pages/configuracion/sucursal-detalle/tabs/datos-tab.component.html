@@ -1,0 +1,44 @@
+<div class="datos-tab">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+    <div class="form-row">
+      <div class="form-field">
+        <label for="code">Código *</label>
+        <input id="code" pInputText formControlName="code" />
+        @if (form.controls.code.invalid && form.controls.code.touched) {
+          <small class="form-error">El código es requerido.</small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="status">Estado *</label>
+        <p-select id="status" formControlName="status" [options]="statusOptions"
+                  optionLabel="label" optionValue="value" appendTo="body" />
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="description">Descripción *</label>
+      <input id="description" pInputText formControlName="description" />
+      @if (form.controls.description.invalid && form.controls.description.touched) {
+        <small class="form-error">La descripción es requerida.</small>
+      }
+    </div>
+
+    <fieldset class="address-fieldset" formGroupName="address">
+      <legend>Dirección</legend>
+      <div class="form-row">
+        <div class="form-field grow">
+          <label for="street">Calle</label>
+          <input id="street" pInputText formControlName="street" />
+        </div>
+        <div class="form-field">
+          <label for="streetNumber">Número</label>
+          <input id="streetNumber" pInputText formControlName="streetNumber" />
+        </div>
+      </div>
+    </fieldset>
+
+    <footer class="tab-footer">
+      <p-button label="Guardar cambios" type="submit" [disabled]="form.invalid || saving" [loading]="saving" />
+    </footer>
+  </form>
+</div>
