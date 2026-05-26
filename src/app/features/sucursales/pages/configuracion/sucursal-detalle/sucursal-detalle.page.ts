@@ -9,12 +9,16 @@ import { MessageService } from 'primeng/api';
 import { selectCurrentSucursal, selectLoadingDetail } from '../../../store/sucursal.selectors';
 import { loadDetail } from '../../../store/sucursal.actions';
 import { DatosTabComponent } from './tabs/datos-tab.component';
+import { HorariosTabComponent } from './tabs/horarios-tab.component';
+import { ContactosTabComponent } from './tabs/contactos-tab.component';
+import { WorkspacesTabComponent } from './tabs/workspaces-tab.component';
+import { TotemTabComponent } from './tabs/totem-tab.component';
 
 @Component({
   selector: 'app-sucursal-detalle',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TabsModule, ButtonModule, ToastModule, DatosTabComponent],
+  imports: [TabsModule, ButtonModule, ToastModule, DatosTabComponent, HorariosTabComponent, ContactosTabComponent, WorkspacesTabComponent, TotemTabComponent],
   templateUrl: './sucursal-detalle.page.html',
   styleUrl: './sucursal-detalle.page.scss',
   providers: [MessageService],
