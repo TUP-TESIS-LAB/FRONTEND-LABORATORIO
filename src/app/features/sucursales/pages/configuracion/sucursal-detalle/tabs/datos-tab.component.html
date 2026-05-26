@@ -38,7 +38,7 @@
     </fieldset>
 
     <footer class="tab-footer">
-      <p-button label="Guardar cambios" type="submit" [disabled]="form.invalid || saving" [loading]="saving" />
+      <p-button label="Guardar cambios" type="submit" [disabled]="form.invalid || saving()" [loading]="saving()" />
     </footer>
   </form>
 </div>

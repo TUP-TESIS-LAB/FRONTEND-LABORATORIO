@@ -1,6 +1,6 @@
 import {
   ChangeDetectionStrategy, Component, EventEmitter, Output,
-  DestroyRef, inject,
+  DestroyRef, inject, signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
@@ -38,7 +38,7 @@ export class DatosStepComponent {
   private destroyRef = inject(DestroyRef);
 
   protected readonly statusOptions = STATUS_OPTIONS;
-  protected saving = false;
+  protected readonly saving = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
     code: ['', [Validators.required, Validators.maxLength(30)]],
@@ -51,7 +51,7 @@ export class DatosStepComponent {
   });
 
   submit() {
-    if (this.form.invalid || this.saving) return;
+    if (this.form.invalid || this.saving()) return;
     const raw = this.form.getRawValue();
 
     const street = raw.address.street?.trim() ?? '';
@@ -65,7 +65,7 @@ export class DatosStepComponent {
       ...(hasAddress ? { address: { street, streetNumber } } : {}),
     };
 
-    this.saving = true;
+    this.saving.set(true);
     this.store.dispatch(addSucursal({ input }));
 
     this.actions$.pipe(
@@ -73,7 +73,7 @@ export class DatosStepComponent {
       take(1),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(({ sucursal }) => {
-      this.saving = false;
+      this.saving.set(false);
       this.messageService.add({
         severity: 'success',
         summary: 'Sucursal creada',
@@ -87,7 +87,7 @@ export class DatosStepComponent {
       take(1),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(({ error }) => {
-      this.saving = false;
+      this.saving.set(false);
       const detail = typeof error === 'string' ? error : 'Ocurrió un error inesperado.';
       this.messageService.add({
         severity: 'error',

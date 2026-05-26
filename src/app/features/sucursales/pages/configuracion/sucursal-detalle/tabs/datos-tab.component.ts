@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, Input, OnInit, DestroyRef, inject, effect,
+  ChangeDetectionStrategy, Component, Input, OnInit, DestroyRef, inject, effect, signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
@@ -42,7 +42,7 @@ export class DatosTabComponent {
   private destroyRef = inject(DestroyRef);
 
   protected readonly statusOptions = STATUS_OPTIONS;
-  protected saving = false;
+  protected readonly saving = signal(false);
   protected readonly current = this.store.selectSignal(selectCurrentSucursal);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -75,7 +75,7 @@ export class DatosTabComponent {
   }
 
   submit() {
-    if (this.form.invalid || this.saving) return;
+    if (this.form.invalid || this.saving()) return;
     const raw = this.form.getRawValue();
     const input: SucursalUpdateInput = {
       code: raw.code.trim(),
@@ -87,7 +87,7 @@ export class DatosTabComponent {
       },
     };
 
-    this.saving = true;
+    this.saving.set(true);
     this.store.dispatch(updateSucursal({ id: this.branchId, input }));
 
     this.actions$.pipe(
@@ -95,7 +95,7 @@ export class DatosTabComponent {
       take(1),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(({ sucursal }) => {
-      this.saving = false;
+      this.saving.set(false);
       this.messageService.add({
         severity: 'success',
         summary: 'Datos actualizados',
@@ -108,7 +108,7 @@ export class DatosTabComponent {
       take(1),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(({ error }) => {
-      this.saving = false;
+      this.saving.set(false);
       const detail = typeof error === 'string' ? error : 'Error al actualizar';
       this.messageService.add({ severity: 'error', summary: 'Error', detail });
     });
