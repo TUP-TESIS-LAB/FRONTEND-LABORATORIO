@@ -13,6 +13,10 @@ export class SucursalService {
     return this.http.get<PageResponse<Sucursal>>(this.base);
   }
 
+  getById(id: number): Observable<Sucursal> {
+    return this.http.get<Sucursal>(`${this.base}/${id}`);
+  }
+
   create(input: SucursalCreateInput): Observable<Sucursal> {
     return this.http.post<Sucursal>(this.base, input);
   }
