@@ -1,0 +1,64 @@
+.alta-page {
+  padding: 1.5rem;
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  flex: 1;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  color: var(--text-color);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.back-btn:hover {
+  background: var(--surface-hover);
+}
+
+.header-spacer {
+  flex: 0 0 2rem;
+}
+
+.alta-stepper {
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.step-content {
+  padding: 1.5rem 0;
+  min-height: 20rem;
+}
+
+.step-placeholder {
+  text-align: center;
+  padding: 2rem;
+  border: 1px dashed var(--surface-border);
+  border-radius: 8px;
+}
+
+.step-placeholder h2 {
+  margin: 0 0 0.5rem;
+}
+
+.step-nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}

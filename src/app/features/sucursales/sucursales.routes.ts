@@ -41,6 +41,18 @@ export const SUCURSALES_ROUTES: Routes = [
           ConfirmationService,
         ],
       },
+      {
+        path: 'configuracion/nueva',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/configuracion/sucursal-alta-stepper/sucursal-alta-stepper.page')
+            .then(m => m.SucursalAltaStepperPage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+        ],
+      },
     ],
   },
 ];

@@ -1,0 +1,130 @@
+<div class="alta-page">
+  <header class="page-header">
+    <button class="back-btn" (click)="cancel()" type="button">
+      <i class="pi pi-arrow-left"></i>
+    </button>
+    <h1>Nueva sucursal</h1>
+    <span class="header-spacer"></span>
+  </header>
+
+  <!-- PrimeNG 21 Stepper: p-stepper > p-step-item > p-step + p-step-panel -->
+  <p-stepper [(value)]="currentStep" [linear]="false" class="alta-stepper">
+
+    <!-- Step 1: Datos — T8 reemplazará este placeholder -->
+    <p-step-item [value]="1">
+      <p-step>Datos</p-step>
+      <p-step-panel>
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="step-content">
+            <div class="step-placeholder">
+              <h2>Datos</h2>
+              <p>Step 1 de alta de sucursal — implementación pendiente en T8.</p>
+              <!-- TODO T8: reemplazar por DatosStepComponent y conectar (onDatosCompleted) -->
+              <p-button label="Simular (T8)" (onClick)="onDatosCompleted(1)" />
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <!-- Step 2: Horarios — T9 reemplazará este placeholder -->
+    <p-step-item [value]="2">
+      <p-step [disabled]="branchId() == null">Horarios</p-step>
+      <p-step-panel>
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="step-content">
+            <div class="step-placeholder">
+              <h2>Horarios</h2>
+              <p>Step 2 — implementación pendiente en T9.</p>
+              <!-- TODO T9: reemplazar por HorariosStepComponent -->
+              <div class="step-nav">
+                <p-button label="Volver" severity="secondary" (onClick)="goToStep(1)" />
+                <p-button label="Siguiente" (onClick)="goToStep(3)" />
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <!-- Step 3: Contactos — T10 reemplazará este placeholder -->
+    <p-step-item [value]="3">
+      <p-step [disabled]="branchId() == null">Contactos</p-step>
+      <p-step-panel>
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="step-content">
+            <div class="step-placeholder">
+              <h2>Contactos</h2>
+              <p>Step 3 — implementación pendiente en T10.</p>
+              <!-- TODO T10: reemplazar por ContactosStepComponent -->
+              <div class="step-nav">
+                <p-button label="Volver" severity="secondary" (onClick)="goToStep(2)" />
+                <p-button label="Siguiente" (onClick)="goToStep(4)" />
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <!-- Step 4: Workspaces — T11 reemplazará este placeholder -->
+    <p-step-item [value]="4">
+      <p-step [disabled]="branchId() == null">Workspaces</p-step>
+      <p-step-panel>
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="step-content">
+            <div class="step-placeholder">
+              <h2>Workspaces</h2>
+              <p>Step 4 — implementación pendiente en T11.</p>
+              <!-- TODO T11: reemplazar por WorkspacesStepComponent -->
+              <div class="step-nav">
+                <p-button label="Volver" severity="secondary" (onClick)="goToStep(3)" />
+                <p-button label="Siguiente" (onClick)="goToStep(5)" />
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <!-- Step 5: Tótem — T12 reemplazará este placeholder -->
+    <p-step-item [value]="5">
+      <p-step [disabled]="branchId() == null">Tótem</p-step>
+      <p-step-panel>
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="step-content">
+            <div class="step-placeholder">
+              <h2>Tótem</h2>
+              <p>Step 5 — implementación pendiente en T12.</p>
+              <!-- TODO T12: reemplazar por TotemStepComponent -->
+              <div class="step-nav">
+                <p-button label="Volver" severity="secondary" (onClick)="goToStep(4)" />
+                <p-button label="Siguiente" (onClick)="goToStep(6)" />
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <!-- Step 6: Confirmar — T13 reemplazará este placeholder -->
+    <p-step-item [value]="6">
+      <p-step [disabled]="branchId() == null">Confirmar</p-step>
+      <p-step-panel>
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="step-content">
+            <div class="step-placeholder">
+              <h2>Confirmar</h2>
+              <p>Step 6 — implementación pendiente en T13.</p>
+              <!-- TODO T13: reemplazar por ConfirmarStepComponent y conectar finish() -->
+              <p-button label="Finalizar" (onClick)="finish()" [disabled]="branchId() == null" />
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+  </p-stepper>
+
+  <p-toast />
+</div>
