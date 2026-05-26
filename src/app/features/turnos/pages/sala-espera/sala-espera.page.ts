@@ -37,6 +37,10 @@ export class SalaEsperaPage implements OnInit {
   protected lastSuccessfulFetch = signal<number>(0);
   protected previousCalledId = signal<number | null>(null);
 
+  protected readonly audioUnlocked = signal<boolean>(
+    typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tv-audio-unlocked') === '1',
+  );
+
   protected connectionLost = computed(() => {
     const last = this.lastSuccessfulFetch();
     return last > 0 && Date.now() - last > 15000;
@@ -95,6 +99,21 @@ export class SalaEsperaPage implements OnInit {
         },
         // network error: mantenemos último snapshot
       });
+  }
+
+  unlockAudio(): void {
+    const a = new Audio('/assets/audio/beep.mp3');
+    a.volume = 0;
+    a.play().then(() => {
+      this.audioUnlocked.set(true);
+      sessionStorage.setItem('tv-audio-unlocked', '1');
+    }).catch(err => {
+      console.warn('[display] audio unlock failed', err);
+      // even on play failure, mark as unlocked — user has interacted now,
+      // so subsequent .play() calls should work in most browsers.
+      this.audioUnlocked.set(true);
+      sessionStorage.setItem('tv-audio-unlocked', '1');
+    });
   }
 
   private isClosed(snap: DisplaySnapshot): boolean {
