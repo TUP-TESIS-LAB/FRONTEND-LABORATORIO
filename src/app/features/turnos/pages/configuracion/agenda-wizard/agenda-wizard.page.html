@@ -1,0 +1,72 @@
+<p-toast />
+
+<div class="agenda-wizard">
+  <header class="page-header">
+    <a class="back-btn" routerLink="/turnos/configuracion" aria-label="Volver">
+      <i class="pi pi-arrow-left"></i>
+    </a>
+    <h1>{{ editingId() ? 'Editar agenda' : 'Nueva agenda' }}</h1>
+  </header>
+
+  <p-stepper
+    [value]="currentStep()"
+    (valueChange)="currentStep.set($event ?? 1)"
+    [linear]="!editingId()"
+  >
+    <p-step-item [value]="1">
+      <p-step>Sucursal</p-step>
+      <p-step-panel>
+        <ng-template #content>
+          <app-step-sucursal
+            [initialBranchId]="branchId()"
+            (next)="onSucursalNext($event)"
+          />
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <p-step-item [value]="2">
+      <p-step>Horario</p-step>
+      <p-step-panel>
+        <ng-template #content>
+          <app-step-horario
+            [initial]="horario()"
+            (next)="onHorarioNext($event)"
+            (back)="goToStep(1)"
+          />
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <p-step-item [value]="3">
+      <p-step>Período</p-step>
+      <p-step-panel>
+        <ng-template #content>
+          <app-step-periodo
+            [initial]="periodo()"
+            (next)="onPeriodoNext($event)"
+            (back)="goToStep(2)"
+          />
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <p-step-item [value]="4">
+      <p-step>Confirmar</p-step>
+      <p-step-panel>
+        <ng-template #content>
+          @if (canShowConfirmar()) {
+            <app-step-confirmar
+              [summary]="summary()"
+              [saving]="saving()"
+              (confirm)="confirm()"
+              (back)="goToStep(3)"
+            />
+          } @else {
+            <p class="muted">Completá los pasos anteriores primero.</p>
+          }
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+  </p-stepper>
+</div>

@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  padding: 1.5rem;
+}
+
+.agenda-wizard {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  color: var(--p-text-color);
+  text-decoration: none;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--p-content-hover-background);
+  }
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+.muted {
+  color: var(--p-text-muted-color);
+  padding: 1rem 0;
+}
