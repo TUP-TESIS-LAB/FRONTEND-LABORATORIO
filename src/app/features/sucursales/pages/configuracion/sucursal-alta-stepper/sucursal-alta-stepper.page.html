@@ -58,21 +58,13 @@
       </p-step-panel>
     </p-step-item>
 
-    <!-- Step 5: Tótem — T12 reemplazará este placeholder -->
+    <!-- Step 5: Tótem — T12 -->
     <p-step-item [value]="5">
       <p-step [disabled]="branchId() == null">Tótem</p-step>
       <p-step-panel>
         <ng-template #content let-activateCallback="activateCallback">
           <div class="step-content">
-            <div class="step-placeholder">
-              <h2>Tótem</h2>
-              <p>Step 5 — implementación pendiente en T12.</p>
-              <!-- TODO T12: reemplazar por TotemStepComponent -->
-              <div class="step-nav">
-                <p-button label="Volver" severity="secondary" (onClick)="goToStep(4)" />
-                <p-button label="Siguiente" (onClick)="goToStep(6)" />
-              </div>
-            </div>
+            <app-totem-step [branchId]="branchId()!" (next)="goToStep(6)" (back)="goToStep(4)" />
           </div>
         </ng-template>
       </p-step-panel>

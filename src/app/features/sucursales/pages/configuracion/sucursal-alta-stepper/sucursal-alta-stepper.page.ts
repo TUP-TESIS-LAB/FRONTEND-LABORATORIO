@@ -9,12 +9,13 @@ import { DatosStepComponent } from './steps/datos-step.component';
 import { HorariosStepComponent } from './steps/horarios-step.component';
 import { ContactosStepComponent } from './steps/contactos-step.component';
 import { WorkspacesStepComponent } from './steps/workspaces-step.component';
+import { TotemStepComponent } from './steps/totem-step.component';
 
 @Component({
   selector: 'app-sucursal-alta-stepper',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StepperModule, ButtonModule, ToastModule, DatosStepComponent, HorariosStepComponent, ContactosStepComponent, WorkspacesStepComponent],
+  imports: [StepperModule, ButtonModule, ToastModule, DatosStepComponent, HorariosStepComponent, ContactosStepComponent, WorkspacesStepComponent, TotemStepComponent],
   templateUrl: './sucursal-alta-stepper.page.html',
   styleUrl: './sucursal-alta-stepper.page.scss',
   providers: [MessageService],

@@ -1,0 +1,30 @@
+.totem-step h2 {
+  margin: 0 0 0.5rem;
+}
+
+.muted {
+  color: var(--text-color-secondary);
+  margin-bottom: 1.5rem;
+  max-width: 40rem;
+}
+
+.big-switch {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.switch-label {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.step-footer {
+  display: flex;
+  justify-content: space-between;
+}
