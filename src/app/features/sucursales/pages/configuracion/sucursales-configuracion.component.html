@@ -1,6 +1,6 @@
 <div class="page-header">
   <h1>Sucursales</h1>
-  <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openCreate()" />
+  <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openNew()" />
 </div>
 
 <p-table [value]="sucursales()" [loading]="loading()" responsiveLayout="scroll">
@@ -14,15 +14,15 @@
     </tr>
   </ng-template>
   <ng-template pTemplate="body" let-s>
-    <tr>
+    <tr style="cursor: pointer" (click)="openDetail(s)">
       <td>{{ s.code }}</td>
       <td>{{ s.description }}</td>
       <td><p-tag [value]="s.status" [severity]="s.status === 'ACTIVE' ? 'success' : 'secondary'" /></td>
       <td>{{ formatAddress(s) }}</td>
       <td>
-        <p-button icon="pi pi-pencil" text rounded (onClick)="openEdit(s)" />
-        <p-button icon="pi pi-refresh" text rounded (onClick)="toggle(s)" />
-        <p-button icon="pi pi-trash" text rounded severity="danger" (onClick)="remove(s)" />
+        <p-button icon="pi pi-eye" text rounded (onClick)="openDetail(s); $event.stopPropagation()" />
+        <p-button icon="pi pi-refresh" text rounded (onClick)="toggle(s); $event.stopPropagation()" />
+        <p-button icon="pi pi-trash" text rounded severity="danger" (onClick)="remove(s); $event.stopPropagation()" />
       </td>
     </tr>
   </ng-template>
@@ -33,7 +33,3 @@
 
 <p-confirmDialog />
 <p-toast />
-
-@if (modalOpen()) {
-  <app-sucursal-form-modal [sucursal]="editing()" (closed)="closeModal()" />
-}
