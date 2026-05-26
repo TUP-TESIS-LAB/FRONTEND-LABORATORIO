@@ -1,0 +1,55 @@
+<div class="step">
+  <h2>Período</h2>
+  <p class="muted">Días de la semana y rango de validez.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+    <div class="form-field">
+      <label>Días de la semana *</label>
+      <div class="day-chips">
+        @for (d of DAYS; track d.id) {
+          <button
+            type="button"
+            class="day-chip"
+            [class.selected]="isSelected(d.id)"
+            (click)="toggleDay(d.id)"
+          >
+            {{ d.label }}
+          </button>
+        }
+      </div>
+      @if (form.controls.daysOfWeek.touched && form.controls.daysOfWeek.invalid) {
+        <small class="field-error">Seleccioná al menos un día de la semana.</small>
+      }
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label for="validFrom">Válido desde *</label>
+        <p-datePicker
+          inputId="validFrom"
+          formControlName="validFrom"
+          dateFormat="dd/mm/yy"
+        />
+        @if (form.controls.validFrom.touched && form.controls.validFrom.invalid) {
+          <small class="field-error">Ingresá la fecha de inicio de vigencia.</small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="validTo">Válido hasta *</label>
+        <p-datePicker
+          inputId="validTo"
+          formControlName="validTo"
+          dateFormat="dd/mm/yy"
+        />
+        @if (form.controls.validTo.touched && form.controls.validTo.invalid) {
+          <small class="field-error">Ingresá la fecha de fin de vigencia.</small>
+        }
+      </div>
+    </div>
+
+    <footer class="step-footer">
+      <p-button label="Volver" severity="secondary" type="button" (onClick)="back.emit()" />
+      <p-button label="Siguiente" type="submit" [disabled]="form.invalid" />
+    </footer>
+  </form>
+</div>
