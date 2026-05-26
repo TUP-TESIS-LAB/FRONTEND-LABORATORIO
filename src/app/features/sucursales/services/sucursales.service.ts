@@ -14,7 +14,8 @@ interface PagedBranches { content: BranchSelectorRow[]; }
 export class SucursalesService {
   private readonly http = inject(HttpClient);
   getSucursales(): Observable<Sucursal[]> { return this.http.get<Sucursal[]>('/api/sucursales'); }
-  getAreas(sucursalId: string): Observable<Area[]> { return this.http.get<Area[]>(`/api/sucursales/${sucursalId}/areas`); }
+  // TODO(T2): reemplazar con servicio dedicado de áreas cuando se implemente el HTTP service de sub-recursos (Plan T2)
+  getAreas(): Observable<Area[]> { return this.http.get<Area[]>('/api/v1/sucursales/areas'); }
 
   // Lista plana de branches del tenant para selectores. El backend usa el
   // tenant del JWT, así que no hay que pasar slug ni id desde acá. size=100
