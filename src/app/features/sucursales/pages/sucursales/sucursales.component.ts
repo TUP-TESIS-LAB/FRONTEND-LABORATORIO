@@ -9,7 +9,7 @@ import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-sta
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadSucursales } from '../../store/sucursales.actions';
 import { selectAllSucursales, selectSucursalesPending } from '../../store/sucursales.selectors';
-import { SucursalesService } from '../../services/sucursales.service';
+import { BranchTotemConfigService } from '../../services/branch-totem-config.service';
 
 @Component({
   selector: 'app-sucursales',
@@ -54,7 +54,7 @@ import { SucursalesService } from '../../services/sucursales.service';
 })
 export class SucursalesPageComponent implements OnInit {
   private readonly store = inject(Store);
-  private readonly service = inject(SucursalesService);
+  private readonly totemConfigService = inject(BranchTotemConfigService);
   private readonly toast = inject(MessageService);
   private readonly session = inject(UserSessionService);
 
@@ -74,7 +74,7 @@ export class SucursalesPageComponent implements OnInit {
       for (const s of list) {
         const id = this.branchIdNum(s.id);
         if (Number.isNaN(id)) continue;
-        this.service.getTotemConfig(id).subscribe({
+        this.totemConfigService.get(id).subscribe({
           next: cfg => this.totemEnabledById.update(m => ({ ...m, [id]: cfg?.enabled ?? false })),
           error: () => {/* silent: deja undefined → renderiza como off */},
         });
@@ -93,7 +93,7 @@ export class SucursalesPageComponent implements OnInit {
   protected onToggleTotem(branchId: number, enabled: boolean): void {
     const prev = this.totemEnabledById()[branchId];
     this.totemEnabledById.update(m => ({ ...m, [branchId]: enabled })); // optimistic
-    this.service.updateTotemConfig(branchId, enabled).subscribe({
+    this.totemConfigService.upsert(branchId, enabled).subscribe({
       next: () => this.toast.add({ severity: 'success', summary: 'Tótem actualizado' }),
       error: () => {
         this.totemEnabledById.update(m => ({ ...m, [branchId]: prev })); // revert
