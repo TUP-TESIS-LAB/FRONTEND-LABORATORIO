@@ -76,12 +76,7 @@
       <p-step-panel>
         <ng-template #content let-activateCallback="activateCallback">
           <div class="step-content">
-            <div class="step-placeholder">
-              <h2>Confirmar</h2>
-              <p>Step 6 — implementación pendiente en T13.</p>
-              <!-- TODO T13: reemplazar por ConfirmarStepComponent y conectar finish() -->
-              <p-button label="Finalizar" (onClick)="finish()" [disabled]="branchId() == null" />
-            </div>
+            <app-confirmar-step [branchId]="branchId()!" (finish)="finish()" (back)="goToStep(5)" />
           </div>
         </ng-template>
       </p-step-panel>

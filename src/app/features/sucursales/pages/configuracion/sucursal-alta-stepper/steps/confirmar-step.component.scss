@@ -1,0 +1,31 @@
+.confirmar-step h2 { margin: 0 0 0.5rem; }
+.muted { color: var(--text-color-secondary); }
+
+.summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .summary { grid-template-columns: 1fr; }
+}
+
+.data-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 1rem;
+  row-gap: 0.25rem;
+  margin: 0;
+}
+.data-list dt { font-weight: 500; color: var(--text-color-secondary); }
+.data-list dd { margin: 0; }
+
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.empty { color: var(--text-color-secondary); margin: 0; }
+
+.step-footer {
+  display: flex;
+  justify-content: space-between;
+}
