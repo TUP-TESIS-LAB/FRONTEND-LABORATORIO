@@ -7,12 +7,13 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { DatosStepComponent } from './steps/datos-step.component';
 import { HorariosStepComponent } from './steps/horarios-step.component';
+import { ContactosStepComponent } from './steps/contactos-step.component';
 
 @Component({
   selector: 'app-sucursal-alta-stepper',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StepperModule, ButtonModule, ToastModule, DatosStepComponent, HorariosStepComponent],
+  imports: [StepperModule, ButtonModule, ToastModule, DatosStepComponent, HorariosStepComponent, ContactosStepComponent],
   templateUrl: './sucursal-alta-stepper.page.html',
   styleUrl: './sucursal-alta-stepper.page.scss',
   providers: [MessageService],

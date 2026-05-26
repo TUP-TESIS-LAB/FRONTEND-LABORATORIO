@@ -40,15 +40,7 @@
       <p-step-panel>
         <ng-template #content let-activateCallback="activateCallback">
           <div class="step-content">
-            <div class="step-placeholder">
-              <h2>Contactos</h2>
-              <p>Step 3 — implementación pendiente en T10.</p>
-              <!-- TODO T10: reemplazar por ContactosStepComponent -->
-              <div class="step-nav">
-                <p-button label="Volver" severity="secondary" (onClick)="goToStep(2)" />
-                <p-button label="Siguiente" (onClick)="goToStep(4)" />
-              </div>
-            </div>
+            <app-contactos-step [branchId]="branchId()!" (next)="goToStep(4)" (back)="goToStep(2)" />
           </div>
         </ng-template>
       </p-step-panel>
