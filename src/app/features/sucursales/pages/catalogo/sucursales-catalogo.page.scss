@@ -1,0 +1,39 @@
+.catalogo-page {
+  padding: 1.5rem;
+}
+
+.catalogo-page header {
+  margin-bottom: 1.5rem;
+}
+
+.catalogo-page header h1 {
+  margin: 0 0 0.5rem;
+}
+
+.muted {
+  color: var(--text-color-secondary);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel-placeholder {
+  padding: 2rem;
+  background: var(--surface-card);
+  border: 1px dashed var(--surface-border);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.panel-placeholder h2 {
+  margin: 0 0 0.5rem;
+}

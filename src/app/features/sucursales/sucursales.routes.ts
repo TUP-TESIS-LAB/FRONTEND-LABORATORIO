@@ -28,6 +28,19 @@ export const SUCURSALES_ROUTES: Routes = [
           ConfirmationService,
         ],
       },
+      {
+        path: 'catalogo',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/catalogo/sucursales-catalogo.page')
+            .then(m => m.SucursalesCatalogoPage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+          ConfirmationService,
+        ],
+      },
     ],
   },
 ];
