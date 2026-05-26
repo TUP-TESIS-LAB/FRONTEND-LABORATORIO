@@ -5,12 +5,13 @@ import { StepperModule } from 'primeng/stepper';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { DatosStepComponent } from './steps/datos-step.component';
 
 @Component({
   selector: 'app-sucursal-alta-stepper',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StepperModule, ButtonModule, ToastModule],
+  imports: [StepperModule, ButtonModule, ToastModule, DatosStepComponent],
   templateUrl: './sucursal-alta-stepper.page.html',
   styleUrl: './sucursal-alta-stepper.page.scss',
   providers: [MessageService],

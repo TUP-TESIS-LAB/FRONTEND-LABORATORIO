@@ -10,18 +10,13 @@
   <!-- PrimeNG 21 Stepper: p-stepper > p-step-item > p-step + p-step-panel -->
   <p-stepper [(value)]="currentStep" [linear]="false" class="alta-stepper">
 
-    <!-- Step 1: Datos — T8 reemplazará este placeholder -->
+    <!-- Step 1: Datos — T8 -->
     <p-step-item [value]="1">
       <p-step>Datos</p-step>
       <p-step-panel>
         <ng-template #content let-activateCallback="activateCallback">
           <div class="step-content">
-            <div class="step-placeholder">
-              <h2>Datos</h2>
-              <p>Step 1 de alta de sucursal — implementación pendiente en T8.</p>
-              <!-- TODO T8: reemplazar por DatosStepComponent y conectar (onDatosCompleted) -->
-              <p-button label="Simular (T8)" (onClick)="onDatosCompleted(1)" />
-            </div>
+            <app-datos-step (completed)="onDatosCompleted($event)" />
           </div>
         </ng-template>
       </p-step-panel>
