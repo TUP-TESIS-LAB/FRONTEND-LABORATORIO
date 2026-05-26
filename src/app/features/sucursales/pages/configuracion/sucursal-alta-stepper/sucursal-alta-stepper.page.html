@@ -22,21 +22,13 @@
       </p-step-panel>
     </p-step-item>
 
-    <!-- Step 2: Horarios — T9 reemplazará este placeholder -->
+    <!-- Step 2: Horarios — T9 -->
     <p-step-item [value]="2">
       <p-step [disabled]="branchId() == null">Horarios</p-step>
       <p-step-panel>
         <ng-template #content let-activateCallback="activateCallback">
           <div class="step-content">
-            <div class="step-placeholder">
-              <h2>Horarios</h2>
-              <p>Step 2 — implementación pendiente en T9.</p>
-              <!-- TODO T9: reemplazar por HorariosStepComponent -->
-              <div class="step-nav">
-                <p-button label="Volver" severity="secondary" (onClick)="goToStep(1)" />
-                <p-button label="Siguiente" (onClick)="goToStep(3)" />
-              </div>
-            </div>
+            <app-horarios-step [branchId]="branchId()!" (next)="goToStep(3)" (back)="goToStep(1)" />
           </div>
         </ng-template>
       </p-step-panel>
