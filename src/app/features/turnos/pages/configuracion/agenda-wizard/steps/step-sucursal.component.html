@@ -1,0 +1,25 @@
+<div class="step">
+  <h2>Sucursal</h2>
+  <p class="muted">Elegí la sucursal para la que estás configurando la agenda.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+    <div class="form-field">
+      <label for="branchId">Sucursal *</label>
+      <p-select
+        inputId="branchId"
+        formControlName="branchId"
+        [options]="branches()"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Seleccionar sucursal"
+      />
+      @if (form.controls.branchId.touched && form.controls.branchId.invalid) {
+        <small class="field-error">Seleccioná una sucursal para continuar.</small>
+      }
+    </div>
+
+    <footer class="step-footer">
+      <p-button label="Siguiente" type="submit" [disabled]="form.invalid" />
+    </footer>
+  </form>
+</div>
