@@ -46,21 +46,13 @@
       </p-step-panel>
     </p-step-item>
 
-    <!-- Step 4: Workspaces — T11 reemplazará este placeholder -->
+    <!-- Step 4: Workspaces — T11 -->
     <p-step-item [value]="4">
       <p-step [disabled]="branchId() == null">Workspaces</p-step>
       <p-step-panel>
         <ng-template #content let-activateCallback="activateCallback">
           <div class="step-content">
-            <div class="step-placeholder">
-              <h2>Workspaces</h2>
-              <p>Step 4 — implementación pendiente en T11.</p>
-              <!-- TODO T11: reemplazar por WorkspacesStepComponent -->
-              <div class="step-nav">
-                <p-button label="Volver" severity="secondary" (onClick)="goToStep(3)" />
-                <p-button label="Siguiente" (onClick)="goToStep(5)" />
-              </div>
-            </div>
+            <app-workspaces-step [branchId]="branchId()!" (next)="goToStep(5)" (back)="goToStep(3)" />
           </div>
         </ng-template>
       </p-step-panel>
