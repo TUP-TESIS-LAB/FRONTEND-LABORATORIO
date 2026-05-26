@@ -10,7 +10,7 @@ export const ANALITICA_ROUTES: Routes = [
         path: 'extraccion',
         loadComponent: () => import('./pages/extraction-queue/extraction-queue.page')
           .then(m => m.ExtractionQueuePage),
-        canMatch: [hasRoleGuard(['ROLE_EXTRACTOR', 'ROLE_ADMINISTRADOR'])],
+        canMatch: [hasRoleGuard(['EXTRACTOR', 'ADMINISTRADOR'])],
         title: 'Cola de extracción',
       },
       {
