@@ -9,7 +9,7 @@
       <p>Necesitás crear áreas y secciones en el catálogo antes de poder configurar workspaces.</p>
       <div class="cta-actions">
         <p-button label="Ir al catálogo" icon="pi pi-external-link" routerLink="/sucursales/catalogo" />
-        <p-button label="Saltar este paso" severity="secondary" (click)="next.emit()" />
+        <p-button label="Saltar este paso" severity="secondary" [text]="true" (click)="next.emit()" />
       </div>
     </div>
   } @else {
@@ -23,7 +23,7 @@
         <p-select formControlName="sectionId" [options]="sectionOptions()" optionLabel="label" optionValue="value" placeholder="Seleccionar" appendTo="body" [disabled]="!form.value.areaId" />
       </div>
       <div class="form-action">
-        <p-button icon="pi pi-plus" type="submit" [disabled]="form.invalid" />
+        <p-button icon="pi pi-plus" label="Agregar" type="submit" [disabled]="form.invalid" />
       </div>
     </form>
 
