@@ -12,11 +12,21 @@
 
     <p-step-list>
       <p-step [value]="1">Datos</p-step>
-      <p-step [value]="2" [disabled]="branchId() == null">Horarios</p-step>
-      <p-step [value]="3" [disabled]="branchId() == null">Contactos</p-step>
-      <p-step [value]="4" [disabled]="branchId() == null">Workspaces</p-step>
-      <p-step [value]="5" [disabled]="branchId() == null">Tótem</p-step>
-      <p-step [value]="6" [disabled]="branchId() == null">Confirmar</p-step>
+      <p-step [value]="2" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Horarios</p-step>
+      <p-step [value]="3" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Contactos</p-step>
+      <p-step [value]="4" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Workspaces</p-step>
+      <p-step [value]="5" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Tótem</p-step>
+      <p-step [value]="6" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Confirmar</p-step>
     </p-step-list>
 
     <p-step-panels>

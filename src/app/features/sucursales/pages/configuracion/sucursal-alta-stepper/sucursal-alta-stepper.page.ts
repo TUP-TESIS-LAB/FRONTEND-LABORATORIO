@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MessageService } from 'primeng/api';
 import { StepperModule } from 'primeng/stepper';
+import { TooltipModule } from 'primeng/tooltip';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { DatosStepComponent } from './steps/datos-step.component';
@@ -16,7 +17,7 @@ import { ConfirmarStepComponent } from './steps/confirmar-step.component';
   selector: 'app-sucursal-alta-stepper',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StepperModule, ButtonModule, ToastModule, DatosStepComponent, HorariosStepComponent, ContactosStepComponent, WorkspacesStepComponent, TotemStepComponent, ConfirmarStepComponent],
+  imports: [StepperModule, TooltipModule, ButtonModule, ToastModule, DatosStepComponent, HorariosStepComponent, ContactosStepComponent, WorkspacesStepComponent, TotemStepComponent, ConfirmarStepComponent],
   templateUrl: './sucursal-alta-stepper.page.html',
   styleUrl: './sucursal-alta-stepper.page.scss',
   providers: [MessageService],
