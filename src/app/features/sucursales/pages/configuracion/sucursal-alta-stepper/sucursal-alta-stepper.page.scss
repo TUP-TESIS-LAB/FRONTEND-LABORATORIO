@@ -67,38 +67,21 @@
    para garantizar alineacion exacta con el centro del circulo. */
 .alta-stepper ::ng-deep {
   .p-steplist {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    align-items: start;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     padding: 0.5rem 0 1rem;
     list-style: none;
     margin: 0;
-    overflow: visible;
+    gap: 0;
   }
 
   .p-stepitem {
-    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
+    flex: 0 0 auto;
     min-width: 0;
-  }
-
-  /* Mini-linea horizontal entre el step anterior y el actual, dejando gap
-     a cada lado del circulo (no lo toca). El circulo mide 2rem; dejamos
-     0.5rem de gap a cada lado. */
-  .p-stepitem:not(:first-child)::before {
-    content: '';
-    position: absolute;
-    top: 1rem; /* centro vertical del circulo (alto 2rem / 2) */
-    /* Va del centro del item anterior + (1rem circulo + 0.5rem gap)
-       al centro del item actual - (1rem circulo + 0.5rem gap). */
-    left: calc(-50% + 1.5rem);
-    right: calc(50% + 1.5rem);
-    height: 2px;
-    background: var(--surface-200, #e5e7eb);
-    transform: translateY(-1px);
   }
 
   .p-step {
@@ -162,10 +145,17 @@
     font-weight: 600;
   }
 
-  /* Esconder cualquier p-stepper-separator que PrimeNG pueda renderizar
-     entre stepitems — ya usamos pseudo-elements. */
+  /* Separator de PrimeNG: linea entre cada par de stepitems, alineada
+     al centro vertical del circulo (top:1rem) con gap horizontal para
+     no tocar los circulos. */
   .p-stepper-separator {
-    display: none;
+    display: block;
+    flex: 1 1 auto;
+    height: 2px;
+    background: var(--surface-200, #e5e7eb);
+    margin: 1rem 0.5rem 0;
+    border-radius: 1px;
+    align-self: flex-start;
   }
 
   .p-step-panels {
