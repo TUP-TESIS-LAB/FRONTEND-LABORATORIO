@@ -10,7 +10,7 @@
           <button
             class="day-chip"
             type="button"
-            [class.selected]="isSelected(d.id)"
+            [class.selected]="selectedDays().has(d.id)"
             (click)="toggleDay(d.id)"
             [title]="d.id">{{ d.label }}</button>
         }

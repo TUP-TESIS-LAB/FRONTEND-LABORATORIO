@@ -71,10 +71,6 @@ export class HorariosStepComponent implements OnInit {
     this.store.dispatch(loadSchedules({ branchId: this.branchId }));
   }
 
-  isSelected(day: DayOfWeek): boolean {
-    return this.selectedDays().has(day);
-  }
-
   toggleDay(day: DayOfWeek): void {
     const next = new Set(this.selectedDays());
     if (next.has(day)) {
