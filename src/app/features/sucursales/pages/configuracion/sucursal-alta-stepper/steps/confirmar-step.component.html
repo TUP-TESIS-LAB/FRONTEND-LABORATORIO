@@ -6,7 +6,7 @@
     <div class="summary">
       <p-card header="Datos básicos">
         <dl class="data-list">
-          <dt>Código</dt><dd>{{ branch.code }}</dd>
+          <dt>Nombre</dt><dd>{{ branch.code }}</dd>
           <dt>Descripción</dt><dd>{{ branch.description }}</dd>
           <dt>Estado</dt><dd>{{ branch.status === 'ACTIVE' ? 'Activa' : 'Inactiva' }}</dd>
           @if (branch.address?.street) {
@@ -67,11 +67,13 @@
       </p-card>
 
       <p-card header="Tótem">
-        <p>
-          <i [class]="(totemConfig()?.enabled) ? 'pi pi-check-circle text-green' : 'pi pi-times-circle text-muted'"></i>
-          {{ (totemConfig()?.enabled) ? 'Tótem habilitado' : 'Tótem deshabilitado' }}
-        </p>
-        <p-button label="Ir a Tótem" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(5)" />
+        <div class="totem-summary">
+          <span class="totem-status">
+            <i [class]="(totemConfig()?.enabled) ? 'pi pi-check-circle text-green' : 'pi pi-times-circle text-muted'"></i>
+            {{ (totemConfig()?.enabled) ? 'Tótem habilitado' : 'Tótem deshabilitado' }}
+          </span>
+          <p-button label="Ir a Tótem" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(5)" />
+        </div>
       </p-card>
     </div>
   } @else {

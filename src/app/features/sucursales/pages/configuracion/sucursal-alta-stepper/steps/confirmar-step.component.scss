@@ -41,8 +41,21 @@
 .empty-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .text-green { color: var(--green-500); }
 .text-muted { color: var(--text-color-secondary); }
+
+.totem-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.totem-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
