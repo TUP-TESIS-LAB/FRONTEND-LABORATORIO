@@ -80,7 +80,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 0 0 auto;
+    flex: 1 1 0;
     min-width: 0;
   }
 
@@ -145,17 +145,31 @@
     font-weight: 600;
   }
 
-  /* Separator de PrimeNG: linea entre cada par de stepitems, alineada
-     al centro vertical del circulo (top:1rem) con gap horizontal para
-     no tocar los circulos. */
-  .p-stepper-separator {
-    display: block;
-    flex: 1 1 auto;
+  /* Linea entre steps: usar ::after en cada .p-step (excepto el ultimo).
+     Position absolute para colocar la linea afuera del propio step,
+     a la altura del centro del circulo, con gap de 0.5rem a cada lado. */
+  .p-step {
+    position: relative;
+  }
+
+  .p-stepitem:not(:last-child) .p-step::after {
+    content: '';
+    position: absolute;
+    top: 1rem; /* centro vertical del circulo (alto 2rem / 2) */
+    left: calc(100% + 0.5rem); /* despues del step + gap */
+    /* Width calculado para llegar al siguiente circulo con gap del otro lado.
+       El stepitem siguiente tiene padding/center con su propio circulo a 0.5rem
+       del borde izquierdo. */
+    width: 100%;
     height: 2px;
     background: var(--surface-200, #e5e7eb);
-    margin: 1rem 0.5rem 0;
-    border-radius: 1px;
-    align-self: flex-start;
+    transform: translateY(-1px);
+    pointer-events: none;
+  }
+
+  /* Esconder el separator nativo de PrimeNG. */
+  .p-stepper-separator {
+    display: none;
   }
 
   .p-step-panels {
