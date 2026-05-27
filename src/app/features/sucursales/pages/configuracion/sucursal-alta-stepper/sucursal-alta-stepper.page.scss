@@ -67,21 +67,19 @@
    para garantizar alineacion exacta con el centro del circulo. */
 .alta-stepper ::ng-deep {
   .p-steplist {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     padding: 0.5rem 0 1rem;
     list-style: none;
     margin: 0;
-    gap: 0;
   }
 
   .p-stepitem {
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 1 1 0;
     min-width: 0;
+    position: relative;
   }
 
   .p-step {
@@ -137,6 +135,9 @@
     font-size: 0.8125rem;
     font-weight: 500;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
     text-align: center;
   }
 
@@ -155,10 +156,6 @@
      Borde izquierdo siguiente - gap: 150% - 1rem - 0.5rem = 150% - 1.5rem
      left = 50% + 1.5rem
      width = (150% - 1.5rem) - (50% + 1.5rem) = 100% - 3rem */
-  .p-stepitem {
-    position: relative;
-  }
-
   .p-stepitem:not(:last-child)::after {
     content: '';
     position: absolute;
