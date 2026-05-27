@@ -3,19 +3,12 @@
   <p class="muted">Información general de la sucursal. La dirección es opcional y puede completarse después.</p>
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="form">
-    <div class="form-row">
-      <div class="form-field">
-        <label for="code">Nombre *</label>
-        <input id="code" pInputText formControlName="code" placeholder="Ej: Sucursal Centro" />
-        @if (form.controls.code.invalid && form.controls.code.touched) {
-          <small class="form-error">El nombre es requerido (máx 30 caracteres).</small>
-        }
-      </div>
-      <div class="form-field">
-        <label for="status">Estado *</label>
-        <p-select id="status" formControlName="status" [options]="statusOptions"
-                  optionLabel="label" optionValue="value" appendTo="body" />
-      </div>
+    <div class="form-field">
+      <label for="code">Nombre *</label>
+      <input id="code" pInputText formControlName="code" placeholder="Ej: Sucursal Centro" />
+      @if (form.controls.code.invalid && form.controls.code.touched) {
+        <small class="form-error">El nombre es requerido (máx 30 caracteres).</small>
+      }
     </div>
 
     <div class="form-field">

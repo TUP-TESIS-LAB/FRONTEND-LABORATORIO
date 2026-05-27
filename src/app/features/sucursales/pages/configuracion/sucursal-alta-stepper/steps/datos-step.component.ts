@@ -9,22 +9,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 
 import { addSucursal, addSucursalSuccess, addSucursalFailure } from '../../../../store/sucursal.actions';
 import { SucursalCreateInput, SucursalStatus } from '../../../../models/sucursal.model';
 
-const STATUS_OPTIONS: { label: string; value: SucursalStatus }[] = [
-  { label: 'Activa', value: 'ACTIVE' },
-  { label: 'Inactiva', value: 'INACTIVE' },
-];
-
 @Component({
   selector: 'app-datos-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule],
   templateUrl: './datos-step.component.html',
   styleUrl: './datos-step.component.scss',
 })
@@ -37,13 +31,11 @@ export class DatosStepComponent {
   private destroyRef = inject(DestroyRef);
   private messageService = inject(MessageService);
 
-  protected readonly statusOptions = STATUS_OPTIONS;
   protected readonly saving = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
     code: ['', [Validators.required, Validators.maxLength(30)]],
     description: ['', [Validators.required, Validators.maxLength(120)]],
-    status: ['ACTIVE' as SucursalStatus, Validators.required],
     address: this.fb.group({
       street: [''],
       streetNumber: [''],
@@ -61,7 +53,7 @@ export class DatosStepComponent {
     const input: SucursalCreateInput = {
       code: raw.code.trim(),
       description: raw.description.trim(),
-      status: raw.status,
+      status: 'ACTIVE' as SucursalStatus,
       ...(hasAddress ? { address: { street, streetNumber } } : {}),
     };
 
