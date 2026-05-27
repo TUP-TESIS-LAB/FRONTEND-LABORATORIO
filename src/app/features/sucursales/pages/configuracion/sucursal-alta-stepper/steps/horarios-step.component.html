@@ -34,7 +34,8 @@
       </div>
       <div class="form-field">
         <label>Tipo *</label>
-        <p-select formControlName="scheduleType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body" />
+        <p-select formControlName="scheduleType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body"
+                  pTooltip="Jornada completa, solo mañana, solo tarde o turno noche" tooltipPosition="top" />
       </div>
       <div class="form-action">
         <p-button icon="pi pi-plus" label="Agregar" type="submit" [disabled]="!canAdd()" />
@@ -44,7 +45,7 @@
 
   <p class="counter muted">{{ schedules().length }} horario{{ schedules().length !== 1 ? 's' : '' }} cargado{{ schedules().length !== 1 ? 's' : '' }}</p>
 
-  <p-table [value]="schedules()" dataKey="id" [scrollable]="true" scrollHeight="16rem" class="schedules-table">
+  <p-table [value]="schedules()" dataKey="id" class="schedules-table">
     <ng-template pTemplate="header">
       <tr>
         <th>Día</th>
