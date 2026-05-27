@@ -10,7 +10,6 @@ import { take } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
 
 import { addSucursal, addSucursalSuccess, addSucursalFailure } from '../../../../store/sucursal.actions';
 import { SucursalCreateInput, SucursalStatus } from '../../../../models/sucursal.model';
@@ -34,7 +33,6 @@ export class DatosStepComponent {
   private fb = inject(FormBuilder);
   private store = inject(Store);
   private actions$ = inject(Actions);
-  private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
 
   protected readonly statusOptions = STATUS_OPTIONS;
@@ -74,11 +72,6 @@ export class DatosStepComponent {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(({ sucursal }) => {
       this.saving.set(false);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Sucursal creada',
-        detail: `${sucursal.code} — ${sucursal.description}`,
-      });
       this.completed.emit(sucursal.id);
     });
 

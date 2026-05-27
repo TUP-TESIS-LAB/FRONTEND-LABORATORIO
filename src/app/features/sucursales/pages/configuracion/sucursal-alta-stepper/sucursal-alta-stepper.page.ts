@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { MessageService } from 'primeng/api';
 import { StepperModule } from 'primeng/stepper';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
 import { DatosStepComponent } from './steps/datos-step.component';
 import { HorariosStepComponent } from './steps/horarios-step.component';
 import { ContactosStepComponent } from './steps/contactos-step.component';
@@ -24,6 +24,7 @@ import { ConfirmarStepComponent } from './steps/confirmar-step.component';
 export class SucursalAltaStepperPage {
   private router = inject(Router);
   private store = inject(Store);
+  private messageService = inject(MessageService);
 
   protected readonly STEPS = [
     { key: 'datos', label: 'Datos' },
@@ -38,7 +39,7 @@ export class SucursalAltaStepperPage {
   protected readonly branchId = signal<number | null>(null);
 
   /**
-   * Llamado por DatosStepComponent (T8) cuando la sucursal se crea y devuelve su id.
+   * Llamado por DatosStepComponent cuando la sucursal se crea y devuelve su id.
    * Habilita los steps 2-6 (que requieren branchId).
    */
   onDatosCompleted(branchId: number) {
@@ -55,12 +56,16 @@ export class SucursalAltaStepperPage {
     this.currentStep.set(step);
   }
 
-  /** Llamado por ConfirmarStepComponent (T13). Navega al detalle de la sucursal creada. */
+  /** Llamado por ConfirmarStepComponent. Muestra toast y navega al detalle. */
   finish() {
     const id = this.branchId();
-    if (id != null) {
-      this.router.navigate(['/sucursales/configuracion', id]);
-    }
+    if (id == null) return;
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Sucursal creada',
+      detail: 'La configuración se guardó correctamente.',
+    });
+    this.router.navigate(['/sucursales/configuracion', id]);
   }
 
   /** Cancel-and-bail (botón opcional en el header). */
