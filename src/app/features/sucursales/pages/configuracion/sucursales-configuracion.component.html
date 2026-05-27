@@ -20,7 +20,7 @@
         <th>Descripcion</th>
         <th style="width: 8rem">Estado</th>
         <th>Direccion</th>
-        <th style="width: 12rem" class="text-center">Acciones</th>
+        <th style="width: 8rem" class="text-center">Acciones</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-s>
@@ -42,14 +42,6 @@
             pTooltip="Editar"
             tooltipPosition="top"
             (onClick)="openDetail(s); $event.stopPropagation()" />
-          <p-button
-            [icon]="s.status === 'ACTIVE' ? 'pi pi-ban' : 'pi pi-check-circle'"
-            [text]="true"
-            [rounded]="true"
-            [severity]="s.status === 'ACTIVE' ? 'warn' : 'success'"
-            [pTooltip]="s.status === 'ACTIVE' ? 'Desactivar' : 'Activar'"
-            tooltipPosition="top"
-            (onClick)="toggle(s); $event.stopPropagation()" />
           <p-button
             icon="pi pi-trash"
             [text]="true"
