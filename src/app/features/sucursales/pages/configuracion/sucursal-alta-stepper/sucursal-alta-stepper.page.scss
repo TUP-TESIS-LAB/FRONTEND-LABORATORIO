@@ -141,6 +141,8 @@
     flex: 0 0 auto;
     border: 2px solid var(--surface-200, #e5e7eb);
     transition: all 0.2s;
+    /* Halo del color del card que tapa la linea horizontal alrededor del circulo. */
+    box-shadow: 0 0 0 0.5rem var(--surface-card, #fff);
   }
 
   .p-step[data-p-active='true'] .p-step-number {
