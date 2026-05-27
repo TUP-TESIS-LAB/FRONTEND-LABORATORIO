@@ -3,7 +3,7 @@
 **Fecha:** 2026-05-27
 **Branch base:** `feat/sucursales-back-office`
 **Tipo:** UX polish (CSS + template, lógica nueva mínima: 1 output `cancel` en step 1)
-**Jira:** TBD (crear al pasar a plan)
+**Jira:** N/A — spike sin ticket (decisión del user al cierre del planning)
 
 ---
 

@@ -12,7 +12,7 @@
 
 **Branch base:** `feat/sucursales-back-office` (LAB, 27 commits ahead de origin antes de empezar este plan).
 
-**Jira:** TBD — el repo exige invocar `jira-workflow` ANTES de pasar a `subagent-driven-development` / implementación (regla #1 de `CLAUDE.md`).
+**Jira:** N/A — spike sin ticket. El user invocó la excepción explícita de la regla #1 del CLAUDE.md ("es un spike, no hace falta") al cierre del planning (2026-05-27).
 
 ---
 
