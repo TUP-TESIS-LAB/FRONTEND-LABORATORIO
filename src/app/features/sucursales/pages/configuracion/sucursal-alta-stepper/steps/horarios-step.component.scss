@@ -39,8 +39,8 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  border: 2px solid var(--surface-border);
-  background: var(--surface-card);
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
   font-weight: 600;
   font-size: 0.875rem;
   cursor: pointer;
@@ -48,17 +48,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-color);
+  color: var(--ds-text);
 }
 
 .day-chip:hover {
-  background: var(--surface-hover);
+  background: #f3f4f6;
 }
 
 .day-chip.selected {
-  background: var(--primary-color);
-  color: var(--primary-color-text);
-  border-color: var(--primary-color);
+  background: var(--brand-primary);
+  color: var(--p-primary-contrast-color);
+  border-color: var(--brand-primary);
 }
 
 .schedules-table { margin-bottom: 1.5rem; }
