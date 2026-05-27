@@ -10,6 +10,7 @@ import { take } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { MessageService } from 'primeng/api';
 
 import { addSucursal, addSucursalSuccess, addSucursalFailure } from '../../../../store/sucursal.actions';
 import { SucursalCreateInput, SucursalStatus } from '../../../../models/sucursal.model';
@@ -34,6 +35,7 @@ export class DatosStepComponent {
   private store = inject(Store);
   private actions$ = inject(Actions);
   private destroyRef = inject(DestroyRef);
+  private messageService = inject(MessageService);
 
   protected readonly statusOptions = STATUS_OPTIONS;
   protected readonly saving = signal(false);
