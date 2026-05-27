@@ -4,8 +4,10 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  /* Use min-height to ensure the page fills the viewport on 1080p
+     without relying on % which doesn't resolve in a scroll container.
+     admin-shell__content has overflow-y: auto, so height:100% doesn't work. */
+  min-height: calc(100vh - var(--ds-topbar-h, 4rem) - var(--space-6, 1.5rem) * 2);
 }
 
 .page-header {
@@ -45,10 +47,14 @@
   border-radius: 8px;
   padding: 1rem 1.25rem;
   flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
+  /* Step content scrolls internally, not the whole page */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .step-content {
   padding: 1rem 0 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
 }
