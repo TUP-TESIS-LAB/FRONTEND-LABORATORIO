@@ -6,6 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import * as A from '../../store/sucursal.actions';
@@ -16,7 +17,7 @@ import { Sucursal } from '../../models/sucursal.model';
   selector: 'app-sucursales-configuracion',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TableModule, ButtonModule, TagModule, ConfirmDialogModule, ToastModule],
+  imports: [TableModule, ButtonModule, TagModule, ConfirmDialogModule, ToastModule, TooltipModule],
   providers: [ConfirmationService, MessageService],
   templateUrl: './sucursales-configuracion.component.html',
   styleUrl: './sucursales-configuracion.component.scss',
@@ -45,8 +46,12 @@ export class SucursalesConfiguracionComponent implements OnInit {
 
   remove(s: Sucursal): void {
     this.confirm.confirm({
-      message: `¿Borrar sucursal "${s.code}"?`,
-      header: 'Confirmar',
+      message: `¿Eliminar la sucursal "${s.code}"? Se conservará el histórico (soft-delete).`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
       accept: () => this.store.dispatch(A.deleteSucursal({ id: s.id })),
     });
   }
