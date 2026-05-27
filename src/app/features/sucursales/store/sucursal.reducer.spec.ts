@@ -297,6 +297,15 @@ describe('sucursalReducer — sections', () => {
     expect(state.loadingCatalog).toBe(false);
   });
 
+  it('loadSectionsSuccess replaces previous sections (per-area loading pattern)', () => {
+    // Simulates switching from area 100 to area 101: new sections must replace the old ones.
+    const sectionArea101: Section = { id: 300, name: 'Sección X', areaId: 101, active: true };
+    const withSectionsA100: SucursalState = { ...initialSucursalState, sections: [mockSection] };
+    const state = reduce(withSectionsA100, A.loadSectionsSuccess({ sections: [sectionArea101] }));
+    expect(state.sections).toHaveLength(1);
+    expect(state.sections[0].areaId).toBe(101);
+  });
+
   it('addSectionSuccess appends section', () => {
     const newSection: Section = { id: 201, name: 'Sección B', areaId: 100, active: true };
     const state = reduce(withSections, A.addSectionSuccess({ section: newSection }));
