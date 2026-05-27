@@ -33,7 +33,7 @@
       <p-step-panel [value]="1">
         <ng-template #content>
           <div class="step-content">
-            <app-datos-step (completed)="onDatosCompleted($event)" />
+            <app-datos-step (completed)="onDatosCompleted($event)" (cancel)="cancel()" />
           </div>
         </ng-template>
       </p-step-panel>

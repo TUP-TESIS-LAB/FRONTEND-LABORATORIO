@@ -34,6 +34,7 @@
     </div>
 
     <footer class="step-footer">
+      <p-button label="Cancelar" severity="secondary" type="button" (click)="cancel.emit()" />
       <p-button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" type="submit" [disabled]="form.invalid || saving()" [loading]="saving()" />
     </footer>
   </form>

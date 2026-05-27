@@ -24,6 +24,7 @@ import { SucursalCreateInput, SucursalStatus } from '../../../../models/sucursal
 })
 export class DatosStepComponent {
   @Output() completed = new EventEmitter<number>();
+  @Output() cancel = new EventEmitter<void>();
 
   private fb = inject(FormBuilder);
   private store = inject(Store);
