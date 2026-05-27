@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -38,7 +38,7 @@ import { Section, SectionCreateInput } from '../../../models/section.model';
   templateUrl: './sections-panel.component.html',
   styleUrl: './sections-panel.component.scss',
 })
-export class SectionsPanelComponent implements OnInit {
+export class SectionsPanelComponent {
   private store = inject(Store);
   private fb = inject(FormBuilder);
   private confirm = inject(ConfirmationService);
@@ -65,9 +65,16 @@ export class SectionsPanelComponent implements OnInit {
     name: ['', [Validators.required, Validators.maxLength(80)]],
   });
 
-  ngOnInit() {
-    // Load all sections upfront; filtering by area is client-side via computed().
-    this.store.dispatch(loadSections({}));
+  constructor() {
+    // Reload sections for the selected area each time it changes.
+    // This ensures freshly created areas (with 0 sections) still trigger a load,
+    // and switching areas always fetches fresh data from the server.
+    effect(() => {
+      const areaId = this.selectedAreaId();
+      if (areaId != null) {
+        this.store.dispatch(loadSections({ areaId }));
+      }
+    });
   }
 
   openNew() {
