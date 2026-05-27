@@ -7,80 +7,67 @@
     <span class="header-spacer"></span>
   </header>
 
-  <!-- PrimeNG 21 Stepper: p-stepper > p-step-item > p-step + p-step-panel -->
+  <!-- PrimeNG 21: p-step-list (headers) + p-step-panels (content) son hermanos dentro de p-stepper. -->
   <p-stepper [(value)]="currentStep" [linear]="false" class="alta-stepper">
 
-    <!-- Step 1: Datos — T8 -->
-    <p-step-item [value]="1">
-      <p-step>Datos</p-step>
-      <p-step-panel>
-        <ng-template #content let-activateCallback="activateCallback">
+    <p-step-list>
+      <p-step [value]="1">Datos</p-step>
+      <p-step [value]="2" [disabled]="branchId() == null">Horarios</p-step>
+      <p-step [value]="3" [disabled]="branchId() == null">Contactos</p-step>
+      <p-step [value]="4" [disabled]="branchId() == null">Workspaces</p-step>
+      <p-step [value]="5" [disabled]="branchId() == null">Tótem</p-step>
+      <p-step [value]="6" [disabled]="branchId() == null">Confirmar</p-step>
+    </p-step-list>
+
+    <p-step-panels>
+      <p-step-panel [value]="1">
+        <ng-template #content>
           <div class="step-content">
             <app-datos-step (completed)="onDatosCompleted($event)" />
           </div>
         </ng-template>
       </p-step-panel>
-    </p-step-item>
 
-    <!-- Step 2: Horarios — T9 -->
-    <p-step-item [value]="2">
-      <p-step [disabled]="branchId() == null">Horarios</p-step>
-      <p-step-panel>
-        <ng-template #content let-activateCallback="activateCallback">
+      <p-step-panel [value]="2">
+        <ng-template #content>
           <div class="step-content">
             <app-horarios-step [branchId]="branchId()!" (next)="goToStep(3)" (back)="goToStep(1)" />
           </div>
         </ng-template>
       </p-step-panel>
-    </p-step-item>
 
-    <!-- Step 3: Contactos — T10 reemplazará este placeholder -->
-    <p-step-item [value]="3">
-      <p-step [disabled]="branchId() == null">Contactos</p-step>
-      <p-step-panel>
-        <ng-template #content let-activateCallback="activateCallback">
+      <p-step-panel [value]="3">
+        <ng-template #content>
           <div class="step-content">
             <app-contactos-step [branchId]="branchId()!" (next)="goToStep(4)" (back)="goToStep(2)" />
           </div>
         </ng-template>
       </p-step-panel>
-    </p-step-item>
 
-    <!-- Step 4: Workspaces — T11 -->
-    <p-step-item [value]="4">
-      <p-step [disabled]="branchId() == null">Workspaces</p-step>
-      <p-step-panel>
-        <ng-template #content let-activateCallback="activateCallback">
+      <p-step-panel [value]="4">
+        <ng-template #content>
           <div class="step-content">
             <app-workspaces-step [branchId]="branchId()!" (next)="goToStep(5)" (back)="goToStep(3)" />
           </div>
         </ng-template>
       </p-step-panel>
-    </p-step-item>
 
-    <!-- Step 5: Tótem — T12 -->
-    <p-step-item [value]="5">
-      <p-step [disabled]="branchId() == null">Tótem</p-step>
-      <p-step-panel>
-        <ng-template #content let-activateCallback="activateCallback">
+      <p-step-panel [value]="5">
+        <ng-template #content>
           <div class="step-content">
             <app-totem-step [branchId]="branchId()!" (next)="goToStep(6)" (back)="goToStep(4)" />
           </div>
         </ng-template>
       </p-step-panel>
-    </p-step-item>
 
-    <!-- Step 6: Confirmar — T13 reemplazará este placeholder -->
-    <p-step-item [value]="6">
-      <p-step [disabled]="branchId() == null">Confirmar</p-step>
-      <p-step-panel>
-        <ng-template #content let-activateCallback="activateCallback">
+      <p-step-panel [value]="6">
+        <ng-template #content>
           <div class="step-content">
             <app-confirmar-step [branchId]="branchId()!" (finish)="finish()" (back)="goToStep(5)" />
           </div>
         </ng-template>
       </p-step-panel>
-    </p-step-item>
+    </p-step-panels>
 
   </p-stepper>
 
