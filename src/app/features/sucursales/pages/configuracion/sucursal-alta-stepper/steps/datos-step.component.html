@@ -20,7 +20,7 @@
 
     <div class="form-field">
       <label for="description">Descripción *</label>
-      <input id="description" pInputText formControlName="description" placeholder="Nombre de la sucursal" />
+      <input id="description" pInputText formControlName="description" placeholder="Ej: Sucursal central de zona norte" />
       @if (form.controls.description.invalid && form.controls.description.touched) {
         <small class="form-error">La descripción es requerida (máx 120 caracteres).</small>
       }
