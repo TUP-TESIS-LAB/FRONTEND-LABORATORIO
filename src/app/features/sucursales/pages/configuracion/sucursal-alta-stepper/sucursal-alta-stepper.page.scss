@@ -4,9 +4,6 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  /* Use min-height to ensure the page fills the viewport on 1080p
-     without relying on % which doesn't resolve in a scroll container.
-     admin-shell__content has overflow-y: auto, so height:100% doesn't work. */
   min-height: calc(100vh - var(--ds-topbar-h, 4rem) - var(--space-6, 1.5rem) * 2);
 }
 
@@ -47,7 +44,6 @@
   border-radius: 8px;
   padding: 1rem 1.25rem;
   flex: 1 1 auto;
-  /* Step content scrolls internally, not the whole page */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -57,4 +53,108 @@
   padding: 1rem 0 0;
   flex: 1 1 auto;
   overflow-y: auto;
+}
+
+/* === PrimeNG 21 stepper visual overrides ===
+   Por default PrimeNG/Tailwind no renderiza los step numbers como circulos
+   con el contraste correcto. Estilamos manualmente las clases generadas
+   (.p-steplist, .p-step-header, .p-step-number, .p-step-title, .p-stepper-separator). */
+.alta-stepper ::ng-deep {
+  .p-steplist {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0 1.25rem;
+    list-style: none;
+    margin: 0;
+  }
+
+  .p-stepitem {
+    display: flex;
+    align-items: center;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .p-stepitem:last-child {
+    flex: 0 0 auto;
+  }
+
+  .p-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--text-color-secondary);
+    font: inherit;
+  }
+
+  .p-step[data-p-disabled='true'] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .p-step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .p-step-number {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--surface-200, #e5e7eb);
+    color: var(--text-color-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex: 0 0 auto;
+    border: 2px solid var(--surface-200, #e5e7eb);
+    transition: all 0.2s;
+  }
+
+  .p-step[data-p-active='true'] .p-step-number {
+    background: var(--primary-color, #3b82f6);
+    color: var(--primary-color-text, #fff);
+    border-color: var(--primary-color, #3b82f6);
+  }
+
+  .p-step-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .p-step[data-p-active='true'] .p-step-title {
+    color: var(--text-color);
+    font-weight: 600;
+  }
+
+  .p-stepper-separator {
+    flex: 1 1 auto;
+    height: 2px;
+    background: var(--surface-200, #e5e7eb);
+    margin: 0 0.5rem;
+    border-radius: 1px;
+    align-self: center;
+  }
+
+  .p-step-panels {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .alta-stepper ::ng-deep {
+    .p-step-title { display: none; }
+    .p-stepper-separator { margin: 0 0.25rem; }
+  }
 }
