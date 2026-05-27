@@ -77,27 +77,28 @@
     overflow: visible;
   }
 
-  /* Linea horizontal unica que cruza todo el stepper, desde el centro del
-     primer item hasta el centro del ultimo. Los numeros (con background
-     opaco) tapan los segmentos sobre cada step. */
-  .p-steplist::before {
-    content: '';
-    position: absolute;
-    top: calc(0.5rem + 1rem - 1px); /* padding top + media altura del circulo */
-    left: calc(100% / 12);   /* centro del primer item (1 col / 2) */
-    right: calc(100% / 12);  /* centro del ultimo item */
-    height: 2px;
-    background: var(--surface-200, #e5e7eb);
-    z-index: 0;
-  }
-
   .p-stepitem {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-width: 0;
-    z-index: 1;
+  }
+
+  /* Mini-linea horizontal entre el step anterior y el actual, dejando gap
+     a cada lado del circulo (no lo toca). El circulo mide 2rem; dejamos
+     0.5rem de gap a cada lado. */
+  .p-stepitem:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    top: 1rem; /* centro vertical del circulo (alto 2rem / 2) */
+    /* Va del centro del item anterior + (1rem circulo + 0.5rem gap)
+       al centro del item actual - (1rem circulo + 0.5rem gap). */
+    left: calc(-50% + 1.5rem);
+    right: calc(50% + 1.5rem);
+    height: 2px;
+    background: var(--surface-200, #e5e7eb);
+    transform: translateY(-1px);
   }
 
   .p-step {
@@ -141,8 +142,6 @@
     flex: 0 0 auto;
     border: 2px solid var(--surface-200, #e5e7eb);
     transition: all 0.2s;
-    /* Halo del color del card que tapa la linea horizontal alrededor del circulo. */
-    box-shadow: 0 0 0 0.5rem var(--surface-card, #fff);
   }
 
   .p-step[data-p-active='true'] .p-step-number {
