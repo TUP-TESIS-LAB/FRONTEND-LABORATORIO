@@ -18,6 +18,7 @@ export const sucursalReducer = createReducer(
     ...state,
     saving: false,
     list: [...state.list, sucursal],
+    current: sucursal,
   })),
   on(A.addSucursalFailure, (state, { error }): SucursalState => ({ ...state, saving: false, error })),
 

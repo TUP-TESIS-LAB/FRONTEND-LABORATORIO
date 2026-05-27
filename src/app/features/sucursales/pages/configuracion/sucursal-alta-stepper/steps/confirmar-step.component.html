@@ -2,12 +2,7 @@
   <h2>Confirmar</h2>
   <p class="muted">Revisá la configuración antes de finalizar.</p>
 
-  @if (loadingDetail()) {
-    <div class="loading-state">
-      <p-progressSpinner strokeWidth="4" animationDuration=".8s" />
-      <p class="muted">Cargando resumen...</p>
-    </div>
-  } @else if (current(); as branch) {
+  @if (current(); as branch) {
     <div class="summary">
       <p-card header="Datos básicos">
         <dl class="data-list">
@@ -85,6 +80,6 @@
 
   <footer class="step-footer">
     <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" (click)="back.emit()" />
-    <p-button label="Finalizar" icon="pi pi-check" (click)="finish.emit()" [disabled]="loadingDetail()" />
+    <p-button label="Finalizar" icon="pi pi-check" (click)="finish.emit()" />
   </footer>
 </div>

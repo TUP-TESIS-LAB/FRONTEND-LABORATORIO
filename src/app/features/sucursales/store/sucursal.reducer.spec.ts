@@ -116,6 +116,17 @@ describe('sucursalReducer — loadSucursales', () => {
   });
 });
 
+// ── Add (create sucursal) ────────────────────────────────────────────────────
+
+describe('sucursalReducer — addSucursal', () => {
+  it('addSucursalSuccess appends to list AND sets current', () => {
+    const state = reduce(initialSucursalState, A.addSucursalSuccess({ sucursal: mockSucursal }));
+    expect(state.list).toEqual([mockSucursal]);
+    expect(state.current).toEqual(mockSucursal);
+    expect(state.saving).toBe(false);
+  });
+});
+
 // ── Detail ────────────────────────────────────────────────────────────────────
 
 describe('sucursalReducer — loadDetail', () => {

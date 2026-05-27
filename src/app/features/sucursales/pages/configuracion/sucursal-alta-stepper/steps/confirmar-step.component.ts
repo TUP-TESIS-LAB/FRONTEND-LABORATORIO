@@ -1,15 +1,13 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 import {
   selectCurrentSucursal, selectSchedules, selectContacts, selectWorkspaces, selectTotemConfig,
-  selectAreas, selectLoadingDetail,
+  selectAreas,
 } from '../../../../store/sucursal.selectors';
-import { loadDetail } from '../../../../store/sucursal.actions';
 import { DayOfWeek, ScheduleType } from '../../../../models/branch-schedule.model';
 import { ContactType } from '../../../../models/branch-contact.model';
 
@@ -31,11 +29,11 @@ const CONTACT_LABELS: Record<ContactType, string> = {
   selector: 'app-confirmar-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, CardModule, DividerModule, ProgressSpinnerModule],
+  imports: [ButtonModule, CardModule, DividerModule],
   templateUrl: './confirmar-step.component.html',
   styleUrl: './confirmar-step.component.scss',
 })
-export class ConfirmarStepComponent implements OnInit {
+export class ConfirmarStepComponent {
   @Input({ required: true }) branchId!: number;
   @Output() finish = new EventEmitter<void>();
   @Output() back = new EventEmitter<void>();
@@ -43,18 +41,18 @@ export class ConfirmarStepComponent implements OnInit {
 
   private store = inject(Store);
 
-  protected readonly loadingDetail = this.store.selectSignal(selectLoadingDetail);
+  // Lee el estado que ya fue populado por los steps previos:
+  // Step 1 (datos) → addSucursalSuccess → state.current
+  // Step 2 (horarios) → addScheduleSuccess × N → state.schedules
+  // Step 3 (contactos) → addContactSuccess × N → state.contacts
+  // Step 4 (workspaces) → syncWorkspacesSuccess → state.workspaces
+  // Step 5 (totem) → upsertTotemConfigSuccess → state.totemConfig
   protected readonly current = this.store.selectSignal(selectCurrentSucursal);
   protected readonly schedules = this.store.selectSignal(selectSchedules);
   protected readonly contacts = this.store.selectSignal(selectContacts);
   protected readonly workspaces = this.store.selectSignal(selectWorkspaces);
   protected readonly totemConfig = this.store.selectSignal(selectTotemConfig);
   protected readonly areas = this.store.selectSignal(selectAreas);
-
-  ngOnInit() {
-    // Refrescar todo para tener datos consistentes en el resumen
-    this.store.dispatch(loadDetail({ branchId: this.branchId }));
-  }
 
   dayLabel(d: DayOfWeek): string { return DAY_LABELS[d] ?? d; }
   scheduleTypeLabel(t: ScheduleType): string { return TYPE_LABELS[t] ?? t; }
