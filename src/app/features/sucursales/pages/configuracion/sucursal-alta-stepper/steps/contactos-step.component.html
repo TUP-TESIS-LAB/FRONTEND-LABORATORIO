@@ -19,6 +19,8 @@
     </div>
   </form>
 
+  <p class="counter muted">{{ contacts().length }} contacto{{ contacts().length !== 1 ? 's' : '' }} cargado{{ contacts().length !== 1 ? 's' : '' }}</p>
+
   <p-table [value]="contacts()" dataKey="id" [scrollable]="true" scrollHeight="20rem" class="contacts-table">
     <ng-template pTemplate="header">
       <tr><th>Tipo</th><th>Valor</th><th style="width: 4rem"></th></tr>
@@ -36,7 +38,7 @@
   </p-table>
 
   <footer class="step-footer">
-    <p-button label="Volver" severity="secondary" (click)="back.emit()" />
-    <p-button label="Siguiente" (click)="next.emit()" />
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" (click)="back.emit()" />
+    <p-button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" (click)="next.emit()" />
   </footer>
 </div>
