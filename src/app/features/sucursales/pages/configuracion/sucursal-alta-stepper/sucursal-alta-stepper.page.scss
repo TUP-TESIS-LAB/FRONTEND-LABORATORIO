@@ -1,19 +1,25 @@
 .alta-page {
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   max-width: 64rem;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .page-header {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  flex: 0 0 auto;
 }
 
 .page-header h1 {
   margin: 0;
   flex: 1;
+  font-size: 1.5rem;
 }
 
 .back-btn {
@@ -37,28 +43,12 @@
 .alta-stepper {
   background: var(--surface-card);
   border-radius: 8px;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .step-content {
-  padding: 1.5rem 0;
-  min-height: 20rem;
-}
-
-.step-placeholder {
-  text-align: center;
-  padding: 2rem;
-  border: 1px dashed var(--surface-border);
-  border-radius: 8px;
-}
-
-.step-placeholder h2 {
-  margin: 0 0 0.5rem;
-}
-
-.step-nav {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
+  padding: 1rem 0 0;
 }
