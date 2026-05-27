@@ -145,26 +145,35 @@
     font-weight: 600;
   }
 
-  /* Linea entre steps: usar ::after en cada .p-step (excepto el ultimo).
-     Position absolute para colocar la linea afuera del propio step,
-     a la altura del centro del circulo, con gap de 0.5rem a cada lado. */
-  .p-step {
+  /* Linea entre steps. Cada .p-stepitem ocupa 1fr (uniforme). El circulo
+     esta centrado horizontalmente. La linea va del borde derecho del
+     circulo actual al borde izquierdo del siguiente circulo, con gap
+     de 0.5rem a cada lado.
+     Posicion del centro del circulo actual: 50% del stepitem.
+     Posicion del centro del circulo siguiente: 150% del stepitem.
+     Borde derecho del circulo + gap: 50% + 1rem + 0.5rem = 50% + 1.5rem
+     Borde izquierdo siguiente - gap: 150% - 1rem - 0.5rem = 150% - 1.5rem
+     left = 50% + 1.5rem
+     width = (150% - 1.5rem) - (50% + 1.5rem) = 100% - 3rem */
+  .p-stepitem {
     position: relative;
   }
 
-  .p-stepitem:not(:last-child) .p-step::after {
+  .p-stepitem:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 1rem; /* centro vertical del circulo (alto 2rem / 2) */
-    left: calc(100% + 0.5rem); /* despues del step + gap */
-    /* Width calculado para llegar al siguiente circulo con gap del otro lado.
-       El stepitem siguiente tiene padding/center con su propio circulo a 0.5rem
-       del borde izquierdo. */
-    width: 100%;
+    top: calc(0.5rem + 1rem - 1px); /* padding-top steplist + media altura circulo */
+    left: calc(50% + 1.5rem);
+    width: calc(100% - 3rem);
     height: 2px;
     background: var(--surface-200, #e5e7eb);
-    transform: translateY(-1px);
     pointer-events: none;
+    z-index: 0;
+  }
+
+  .p-step {
+    position: relative;
+    z-index: 1;
   }
 
   /* Esconder el separator nativo de PrimeNG. */
