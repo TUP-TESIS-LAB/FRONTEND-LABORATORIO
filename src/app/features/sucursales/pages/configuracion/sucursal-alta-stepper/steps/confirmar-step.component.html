@@ -2,7 +2,12 @@
   <h2>Confirmar</h2>
   <p class="muted">Revisá la configuración antes de finalizar.</p>
 
-  @if (current(); as branch) {
+  @if (loadingDetail()) {
+    <div class="loading-state">
+      <p-progressSpinner strokeWidth="4" animationDuration=".8s" />
+      <p class="muted">Cargando resumen...</p>
+    </div>
+  } @else if (current(); as branch) {
     <div class="summary">
       <p-card header="Datos básicos">
         <dl class="data-list">
@@ -16,14 +21,18 @@
         </dl>
       </p-card>
 
-      <p-card header="Horarios">
+      <p-card header="Horarios ({{ schedules().length }})">
         @if (schedules().length === 0) {
-          <p class="empty">Sin horarios cargados.</p>
+          <div class="empty-section">
+            <p class="empty">Sin horarios cargados.</p>
+            <p-button label="Ir a Horarios" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(2)" />
+          </div>
         } @else {
           <ul class="list">
             @for (s of schedules(); track s.id) {
               <li>
-                <strong>{{ dayLabel(s.dayFrom) }} – {{ dayLabel(s.dayTo) }}</strong>
+                <strong>{{ dayLabel(s.dayFrom) }}</strong>
+                @if (s.dayFrom !== s.dayTo) { – <strong>{{ dayLabel(s.dayTo) }}</strong> }
                 · {{ s.fromTime }} – {{ s.toTime }}
                 · <span class="muted">{{ scheduleTypeLabel(s.scheduleType) }}</span>
               </li>
@@ -32,9 +41,12 @@
         }
       </p-card>
 
-      <p-card header="Contactos">
+      <p-card header="Contactos ({{ contacts().length }})">
         @if (contacts().length === 0) {
-          <p class="empty">Sin contactos cargados.</p>
+          <div class="empty-section">
+            <p class="empty">Sin contactos cargados.</p>
+            <p-button label="Ir a Contactos" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(3)" />
+          </div>
         } @else {
           <ul class="list">
             @for (c of contacts(); track c.id) {
@@ -44,13 +56,16 @@
         }
       </p-card>
 
-      <p-card header="Workspaces">
+      <p-card header="Workspaces ({{ workspaces().length }})">
         @if (workspaces().length === 0) {
-          <p class="empty">Sin workspaces cargados.</p>
+          <div class="empty-section">
+            <p class="empty">Sin workspaces cargados.</p>
+            <p-button label="Ir a Workspaces" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(4)" />
+          </div>
         } @else {
           <ul class="list">
             @for (w of workspaces(); track w.id) {
-              <li>{{ areaName(w.areaId) }} — Sección #{{ w.sectionId }}</li>
+              <li>{{ areaName(w.areaId) }} — {{ sectionRef(w.sectionId) }}</li>
             }
           </ul>
         }
@@ -58,17 +73,18 @@
 
       <p-card header="Tótem">
         <p>
-          <i [class]="(totemConfig()?.enabled) ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+          <i [class]="(totemConfig()?.enabled) ? 'pi pi-check-circle text-green' : 'pi pi-times-circle text-muted'"></i>
           {{ (totemConfig()?.enabled) ? 'Tótem habilitado' : 'Tótem deshabilitado' }}
         </p>
+        <p-button label="Ir a Tótem" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(5)" />
       </p-card>
     </div>
   } @else {
-    <p class="muted">Cargando resumen...</p>
+    <p class="muted">No se pudo cargar el resumen. Intentá volver y entrar de nuevo.</p>
   }
 
   <footer class="step-footer">
-    <p-button label="Volver" severity="secondary" (click)="back.emit()" />
-    <p-button label="Finalizar" icon="pi pi-check" (click)="finish.emit()" />
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" (click)="back.emit()" />
+    <p-button label="Finalizar" icon="pi pi-check" (click)="finish.emit()" [disabled]="loadingDetail()" />
   </footer>
 </div>

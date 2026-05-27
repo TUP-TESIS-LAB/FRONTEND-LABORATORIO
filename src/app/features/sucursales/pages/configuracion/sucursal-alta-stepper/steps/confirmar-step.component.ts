@@ -3,10 +3,11 @@ import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 import {
   selectCurrentSucursal, selectSchedules, selectContacts, selectWorkspaces, selectTotemConfig,
-  selectAreas,
+  selectAreas, selectLoadingDetail,
 } from '../../../../store/sucursal.selectors';
 import { loadDetail } from '../../../../store/sucursal.actions';
 import { DayOfWeek, ScheduleType } from '../../../../models/branch-schedule.model';
@@ -30,7 +31,7 @@ const CONTACT_LABELS: Record<ContactType, string> = {
   selector: 'app-confirmar-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, CardModule, DividerModule],
+  imports: [ButtonModule, CardModule, DividerModule, ProgressSpinnerModule],
   templateUrl: './confirmar-step.component.html',
   styleUrl: './confirmar-step.component.scss',
 })
@@ -38,9 +39,11 @@ export class ConfirmarStepComponent implements OnInit {
   @Input({ required: true }) branchId!: number;
   @Output() finish = new EventEmitter<void>();
   @Output() back = new EventEmitter<void>();
+  @Output() goToStep = new EventEmitter<number>();
 
   private store = inject(Store);
 
+  protected readonly loadingDetail = this.store.selectSignal(selectLoadingDetail);
   protected readonly current = this.store.selectSignal(selectCurrentSucursal);
   protected readonly schedules = this.store.selectSignal(selectSchedules);
   protected readonly contacts = this.store.selectSignal(selectContacts);
@@ -59,5 +62,9 @@ export class ConfirmarStepComponent implements OnInit {
 
   areaName(areaId: number): string {
     return this.areas().find(a => a.id === areaId)?.name ?? `Área #${areaId}`;
+  }
+
+  sectionRef(sectionId: number): string {
+    return `Sección #${sectionId}`;
   }
 }
