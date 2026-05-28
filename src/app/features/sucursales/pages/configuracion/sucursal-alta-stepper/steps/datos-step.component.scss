@@ -5,7 +5,7 @@
 }
 
 .muted {
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
   margin: 0 0 1rem;
   font-size: 0.875rem;
 }
@@ -36,7 +36,7 @@
 .form-field label {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--p-text-color);
 }
 
 .form-field input,
@@ -46,7 +46,7 @@
 }
 
 .form-error {
-  color: var(--red-500);
+  color: var(--p-red-500);
   font-size: 0.75rem;
 }
 
@@ -60,7 +60,7 @@
   margin: 0;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--p-text-color);
   text-transform: none;
 }
 

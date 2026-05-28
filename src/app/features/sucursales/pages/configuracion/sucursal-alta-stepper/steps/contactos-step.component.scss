@@ -1,5 +1,5 @@
 .contactos-step h2 { margin: 0 0 0.5rem; }
-.muted { color: var(--text-color-secondary); margin-bottom: 1rem; }
+.muted { color: var(--p-text-muted-color); margin-bottom: 1rem; }
 
 .inline-form {
   display: grid;
@@ -13,7 +13,7 @@
 .form-field label { font-size: 0.75rem; font-weight: 500; }
 .form-field.grow { flex: 1; }
 
-.form-error { color: var(--red-500); font-size: 0.75rem; }
+.form-error { color: var(--p-red-500); font-size: 0.75rem; }
 
 .form-action { display: flex; align-items: end; }
 

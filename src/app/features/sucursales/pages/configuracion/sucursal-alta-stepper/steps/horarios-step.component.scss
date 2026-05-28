@@ -1,5 +1,5 @@
 .horarios-step h2 { margin: 0 0 0.5rem; }
-.muted { color: var(--text-color-secondary); margin-bottom: 0.5rem; }
+.muted { color: var(--p-text-muted-color); margin-bottom: 0.5rem; }
 .counter { font-size: 0.875rem; margin: 0 0 0.75rem; }
 
 .inline-form {
@@ -26,7 +26,7 @@
 .form-field { display: flex; flex-direction: column; gap: 0.25rem; }
 .form-field label { font-size: 0.75rem; font-weight: 500; }
 .form-action { display: flex; align-items: end; }
-.form-error { color: var(--red-500); font-size: 0.75rem; }
+.form-error { color: var(--p-red-500); font-size: 0.75rem; }
 
 /* Day chips */
 .day-chips {
