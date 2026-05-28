@@ -1,6 +1,6 @@
 .panel {
   padding: 1rem;
-  background: var(--surface-card);
+  background: #ffffff;
   border-radius: 8px;
 }
 
@@ -14,7 +14,7 @@
 .panel-header h2 { margin: 0; }
 
 .row-selectable { cursor: pointer; }
-.row-selectable:hover { background: var(--surface-hover); }
+.row-selectable:hover { background: #f3f4f6; }
 
 .actions {
   display: flex;
@@ -40,7 +40,7 @@
 }
 
 .form-error {
-  color: var(--red-500);
+  color: var(--p-red-500);
   font-size: 0.75rem;
 }
 
@@ -52,7 +52,7 @@
 }
 
 .muted {
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
   text-align: center;
   padding: 1rem;
 }

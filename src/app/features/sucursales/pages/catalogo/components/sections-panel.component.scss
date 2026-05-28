@@ -1,6 +1,6 @@
 .panel {
   padding: 1rem;
-  background: var(--surface-card);
+  background: #ffffff;
   border-radius: 8px;
 }
 
@@ -24,7 +24,7 @@
   justify-content: center;
   gap: 1rem;
   padding: 3rem 1rem;
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
 }
 
 .empty-state i {
@@ -55,7 +55,7 @@
 }
 
 .form-error {
-  color: var(--red-500);
+  color: var(--p-red-500);
   font-size: 0.75rem;
 }
 
@@ -67,5 +67,5 @@
 }
 
 .muted {
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
 }
