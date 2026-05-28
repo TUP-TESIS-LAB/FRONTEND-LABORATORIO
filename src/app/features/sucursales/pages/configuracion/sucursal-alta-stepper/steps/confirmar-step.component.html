@@ -1,87 +1,16 @@
 <div class="confirmar-step">
   <h2>Confirmar</h2>
-  <p class="ui-text-muted">Revisá la configuración antes de finalizar.</p>
 
-  @if (current(); as branch) {
-    <div class="summary">
-      <p-card header="Datos básicos">
-        <dl class="data-list">
-          <dt>Nombre</dt><dd>{{ branch.code }}</dd>
-          <dt>Descripción</dt><dd>{{ branch.description }}</dd>
-          <dt>Estado</dt><dd>{{ branch.status === 'ACTIVE' ? 'Activa' : 'Inactiva' }}</dd>
-          @if (branch.address?.street) {
-            <dt>Dirección</dt>
-            <dd>{{ branch.address?.street }} {{ branch.address?.streetNumber }}</dd>
-          }
-        </dl>
-      </p-card>
-
-      <p-card header="Horarios ({{ schedules().length }})">
-        @if (schedules().length === 0) {
-          <div class="empty-section">
-            <p class="empty">Sin horarios cargados.</p>
-            <p-button label="Ir a Horarios" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(2)" />
-          </div>
-        } @else {
-          <ul class="list">
-            @for (s of schedules(); track s.id) {
-              <li>
-                <strong>{{ dayLabel(s.dayFrom) }}</strong>
-                @if (s.dayFrom !== s.dayTo) { – <strong>{{ dayLabel(s.dayTo) }}</strong> }
-                · {{ s.fromTime }} – {{ s.toTime }}
-                · <span class="ui-text-muted">{{ scheduleTypeLabel(s.scheduleType) }}</span>
-              </li>
-            }
-          </ul>
-        }
-      </p-card>
-
-      <p-card header="Contactos ({{ contacts().length }})">
-        @if (contacts().length === 0) {
-          <div class="empty-section">
-            <p class="empty">Sin contactos cargados.</p>
-            <p-button label="Ir a Contactos" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(3)" />
-          </div>
-        } @else {
-          <ul class="list">
-            @for (c of contacts(); track c.id) {
-              <li><strong>{{ contactLabel(c.contactType) }}:</strong> {{ c.value }}</li>
-            }
-          </ul>
-        }
-      </p-card>
-
-      <p-card header="Workspaces ({{ workspaces().length }})">
-        @if (workspaces().length === 0) {
-          <div class="empty-section">
-            <p class="empty">Sin workspaces cargados.</p>
-            <p-button label="Ir a Workspaces" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(4)" />
-          </div>
-        } @else {
-          <ul class="list">
-            @for (w of workspaces(); track w.id) {
-              <li>{{ areaName(w.areaId) }} — {{ sectionRef(w.sectionId) }}</li>
-            }
-          </ul>
-        }
-      </p-card>
-
-      <p-card header="Tótem">
-        <div class="totem-summary">
-          <span class="totem-status">
-            <i [class]="(totemConfig()?.enabled) ? 'pi pi-check-circle text-green' : 'pi pi-times-circle text-muted'"></i>
-            {{ (totemConfig()?.enabled) ? 'Tótem habilitado' : 'Tótem deshabilitado' }}
-          </span>
-          <p-button label="Ir a Tótem" icon="pi pi-arrow-left" [text]="true" severity="secondary" size="small" (click)="goToStep.emit(5)" />
-        </div>
-      </p-card>
-    </div>
-  } @else {
-    <p class="ui-text-muted">No se pudo cargar el resumen. Intentá volver y entrar de nuevo.</p>
-  }
+  <div class="confirmar-content-center">
+    <i class="pi pi-check-circle"></i>
+    <p class="confirmar-message">
+      Verificá que los datos cargados en los pasos anteriores sean correctos
+      antes de finalizar. Si necesitás corregir algo, volvé al paso correspondiente.
+    </p>
+  </div>
 
   <footer class="step-footer">
     <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" (click)="back.emit()" />
-    <p-button label="Finalizar" icon="pi pi-check" (click)="finish.emit()" />
+    <p-button label="Finalizar" icon="pi pi-check" iconPos="right" (click)="finish.emit()" />
   </footer>
 </div>

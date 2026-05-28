@@ -73,7 +73,7 @@
       <p-step-panel [value]="6">
         <ng-template #content>
           <div class="step-content">
-            <app-confirmar-step [branchId]="branchId()!" (finish)="finish()" (back)="goToStep(5)" (goToStep)="goToStep($event)" />
+            <app-confirmar-step (finish)="finish()" (back)="goToStep(5)" />
           </div>
         </ng-template>
       </p-step-panel>
