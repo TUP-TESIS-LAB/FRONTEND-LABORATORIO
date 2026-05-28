@@ -29,4 +29,18 @@ export class StepConfirmarComponent {
   @Input() saving = false;
   @Output() confirm = new EventEmitter<void>();
   @Output() back = new EventEmitter<void>();
+
+  protected readonly DAY_LABELS: Record<number, string> = {
+    1: 'Lun',
+    2: 'Mar',
+    3: 'Mié',
+    4: 'Jue',
+    5: 'Vie',
+    6: 'Sáb',
+    7: 'Dom',
+  };
+
+  protected formatDays(days: number[]): string {
+    return days.map(d => this.DAY_LABELS[d] ?? '?').join(', ');
+  }
 }

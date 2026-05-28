@@ -16,7 +16,7 @@
 
     <div class="card">
       <h3>Período</h3>
-      <p>Días: {{ summary.periodo.daysOfWeek.join(', ') }}</p>
+      <p>Días: {{ formatDays(summary.periodo.daysOfWeek) }}</p>
       <p>
         {{ summary.periodo.validFrom | date:'dd/MM/yyyy' }} –
         {{ summary.periodo.validTo | date:'dd/MM/yyyy' }}
