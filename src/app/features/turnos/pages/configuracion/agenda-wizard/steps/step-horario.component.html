@@ -30,6 +30,10 @@
       </div>
     </div>
 
+    @if (form.hasError('timeRangeInvalid') && (form.controls.fromTime.touched || form.controls.toTime.touched)) {
+      <small class="field-error">La hora "Desde" debe ser anterior a "Hasta".</small>
+    }
+
     <div class="form-row">
       <div class="form-field">
         <label for="slotDuration">Duración de cada turno (min) *</label>
