@@ -19,13 +19,13 @@
 }
 
 .muted {
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
   margin: 0;
   font-size: 0.875rem;
 }
 
 .sucursales-table ::ng-deep .p-datatable {
-  background: var(--surface-card);
+  background: #ffffff;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -36,7 +36,7 @@
 }
 
 .row-selectable:hover {
-  background: var(--surface-hover);
+  background: #f3f4f6;
 }
 
 .text-center {
@@ -59,7 +59,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
 }
 
 .empty-state i {
