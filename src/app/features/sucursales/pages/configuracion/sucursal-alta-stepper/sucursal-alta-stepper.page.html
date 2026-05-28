@@ -1,11 +1,7 @@
 <div class="alta-page">
-  <header class="page-header">
-    <button class="back-btn" (click)="cancel()" type="button">
-      <i class="pi pi-arrow-left"></i>
-    </button>
-    <h1>Nueva sucursal</h1>
-    <span class="header-spacer"></span>
-  </header>
+  <button class="back-btn" (click)="cancel()" type="button" aria-label="Volver">
+    <i class="pi pi-arrow-left"></i>
+  </button>
 
   <!-- PrimeNG 21: p-step-list (headers) + p-step-panels (content) son hermanos dentro de p-stepper. -->
   <p-stepper [(value)]="currentStep" [linear]="false" class="alta-stepper">
