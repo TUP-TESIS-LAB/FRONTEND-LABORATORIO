@@ -128,10 +128,30 @@ export class AgendaWizardPage implements OnInit {
           : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       });
 
-      // branchName will be set when step-sucursal emits; in edit mode
-      // show a placeholder until user re-visits step 1.
+      // Placeholder mientras carga el nombre real (evita flash de "")
       this.branchName.set(`Sucursal #${agenda.branchId}`);
+      this.loadBranchName(agenda.branchId);
+    } else {
+      // Pre-seleccionar branch desde queryParams (set por "Agregar" en accordion)
+      const queryBranchId = this.route.snapshot.queryParamMap.get('branchId');
+      if (queryBranchId) {
+        const branchId = Number(queryBranchId);
+        if (!Number.isNaN(branchId)) {
+          this.branchId.set(branchId);
+          this.loadBranchName(branchId);
+        }
+      }
     }
+  }
+
+  private loadBranchName(branchId: number): void {
+    this.sucursalesService
+      .listBranchesForSelector()
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => {
+        const branch = list.find(b => b.id === branchId);
+        if (branch) this.branchName.set(branch.name);
+      });
   }
 
   onSucursalNext(payload: { branchId: number }): void {
