@@ -64,11 +64,11 @@
 }
 
 /* === PrimeNG 21 stepper visual overrides ===
-   PrimeNG genera p-stepitem (wrapper) > p-step (header con num+title) +
-   p-stepper-separator (linea entre items). Reseteamos su layout y usamos
-   GRID con N columnas iguales — cada stepitem ocupa una col. Las lineas
-   las dibujamos con pseudo-elements en cada stepitem (excepto primero)
-   para garantizar alineacion exacta con el centro del circulo. */
+   En este page usamos el patron simplificado: <p-step-list> contiene
+   <p-step> directos (sin <p-step-item> wrapper). Por eso el wrapper real
+   de cada paso es <p-step class="p-step">, NO <p-step-item class="p-stepitem">.
+   El grid se aplica al .p-steplist y cada .p-step es un item del grid.
+   Las lineas entre pasos se dibujan con .p-step::after. */
 .alta-stepper ::ng-deep {
   .p-steplist {
     display: grid;
@@ -76,14 +76,6 @@
     padding: 0.5rem 0 1rem;
     list-style: none;
     margin: 0;
-  }
-
-  .p-stepitem {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 0;
-    position: relative;
   }
 
   .p-step {
@@ -98,6 +90,7 @@
     color: var(--text-color-secondary);
     font: inherit;
     position: relative;
+    min-width: 0;
     z-index: 1;
   }
 
@@ -150,13 +143,13 @@
     font-weight: 600;
   }
 
-  /* Linea entre pasos. Cada .p-stepitem (excepto el ultimo) dibuja un segmento
-     que va de su circulo al circulo siguiente, dejando un gap visible a cada
-     lado. La posicion es relativa al .p-stepitem (position:relative).
-       top   = 1rem (centro del circulo desde el top del stepitem) - 1px (media linea)
-       left  = 50% (centro del stepitem = centro del circulo actual) + 1rem (radio) + 0.25rem (gap)
-       width = (150% - 1.25rem) - (50% + 1.25rem) = 100% - 2.5rem */
-  .p-stepitem:not(:last-child)::after {
+  /* Linea entre pasos. Cada .p-step (excepto el ultimo) dibuja un segmento
+     a su derecha que va al circulo del siguiente paso. Posicion relativa al
+     .p-step (position:relative, ya seteado arriba).
+       top   = 1rem - 1px (centro del circulo desde el top del p-step)
+       left  = 50% + 1.25rem (centro circulo + radio + gap 0.25rem)
+       width = 100% - 2.5rem (analogo del otro lado) */
+  .p-step:not(:last-child)::after {
     content: '';
     position: absolute;
     top: calc(1rem - 1px);
@@ -168,13 +161,8 @@
     z-index: 0;
   }
 
-  .p-step {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Esconder el separator nativo de PrimeNG (queda dentro del button del step,
-     no como sibling del stepitem; dibujarlo manualmente es mas controlable). */
+  /* Esconder el separator nativo de PrimeNG (queda dentro del template del
+     <p-step>, abajo del titulo; dibujarlo manualmente es mas controlable). */
   .p-stepper-separator {
     display: none;
   }
