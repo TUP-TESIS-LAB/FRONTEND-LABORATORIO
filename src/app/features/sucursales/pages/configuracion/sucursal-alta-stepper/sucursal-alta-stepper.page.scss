@@ -76,25 +76,6 @@
     padding: 0.5rem 0 1rem;
     list-style: none;
     margin: 0;
-    position: relative;
-  }
-
-  /* Linea continua atras de todos los circulos. Los circulos (background propio
-     + z-index:1) tapan las puntas, dejando solo los tramos entre pasos visibles.
-     left/right = 100%/12 = centro del primer/ultimo circulo (cada columna mide
-     1/6, su centro esta a 1/12 del steplist).
-     top = padding-top steplist (0.5rem) + media altura circulo (1rem) - media
-     altura linea (1px) = 1.5rem - 1px. */
-  .p-steplist::before {
-    content: '';
-    position: absolute;
-    top: calc(1.5rem - 1px);
-    left: calc(100% / 12);
-    right: calc(100% / 12);
-    height: 2px;
-    background: #d1d5db;
-    pointer-events: none;
-    z-index: 0;
   }
 
   .p-stepitem {
@@ -169,13 +150,31 @@
     font-weight: 600;
   }
 
+  /* Linea entre pasos. Cada .p-stepitem (excepto el ultimo) dibuja un segmento
+     que va de su circulo al circulo siguiente, dejando un gap visible a cada
+     lado. La posicion es relativa al .p-stepitem (position:relative).
+       top   = 1rem (centro del circulo desde el top del stepitem) - 1px (media linea)
+       left  = 50% (centro del stepitem = centro del circulo actual) + 1rem (radio) + 0.25rem (gap)
+       width = (150% - 1.25rem) - (50% + 1.25rem) = 100% - 2.5rem */
+  .p-stepitem:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: calc(1rem - 1px);
+    left: calc(50% + 1.25rem);
+    width: calc(100% - 2.5rem);
+    height: 2px;
+    background: #9ca3af;
+    pointer-events: none;
+    z-index: 0;
+  }
 
   .p-step {
     position: relative;
     z-index: 1;
   }
 
-  /* Esconder el separator nativo de PrimeNG. */
+  /* Esconder el separator nativo de PrimeNG (queda dentro del button del step,
+     no como sibling del stepitem; dibujarlo manualmente es mas controlable). */
   .p-stepper-separator {
     display: none;
   }
