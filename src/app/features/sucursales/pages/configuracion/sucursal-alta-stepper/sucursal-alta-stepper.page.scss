@@ -167,32 +167,9 @@
     display: none;
   }
 
-  /* Cadena de wrappers de panels (clases sin guion, no '.p-step-panels' con guion).
-     Cada nivel necesita flex:1 + min-height:0 para que el scroll termine en
-     .step-content (interno al template del panel) y no escale a la pagina. */
-  .p-steppanels {
+  .p-step-panels {
     flex: 1 1 auto;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .p-steppanel {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .p-steppanel-content-wrapper,
-  .p-steppanel-content {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
   }
 }
 
