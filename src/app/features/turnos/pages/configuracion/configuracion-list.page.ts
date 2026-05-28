@@ -1,11 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -19,6 +21,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { FormsModule } from '@angular/forms';
 import { UserSessionService } from '@features/profile/services/user-session.service';
+import { SucursalesService } from '../../../sucursales/services/sucursales.service';
 import { loadAgendas, deleteAgenda } from '../../store/agendas/agendas.actions';
 import {
   selectAgendasPending,
@@ -52,6 +55,10 @@ export class ConfiguracionListPage implements OnInit {
   protected router = inject(Router);
   private confirm = inject(ConfirmationService);
   private session = inject(UserSessionService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly sucursalesService = inject(SucursalesService);
+
+  private readonly branchesFromService = signal<{ id: number; name: string }[]>([]);
 
   protected pending = this.store.selectSignal(selectAgendasPending);
   protected error = this.store.selectSignal(selectAgendasError);
@@ -67,8 +74,10 @@ export class ConfiguracionListPage implements OnInit {
   get searchTerm(): string { return this._searchTerm(); }
   set searchTerm(v: string) { this._searchTerm.set(v); }
 
-  // Pendiente: cuando exista store de sucursales accesibles, reemplazar esta derivación.
   protected branches = computed(() => {
+    const fromService = this.branchesFromService();
+    if (fromService.length > 0) return fromService;
+    // Fallback mientras llega la respuesta del service: derivar del map de agendas
     const map = this.configsByBranch();
     return Object.keys(map).map(id => ({ id: Number(id), name: `Sucursal ${id}` }));
   });
@@ -84,13 +93,20 @@ export class ConfiguracionListPage implements OnInit {
   });
 
   ngOnInit(): void {
-    const branch = this.session.currentUser()?.branch;
-    if (branch != null) {
-      this.store.dispatch(loadAgendas({ branchId: branch }));
-      this._filterBranchId.set(branch);
-    } else {
-      // Pendiente: iterar sobre branches visibles del usuario cuando exista el store de sucursales.
-      this.store.dispatch(loadAgendas({ branchId: 1 }));
+    // Cargar branches accesibles desde el service de sucursales
+    this.sucursalesService
+      .listBranchesForSelector()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => {
+        this.branchesFromService.set(list);
+        // Dispatch loadAgendas por cada branch accesible (UX-4)
+        list.forEach(b => this.store.dispatch(loadAgendas({ branchId: b.id })));
+      });
+
+    // Default filter a la branch del usuario actual si la conocemos
+    const userBranch = this.session.currentUser()?.branch;
+    if (userBranch != null) {
+      this._filterBranchId.set(userBranch);
     }
   }
 
