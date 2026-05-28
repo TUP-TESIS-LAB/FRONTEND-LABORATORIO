@@ -3,7 +3,7 @@
 }
 
 .muted {
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
   margin-bottom: 1.5rem;
   max-width: 40rem;
 }
@@ -13,8 +13,8 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: var(--surface-card);
-  border: 1px solid var(--surface-border);
+  background: #ffffff;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
 }
 
