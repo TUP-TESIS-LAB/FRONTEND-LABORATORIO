@@ -63,8 +63,8 @@
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  border: 1px solid var(--surface-border);
-  background: var(--surface-card);
+  border: 1px solid #d1d5db;
+  background: #ffffff;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -74,13 +74,13 @@
   justify-content: center;
 
   &:hover {
-    background: var(--surface-hover);
+    background: #f3f4f6;
   }
 
   &.selected {
-    background: var(--primary-color);
-    color: var(--primary-color-text);
-    border-color: var(--primary-color);
+    background: var(--brand-primary);
+    color: var(--p-primary-contrast-color);
+    border-color: var(--brand-primary);
   }
 }
 
