@@ -28,6 +28,16 @@ function minOneDay(control: AbstractControl): ValidationErrors | null {
   return value && value.length > 0 ? null : { required: true };
 }
 
+/** Cross-field: validFrom debe ser anterior a validTo. Exportado para test. */
+export function dateRangeValid(control: AbstractControl): ValidationErrors | null {
+  const from = control.get('validFrom')?.value as Date | null;
+  const to = control.get('validTo')?.value as Date | null;
+  if (!from || !to) return null;
+  const fromTime = from instanceof Date ? from.getTime() : new Date(from).getTime();
+  const toTime = to instanceof Date ? to.getTime() : new Date(to).getTime();
+  return fromTime < toTime ? null : { dateRangeInvalid: true };
+}
+
 @Component({
   selector: 'app-step-periodo',
   standalone: true,
@@ -53,11 +63,14 @@ export class StepPeriodoComponent implements OnInit {
 
   private readonly fb = inject(FormBuilder);
 
-  protected readonly form = this.fb.nonNullable.group({
-    daysOfWeek: [[1, 2, 3, 4, 5] as number[], [Validators.required, minOneDay]],
-    validFrom: [new Date(), Validators.required],
-    validTo: [new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), Validators.required],
-  });
+  protected readonly form = this.fb.nonNullable.group(
+    {
+      daysOfWeek: [[1, 2, 3, 4, 5] as number[], [Validators.required, minOneDay]],
+      validFrom: [new Date(), Validators.required],
+      validTo: [new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), Validators.required],
+    },
+    { validators: [dateRangeValid] },
+  );
 
   ngOnInit(): void {
     if (this.initial) {

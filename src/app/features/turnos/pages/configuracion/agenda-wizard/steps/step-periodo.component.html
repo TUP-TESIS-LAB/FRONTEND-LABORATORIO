@@ -47,6 +47,10 @@
       </div>
     </div>
 
+    @if (form.hasError('dateRangeInvalid') && (form.controls.validFrom.touched || form.controls.validTo.touched)) {
+      <small class="field-error">La fecha "Válido desde" debe ser anterior a "Válido hasta".</small>
+    }
+
     <footer class="step-footer">
       <p-button label="Volver" severity="secondary" type="button" (onClick)="back.emit()" />
       <p-button label="Siguiente" type="submit" [disabled]="form.invalid" />
