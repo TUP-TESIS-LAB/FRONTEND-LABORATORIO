@@ -150,24 +150,22 @@
     font-weight: 600;
   }
 
-  /* Linea entre steps. Cada .p-stepitem ocupa 1fr (uniforme). El circulo
-     esta centrado horizontalmente. La linea va del borde derecho del
-     circulo actual al borde izquierdo del siguiente circulo, con gap
-     de 0.5rem a cada lado.
-     Posicion del centro del circulo actual: 50% del stepitem.
-     Posicion del centro del circulo siguiente: 150% del stepitem.
-     Borde derecho del circulo + gap: 50% + 1rem + 0.5rem = 50% + 1.5rem
-     Borde izquierdo siguiente - gap: 150% - 1rem - 0.5rem = 150% - 1.5rem
-     left = 50% + 1.5rem
-     width = (150% - 1.5rem) - (50% + 1.5rem) = 100% - 3rem */
+  /* Linea entre steps. El ::after se posiciona relativo al .p-stepitem
+     (position:relative), no al .p-steplist. El circulo (2rem alto, primer
+     child del stepitem) empieza a 0 del top del stepitem, asi que su centro
+     esta a 1rem del top. Una linea de 2px centrada va a (1rem - 1px).
+     Horizontalmente la linea va de borde derecho del circulo actual + gap
+     al borde izquierdo del siguiente circulo - gap:
+       left  = 50% (centro circulo) + 1rem (radio) + 0.5rem (gap) = 50% + 1.5rem
+       width = (150% - 1.5rem) - (50% + 1.5rem) = 100% - 3rem */
   .p-stepitem:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: calc(0.5rem + 1rem - 1px); /* padding-top steplist + media altura circulo */
+    top: calc(1rem - 1px);
     left: calc(50% + 1.5rem);
     width: calc(100% - 3rem);
     height: 2px;
-    background: var(--surface-200, #e5e7eb);
+    background: #d1d5db;
     pointer-events: none;
     z-index: 0;
   }
