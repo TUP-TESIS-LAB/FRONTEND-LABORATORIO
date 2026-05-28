@@ -31,8 +31,8 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
       min-height: 5rem;
       font-size: 2.5rem;
       font-weight: 700;
-      background: var(--surface-card);
-      border: 2px solid var(--surface-border);
+      background: #ffffff;
+      border: 2px solid #d1d5db;
       border-radius: 12px;
       cursor: pointer;
       transition: transform 0.05s, background 0.15s;
@@ -40,23 +40,23 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 
     .num-btn:active, .action-btn:active {
       transform: scale(0.97);
-      background: var(--surface-hover);
+      background: #f3f4f6;
     }
 
     .action-btn.submit {
-      background: var(--primary-color);
-      color: var(--primary-color-text);
-      border-color: var(--primary-color);
+      background: var(--brand-primary);
+      color: var(--p-primary-contrast-color);
+      border-color: var(--brand-primary);
     }
 
     .action-btn.submit:disabled {
-      background: var(--surface-200);
-      color: var(--surface-400);
+      background: #e5e7eb;
+      color: #9ca3af;
       cursor: not-allowed;
     }
 
     .action-btn.clear {
-      background: var(--surface-200);
+      background: #e5e7eb;
     }
   `],
 })
