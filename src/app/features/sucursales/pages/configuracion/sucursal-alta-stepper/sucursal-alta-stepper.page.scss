@@ -4,9 +4,10 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  /* Usar dvh (dynamic viewport) para que respete topbar dinamico del shell.
-     overflow:hidden + flex children con flex:1 + overflow-y:auto interno. */
-  height: 100dvh;
+  /* height:100% (no 100dvh) — el shell content (.ui-admin-shell__content) ya
+     descuenta topbar y nos asigna su espacio via flex:1. Con 100dvh la pagina
+     se extendia mas alla del area visible y aparecia scroll vacio en el shell. */
+  height: 100%;
   overflow: hidden;
 }
 
