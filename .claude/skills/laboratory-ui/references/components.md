@@ -1049,14 +1049,22 @@ PrimeNG 21 renderiza el patrón simplificado así (clases reales aplicadas):
     </p-step>
     ...
   </p-step-list>
-  <p-step-panels class="p-steppanels">
-    <p-step-panel class="p-steppanel">...</p-step-panel>
+  <p-step-panels class="p-steppanels">              ← SIN GUION
+    <p-step-panel class="p-steppanel">              ← SIN GUION
+      <div class="p-steppanel-content-wrapper">     ← wrapper interno
+        <div class="p-steppanel-content">           ← envuelve el ng-template
+          ...contenido del step...
+        </div>
+      </div>
+    </p-step-panel>
     ...
   </p-step-panels>
 </p-stepper>
 ```
 
 **Gotcha crítico — el wrapper de cada paso es `.p-step`, NO `.p-stepitem`.** La clase `.p-stepitem` solo existe si usás el patrón completo con `<p-step-item>` wrapper, que no usamos. Todo selector apuntando a `.p-stepitem` en el patrón simplificado falla silenciosamente (no hay error, simplemente no matchea).
+
+**Gotcha 2 — inconsistencia con/sin guión.** Los selectores HTML llevan guión (`<p-step-panels>`, `<p-step-panel>`) pero las **clases CSS emitidas no** (`.p-steppanels`, `.p-steppanel`). Mismo patrón: `<p-step-list>` → `.p-steplist`. Si en SCSS escribís `.p-step-panels` (con guión), no matchea nada. Síntoma: el scroll que esperabas dentro del step queda atrapado en el stepper entero porque la cadena `flex: 1` se rompe en el panels container.
 
 ### Layout uniforme con CSS Grid
 
@@ -1190,9 +1198,33 @@ Reemplazar `repeat(6, ...)` por el número real de pasos.
     display: none;
   }
 
-  .p-step-panels {
+  /* Cadena de wrappers de panels — clases SIN GUION en CSS aunque los
+     selectores HTML lleven guion. Cada nivel necesita flex:1 + min-height:0
+     para que el scroll termine adentro del .step-content y no escale al
+     stepper entero. */
+  .p-steppanels {
     flex: 1 1 auto;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .p-steppanel {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .p-steppanel-content-wrapper,
+  .p-steppanel-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 }
 
@@ -1207,6 +1239,8 @@ Reemplazar `repeat(6, ...)` por el número real de pasos.
 - [ ] Imports del page: `StepperModule, TooltipModule` (sí o sí — el `pTooltip` en `<p-step>` lo necesita).
 - [ ] Cambiar `repeat(N, ...)` por la cantidad real de pasos en `.p-steplist`.
 - [ ] **No usar selectores con `.p-stepitem`** — no existen en este patrón.
+- [ ] **Clases sin guión: `.p-steppanels`, `.p-steppanel` (no `.p-step-panels` ni `.p-step-panel`).** Inconsistencia de PrimeNG 21 vs los selectores HTML. Si escribís el SCSS con guión, no aplica nada y el scroll queda atrapado en el stepper.
+- [ ] Si el step tiene scroll interno (resúmenes largos, tablas), agregar la **cadena flex completa** en panels/panel/content-wrapper/content (ver SCSS completo arriba). Sin esa cadena el `.step-content` no recibe altura definida.
 - [ ] **No usar vars `--primary-color`, `--surface-card`, `--surface-border`, `--text-color-secondary`** — undefined en PrimeNG 21. Ver `tokens.md` sección "Tokens legacy PrimeNG".
 - [ ] Cada step component (`<app-X-step>`) emite outputs `next`/`back` y opcionalmente `cancel`. El page los cablea a `goToStep()` / `cancel()`.
 - [ ] Step 1 emite `(completed)="onCompleted($event)"` con el id de la entidad creada; el page habilita los pasos 2..N cuando ese id está seteado.
