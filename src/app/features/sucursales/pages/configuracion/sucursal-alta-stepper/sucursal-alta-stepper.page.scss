@@ -76,6 +76,25 @@
     padding: 0.5rem 0 1rem;
     list-style: none;
     margin: 0;
+    position: relative;
+  }
+
+  /* Linea continua atras de todos los circulos. Los circulos (background propio
+     + z-index:1) tapan las puntas, dejando solo los tramos entre pasos visibles.
+     left/right = 100%/12 = centro del primer/ultimo circulo (cada columna mide
+     1/6, su centro esta a 1/12 del steplist).
+     top = padding-top steplist (0.5rem) + media altura circulo (1rem) - media
+     altura linea (1px) = 1.5rem - 1px. */
+  .p-steplist::before {
+    content: '';
+    position: absolute;
+    top: calc(1.5rem - 1px);
+    left: calc(100% / 12);
+    right: calc(100% / 12);
+    height: 2px;
+    background: #d1d5db;
+    pointer-events: none;
+    z-index: 0;
   }
 
   .p-stepitem {
@@ -150,25 +169,6 @@
     font-weight: 600;
   }
 
-  /* Linea entre steps. El ::after se posiciona relativo al .p-stepitem
-     (position:relative), no al .p-steplist. El circulo (2rem alto, primer
-     child del stepitem) empieza a 0 del top del stepitem, asi que su centro
-     esta a 1rem del top. Una linea de 2px centrada va a (1rem - 1px).
-     Horizontalmente la linea va de borde derecho del circulo actual + gap
-     al borde izquierdo del siguiente circulo - gap:
-       left  = 50% (centro circulo) + 1rem (radio) + 0.5rem (gap) = 50% + 1.5rem
-       width = (150% - 1.5rem) - (50% + 1.5rem) = 100% - 3rem */
-  .p-stepitem:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    top: calc(1rem - 1px);
-    left: calc(50% + 1.5rem);
-    width: calc(100% - 3rem);
-    height: 2px;
-    background: #d1d5db;
-    pointer-events: none;
-    z-index: 0;
-  }
 
   .p-step {
     position: relative;
