@@ -32,13 +32,13 @@
   border: none;
   cursor: pointer;
   font-size: 1.25rem;
-  color: var(--text-color);
+  color: var(--p-text-color);
   padding: 0.5rem;
   border-radius: 4px;
 }
 
 .back-btn:hover {
-  background: var(--surface-hover);
+  background: #f3f4f6;
 }
 
 .header-spacer {
@@ -79,7 +79,7 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    color: var(--text-color-secondary);
+    color: var(--p-text-muted-color);
     font: inherit;
     position: relative;
     min-width: 0;
@@ -102,22 +102,22 @@
     width: 2rem;
     height: 2rem;
     border-radius: 50%;
-    background: var(--surface-card, #fff);
-    color: var(--text-color-secondary);
+    background: #ffffff;
+    color: var(--p-text-muted-color);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-weight: 600;
     font-size: 0.875rem;
     flex: 0 0 auto;
-    border: 2px solid var(--surface-200, #e5e7eb);
+    border: 2px solid #e5e7eb;
     transition: all 0.2s;
   }
 
   .p-step[data-p-active='true'] .p-step-number {
-    background: var(--primary-color, #3b82f6);
-    color: var(--primary-color-text, #fff);
-    border-color: var(--primary-color, #3b82f6);
+    background: var(--brand-primary);
+    color: var(--p-primary-contrast-color);
+    border-color: var(--brand-primary);
   }
 
   .p-step-title {
@@ -131,7 +131,7 @@
   }
 
   .p-step[data-p-active='true'] .p-step-title {
-    color: var(--text-color);
+    color: var(--p-text-color);
     font-weight: 600;
   }
 
