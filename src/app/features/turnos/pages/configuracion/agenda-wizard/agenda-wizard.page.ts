@@ -11,7 +11,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { take } from 'rxjs/operators';
+import { race, Subject } from 'rxjs';
+import { take, takeUntil } from 'rxjs/operators';
 import { StepperModule } from 'primeng/stepper';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
@@ -71,6 +72,9 @@ export class AgendaWizardPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly messageService = inject(MessageService);
   private readonly sucursalesService = inject(SucursalesService);
+
+  /** Emite cuando un nuevo `confirm()` arranca, para cancelar el subscribe anterior. */
+  private readonly cancelInFlight = new Subject<void>();
 
   protected readonly currentStep = signal<number>(1);
   protected readonly saving = signal(false);
@@ -180,6 +184,9 @@ export class AgendaWizardPage implements OnInit {
 
   confirm(): void {
     if (!this.canShowConfirmar()) return;
+
+    // Cancelar cualquier subscription previa (si el user re-confirma tras un error)
+    this.cancelInFlight.next();
     this.saving.set(true);
 
     const h = this.horario()!;
@@ -190,79 +197,57 @@ export class AgendaWizardPage implements OnInit {
       .join(',');
 
     const editId = this.editingId();
+    const isEdit = editId != null;
 
-    if (editId != null) {
+    // Shared request shape. `branchId` SOLO va dentro del request en create;
+    // en update va como arg separado de la action.
+    const baseRequest = {
+      startTime: h.fromTime,
+      endTime: h.toTime,
+      slotDurationMinutes: h.slotDurationMinutes,
+      patientsPerSlot: h.patientsPerSlot,
+      isRecurring: recurringDaysOfWeek.length > 0,
+      validFromDate: this.toIsoDate(p.validFrom),
+      validToDate: this.toIsoDate(p.validTo),
+      recurringDaysOfWeek: recurringDaysOfWeek || undefined,
+    };
+
+    if (isEdit) {
       this.store.dispatch(
-        updateAgenda({
-          id: editId,
-          branchId: this.branchId()!,
-          request: {
-            startTime: h.fromTime,
-            endTime: h.toTime,
-            slotDurationMinutes: h.slotDurationMinutes,
-            patientsPerSlot: h.patientsPerSlot,
-            isRecurring: recurringDaysOfWeek.length > 0,
-            validFromDate: this.toIsoDate(p.validFrom),
-            validToDate: this.toIsoDate(p.validTo),
-            recurringDaysOfWeek: recurringDaysOfWeek || undefined,
-          },
-        }),
+        updateAgenda({ id: editId!, branchId: this.branchId()!, request: baseRequest }),
       );
-
-      this.actions$.pipe(
-        ofType(updateAgendaSuccess),
-        take(1),
-        takeUntilDestroyed(this.destroyRef),
-      ).subscribe(() => {
-        this.saving.set(false);
-        this.router.navigate(['/turnos/configuracion']);
-      });
-
-      this.actions$.pipe(
-        ofType(updateAgendaFailure),
-        take(1),
-        takeUntilDestroyed(this.destroyRef),
-      ).subscribe(({ error }) => {
-        this.saving.set(false);
-        const mapped = mapAgendaError(error as any);
-        this.messageService.add({ severity: mapped.severity, summary: 'Error', detail: mapped.message });
-      });
     } else {
       this.store.dispatch(
-        createAgenda({
-          request: {
-            branchId: this.branchId()!,
-            startTime: h.fromTime,
-            endTime: h.toTime,
-            slotDurationMinutes: h.slotDurationMinutes,
-            patientsPerSlot: h.patientsPerSlot,
-            isRecurring: recurringDaysOfWeek.length > 0,
-            validFromDate: this.toIsoDate(p.validFrom),
-            validToDate: this.toIsoDate(p.validTo),
-            recurringDaysOfWeek: recurringDaysOfWeek || undefined,
-          },
-        }),
+        createAgenda({ request: { branchId: this.branchId()!, ...baseRequest } }),
       );
-
-      this.actions$.pipe(
-        ofType(createAgendaSuccess),
-        take(1),
-        takeUntilDestroyed(this.destroyRef),
-      ).subscribe(() => {
-        this.saving.set(false);
-        this.router.navigate(['/turnos/configuracion']);
-      });
-
-      this.actions$.pipe(
-        ofType(createAgendaFailure),
-        take(1),
-        takeUntilDestroyed(this.destroyRef),
-      ).subscribe(({ error }) => {
-        this.saving.set(false);
-        const mapped = mapAgendaError(error as any);
-        this.messageService.add({ severity: mapped.severity, summary: 'Error', detail: mapped.message });
-      });
     }
+
+    const success$ = this.actions$.pipe(
+      ofType(isEdit ? updateAgendaSuccess : createAgendaSuccess),
+    );
+    const failure$ = this.actions$.pipe(
+      ofType(isEdit ? updateAgendaFailure : createAgendaFailure),
+    );
+
+    race(success$, failure$)
+      .pipe(
+        take(1),
+        takeUntil(this.cancelInFlight),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(action => {
+        this.saving.set(false);
+        if ('error' in action) {
+          const mapped = mapAgendaError(action.error as any);
+          this.messageService.add({
+            severity: mapped.severity,
+            summary: 'Error',
+            detail: mapped.message,
+          });
+        } else {
+          this.router.navigate(['/turnos/configuracion']);
+        }
+      });
   }
 
   private toIsoDate(d: Date): string {
