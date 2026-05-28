@@ -37,7 +37,7 @@
   @if (error(); as err) {
     <div class="config-page__banner config-page__banner--error">
       <span>No pudimos cargar las agendas.</span>
-      <p-button label="Reintentar" severity="secondary" (onClick)="ngOnInit()" />
+      <p-button label="Reintentar" severity="secondary" (onClick)="reload()" />
     </div>
   }
 

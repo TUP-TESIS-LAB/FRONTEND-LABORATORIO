@@ -110,6 +110,22 @@ export class ConfiguracionListPage implements OnInit {
     }
   }
 
+  protected reload(): void {
+    const branches = this.branchesFromService();
+    if (branches.length > 0) {
+      branches.forEach(b => this.store.dispatch(loadAgendas({ branchId: b.id })));
+      return;
+    }
+    // Fallback: si las branches aún no llegaron, re-ejecutar el flow del service.
+    this.sucursalesService
+      .listBranchesForSelector()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => {
+        this.branchesFromService.set(list);
+        list.forEach(b => this.store.dispatch(loadAgendas({ branchId: b.id })));
+      });
+  }
+
   protected onAgregarPara(branchId: number): void {
     this.router.navigate(['/turnos/configuracion/nueva'], { queryParams: { branchId } });
   }
