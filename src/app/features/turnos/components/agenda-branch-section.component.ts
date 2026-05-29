@@ -51,8 +51,9 @@ export class AgendaBranchSectionComponent implements OnChanges {
       MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4,
       FRIDAY: 5, SATURDAY: 6, SUNDAY: 7,
     };
-    const SHORT: Record<number, string> = {
-      1: 'L', 2: 'M', 3: 'X', 4: 'J', 5: 'V', 6: 'S', 7: 'D',
+    const FULL: Record<number, string> = {
+      1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves',
+      5: 'Viernes', 6: 'Sábado', 7: 'Domingo',
     };
     // Acepta tanto nombres (MONDAY...) como numeros ISO (1...7),
     // por compatibilidad con el seed V903 que guarda numeros.
@@ -69,8 +70,9 @@ export class AgendaBranchSectionComponent implements OnChanges {
 
     if (nums.length === 0) return '—';
 
-    // Agrupar consecutivos para mostrar "L–V" en lugar de "L M X J V".
-    // Threshold: 3 dias o mas hacen rango; 1-2 quedan sueltos.
+    // Agrupar consecutivos para mostrar "Lunes a Viernes" en lugar de
+    // "Lunes, Martes, Miércoles, Jueves, Viernes". 2+ consecutivos hacen
+    // rango ("Lunes a Martes"); sueltos quedan separados por coma.
     const ranges: number[][] = [];
     let current = [nums[0]];
     for (let i = 1; i < nums.length; i++) {
@@ -83,9 +85,9 @@ export class AgendaBranchSectionComponent implements OnChanges {
     ranges.push(current);
 
     return ranges
-      .map(r => r.length >= 3
-        ? `${SHORT[r[0]]}–${SHORT[r[r.length - 1]]}`
-        : r.map(n => SHORT[n]).join(' '))
+      .map(r => r.length >= 2
+        ? `${FULL[r[0]]} a ${FULL[r[r.length - 1]]}`
+        : FULL[r[0]])
       .join(', ');
   }
 
