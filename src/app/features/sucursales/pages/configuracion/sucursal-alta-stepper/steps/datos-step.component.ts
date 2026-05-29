@@ -116,12 +116,29 @@ export class DatosStepComponent {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(({ error }) => {
       this.saving.set(false);
-      const detail = typeof error === 'string' ? error : 'Ocurrió un error inesperado.';
       this.messageService.add({
         severity: 'error',
         summary: 'No se pudo crear la sucursal',
-        detail,
+        detail: this.mapCreateError(error),
       });
     });
+  }
+
+  /** Mapea HttpErrorResponse del back a mensaje user-friendly en espanol. */
+  private mapCreateError(error: unknown): string {
+    if (typeof error === 'string') return error;
+    const raw = (error as { error?: { message?: string }, status?: number, message?: string });
+    const backMsg = raw?.error?.message ?? raw?.message ?? '';
+    if (raw?.status === 409) {
+      if (backMsg.includes('description already exists')) {
+        return 'Ya existe una sucursal con ese nombre.';
+      }
+      if (backMsg.includes('code already exists')) {
+        return 'Ya existe una sucursal con ese código.';
+      }
+      return 'La sucursal ya existe.';
+    }
+    if (raw?.status === 400) return 'Algun dato no es valido. Revisá los campos.';
+    return 'Ocurrió un error inesperado.';
   }
 }
