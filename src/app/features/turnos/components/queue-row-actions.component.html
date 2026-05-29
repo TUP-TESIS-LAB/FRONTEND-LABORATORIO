@@ -1,0 +1,8 @@
+<p-menu #menu [model]="items" [popup]="true" appendTo="body" />
+<p-button
+  icon="pi pi-ellipsis-v"
+  [rounded]="true"
+  [text]="true"
+  severity="secondary"
+  (onClick)="menu.toggle($event)"
+  [ariaLabel]="'Acciones turno ' + entryId" />

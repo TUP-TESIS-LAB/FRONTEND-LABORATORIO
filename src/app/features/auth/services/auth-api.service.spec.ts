@@ -23,6 +23,7 @@ describe('AuthApiService', () => {
       id: 1, firstName: 'Ana', lastName: 'Perez', username: 'ana', email: 'a@b.com',
       phone: null, document: null, isEmailVerified: true, isExternal: false,
       branch: null, isFirstLogin: false, active: true, roles: [],
+      tenantSlug: null,
     };
     const mockResp: LoginResponse = { token: 'jwt', firstLoginToken: null, user: mockUser, isFirstLogin: false };
 

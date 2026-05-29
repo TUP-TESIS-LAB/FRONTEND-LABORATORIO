@@ -1,10 +1,10 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanMatchFn, Router } from '@angular/router';
 import { TokenService } from '@core/auth/token.service';
 
-export const roleGuard = (requiredRole: string): CanActivateFn =>
+export const roleGuard = (required: string): CanMatchFn =>
   () => {
-    const roles = inject(TokenService).getPayload()?.roles ?? [];
-    if (roles.includes(requiredRole)) return true;
+    const roles = inject(TokenService).getRoles();
+    if (roles.includes(required)) return true;
     return inject(Router).createUrlTree(['/']);
   };

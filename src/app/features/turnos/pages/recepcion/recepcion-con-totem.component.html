@@ -1,0 +1,57 @@
+<div class="grid">
+  <p-card class="col" header="Con turno">
+    <p-table [value]="withAppointment()" [loading]="loading()">
+      <ng-template pTemplate="header">
+        <tr><th>Código</th><th>DNI</th><th>Llamadas</th><th></th></tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.publicCode }}</td>
+          <td>{{ row.nationalId }}</td>
+          <td>
+            @if (row.callCount > 0) {
+              <p-badge [value]="row.callCount" severity="warn" />
+            }
+          </td>
+          <td>
+            <app-queue-row-actions
+              [entryId]="row.id"
+              (call)="onCall(row.id)"
+              (nuevaAtencion)="onNuevaAtencion(row.id)" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="4">Sin pacientes con turno en cola</td></tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <p-card class="col" header="Sin turno">
+    <p-table [value]="walkIn()" [loading]="loading()">
+      <ng-template pTemplate="header">
+        <tr><th>Código</th><th>DNI</th><th>Llamadas</th><th></th></tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.publicCode }}</td>
+          <td>{{ row.nationalId }}</td>
+          <td>
+            @if (row.callCount > 0) {
+              <p-badge [value]="row.callCount" severity="warn" />
+            }
+          </td>
+          <td>
+            <app-queue-row-actions
+              [entryId]="row.id"
+              (call)="onCall(row.id)"
+              (nuevaAtencion)="onNuevaAtencion(row.id)" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="4">Sin walk-ins en cola</td></tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</div>

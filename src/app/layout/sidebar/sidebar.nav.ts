@@ -14,6 +14,7 @@ export type NavItem =
       badge?: NavBadge;
       chip?: string;       // small uppercase chip text, e.g. 'Beta', 'Root'
       moduleKey?: ModuleKey;
+      roleKey?: string;    // required role to show the item
     }
   | {
       kind: 'expandable';
@@ -76,7 +77,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { kind: 'link', label: 'Empresa',          icon: 'pi pi-building',    path: '/empresa' },
       { kind: 'link', label: 'Roles y permisos', icon: 'pi pi-shield',      path: '/roles' },
-      { kind: 'link', label: 'Sucursales',       icon: 'pi pi-map-marker',  path: '/sucursales' },
+      { kind: 'link', label: 'Sucursales',       icon: 'pi pi-building',    path: '/sucursales/configuracion', roleKey: 'ADMINISTRADOR' },
       {
         kind: 'link',
         label: 'Financiero',

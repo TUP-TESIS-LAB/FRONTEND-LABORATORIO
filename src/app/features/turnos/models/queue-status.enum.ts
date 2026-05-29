@@ -1,0 +1,6 @@
+export enum QueueStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  CANCELED = 'CANCELED',
+  EXPIRED = 'EXPIRED',
+}

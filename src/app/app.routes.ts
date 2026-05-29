@@ -127,5 +127,19 @@ export const routes: Routes = [
       import('./features/saas-admin/saas-admin.routes').then((m) => m.SAAS_ADMIN_ROUTES),
   },
 
+  {
+    path: 'display/:tenantSlug/:branchId',
+    loadComponent: () =>
+      import('./features/turnos/pages/sala-espera/sala-espera.page').then((m) => m.SalaEsperaPage),
+  },
+
+  {
+    path: 'turnos/totem',
+    loadComponent: () =>
+      import('./layout/kiosk-shell/kiosk-shell.component').then((m) => m.KioskShellComponent),
+    loadChildren: () =>
+      import('./features/turnos/pages/totem/totem.routes').then((m) => m.TOTEM_ROUTES),
+  },
+
   { path: '**', redirectTo: '' },
 ];

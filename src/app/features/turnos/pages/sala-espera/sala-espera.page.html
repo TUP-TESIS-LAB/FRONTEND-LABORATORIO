@@ -1,0 +1,46 @@
+@if (!tenantSlug || !branchId) {
+  <div class="invalid-url">URL inválida — falta tenantSlug o branchId</div>
+} @else {
+  @if (connectionLost()) {
+    <div class="banner-disconnected">⚠ Reconectando...</div>
+  }
+
+  @switch (viewMode()) {
+    @case ('loading') {
+      <div class="loading">Cargando...</div>
+    }
+    @case ('empty') {
+      <app-empty-state
+        [serverTime]="snapshot()?.serverTime ?? ''"
+        [branchName]="snapshot()?.branchName ?? ''" />
+    }
+    @case ('closed') {
+      <app-closed-state [reopenTime]="snapshot()?.openWindow?.startTime ?? ''" />
+    }
+    @case ('queue') {
+      <div class="layout">
+        @if (calledEntry(); as called) {
+          <div class="destacado">
+            <h1>LLAMANDO AHORA</h1>
+            <div class="code">{{ called.publicCode }}</div>
+            <div class="hint">→ acercate al mostrador</div>
+          </div>
+        }
+        @if (upcomingEntries().length) {
+          <div class="proximos">
+            <h2>Próximos turnos:</h2>
+            <ul>
+              @for (e of upcomingEntries(); track e.id) {
+                <li>{{ e.publicCode }}</li>
+              }
+            </ul>
+          </div>
+        }
+        <div class="footer">
+          {{ snapshot()?.serverTime }} hs &mdash;
+          {{ snapshot()?.tenantName }} — {{ snapshot()?.branchName }}
+        </div>
+      </div>
+    }
+  }
+}

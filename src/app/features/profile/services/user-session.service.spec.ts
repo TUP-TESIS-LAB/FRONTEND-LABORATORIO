@@ -18,6 +18,7 @@ const mockUser: UserResponse = {
   isFirstLogin: false,
   active: true,
   roles: [{ id: 1, code: 'ADMINISTRADOR', description: 'Administrador', hierarchy: 0 }],
+  tenantSlug: null,
 };
 
 describe('UserSessionService', () => {

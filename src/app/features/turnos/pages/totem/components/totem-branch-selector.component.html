@@ -1,0 +1,20 @@
+<div class="kiosk-card">
+  <h2>Seleccionar sucursal</h2>
+  <p>Esta configuración se guarda en este dispositivo.</p>
+
+  <p-select
+    [options]="branches()"
+    [(ngModel)]="selectedId"
+    optionLabel="description"
+    optionValue="id"
+    placeholder="Elegí una sucursal"
+    [disabled]="loading()"
+    appendTo="body"
+  />
+
+  <p-button
+    label="Confirmar"
+    [disabled]="selectedId === null || loading()"
+    (onClick)="confirm()"
+  />
+</div>
