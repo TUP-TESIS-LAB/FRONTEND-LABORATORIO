@@ -47,19 +47,46 @@ export class AgendaBranchSectionComponent implements OnChanges {
 
   protected formatDays(daysCSV: string | null): string {
     if (!daysCSV) return '—';
-    const SHORT: Record<string, string> = {
-      MONDAY: 'L',
-      TUESDAY: 'M',
-      WEDNESDAY: 'X',
-      THURSDAY: 'J',
-      FRIDAY: 'V',
-      SATURDAY: 'S',
-      SUNDAY: 'D',
+    const NAME_TO_ISO: Record<string, number> = {
+      MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4,
+      FRIDAY: 5, SATURDAY: 6, SUNDAY: 7,
     };
-    return daysCSV
+    const SHORT: Record<number, string> = {
+      1: 'L', 2: 'M', 3: 'X', 4: 'J', 5: 'V', 6: 'S', 7: 'D',
+    };
+    // Acepta tanto nombres (MONDAY...) como numeros ISO (1...7),
+    // por compatibilidad con el seed V903 que guarda numeros.
+    const nums = daysCSV
       .split(',')
-      .map(d => SHORT[d] ?? d)
-      .join(' ');
+      .map(d => {
+        const trimmed = d.trim();
+        const asNum = Number(trimmed);
+        if (Number.isInteger(asNum) && asNum >= 1 && asNum <= 7) return asNum;
+        return NAME_TO_ISO[trimmed.toUpperCase()];
+      })
+      .filter((n): n is number => n != null)
+      .sort((a, b) => a - b);
+
+    if (nums.length === 0) return '—';
+
+    // Agrupar consecutivos para mostrar "L–V" en lugar de "L M X J V".
+    // Threshold: 3 dias o mas hacen rango; 1-2 quedan sueltos.
+    const ranges: number[][] = [];
+    let current = [nums[0]];
+    for (let i = 1; i < nums.length; i++) {
+      if (nums[i] === nums[i - 1] + 1) current.push(nums[i]);
+      else {
+        ranges.push(current);
+        current = [nums[i]];
+      }
+    }
+    ranges.push(current);
+
+    return ranges
+      .map(r => r.length >= 3
+        ? `${SHORT[r[0]]}–${SHORT[r[r.length - 1]]}`
+        : r.map(n => SHORT[n]).join(' '))
+      .join(', ');
   }
 
   protected formatRange(a: AgendaConfig): string {

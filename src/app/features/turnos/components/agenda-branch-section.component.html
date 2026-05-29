@@ -27,7 +27,7 @@
     }
   </div>
 } @else {
-  <p-table [value]="filtered" [responsiveLayout]="'stack'" [breakpoint]="'768px'">
+  <p-table [value]="filtered">
     <ng-template pTemplate="header">
       <tr>
         <th>Horario</th>
@@ -39,17 +39,10 @@
     </ng-template>
     <ng-template pTemplate="body" let-a>
       <tr>
-        <td>
-          <span class="p-column-title">Horario</span>
-          {{ formatRange(a) }}
-        </td>
-        <td>
-          <span class="p-column-title">Días</span>
-          {{ formatDays(a.recurringDaysOfWeek) }}
-        </td>
+        <td>{{ formatRange(a) }}</td>
+        <td>{{ formatDays(a.recurringDaysOfWeek) }}</td>
         @if (canWrite) {
           <td class="branch-section__actions-cell">
-            <span class="p-column-title">Acciones</span>
             <p-button
               icon="pi pi-pencil"
               severity="secondary"
