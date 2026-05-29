@@ -14,8 +14,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { race, Subject } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
 import { StepperModule } from 'primeng/stepper';
-import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 
 import { StepSucursalComponent } from './steps/step-sucursal.component';
@@ -53,8 +53,8 @@ const ISO_TO_WEEKDAY: Record<number, typeof WEEK_DAYS[number]> = {
   imports: [
     RouterLink,
     StepperModule,
-    ButtonModule,
     ToastModule,
+    TooltipModule,
     StepSucursalComponent,
     StepHorarioComponent,
     StepPeriodoComponent,
