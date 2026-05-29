@@ -59,6 +59,13 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         kind: 'link',
+        label: 'Recepción',
+        icon: 'pi pi-bell',
+        path: '/turnos/recepcion',
+        moduleKey: ModuleKey.Turnos,
+      },
+      {
+        kind: 'link',
         label: 'Configuración de agendas',
         icon: 'pi pi-calendar-plus',
         path: '/turnos/configuracion',
