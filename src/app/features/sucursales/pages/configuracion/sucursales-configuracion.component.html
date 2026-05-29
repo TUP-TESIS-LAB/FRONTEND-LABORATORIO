@@ -35,6 +35,14 @@
         <td>{{ formatAddress(s) }}</td>
         <td class="actions">
           <p-button
+            icon="pi pi-pencil"
+            [text]="true"
+            [rounded]="true"
+            severity="secondary"
+            pTooltip="Editar"
+            tooltipPosition="top"
+            (onClick)="openDetail(s); $event.stopPropagation()" />
+          <p-button
             icon="pi pi-trash"
             [text]="true"
             [rounded]="true"

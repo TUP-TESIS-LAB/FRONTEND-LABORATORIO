@@ -39,7 +39,13 @@
     </ng-template>
     <ng-template pTemplate="body" let-s>
       <tr>
-        <td>{{ labelForDay(s.dayFrom) }} – {{ labelForDay(s.dayTo) }}</td>
+        <td>
+          @if (s.dayFrom === s.dayTo) {
+            {{ labelForDay(s.dayFrom) }}
+          } @else {
+            {{ labelForDay(s.dayFrom) }} – {{ labelForDay(s.dayTo) }}
+          }
+        </td>
         <td>{{ s.fromTime }} – {{ s.toTime }}</td>
         <td>{{ labelForType(s.scheduleType) }}</td>
         <td>

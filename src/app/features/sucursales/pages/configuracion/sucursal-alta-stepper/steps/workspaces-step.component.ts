@@ -1,9 +1,10 @@
 import {
-  ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,
-  computed, inject,
+  ChangeDetectionStrategy, Component, DestroyRef, EventEmitter, Input, OnInit, Output,
+  computed, inject, signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -32,6 +33,7 @@ export class WorkspacesStepComponent implements OnInit {
 
   private store = inject(Store);
   private fb = inject(FormBuilder);
+  private destroyRef = inject(DestroyRef);
 
   protected readonly areas = this.store.selectSignal(selectAreas);
   protected readonly allSections = this.store.selectSignal(selectSections);
@@ -42,8 +44,18 @@ export class WorkspacesStepComponent implements OnInit {
     sectionId: [null as number | null, Validators.required],
   });
 
+  // Espejo signal del FormControl.value -- `computed()` no detecta cambios
+  // en form.controls.areaId.value directamente porque no es un signal.
+  private readonly selectedAreaId = signal<number | null>(null);
+
+  constructor() {
+    this.form.controls.areaId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(v => this.selectedAreaId.set(v));
+  }
+
   protected readonly sectionsForArea = computed(() => {
-    const areaId = this.form.controls.areaId.value;
+    const areaId = this.selectedAreaId();
     return areaId == null ? [] : this.allSections().filter(s => s.areaId === areaId);
   });
 
