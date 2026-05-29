@@ -112,23 +112,25 @@ const POLL_INTERVAL_MS = 5000;
                 <td>{{ row.attentionNumber }}</td>
                 <td>{{ row.attentionBox }}</td>
                 <td class="actions-col">
-                  <p-button
-                    label="Finalizar"
-                    icon="pi pi-check"
-                    severity="success"
-                    size="small"
-                    [disabled]="mutating()"
-                    (onClick)="onEnd(row)"
-                  />
-                  <p-button
-                    label="Cancelar"
-                    icon="pi pi-times"
-                    severity="secondary"
-                    [text]="true"
-                    size="small"
-                    [disabled]="mutating()"
-                    (onClick)="onCancel(row)"
-                  />
+                  <div class="actions-cell">
+                    <p-button
+                      label="Finalizar"
+                      icon="pi pi-check"
+                      severity="success"
+                      size="small"
+                      [disabled]="mutating()"
+                      (onClick)="onEnd(row)"
+                    />
+                    <p-button
+                      label="Cancelar"
+                      icon="pi pi-times"
+                      severity="secondary"
+                      [text]="true"
+                      size="small"
+                      [disabled]="mutating()"
+                      (onClick)="onCancel(row)"
+                    />
+                  </div>
                 </td>
               </tr>
             </ng-template>
@@ -183,14 +185,16 @@ const POLL_INTERVAL_MS = 5000;
                 <td>{{ row.analysisCount }}</td>
                 <td>{{ row.waitMinutes }} min</td>
                 <td class="actions-col">
-                  <p-button
-                    label="Tomar"
-                    icon="pi pi-arrow-right"
-                    size="small"
-                    [disabled]="!canTakeMore() || mutating()"
-                    [pTooltip]="!canTakeMore() ? 'Ya tenés una extracción en curso.' : ''"
-                    (onClick)="onTake(row)"
-                  />
+                  <div class="actions-cell">
+                    <p-button
+                      label="Tomar"
+                      icon="pi pi-arrow-right"
+                      size="small"
+                      [disabled]="!canTakeMore() || mutating()"
+                      [pTooltip]="!canTakeMore() ? 'Ya tenés una extracción en curso.' : ''"
+                      (onClick)="onTake(row)"
+                    />
+                  </div>
                 </td>
               </tr>
             </ng-template>
@@ -222,7 +226,8 @@ const POLL_INTERVAL_MS = 5000;
     .block__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .block__search { display: inline-flex; align-items: center; gap: 6px; }
     .block__search input { min-width: 240px; }
-    .actions-col { width: 1%; white-space: nowrap; display: flex; gap: 6px; justify-content: flex-end; }
+    .actions-col { width: 1%; white-space: nowrap; text-align: right; }
+    .actions-cell { display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center; }
     tr.is-urgent { background: rgba(239,68,68,.04); }
   `],
 })
