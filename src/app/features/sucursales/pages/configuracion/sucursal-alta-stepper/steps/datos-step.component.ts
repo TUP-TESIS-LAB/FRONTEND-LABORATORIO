@@ -9,16 +9,18 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 
 import { addSucursal, addSucursalSuccess, addSucursalFailure } from '../../../../store/sucursal.actions';
 import { SucursalCreateInput, SucursalStatus } from '../../../../models/sucursal.model';
+import { GeographyService, Province, City } from '../../../../services/geography.service';
 
 @Component({
   selector: 'app-datos-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule],
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './datos-step.component.html',
   styleUrl: './datos-step.component.scss',
 })
@@ -31,17 +33,45 @@ export class DatosStepComponent {
   private actions$ = inject(Actions);
   private destroyRef = inject(DestroyRef);
   private messageService = inject(MessageService);
+  private geographyService = inject(GeographyService);
 
   protected readonly saving = signal(false);
+  protected readonly provinces = signal<Province[]>([]);
+  protected readonly cities = signal<City[]>([]);
 
+  // provinceId vive en el form root porque NO se envia al back -- solo
+  // filtra las ciudades disponibles. cityId vive dentro de address porque
+  // es lo que realmente persiste el backend (AddressRequest.cityId).
   protected readonly form = this.fb.nonNullable.group({
     code: ['', [Validators.required, Validators.maxLength(30)]],
     description: ['', [Validators.required, Validators.maxLength(120)]],
+    provinceId: this.fb.control<number | null>(null),
     address: this.fb.group({
       street: [''],
       streetNumber: [''],
+      cityId: this.fb.control<number | null>(null),
     }),
   });
+
+  constructor() {
+    this.geographyService.listProvinces()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => this.provinces.set(list));
+
+    this.form.controls.provinceId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(provinceId => {
+        // Al cambiar de provincia, limpiar ciudad y recargar ciudades.
+        this.form.controls.address.controls.cityId.setValue(null);
+        if (provinceId == null) {
+          this.cities.set([]);
+          return;
+        }
+        this.geographyService.listCitiesByProvince(provinceId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(list => this.cities.set(list));
+      });
+  }
 
   submit() {
     if (this.form.invalid || this.saving()) return;
@@ -49,13 +79,20 @@ export class DatosStepComponent {
 
     const street = raw.address.street?.trim() ?? '';
     const streetNumber = raw.address.streetNumber?.trim() ?? '';
-    const hasAddress = street.length > 0 || streetNumber.length > 0;
+    const cityId = raw.address.cityId;
+    const hasAddress = street.length > 0 || streetNumber.length > 0 || cityId != null;
 
     const input: SucursalCreateInput = {
       code: raw.code.trim(),
       description: raw.description.trim(),
       status: 'ACTIVE' as SucursalStatus,
-      ...(hasAddress ? { address: { street, streetNumber } } : {}),
+      ...(hasAddress ? {
+        address: {
+          ...(street.length > 0 ? { street } : {}),
+          ...(streetNumber.length > 0 ? { streetNumber } : {}),
+          ...(cityId != null ? { cityId } : {}),
+        },
+      } : {}),
     };
 
     this.saving.set(true);

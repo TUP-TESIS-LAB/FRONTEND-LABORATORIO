@@ -19,9 +19,10 @@
       }
     </div>
 
-    <div class="address-section" formGroupName="address">
+    <div class="address-section">
       <h3 class="section-title">Dirección (opcional)</h3>
-      <div class="form-row address-row">
+
+      <div class="form-row address-row" formGroupName="address">
         <div class="form-field">
           <label for="street">Calle</label>
           <input id="street" pInputText formControlName="street" />
@@ -29,6 +30,34 @@
         <div class="form-field">
           <label for="streetNumber">Número</label>
           <input id="streetNumber" pInputText formControlName="streetNumber" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="provinceId">Provincia</label>
+          <p-select
+            inputId="provinceId"
+            formControlName="provinceId"
+            [options]="provinces()"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Seleccionar provincia"
+            [showClear]="true"
+          />
+        </div>
+        <div class="form-field" formGroupName="address">
+          <label for="cityId">Ciudad</label>
+          <p-select
+            inputId="cityId"
+            formControlName="cityId"
+            [options]="cities()"
+            optionLabel="name"
+            optionValue="id"
+            [placeholder]="form.controls.provinceId.value == null ? 'Elegí primero una provincia' : 'Seleccionar ciudad'"
+            [disabled]="form.controls.provinceId.value == null"
+            [showClear]="true"
+          />
         </div>
       </div>
     </div>
