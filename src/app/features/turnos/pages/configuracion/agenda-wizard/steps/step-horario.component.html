@@ -1,0 +1,70 @@
+<div class="step">
+  <h2>Horario</h2>
+  <p class="muted">Definí el rango de atención y la capacidad por turno.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+    <div class="form-row">
+      <div class="form-field">
+        <label for="fromTime">Desde *</label>
+        <input
+          id="fromTime"
+          pInputText
+          type="time"
+          formControlName="fromTime"
+        />
+        @if (form.controls.fromTime.touched && form.controls.fromTime.invalid) {
+          <small class="field-error">Ingresá una hora de inicio válida (HH:mm).</small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="toTime">Hasta *</label>
+        <input
+          id="toTime"
+          pInputText
+          type="time"
+          formControlName="toTime"
+        />
+        @if (form.controls.toTime.touched && form.controls.toTime.invalid) {
+          <small class="field-error">Ingresá una hora de fin válida (HH:mm).</small>
+        }
+      </div>
+    </div>
+
+    @if (form.hasError('timeRangeInvalid') && (form.controls.fromTime.touched || form.controls.toTime.touched)) {
+      <small class="field-error">La hora "Desde" debe ser anterior a "Hasta".</small>
+    }
+
+    <div class="form-row">
+      <div class="form-field">
+        <label for="slotDuration">Duración de cada turno (min) *</label>
+        <p-inputNumber
+          inputId="slotDuration"
+          formControlName="slotDurationMinutes"
+          [min]="5"
+          [max]="180"
+          [step]="5"
+        />
+        @if (form.controls.slotDurationMinutes.touched && form.controls.slotDurationMinutes.invalid) {
+          <small class="field-error">Duración entre 5 y 180 minutos.</small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="patientsPerSlot">Pacientes por turno *</label>
+        <p-inputNumber
+          inputId="patientsPerSlot"
+          formControlName="patientsPerSlot"
+          [min]="1"
+          [max]="20"
+        />
+        @if (form.controls.patientsPerSlot.touched && form.controls.patientsPerSlot.invalid) {
+          <small class="field-error">Entre 1 y 20 pacientes por turno.</small>
+        }
+      </div>
+    </div>
+
+    <footer class="step-footer">
+      <p-button label="Volver" severity="secondary" type="button" (onClick)="back.emit()" />
+      <p-button label="Siguiente" type="submit" [disabled]="form.invalid" />
+    </footer>
+  </form>
+</div>

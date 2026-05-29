@@ -59,6 +59,13 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         kind: 'link',
+        label: 'Configuración de agendas',
+        icon: 'pi pi-calendar-plus',
+        path: '/turnos/configuracion',
+        roleKey: 'ADMINISTRADOR',
+      },
+      {
+        kind: 'link',
         label: 'Atención',
         icon: 'pi pi-users',
         path: '/analitica/atencion',

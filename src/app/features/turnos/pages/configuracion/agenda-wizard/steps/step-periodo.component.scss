@@ -1,0 +1,92 @@
+:host {
+  display: block;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+}
+
+.muted {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+
+  .form-field {
+    flex: 1;
+  }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  label {
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  p-datePicker {
+    width: 100%;
+  }
+}
+
+.field-error {
+  color: var(--p-red-600);
+  font-size: 0.8rem;
+}
+
+.day-chips {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.day-chip {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+
+  &.selected {
+    background: var(--brand-primary);
+    color: var(--p-primary-contrast-color);
+    border-color: var(--brand-primary);
+  }
+}
+
+.step-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-content-border-color);
+}
