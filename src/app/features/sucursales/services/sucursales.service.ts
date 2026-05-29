@@ -22,7 +22,14 @@ export class SucursalesService {
   // futuro alguien tiene más, paginarlo en el componente.
   listBranchesForSelector(): Observable<{ id: number; name: string }[]> {
     return this.http.get<PagedBranches>('/api/v1/sucursales/branches?page=0&size=100').pipe(
-      map(p => p.content.map(b => ({ id: b.id, name: `${b.code} — ${b.description}` }))),
+      map(p => p.content.map(b => ({
+        id: b.id,
+        // Si description coincide con code (sucursales nuevas, ver datos-step
+        // que manda description=code) o esta vacia, no duplicar el texto.
+        name: !b.description || b.description === b.code
+          ? b.code
+          : `${b.code} — ${b.description}`,
+      }))),
     );
   }
 }

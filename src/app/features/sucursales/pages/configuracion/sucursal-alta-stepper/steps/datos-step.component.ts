@@ -44,7 +44,6 @@ export class DatosStepComponent {
   // es lo que realmente persiste el backend (AddressRequest.cityId).
   protected readonly form = this.fb.nonNullable.group({
     code: ['', [Validators.required, Validators.maxLength(30)]],
-    description: ['', [Validators.required, Validators.maxLength(120)]],
     provinceId: this.fb.control<number | null>(null),
     address: this.fb.group({
       street: [''],
@@ -82,9 +81,13 @@ export class DatosStepComponent {
     const cityId = raw.address.cityId;
     const hasAddress = street.length > 0 || streetNumber.length > 0 || cityId != null;
 
+    const code = raw.code.trim();
     const input: SucursalCreateInput = {
-      code: raw.code.trim(),
-      description: raw.description.trim(),
+      code,
+      // Backend requiere description -- mandamos el mismo code para
+      // satisfacer @NotBlank. El field se quito de la UI por decision UX
+      // (no aportaba valor; ver tambien sucursales.service formato del selector).
+      description: code,
       status: 'ACTIVE' as SucursalStatus,
       ...(hasAddress ? {
         address: {
