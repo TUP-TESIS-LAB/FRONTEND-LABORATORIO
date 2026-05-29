@@ -1,0 +1,16 @@
+<div class="confirmar-step">
+  <h2>Confirmar</h2>
+
+  <div class="confirmar-content-center">
+    <i class="pi pi-check-circle"></i>
+    <p class="confirmar-message">
+      Verificá que los datos cargados en los pasos anteriores sean correctos
+      antes de finalizar. Si necesitás corregir algo, volvé al paso correspondiente.
+    </p>
+  </div>
+
+  <footer class="step-footer">
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" (click)="back.emit()" />
+    <p-button label="Finalizar" icon="pi pi-check" iconPos="right" (click)="finish.emit()" />
+  </footer>
+</div>

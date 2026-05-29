@@ -62,6 +62,37 @@ export class AdminShellComponent {
 }
 ```
 
+### Reglas para pages dentro del shell admin
+
+El `<main class="ui-admin-shell__content">` (el container del `<router-outlet />`) ya está cableado como `flex: 1; overflow-y: auto; padding: var(--space-6)` (16px en mobile). Las pages que viven adentro **deben respetar esa geometría**:
+
+❌ **NO hacer en pages dentro del shell:**
+
+```scss
+.mi-page {
+  height: 100dvh;       /* toma todo el viewport, IGNORA el topbar del shell */
+  padding: 1rem 1.5rem; /* duplica el padding del shell content */
+}
+```
+
+Síntoma: aparece scroll vertical "vacío" al final del shell — la página se extendió más allá del area visible asignada porque pidió `100dvh` y el shell te deja scrollear para alcanzar el footer.
+
+✅ **Sí hacer en pages que necesitan ocupar toda la altura asignada (wizards, listas con virtual scroll, layouts column con footer pegado al fondo):**
+
+```scss
+.mi-page {
+  height: 100%;          /* el shell ya descuenta topbar via flex:1 */
+  overflow: hidden;
+  padding: 0;            /* el shell content ya aporta var(--space-6) */
+  display: flex;
+  flex-direction: column;
+  max-width: 64rem;
+  margin: 0 auto;
+}
+```
+
+✅ **Pages que solo fluyen verticalmente (formularios cortos, dashboards con grid de cards)**: no setear `height` ni `overflow`. Dejar que el shell content scrollee si el contenido excede.
+
 ---
 
 ## Shell Paciente

@@ -1,39 +1,71 @@
-<div class="page-header">
-  <h1>Sucursales</h1>
-  <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openCreate()" />
+<div class="sucursales-page">
+  <header class="page-header">
+    <div class="header-info">
+      <h1>Sucursales</h1>
+      <p class="muted">Gestioná las sucursales del laboratorio.</p>
+    </div>
+    <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openNew()" />
+  </header>
+
+  <p-table
+    [value]="sucursales()"
+    [loading]="loading()"
+    [paginator]="sucursales().length > 10"
+    [rows]="10"
+    responsiveLayout="scroll"
+    styleClass="sucursales-table">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Nombre</th>
+        <th>Descripcion</th>
+        <th style="width: 8rem">Estado</th>
+        <th>Direccion</th>
+        <th style="width: 8rem" class="text-center">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-s>
+      <tr class="row-selectable" (click)="openDetail(s)">
+        <td><strong>{{ s.code }}</strong></td>
+        <td>{{ s.description }}</td>
+        <td>
+          <p-tag
+            [value]="s.status === 'ACTIVE' ? 'Activa' : 'Inactiva'"
+            [severity]="s.status === 'ACTIVE' ? 'success' : 'secondary'" />
+        </td>
+        <td>{{ formatAddress(s) }}</td>
+        <td class="actions">
+          <p-button
+            icon="pi pi-pencil"
+            [text]="true"
+            [rounded]="true"
+            severity="secondary"
+            pTooltip="Editar"
+            tooltipPosition="top"
+            (onClick)="openDetail(s); $event.stopPropagation()" />
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            [rounded]="true"
+            severity="danger"
+            pTooltip="Eliminar"
+            tooltipPosition="top"
+            (onClick)="remove(s); $event.stopPropagation()" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="5" class="empty-row">
+          <div class="empty-state">
+            <i class="pi pi-building"></i>
+            <p>Sin sucursales todavia.</p>
+            <p-button label="Crear la primera" icon="pi pi-plus" [text]="true" (onClick)="openNew()" />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-confirmDialog />
+  <p-toast />
 </div>
-
-<p-table [value]="sucursales()" [loading]="loading()" responsiveLayout="scroll">
-  <ng-template pTemplate="header">
-    <tr>
-      <th>Código</th>
-      <th>Descripción</th>
-      <th>Estado</th>
-      <th>Dirección</th>
-      <th style="width: 200px">Acciones</th>
-    </tr>
-  </ng-template>
-  <ng-template pTemplate="body" let-s>
-    <tr>
-      <td>{{ s.code }}</td>
-      <td>{{ s.description }}</td>
-      <td><p-tag [value]="s.status" [severity]="s.status === 'ACTIVE' ? 'success' : 'secondary'" /></td>
-      <td>{{ formatAddress(s) }}</td>
-      <td>
-        <p-button icon="pi pi-pencil" text rounded (onClick)="openEdit(s)" />
-        <p-button icon="pi pi-refresh" text rounded (onClick)="toggle(s)" />
-        <p-button icon="pi pi-trash" text rounded severity="danger" (onClick)="remove(s)" />
-      </td>
-    </tr>
-  </ng-template>
-  <ng-template pTemplate="emptymessage">
-    <tr><td colspan="5">Sin sucursales todavía.</td></tr>
-  </ng-template>
-</p-table>
-
-<p-confirmDialog />
-<p-toast />
-
-@if (modalOpen()) {
-  <app-sucursal-form-modal [sucursal]="editing()" (closed)="closeModal()" />
-}

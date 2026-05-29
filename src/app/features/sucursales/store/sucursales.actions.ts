@@ -19,8 +19,7 @@ export const loadSucursalesFailure = createAction(
 
 // Load Areas
 export const loadAreas = createAction(
-  '[Sucursales Page] Load Areas',
-  props<{ sucursalId: string }>()
+  '[Sucursales Page] Load Areas'
 );
 
 export const loadAreasSuccess = createAction(

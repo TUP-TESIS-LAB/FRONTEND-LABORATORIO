@@ -1,0 +1,85 @@
+<div class="alta-page">
+  <header class="page-header">
+    <button class="back-btn" (click)="cancel()" type="button">
+      <i class="pi pi-arrow-left"></i>
+    </button>
+    <h1>Nueva sucursal</h1>
+    <span class="header-spacer"></span>
+  </header>
+
+  <!-- PrimeNG 21: p-step-list (headers) + p-step-panels (content) son hermanos dentro de p-stepper. -->
+  <p-stepper [(value)]="currentStep" [linear]="false" class="alta-stepper">
+
+    <p-step-list>
+      <p-step [value]="1">Datos</p-step>
+      <p-step [value]="2" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Horarios</p-step>
+      <p-step [value]="3" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Contactos</p-step>
+      <p-step [value]="4" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Workspaces</p-step>
+      <p-step [value]="5" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Tótem</p-step>
+      <p-step [value]="6" [disabled]="branchId() == null"
+              [pTooltip]="branchId() == null ? 'Guardá los datos básicos primero' : ''"
+              tooltipPosition="bottom">Confirmar</p-step>
+    </p-step-list>
+
+    <p-step-panels>
+      <p-step-panel [value]="1">
+        <ng-template #content>
+          <div class="step-content">
+            <app-datos-step (completed)="onDatosCompleted($event)" (cancel)="cancel()" />
+          </div>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="2">
+        <ng-template #content>
+          <div class="step-content">
+            <app-horarios-step [branchId]="branchId()!" (next)="goToStep(3)" (back)="goToStep(1)" />
+          </div>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="3">
+        <ng-template #content>
+          <div class="step-content">
+            <app-contactos-step [branchId]="branchId()!" (next)="goToStep(4)" (back)="goToStep(2)" />
+          </div>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="4">
+        <ng-template #content>
+          <div class="step-content">
+            <app-workspaces-step [branchId]="branchId()!" (next)="goToStep(5)" (back)="goToStep(3)" />
+          </div>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="5">
+        <ng-template #content>
+          <div class="step-content">
+            <app-totem-step [branchId]="branchId()!" (next)="goToStep(6)" (back)="goToStep(4)" />
+          </div>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="6">
+        <ng-template #content>
+          <div class="step-content">
+            <app-confirmar-step (finish)="finish()" (back)="goToStep(5)" />
+          </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-panels>
+
+  </p-stepper>
+
+  <p-toast />
+</div>

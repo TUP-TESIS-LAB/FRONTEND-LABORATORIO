@@ -1,0 +1,70 @@
+.horarios-step h2 { margin: 0 0 0.5rem; }
+.muted { color: var(--p-text-muted-color); margin-bottom: 0.5rem; }
+.counter { font-size: 0.875rem; margin: 0 0 0.75rem; }
+
+.inline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.full-width { width: 100%; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+@media (max-width: 900px) {
+  .form-row { grid-template-columns: 1fr 1fr; }
+  .form-action { grid-column: span 2; }
+}
+
+.form-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.form-field label { font-size: 0.75rem; font-weight: 500; }
+.form-action { display: flex; align-items: end; }
+.form-error { color: var(--p-red-500); font-size: 0.75rem; }
+
+/* Day chips */
+.day-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.day-chip {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-text);
+}
+
+.day-chip:hover {
+  background: #f3f4f6;
+}
+
+.day-chip.selected {
+  background: var(--brand-primary);
+  color: var(--p-primary-contrast-color);
+  border-color: var(--brand-primary);
+}
+
+.schedules-table { margin-bottom: 1.5rem; }
+
+.step-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}

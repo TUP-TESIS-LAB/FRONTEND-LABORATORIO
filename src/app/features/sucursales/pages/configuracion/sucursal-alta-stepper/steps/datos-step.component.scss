@@ -1,0 +1,69 @@
+.datos-step h2 {
+  margin: 0 0 0.125rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--p-text-muted-color);
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.form-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.address-row {
+  grid-template-columns: 3fr 1fr;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.form-field label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--p-text-color);
+}
+
+.form-field input,
+.form-field ::ng-deep .p-select,
+.form-field ::ng-deep .p-inputtext {
+  width: 100%;
+}
+
+.form-error {
+  color: var(--p-red-500);
+  font-size: 0.75rem;
+}
+
+.address-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.step-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 700px) {
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+}

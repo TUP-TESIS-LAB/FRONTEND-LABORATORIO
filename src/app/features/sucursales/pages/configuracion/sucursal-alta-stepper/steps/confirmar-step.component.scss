@@ -1,0 +1,40 @@
+.confirmar-step {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.confirmar-step h2 {
+  margin: 0 0 0.5rem;
+}
+
+.confirmar-content-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+  min-height: 12rem;
+  padding: 1rem;
+}
+
+.confirmar-content-center i {
+  font-size: 3rem;
+  color: var(--brand-primary);
+}
+
+.confirmar-message {
+  margin: 0;
+  max-width: 32rem;
+  font-size: 1rem;
+  color: var(--ds-text);
+  line-height: 1.5;
+}
+
+.step-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}

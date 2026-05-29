@@ -32,8 +32,8 @@ export class SucursalesEffects {
   loadAreas$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadAreas),
-      switchMap(({ sucursalId }) =>
-        this.sucursalesService.getAreas(sucursalId).pipe(
+      switchMap(() =>
+        this.sucursalesService.getAreas().pipe(
           map(areas => loadAreasSuccess({ areas })),
           catchError(error => of(loadAreasFailure({ error })))
         )

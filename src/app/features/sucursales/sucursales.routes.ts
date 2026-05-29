@@ -14,13 +14,50 @@ export const SUCURSALES_ROUTES: Routes = [
     children: [
       { path: '', redirectTo: 'lista', pathMatch: 'full' },
       { path: 'lista', loadComponent: () => import('./pages/sucursales/sucursales.component').then(m => m.SucursalesPageComponent) },
-      { path: 'areas', loadComponent: () => import('./pages/areas/areas.component').then(m => m.AreasComponent) },
       {
         path: 'configuracion',
         canMatch: [roleGuard('ADMINISTRADOR')],
         loadComponent: () =>
           import('./pages/configuracion/sucursales-configuracion.component')
             .then(m => m.SucursalesConfiguracionComponent),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+          ConfirmationService,
+        ],
+      },
+      {
+        path: 'catalogo',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/catalogo/sucursales-catalogo.page')
+            .then(m => m.SucursalesCatalogoPage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+          ConfirmationService,
+        ],
+      },
+      {
+        path: 'configuracion/nueva',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/configuracion/sucursal-alta-stepper/sucursal-alta-stepper.page')
+            .then(m => m.SucursalAltaStepperPage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+        ],
+      },
+      {
+        path: 'configuracion/:id',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/configuracion/sucursal-detalle/sucursal-detalle.page')
+            .then(m => m.SucursalDetallePage),
         providers: [
           provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
           provideEffects([SucursalEffects]),
