@@ -16,9 +16,8 @@ import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { NotificationService } from '@core/services/notification.service';
+import { ExtractorBoxService } from '@core/services/extractor-box.service';
 import { AwaitingExtractionItem } from '../../models/extraction.model';
-
-const STORAGE_KEY = 'extractor.box';
 
 /**
  * Drawer lateral derecho para confirmar la toma de un paciente.
@@ -127,8 +126,9 @@ export class TakePatientDrawerComponent {
   @Output() readonly confirm = new EventEmitter<{ id: number; box: number }>();
 
   private readonly notifier = inject(NotificationService);
+  private readonly boxService = inject(ExtractorBoxService);
 
-  readonly boxValue = signal<number | null>(readBoxFromStorage());
+  readonly boxValue = signal<number | null>(this.boxService.box());
 
   readonly canConfirm = computed(() => {
     const v = this.boxValue();
@@ -136,10 +136,12 @@ export class TakePatientDrawerComponent {
   });
 
   constructor() {
-    // Reset to stored value on drawer open if the user cleared it last time.
+    // Sync con el service: si el FAB cambia el box mientras el drawer está abierto,
+    // reflejarlo. También repuebla al abrir si el usuario lo borró localmente.
     effect(() => {
-      if (this.visible() && this.boxValue() == null) {
-        this.boxValue.set(readBoxFromStorage());
+      const fromService = this.boxService.box();
+      if (this.visible() && (this.boxValue() == null || fromService !== null)) {
+        if (fromService !== null) this.boxValue.set(fromService);
       }
     });
   }
@@ -155,22 +157,7 @@ export class TakePatientDrawerComponent {
       this.notifier.error('Indicá un box válido para tomar el paciente.');
       return;
     }
-    try {
-      window.localStorage.setItem(STORAGE_KEY, String(box));
-    } catch {
-      // Ignoramos errores de quota / private mode — el drawer sigue siendo funcional.
-    }
+    this.boxService.setBox(box);
     this.confirm.emit({ id: p.id, box });
-  }
-}
-
-function readBoxFromStorage(): number | null {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const n = Number.parseInt(raw, 10);
-    return Number.isInteger(n) && n >= 1 ? n : null;
-  } catch {
-    return null;
   }
 }

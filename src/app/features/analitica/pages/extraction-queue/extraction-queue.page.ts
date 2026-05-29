@@ -26,6 +26,7 @@ import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-sta
 import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicator/refresh-indicator.component';
 import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { TakePatientDrawerComponent } from '../../components/take-patient-drawer/take-patient-drawer.component';
+import { ExtractorBoxFabComponent } from '../../components/extractor-box-fab/extractor-box-fab.component';
 import { AwaitingExtractionItem } from '../../models/extraction.model';
 import * as A from '../../store/extraction/extraction.actions';
 import {
@@ -56,6 +57,7 @@ const POLL_INTERVAL_MS = 5000;
     RefreshIndicatorComponent,
     StatCardComponent,
     TakePatientDrawerComponent,
+    ExtractorBoxFabComponent,
   ],
   providers: [ConfirmationService],
   template: `
@@ -202,6 +204,8 @@ const POLL_INTERVAL_MS = 5000;
         [saving]="mutating()"
         (confirm)="onConfirmTake($event)"
       />
+
+      <app-extractor-box-fab />
 
       <p-confirmDialog />
     </section>
