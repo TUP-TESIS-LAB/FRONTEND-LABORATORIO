@@ -26,6 +26,10 @@ El SaaS de laboratorio ya gestiona **usuarios de login** desde *Empresa › Usua
 
 **Fuera (out of scope):**
 - Cualquier cambio de **backend** (los 3 CRUD ya existen y alcanzan).
+- **Sucursal del empleado** (filtrar/mostrar empleados por sucursal): el backend de `Employee`
+  **no tiene `branchId`** (ni tabla, ni DTO, ni filtro). Se **difiere** (ver §10): ticket de
+  backend aparte para agregar `branchId` + filtro, y una 2da iteración de frontend que lo
+  consuma. En esta entrega el listado de empleados **no** muestra ni filtra por sucursal.
 - Vincular empleado ↔ cuenta de login (`userId`). Empleado es **catálogo aparte**.
 - Refactor de la duplicación pre-existente de stores de Sucursales (`sucursal.*` vs `sucursales.*`).
 - Migrar la feature `pacientes` al stepper-header genérico (lo trabaja otro agente; se deja como follow-up).
@@ -42,6 +46,7 @@ El SaaS de laboratorio ya gestiona **usuarios de login** desde *Empresa › Usua
 | Forma del alta/edición | **Stepper full-page** estilo pacientes (no drawer/modal) |
 | Reutilización del stepper | **Componente genérico nuevo en `shared/`**, sin tocar `pacientes` (evita conflicto con `feat/patient-form-stepper-impl`) |
 | Empleados vs Médicos | Dos features separadas (consistencia > DRY prematuro), compartiendo solo el stepper-header |
+| Sucursal del empleado | **Diferida** — el backend no la soporta hoy; ticket de backend aparte para `branchId` + filtro, consumido en una 2da iteración (ver §10) |
 
 ## 4. Diseño
 
@@ -119,6 +124,9 @@ Cada stepper full-page replica la estructura de `PatientFormPage`:
 - Sidebar (`sidebar.nav.ts`): el item "Sucursales" pasa a apuntar a `/sucursales`
   (hoy `/sucursales/configuracion`). Mantiene `roleKey: 'ADMINISTRADOR'`.
 - Gating: rutas de empleados protegidas con `roleGuard('ADMINISTRADOR')` (igual que sedes).
+- **Listado (tabla):** columnas Nombre · Documento · Matrícula · Bioquímico (tag) · Estado ·
+  Acciones. **Sin** columna ni filtro de **sucursal** en esta iteración — el backend no
+  expone ese dato todavía (ver §2 y §10). Botón "Nuevo" que navega al stepper.
 
 **Pasos del stepper de Empleados:**
 1. **Datos** — `firstName`, `lastName`, `document`, `registration` (matrícula, opcional),
@@ -232,3 +240,26 @@ contactos en el effect de alta. **Médicos** usa `[Datos, Resumen]`.
 3. `jira-workflow` → ticket Jira (regla #1), linkeado al plan.
 4. Implementación (empezando por `ui-form-stepper-header`), con tests, contra
    `feat/abm-empleados-medicos`.
+
+## 10. Follow-ups diferidos
+
+### 10.1 Sucursal del empleado (cambio de backend) — ticket aparte
+El requerimiento "listar empleados filtrados por sucursal / mostrar en qué sucursal trabaja"
+necesita backend, que hoy no existe. Se difiere a un cambio independiente en el repo
+**Backend** (con su propio flujo SDD + ticket Jira + worktree):
+
+- **Migración Flyway:** agregar `branch_id BIGINT` a la tabla `employees` (FK a `branches`,
+  nullable para no romper filas existentes) + índice `(tenant_id, branch_id)`.
+- **Dominio/DTO:** sumar `branchId` a `Employee`, `EmployeeJpaEntity`, `CreateEmployeeRequest`,
+  `UpdateEmployeeRequest`, `EmployeeResponse` y mappers/use cases.
+- **Filtro de listado:** `GET /api/v1/sucursales/employees?branchId=` (param opcional).
+- **Modelo:** 1 sucursal por empleado (consistente con `User.branch`). Si se necesita
+  multi-sucursal, sería tabla `employee_branches` (M:N) — fuera de este follow-up.
+
+**2da iteración de frontend (este repo, después del backend):** selector de sucursal en el
+listado de empleados, columna "Sucursal" en la tabla, y campo "Sucursal" en el paso *Datos*
+del stepper.
+
+### 10.2 Migrar `pacientes` al `ui-form-stepper-header` compartido (opcional)
+Cuando el trabajo de `feat/patient-form-stepper-impl` esté mergeado, reemplazar el
+`pat-form-stepper-header` por el genérico de `shared` para eliminar la duplicación.
