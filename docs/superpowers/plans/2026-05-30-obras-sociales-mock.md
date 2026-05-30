@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Jira:** _(pendiente — crear con `jira-workflow` ANTES de implementar; luego reemplazar por `[KAN-N](URL)` — regla #1/#3 del CLAUDE.md)_
+> **Jira:** [KAN-56](https://exequielsantoro.atlassian.net/browse/KAN-56)
 
 **Goal:** Implementar las 3 pantallas de Obras Sociales (listado en tabla, stepper de alta, detalle con tabs) con datos mock y NgRx clásico, dejando el mock aislado en el servicio para enchufar el backend después.
 
