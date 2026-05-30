@@ -1,7 +1,7 @@
 # Stepper compartido + Médicos derivantes — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-> **Jira:** _(pendiente — crear con `jira-workflow` antes de implementar, regla #1 del CLAUDE.md)_
+> **Jira:** [KAN-58](https://exequielsantoro.atlassian.net/browse/KAN-58)
 > **Spec:** `docs/superpowers/specs/2026-05-30-abm-empleados-medicos-design.md`
 
 **Goal:** Crear un componente genérico de stepper-header en `shared/` y construir el ABM completo de Médicos derivantes (lista + alta/edición como stepper full-page) llenando el módulo `/medicos`.

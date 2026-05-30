@@ -4,6 +4,7 @@
 > **Jira:** _(pendiente — crear con `jira-workflow` antes de implementar, regla #1 del CLAUDE.md)_
 > **Spec:** `docs/superpowers/specs/2026-05-30-abm-empleados-medicos-design.md`
 > **Depende de:** Plan 1 (`2026-05-30-stepper-compartido-y-medicos.md`) — usa `ui-form-stepper-header` y el tipo `FormStep` de `@shared/ui`. Implementar Plan 1 primero.
+> **⚠️ Coordinación KAN-47:** este plan modifica `sucursales.routes.ts` y `sidebar.nav.ts`, que también reescribe **KAN-47** ("[Frontend LAB] Back-office completo de sucursales", Mateo Pillado, rama `feat/sucursales-back-office`, *Por hacer*). KAN-47 elimina el modal legacy, el stub `pages/areas` y el store plural, y agrega su propio detalle con tabs + catálogo. Decisión del equipo: avanzar Empleados sobre la estructura **actual** de Sucursales (este plan) y reconciliar con KAN-47 cuando alguno de los dos mergee. **Antes de empezar este plan**, revisar si `feat/sucursales-back-office` ya avanzó para evitar retrabajo.
 
 **Goal:** Construir el ABM de Empleados (lista + alta/edición como stepper Datos/Contactos/Resumen, con gestión de contactos) dentro de un nuevo shell de tabs en Sucursales ("Sucursales | Empleados").
 
