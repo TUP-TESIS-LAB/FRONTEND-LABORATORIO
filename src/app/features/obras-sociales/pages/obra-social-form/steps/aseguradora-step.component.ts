@@ -42,7 +42,7 @@ import { TextareaModule } from 'primeng/textarea';
 
       <div class="flex flex-col gap-1 col-span-2">
         <label class="text-sm font-medium">URL de autorización</label>
-        <input pInputText formControlName="authorizationUrl" maxlength="255" placeholder="https://…" />
+        <input pInputText formControlName="authorizationUrl" maxlength="255" placeholder="https://..." />
       </div>
 
       <div class="flex flex-col gap-1 col-span-2">
@@ -53,11 +53,11 @@ import { TextareaModule } from 'primeng/textarea';
       <div class="col-span-2 mt-2 text-xs text-surface-500">Contacto (opcional)</div>
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">Teléfono</label>
-        <input pInputText formControlName="phone" placeholder="0810-…" />
+        <input pInputText formControlName="phone" placeholder="0810-..." />
       </div>
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">Email</label>
-        <input pInputText formControlName="email" placeholder="contacto@…" />
+        <input pInputText formControlName="email" placeholder="contacto@..." />
         @if (showError('email')) { <small class="text-red-600">Ingresá un email válido.</small> }
       </div>
     </div>

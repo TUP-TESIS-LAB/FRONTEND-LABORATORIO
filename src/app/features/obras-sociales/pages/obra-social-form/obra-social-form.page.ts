@@ -63,10 +63,10 @@ function isoFromDate(d: unknown): string {
           @if (isLastStep()) {
             <p-button label="Guardar" type="button" severity="success" [loading]="creating()" [disabled]="!canSubmit()" (onClick)="confirmSave()" />
           } @else {
-            <p-button label="Continuar →" type="button" [disabled]="!canContinue()" (onClick)="goNext()" />
+            <p-button label="Continuar" icon="pi pi-arrow-right" iconPos="right" type="button" [disabled]="!canContinue()" (onClick)="goNext()" />
           }
           @if (!isFirstStep()) {
-            <p-button label="← Atrás" [text]="true" type="button" (onClick)="goBack()" />
+            <p-button label="Atrás" icon="pi pi-arrow-left" [text]="true" type="button" (onClick)="goBack()" />
           }
           <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
         </div>

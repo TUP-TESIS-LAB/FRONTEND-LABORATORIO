@@ -155,7 +155,7 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
         </p-tabs>
       </div>
     } @else {
-      <div class="p-6">{{ pending() ? 'Cargando…' : 'Obra social no encontrada.' }}</div>
+      <div class="p-6">{{ pending() ? 'Cargando...' : 'Obra social no encontrada.' }}</div>
     }
   `,
 })

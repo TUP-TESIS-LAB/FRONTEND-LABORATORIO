@@ -81,7 +81,7 @@ export class ObraSocialEffects {
   loadObraSocialCatalogs$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadObraSocialCatalogs),
-      switchMap(() =>
+      exhaustMap(() =>
         forkJoin({
           insurerTypes: this.service.getInsurerTypes(),
           nbuVersions: this.service.getNbuVersions(),

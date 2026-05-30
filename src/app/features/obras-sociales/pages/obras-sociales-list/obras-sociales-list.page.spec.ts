@@ -49,4 +49,12 @@ describe('ObrasSocialesListPage (smoke)', () => {
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
     expect(html).toMatch(/href="[^"]*\/obras-sociales\/nueva"/);
   });
+
+  it('carga la lista en init: el p-table lazy dispara setObraSocialPageRequest', () => {
+    const spy = vi.spyOn(store, 'dispatch');
+    TestBed.createComponent(ObrasSocialesListPage).detectChanges();
+    expect(spy).toHaveBeenCalledWith(
+      setObraSocialPageRequest({ patch: { page: 0, size: initialObraSocialState.pageRequest.size } }),
+    );
+  });
 });

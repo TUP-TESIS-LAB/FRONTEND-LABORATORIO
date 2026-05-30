@@ -26,7 +26,7 @@ import { ObraSocialFormStep } from '../../obra-social-form-steps';
           (keydown.space)="onKey($event, i)"
         >
           <span class="os-stepper__num" aria-hidden="true">
-            @if (isDone(i)) { ✓ } @else { {{ i + 1 }} }
+            @if (isDone(i)) { <i class="pi pi-check" aria-hidden="true"></i> } @else { {{ i + 1 }} }
           </span>
           <span class="os-stepper__lbl">
             <span class="os-stepper__title">{{ step.title }}</span>

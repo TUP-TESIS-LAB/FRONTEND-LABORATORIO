@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime } from 'rxjs';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -45,7 +46,7 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
       <div class="flex items-center gap-2 mb-3 flex-wrap">
         <span class="p-input-icon-left">
           <i class="pi pi-search"></i>
-          <input pInputText placeholder="Buscar por nombre, sigla o código…" (input)="onSearch($any($event.target).value)" />
+          <input pInputText placeholder="Buscar por nombre, sigla o código..." (input)="onSearch($any($event.target).value)" />
         </span>
         @for (opt of stateOptions; track opt.value) {
           <p-button
@@ -120,6 +121,7 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
 })
 export class ObrasSocialesListPage implements OnInit {
   private readonly store = inject(Store);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly search$ = new Subject<string>();
 
   readonly items = this.store.selectSignal(selectObraSocialItems);
@@ -141,7 +143,7 @@ export class ObrasSocialesListPage implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(loadObraSocialCatalogs());
-    this.search$.pipe(debounceTime(300)).subscribe((q) =>
+    this.search$.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe((q) =>
       this.store.dispatch(setObraSocialPageRequest({ patch: { q, page: 0 } })),
     );
   }
