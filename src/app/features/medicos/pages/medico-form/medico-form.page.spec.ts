@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
+import { provideMockActions } from '@ngrx/effects/testing';
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { of } from 'rxjs';
 import { MedicoFormPage } from './medico-form.page';
 import { DOCTOR_FEATURE_KEY, initialDoctorState } from '../../store/doctor.state';
 import { addDoctor } from '../../store/doctor.actions';
@@ -14,6 +16,7 @@ describe('MedicoFormPage (smoke)', () => {
       imports: [MedicoFormPage],
       providers: [
         provideMockStore({ initialState: { [DOCTOR_FEATURE_KEY]: initialDoctorState } }),
+        provideMockActions(() => of()),
         provideRouter([]),
         provideNoopAnimations(),
       ],
