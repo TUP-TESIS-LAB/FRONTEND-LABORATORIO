@@ -38,10 +38,6 @@ import { ATENCION_FEATURE_KEY } from '@features/analitica/store/atencion/atencio
 import { atencionReducer } from '@features/analitica/store/atencion/atencion.reducer';
 import { AtencionEffects } from '@features/analitica/store/atencion/atencion.effects';
 
-import { TURNOS_FEATURE_KEY } from '@features/turnos/store/turnos.state';
-import { turnosReducer } from '@features/turnos/store/turnos.reducer';
-import { TurnosEffects } from '@features/turnos/store/turnos.effects';
-
 import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.state';
 import { financieroReducer } from '@features/financiero/store/financiero.reducer';
 import { FinancieroEffects } from '@features/financiero/store/financiero.effects';
@@ -84,8 +80,6 @@ export const appConfig: ApplicationConfig = {
     provideEffects(AnaliticaEffects),
     provideState(ATENCION_FEATURE_KEY, atencionReducer),
     provideEffects(AtencionEffects),
-    provideState(TURNOS_FEATURE_KEY, turnosReducer),
-    provideEffects(TurnosEffects),
     provideState(FINANCIERO_FEATURE_KEY, financieroReducer),
     provideEffects(FinancieroEffects),
     provideState(PATIENT_FEATURE_KEY, patientReducer),
