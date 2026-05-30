@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -10,7 +10,7 @@ import { TextareaModule } from 'primeng/textarea';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, InputTextModule, SelectModule, TextareaModule],
   template: `
-    <div [formGroup]="group" class="grid grid-cols-2 gap-4 max-w-3xl">
+    <div [formGroup]="group()" class="grid grid-cols-2 gap-4 max-w-3xl">
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">Código *</label>
         <input pInputText formControlName="code" maxlength="20" placeholder="Ej. OSDE" />
@@ -64,7 +64,7 @@ import { TextareaModule } from 'primeng/textarea';
   `,
 })
 export class AseguradoraStepComponent {
-  @Input({ required: true }) group!: FormGroup;
+  readonly group = input.required<FormGroup>();
 
   readonly typeOptions = [
     { label: 'Obra Social', value: 'SOCIAL' },
@@ -72,7 +72,7 @@ export class AseguradoraStepComponent {
   ];
 
   showError(controlName: string): boolean {
-    const c = this.group.get(controlName);
+    const c = this.group().get(controlName);
     return !!c && c.invalid && (c.dirty || c.touched);
   }
 }

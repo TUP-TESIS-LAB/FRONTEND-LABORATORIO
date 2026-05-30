@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ObraSocialFormStep } from '../../obra-social-form-steps';
 
 @Component({
@@ -7,17 +7,17 @@ import { ObraSocialFormStep } from '../../obra-social-form-steps';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ol class="os-stepper" role="list">
-      @for (step of steps; track step.key; let i = $index) {
+      @for (step of steps(); track step.key; let i = $index) {
         @if (i > 0) {
           <li class="os-stepper__connector" [class.is-done]="isDone(i - 1)" aria-hidden="true"></li>
         }
         <li
           class="os-stepper__item"
-          [class.is-current]="i === currentIndex"
+          [class.is-current]="i === currentIndex()"
           [class.is-done]="isDone(i)"
           [class.is-locked]="isLocked(i)"
           [class.is-clickable]="isClickable(i)"
-          [attr.aria-current]="i === currentIndex ? 'step' : null"
+          [attr.aria-current]="i === currentIndex() ? 'step' : null"
           [attr.role]="isClickable(i) ? 'button' : null"
           [attr.tabindex]="isClickable(i) ? 0 : null"
           [attr.aria-label]="ariaLabelFor(step, i)"
@@ -56,14 +56,14 @@ import { ObraSocialFormStep } from '../../obra-social-form-steps';
   `],
 })
 export class ObraSocialStepperHeaderComponent {
-  @Input({ required: true }) steps!: readonly ObraSocialFormStep[];
-  @Input({ required: true }) currentIndex!: number;
-  @Input({ required: true }) visited!: ReadonlySet<number>;
+  readonly steps = input.required<readonly ObraSocialFormStep[]>();
+  readonly currentIndex = input.required<number>();
+  readonly visited = input.required<ReadonlySet<number>>();
   readonly stepSelected = output<number>();
 
-  isDone(i: number): boolean { return this.visited.has(i) && i !== this.currentIndex; }
-  isLocked(i: number): boolean { return !this.visited.has(i) && i !== this.currentIndex; }
-  isClickable(i: number): boolean { return i !== this.currentIndex && this.visited.has(i); }
+  readonly isDone = (i: number) => this.visited().has(i) && i !== this.currentIndex();
+  readonly isLocked = (i: number) => !this.visited().has(i) && i !== this.currentIndex();
+  readonly isClickable = (i: number) => i !== this.currentIndex() && this.visited().has(i);
 
   onClick(i: number): void { if (this.isClickable(i)) this.stepSelected.emit(i); }
   onKey(event: Event, i: number): void {
@@ -72,8 +72,8 @@ export class ObraSocialStepperHeaderComponent {
     this.stepSelected.emit(i);
   }
   ariaLabelFor(step: ObraSocialFormStep, i: number): string {
-    const total = this.steps.length;
-    const status = i === this.currentIndex ? 'actual' : this.isDone(i) ? 'completado' : 'bloqueado';
+    const total = this.steps().length;
+    const status = i === this.currentIndex() ? 'actual' : this.isDone(i) ? 'completado' : 'bloqueado';
     return `Paso ${i + 1} de ${total}: ${step.title} (${status})`;
   }
 }
