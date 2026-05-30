@@ -17,6 +17,7 @@ import { authTokenInterceptor } from '@core/interceptors/auth-token.interceptor'
 import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
 import { TokenService } from '@core/auth/token.service';
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
+import { loadMySections } from '@core/access/store/access.actions';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
 import { tenantReducer } from '@core/tenant/store/tenant.reducer';
@@ -69,6 +70,7 @@ export const appConfig: ApplicationConfig = {
       const store = inject(Store);
       if (tokens.isTokenValid() && !tokens.getRoles().includes('SAAS_ADMIN')) {
         store.dispatch(loadTenantConfig());
+        store.dispatch(loadMySections());
       }
     }),
     provideRouter(routes, withComponentInputBinding()),
