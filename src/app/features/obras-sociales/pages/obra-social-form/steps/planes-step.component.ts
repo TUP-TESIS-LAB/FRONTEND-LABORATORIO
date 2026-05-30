@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Input, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -23,7 +23,7 @@ import { NbuOption } from '../../../models/catalogs.model';
           <input type="date" pInputText formControlName="validFromDate" />
         </label>
         <label class="flex flex-col gap-1 text-xs text-surface-500">Versión NBU *
-          <p-select formControlName="versionNbu" [options]="nbuOptions()" optionLabel="label" optionValue="value" placeholder="NBU" />
+          <p-select formControlName="versionNbu" [options]="nbuOptions" optionLabel="label" optionValue="value" placeholder="NBU" />
         </label>
         <label class="flex flex-col gap-1 text-xs text-surface-500">Valor U.B. *
           <input type="number" pInputText formControlName="ubValue" min="0" step="0.01" />
@@ -40,7 +40,7 @@ import { NbuOption } from '../../../models/catalogs.model';
       </div>
       @if (dupError()) { <small class="text-red-600 block mb-2">Ya hay un plan con ese código.</small> }
 
-      <p-table [value]="array().controls" dataKey="value.code">
+      <p-table [value]="array.controls" dataKey="value.code">
         <ng-template pTemplate="header">
           <tr><th>Código</th><th>Nombre</th><th>Vigente desde</th><th>NBU</th><th>Valor U.B.</th><th>% Cob.</th><th>IVA</th><th></th></tr>
         </ng-template>
@@ -67,8 +67,8 @@ import { NbuOption } from '../../../models/catalogs.model';
 })
 export class PlanesStepComponent {
   private readonly fb = inject(FormBuilder);
-  readonly array = input.required<FormArray<FormGroup>>();
-  readonly nbuOptions = input.required<NbuOption[]>();
+  @Input({ required: true }) array!: FormArray<FormGroup>;
+  @Input({ required: true }) nbuOptions!: NbuOption[];
   readonly dupError = signal(false);
 
   readonly draft: FormGroup = this.fb.group({
@@ -85,16 +85,16 @@ export class PlanesStepComponent {
   addPlan(): void {
     if (this.draft.invalid) { this.draft.markAllAsTouched(); return; }
     const v = this.draft.getRawValue() as { code: string };
-    const exists = this.array().controls.some((c) => (c.value.code as string)?.toLowerCase() === v.code.toLowerCase());
+    const exists = this.array.controls.some((c) => (c.value.code as string)?.toLowerCase() === v.code.toLowerCase());
     if (exists) { this.dupError.set(true); return; }
     this.dupError.set(false);
-    this.array().push(this.fb.group({ ...this.draft.getRawValue() }));
+    this.array.push(this.fb.group({ ...this.draft.getRawValue() }));
     this.draft.reset({ code: '', acronym: '', name: '', validFromDate: '', versionNbu: null, ubValue: null, coveragePercentage: null, iva: null });
   }
 
-  removePlan(i: number): void { this.array().removeAt(i); }
+  removePlan(i: number): void { this.array.removeAt(i); }
 
   nbuLabel(value: number): string {
-    return this.nbuOptions().find((o) => o.value === value)?.label ?? String(value);
+    return this.nbuOptions.find((o) => o.value === value)?.label ?? String(value);
   }
 }
