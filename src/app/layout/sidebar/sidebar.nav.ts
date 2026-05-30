@@ -71,7 +71,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { kind: 'link', label: 'Empresa',          icon: 'pi pi-building',    path: '/empresa' },
       { kind: 'link', label: 'Roles y permisos', icon: 'pi pi-shield',      path: '/roles' },
-      { kind: 'link', label: 'Sucursales',       icon: 'pi pi-building',    path: '/sucursales/configuracion', roleKey: 'ADMINISTRADOR' },
+      { kind: 'link', label: 'Sucursales',       icon: 'pi pi-building',    path: '/sucursales', roleKey: 'ADMINISTRADOR' },
       {
         kind: 'link',
         label: 'Financiero',
