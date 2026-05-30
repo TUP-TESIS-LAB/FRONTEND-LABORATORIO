@@ -54,6 +54,10 @@ import { SAAS_ADMIN_FEATURE_KEY } from '@features/saas-admin/store/saas-admin.st
 import { saasAdminReducer } from '@features/saas-admin/store/saas-admin.reducer';
 import { SaasAdminEffects } from '@features/saas-admin/store/saas-admin.effects';
 
+import { ACCESS_FEATURE_KEY } from '@core/access/store/access.state';
+import { accessReducer } from '@core/access/store/access.reducer';
+import { AccessEffects } from '@core/access/store/access.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -92,6 +96,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(PatientEffects),
     provideState(SAAS_ADMIN_FEATURE_KEY, saasAdminReducer),
     provideEffects(SaasAdminEffects),
+    provideState(ACCESS_FEATURE_KEY, accessReducer),
+    provideEffects(AccessEffects),
     providePrimeNG({
       theme: {
         preset: Aura,
