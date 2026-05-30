@@ -38,7 +38,7 @@ describe('EmployeeEffects', () => {
 
   it('loadEmployees$ maps to loadEmployeesSuccess', () =>
     new Promise<void>((resolve) => {
-      svc.list.mockReturnValue(of([emp]));
+      svc['list'].mockReturnValue(of([emp]));
       actions$ = of(loadEmployees());
       TestBed.inject(EmployeeEffects).loadEmployees$.subscribe((a) => {
         expect(a).toEqual(loadEmployeesSuccess({ employees: [emp] }));
@@ -48,36 +48,36 @@ describe('EmployeeEffects', () => {
 
   it('addEmployee$ creates employee then its contacts and emits addEmployeeSuccess', () =>
     new Promise<void>((resolve) => {
-      svc.create.mockReturnValue(of(emp));
-      svc.addContact.mockReturnValue(of({ id: 7, employeeId: 1, contactType: 'EMAIL', value: 'x@x.com' }));
+      svc['create'].mockReturnValue(of(emp));
+      svc['addContact'].mockReturnValue(of({ id: 7, employeeId: 1, contactType: 'EMAIL', value: 'x@x.com' }));
       actions$ = of(addEmployee({
         req: { firstName: 'a', lastName: 'b', document: '1', isBiochemist: false },
         contacts: [{ contactType: 'EMAIL', value: 'x@x.com' }],
       }));
       TestBed.inject(EmployeeEffects).addEmployee$.subscribe((a) => {
         expect(a).toEqual(addEmployeeSuccess({ employee: emp }));
-        expect(svc.addContact).toHaveBeenCalledWith(1, { contactType: 'EMAIL', value: 'x@x.com' });
+        expect(svc['addContact']).toHaveBeenCalledWith(1, { contactType: 'EMAIL', value: 'x@x.com' });
         resolve();
       });
     }));
 
   it('addEmployee$ with no contacts still emits success without calling addContact', () =>
     new Promise<void>((resolve) => {
-      svc.create.mockReturnValue(of(emp));
+      svc['create'].mockReturnValue(of(emp));
       actions$ = of(addEmployee({ req: { firstName: 'a', lastName: 'b', document: '1', isBiochemist: false }, contacts: [] }));
       TestBed.inject(EmployeeEffects).addEmployee$.subscribe((a) => {
         expect(a).toEqual(addEmployeeSuccess({ employee: emp }));
-        expect(svc.addContact).not.toHaveBeenCalled();
+        expect(svc['addContact']).not.toHaveBeenCalled();
         resolve();
       });
     }));
 
   it('updateEmployee$ updates then reconciles contacts (delete/update/create) and emits success', () =>
     new Promise<void>((resolve) => {
-      svc.update.mockReturnValue(of(emp));
-      svc.removeContact.mockReturnValue(of(undefined));
-      svc.updateContact.mockReturnValue(of({ id: 2, employeeId: 1, contactType: 'PHONE', value: '11' }));
-      svc.addContact.mockReturnValue(of({ id: 3, employeeId: 1, contactType: 'EMAIL', value: 'n@x.com' }));
+      svc['update'].mockReturnValue(of(emp));
+      svc['removeContact'].mockReturnValue(of(undefined));
+      svc['updateContact'].mockReturnValue(of({ id: 2, employeeId: 1, contactType: 'PHONE', value: '11' }));
+      svc['addContact'].mockReturnValue(of({ id: 3, employeeId: 1, contactType: 'EMAIL', value: 'n@x.com' }));
       actions$ = of(updateEmployee({
         id: 1,
         req: { firstName: 'a', lastName: 'b', document: '1', isBiochemist: true },
@@ -87,16 +87,16 @@ describe('EmployeeEffects', () => {
       }));
       TestBed.inject(EmployeeEffects).updateEmployee$.subscribe((a) => {
         expect(a).toEqual(updateEmployeeSuccess({ employee: emp }));
-        expect(svc.removeContact).toHaveBeenCalledWith(1, 9);
-        expect(svc.updateContact).toHaveBeenCalledWith(1, 2, { contactType: 'PHONE', value: '11' });
-        expect(svc.addContact).toHaveBeenCalledWith(1, { contactType: 'EMAIL', value: 'n@x.com' });
+        expect(svc['removeContact']).toHaveBeenCalledWith(1, 9);
+        expect(svc['updateContact']).toHaveBeenCalledWith(1, 2, { contactType: 'PHONE', value: '11' });
+        expect(svc['addContact']).toHaveBeenCalledWith(1, { contactType: 'EMAIL', value: 'n@x.com' });
         resolve();
       });
     }));
 
   it('toggleEmployeeStatus$ maps to success with returned employee', () =>
     new Promise<void>((resolve) => {
-      svc.toggleStatus.mockReturnValue(of({ ...emp, active: false }));
+      svc['toggleStatus'].mockReturnValue(of({ ...emp, active: false }));
       actions$ = of(toggleEmployeeStatus({ id: 1 }));
       TestBed.inject(EmployeeEffects).toggleEmployeeStatus$.subscribe((a) => {
         expect(a).toEqual(toggleEmployeeStatusSuccess({ employee: { ...emp, active: false } }));
