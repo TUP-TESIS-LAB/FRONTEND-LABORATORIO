@@ -59,6 +59,10 @@ import { ACCESS_FEATURE_KEY } from '@core/access/store/access.state';
 import { accessReducer } from '@core/access/store/access.reducer';
 import { AccessEffects } from '@core/access/store/access.effects';
 
+import { ROLES_PERMISOS_FEATURE_KEY } from '@features/roles-permisos/store/roles-permisos.state';
+import { rolesPermisosReducer } from '@features/roles-permisos/store/roles-permisos.reducer';
+import { RolesPermisosEffects } from '@features/roles-permisos/store/roles-permisos.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -100,6 +104,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(SaasAdminEffects),
     provideState(ACCESS_FEATURE_KEY, accessReducer),
     provideEffects(AccessEffects),
+    provideState(ROLES_PERMISOS_FEATURE_KEY, rolesPermisosReducer),
+    provideEffects(RolesPermisosEffects),
     providePrimeNG({
       theme: {
         preset: Aura,
