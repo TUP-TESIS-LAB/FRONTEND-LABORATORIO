@@ -13,26 +13,32 @@ import { NbuOption } from '../../../models/catalogs.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, TableModule, ButtonModule, InputTextModule, SelectModule, CurrencyArPipe],
   template: `
-    <div class="max-w-4xl">
+    <div class="max-w-5xl mx-auto w-full">
       <h3 class="text-base font-semibold mb-2">Agregar plan</h3>
-      <div [formGroup]="draft" class="grid grid-cols-3 gap-3 mb-2">
-        <input pInputText formControlName="code" placeholder="Código *" maxlength="20" />
-        <input pInputText formControlName="acronym" placeholder="Sigla *" maxlength="10" />
-        <input pInputText formControlName="name" placeholder="Nombre *" maxlength="100" />
+      <div [formGroup]="draft" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-2">
+        <label class="flex flex-col gap-1 text-xs text-surface-500">Código *
+          <input pInputText formControlName="code" maxlength="20" class="w-full" />
+        </label>
+        <label class="flex flex-col gap-1 text-xs text-surface-500">Sigla *
+          <input pInputText formControlName="acronym" maxlength="10" class="w-full" />
+        </label>
+        <label class="flex flex-col gap-1 text-xs text-surface-500">Nombre *
+          <input pInputText formControlName="name" maxlength="100" class="w-full" />
+        </label>
         <label class="flex flex-col gap-1 text-xs text-surface-500">Vigente desde *
-          <input type="date" pInputText formControlName="validFromDate" />
+          <input type="date" pInputText formControlName="validFromDate" class="w-full" />
         </label>
         <label class="flex flex-col gap-1 text-xs text-surface-500">Versión NBU *
-          <p-select formControlName="versionNbu" [options]="nbuOptions()" optionLabel="label" optionValue="value" placeholder="NBU" />
+          <p-select formControlName="versionNbu" [options]="nbuOptions()" optionLabel="label" optionValue="value" placeholder="Elegí una versión" />
         </label>
         <label class="flex flex-col gap-1 text-xs text-surface-500">Valor U.B. *
-          <input type="number" pInputText formControlName="ubValue" min="0" step="0.01" />
+          <input type="number" pInputText formControlName="ubValue" min="0" step="0.01" class="w-full" />
         </label>
         <label class="flex flex-col gap-1 text-xs text-surface-500">% Cobertura *
-          <input type="number" pInputText formControlName="coveragePercentage" min="0" max="100" />
+          <input type="number" pInputText formControlName="coveragePercentage" min="0" max="100" class="w-full" />
         </label>
         <label class="flex flex-col gap-1 text-xs text-surface-500">IVA % *
-          <input type="number" pInputText formControlName="iva" min="0" max="100" />
+          <input type="number" pInputText formControlName="iva" min="0" max="100" class="w-full" />
         </label>
         <div class="flex items-end">
           <p-button label="Agregar plan" icon="pi pi-plus" size="small" (onClick)="addPlan()" [disabled]="draft.invalid" />

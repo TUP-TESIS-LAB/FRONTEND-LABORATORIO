@@ -31,7 +31,7 @@ export interface ResumenView {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TableModule, CurrencyArPipe],
   template: `
-    <div class="max-w-4xl space-y-5">
+    <div class="max-w-5xl mx-auto w-full space-y-5">
       <section>
         <h3 class="text-base font-semibold mb-2">Aseguradora</h3>
         <div class="grid grid-cols-3 gap-3">
