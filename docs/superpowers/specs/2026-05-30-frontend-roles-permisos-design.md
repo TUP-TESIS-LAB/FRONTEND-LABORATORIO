@@ -3,7 +3,7 @@
 > **Fecha:** 2026-05-30
 > **Repo:** FRONTEND-LABORATORIO · **Rama:** `feat/roles-permisos` (worktree `.worktrees/roles-permisos`, desde `development`)
 > **Estado:** Diseño aprobado en brainstorming. Pendiente: writing-plans → jira-workflow (regla #1) → tasks.
-> **Jira:** _(pendiente — se crea con `jira-workflow` antes de implementar)_
+> **Jira:** [KAN-60](https://exequielsantoro.atlassian.net/browse/KAN-60)
 > **Backend:** consume la API de KAN-57 (permisos modulares por usuario), ya implementada.
 
 ## 1. Contexto y problema

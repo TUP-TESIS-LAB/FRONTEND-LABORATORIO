@@ -4,7 +4,7 @@
 >
 > **Spec:** `docs/superpowers/specs/2026-05-30-frontend-roles-permisos-design.md`
 > **Rama:** `feat/roles-permisos` (worktree `.worktrees/roles-permisos`, desde `development`)
-> **Jira:** _(pendiente — lo completa `jira-workflow` antes de implementar; regla #1 del CLAUDE.md)_
+> **Jira:** [KAN-60](https://exequielsantoro.atlassian.net/browse/KAN-60)
 
 **Goal:** Pantalla master-detail para que el `ADMINISTRADOR` asigne secciones por usuario (consume la API de KAN-57) + sidebar/guard dirigidos por `/me/access-sections`, de modo que cada empleado vea solo lo que tiene concedido.
 
