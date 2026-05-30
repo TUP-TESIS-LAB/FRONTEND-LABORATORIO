@@ -26,7 +26,7 @@ export class DoctorEffects {
         this.service.list().pipe(
           map((doctors) => loadDoctorsSuccess({ doctors })),
           catchError((error: HttpErrorResponse) => {
-            this.notifications.error('No se pudieron cargar los medicos.');
+            this.notifications.error('No se pudieron cargar los médicos.');
             return of(loadDoctorsFailure({ error }));
           }),
         ),
@@ -41,7 +41,7 @@ export class DoctorEffects {
         this.service.getById(id).pipe(
           map((doctor) => loadDoctorSuccess({ doctor })),
           catchError((error: HttpErrorResponse) => {
-            this.notifications.error('No se pudo cargar el medico.');
+            this.notifications.error('No se pudo cargar el médico.');
             return of(loadDoctorFailure({ error }));
           }),
         ),
@@ -80,7 +80,7 @@ export class DoctorEffects {
         this.service.toggleStatus(id).pipe(
           map((doctor) => toggleDoctorStatusSuccess({ doctor })),
           catchError((error: HttpErrorResponse) => {
-            this.notifications.error('No se pudo cambiar el estado del medico.');
+            this.notifications.error('No se pudo cambiar el estado del médico.');
             return of(toggleDoctorStatusFailure({ error }));
           }),
         ),
@@ -95,7 +95,7 @@ export class DoctorEffects {
         this.service.remove(id).pipe(
           map(() => deleteDoctorSuccess({ id })),
           catchError((error: HttpErrorResponse) => {
-            this.notifications.error('No se pudo eliminar el medico.');
+            this.notifications.error('No se pudo eliminar el médico.');
             return of(deleteDoctorFailure({ error }));
           }),
         ),
