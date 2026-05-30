@@ -14,6 +14,7 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { CONTACT_TYPE_LABELS } from '../../models/contact-info.model';
 import { PlanComplete } from '../../models/plan.model';
+import { Agreement } from '../../models/agreement.model';
 import { loadObraSocial, loadObraSocialFailure, clearSelectedObraSocial } from '../../store/obra-social.actions';
 import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } from '../../store/obra-social.selectors';
 
@@ -208,7 +209,7 @@ export class ObraSocialDetailPage implements OnInit, OnDestroy {
     if (value == null) return '—';
     return this.nbuOptions().find((o) => o.value === value)?.label ?? String(value);
   }
-  currentAgreement(p: PlanComplete) {
+  currentAgreement(p: PlanComplete): Agreement | undefined {
     return p.actualAgreements.find((a) => !a.validToDate) ?? p.actualAgreements[0];
   }
 }
