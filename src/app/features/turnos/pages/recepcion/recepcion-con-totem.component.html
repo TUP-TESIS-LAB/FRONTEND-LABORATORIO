@@ -10,7 +10,7 @@
           <td>{{ row.nationalId }}</td>
           <td>
             @if (row.callCount > 0) {
-              <p-badge [value]="row.callCount" severity="warn" />
+              <span class="call-count">{{ row.callCount }}</span>
             }
           </td>
           <td>
@@ -38,7 +38,7 @@
           <td>{{ row.nationalId }}</td>
           <td>
             @if (row.callCount > 0) {
-              <p-badge [value]="row.callCount" severity="warn" />
+              <span class="call-count">{{ row.callCount }}</span>
             }
           </td>
           <td>
