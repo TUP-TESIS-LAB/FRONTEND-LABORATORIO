@@ -8,11 +8,11 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { interval, startWith, switchMap } from 'rxjs';
 import { DisplaySnapshot, PublicQueueEntry } from '../../models/public-display.model';
-import { QueueStatus } from '../../models/queue-status.enum';
 import { PublicDisplayService } from '../../services/public-display.service';
 import { EmptyStateComponent } from './empty-state.component';
 import { ClosedStateComponent } from './closed-state.component';
@@ -21,7 +21,7 @@ import { AdCarouselComponent } from './ad-carousel.component';
 @Component({
   selector: 'app-sala-espera-page',
   standalone: true,
-  imports: [EmptyStateComponent, ClosedStateComponent, AdCarouselComponent],
+  imports: [DatePipe, EmptyStateComponent, ClosedStateComponent, AdCarouselComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sala-espera.page.html',
   styleUrl: './sala-espera.page.scss',
@@ -36,7 +36,7 @@ export class SalaEsperaPage implements OnInit {
 
   protected snapshot = signal<DisplaySnapshot | null>(null);
   protected lastSuccessfulFetch = signal<number>(0);
-  protected previousCalledId = signal<number | null>(null);
+  protected previousMostRecentCalledId = signal<number | null>(null);
 
   protected readonly audioUnlocked = signal<boolean>(
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tv-audio-unlocked') === '1',
@@ -47,40 +47,32 @@ export class SalaEsperaPage implements OnInit {
     return last > 0 && Date.now() - last > 15000;
   });
 
-  protected calledEntry = computed<PublicQueueEntry | null>(() => {
+  /**
+   * Últimos llamados del día: entries con lastCalledAt no nulo, ordenados desc por hora de llamado.
+   * El backend ya devuelve sólo los que tienen callCount > 0 y lastCalledAt hoy (máx 10).
+   */
+  protected calledEntries = computed<PublicQueueEntry[]>(() => {
     const entries = this.snapshot()?.entries ?? [];
-    const pending = entries.filter(e => e.status === QueueStatus.PENDING && e.lastCalledAt);
-    if (!pending.length) return null;
-    const mostRecent = pending.reduce((a, b) =>
-      new Date(a.lastCalledAt!) > new Date(b.lastCalledAt!) ? a : b,
-    );
-    const ageSeconds = (Date.now() - new Date(mostRecent.lastCalledAt!).getTime()) / 1000;
-    return ageSeconds < 15 ? mostRecent : null;
-  });
-
-  protected upcomingEntries = computed<PublicQueueEntry[]>(() => {
-    const entries = this.snapshot()?.entries ?? [];
-    const called = this.calledEntry();
     return entries
-      .filter(e => e.status === QueueStatus.PENDING && e.id !== called?.id && !e.lastCalledAt)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .slice(0, 5);
+      .filter(e => !!e.lastCalledAt)
+      .sort((a, b) => (b.lastCalledAt ?? '').localeCompare(a.lastCalledAt ?? ''));
   });
 
   protected viewMode = computed<'loading' | 'queue' | 'empty' | 'closed'>(() => {
     const snap = this.snapshot();
     if (!snap) return 'loading';
     if (this.isClosed(snap)) return 'closed';
-    if (snap.entries.filter(e => e.status === QueueStatus.PENDING).length === 0) return 'empty';
+    if ((snap.entries ?? []).length === 0) return 'empty';
     return 'queue';
   });
 
   constructor() {
     effect(() => {
-      const current = this.calledEntry();
-      if (current && current.id !== this.previousCalledId()) {
+      const list = this.calledEntries();
+      const mostRecent = list[0] ?? null;
+      if (mostRecent && mostRecent.id !== this.previousMostRecentCalledId()) {
         this.playBeep();
-        this.previousCalledId.set(current.id);
+        this.previousMostRecentCalledId.set(mostRecent.id);
       }
     });
   }

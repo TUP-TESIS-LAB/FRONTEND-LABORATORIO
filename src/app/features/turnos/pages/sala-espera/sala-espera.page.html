@@ -34,23 +34,26 @@
         }
         @case ('queue') {
           <div class="layout">
-            @if (calledEntry(); as called) {
-              <div class="destacado">
-                <h1>LLAMANDO AHORA</h1>
-                <div class="code">{{ called.publicCode }}</div>
-                <div class="hint">&#8594; acercate al mostrador</div>
-              </div>
-            }
-            @if (upcomingEntries().length) {
-              <div class="proximos">
-                <h2>Próximos turnos:</h2>
+            <div class="proximos">
+              <h2>Últimos llamados:</h2>
+              @if (calledEntries().length === 0) {
+                <div class="empty-state">
+                  <i class="pi pi-info-circle"></i>
+                  <span>Aún no se llamó a ningún paciente hoy</span>
+                </div>
+              } @else {
                 <ul>
-                  @for (e of upcomingEntries(); track e.id) {
-                    <li>{{ e.publicCode }}</li>
+                  @for (e of calledEntries(); track e.id) {
+                    <li>
+                      <span class="code">{{ e.publicCode }}</span>
+                      @if (e.lastCalledAt) {
+                        <span class="hour">{{ e.lastCalledAt | date:'HH:mm':'America/Argentina/Buenos_Aires' }}</span>
+                      }
+                    </li>
                   }
                 </ul>
-              </div>
-            }
+              }
+            </div>
             <div class="footer">
               {{ snapshot()?.serverTime }} hs &mdash;
               {{ snapshot()?.tenantName }} — {{ snapshot()?.branchName }}
