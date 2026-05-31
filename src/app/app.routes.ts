@@ -76,8 +76,8 @@ export const routes: Routes = [
       },
       {
         path: 'roles',
-        loadComponent: () =>
-          import('./features/empresa/pages/roles/roles.page').then((m) => m.RolesPage),
+        loadChildren: () =>
+          import('./features/roles-permisos/roles-permisos.routes').then((m) => m.ROLES_PERMISOS_ROUTES),
       },
       {
         path: 'obras-sociales',
