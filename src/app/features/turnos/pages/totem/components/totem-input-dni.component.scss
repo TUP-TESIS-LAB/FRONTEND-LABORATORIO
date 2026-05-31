@@ -15,15 +15,18 @@
 }
 
 .dni-display {
-  font-size: 3.5rem;
-  font-weight: 700;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5rem;
+  font-size: 2.75rem;
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Montserrat', system-ui, sans-serif;
+  letter-spacing: 0.2rem;
   background: #ffffff;
   border: 2px solid #d1d5db;
   border-radius: 12px;
-  padding: 1rem 2rem;
-  min-width: 20rem;
+  padding: 0.875rem 2rem;
+  width: 24rem;
+  max-width: 100%;
+  box-sizing: border-box;
   text-align: center;
-  min-height: 5rem;
+  min-height: 4.5rem;
 }

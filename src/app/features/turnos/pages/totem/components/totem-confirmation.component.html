@@ -1,5 +1,9 @@
 <div class="kiosk-card kiosk-card--confirm">
-  <h1>¡Listo, {{ patientName() }}!</h1>
+  @if (patientName(); as name) {
+    <h1>¡Listo, {{ name }}!</h1>
+  } @else {
+    <h1>¡Bienvenido!</h1>
+  }
   <p>Tu número es</p>
   <div class="queue-number">{{ queueNumber() }}</div>
   <p>Esperá a ser llamado por pantalla.</p>

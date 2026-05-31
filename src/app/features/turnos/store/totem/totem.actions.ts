@@ -7,12 +7,12 @@ export const submitTotemEntry = createAction(
 
 export const submitTotemEntrySuccess = createAction(
   '[Totem] Submit Entry Success',
-  props<{ queueNumber: string; patientFirstName: string; patientLastName: string }>()
+  props<{ queueNumber: string; patientFirstName: string | null; patientLastName: string | null }>()
 );
 
 export const submitTotemEntryFailure = createAction(
   '[Totem] Submit Entry Failure',
-  props<{ reason: 'PATIENT_NOT_FOUND' | 'UNKNOWN' }>()
+  props<{ reason: 'UNKNOWN' }>()
 );
 
 export const resetTotemView = createAction('[Totem] Reset View');

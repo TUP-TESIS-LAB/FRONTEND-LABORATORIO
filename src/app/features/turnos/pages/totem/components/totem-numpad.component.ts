@@ -11,31 +11,54 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
       }
       <button class="action-btn clear" type="button" data-action="clear" (click)="pressClear()" aria-label="Borrar">
         <i class="pi pi-backspace"></i>
+        <span class="action-label">Borrar</span>
       </button>
       <button class="num-btn" type="button" data-digit="0" (click)="press0()">0</button>
-      <button class="action-btn submit" type="button" data-action="submit" (click)="pressSubmit()" [disabled]="submitDisabled" aria-label="Enviar">
+      <button class="action-btn submit" type="button" data-action="submit" (click)="pressSubmit()" [disabled]="submitDisabled" aria-label="Continuar">
         <i class="pi pi-arrow-right"></i>
       </button>
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+    }
+
     .numpad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      max-width: 28rem;
+      gap: 0.75rem;
+      width: 24rem;
+      max-width: 100%;
       margin: 0 auto;
     }
 
     .num-btn, .action-btn {
       min-height: 5rem;
-      font-size: 2.5rem;
-      font-weight: 700;
+      font-size: 2.25rem;
+      font-weight: 400;
       background: #ffffff;
       border: 2px solid #d1d5db;
       border-radius: 12px;
       cursor: pointer;
       transition: transform 0.05s, background 0.15s;
+    }
+
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+    }
+
+    .action-btn.clear i { font-size: 1.5rem; }
+
+    .action-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
     }
 
     .num-btn:active, .action-btn:active {
@@ -49,9 +72,16 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
       border-color: var(--brand-primary);
     }
 
+    .action-btn.submit i { font-size: 2.25rem; }
+
+    .action-btn.submit:active {
+      background: var(--brand-primary);
+    }
+
     .action-btn.submit:disabled {
       background: #e5e7eb;
       color: #9ca3af;
+      border-color: #d1d5db;
       cursor: not-allowed;
     }
 
