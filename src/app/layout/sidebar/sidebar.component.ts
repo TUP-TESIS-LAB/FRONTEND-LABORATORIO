@@ -34,6 +34,7 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
               <a
                 [routerLink]="item.path"
                 routerLinkActive="ui-sidebar__item--active"
+                [routerLinkActiveOptions]="{ exact: !!item.exact }"
                 class="ui-sidebar__item"
                 (click)="itemClick.emit()">
                 <span class="ui-sidebar__icon"><i [class]="item.icon"></i></span>
@@ -47,6 +48,20 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
                 @if (item.chip) {
                   <span class="ui-sidebar__chip">{{ item.chip }}</span>
                 }
+              </a>
+            } @else if (item.kind === 'external') {
+              <a
+                [href]="item.href"
+                target="_blank"
+                rel="noopener"
+                class="ui-sidebar__item"
+                (click)="itemClick.emit()">
+                <span class="ui-sidebar__icon"><i [class]="item.icon"></i></span>
+                <span class="ui-sidebar__label">{{ item.label }}</span>
+                @if (item.chip) {
+                  <span class="ui-sidebar__chip">{{ item.chip }}</span>
+                }
+                <i class="pi pi-external-link ui-sidebar__chevron"></i>
               </a>
             } @else {
               <button
@@ -332,7 +347,7 @@ export class SidebarComponent implements OnInit {
   }
 
   protected isItemVisible(item: NavItem): boolean {
-    if (item.kind === 'expandable') return true;
+    if (item.kind === 'expandable' || item.kind === 'external') return true;
     if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
     if (item.roleKey && !this.token.getRoles().includes(item.roleKey)) return false;
     return true;

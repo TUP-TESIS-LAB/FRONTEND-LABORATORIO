@@ -15,6 +15,14 @@ export type NavItem =
       chip?: string;       // small uppercase chip text, e.g. 'Beta', 'Root'
       moduleKey?: ModuleKey;
       roleKey?: string;    // required role to show the item
+      exact?: boolean;     // routerLinkActive exact match — útil para paths padre que tienen sub-rutas en el mismo nav
+    }
+  | {
+      kind: 'external';
+      label: string;
+      icon: string;
+      href: string;        // URL absoluta o ruta fuera del admin-shell; abre en nueva pestaña
+      chip?: string;
     }
   | {
       kind: 'expandable';
@@ -56,6 +64,7 @@ export const NAV_SECTIONS: NavSection[] = [
         path: '/turnos',
         moduleKey: ModuleKey.Turnos,
         badge: { text: '4', tone: 'red' },
+        exact: true,
       },
       {
         kind: 'link',
@@ -63,6 +72,20 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'pi pi-bell',
         path: '/turnos/recepcion',
         moduleKey: ModuleKey.Turnos,
+      },
+      {
+        kind: 'external',
+        label: 'TV sala de espera',
+        icon: 'pi pi-desktop',
+        href: '/display/lab-demo/1',
+        chip: 'Smoke',
+      },
+      {
+        kind: 'external',
+        label: 'Tótem',
+        icon: 'pi pi-mobile',
+        href: '/turnos/totem',
+        chip: 'Smoke',
       },
       {
         kind: 'link',
