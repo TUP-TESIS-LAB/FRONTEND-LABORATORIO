@@ -90,16 +90,17 @@
 
   ul {
     display: grid;
-    grid-template-columns: 1fr 1fr;
     grid-template-rows: repeat(5, 1fr);
-    grid-auto-flow: column;
-    gap: 0.75rem 2rem;
+    gap: 0.75rem;
     list-style: none;
     padding: 0;
-    margin: 0;
+    margin: 0 auto;
     color: #1a1a1a;
     flex: 1;
     min-height: 0;
+    width: 100%;
+    max-width: 640px;
+    align-content: center;
   }
 
   li {
@@ -110,8 +111,9 @@
     gap: 0.25rem;
     padding: 0.5rem 1rem;
     font-weight: 700;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     background: #f8fafc;
+    animation: fadeIn 320ms ease-out;
   }
 
   .code {
@@ -127,6 +129,28 @@
     opacity: 0.6;
     color: #1a1a1a;
   }
+
+  .page-indicator {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    padding-top: 1rem;
+
+    .dot {
+      width: 0.625rem;
+      height: 0.625rem;
+      border-radius: 50%;
+      background: #d0d7e0;
+      transition: background 200ms ease;
+
+      &.active { background: var(--brand-primary, #1a1a1a); }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .empty-state {

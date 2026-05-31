@@ -58,6 +58,25 @@ export class SalaEsperaPage implements OnInit {
       .sort((a, b) => (b.lastCalledAt ?? '').localeCompare(a.lastCalledAt ?? ''));
   });
 
+  private static readonly PAGE_SIZE = 5;
+  private static readonly ROTATE_MS = 6000;
+
+  /** Página actual del carousel (0 = primeros 5, 1 = siguientes 5). */
+  protected currentPage = signal<number>(0);
+
+  /** Total de páginas según cantidad de entries (ceil(count / 5)). 0 si no hay entries. */
+  protected totalPages = computed<number>(() => {
+    const n = this.calledEntries().length;
+    return n === 0 ? 0 : Math.ceil(n / SalaEsperaPage.PAGE_SIZE);
+  });
+
+  /** Slice de los 5 entries visibles según currentPage. */
+  protected visibleEntries = computed<PublicQueueEntry[]>(() => {
+    const all = this.calledEntries();
+    const start = this.currentPage() * SalaEsperaPage.PAGE_SIZE;
+    return all.slice(start, start + SalaEsperaPage.PAGE_SIZE);
+  });
+
   protected viewMode = computed<'loading' | 'queue' | 'empty' | 'closed'>(() => {
     const snap = this.snapshot();
     if (!snap) return 'loading';
@@ -75,6 +94,13 @@ export class SalaEsperaPage implements OnInit {
         this.previousMostRecentCalledId.set(mostRecent.id);
       }
     });
+
+    // Reset a página 0 cuando entran nuevos llamados o cambia la cantidad total
+    // (evita quedarse en una página fuera de rango).
+    effect(() => {
+      const total = this.totalPages();
+      if (this.currentPage() >= total) this.currentPage.set(0);
+    });
   }
 
   ngOnInit(): void {
@@ -91,6 +117,16 @@ export class SalaEsperaPage implements OnInit {
           this.lastSuccessfulFetch.set(Date.now());
         },
         // network error: mantenemos último snapshot
+      });
+
+    // Carousel: rotar página cada ROTATE_MS si hay más de una página.
+    interval(SalaEsperaPage.ROTATE_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const total = this.totalPages();
+        if (total > 1) {
+          this.currentPage.set((this.currentPage() + 1) % total);
+        }
       });
   }
 
