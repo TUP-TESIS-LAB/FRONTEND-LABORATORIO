@@ -13,10 +13,11 @@ import { Actions, ofType } from '@ngrx/effects';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { race, Subject } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
-import { StepperModule } from 'primeng/stepper';
 import { ToastModule } from 'primeng/toast';
-import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
+
+import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { AGENDA_WIZARD_STEPS } from './agenda-wizard.steps';
 
 import { StepSucursalComponent } from './steps/step-sucursal.component';
 import { StepHorarioComponent, HorarioFormValue } from './steps/step-horario.component';
@@ -52,9 +53,8 @@ const ISO_TO_WEEKDAY: Record<number, typeof WEEK_DAYS[number]> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
-    StepperModule,
     ToastModule,
-    TooltipModule,
+    FormStepperHeaderComponent,
     StepSucursalComponent,
     StepHorarioComponent,
     StepPeriodoComponent,
@@ -76,7 +76,26 @@ export class AgendaWizardPage implements OnInit {
   /** Emite cuando un nuevo `confirm()` arranca, para cancelar el subscribe anterior. */
   private readonly cancelInFlight = new Subject<void>();
 
-  protected readonly currentStep = signal<number>(1);
+  protected readonly steps = AGENDA_WIZARD_STEPS;
+
+  /**
+   * currentStep es 0-indexed para alinearse con el `currentIndex` del
+   * componente compartido `app-form-stepper-header`. Antes era 1-indexed
+   * por la API de PrimeNG <p-stepper>; el mapeo nuevo es directo
+   * (0=sucursal, 1=horario, 2=periodo, 3=confirmar).
+   */
+  protected readonly currentStep = signal<number>(0);
+
+  /**
+   * Set de pasos visitados (clickeables desde el header). Arranca con sólo
+   * el paso 0 (sucursal). Si entramos en modo edición se desbloquean todos
+   * porque todos los datos ya están precargados.
+   */
+  protected readonly visited = signal<ReadonlySet<number>>(new Set([0]));
+
+  protected readonly isFirstStep = computed(() => this.currentStep() === 0);
+  protected readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
+
   protected readonly saving = signal(false);
   protected readonly editingId = signal<number | null>(null);
 
@@ -135,6 +154,10 @@ export class AgendaWizardPage implements OnInit {
       // Placeholder mientras carga el nombre real (evita flash de "")
       this.branchName.set(`Sucursal #${agenda.branchId}`);
       this.loadBranchName(agenda.branchId);
+
+      // Modo edición: todos los pasos están visitados (datos ya precargados),
+      // permitir navegar libre entre ellos desde el header.
+      this.visited.set(new Set([0, 1, 2, 3]));
     } else {
       // Pre-seleccionar branch desde queryParams (set por "Agregar" en accordion)
       const queryBranchId = this.route.snapshot.queryParamMap.get('branchId');
@@ -165,21 +188,41 @@ export class AgendaWizardPage implements OnInit {
       const branch = list.find(b => b.id === payload.branchId);
       if (branch) this.branchName.set(branch.name);
     });
-    this.currentStep.set(2);
+    this.goNext();
   }
 
   onHorarioNext(payload: HorarioFormValue): void {
     this.horario.set(payload);
-    this.currentStep.set(3);
+    this.goNext();
   }
 
   onPeriodoNext(payload: PeriodoFormValue): void {
     this.periodo.set(payload);
-    this.currentStep.set(4);
+    this.goNext();
   }
 
+  /** Avanza al siguiente paso y lo agrega al set de visitados. */
+  goNext(): void {
+    const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
+    this.visited.update(s => new Set([...s, next]));
+    this.currentStep.set(next);
+  }
+
+  /** Retrocede al paso anterior (no toca el set de visitados). */
+  goBack(): void {
+    this.currentStep.update(s => Math.max(0, s - 1));
+  }
+
+  /**
+   * Navegación entre steps disparada por el header compartido o por los
+   * botones internos de cada step. El shared component sólo emite
+   * `stepSelected` para pasos ya visitados, así que el guard cubre los
+   * requisitos previos (branch elegida, horario completado, etc).
+   */
   goToStep(step: number): void {
-    if (step >= 1 && step <= 4) this.currentStep.set(step);
+    if (step < 0 || step >= this.steps.length) return;
+    if (!this.visited().has(step)) return;
+    this.currentStep.set(step);
   }
 
   confirm(): void {
