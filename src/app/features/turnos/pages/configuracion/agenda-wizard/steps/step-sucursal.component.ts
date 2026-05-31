@@ -8,8 +8,8 @@ import {
   Output,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { SucursalesService } from '../../../../../sucursales/services/sucursales.service';
 
@@ -17,7 +17,7 @@ import { SucursalesService } from '../../../../../sucursales/services/sucursales
   selector: 'app-step-sucursal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ButtonModule, SelectModule],
+  imports: [ReactiveFormsModule, SelectModule],
   templateUrl: './step-sucursal.component.html',
   styleUrl: './step-sucursal.component.scss',
 })
@@ -34,6 +34,11 @@ export class StepSucursalComponent implements OnInit {
     branchId: [null as number | null, Validators.required],
   });
 
+  // Espejo signal del estado del form para que la pagina pueda habilitar
+  // su boton "Continuar →" en el footer reactivamente via @ViewChild.
+  private readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
+  readonly formValid = (): boolean => this.status() === 'VALID';
+
   ngOnInit(): void {
     this.sucursalesService
       .listBranchesForSelector()
@@ -44,8 +49,15 @@ export class StepSucursalComponent implements OnInit {
     }
   }
 
+  /**
+   * Llamado por la pagina via @ViewChild cuando el usuario hace click en
+   * "Continuar →" del footer. Valida y emite (next) con el branchId elegido.
+   */
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     this.next.emit({ branchId: this.form.value.branchId! });
   }
 }

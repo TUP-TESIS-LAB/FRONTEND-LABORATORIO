@@ -1,18 +1,23 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   OnInit,
+  ViewChild,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { race, Subject } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
+import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
@@ -52,7 +57,7 @@ const ISO_TO_WEEKDAY: Record<number, typeof WEEK_DAYS[number]> = {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
+    ButtonModule,
     ToastModule,
     FormStepperHeaderComponent,
     StepSucursalComponent,
@@ -64,7 +69,7 @@ const ISO_TO_WEEKDAY: Record<number, typeof WEEK_DAYS[number]> = {
   styleUrl: './agenda-wizard.page.scss',
   providers: [MessageService],
 })
-export class AgendaWizardPage implements OnInit {
+export class AgendaWizardPage implements OnInit, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   protected readonly router = inject(Router);
   private readonly store = inject(Store);
@@ -72,6 +77,7 @@ export class AgendaWizardPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly messageService = inject(MessageService);
   private readonly sucursalesService = inject(SucursalesService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   /** Emite cuando un nuevo `confirm()` arranca, para cancelar el subscribe anterior. */
   private readonly cancelInFlight = new Subject<void>();
@@ -114,6 +120,29 @@ export class AgendaWizardPage implements OnInit {
   protected readonly canShowConfirmar = computed(
     () => this.branchId() != null && this.horario() != null && this.periodo() != null,
   );
+
+  /**
+   * Estado de validez del step actual (0, 1 o 2). Se actualiza via @ViewChild
+   * en cada change-detection cycle leyendo el signal `formValid()` que expone
+   * cada step component. Esto habilita reactivamente el boton "Continuar →"
+   * del footer sin acoplar la pagina al FormGroup interno de los steps.
+   */
+  protected readonly canContinueCurrentStep = signal(false);
+
+  @ViewChild('step0') step0?: StepSucursalComponent;
+  @ViewChild('step1') step1?: StepHorarioComponent;
+  @ViewChild('step2') step2?: StepPeriodoComponent;
+
+  constructor() {
+    // Cuando cambiamos de step (desde el header del stepper o desde el footer),
+    // re-sincronizar el flag de validez una vez que el ViewChild este vivo
+    // tras el re-render del @switch.
+    effect(() => {
+      // Re-leer currentStep para que este effect dependa de el.
+      this.currentStep();
+      queueMicrotask(() => this.syncCurrentStepValid());
+    });
+  }
 
   ngOnInit(): void {
     const agenda = this.route.snapshot.data['agenda'] as AgendaConfig | null;
@@ -171,6 +200,28 @@ export class AgendaWizardPage implements OnInit {
     }
   }
 
+  ngAfterViewInit(): void {
+    this.syncCurrentStepValid();
+  }
+
+  /**
+   * Espejo del signal `formValid()` del step actual en esta pagina. Llamado
+   * tras cada cambio de paso y desde el AfterViewInit. El ViewChild puede
+   * no estar inicializado en el primer CD cycle tras el switch — por eso el
+   * effect del constructor lo difiere con queueMicrotask.
+   */
+  private syncCurrentStepValid(): void {
+    const i = this.currentStep();
+    let valid = false;
+    if (i === 0) valid = this.step0?.formValid() ?? false;
+    else if (i === 1) valid = this.step1?.formValid() ?? false;
+    else if (i === 2) valid = this.step2?.formValid() ?? false;
+    if (this.canContinueCurrentStep() !== valid) {
+      this.canContinueCurrentStep.set(valid);
+      this.cdr.markForCheck();
+    }
+  }
+
   private loadBranchName(branchId: number): void {
     this.sucursalesService
       .listBranchesForSelector()
@@ -201,6 +252,19 @@ export class AgendaWizardPage implements OnInit {
     this.goNext();
   }
 
+  /**
+   * Disparado por el boton "Continuar →" del footer. Llama al submit() del
+   * step actual via @ViewChild para que valide y emita su (next) event,
+   * que termina llamando a onSucursalNext / onHorarioNext / onPeriodoNext
+   * y avanza al siguiente paso.
+   */
+  onContinueFromCurrentStep(): void {
+    const i = this.currentStep();
+    if (i === 0) this.step0?.submit();
+    else if (i === 1) this.step1?.submit();
+    else if (i === 2) this.step2?.submit();
+  }
+
   /** Avanza al siguiente paso y lo agrega al set de visitados. */
   goNext(): void {
     const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
@@ -214,15 +278,19 @@ export class AgendaWizardPage implements OnInit {
   }
 
   /**
-   * Navegación entre steps disparada por el header compartido o por los
-   * botones internos de cada step. El shared component sólo emite
-   * `stepSelected` para pasos ya visitados, así que el guard cubre los
-   * requisitos previos (branch elegida, horario completado, etc).
+   * Navegación entre steps disparada por el header compartido. El shared
+   * component sólo emite `stepSelected` para pasos ya visitados, así que el
+   * guard cubre los requisitos previos (branch elegida, horario completado).
    */
   goToStep(step: number): void {
     if (step < 0 || step >= this.steps.length) return;
     if (!this.visited().has(step)) return;
     this.currentStep.set(step);
+  }
+
+  /** Cancel-and-bail (boton Volver del header + Cancelar del footer). */
+  cancel(): void {
+    this.router.navigate(['/turnos/configuracion']);
   }
 
   confirm(): void {

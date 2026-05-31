@@ -2,7 +2,7 @@
   <h2>Período</h2>
   <p class="muted">Días de la semana y rango de validez.</p>
 
-  <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+  <form [formGroup]="form" class="form">
     <div class="form-field">
       <label>Días de la semana *</label>
       <div class="day-chips">
@@ -50,10 +50,5 @@
     @if (form.hasError('dateRangeInvalid') && (form.controls.validFrom.touched || form.controls.validTo.touched)) {
       <small class="field-error">La fecha "Válido desde" debe ser anterior a "Válido hasta".</small>
     }
-
-    <footer class="step-footer">
-      <p-button label="Volver" severity="secondary" type="button" (onClick)="back.emit()" />
-      <p-button label="Siguiente" type="submit" [disabled]="form.invalid" />
-    </footer>
   </form>
 </div>

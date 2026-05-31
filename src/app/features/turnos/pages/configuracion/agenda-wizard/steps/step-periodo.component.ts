@@ -14,7 +14,7 @@ import {
   OnInit,
   Output,
 } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePickerModule } from 'primeng/datepicker';
 
 export interface PeriodoFormValue {
@@ -42,14 +42,13 @@ export function dateRangeValid(control: AbstractControl): ValidationErrors | nul
   selector: 'app-step-periodo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ButtonModule, DatePickerModule],
+  imports: [ReactiveFormsModule, DatePickerModule],
   templateUrl: './step-periodo.component.html',
   styleUrl: './step-periodo.component.scss',
 })
 export class StepPeriodoComponent implements OnInit {
   @Input() initial: PeriodoFormValue | null = null;
   @Output() next = new EventEmitter<PeriodoFormValue>();
-  @Output() back = new EventEmitter<void>();
 
   protected readonly DAYS = [
     { id: 1, label: 'L' },
@@ -72,6 +71,11 @@ export class StepPeriodoComponent implements OnInit {
     { validators: [dateRangeValid] },
   );
 
+  // Espejo signal del estado del form para que la pagina pueda habilitar
+  // su boton "Continuar →" en el footer reactivamente via @ViewChild.
+  private readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
+  readonly formValid = (): boolean => this.status() === 'VALID';
+
   ngOnInit(): void {
     if (this.initial) {
       this.form.patchValue(this.initial);
@@ -91,8 +95,15 @@ export class StepPeriodoComponent implements OnInit {
     return (this.form.value.daysOfWeek ?? []).includes(dayId);
   }
 
+  /**
+   * Llamado por la pagina via @ViewChild cuando el usuario hace click en
+   * "Continuar →" del footer. Valida y emite (next) con los datos del periodo.
+   */
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     this.next.emit(this.form.getRawValue() as PeriodoFormValue);
   }
 }

@@ -2,7 +2,7 @@
   <h2>Horario</h2>
   <p class="muted">Definí el rango de atención y la capacidad por turno.</p>
 
-  <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+  <form [formGroup]="form" class="form">
     <div class="form-row">
       <div class="form-field">
         <label for="fromTime">Desde *</label>
@@ -61,10 +61,5 @@
         }
       </div>
     </div>
-
-    <footer class="step-footer">
-      <p-button label="Volver" severity="secondary" type="button" (onClick)="back.emit()" />
-      <p-button label="Siguiente" type="submit" [disabled]="form.invalid" />
-    </footer>
   </form>
 </div>
