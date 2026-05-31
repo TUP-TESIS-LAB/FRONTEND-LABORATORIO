@@ -59,7 +59,7 @@ export class SalaEsperaPage implements OnInit {
   });
 
   private static readonly PAGE_SIZE = 5;
-  private static readonly ROTATE_MS = 6000;
+  private static readonly ROTATE_MS = 15000;
 
   /** Página actual del carousel (0 = primeros 5, 1 = siguientes 5). */
   protected currentPage = signal<number>(0);
