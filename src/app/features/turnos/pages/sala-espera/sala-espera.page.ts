@@ -16,11 +16,12 @@ import { QueueStatus } from '../../models/queue-status.enum';
 import { PublicDisplayService } from '../../services/public-display.service';
 import { EmptyStateComponent } from './empty-state.component';
 import { ClosedStateComponent } from './closed-state.component';
+import { AdCarouselComponent } from './ad-carousel.component';
 
 @Component({
   selector: 'app-sala-espera-page',
   standalone: true,
-  imports: [EmptyStateComponent, ClosedStateComponent],
+  imports: [EmptyStateComponent, ClosedStateComponent, AdCarouselComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sala-espera.page.html',
   styleUrl: './sala-espera.page.scss',
