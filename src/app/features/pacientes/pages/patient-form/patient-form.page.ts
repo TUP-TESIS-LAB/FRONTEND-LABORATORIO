@@ -21,7 +21,7 @@ import {
 } from '../../store/patient.selectors';
 import { ContactSectionComponent } from '../../components/contact-section/contact-section.component';
 import { CoverageSectionComponent } from '../../components/coverage-section/coverage-section.component';
-import { FormStepperHeaderComponent } from './components/form-stepper-header/form-stepper-header.component';
+import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
 import { GeneralStepComponent } from './steps/general-step/general-step.component';
 import { AddressStepComponent } from './steps/address-step/address-step.component';
 import { CoveragesStepComponent } from './steps/coverages-step/coverages-step.component';
@@ -66,7 +66,7 @@ function isAddressFilled(a: Partial<Address>): boolean {
         </nav>
       </header>
 
-      <pat-form-stepper-header
+      <app-form-stepper-header
         [steps]="steps"
         [currentIndex]="currentStep()"
         [visited]="visited()"

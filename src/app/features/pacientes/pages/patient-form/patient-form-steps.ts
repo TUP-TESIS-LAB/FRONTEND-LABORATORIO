@@ -1,11 +1,7 @@
-export type PatientFormStepKey = 'general' | 'address' | 'coverages' | 'summary';
+import { FormStep } from '@shared/ui/components/form-stepper-header/form-step';
 
-export interface PatientFormStep {
-  readonly key: PatientFormStepKey;
-  readonly title: string;
-  readonly subtitle: string;
-  readonly required: boolean;
-}
+export type PatientFormStepKey = 'general' | 'address' | 'coverages' | 'summary';
+export type PatientFormStep = FormStep<PatientFormStepKey>;
 
 export const PATIENT_FORM_STEPS: readonly PatientFormStep[] = [
   { key: 'general', title: 'Datos generales', subtitle: 'Identidad + contacto', required: true },
