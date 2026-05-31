@@ -17,6 +17,7 @@ import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadBranchTotemConfig } from '@features/turnos/store/branch-totem-config/branch-totem-config.actions';
 import { selectBranchTotemEnabled } from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
+import { AccessRegistry } from '@core/access/access-registry';
 import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
 
 @Component({
@@ -265,6 +266,7 @@ export class SidebarComponent implements OnInit {
   private readonly store    = inject(Store);
   private readonly session  = inject(UserSessionService);
   private readonly token    = inject(TokenService);
+  private readonly access   = inject(AccessRegistry);
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -279,11 +281,13 @@ export class SidebarComponent implements OnInit {
 
   readonly visibleSections = computed<NavSection[]>(() =>
     NAV_SECTIONS
-      .map(section => ({
+      .map((section) => ({
         ...section,
-        items: section.items.filter(item => this.isItemVisible(item)),
+        items: section.items
+          .map((item) => this.applyChildVisibility(item))
+          .filter((item) => this.isItemVisible(item)),
       }))
-      .filter(section => section.items.length > 0),
+      .filter((section) => section.items.length > 0),
   );
 
   // ---- Sala de espera (TV) link condicional ----
@@ -331,10 +335,20 @@ export class SidebarComponent implements OnInit {
     if (id != null) this.store.dispatch(loadBranchTotemConfig({ branchId: id }));
   }
 
+  /** Para expandables: filtra hijos por sectionKey. Para links: devuelve el item igual. */
+  private applyChildVisibility(item: NavItem): NavItem {
+    if (item.kind !== 'expandable') return item;
+    return {
+      ...item,
+      children: item.children.filter((c) => !c.sectionKey || this.access.has(c.sectionKey)),
+    };
+  }
+
   protected isItemVisible(item: NavItem): boolean {
-    if (item.kind === 'expandable') return true;
+    if (item.kind === 'expandable') return item.children.length > 0;
     if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
     if (item.roleKey && !this.token.getRoles().includes(item.roleKey)) return false;
+    if (item.sectionKey && !this.access.has(item.sectionKey)) return false;
     return true;
   }
 
