@@ -1,13 +1,10 @@
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   DestroyRef,
   OnInit,
   ViewChild,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -69,7 +66,7 @@ const ISO_TO_WEEKDAY: Record<number, typeof WEEK_DAYS[number]> = {
   styleUrl: './agenda-wizard.page.scss',
   providers: [MessageService],
 })
-export class AgendaWizardPage implements OnInit, AfterViewInit {
+export class AgendaWizardPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   protected readonly router = inject(Router);
   private readonly store = inject(Store);
@@ -77,7 +74,6 @@ export class AgendaWizardPage implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly messageService = inject(MessageService);
   private readonly sucursalesService = inject(SucursalesService);
-  private readonly cdr = inject(ChangeDetectorRef);
 
   /** Emite cuando un nuevo `confirm()` arranca, para cancelar el subscribe anterior. */
   private readonly cancelInFlight = new Subject<void>();
@@ -122,27 +118,28 @@ export class AgendaWizardPage implements OnInit, AfterViewInit {
   );
 
   /**
-   * Estado de validez del step actual (0, 1 o 2). Se actualiza via @ViewChild
-   * en cada change-detection cycle leyendo el signal `formValid()` que expone
-   * cada step component. Esto habilita reactivamente el boton "Continuar →"
-   * del footer sin acoplar la pagina al FormGroup interno de los steps.
+   * Estado de validez de cada step (0/1/2). Cada step component emite
+   * `(validChange)` desde un effect interno sobre su FormGroup, y la pagina
+   * solo mantiene 3 signals locales que reflejan ese estado. Esto reemplaza
+   * al patron viejo de @ViewChild + queueMicrotask que solo sincronizaba al
+   * cambiar de step (y por eso el boton "Continuar →" quedaba disabled
+   * eternamente al tipear).
    */
-  protected readonly canContinueCurrentStep = signal(false);
+  protected readonly step0Valid = signal(false);
+  protected readonly step1Valid = signal(false);
+  protected readonly step2Valid = signal(false);
+
+  protected readonly canContinueCurrentStep = computed(() => {
+    const i = this.currentStep();
+    if (i === 0) return this.step0Valid();
+    if (i === 1) return this.step1Valid();
+    if (i === 2) return this.step2Valid();
+    return false;
+  });
 
   @ViewChild('step0') step0?: StepSucursalComponent;
   @ViewChild('step1') step1?: StepHorarioComponent;
   @ViewChild('step2') step2?: StepPeriodoComponent;
-
-  constructor() {
-    // Cuando cambiamos de step (desde el header del stepper o desde el footer),
-    // re-sincronizar el flag de validez una vez que el ViewChild este vivo
-    // tras el re-render del @switch.
-    effect(() => {
-      // Re-leer currentStep para que este effect dependa de el.
-      this.currentStep();
-      queueMicrotask(() => this.syncCurrentStepValid());
-    });
-  }
 
   ngOnInit(): void {
     const agenda = this.route.snapshot.data['agenda'] as AgendaConfig | null;
@@ -197,28 +194,6 @@ export class AgendaWizardPage implements OnInit, AfterViewInit {
           this.loadBranchName(branchId);
         }
       }
-    }
-  }
-
-  ngAfterViewInit(): void {
-    this.syncCurrentStepValid();
-  }
-
-  /**
-   * Espejo del signal `formValid()` del step actual en esta pagina. Llamado
-   * tras cada cambio de paso y desde el AfterViewInit. El ViewChild puede
-   * no estar inicializado en el primer CD cycle tras el switch — por eso el
-   * effect del constructor lo difiere con queueMicrotask.
-   */
-  private syncCurrentStepValid(): void {
-    const i = this.currentStep();
-    let valid = false;
-    if (i === 0) valid = this.step0?.formValid() ?? false;
-    else if (i === 1) valid = this.step1?.formValid() ?? false;
-    else if (i === 2) valid = this.step2?.formValid() ?? false;
-    if (this.canContinueCurrentStep() !== valid) {
-      this.canContinueCurrentStep.set(valid);
-      this.cdr.markForCheck();
     }
   }
 

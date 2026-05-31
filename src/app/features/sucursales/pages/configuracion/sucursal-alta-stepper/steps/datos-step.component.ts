@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, EventEmitter, Output,
+  ChangeDetectionStrategy, Component, EventEmitter, Output, output, effect,
   DestroyRef, inject, signal,
 } from '@angular/core';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -26,6 +26,14 @@ import { GeographyService, Province, City } from '../../../../services/geography
 export class DatosStepComponent {
   // Emite el branchId recien creado para que la pagina avance al siguiente paso.
   @Output() completed = new EventEmitter<number>();
+
+  /**
+   * Emite el estado de validez del form en cada cambio. La pagina lo consume
+   * para habilitar reactivamente el boton "Continuar →" del footer sin tener
+   * que mirar el FormGroup interno via @ViewChild ni depender de queueMicrotask
+   * al cambiar de step.
+   */
+  readonly validChange = output<boolean>();
 
   private fb = inject(FormBuilder);
   private store = inject(Store);
@@ -58,6 +66,13 @@ export class DatosStepComponent {
   readonly isSaving = (): boolean => this.saving();
 
   constructor() {
+    // Emite validChange en cada cambio de status. La pagina (parent) se subscribe
+    // y actualiza su signal local — esto reemplaza al patron viejo de
+    // @ViewChild + effect + queueMicrotask que solo se disparaba al cambiar de step.
+    effect(() => {
+      this.validChange.emit(this.formValid());
+    });
+
     this.geographyService.listProvinces()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(list => this.provinces.set(list));

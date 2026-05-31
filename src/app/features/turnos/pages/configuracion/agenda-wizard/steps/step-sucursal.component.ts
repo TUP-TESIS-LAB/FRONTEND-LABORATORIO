@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
+  effect,
   inject,
   Input,
   OnInit,
   Output,
+  output,
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -25,6 +27,13 @@ export class StepSucursalComponent implements OnInit {
   @Input() initialBranchId: number | null = null;
   @Output() next = new EventEmitter<{ branchId: number }>();
 
+  /**
+   * Emite el estado de validez del form en cada cambio. La pagina lo consume
+   * para habilitar reactivamente el boton "Continuar →" del footer sin
+   * depender de queueMicrotask al cambiar de step.
+   */
+  readonly validChange = output<boolean>();
+
   private readonly fb = inject(FormBuilder);
   private readonly sucursalesService = inject(SucursalesService);
 
@@ -35,9 +44,15 @@ export class StepSucursalComponent implements OnInit {
   });
 
   // Espejo signal del estado del form para que la pagina pueda habilitar
-  // su boton "Continuar →" en el footer reactivamente via @ViewChild.
+  // su boton "Continuar →" en el footer reactivamente.
   private readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
   readonly formValid = (): boolean => this.status() === 'VALID';
+
+  constructor() {
+    effect(() => {
+      this.validChange.emit(this.formValid());
+    });
+  }
 
   ngOnInit(): void {
     this.sucursalesService

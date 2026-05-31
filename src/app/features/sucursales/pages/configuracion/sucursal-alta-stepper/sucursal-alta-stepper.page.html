@@ -15,7 +15,9 @@
     <div class="w-full">
       @switch (currentStep()) {
         @case (0) {
-          <app-datos-step #step0 (completed)="onDatosCompleted($event)" />
+          <app-datos-step #step0
+            (completed)="onDatosCompleted($event)"
+            (validChange)="step0Valid.set($event)" />
         }
         @case (1) {
           <app-horarios-step [branchId]="branchId()!" />

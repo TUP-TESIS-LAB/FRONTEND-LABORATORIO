@@ -29,6 +29,7 @@
           inputId="validFrom"
           formControlName="validFrom"
           dateFormat="dd/mm/yy"
+          appendTo="body"
         />
         @if (form.controls.validFrom.touched && form.controls.validFrom.invalid) {
           <small class="field-error">Ingresá la fecha de inicio de vigencia.</small>
@@ -40,6 +41,7 @@
           inputId="validTo"
           formControlName="validTo"
           dateFormat="dd/mm/yy"
+          appendTo="body"
         />
         @if (form.controls.validTo.touched && form.controls.validTo.invalid) {
           <small class="field-error">Ingresá la fecha de fin de vigencia.</small>

@@ -34,6 +34,7 @@
             optionValue="id"
             placeholder="Seleccionar provincia"
             [showClear]="true"
+            appendTo="body"
           />
         </div>
         <div class="form-field" formGroupName="address">
@@ -47,6 +48,7 @@
             [placeholder]="form.controls.provinceId.value == null ? 'Elegí primero una provincia' : 'Seleccionar ciudad'"
             [disabled]="form.controls.provinceId.value == null"
             [showClear]="true"
+            appendTo="body"
           />
         </div>
       </div>

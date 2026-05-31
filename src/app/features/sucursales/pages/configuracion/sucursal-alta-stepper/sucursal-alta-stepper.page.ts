@@ -1,6 +1,6 @@
 import {
-  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild,
-  computed, effect, inject, signal,
+  ChangeDetectionStrategy, Component, ViewChild,
+  computed, inject, signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -35,11 +35,10 @@ import { SUCURSAL_FORM_STEPS } from './sucursal-alta-stepper.steps';
   styleUrl: './sucursal-alta-stepper.page.scss',
   providers: [MessageService],
 })
-export class SucursalAltaStepperPage implements AfterViewInit {
+export class SucursalAltaStepperPage {
   private router = inject(Router);
   private store = inject(Store);
   private messageService = inject(MessageService);
-  private cdr = inject(ChangeDetectorRef);
 
   protected readonly steps = SUCURSAL_FORM_STEPS;
 
@@ -73,45 +72,15 @@ export class SucursalAltaStepperPage implements AfterViewInit {
   protected readonly finishing = signal(false);
 
   /**
-   * Estado de validez del form del paso 0 (datos). Se actualiza via
-   * @ViewChild en cada change-detection cycle leyendo el signal
-   * `formValid()` que expone DatosStepComponent.
-   * Esto habilita reactivamente el boton "Continuar" del footer sin
-   * acoplar la pagina al FormGroup interno del step.
+   * Estado de validez del form del paso 0 (datos). Se sincroniza desde el
+   * output `(validChange)` del DatosStepComponent — el step emite en cada
+   * cambio de status del FormGroup, y la pagina solo refleja el valor.
+   * Esto habilita reactivamente el boton "Continuar" del footer sin acoplar
+   * la pagina al FormGroup interno del step ni depender de @ViewChild + CD.
    */
   protected readonly step0Valid = signal(false);
 
   @ViewChild('step0') step0?: DatosStepComponent;
-
-  constructor() {
-    // Cuando volvemos al paso 0 (desde el header del stepper, por ej.),
-    // re-sincronizar el flag de validez una vez que el ViewChild este vivo.
-    // El effect corre en angular zone tras CD y dispara markForCheck si cambia.
-    effect(() => {
-      // Re-leer currentStep para que este effect dependa de el.
-      this.currentStep();
-      // Diferir al siguiente tick para que @ViewChild haya tomado la
-      // referencia post @switch.
-      queueMicrotask(() => this.syncStep0Valid());
-    });
-  }
-
-  ngAfterViewInit(): void {
-    this.syncStep0Valid();
-  }
-
-  /**
-   * Espejo del signal `formValid()` del DatosStep en este componente.
-   * Llamado tras cada cambio relevante (cambio de paso, completed event).
-   */
-  private syncStep0Valid(): void {
-    const ref = this.step0;
-    const valid = ref ? ref.formValid() : false;
-    if (this.step0Valid() !== valid) {
-      this.step0Valid.set(valid);
-      this.cdr.markForCheck();
-    }
-  }
 
   /**
    * Disparado por el boton "Continuar →" del footer en el paso 0.

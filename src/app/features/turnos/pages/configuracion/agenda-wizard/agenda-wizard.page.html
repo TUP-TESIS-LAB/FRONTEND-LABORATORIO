@@ -20,19 +20,22 @@
           <app-step-sucursal
             #step0
             [initialBranchId]="branchId()"
-            (next)="onSucursalNext($event)" />
+            (next)="onSucursalNext($event)"
+            (validChange)="step0Valid.set($event)" />
         }
         @case (1) {
           <app-step-horario
             #step1
             [initial]="horario()"
-            (next)="onHorarioNext($event)" />
+            (next)="onHorarioNext($event)"
+            (validChange)="step1Valid.set($event)" />
         }
         @case (2) {
           <app-step-periodo
             #step2
             [initial]="periodo()"
-            (next)="onPeriodoNext($event)" />
+            (next)="onPeriodoNext($event)"
+            (validChange)="step2Valid.set($event)" />
         }
         @case (3) {
           @if (canShowConfirmar()) {

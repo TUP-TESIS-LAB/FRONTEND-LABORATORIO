@@ -9,10 +9,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
+  effect,
   inject,
   Input,
   OnInit,
   Output,
+  output,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -50,6 +52,12 @@ export class StepPeriodoComponent implements OnInit {
   @Input() initial: PeriodoFormValue | null = null;
   @Output() next = new EventEmitter<PeriodoFormValue>();
 
+  /**
+   * Emite el estado de validez del form en cada cambio. La pagina lo consume
+   * para habilitar reactivamente el boton "Continuar →" del footer.
+   */
+  readonly validChange = output<boolean>();
+
   protected readonly DAYS = [
     { id: 1, label: 'L' },
     { id: 2, label: 'M' },
@@ -72,9 +80,15 @@ export class StepPeriodoComponent implements OnInit {
   );
 
   // Espejo signal del estado del form para que la pagina pueda habilitar
-  // su boton "Continuar →" en el footer reactivamente via @ViewChild.
+  // su boton "Continuar →" en el footer reactivamente.
   private readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
   readonly formValid = (): boolean => this.status() === 'VALID';
+
+  constructor() {
+    effect(() => {
+      this.validChange.emit(this.formValid());
+    });
+  }
 
   ngOnInit(): void {
     if (this.initial) {

@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
+  effect,
   inject,
   Input,
   OnInit,
   Output,
+  output,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
@@ -40,6 +42,12 @@ export class StepHorarioComponent implements OnInit {
   @Input() initial: HorarioFormValue | null = null;
   @Output() next = new EventEmitter<HorarioFormValue>();
 
+  /**
+   * Emite el estado de validez del form en cada cambio. La pagina lo consume
+   * para habilitar reactivamente el boton "Continuar →" del footer.
+   */
+  readonly validChange = output<boolean>();
+
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group(
@@ -53,9 +61,15 @@ export class StepHorarioComponent implements OnInit {
   );
 
   // Espejo signal del estado del form para que la pagina pueda habilitar
-  // su boton "Continuar →" en el footer reactivamente via @ViewChild.
+  // su boton "Continuar →" en el footer reactivamente.
   private readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
   readonly formValid = (): boolean => this.status() === 'VALID';
+
+  constructor() {
+    effect(() => {
+      this.validChange.emit(this.formValid());
+    });
+  }
 
   ngOnInit(): void {
     if (this.initial) {
