@@ -1,15 +1,11 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Output } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 @Component({
   selector: 'app-confirmar-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule],
+  imports: [],
   templateUrl: './confirmar-step.component.html',
   styleUrl: './confirmar-step.component.scss',
 })
-export class ConfirmarStepComponent {
-  @Output() finish = new EventEmitter<void>();
-  @Output() back = new EventEmitter<void>();
-}
+export class ConfirmarStepComponent {}

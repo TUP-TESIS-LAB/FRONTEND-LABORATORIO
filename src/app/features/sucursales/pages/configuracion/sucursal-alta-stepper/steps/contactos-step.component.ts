@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, computed, effect, inject,
+  ChangeDetectionStrategy, Component, Input, OnInit, computed, effect, inject,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
@@ -37,8 +37,6 @@ const CONTACT_TYPE_OPTIONS: Array<{
 })
 export class ContactosStepComponent implements OnInit {
   @Input({ required: true }) branchId!: number;
-  @Output() next = new EventEmitter<void>();
-  @Output() back = new EventEmitter<void>();
 
   private store = inject(Store);
   private fb = inject(FormBuilder);

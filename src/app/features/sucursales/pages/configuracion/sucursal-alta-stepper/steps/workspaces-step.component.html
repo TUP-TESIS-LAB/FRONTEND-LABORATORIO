@@ -9,8 +9,8 @@
       <p>Necesitás crear áreas y secciones en el catálogo antes de poder configurar workspaces.</p>
       <div class="cta-actions">
         <p-button label="Ir al catálogo" icon="pi pi-external-link" routerLink="/sucursales/catalogo" />
-        <p-button label="Saltar este paso" severity="secondary" [text]="true" (click)="next.emit()" />
       </div>
+      <p class="helper-text">Podés continuar al siguiente paso y volver más tarde a configurar workspaces.</p>
     </div>
   } @else {
     <form [formGroup]="form" (ngSubmit)="add()" class="inline-form">
@@ -44,10 +44,5 @@
         <tr><td colspan="3" class="muted">Sin workspaces configurados.</td></tr>
       </ng-template>
     </p-table>
-
-    <footer class="step-footer">
-      <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" (click)="back.emit()" />
-      <p-button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" (click)="next.emit()" />
-    </footer>
   }
 </div>

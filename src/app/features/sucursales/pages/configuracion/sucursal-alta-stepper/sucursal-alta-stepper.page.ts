@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild,
+  computed, effect, inject, signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MessageService } from 'primeng/api';
@@ -32,10 +35,11 @@ import { SUCURSAL_FORM_STEPS } from './sucursal-alta-stepper.steps';
   styleUrl: './sucursal-alta-stepper.page.scss',
   providers: [MessageService],
 })
-export class SucursalAltaStepperPage {
+export class SucursalAltaStepperPage implements AfterViewInit {
   private router = inject(Router);
   private store = inject(Store);
   private messageService = inject(MessageService);
+  private cdr = inject(ChangeDetectorRef);
 
   protected readonly steps = SUCURSAL_FORM_STEPS;
 
@@ -59,10 +63,74 @@ export class SucursalAltaStepperPage {
   protected readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
 
   /**
+   * Loading flag mientras DatosStepComponent dispatch addSucursal y espera
+   * la respuesta del back. Se refleja en el [loading] del boton "Continuar"
+   * del footer en el paso 0.
+   */
+  protected readonly creatingBranch = signal(false);
+
+  /** Loading flag para el boton "Finalizar" del paso final. */
+  protected readonly finishing = signal(false);
+
+  /**
+   * Estado de validez del form del paso 0 (datos). Se actualiza via
+   * @ViewChild en cada change-detection cycle leyendo el signal
+   * `formValid()` que expone DatosStepComponent.
+   * Esto habilita reactivamente el boton "Continuar" del footer sin
+   * acoplar la pagina al FormGroup interno del step.
+   */
+  protected readonly step0Valid = signal(false);
+
+  @ViewChild('step0') step0?: DatosStepComponent;
+
+  constructor() {
+    // Cuando volvemos al paso 0 (desde el header del stepper, por ej.),
+    // re-sincronizar el flag de validez una vez que el ViewChild este vivo.
+    // El effect corre en angular zone tras CD y dispara markForCheck si cambia.
+    effect(() => {
+      // Re-leer currentStep para que este effect dependa de el.
+      this.currentStep();
+      // Diferir al siguiente tick para que @ViewChild haya tomado la
+      // referencia post @switch.
+      queueMicrotask(() => this.syncStep0Valid());
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.syncStep0Valid();
+  }
+
+  /**
+   * Espejo del signal `formValid()` del DatosStep en este componente.
+   * Llamado tras cada cambio relevante (cambio de paso, completed event).
+   */
+  private syncStep0Valid(): void {
+    const ref = this.step0;
+    const valid = ref ? ref.formValid() : false;
+    if (this.step0Valid() !== valid) {
+      this.step0Valid.set(valid);
+      this.cdr.markForCheck();
+    }
+  }
+
+  /**
+   * Disparado por el boton "Continuar →" del footer en el paso 0.
+   * Llama a DatosStep.submit() que dispatcha addSucursal y, en exito,
+   * emite (completed) → onDatosCompleted avanza al paso 1.
+   */
+  onContinueFromDatos(): void {
+    const ref = this.step0;
+    if (!ref) return;
+    this.creatingBranch.set(true);
+    ref.submit();
+  }
+
+  /**
    * Llamado por DatosStepComponent cuando la sucursal se crea y devuelve su id.
    * Habilita los steps 2-6 (que requieren branchId) y avanza al paso de horarios.
    */
   onDatosCompleted(branchId: number) {
+    this.creatingBranch.set(false);
     this.branchId.set(branchId);
     this.visited.set(new Set([0, 1, 2, 3, 4, 5]));
     this.currentStep.set(1);
@@ -79,23 +147,24 @@ export class SucursalAltaStepperPage {
     this.currentStep.set(step);
   }
 
-  /** Avanza al siguiente paso (usado por los botones internos de cada step). */
+  /** Avanza al siguiente paso (usado por el footer en steps >= 1). */
   goNext() {
     const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
     this.visited.update((s) => new Set([...s, next]));
     this.currentStep.set(next);
   }
 
-  /** Retrocede al paso anterior (usado por los botones internos de cada step). */
+  /** Retrocede al paso anterior (usado por el footer). */
   goBack() {
     const prev = Math.max(this.currentStep() - 1, 0);
     this.currentStep.set(prev);
   }
 
-  /** Llamado por ConfirmarStepComponent. Muestra toast y navega al detalle. */
+  /** Llamado por el footer en el paso final. Muestra toast y navega al detalle. */
   finish() {
     const id = this.branchId();
     if (id == null) return;
+    this.finishing.set(true);
     this.messageService.add({
       severity: 'success',
       summary: 'Sucursal creada',
@@ -104,7 +173,7 @@ export class SucursalAltaStepperPage {
     this.router.navigate(['/sucursales/configuracion', id]);
   }
 
-  /** Cancel-and-bail (botón opcional en el header). */
+  /** Cancel-and-bail (boton Volver del header + Cancelar del footer). */
   cancel() {
     this.router.navigate(['/sucursales/configuracion']);
   }

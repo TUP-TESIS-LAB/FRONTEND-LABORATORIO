@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, EventEmitter, Input, OnInit, Output,
+  ChangeDetectionStrategy, Component, DestroyRef, Input, OnInit,
   computed, inject, signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -28,8 +28,6 @@ import { BranchWorkspace, BranchWorkspaceCreateInput } from '../../../../models/
 })
 export class WorkspacesStepComponent implements OnInit {
   @Input({ required: true }) branchId!: number;
-  @Output() next = new EventEmitter<void>();
-  @Output() back = new EventEmitter<void>();
 
   private store = inject(Store);
   private fb = inject(FormBuilder);

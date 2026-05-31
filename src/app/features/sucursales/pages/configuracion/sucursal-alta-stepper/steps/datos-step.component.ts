@@ -2,12 +2,11 @@ import {
   ChangeDetectionStrategy, Component, EventEmitter, Output,
   DestroyRef, inject, signal,
 } from '@angular/core';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs/operators';
-import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
@@ -20,13 +19,13 @@ import { GeographyService, Province, City } from '../../../../services/geography
   selector: 'app-datos-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
+  imports: [ReactiveFormsModule, InputTextModule, SelectModule],
   templateUrl: './datos-step.component.html',
   styleUrl: './datos-step.component.scss',
 })
 export class DatosStepComponent {
+  // Emite el branchId recien creado para que la pagina avance al siguiente paso.
   @Output() completed = new EventEmitter<number>();
-  @Output() cancel = new EventEmitter<void>();
 
   private fb = inject(FormBuilder);
   private store = inject(Store);
@@ -52,6 +51,12 @@ export class DatosStepComponent {
     }),
   });
 
+  // Espejo signal del estado del form para que la pagina pueda habilitar
+  // su boton "Continuar" en el footer reactivamente via @ViewChild.
+  private readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
+  readonly formValid = (): boolean => this.status() === 'VALID';
+  readonly isSaving = (): boolean => this.saving();
+
   constructor() {
     this.geographyService.listProvinces()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -73,7 +78,11 @@ export class DatosStepComponent {
   }
 
   submit() {
-    if (this.form.invalid || this.saving()) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    if (this.saving()) return;
     const raw = this.form.getRawValue();
 
     const street = raw.address.street?.trim() ?? '';

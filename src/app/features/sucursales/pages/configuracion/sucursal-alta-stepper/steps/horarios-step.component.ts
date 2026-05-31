@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, inject, signal, computed,
+  ChangeDetectionStrategy, Component, Input, OnInit, inject, signal, computed,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
@@ -45,8 +45,6 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
 })
 export class HorariosStepComponent implements OnInit {
   @Input({ required: true }) branchId!: number;
-  @Output() next = new EventEmitter<void>();
-  @Output() back = new EventEmitter<void>();
 
   private store = inject(Store);
   private fb = inject(FormBuilder);

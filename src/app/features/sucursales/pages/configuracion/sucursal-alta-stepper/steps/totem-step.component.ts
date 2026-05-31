@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, computed, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { ButtonModule } from 'primeng/button';
 import { ToggleSwitch } from 'primeng/toggleswitch';
 import { FormsModule } from '@angular/forms';
 
@@ -11,14 +10,12 @@ import { loadTotemConfig, upsertTotemConfig } from '../../../../store/sucursal.a
   selector: 'app-totem-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonModule, ToggleSwitch],
+  imports: [FormsModule, ToggleSwitch],
   templateUrl: './totem-step.component.html',
   styleUrl: './totem-step.component.scss',
 })
 export class TotemStepComponent implements OnInit {
   @Input({ required: true }) branchId!: number;
-  @Output() next = new EventEmitter<void>();
-  @Output() back = new EventEmitter<void>();
 
   private store = inject(Store);
   protected readonly totemConfig = this.store.selectSignal(selectTotemConfig);
