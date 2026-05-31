@@ -82,7 +82,7 @@ export class AgendaWizardPage implements OnInit {
 
   /**
    * currentStep es 0-indexed para alinearse con el `currentIndex` del
-   * componente compartido `app-form-stepper-header`. Antes era 1-indexed
+   * componente compartido `ui-form-stepper-header`. Antes era 1-indexed
    * por la API de PrimeNG <p-stepper>; el mapeo nuevo es directo
    * (0=sucursal, 1=horario, 2=periodo, 3=confirmar).
    */

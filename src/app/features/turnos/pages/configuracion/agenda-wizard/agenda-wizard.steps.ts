@@ -1,4 +1,4 @@
-import { FormStep } from '@shared/ui/components/form-stepper-header/form-step';
+import { FormStep } from '@shared/ui/models/form-step';
 
 export type AgendaWizardStepKey = 'sucursal' | 'horario' | 'periodo' | 'confirmar';
 

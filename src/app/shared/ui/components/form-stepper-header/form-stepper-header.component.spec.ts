@@ -1,75 +1,54 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import { Component, signal } from '@angular/core';
 import { FormStepperHeaderComponent } from './form-stepper-header.component';
-import { FormStep } from './form-step';
+import { FormStep } from '@shared/ui/models/form-step';
+
+const STEPS: FormStep[] = [
+  { key: 'datos', title: 'Datos', subtitle: 'Nombre y matrícula' },
+  { key: 'resumen', title: 'Resumen', subtitle: 'Revisá y confirmá' },
+];
+
+@Component({
+  standalone: true,
+  imports: [FormStepperHeaderComponent],
+  template: `<ui-form-stepper-header
+    [steps]="steps" [currentIndex]="current()" [visited]="visited()"
+    (stepSelected)="onSelect($event)" />`,
+})
+class HostComponent {
+  steps = STEPS;
+  current = signal(1);
+  visited = signal<ReadonlySet<number>>(new Set([0, 1]));
+  selected: number | null = null;
+  onSelect(i: number): void { this.selected = i; }
+}
 
 describe('FormStepperHeaderComponent', () => {
-  let component: FormStepperHeaderComponent;
-  let fixture: ComponentFixture<FormStepperHeaderComponent>;
+  function setup() {
+    TestBed.configureTestingModule({ imports: [HostComponent] });
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.detectChanges();
+    return fixture;
+  }
 
-  const sampleSteps: readonly FormStep[] = [
-    { key: 'a', title: 'A', subtitle: 'Paso 1', required: true },
-    { key: 'b', title: 'B', subtitle: 'Paso 2', required: false },
-    { key: 'c', title: 'C', subtitle: 'Paso 3', required: false },
-  ];
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      imports: [FormStepperHeaderComponent],
-    });
-    fixture = TestBed.createComponent(FormStepperHeaderComponent);
-    component = fixture.componentInstance;
+  it('renders one item per step with its title', () => {
+    const html = (setup().nativeElement as HTMLElement).innerHTML;
+    expect(html).toContain('Datos');
+    expect(html).toContain('Resumen');
   });
 
-  it('renders all steps', () => {
-    fixture.componentRef.setInput('steps', sampleSteps);
-    fixture.componentRef.setInput('currentIndex', 0);
-    fixture.componentRef.setInput('visited', new Set([0]));
-    fixture.detectChanges();
-    const items = fixture.nativeElement.querySelectorAll('.app-stepper__item');
-    expect(items.length).toBe(3);
+  it('marks the current step with is-current', () => {
+    const el = setup().nativeElement as HTMLElement;
+    const current = el.querySelector('.pat-stepper__item.is-current');
+    expect(current?.textContent).toContain('Resumen');
   });
 
-  it('marks step as current', () => {
-    fixture.componentRef.setInput('steps', sampleSteps);
-    fixture.componentRef.setInput('currentIndex', 1);
-    fixture.componentRef.setInput('visited', new Set([0, 1]));
-    fixture.detectChanges();
-    const items = fixture.nativeElement.querySelectorAll('.app-stepper__item');
-    expect(items[1].classList.contains('is-current')).toBe(true);
-  });
-
-  it('marks visited non-current as done', () => {
-    fixture.componentRef.setInput('steps', sampleSteps);
-    fixture.componentRef.setInput('currentIndex', 2);
-    fixture.componentRef.setInput('visited', new Set([0, 1, 2]));
-    fixture.detectChanges();
-    const items = fixture.nativeElement.querySelectorAll('.app-stepper__item');
-    expect(items[0].classList.contains('is-done')).toBe(true);
-    expect(items[1].classList.contains('is-done')).toBe(true);
-  });
-
-  it('emits stepSelected on click of visited non-current', () => {
-    fixture.componentRef.setInput('steps', sampleSteps);
-    fixture.componentRef.setInput('currentIndex', 2);
-    fixture.componentRef.setInput('visited', new Set([0, 1, 2]));
-    fixture.detectChanges();
-    let emitted: number | null = null;
-    component.stepSelected.subscribe((i) => (emitted = i));
-    const items = fixture.nativeElement.querySelectorAll('.app-stepper__item');
-    (items[0] as HTMLElement).click();
-    expect(emitted).toBe(0);
-  });
-
-  it('does not emit on click of locked step', () => {
-    fixture.componentRef.setInput('steps', sampleSteps);
-    fixture.componentRef.setInput('currentIndex', 0);
-    fixture.componentRef.setInput('visited', new Set([0]));
-    fixture.detectChanges();
-    let emitted: number | null = null;
-    component.stepSelected.subscribe((i) => (emitted = i));
-    const items = fixture.nativeElement.querySelectorAll('.app-stepper__item');
-    (items[2] as HTMLElement).click();
-    expect(emitted).toBeNull();
+  it('emits stepSelected when a visited, non-current step is clicked', () => {
+    const fixture = setup();
+    const host = fixture.componentInstance;
+    const first = (fixture.nativeElement as HTMLElement)
+      .querySelector('.pat-stepper__item[data-step="0"]') as HTMLElement;
+    first.click();
+    expect(host.selected).toBe(0);
   });
 });

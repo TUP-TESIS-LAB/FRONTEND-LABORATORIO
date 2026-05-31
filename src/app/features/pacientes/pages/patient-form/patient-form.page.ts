@@ -66,7 +66,7 @@ function isAddressFilled(a: Partial<Address>): boolean {
         </nav>
       </header>
 
-      <app-form-stepper-header
+      <ui-form-stepper-header
         [steps]="steps"
         [currentIndex]="currentStep()"
         [visited]="visited()"
