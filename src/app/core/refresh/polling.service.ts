@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, EMPTY, Observable, Subject, Subscription, fromEvent, interval, merge } from 'rxjs';
-import { startWith, switchMap, tap } from 'rxjs/operators';
+import { catchError, startWith, switchMap } from 'rxjs/operators';
 
 export interface PollingOptions {
   /** Identificador único de la pantalla / consumidor — útil para logs. */
@@ -64,12 +64,14 @@ export class PollingService {
             ? merge(interval(intervalMs).pipe(startWith(0)), poke$)
             : EMPTY,
         ),
-        switchMap(() => opts.poll()),
-        // Swallow errors silently — el caller gestiona errores via su propio flujo
-        // (typicamente NgRx effect). Si el poll() tira, el polling no debería detenerse.
-        tap({ error: () => void 0 }),
+        // catchError DENTRO del switchMap garantiza que solo cae la pasada que falló,
+        // no el stream entero. tap({ error }) + subscribe({ error }) sólo observaban
+        // el error pero no lo recuperaban → polling muerto al primer fallo. El caller
+        // suele manejar errores con su propio NgRx effect; acá silenciamos para no
+        // matar el polling.
+        switchMap(() => opts.poll().pipe(catchError(() => EMPTY))),
       )
-      .subscribe({ error: () => void 0 });
+      .subscribe();
 
     return {
       stop: () => {

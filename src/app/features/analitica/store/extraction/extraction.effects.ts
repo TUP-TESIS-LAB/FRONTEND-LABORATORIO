@@ -227,6 +227,19 @@ export class ExtractionEffects {
     ),
   { dispatch: false });
 
+  /**
+   * Si el assign falla con 409 (box ocupado por otro extractor / race), forzamos
+   * un refresh inmediato para que la UI muestre quién tomó el box sin esperar
+   * el próximo tick de polling.
+   */
+  refreshOnAssignConflict$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.assignExtractorFailure),
+      filter(({ error }) => error?.status === 409),
+      map(() => A.refreshAll()),
+    ),
+  );
+
   private toastForMutation(action: Action): void {
     switch (action.type) {
       case A.assignExtractorSuccess.type:

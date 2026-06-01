@@ -79,7 +79,6 @@ const POLL_INTERVAL_MS = 5000;
           <ui-refresh-indicator
             [lastRefreshAt]="lastRefreshAt()"
             [paused]="paused()"
-            [intervalMs]="pollIntervalMs"
           />
           <app-branch-selector-chip
             [selected]="selectedBranch()"

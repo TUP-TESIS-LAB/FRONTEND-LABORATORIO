@@ -55,7 +55,6 @@ import { interval } from 'rxjs';
 export class RefreshIndicatorComponent {
   readonly lastRefreshAt = input<Date | null>(null);
   readonly paused = input<boolean>(false);
-  readonly intervalMs = input<number>(5000);
 
   private readonly tick = signal(0);
   private readonly destroyRef = inject(DestroyRef);

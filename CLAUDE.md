@@ -46,15 +46,20 @@ Aplica también a los emojis: NO usar emojis Unicode (📱 ✉ ☎ etc.) — usa
 
 ### 5. Refresco en tiempo real — estándar del proyecto
 
-Pantallas que requieren ver cambios sin recargar (colas, dashboards, listas en curso) usan **HTTP polling con ETag/304** vía el helper `createPollingEffect` (ubicado en `core/refresh/`). Es el estándar único — no improvisar `setInterval` en componentes, ni introducir SSE/WebSockets sin discusión previa.
+Pantallas que requieren ver cambios sin recargar (colas, dashboards, listas en curso) usan **HTTP polling con ETag/304**. La infra vive en `core/refresh/` y se compone de:
+- **`PollingService.startPolling({ key, intervalMs, poll })`** — orquesta el loop (visibility-paused, manual setActive, pokeNow). El componente lo inyecta y guarda el handle para `stop()` en `ngOnDestroy`.
+- **`withPolling()`** — `HttpContext` helper que marca la request como polleable. Pasar en cada `http.get(...)` que va al ciclo de refresco.
+- **`etagInterceptor`** — interceptor HTTP global. Sólo actúa sobre requests marcadas con `withPolling()`. Agrega `If-None-Match`, cachea el `ETag` que vuelve, y traduce `304` a un sentinel `{ notModified: true }` para que el effect distinga "vino data nueva" vs "todo igual".
+
+Es el estándar único — no improvisar `setInterval` en componentes, ni introducir SSE/WebSockets sin discusión previa.
 
 Reglas:
 - **Intervalo por defecto: 5 segundos.** Solo bajarlo con justificación explícita (latencia inaceptable comprobada en uso real, no en hipótesis).
-- El polling **debe pausarse cuando la pestaña no está visible** (`document.visibilityState === 'hidden'`) para no gastar ancho de banda ni cuota del usuario.
-- Al volver visible: reanudar + disparar un poll extra inmediato.
+- El polling **debe pausarse cuando la pestaña no está visible** (`document.visibilityState === 'hidden'`) para no gastar ancho de banda ni cuota del usuario — `PollingService` lo hace por default si `pauseOnHidden !== false`.
+- Al volver visible: reanudar + disparar un poll extra inmediato (también lo hace el service).
 - El effect debe respetar el flag `pending` del feature para no encolar peticiones si hay una en vuelo (dedup).
-- El cliente debe enviar `If-None-Match` con el ETag del último response exitoso, y NO disparar acción de éxito si la respuesta es `304` (mantener el estado actual).
-- Cuando agregues una pantalla nueva con refresco, reusá el helper — no copies la lógica.
+- El cliente debe enviar `If-None-Match` con el ETag del último response exitoso (lo hace `etagInterceptor`), y NO disparar acción de éxito si la respuesta es `304` — usar `isNotModified(res)` en el effect para distinguir y emitir `*NotModified` en vez de `*Success`.
+- Cuando agregues una pantalla nueva con refresco, reusá `PollingService` — no copies la lógica.
 
 Si una pantalla específica requiere latencia <2s comprobada (no asumida), abrir issue para evaluar SSE puntualmente; no migrar el estándar global por un caso.
 
