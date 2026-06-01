@@ -30,7 +30,7 @@ describe('UsuariosApiService', () => {
   it('create POST a /internal', () => {
     const payload = {
       firstName: 'A', lastName: 'B', email: 'a@b.com',
-      document: '1', username: 'ab', roleIds: [1],
+      document: '1', username: 'ab', roleIds: [1], sections: [] as any[],
     };
     service.create(payload).subscribe();
     const req = http.expectOne('/api/v1/user/internal');

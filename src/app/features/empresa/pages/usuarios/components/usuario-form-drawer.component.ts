@@ -1,21 +1,25 @@
 import {
   ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges,
-  computed, inject,
+  computed, inject, signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DrawerModule } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { MultiSelectModule } from 'primeng/multiselect';
+import { SelectModule } from 'primeng/select';
 import { Rol } from '../../../models/rol.model';
 import { ActualizarUsuarioPayload, CrearUsuarioPayload, Usuario } from '../../../models/usuario.model';
+import { AccessSection, SectionResponse } from '@core/access/access.model';
+import { SeccionesChecklistComponent } from '@features/roles-permisos/components/secciones-checklist.component';
+import { presetForRole } from '../../../models/role-section-presets';
 
 @Component({
   selector: 'emp-usuario-form-drawer',
   standalone: true,
   imports: [
-    ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, MultiSelectModule,
+    ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, SelectModule,
+    SeccionesChecklistComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -59,22 +63,33 @@ import { ActualizarUsuarioPayload, CrearUsuarioPayload, Usuario } from '../../..
 
           <section class="pat-form__card">
             <div class="pat-form__card-header">
-              <span><i class="pi pi-id-card" style="margin-right:6px"></i>Roles</span>
+              <span><i class="pi pi-id-card" style="margin-right:6px"></i>Rol</span>
             </div>
             <div class="pat-form__grid pat-form__grid--full">
               <div class="pat-form__field">
-                <label class="pat-form__label">Asignar roles*</label>
-                <p-multiSelect
+                <label class="pat-form__label">Rol*</label>
+                <p-select
                   [options]="roles"
                   optionLabel="description"
                   optionValue="id"
-                  formControlName="roleIds"
-                  display="chip"
+                  formControlName="roleId"
                   appendTo="body"
                   class="w-full"
-                  placeholder="Seleccionar uno o más roles" />
+                  placeholder="Elegí un rol"
+                  (onChange)="onRoleChange($event.value)" />
+                <small class="ui-text-muted">El rol pre-marca las secciones. Podés ajustarlas abajo.</small>
               </div>
             </div>
+          </section>
+
+          <section class="pat-form__card">
+            <div class="pat-form__card-header">
+              <span><i class="pi pi-th-large" style="margin-right:6px"></i>Accesos (secciones)</span>
+            </div>
+            <rp-secciones-checklist
+              [catalog]="catalog"
+              [workingSet]="workingSet()"
+              (toggle)="onToggleSection($event)" />
           </section>
         </div>
 
@@ -96,6 +111,8 @@ export class UsuarioFormDrawerComponent implements OnChanges {
 
   @Input() visible = false;
   @Input({ required: true }) roles!: Rol[];
+  @Input({ required: true }) catalog!: SectionResponse[];
+  @Input() initialSections: AccessSection[] = [];
   @Input() usuario: Usuario | null = null;
   @Input() saving = false;
 
@@ -104,6 +121,7 @@ export class UsuarioFormDrawerComponent implements OnChanges {
   @Output() cancel = new EventEmitter<void>();
 
   visibleInternal = false;
+  readonly workingSet = signal<AccessSection[]>([]);
 
   form = this.fb.group({
     firstName: ['', [Validators.required]],
@@ -111,7 +129,7 @@ export class UsuarioFormDrawerComponent implements OnChanges {
     email: ['', [Validators.required, Validators.email]],
     document: ['', [Validators.required]],
     username: ['', [Validators.required]],
-    roleIds: [[] as number[], [Validators.required]],
+    roleId: [null as number | null, [Validators.required]],
   });
 
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
@@ -120,25 +138,46 @@ export class UsuarioFormDrawerComponent implements OnChanges {
 
   private wasVisible = false;
 
+  private grantableCodes(): AccessSection[] {
+    return this.catalog.map((s) => s.code);
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if ('visible' in changes) {
       this.visibleInternal = this.visible;
       if (this.visible && !this.wasVisible) {
         if (this.usuario) {
+          const firstRoleId = this.usuario.roles[0]?.id ?? null;
           this.form.reset({
             firstName: this.usuario.firstName,
             lastName: this.usuario.lastName,
             email: this.usuario.email,
             document: this.usuario.document,
             username: this.usuario.username,
-            roleIds: this.usuario.roles.map((r) => r.id),
+            roleId: firstRoleId,
           });
+          this.workingSet.set([...this.initialSections]);
         } else {
-          this.form.reset({ firstName: '', lastName: '', email: '', document: '', username: '', roleIds: [] });
+          this.form.reset({ firstName: '', lastName: '', email: '', document: '', username: '', roleId: null });
+          this.workingSet.set([]);
         }
       }
       this.wasVisible = this.visible;
     }
+  }
+
+  onRoleChange(roleId: number | null): void {
+    this.form.patchValue({ roleId });
+    const role = this.roles.find((r) => r.id === roleId);
+    if (!role) { this.workingSet.set([]); return; }
+    this.workingSet.set(presetForRole(role.code, this.grantableCodes()));
+  }
+
+  onToggleSection(code: AccessSection): void {
+    const current = this.workingSet();
+    this.workingSet.set(
+      current.includes(code) ? current.filter((c) => c !== code) : [...current, code],
+    );
   }
 
   onVisibleChange(open: boolean): void {
@@ -148,7 +187,16 @@ export class UsuarioFormDrawerComponent implements OnChanges {
 
   onSubmit(): void {
     if (this.form.invalid) return;
-    const payload = this.form.getRawValue() as CrearUsuarioPayload;
+    const raw = this.form.getRawValue();
+    const payload: CrearUsuarioPayload = {
+      firstName: raw.firstName!,
+      lastName: raw.lastName!,
+      email: raw.email!,
+      document: raw.document!,
+      username: raw.username!,
+      roleIds: raw.roleId != null ? [raw.roleId] : [],
+      sections: this.workingSet(),
+    };
     if (this.usuario) {
       this.update.emit({ id: this.usuario.id, payload });
     } else {
