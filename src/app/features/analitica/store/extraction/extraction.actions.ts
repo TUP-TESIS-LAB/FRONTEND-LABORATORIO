@@ -2,12 +2,33 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { createAction, props } from '@ngrx/store';
 import {
   AwaitingExtractionItem,
+  BoxOccupancyItem,
+  BranchOption,
   ExtractionStats,
   InExtractionItem,
 } from '../../models/extraction.model';
 
 // --- Refresh trigger -------------------------------------------------------
 export const refreshAll = createAction('[Extraction Queue] Refresh All');
+
+// --- Branches --------------------------------------------------------------
+export const loadBranches = createAction('[Extraction Queue] Load Branches');
+export const loadBranchesSuccess = createAction(
+  '[Extraction API] Load Branches Success',
+  props<{ items: BranchOption[] }>(),
+);
+export const loadBranchesNotModified = createAction(
+  '[Extraction API] Load Branches Not Modified',
+);
+export const loadBranchesFailure = createAction(
+  '[Extraction API] Load Branches Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+export const setSelectedBranch = createAction(
+  '[Extraction Queue] Set Selected Branch',
+  props<{ branchId: number | null }>(),
+);
 
 // --- Awaiting --------------------------------------------------------------
 export const loadAwaiting = createAction('[Extraction Queue] Load Awaiting');
@@ -51,6 +72,20 @@ export const loadStatsFailure = createAction(
   props<{ error: HttpErrorResponse }>(),
 );
 
+// --- Box occupancy ---------------------------------------------------------
+export const loadOccupancy = createAction('[Extraction Queue] Load Occupancy');
+export const loadOccupancySuccess = createAction(
+  '[Extraction API] Load Occupancy Success',
+  props<{ items: BoxOccupancyItem[] }>(),
+);
+export const loadOccupancyNotModified = createAction(
+  '[Extraction API] Load Occupancy Not Modified',
+);
+export const loadOccupancyFailure = createAction(
+  '[Extraction API] Load Occupancy Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
 // --- UI filter ------------------------------------------------------------
 export const setSearch = createAction(
   '[Extraction Queue] Set Search',
@@ -60,7 +95,7 @@ export const setSearch = createAction(
 // --- Mutations ------------------------------------------------------------
 export const assignExtractor = createAction(
   '[Extraction Queue] Assign Extractor',
-  props<{ id: number; box: number }>(),
+  props<{ id: number; box: number; branchId: number }>(),
 );
 export const assignExtractorSuccess = createAction(
   '[Extraction API] Assign Extractor Success',
@@ -73,7 +108,7 @@ export const assignExtractorFailure = createAction(
 
 export const cancelExtraction = createAction(
   '[Extraction Queue] Cancel Extraction',
-  props<{ id: number }>(),
+  props<{ id: number; reason: string }>(),
 );
 export const cancelExtractionSuccess = createAction(
   '[Extraction API] Cancel Extraction Success',

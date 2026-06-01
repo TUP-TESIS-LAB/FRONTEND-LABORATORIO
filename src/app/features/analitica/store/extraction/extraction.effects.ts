@@ -1,73 +1,154 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { Action } from '@ngrx/store';
-import { of } from 'rxjs';
-import { catchError, exhaustMap, map, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { Action, Store } from '@ngrx/store';
+import { EMPTY, of } from 'rxjs';
+import {
+  catchError,
+  concatMap,
+  exhaustMap,
+  filter,
+  map,
+  mergeMap,
+  switchMap,
+  take,
+  tap,
+  withLatestFrom,
+} from 'rxjs/operators';
 import { NotModified, isNotModified } from '@core/refresh';
 import { NotificationService } from '@core/services/notification.service';
+import { ExtractorBoxService } from '@core/services/extractor-box.service';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import { ExtractorAttentionService } from '../../services/extractor-attention.service';
 import {
   AwaitingExtractionItem,
+  BoxOccupancyItem,
+  BranchOption,
   ExtractionStats,
   InExtractionItem,
 } from '../../models/extraction.model';
 import * as A from './extraction.actions';
+import { selectSelectedBranchId } from './extraction.selectors';
 
 @Injectable()
 export class ExtractionEffects {
   private readonly actions$ = inject(Actions);
   private readonly api = inject(ExtractorAttentionService);
   private readonly notifier = inject(NotificationService);
+  private readonly store = inject(Store);
+  private readonly boxService = inject(ExtractorBoxService);
 
-  // refreshAll dispara los 3 loads en paralelo.
+  // refreshAll dispara los 4 loads cuando hay sucursal seleccionada.
   refreshAll$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.refreshAll),
-      mergeMap(() => [A.loadAwaiting(), A.loadMine(), A.loadStats()]),
+      withLatestFrom(this.store.select(selectSelectedBranchId)),
+      mergeMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return of(
+          A.loadAwaiting(),
+          A.loadMine(),
+          A.loadStats(),
+          A.loadOccupancy(),
+        );
+      }),
     ),
   );
 
+  // Al cambiar la sucursal seleccionada, refrescamos todo.
+  branchChangeRefresh$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.setSelectedBranch),
+      filter(({ branchId }) => branchId != null),
+      map(() => A.refreshAll()),
+    ),
+  );
+
+  // --- Branches ----------------------------------------------------------
+  loadBranches$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.loadBranches),
+      switchMap(() => this.api.getMyBranches().pipe(
+        map((r) => mapLoad<BranchOption[]>(
+          r,
+          (items) => A.loadBranchesSuccess({ items }),
+          () => A.loadBranchesNotModified(),
+        )),
+        catchError((error: HttpErrorResponse) => of(A.loadBranchesFailure({ error }))),
+      )),
+    ),
+  );
+
+  // --- Loads dependientes de branchId ------------------------------------
   loadAwaiting$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.loadAwaiting),
-      switchMap(() => this.api.getAwaiting().pipe(
-        map((r) => mapLoad<AwaitingExtractionItem[]>(
-          r,
-          (items) => A.loadAwaitingSuccess({ items }),
-          () => A.loadAwaitingNotModified(),
-        )),
-        catchError((error: HttpErrorResponse) => of(A.loadAwaitingFailure({ error }))),
-      )),
+      withLatestFrom(this.store.select(selectSelectedBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getAwaiting(branchId).pipe(
+          map((r) => mapLoad<AwaitingExtractionItem[]>(
+            r,
+            (items) => A.loadAwaitingSuccess({ items }),
+            () => A.loadAwaitingNotModified(),
+          )),
+          catchError((error: HttpErrorResponse) => of(A.loadAwaitingFailure({ error }))),
+        );
+      }),
     ),
   );
 
   loadMine$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.loadMine),
-      switchMap(() => this.api.getMine().pipe(
-        map((r) => mapLoad<InExtractionItem[]>(
-          r,
-          (items) => A.loadMineSuccess({ items }),
-          () => A.loadMineNotModified(),
-        )),
-        catchError((error: HttpErrorResponse) => of(A.loadMineFailure({ error }))),
-      )),
+      withLatestFrom(this.store.select(selectSelectedBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getMine(branchId).pipe(
+          map((r) => mapLoad<InExtractionItem[]>(
+            r,
+            (items) => A.loadMineSuccess({ items }),
+            () => A.loadMineNotModified(),
+          )),
+          catchError((error: HttpErrorResponse) => of(A.loadMineFailure({ error }))),
+        );
+      }),
     ),
   );
 
   loadStats$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.loadStats),
-      switchMap(() => this.api.getStats().pipe(
-        map((r) => mapLoad<ExtractionStats>(
-          r,
-          (stats) => A.loadStatsSuccess({ stats }),
-          () => A.loadStatsNotModified(),
-        )),
-        catchError((error: HttpErrorResponse) => of(A.loadStatsFailure({ error }))),
-      )),
+      withLatestFrom(this.store.select(selectSelectedBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getStats(branchId).pipe(
+          map((r) => mapLoad<ExtractionStats>(
+            r,
+            (stats) => A.loadStatsSuccess({ stats }),
+            () => A.loadStatsNotModified(),
+          )),
+          catchError((error: HttpErrorResponse) => of(A.loadStatsFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  loadOccupancy$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.loadOccupancy),
+      withLatestFrom(this.store.select(selectSelectedBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getBoxOccupancy(branchId).pipe(
+          map((r) => mapLoad<BoxOccupancyItem[]>(
+            r,
+            (items) => A.loadOccupancySuccess({ items }),
+            () => A.loadOccupancyNotModified(),
+          )),
+          catchError((error: HttpErrorResponse) => of(A.loadOccupancyFailure({ error }))),
+        );
+      }),
     ),
   );
 
@@ -75,7 +156,7 @@ export class ExtractionEffects {
   assignExtractor$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.assignExtractor),
-      exhaustMap(({ id, box }) => this.api.assignExtractor(id, box).pipe(
+      exhaustMap(({ id, box, branchId }) => this.api.assignExtractor(id, box, branchId).pipe(
         map(() => A.assignExtractorSuccess({ id })),
         catchError((error: HttpErrorResponse) => of(A.assignExtractorFailure({ error }))),
       )),
@@ -85,7 +166,7 @@ export class ExtractionEffects {
   cancelExtraction$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.cancelExtraction),
-      exhaustMap(({ id }) => this.api.cancelExtraction(id).pipe(
+      exhaustMap(({ id, reason }) => this.api.cancelExtraction(id, reason).pipe(
         map(() => A.cancelExtractionSuccess({ id })),
         catchError((error: HttpErrorResponse) => of(A.cancelExtractionFailure({ error }))),
       )),
@@ -102,7 +183,7 @@ export class ExtractionEffects {
     ),
   );
 
-  // Toda mutation exitosa refresca la pantalla.
+  // Toda mutation exitosa refresca toda la pantalla (incluye occupancy).
   mutationRefresh$ = createEffect(() =>
     this.actions$.pipe(
       ofType(
@@ -111,6 +192,26 @@ export class ExtractionEffects {
         A.endExtractionSuccess,
       ),
       map(() => A.refreshAll()),
+    ),
+  );
+
+  // --- Manejo especial de 403 al cambiar de sucursal ---------------------
+  branchAccessDenied$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(
+        A.loadAwaitingFailure, A.loadMineFailure, A.loadStatsFailure, A.loadOccupancyFailure,
+      ),
+      filter((a: { error: HttpErrorResponse }) => a.error.status === 403),
+      take(1),
+      concatMap(({ error }) => {
+        const msg = humanizeBackendError(error, {
+          fallback: 'No tenés acceso a esta sucursal.',
+          byStatus: { 403: 'No tenés acceso a esta sucursal.' },
+        });
+        this.notifier.error(msg);
+        this.boxService.setSelectedBranch(null);
+        return of(A.setSelectedBranch({ branchId: null }));
+      }),
     ),
   );
 
@@ -139,15 +240,14 @@ export class ExtractionEffects {
         return;
       case A.assignExtractorFailure.type: {
         const err = (action as ReturnType<typeof A.assignExtractorFailure>).error;
-        const msg = err.status === 409
-          ? 'Otro extractor tomó este paciente. La cola se actualizó.'
-          : humanizeBackendError(err, {
-              fallback: 'No pudimos tomar la extracción. Probá de nuevo.',
-              byStatus: {
-                403: 'No tenés permiso para tomar extracciones.',
-                404: 'No encontramos la atención solicitada.',
-              },
-            });
+        const msg = humanizeBackendError(err, {
+          fallback: 'No pudimos tomar la extracción. Probá de nuevo.',
+          byStatus: {
+            403: 'No tenés permiso para tomar extracciones.',
+            404: 'No encontramos la atención solicitada.',
+            409: 'El box que elegiste está ocupado por otro extractor. Cambiá de box.',
+          },
+        });
         this.notifier.error(msg);
         return;
       }
@@ -155,6 +255,10 @@ export class ExtractionEffects {
         const err = (action as ReturnType<typeof A.cancelExtractionFailure>).error;
         this.notifier.error(humanizeBackendError(err, {
           fallback: 'No pudimos cancelar la extracción.',
+          byStatus: {
+            400: 'El motivo de cancelación no es válido.',
+            404: 'No encontramos la atención solicitada.',
+          },
         }));
         return;
       }

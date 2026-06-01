@@ -15,6 +15,33 @@ function setPending(
 export const extractionReducer = createReducer(
   initialExtractionState,
 
+  // --- Branches ----------------------------------------------------------
+  on(A.loadBranches, (s): ExtractionFeatureState => setPending(s, { branches: true })),
+  on(A.loadBranchesSuccess, (s, { items }): ExtractionFeatureState => ({
+    ...setPending(s, { branches: false }),
+    branches: items,
+    error: null,
+  })),
+  on(A.loadBranchesNotModified, (s): ExtractionFeatureState => setPending(s, { branches: false })),
+  on(A.loadBranchesFailure, (s, { error }): ExtractionFeatureState => ({
+    ...setPending(s, { branches: false }),
+    error: extractErrorText(error),
+  })),
+
+  on(A.setSelectedBranch, (s, { branchId }): ExtractionFeatureState => {
+    if (s.selectedBranchId === branchId) return s;
+    // Cambiar de sucursal invalida el contenido específico de la anterior.
+    return {
+      ...s,
+      selectedBranchId: branchId,
+      awaiting: [],
+      mine: [],
+      stats: null,
+      boxOccupancy: [],
+      error: null,
+    };
+  }),
+
   // --- Awaiting ----------------------------------------------------------
   on(A.loadAwaiting, (s): ExtractionFeatureState => setPending(s, { awaiting: true })),
   on(A.loadAwaitingSuccess, (s, { items }): ExtractionFeatureState => ({
@@ -63,6 +90,23 @@ export const extractionReducer = createReducer(
   })),
   on(A.loadStatsFailure, (s, { error }): ExtractionFeatureState => ({
     ...setPending(s, { stats: false }),
+    error: extractErrorText(error),
+  })),
+
+  // --- Box occupancy -----------------------------------------------------
+  on(A.loadOccupancy, (s): ExtractionFeatureState => setPending(s, { occupancy: true })),
+  on(A.loadOccupancySuccess, (s, { items }): ExtractionFeatureState => ({
+    ...setPending(s, { occupancy: false }),
+    boxOccupancy: items,
+    lastRefreshAt: Date.now(),
+    error: null,
+  })),
+  on(A.loadOccupancyNotModified, (s): ExtractionFeatureState => ({
+    ...setPending(s, { occupancy: false }),
+    lastRefreshAt: Date.now(),
+  })),
+  on(A.loadOccupancyFailure, (s, { error }): ExtractionFeatureState => ({
+    ...setPending(s, { occupancy: false }),
     error: extractErrorText(error),
   })),
 

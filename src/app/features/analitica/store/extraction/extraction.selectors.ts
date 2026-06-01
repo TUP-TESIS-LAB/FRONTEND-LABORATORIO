@@ -1,5 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { AwaitingExtractionItem } from '../../models/extraction.model';
+import { AwaitingExtractionItem, BranchOption } from '../../models/extraction.model';
 import { EXTRACTION_FEATURE_KEY, ExtractionFeatureState } from './extraction.state';
 
 export const selectExtractionState =
@@ -17,6 +17,44 @@ export const selectLastRefreshAt = createSelector(
   selectExtractionState,
   (s) => (s.lastRefreshAt ? new Date(s.lastRefreshAt) : null),
 );
+
+export const selectBranches = createSelector(selectExtractionState, (s) => s.branches);
+export const selectSelectedBranchId = createSelector(
+  selectExtractionState,
+  (s) => s.selectedBranchId,
+);
+export const selectSelectedBranch = createSelector(
+  selectBranches,
+  selectSelectedBranchId,
+  (branches, id): BranchOption | null => {
+    if (id == null) return null;
+    return branches.find((b) => b.id === id) ?? null;
+  },
+);
+
+export const selectBoxOccupancy = createSelector(
+  selectExtractionState,
+  (s) => s.boxOccupancy,
+);
+
+/**
+ * Devuelve la fila de occupancy del usuario actual (si está ocupando un box
+ * en la sucursal actual). Útil para destacar "mi box".
+ */
+export const selectMyBoxOccupancy = (myUserId: number | null) =>
+  createSelector(selectBoxOccupancy, (rows) => {
+    if (myUserId == null) return null;
+    return rows.find((r) => r.extractorId === myUserId) ?? null;
+  });
+
+/**
+ * Factory selector: ¿está ocupado el box N por OTRO extractor que no sea el
+ * usuario actual? (Si lo ocupa el propio usuario, devuelve `false`).
+ */
+export const selectBoxIsOccupied = (box: number, myUserId: number | null) =>
+  createSelector(selectBoxOccupancy, (rows) =>
+    rows.some((r) => r.box === box && (myUserId == null || r.extractorId !== myUserId)),
+  );
 
 /**
  * Filtra `awaiting` por DNI o nombre (case insensitive). NO reordena: el

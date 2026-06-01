@@ -1,5 +1,18 @@
-import { AwaitingExtractionItem, InExtractionItem } from '../../models/extraction.model';
-import { selectAwaiting, selectCanTakeMore, selectExtractionState } from './extraction.selectors';
+import {
+  AwaitingExtractionItem,
+  BoxOccupancyItem,
+  BranchOption,
+  InExtractionItem,
+} from '../../models/extraction.model';
+import {
+  selectAwaiting,
+  selectBoxIsOccupied,
+  selectBranches,
+  selectCanTakeMore,
+  selectExtractionState,
+  selectMyBoxOccupancy,
+  selectSelectedBranch,
+} from './extraction.selectors';
 import { EXTRACTION_FEATURE_KEY, ExtractionFeatureState, initialExtractionState } from './extraction.state';
 
 function aw(over: Partial<AwaitingExtractionItem>): AwaitingExtractionItem {
@@ -18,6 +31,15 @@ function mine(over: Partial<InExtractionItem>): InExtractionItem {
     extractionStartedAt: '',
     extractorId: 1,
     ...over,
+  };
+}
+function br(over: Partial<BranchOption> = {}): BranchOption {
+  return { id: 1, code: 'NORTE', name: 'Sucursal Norte', ...over };
+}
+function occ(over: Partial<BoxOccupancyItem> = {}): BoxOccupancyItem {
+  return {
+    box: 1, extractorId: 100, extractorFullName: 'Otro',
+    attentionId: 11, attentionNumber: 'A-1', ...over,
   };
 }
 
@@ -58,7 +80,6 @@ describe('extraction selectors', () => {
   });
 
   it('selectAwaiting does NOT reorder — preserves backend order', () => {
-    // backend returns urgent first; we just keep the order.
     const items = [
       aw({ id: 1, isUrgent: true }),
       aw({ id: 2, isUrgent: false }),
@@ -76,5 +97,51 @@ describe('extraction selectors', () => {
   it('selectCanTakeMore is false when mine has at least 1', () => {
     const root = stateWith({ mine: [mine({ id: 1 })] });
     expect(selectCanTakeMore(root)).toBe(false);
+  });
+
+  it('selectBranches returns the branches slice', () => {
+    const list = [br({ id: 1 }), br({ id: 2, name: 'Sucursal Sur' })];
+    const root = stateWith({ branches: list });
+    expect(selectBranches(root)).toBe(list);
+  });
+
+  it('selectSelectedBranch derives the BranchOption from id', () => {
+    const list = [br({ id: 1 }), br({ id: 2, name: 'Sucursal Sur' })];
+    const root = stateWith({ branches: list, selectedBranchId: 2 });
+    expect(selectSelectedBranch(root)?.name).toBe('Sucursal Sur');
+  });
+
+  it('selectSelectedBranch is null when no id selected', () => {
+    const root = stateWith({ branches: [br()], selectedBranchId: null });
+    expect(selectSelectedBranch(root)).toBeNull();
+  });
+
+  it('selectMyBoxOccupancy returns the row where extractorId matches', () => {
+    const rows = [occ({ box: 1, extractorId: 100 }), occ({ box: 3, extractorId: 50 })];
+    const root = stateWith({ boxOccupancy: rows });
+    expect(selectMyBoxOccupancy(50)(root)?.box).toBe(3);
+  });
+
+  it('selectMyBoxOccupancy returns null when no match', () => {
+    const rows = [occ({ box: 1, extractorId: 100 })];
+    const root = stateWith({ boxOccupancy: rows });
+    expect(selectMyBoxOccupancy(999)(root)).toBeNull();
+  });
+
+  it('selectBoxIsOccupied is true when another extractor is on that box', () => {
+    const rows = [occ({ box: 5, extractorId: 200 })];
+    const root = stateWith({ boxOccupancy: rows });
+    expect(selectBoxIsOccupied(5, 50)(root)).toBe(true);
+  });
+
+  it('selectBoxIsOccupied is false when the box is mine', () => {
+    const rows = [occ({ box: 5, extractorId: 50 })];
+    const root = stateWith({ boxOccupancy: rows });
+    expect(selectBoxIsOccupied(5, 50)(root)).toBe(false);
+  });
+
+  it('selectBoxIsOccupied is false when no row matches', () => {
+    const root = stateWith({ boxOccupancy: [occ({ box: 1, extractorId: 200 })] });
+    expect(selectBoxIsOccupied(99, 50)(root)).toBe(false);
   });
 });

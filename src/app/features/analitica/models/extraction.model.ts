@@ -29,4 +29,25 @@ export interface ExtractionStats {
 
 export interface AssignExtractorRequest {
   attentionBox: number;
+  branchId: number;
+}
+
+export interface CancelExtractionRequest {
+  reason: string;
+}
+
+/** Sucursal en la que un extractor puede trabajar. */
+export interface BranchOption {
+  id: number;
+  code: string;
+  name: string;
+}
+
+/** Una fila por box ocupado en la sucursal actual. */
+export interface BoxOccupancyItem {
+  box: number;
+  extractorId: number;
+  extractorFullName: string;
+  attentionId: number;
+  attentionNumber: string;
 }

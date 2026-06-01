@@ -1,5 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { AwaitingExtractionItem, ExtractionStats, InExtractionItem } from '../../models/extraction.model';
+import {
+  AwaitingExtractionItem,
+  BoxOccupancyItem,
+  BranchOption,
+  ExtractionStats,
+  InExtractionItem,
+} from '../../models/extraction.model';
 import * as A from './extraction.actions';
 import { extractionReducer } from './extraction.reducer';
 import { initialExtractionState } from './extraction.state';
@@ -19,6 +25,19 @@ function mineItem(over: Partial<InExtractionItem> = {}): InExtractionItem {
     attentionBox: 1,
     extractionStartedAt: '2026-01-01T00:05:00Z',
     extractorId: 99,
+    ...over,
+  };
+}
+function branch(over: Partial<BranchOption> = {}): BranchOption {
+  return { id: 1, code: 'NORTE', name: 'Sucursal Norte', ...over };
+}
+function occItem(over: Partial<BoxOccupancyItem> = {}): BoxOccupancyItem {
+  return {
+    box: 1,
+    extractorId: 99,
+    extractorFullName: 'Juan Pérez',
+    attentionId: 42,
+    attentionNumber: 'A-FX0008',
     ...over,
   };
 }
@@ -73,14 +92,14 @@ describe('extractionReducer', () => {
   });
 
   it('assignExtractor sets mutation pending, success clears it', () => {
-    const s1 = extractionReducer(initialExtractionState, A.assignExtractor({ id: 1, box: 2 }));
+    const s1 = extractionReducer(initialExtractionState, A.assignExtractor({ id: 1, box: 2, branchId: 7 }));
     expect(s1.pending.mutation).toBe(true);
     const s2 = extractionReducer(s1, A.assignExtractorSuccess({ id: 1 }));
     expect(s2.pending.mutation).toBe(false);
   });
 
   it('cancel + end mutations toggle pending', () => {
-    const s1 = extractionReducer(initialExtractionState, A.cancelExtraction({ id: 1 }));
+    const s1 = extractionReducer(initialExtractionState, A.cancelExtraction({ id: 1, reason: 'no se presentó' }));
     expect(s1.pending.mutation).toBe(true);
     const s2 = extractionReducer(s1, A.cancelExtractionSuccess({ id: 1 }));
     expect(s2.pending.mutation).toBe(false);
@@ -89,5 +108,51 @@ describe('extractionReducer', () => {
     expect(s3.pending.mutation).toBe(true);
     const s4 = extractionReducer(s3, A.endExtractionSuccess({ id: 1 }));
     expect(s4.pending.mutation).toBe(false);
+  });
+
+  it('loadBranchesSuccess stores branches and clears pending', () => {
+    const items = [branch({ id: 1 }), branch({ id: 2, code: 'SUR', name: 'Sucursal Sur' })];
+    const start = { ...initialExtractionState, pending: { ...initialExtractionState.pending, branches: true } };
+    const out = extractionReducer(start, A.loadBranchesSuccess({ items }));
+    expect(out.branches).toBe(items);
+    expect(out.pending.branches).toBe(false);
+  });
+
+  it('setSelectedBranch resets data slices to allow refetch', () => {
+    const start = {
+      ...initialExtractionState,
+      awaiting: [awaitingItem({ id: 9 })],
+      mine: [mineItem({ id: 10 })],
+      stats: { queueSize: 5, averageWaitMinutes: 3, finishedTodayByMe: 1 },
+      boxOccupancy: [occItem()],
+      selectedBranchId: 1,
+    };
+    const out = extractionReducer(start, A.setSelectedBranch({ branchId: 2 }));
+    expect(out.selectedBranchId).toBe(2);
+    expect(out.awaiting).toEqual([]);
+    expect(out.mine).toEqual([]);
+    expect(out.stats).toBeNull();
+    expect(out.boxOccupancy).toEqual([]);
+  });
+
+  it('setSelectedBranch with same id is a no-op', () => {
+    const start = { ...initialExtractionState, selectedBranchId: 3, awaiting: [awaitingItem({ id: 1 })] };
+    const out = extractionReducer(start, A.setSelectedBranch({ branchId: 3 }));
+    expect(out).toBe(start);
+  });
+
+  it('loadOccupancySuccess replaces boxOccupancy', () => {
+    const items = [occItem({ box: 1 }), occItem({ box: 2, extractorId: 100 })];
+    const out = extractionReducer(initialExtractionState, A.loadOccupancySuccess({ items }));
+    expect(out.boxOccupancy).toBe(items);
+    expect(out.pending.occupancy).toBe(false);
+  });
+
+  it('loadOccupancyNotModified keeps the existing occupancy list', () => {
+    const items = [occItem()];
+    const start = { ...initialExtractionState, boxOccupancy: items };
+    const out = extractionReducer(start, A.loadOccupancyNotModified());
+    expect(out.boxOccupancy).toBe(items);
+    expect(out.lastRefreshAt).not.toBeNull();
   });
 });
