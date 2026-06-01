@@ -58,4 +58,11 @@ describe('UsuarioFormDrawerComponent', () => {
     expect(emitted.roleIds).toEqual([2]);
     expect(emitted.sections).toEqual(['ATENCION', 'PACIENTES', 'TURNOS', 'OBRAS_SOCIALES']);
   });
+
+  it('el form es válido sin rol (rol opcional)', () => {
+    const { comp } = build();
+    comp.form.patchValue({ firstName: 'M', lastName: 'G', email: 'm@l.com', document: '1', username: 'mg' });
+    // sin setear roleId
+    expect(comp.canSubmit()).toBe(true);
+  });
 });

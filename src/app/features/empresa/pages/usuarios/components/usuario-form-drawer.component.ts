@@ -67,7 +67,7 @@ import { presetForRole } from '../../../models/role-section-presets';
             </div>
             <div class="pat-form__grid pat-form__grid--full">
               <div class="pat-form__field">
-                <label class="pat-form__label">Rol*</label>
+                <label class="pat-form__label">Rol</label>
                 <p-select
                   [options]="roles"
                   optionLabel="description"
@@ -96,7 +96,7 @@ import { presetForRole } from '../../../models/role-section-presets';
         <div class="pat-form__footer">
           <p-button label="Cancelar" severity="secondary" text type="button" (onClick)="cancel.emit()" />
           <p-button
-            [label]="editing() ? 'Guardar' : 'Invitar'"
+            [label]="editing() ? 'Confirmar' : 'Invitar'"
             severity="primary"
             type="submit"
             [disabled]="!canSubmit() || saving"
@@ -129,7 +129,7 @@ export class UsuarioFormDrawerComponent implements OnChanges {
     email: ['', [Validators.required, Validators.email]],
     document: ['', [Validators.required]],
     username: ['', [Validators.required]],
-    roleId: [null as number | null, [Validators.required]],
+    roleId: [null as number | null],
   });
 
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
