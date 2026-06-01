@@ -43,14 +43,39 @@ describe('TotemEffects.submitTotemEntry$', () => {
     });
   });
 
-  it('failure on lookup 404: dispatches PATIENT_NOT_FOUND', () => {
+  it('walk-in puro: 404 en lookup encola igual con patientId=null y firstName/lastName null', () => {
     return new Promise<void>((resolve) => {
       totemService.lookupPatientByDni.mockReturnValue(throwError(() => ({ status: 404 })));
+      totemService.registerQueueEntry.mockReturnValue(of({ queueNumber: 'W-007', queueEntryId: 77 }));
+
       actions$ = of(submitTotemEntry({ dni: '99999999', branchId: 10 }));
 
       effects.submitTotemEntry$.subscribe(action => {
+        expect(action).toEqual(submitTotemEntrySuccess({
+          queueNumber: 'W-007',
+          patientFirstName: null,
+          patientLastName: null,
+        }));
+        expect(totemService.lookupPatientByDni).toHaveBeenCalledWith('99999999');
+        expect(totemService.registerQueueEntry).toHaveBeenCalledWith({
+          nationalId: '99999999',
+          patientId: null,
+          branchId: 10,
+        });
+        resolve();
+      });
+    });
+  });
+
+  it('falla con UNKNOWN si el error no es 404 (network, 500, etc.)', () => {
+    return new Promise<void>((resolve) => {
+      totemService.lookupPatientByDni.mockReturnValue(throwError(() => ({ status: 500 })));
+
+      actions$ = of(submitTotemEntry({ dni: '12345678', branchId: 10 }));
+
+      effects.submitTotemEntry$.subscribe(action => {
         expect(action.type).toBe(submitTotemEntryFailure.type);
-        expect((action as any).reason).toBe('PATIENT_NOT_FOUND');
+        expect((action as any).reason).toBe('UNKNOWN');
         expect(totemService.registerQueueEntry).not.toHaveBeenCalled();
         resolve();
       });

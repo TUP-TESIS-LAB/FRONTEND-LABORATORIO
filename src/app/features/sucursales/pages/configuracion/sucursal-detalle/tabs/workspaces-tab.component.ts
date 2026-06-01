@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy, Component, Input, OnInit,
   computed, inject,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
@@ -40,8 +41,14 @@ export class WorkspacesTabComponent implements OnInit {
     sectionId: [null as number | null, Validators.required],
   });
 
+  // Signal reactivo del areaId. Sin esto, computed() no se re-evaluaba al
+  // cambiar el select porque form.controls.areaId.value no es signal.
+  private readonly areaIdSignal = toSignal(this.form.controls.areaId.valueChanges, {
+    initialValue: this.form.controls.areaId.value,
+  });
+
   protected readonly sectionsForArea = computed(() => {
-    const areaId = this.form.controls.areaId.value;
+    const areaId = this.areaIdSignal();
     return areaId == null ? [] : this.allSections().filter(s => s.areaId === areaId);
   });
 

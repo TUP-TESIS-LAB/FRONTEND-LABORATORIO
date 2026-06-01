@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy, Component, Input, OnInit, computed, effect, inject,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { TableModule } from 'primeng/table';
@@ -49,8 +50,14 @@ export class ContactosStepComponent implements OnInit {
     value: ['', [Validators.required]],
   });
 
+  // Signal reactivo del contactType para que currentTypeConfig se recalcule
+  // al cambiar el select. form.value.contactType no es reactivo en computed().
+  private readonly contactTypeSignal = toSignal(this.form.controls.contactType.valueChanges, {
+    initialValue: this.form.controls.contactType.value,
+  });
+
   protected readonly currentTypeConfig = computed(() => {
-    const type = this.form.value.contactType ?? 'PHONE';
+    const type = this.contactTypeSignal() ?? 'PHONE';
     return CONTACT_TYPE_OPTIONS.find(o => o.value === type) ?? CONTACT_TYPE_OPTIONS[0];
   });
 

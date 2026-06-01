@@ -11,7 +11,7 @@ import {
 import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { interval, startWith, switchMap } from 'rxjs';
+import { catchError, EMPTY, interval, startWith, switchMap } from 'rxjs';
 import { DisplaySnapshot, PublicQueueEntry } from '../../models/public-display.model';
 import { PublicDisplayService } from '../../services/public-display.service';
 import { EmptyStateComponent } from './empty-state.component';
@@ -105,18 +105,24 @@ export class SalaEsperaPage implements OnInit {
 
   ngOnInit(): void {
     if (!this.tenantSlug || !this.branchId) return;
+    // Polling cada 3s. switchMap cancela peticiones en vuelo cuando llega un nuevo tick.
+    // catchError INSIDE switchMap convierte el error a EMPTY para que NO termine el stream
+    // outer — sin esto, el primer error mata el polling y la TV no se recupera.
+    // Mantenemos el último snapshot; connectionLost() se activa cuando lastSuccessfulFetch
+    // queda más viejo que 15s.
     interval(3000)
       .pipe(
         startWith(0),
-        switchMap(() => this.service.fetchSnapshot(this.tenantSlug, this.branchId)),
+        switchMap(() =>
+          this.service.fetchSnapshot(this.tenantSlug, this.branchId).pipe(
+            catchError(() => EMPTY),
+          ),
+        ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe({
-        next: snap => {
-          this.snapshot.set(snap);
-          this.lastSuccessfulFetch.set(Date.now());
-        },
-        // network error: mantenemos último snapshot
+      .subscribe(snap => {
+        this.snapshot.set(snap);
+        this.lastSuccessfulFetch.set(Date.now());
       });
 
     // Carousel: rotar página cada ROTATE_MS si hay más de una página.
