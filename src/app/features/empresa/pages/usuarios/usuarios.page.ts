@@ -13,6 +13,8 @@ import {
   selectEmpresaPending, selectUsuariosFilters,
   selectUsuariosPage, selectUsuariosSize, selectUsuariosTotalElements,
 } from '../../store/empresa.selectors';
+import { loadCatalog, selectUser } from '@features/roles-permisos/store/roles-permisos.actions';
+import { selectCatalog, selectWorkingSet } from '@features/roles-permisos/store/roles-permisos.selectors';
 import {
   ActualizarUsuarioPayload, BuscarUsuariosParams, CambiarEstadoPayload, CrearUsuarioPayload, Usuario,
 } from '../../models/usuario.model';
@@ -61,6 +63,8 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
       [visible]="formOpen()"
       [usuario]="editingUser()"
       [roles]="roles()"
+      [catalog]="catalog()"
+      [initialSections]="editingUser() ? editingSections() : []"
       [saving]="pending()"
       (create)="onCreate($event)"
       (update)="onUpdate($event)"
@@ -91,6 +95,8 @@ export class UsuariosPage implements OnInit {
   readonly page = this.store.selectSignal(selectUsuariosPage);
   readonly size = this.store.selectSignal(selectUsuariosSize);
   readonly totalElements = this.store.selectSignal(selectUsuariosTotalElements);
+  readonly catalog = this.store.selectSignal(selectCatalog);
+  readonly editingSections = this.store.selectSignal(selectWorkingSet);
 
   readonly formOpen = signal(false);
   readonly editingUser = signal<Usuario | null>(null);
@@ -100,6 +106,7 @@ export class UsuariosPage implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(loadRoles());
+    this.store.dispatch(loadCatalog());
     this.store.dispatch(loadUsuarios({ filters: this.filters() }));
   }
 
@@ -111,7 +118,11 @@ export class UsuariosPage implements OnInit {
   }
 
   openCreate(): void { this.editingUser.set(null); this.formOpen.set(true); }
-  openEdit(u: Usuario): void { this.editingUser.set(u); this.formOpen.set(true); }
+  openEdit(u: Usuario): void {
+    this.editingUser.set(u);
+    this.store.dispatch(selectUser({ userId: u.id }));
+    this.formOpen.set(true);
+  }
   closeForm(): void { this.formOpen.set(false); this.editingUser.set(null); }
 
   onCreate(payload: CrearUsuarioPayload): void {
