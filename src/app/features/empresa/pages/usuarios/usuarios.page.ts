@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { Store } from '@ngrx/store';
+import { filter, take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 
 import {
@@ -14,7 +15,7 @@ import {
   selectUsuariosPage, selectUsuariosSize, selectUsuariosTotalElements,
 } from '../../store/empresa.selectors';
 import { loadCatalog, selectUser } from '@features/roles-permisos/store/roles-permisos.actions';
-import { selectCatalog, selectWorkingSet } from '@features/roles-permisos/store/roles-permisos.selectors';
+import { selectCatalog, selectRpPending, selectWorkingSet } from '@features/roles-permisos/store/roles-permisos.selectors';
 import {
   ActualizarUsuarioPayload, BuscarUsuariosParams, CambiarEstadoPayload, CrearUsuarioPayload, Usuario,
 } from '../../models/usuario.model';
@@ -121,7 +122,12 @@ export class UsuariosPage implements OnInit {
   openEdit(u: Usuario): void {
     this.editingUser.set(u);
     this.store.dispatch(selectUser({ userId: u.id }));
-    this.formOpen.set(true);
+    // Abrir el drawer recién cuando terminó de cargar las secciones del usuario,
+    // para que el drawer tome las secciones correctas y no pise/borre nada.
+    this.store.select(selectRpPending).pipe(
+      filter((pending) => !pending),
+      take(1),
+    ).subscribe(() => this.formOpen.set(true));
   }
   closeForm(): void { this.formOpen.set(false); this.editingUser.set(null); }
 

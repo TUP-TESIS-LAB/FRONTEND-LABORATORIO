@@ -15,6 +15,7 @@ export const rolesPermisosReducer = createReducer(
 
   on(selectUser, (s, { userId }): RolesPermisosState => ({
     ...s, selectedUserId: userId, pending: true, error: null,
+    workingSet: [], grantedSet: [],
   })),
   on(loadUserSectionsSuccess, (s, { sections }): RolesPermisosState => ({
     ...s, grantedSet: sections, workingSet: sections, pending: false,
