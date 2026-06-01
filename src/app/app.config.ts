@@ -17,6 +17,7 @@ import { authTokenInterceptor } from '@core/interceptors/auth-token.interceptor'
 import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
 import { TokenService } from '@core/auth/token.service';
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
+import { metaReducers } from '@core/store/logger.meta-reducer';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
 import { tenantReducer } from '@core/tenant/store/tenant.reducer';
@@ -67,7 +68,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authTokenInterceptor, tenantIdInterceptor]),
     ),
-    provideStore({}),
+    provideStore({}, { metaReducers }),
     provideEffects([]),
     provideRouterStore(),
     provideState(TENANT_FEATURE_KEY, tenantReducer),
