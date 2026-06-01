@@ -17,6 +17,7 @@
         @case (0) {
           <app-datos-step #step0
             (completed)="onDatosCompleted($event)"
+            (failed)="onDatosFailed()"
             (validChange)="step0Valid.set($event)" />
         }
         @case (1) {

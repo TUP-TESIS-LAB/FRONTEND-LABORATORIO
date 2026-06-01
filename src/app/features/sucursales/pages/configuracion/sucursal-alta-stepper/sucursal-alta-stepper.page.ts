@@ -106,6 +106,15 @@ export class SucursalAltaStepperPage {
   }
 
   /**
+   * Llamado por DatosStepComponent cuando el submit fallo (p.ej. 409 codigo
+   * duplicado). Resetea el loading del boton "Continuar →" para que el usuario
+   * pueda corregir y reintentar sin tener que recargar la pagina.
+   */
+  onDatosFailed() {
+    this.creatingBranch.set(false);
+  }
+
+  /**
    * Navegación entre steps disparada por el header compartido.
    * El propio shared component solo emite `stepSelected` cuando el paso
    * está visitado, así que el guard de branchId queda cubierto por el set.

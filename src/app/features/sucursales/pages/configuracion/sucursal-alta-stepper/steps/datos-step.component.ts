@@ -28,6 +28,15 @@ export class DatosStepComponent {
   @Output() completed = new EventEmitter<number>();
 
   /**
+   * Emite cuando el submit fallo (p.ej. 409 codigo duplicado). La pagina
+   * lo consume para resetear su flag `creatingBranch` y desbloquear el boton
+   * "Continuar →". Sin este output, el padre setea `creatingBranch=true` en
+   * onContinueFromDatos() y nunca tiene como saber que hubo error → el boton
+   * queda en loading state forever y el usuario no puede reintentar.
+   */
+  @Output() failed = new EventEmitter<void>();
+
+  /**
    * Emite el estado de validez del form en cada cambio. La pagina lo consume
    * para habilitar reactivamente el boton "Continuar →" del footer sin tener
    * que mirar el FormGroup interno via @ViewChild ni depender de queueMicrotask
@@ -140,6 +149,7 @@ export class DatosStepComponent {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(({ error }) => {
       this.saving.set(false);
+      this.failed.emit();
       this.messageService.add({
         severity: 'error',
         summary: 'No se pudo crear la sucursal',

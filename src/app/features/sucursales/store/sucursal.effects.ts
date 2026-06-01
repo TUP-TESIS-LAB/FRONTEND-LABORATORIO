@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, map, of, switchMap, tap, forkJoin } from 'rxjs';
+import { catchError, map, mergeMap, of, switchMap, tap, forkJoin } from 'rxjs';
 import { MessageService } from 'primeng/api';
 
 import * as A from './sucursal.actions';
@@ -99,9 +99,12 @@ export class SucursalEffects {
     )),
   ));
 
+  // mergeMap (no switchMap): el componente puede dispatchar N add/update/delete
+  // independientes en paralelo (p.ej. HorariosStep.add() hace un loop por dia
+  // seleccionado). switchMap cancelaria todos menos el ultimo silenciosamente.
   addSchedule$ = createEffect(() => this.actions$.pipe(
     ofType(A.addSchedule),
-    switchMap(({ branchId, input }) => this.scheduleService.create(branchId, input).pipe(
+    mergeMap(({ branchId, input }) => this.scheduleService.create(branchId, input).pipe(
       map(schedule => A.addScheduleSuccess({ schedule })),
       catchError(err => of(A.addScheduleFailure({ error: this.errorMessage(err) }))),
     )),
@@ -109,7 +112,7 @@ export class SucursalEffects {
 
   updateSchedule$ = createEffect(() => this.actions$.pipe(
     ofType(A.updateSchedule),
-    switchMap(({ branchId, id, input }) => this.scheduleService.update(branchId, id, input).pipe(
+    mergeMap(({ branchId, id, input }) => this.scheduleService.update(branchId, id, input).pipe(
       map(schedule => A.updateScheduleSuccess({ schedule })),
       catchError(err => of(A.updateScheduleFailure({ error: this.errorMessage(err) }))),
     )),
@@ -117,7 +120,7 @@ export class SucursalEffects {
 
   deleteSchedule$ = createEffect(() => this.actions$.pipe(
     ofType(A.deleteSchedule),
-    switchMap(({ branchId, id }) => this.scheduleService.delete(branchId, id).pipe(
+    mergeMap(({ branchId, id }) => this.scheduleService.delete(branchId, id).pipe(
       map(() => A.deleteScheduleSuccess({ id })),
       catchError(err => of(A.deleteScheduleFailure({ error: this.errorMessage(err) }))),
     )),
@@ -134,9 +137,11 @@ export class SucursalEffects {
     )),
   ));
 
+  // mergeMap: misma razon que schedules. Multiples contactos pueden agregarse/
+  // editarse/borrarse en paralelo desde la UI sin que el efecto cancele en vuelo.
   addContact$ = createEffect(() => this.actions$.pipe(
     ofType(A.addContact),
-    switchMap(({ branchId, input }) => this.contactService.create(branchId, input).pipe(
+    mergeMap(({ branchId, input }) => this.contactService.create(branchId, input).pipe(
       map(contact => A.addContactSuccess({ contact })),
       catchError(err => of(A.addContactFailure({ error: this.errorMessage(err) }))),
     )),
@@ -144,7 +149,7 @@ export class SucursalEffects {
 
   updateContact$ = createEffect(() => this.actions$.pipe(
     ofType(A.updateContact),
-    switchMap(({ branchId, id, input }) => this.contactService.update(branchId, id, input).pipe(
+    mergeMap(({ branchId, id, input }) => this.contactService.update(branchId, id, input).pipe(
       map(contact => A.updateContactSuccess({ contact })),
       catchError(err => of(A.updateContactFailure({ error: this.errorMessage(err) }))),
     )),
@@ -152,7 +157,7 @@ export class SucursalEffects {
 
   deleteContact$ = createEffect(() => this.actions$.pipe(
     ofType(A.deleteContact),
-    switchMap(({ branchId, id }) => this.contactService.delete(branchId, id).pipe(
+    mergeMap(({ branchId, id }) => this.contactService.delete(branchId, id).pipe(
       map(() => A.deleteContactSuccess({ id })),
       catchError(err => of(A.deleteContactFailure({ error: this.errorMessage(err) }))),
     )),
@@ -207,9 +212,11 @@ export class SucursalEffects {
     )),
   ));
 
+  // mergeMap preventivo: mismo riesgo que schedules/contacts si el ABM de
+  // areas dispara varias acciones en rafaga (toggle masivo, alta multiple).
   addArea$ = createEffect(() => this.actions$.pipe(
     ofType(A.addArea),
-    switchMap(({ input }) => this.areaService.create(input).pipe(
+    mergeMap(({ input }) => this.areaService.create(input).pipe(
       map(area => A.addAreaSuccess({ area })),
       catchError(err => of(A.addAreaFailure({ error: this.errorMessage(err) }))),
     )),
@@ -217,7 +224,7 @@ export class SucursalEffects {
 
   updateArea$ = createEffect(() => this.actions$.pipe(
     ofType(A.updateArea),
-    switchMap(({ id, input }) => this.areaService.update(id, input).pipe(
+    mergeMap(({ id, input }) => this.areaService.update(id, input).pipe(
       map(area => A.updateAreaSuccess({ area })),
       catchError(err => of(A.updateAreaFailure({ error: this.errorMessage(err) }))),
     )),
@@ -225,7 +232,7 @@ export class SucursalEffects {
 
   toggleAreaStatus$ = createEffect(() => this.actions$.pipe(
     ofType(A.toggleAreaStatus),
-    switchMap(({ id }) => this.areaService.toggleStatus(id).pipe(
+    mergeMap(({ id }) => this.areaService.toggleStatus(id).pipe(
       map(area => A.toggleAreaStatusSuccess({ area })),
       catchError(err => of(A.toggleAreaStatusFailure({ error: this.errorMessage(err) }))),
     )),
@@ -242,9 +249,10 @@ export class SucursalEffects {
     )),
   ));
 
+  // mergeMap preventivo: idem areas.
   addSection$ = createEffect(() => this.actions$.pipe(
     ofType(A.addSection),
-    switchMap(({ input }) => this.sectionService.create(input).pipe(
+    mergeMap(({ input }) => this.sectionService.create(input).pipe(
       map(section => A.addSectionSuccess({ section })),
       catchError(err => of(A.addSectionFailure({ error: this.errorMessage(err) }))),
     )),
@@ -252,7 +260,7 @@ export class SucursalEffects {
 
   updateSection$ = createEffect(() => this.actions$.pipe(
     ofType(A.updateSection),
-    switchMap(({ id, input }) => this.sectionService.update(id, input).pipe(
+    mergeMap(({ id, input }) => this.sectionService.update(id, input).pipe(
       map(section => A.updateSectionSuccess({ section })),
       catchError(err => of(A.updateSectionFailure({ error: this.errorMessage(err) }))),
     )),
@@ -260,7 +268,7 @@ export class SucursalEffects {
 
   toggleSectionStatus$ = createEffect(() => this.actions$.pipe(
     ofType(A.toggleSectionStatus),
-    switchMap(({ id }) => this.sectionService.toggleStatus(id).pipe(
+    mergeMap(({ id }) => this.sectionService.toggleStatus(id).pipe(
       map(section => A.toggleSectionStatusSuccess({ section })),
       catchError(err => of(A.toggleSectionStatusFailure({ error: this.errorMessage(err) }))),
     )),

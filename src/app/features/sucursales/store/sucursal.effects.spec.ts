@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
+import { delay } from 'rxjs/operators';
 import { MessageService } from 'primeng/api';
 
 import { SucursalEffects } from './sucursal.effects';
@@ -267,6 +268,40 @@ describe('SucursalEffects', () => {
           expect(action.type).toBe('[Sucursal] Add Schedule Failure');
           resolve();
         });
+      });
+    });
+
+    // Regression: PERTUSATTI review on PR #21.
+    // HorariosStep.add() dispatcha addSchedule en loop por dia seleccionado.
+    // Con switchMap, solo el ultimo se persistia (los anteriores se cancelaban
+    // en silencio). Con mergeMap, ambos requests viajan al backend y ambos
+    // emiten success — el servicio se llama N veces.
+    it('mergeMap: dispatcha 2 addSchedule en rafaga sin cancelar el primero', () => {
+      return new Promise<void>((resolve) => {
+        const monday: BranchSchedule = { ...mockSchedule, id: 1, dayFrom: 'MONDAY', dayTo: 'MONDAY' };
+        const tuesday: BranchSchedule = { ...mockSchedule, id: 2, dayFrom: 'TUESDAY', dayTo: 'TUESDAY' };
+        // delay para garantizar que la segunda accion llegue antes de que la
+        // primera resuelva — el comportamiento que switchMap rompia.
+        scheduleService.create
+          .mockReturnValueOnce(of(monday).pipe(delay(10)))
+          .mockReturnValueOnce(of(tuesday).pipe(delay(5)));
+
+        const actionsSubject = new Subject<Action>();
+        actions$ = actionsSubject.asObservable();
+
+        const results: Action[] = [];
+        effects.addSchedule$.subscribe((action) => {
+          results.push(action);
+          if (results.length === 2) {
+            const ids = results.map((a) => (a as { schedule: BranchSchedule }).schedule.id).sort();
+            expect(ids).toEqual([1, 2]);
+            expect(scheduleService.create).toHaveBeenCalledTimes(2);
+            resolve();
+          }
+        });
+
+        actionsSubject.next(A.addSchedule({ branchId: 1, input: { dayFrom: 'MONDAY', dayTo: 'MONDAY', fromTime: '08:00', toTime: '17:00', scheduleType: 'MORNING' } }));
+        actionsSubject.next(A.addSchedule({ branchId: 1, input: { dayFrom: 'TUESDAY', dayTo: 'TUESDAY', fromTime: '08:00', toTime: '17:00', scheduleType: 'MORNING' } }));
       });
     });
   });
