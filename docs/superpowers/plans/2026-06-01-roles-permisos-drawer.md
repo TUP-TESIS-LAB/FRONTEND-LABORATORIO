@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-68](https://exequielsantoro.atlassian.net/browse/KAN-68)
 > **Spec:** `docs/superpowers/specs/2026-06-01-roles-permisos-drawer-design.md`
 
 **Goal:** Unificar la asignación de accesos en el drawer de alta/edición de usuario: un rol único que pre-marca un preset de secciones editable, guardado en una sola llamada atómica; más los 2 bug fixes (dropdown de roles, host de notificaciones) y el borrado de la pantalla `/roles`.

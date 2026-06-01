@@ -1,6 +1,6 @@
 # Diseño — Asignación de rol + secciones en el drawer de usuario
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-68](https://exequielsantoro.atlassian.net/browse/KAN-68)
 > **Fecha:** 2026-06-01
 > **Repos afectados:** `FRONTEND-LABORATORIO` (rama `feat/roles-permisos`, PR #20) y `Backend` (rama `feat/permisos-modulares-por-usuario`, PR #29)
 > **Relacionado:** KAN-57 (permisos modulares BE), KAN-60 (roles y permisos FE)
