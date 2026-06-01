@@ -78,11 +78,6 @@ export const routes: Routes = [
           import('./features/home/home.routes').then((m) => m.HOME_ROUTES),
       },
       {
-        path: 'roles',
-        loadChildren: () =>
-          import('./features/roles-permisos/roles-permisos.routes').then((m) => m.ROLES_PERMISOS_ROUTES),
-      },
-      {
         path: 'obras-sociales',
         loadChildren: () =>
           import('./features/obras-sociales/obras-sociales.routes').then((m) => m.OBRAS_SOCIALES_ROUTES),
