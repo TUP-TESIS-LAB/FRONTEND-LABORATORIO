@@ -1,0 +1,38 @@
+<div class="branch-fab" [class.expanded]="expanded()">
+  @if (expanded()) {
+    <div class="fab-backdrop" (click)="close()"></div>
+  }
+
+  <button
+    class="fab-trigger"
+    type="button"
+    (click)="toggle()"
+    [attr.aria-expanded]="expanded()"
+  >
+    <i class="pi pi-building"></i>
+    <span class="trigger-label">{{ currentBranchName() }}</span>
+    <i class="pi pi-chevron-up chevron" [class.flipped]="expanded()"></i>
+  </button>
+
+  @if (expanded()) {
+    <div class="fab-menu" role="menu">
+      <div class="menu-header">Cambiar de sucursal</div>
+      @if (branches().length === 0) {
+        <div class="menu-empty">Cargando sucursales…</div>
+      } @else {
+        @for (b of branches(); track b.id) {
+          <button
+            class="branch-option"
+            type="button"
+            role="menuitem"
+            [class.active]="b.id === currentBranchId()"
+            (click)="select(b.id)"
+          >
+            <i class="pi pi-check check" [class.visible]="b.id === currentBranchId()"></i>
+            <span class="option-label">{{ b.name }}</span>
+          </button>
+        }
+      }
+    </div>
+  }
+</div>

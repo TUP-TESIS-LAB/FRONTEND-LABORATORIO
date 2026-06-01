@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, map, of, switchMap } from 'rxjs';
+import { catchError, map, of, switchMap, throwError } from 'rxjs';
 import { TotemService } from '../../pages/totem/services/totem.service';
 import * as A from './totem.actions';
 
@@ -14,22 +14,25 @@ export class TotemEffects {
       ofType(A.submitTotemEntry),
       switchMap(({ dni, branchId }) =>
         this.totemService.lookupPatientByDni(dni).pipe(
-          switchMap((patient) =>
-            this.totemService.registerQueueEntry({ nationalId: patient.dni, patientId: patient.id, branchId }).pipe(
-              map((reg) =>
+          // Walk-in puro: si el paciente no existe (404), encolamos igual sin patientId.
+          // Otros errores (network, 500) se propagan al catchError de abajo.
+          catchError(error => error?.status === 404 ? of(null) : throwError(() => error)),
+          switchMap(patient =>
+            this.totemService.registerQueueEntry({
+              nationalId: dni,
+              patientId: patient?.id ?? null,
+              branchId,
+            }).pipe(
+              map(reg =>
                 A.submitTotemEntrySuccess({
                   queueNumber: reg.queueNumber,
-                  patientFirstName: patient.firstName,
-                  patientLastName: patient.lastName,
+                  patientFirstName: patient?.firstName ?? null,
+                  patientLastName: patient?.lastName ?? null,
                 }),
               ),
             ),
           ),
-          catchError((error) => {
-            const reason: 'PATIENT_NOT_FOUND' | 'UNKNOWN' =
-              error?.status === 404 ? 'PATIENT_NOT_FOUND' : 'UNKNOWN';
-            return of(A.submitTotemEntryFailure({ reason }));
-          }),
+          catchError(() => of(A.submitTotemEntryFailure({ reason: 'UNKNOWN' }))),
         ),
       ),
     ),

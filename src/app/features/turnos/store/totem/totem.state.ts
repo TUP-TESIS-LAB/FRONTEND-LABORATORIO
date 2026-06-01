@@ -3,7 +3,7 @@ export interface TotemState {
   lastQueueNumber: string | null;
   lastPatientFirstName: string | null;
   lastPatientLastName: string | null;
-  error: 'PATIENT_NOT_FOUND' | 'UNKNOWN' | null;
+  error: 'UNKNOWN' | null;
 }
 
 export const initialTotemState: TotemState = {

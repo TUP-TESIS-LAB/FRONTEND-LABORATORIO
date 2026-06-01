@@ -22,8 +22,27 @@ export interface SucursalCreateInput {
 
 export type SucursalUpdateInput = SucursalCreateInput;
 
+export type AreaType =
+  | 'QUIMICA_CLINICA'
+  | 'HEMATOLOGIA_HEMOSTASIA'
+  | 'NEFROLOGIA'
+  | 'MEDIO_INTERNO'
+  | 'ENDOCRINOLOGIA_VIROLOGIA'
+  | 'MICROBIOLOGIA'
+  | 'INMUNOLOGIA_SEROLOGIA'
+  | 'EXTERNO'
+  | 'OTRO';
+
 export interface Area {
-  id: string;
-  nombre: string;
-  sucursalId: string;
+  id: number;
+  name: string;
+  areaType: AreaType;
+  externalLabName: string | null;
+  active: boolean;
+}
+
+export interface AreaCreateInput {
+  name: string;
+  areaType: AreaType;
+  externalLabName?: string | null;
 }

@@ -13,7 +13,6 @@ import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { BadgeModule } from 'primeng/badge';
 import { callQueueEntry, loadQueue } from '../../store/queue/queue.actions';
 import {
   selectQueueEntriesWalkIn,
@@ -25,7 +24,7 @@ import { QueueRowActionsComponent } from '../../components/queue-row-actions.com
 @Component({
   selector: 'app-recepcion-con-totem',
   standalone: true,
-  imports: [TableModule, ButtonModule, CardModule, BadgeModule, QueueRowActionsComponent],
+  imports: [TableModule, ButtonModule, CardModule, QueueRowActionsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion-con-totem.component.html',
   styleUrl: './recepcion-con-totem.component.scss',

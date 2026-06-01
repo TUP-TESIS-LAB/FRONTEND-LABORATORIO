@@ -19,6 +19,14 @@ interface ApiErrorBody {
   fieldErrors?: Record<string, string>;
 }
 
+const TECHNICAL_LEAK_PATTERNS = [
+  /^must not be null/i,
+  /^must not be blank/i,
+  /^must be greater than/i,
+  /^must be less than/i,
+  /^size must be between/i,
+];
+
 export function mapAgendaError(error: HttpErrorResponse): MappedAgendaError {
   const body = (error.error ?? {}) as ApiErrorBody;
   const code = body.code;
@@ -82,6 +90,23 @@ export function mapAgendaError(error: HttpErrorResponse): MappedAgendaError {
       display: 'toast',
       severity: 'warn',
       message: 'No tenés permiso para esta acción.',
+    };
+  }
+
+  if (error.status === 400 && apiMessage && /overlap/i.test(apiMessage)) {
+    return {
+      display: 'toast',
+      severity: 'error',
+      message: 'La agenda se superpone con otra ya configurada en esta sucursal. Ajustá el horario o el período.',
+      returnToStep: 3,
+    };
+  }
+
+  if (error.status === 400 && apiMessage && TECHNICAL_LEAK_PATTERNS.some(p => p.test(apiMessage))) {
+    return {
+      display: 'toast',
+      severity: 'error',
+      message: 'Revisá que todos los campos requeridos estén completos.',
     };
   }
 

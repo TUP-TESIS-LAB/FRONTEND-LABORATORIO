@@ -995,3 +995,292 @@ Patrón genérico para mostrar una entidad con identidad visual (avatar/iniciale
 **Diferencia con `ui-list-card`:**
 - `ui-list-card`: lista densa, item entero clickeable (navega), sin acciones inline.
 - `ui-entity-card`: card más espaciosa, con acciones inline, no navega como un todo.
+
+---
+
+## Stepper (PrimeNG 21) — wizard horizontal de N pasos
+
+Patrón usado para flujos de alta multi-paso (sucursales, agendas, etc.). PrimeNG 21 tiene dos patrones; **siempre usar el simplificado** (más limpio, menos elementos).
+
+### Patrón simplificado (recomendado)
+
+```html
+<p-stepper [(value)]="currentStep" [linear]="false" class="alta-stepper">
+
+  <p-step-list>
+    <p-step [value]="1">Datos</p-step>
+    <p-step [value]="2" [disabled]="entityId() == null"
+            [pTooltip]="entityId() == null ? 'Guardá los datos básicos primero' : ''"
+            tooltipPosition="bottom">Horarios</p-step>
+    <p-step [value]="3" [disabled]="entityId() == null"
+            [pTooltip]="entityId() == null ? 'Guardá los datos básicos primero' : ''"
+            tooltipPosition="bottom">Contactos</p-step>
+    <!-- ... -->
+  </p-step-list>
+
+  <p-step-panels>
+    <p-step-panel [value]="1">
+      <ng-template #content>
+        <div class="step-content">
+          <app-datos-step (completed)="onDatosCompleted($event)" (cancel)="cancel()" />
+        </div>
+      </ng-template>
+    </p-step-panel>
+    <!-- ... -->
+  </p-step-panels>
+
+</p-stepper>
+
+<p-toast />
+```
+
+**Imports del page:** `StepperModule, TooltipModule, ButtonModule, ToastModule, ...stepComponents`.
+
+### Estructura DOM real (importante para el SCSS)
+
+PrimeNG 21 renderiza el patrón simplificado así (clases reales aplicadas):
+
+```
+<p-stepper class="p-stepper alta-stepper">
+  <p-step-list class="p-steplist">
+    <p-step class="p-step" data-p-active="..." data-p-disabled="...">  ← wrapper de cada paso
+      <button>...</button>
+      <p-stepper-separator class="p-stepper-separator" />  ← se oculta
+    </p-step>
+    ...
+  </p-step-list>
+  <p-step-panels class="p-steppanels">              ← SIN GUION
+    <p-step-panel class="p-steppanel">              ← SIN GUION
+      <div class="p-steppanel-content-wrapper">     ← wrapper interno
+        <div class="p-steppanel-content">           ← envuelve el ng-template
+          ...contenido del step...
+        </div>
+      </div>
+    </p-step-panel>
+    ...
+  </p-step-panels>
+</p-stepper>
+```
+
+**Gotcha crítico — el wrapper de cada paso es `.p-step`, NO `.p-stepitem`.** La clase `.p-stepitem` solo existe si usás el patrón completo con `<p-step-item>` wrapper, que no usamos. Todo selector apuntando a `.p-stepitem` en el patrón simplificado falla silenciosamente (no hay error, simplemente no matchea).
+
+**Gotcha 2 — inconsistencia con/sin guión.** Los selectores HTML llevan guión (`<p-step-panels>`, `<p-step-panel>`) pero las **clases CSS emitidas no** (`.p-steppanels`, `.p-steppanel`). Mismo patrón: `<p-step-list>` → `.p-steplist`. Si en SCSS escribís `.p-step-panels` (con guión), no matchea nada. Síntoma: el scroll que esperabas dentro del step queda atrapado en el stepper entero porque la cadena `flex: 1` se rompe en el panels container.
+
+### Layout uniforme con CSS Grid
+
+Para distribuir los pasos en columnas matemáticamente iguales (sin que títulos largos como "Workspaces" empujen su columna), usar **CSS Grid de N columnas `minmax(0, 1fr)`** en el `.p-steplist`. Flex con `flex: 1 1 0` falla porque `white-space: nowrap` del título lo sobrepasa.
+
+### SCSS completo para un stepper de N pasos
+
+Reemplazar `repeat(6, ...)` por el número real de pasos.
+
+```scss
+.alta-page {
+  /* NO usar height: 100dvh aca — el shell ya descuenta topbar via flex:1. */
+  padding: 0;                    /* el shell content ya aporta var(--space-6) */
+  max-width: 64rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.alta-stepper {
+  background: #ffffff;            /* NO usar var(--surface-card) — undefined en PrimeNG 21 */
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.step-content {
+  padding: 1rem 0 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+/* === PrimeNG 21 stepper overrides ===
+   Patron simplificado: el wrapper real de cada paso es .p-step (NO .p-stepitem).
+   Grid de N columnas iguales para uniformidad geometrica.
+   Lineas entre pasos via .p-step::after.
+   El separator nativo .p-stepper-separator queda dentro del template del <p-step>
+   abajo del titulo; lo escondemos y dibujamos lineas manualmente.  */
+.alta-stepper ::ng-deep {
+  .p-steplist {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));  /* N = cantidad de pasos */
+    padding: 0.5rem 0 1rem;
+    list-style: none;
+    margin: 0;
+  }
+
+  .p-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--ds-text-muted);   /* NO usar --text-color-secondary (undefined) */
+    font: inherit;
+    position: relative;
+    min-width: 0;
+    z-index: 1;
+  }
+
+  .p-step[data-p-disabled='true'] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .p-step-number {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #ffffff;            /* NO usar --surface-card (undefined) */
+    color: var(--ds-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex: 0 0 auto;
+    border: 2px solid #e5e7eb;     /* NO usar --surface-200 (undefined) */
+    transition: all 0.2s;
+  }
+
+  .p-step[data-p-active='true'] .p-step-number {
+    background: var(--brand-primary);
+    color: var(--p-primary-contrast-color);
+    border-color: var(--brand-primary);
+  }
+
+  .p-step-title {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .p-step[data-p-active='true'] .p-step-title {
+    color: var(--ds-text);
+    font-weight: 600;
+  }
+
+  /* Linea entre pasos. Cada .p-step (excepto el ultimo) dibuja un segmento
+     a su derecha que va al circulo del siguiente paso.
+       top   = 1rem - 1px (centro del circulo desde el top del p-step,
+                            asumiendo circulo de 2rem alto como primer child)
+       left  = 50% + 1.25rem (centro circulo + radio 1rem + gap 0.25rem)
+       width = 100% - 2.5rem (analogo del otro lado) */
+  .p-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: calc(1rem - 1px);
+    left: calc(50% + 1.25rem);
+    width: calc(100% - 2.5rem);
+    height: 2px;
+    background: #9ca3af;             /* gray-400; sube de #d1d5db si te queda muy sutil */
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .p-stepper-separator {
+    display: none;
+  }
+
+  /* Cadena de wrappers de panels — clases SIN GUION en CSS aunque los
+     selectores HTML lleven guion. Cada nivel necesita flex:1 + min-height:0
+     para que el scroll termine adentro del .step-content y no escale al
+     stepper entero. */
+  .p-steppanels {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .p-steppanel {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .p-steppanel-content-wrapper,
+  .p-steppanel-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 540px) {
+  .alta-stepper ::ng-deep .p-step-title { display: none; }
+}
+```
+
+### Checklist al crear un stepper nuevo
+
+- [ ] Usar patrón simplificado: `<p-step-list>` con `<p-step>` directos, sin `<p-step-item>`.
+- [ ] Imports del page: `StepperModule, TooltipModule` (sí o sí — el `pTooltip` en `<p-step>` lo necesita).
+- [ ] Cambiar `repeat(N, ...)` por la cantidad real de pasos en `.p-steplist`.
+- [ ] **No usar selectores con `.p-stepitem`** — no existen en este patrón.
+- [ ] **Clases sin guión: `.p-steppanels`, `.p-steppanel` (no `.p-step-panels` ni `.p-step-panel`).** Inconsistencia de PrimeNG 21 vs los selectores HTML. Si escribís el SCSS con guión, no aplica nada y el scroll queda atrapado en el stepper.
+- [ ] Si el step tiene scroll interno (resúmenes largos, tablas), agregar la **cadena flex completa** en panels/panel/content-wrapper/content (ver SCSS completo arriba). Sin esa cadena el `.step-content` no recibe altura definida.
+- [ ] **No usar vars `--primary-color`, `--surface-card`, `--surface-border`, `--text-color-secondary`** — undefined en PrimeNG 21. Ver `tokens.md` sección "Tokens legacy PrimeNG".
+- [ ] Cada step component (`<app-X-step>`) emite outputs `next`/`back` y opcionalmente `cancel`. El page los cablea a `goToStep()` / `cancel()`.
+- [ ] Step 1 emite `(completed)="onCompleted($event)"` con el id de la entidad creada; el page habilita los pasos 2..N cuando ese id está seteado.
+- [ ] Pasos 2..N usan `[disabled]="entityId() == null"` + `pTooltip` condicional para explicar el bloqueo.
+- [ ] Footer del step 1: simétrico con `<Cancelar>` izquierda + `<Siguiente>` derecha (evita "salto visual" al avanzar).
+
+### Anatomía de un step component
+
+Cada step es un standalone component con su propio FormGroup (si hay form), Output `next` / `back` (excepto el primero y el último), y `(completed)` solo en el primer step si dispara la creación.
+
+```typescript
+@Component({
+  selector: 'app-horarios-step',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [/* ReactiveFormsModule, etc. */],
+  templateUrl: './horarios-step.component.html',
+  styleUrl: './horarios-step.component.scss',
+})
+export class HorariosStepComponent {
+  @Input({ required: true }) entityId!: number;
+  @Output() next = new EventEmitter<void>();
+  @Output() back = new EventEmitter<void>();
+  // ...
+}
+```
+
+Footer estándar de cada step (consistencia visual):
+
+```html
+<footer class="step-footer">
+  <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" (click)="back.emit()" />
+  <p-button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" (click)="next.emit()" />
+</footer>
+```
+
+```scss
+.step-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+```

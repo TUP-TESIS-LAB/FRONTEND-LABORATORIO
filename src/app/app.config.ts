@@ -39,6 +39,9 @@ import { ATENCION_FEATURE_KEY } from '@features/analitica/store/atencion/atencio
 import { atencionReducer } from '@features/analitica/store/atencion/atencion.reducer';
 import { AtencionEffects } from '@features/analitica/store/atencion/atencion.effects';
 
+// Turnos stores son provistos por turnos.routes.ts (per-feature: queue, agendas,
+// appointments, branchTotemConfig, totem). No hay reducer/effects singular global.
+
 import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.state';
 import { financieroReducer } from '@features/financiero/store/financiero.reducer';
 import { FinancieroEffects } from '@features/financiero/store/financiero.effects';

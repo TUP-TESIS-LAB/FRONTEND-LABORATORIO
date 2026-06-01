@@ -19,9 +19,18 @@
     gap: 0.5rem;
   }
 
+  &__actions-th {
+    text-align: right;
+    width: 1%;
+    white-space: nowrap;
+  }
+
   &__actions-cell {
-    display: flex;
-    gap: 0.25rem;
-    align-items: center;
+    text-align: right;
+    white-space: nowrap;
+
+    p-button + p-button {
+      margin-left: 0.25rem;
+    }
   }
 }

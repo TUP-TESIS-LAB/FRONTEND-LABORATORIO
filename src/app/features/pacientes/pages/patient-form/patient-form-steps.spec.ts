@@ -18,7 +18,7 @@ describe('PATIENT_FORM_STEPS', () => {
   it('every step has title and subtitle copy', () => {
     for (const step of PATIENT_FORM_STEPS) {
       expect(step.title.length).toBeGreaterThan(0);
-      expect(step.subtitle.length).toBeGreaterThan(0);
+      expect(step.subtitle?.length ?? 0).toBeGreaterThan(0);
     }
   });
 });
