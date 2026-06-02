@@ -5,12 +5,13 @@ import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuComponent } from '@features/profile/components/profile-menu/profile-menu.component';
+import { BranchBadgeComponent } from './branch-badge.component';
 
 @Component({
   selector: 'ui-topbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Popover, ProfileMenuComponent],
+  imports: [Popover, ProfileMenuComponent, BranchBadgeComponent],
   template: `
     <header class="ui-topbar">
       <button
@@ -38,6 +39,7 @@ import { ProfileMenuComponent } from '@features/profile/components/profile-menu/
       </div>
 
       <div class="ui-topbar__actions">
+        <ui-branch-badge />
         <!-- TODO: badge dinámico de notificaciones -->
         <button
           type="button"
