@@ -1,6 +1,15 @@
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-@media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
-.col { min-height: 60vh; }
+:host { display: block; }
+
+.empty-branch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: var(--ds-text-muted, #64748b);
+  font-size: 0.875rem;
+  background: rgba(245, 158, 11, 0.06);
+  border-radius: 6px;
+}
 
 .call-count {
   display: inline-flex;
@@ -15,4 +24,9 @@
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1;
+}
+
+// Color sutil para filas ST (sin turno). PrimeNG aplica el class al <tr>.
+:host ::ng-deep tr.row-st > td {
+  background-color: rgba(255, 165, 0, 0.05);
 }
