@@ -40,23 +40,23 @@ import { presetForRole } from '../../../models/role-section-presets';
             <div class="pat-form__grid">
               <div class="pat-form__field">
                 <label class="pat-form__label">Nombre*</label>
-                <input pInputText formControlName="firstName" class="pat-form__input" placeholder="María" />
+                <input pInputText formControlName="firstName" class="pat-form__input" />
               </div>
               <div class="pat-form__field">
                 <label class="pat-form__label">Apellido*</label>
-                <input pInputText formControlName="lastName" class="pat-form__input" placeholder="García" />
+                <input pInputText formControlName="lastName" class="pat-form__input" />
               </div>
               <div class="pat-form__field">
                 <label class="pat-form__label">Email*</label>
-                <input pInputText type="email" formControlName="email" class="pat-form__input" placeholder="maria@laboratorio.com" />
+                <input pInputText type="email" formControlName="email" class="pat-form__input" />
               </div>
               <div class="pat-form__field">
                 <label class="pat-form__label">Documento*</label>
-                <input pInputText formControlName="document" class="pat-form__input" placeholder="32456789" />
+                <input pInputText formControlName="document" class="pat-form__input" />
               </div>
               <div class="pat-form__field">
                 <label class="pat-form__label">Usuario*</label>
-                <input pInputText formControlName="username" class="pat-form__input" placeholder="mgarcia" />
+                <input pInputText formControlName="username" class="pat-form__input" />
               </div>
             </div>
           </section>
@@ -67,7 +67,6 @@ import { presetForRole } from '../../../models/role-section-presets';
             </div>
             <div class="pat-form__grid pat-form__grid--full">
               <div class="pat-form__field">
-                <label class="pat-form__label">Rol</label>
                 <p-select
                   [options]="roles"
                   optionLabel="description"
@@ -75,7 +74,6 @@ import { presetForRole } from '../../../models/role-section-presets';
                   formControlName="roleId"
                   appendTo="body"
                   class="w-full"
-                  placeholder="Elegí un rol"
                   (onChange)="onRoleChange($event.value)" />
                 <small class="ui-text-muted">El rol pre-marca las secciones. Podés ajustarlas abajo.</small>
               </div>
