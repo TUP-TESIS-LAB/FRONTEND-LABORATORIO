@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { Dialog } from 'primeng/dialog';
 import { Button } from 'primeng/button';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuService } from '@features/profile/services/profile-menu.service';
+import { clearMySections } from '@core/access/store/access.actions';
 
 @Component({
   selector: 'ui-logout-confirm',
@@ -90,6 +92,7 @@ export class LogoutConfirmComponent {
   private readonly tokens = inject(TokenService);
   private readonly userSession = inject(UserSessionService);
   private readonly router = inject(Router);
+  private readonly store = inject(Store);
 
   protected readonly visible = this.profileMenu.logoutConfirmOpen;
 
@@ -105,6 +108,7 @@ export class LogoutConfirmComponent {
     this.tokens.removeToken();
     this.userSession.clear();
     this.profileMenu.closeLogoutConfirm();
+    this.store.dispatch(clearMySections());
     await this.router.navigate(['/login']);
   }
 }

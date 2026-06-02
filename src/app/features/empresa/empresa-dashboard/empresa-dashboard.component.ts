@@ -14,7 +14,6 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
     <nav class="emp-dashboard__tabs" role="tablist">
       <a routerLink="usuarios" routerLinkActive="is-active" role="tab">Usuarios</a>
-      <a routerLink="roles" routerLinkActive="is-active" role="tab">Roles</a>
       <a routerLink="white-label" routerLinkActive="is-active" role="tab">White-label</a>
       <a routerLink="modulos" routerLinkActive="is-active" role="tab">Módulos</a>
       <a routerLink="fiscal" routerLinkActive="is-active" role="tab">Fiscal</a>

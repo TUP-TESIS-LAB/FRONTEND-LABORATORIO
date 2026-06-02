@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
+import { loadMySections } from '@core/access/store/access.actions';
 import { AuthApiService } from '@features/auth/services/auth-api.service';
 
 @Component({
@@ -370,6 +371,7 @@ export class LoginComponent {
         this.tokens.setToken(response.token);
         this.userSession.set(response.user);
         this.store.dispatch(loadTenantConfig());
+        this.store.dispatch(loadMySections());
         await this.router.navigate(['/home']);
         return;
       }

@@ -17,6 +17,7 @@ import { authTokenInterceptor } from '@core/interceptors/auth-token.interceptor'
 import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
 import { TokenService } from '@core/auth/token.service';
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
+import { loadMySections } from '@core/access/store/access.actions';
 import { metaReducers } from '@core/store/logger.meta-reducer';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
@@ -54,6 +55,14 @@ import { SAAS_ADMIN_FEATURE_KEY } from '@features/saas-admin/store/saas-admin.st
 import { saasAdminReducer } from '@features/saas-admin/store/saas-admin.reducer';
 import { SaasAdminEffects } from '@features/saas-admin/store/saas-admin.effects';
 
+import { ACCESS_FEATURE_KEY } from '@core/access/store/access.state';
+import { accessReducer } from '@core/access/store/access.reducer';
+import { AccessEffects } from '@core/access/store/access.effects';
+
+import { ROLES_PERMISOS_FEATURE_KEY } from '@features/roles-permisos/store/roles-permisos.state';
+import { rolesPermisosReducer } from '@features/roles-permisos/store/roles-permisos.reducer';
+import { RolesPermisosEffects } from '@features/roles-permisos/store/roles-permisos.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -65,6 +74,7 @@ export const appConfig: ApplicationConfig = {
       const store = inject(Store);
       if (tokens.isTokenValid() && !tokens.getRoles().includes('SAAS_ADMIN')) {
         store.dispatch(loadTenantConfig());
+        store.dispatch(loadMySections());
       }
     }),
     provideRouter(routes, withComponentInputBinding()),
@@ -90,6 +100,10 @@ export const appConfig: ApplicationConfig = {
     provideEffects(PatientEffects),
     provideState(SAAS_ADMIN_FEATURE_KEY, saasAdminReducer),
     provideEffects(SaasAdminEffects),
+    provideState(ACCESS_FEATURE_KEY, accessReducer),
+    provideEffects(AccessEffects),
+    provideState(ROLES_PERMISOS_FEATURE_KEY, rolesPermisosReducer),
+    provideEffects(RolesPermisosEffects),
     providePrimeNG({
       theme: {
         preset: Aura,
