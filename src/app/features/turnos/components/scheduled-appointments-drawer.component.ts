@@ -51,7 +51,7 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
               <span class="row-hora">{{ row.hora }}</span>
               <span class="row-paciente">{{ row.paciente }}</span>
               <p-tag
-                [value]="row.estado"
+                [value]="estadoLabel(row.estado)"
                 [severity]="estadoSeverity(row.estado)"
                 styleClass="row-estado" />
             </li>
@@ -139,6 +139,14 @@ export class ScheduledAppointmentsDrawerComponent {
       case 'Cancelado': return 'danger';
       default: return 'secondary';
     }
+  }
+
+  /**
+   * El discriminator TS es 'Llego' (sin acento) para evitar caracteres
+   * especiales en string literals; en la UI mostramos 'Llegó' correcto.
+   */
+  protected estadoLabel(estado: string): string {
+    return estado === 'Llego' ? 'Llegó' : estado;
   }
 
   private dispatchLoad(): void {
