@@ -4,6 +4,7 @@ import { MessageService } from 'primeng/api';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { QueueService } from '../../services/queue.service';
+import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import * as A from './queue.actions';
 
 @Injectable()
@@ -12,13 +13,21 @@ export class QueueEffects {
   private service = inject(QueueService);
   private toast = inject(MessageService);
   private router = inject(Router);
+  private branchContext = inject(OperatorBranchContextService);
 
   load$ = createEffect(() => this.actions$.pipe(
     ofType(A.loadQueue),
-    switchMap(({ branchId }) => this.service.list(branchId).pipe(
-      map(entries => A.loadQueueSuccess({ entries })),
-      catchError(error => of(A.loadQueueFailure({ error }))),
-    )),
+    switchMap(({ branchId }) => {
+      const effectiveBranchId = branchId ?? this.branchContext.branchId();
+      if (effectiveBranchId == null) {
+        console.warn('[queue.effects] loadQueue dispatched sin branchId y sin context — skip');
+        return of(A.loadQueueFailure({ error: new Error('No branchId available') }));
+      }
+      return this.service.list(effectiveBranchId).pipe(
+        map(entries => A.loadQueueSuccess({ entries })),
+        catchError(error => of(A.loadQueueFailure({ error }))),
+      );
+    }),
   ));
 
   call$ = createEffect(() => this.actions$.pipe(

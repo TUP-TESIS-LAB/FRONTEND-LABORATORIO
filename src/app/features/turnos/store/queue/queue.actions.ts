@@ -3,7 +3,7 @@ import { QueueEntry } from '../../models/queue-entry.model';
 
 export const loadQueue = createAction(
   '[Queue] Load',
-  props<{ branchId: number }>()
+  props<{ branchId?: number }>()
 );
 export const loadQueueSuccess = createAction(
   '[Queue] Load Success',
