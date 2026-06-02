@@ -28,6 +28,14 @@ describe('OperatorBranchContextService', () => {
     expect(svc.branchName()).toBeNull();
   });
 
+  it('si coexisten ambos keys, el nuevo gana sobre el legacy', () => {
+    localStorage.setItem('turnos.operatorBranch', JSON.stringify({ id: 11, name: 'Sucursal Nueva' }));
+    localStorage.setItem('turnos.operatorBranchId', '99');
+    const svc = TestBed.inject(OperatorBranchContextService);
+    expect(svc.branchId()).toBe(11);
+    expect(svc.branchName()).toBe('Sucursal Nueva');
+  });
+
   it('clear elimina ambos keys del storage', () => {
     const svc = TestBed.inject(OperatorBranchContextService);
     svc.setBranch(3, 'X');
