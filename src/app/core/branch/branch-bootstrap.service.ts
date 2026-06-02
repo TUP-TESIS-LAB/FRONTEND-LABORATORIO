@@ -59,7 +59,10 @@ export class BranchBootstrapService {
         this.ctx.setBranch(first.id, first.name);
       }),
       map(() => void 0),
-      catchError(() => of(void 0)),
+      catchError(err => {
+        console.warn('[BranchBootstrap] no se pudo resolver la sucursal activa', err);
+        return of(void 0);
+      }),
     );
   }
 }
