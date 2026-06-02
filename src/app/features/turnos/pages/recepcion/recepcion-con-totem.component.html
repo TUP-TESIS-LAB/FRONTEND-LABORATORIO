@@ -1,3 +1,13 @@
+<div class="recepcion-toolbar">
+  <p-button
+    icon="pi pi-calendar"
+    label="Turnos del día"
+    severity="secondary"
+    [outlined]="true"
+    size="small"
+    (onClick)="toggleDrawer()" />
+</div>
+
 <p-card header="Cola de espera">
   @if (!hasBranch()) {
     <div class="empty-branch">
@@ -40,3 +50,7 @@
     </p-table>
   }
 </p-card>
+
+<app-scheduled-appointments-drawer
+  [visible]="drawerOpen()"
+  (visibleChange)="onDrawerVisibleChange($event)" />

@@ -4,6 +4,7 @@ import {
   DestroyRef,
   OnInit,
   inject,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
@@ -18,13 +19,14 @@ import {
   selectQueueLoading,
 } from '../../store/queue/queue.selectors';
 import { QueueRowActionsComponent } from '../../components/queue-row-actions.component';
+import { ScheduledAppointmentsDrawerComponent } from '../../components/scheduled-appointments-drawer.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import { QueueEntry } from '../../models/queue-entry.model';
 
 @Component({
   selector: 'app-recepcion-con-totem',
   standalone: true,
-  imports: [TableModule, ButtonModule, CardModule, QueueRowActionsComponent],
+  imports: [TableModule, ButtonModule, CardModule, QueueRowActionsComponent, ScheduledAppointmentsDrawerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion-con-totem.component.html',
   styleUrl: './recepcion-con-totem.component.scss',
@@ -38,6 +40,7 @@ export class RecepcionConTotemComponent implements OnInit {
   protected entries = this.store.selectSignal(selectQueueEntriesAll);
   protected loading = this.store.selectSignal(selectQueueLoading);
   protected hasBranch = this.branchContext.branchId;
+  protected drawerOpen = signal(false);
 
   ngOnInit(): void {
     this.refreshIfBranch();
@@ -61,6 +64,14 @@ export class RecepcionConTotemComponent implements OnInit {
 
   protected onNuevaAtencion(id: number): void {
     this.router.navigate(['/turnos/atencion-turno', id]);
+  }
+
+  protected toggleDrawer(): void {
+    this.drawerOpen.update(v => !v);
+  }
+
+  protected onDrawerVisibleChange(visible: boolean): void {
+    this.drawerOpen.set(visible);
   }
 
   protected rowClass(entry: QueueEntry): string {
