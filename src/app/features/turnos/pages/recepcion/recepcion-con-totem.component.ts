@@ -40,10 +40,17 @@ export class RecepcionConTotemComponent implements OnInit {
   protected hasBranch = this.branchContext.branchId;
 
   ngOnInit(): void {
-    this.store.dispatch(loadQueue({}));  // effect resuelve branchId del context
+    this.refreshIfBranch();
     interval(5000)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.store.dispatch(loadQueue({})));
+      .subscribe(() => this.refreshIfBranch());
+  }
+
+  private refreshIfBranch(): void {
+    // Sin branch no tiene sentido pegarle al endpoint — evita warn loop
+    // cada 5s cuando el operador no tiene sucursal asignada todavia.
+    if (this.branchContext.branchId() == null) return;
+    this.store.dispatch(loadQueue({}));
   }
 
   protected onCall(id: number): void {
