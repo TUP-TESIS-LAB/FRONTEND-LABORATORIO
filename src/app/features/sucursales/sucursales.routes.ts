@@ -40,6 +40,44 @@ export const SUCURSALES_ROUTES: Routes = [
         loadComponent: () => import('./pages/areas/areas.component').then((m) => m.AreasComponent),
       },
       {
+        path: 'catalogo',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/catalogo/sucursales-catalogo.page')
+            .then(m => m.SucursalesCatalogoPage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+          ConfirmationService,
+        ],
+      },
+      {
+        path: 'configuracion/nueva',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/configuracion/sucursal-alta-stepper/sucursal-alta-stepper.page')
+            .then(m => m.SucursalAltaStepperPage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+        ],
+      },
+      {
+        path: 'configuracion/:id',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/configuracion/sucursal-detalle/sucursal-detalle.page')
+            .then(m => m.SucursalDetallePage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+          ConfirmationService,
+        ],
+      },
+      {
         path: '',
         loadComponent: () =>
           import('./sucursales-shell/sucursales-shell.component').then((m) => m.SucursalesShellComponent),

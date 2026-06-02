@@ -1,0 +1,57 @@
+<div class="datos-step">
+  <h2>Datos básicos</h2>
+  <p class="muted">Información general de la sucursal. La dirección es opcional y puede completarse después.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+    <div class="form-field">
+      <label for="code">Nombre *</label>
+      <input id="code" pInputText formControlName="code" placeholder="Ej: Sucursal Centro" />
+      @if (form.controls.code.invalid && form.controls.code.touched) {
+        <small class="form-error">El nombre es requerido (máx 30 caracteres).</small>
+      }
+    </div>
+
+    <div class="address-section">
+      <div class="form-row address-row" formGroupName="address">
+        <div class="form-field">
+          <label for="street">Calle</label>
+          <input id="street" pInputText formControlName="street" />
+        </div>
+        <div class="form-field">
+          <label for="streetNumber">Número</label>
+          <input id="streetNumber" pInputText formControlName="streetNumber" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="provinceId">Provincia</label>
+          <p-select
+            inputId="provinceId"
+            formControlName="provinceId"
+            [options]="provinces()"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Seleccionar provincia"
+            [showClear]="true"
+            appendTo="body"
+          />
+        </div>
+        <div class="form-field" formGroupName="address">
+          <label for="cityId">Ciudad</label>
+          <p-select
+            inputId="cityId"
+            formControlName="cityId"
+            [options]="cities()"
+            optionLabel="name"
+            optionValue="id"
+            [placeholder]="form.controls.provinceId.value == null ? 'Elegí primero una provincia' : 'Seleccionar ciudad'"
+            [disabled]="form.controls.provinceId.value == null"
+            [showClear]="true"
+            appendTo="body"
+          />
+        </div>
+      </div>
+    </div>
+  </form>
+</div>

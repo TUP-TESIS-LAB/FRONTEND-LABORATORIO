@@ -1,0 +1,46 @@
+:host {
+  display: block;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+}
+
+.muted {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  label {
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  p-select {
+    width: 100%;
+  }
+}
+
+.field-error {
+  color: var(--p-red-600);
+  font-size: 0.8rem;
+}

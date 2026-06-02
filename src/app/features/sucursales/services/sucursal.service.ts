@@ -2,14 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Sucursal, SucursalCreateInput, SucursalUpdateInput } from '../models/sucursal.model';
-
-export interface PageResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  page: number;
-  size: number;
-}
+import { PageResponse } from '../models/page-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class SucursalService {
@@ -18,6 +11,10 @@ export class SucursalService {
 
   list(): Observable<PageResponse<Sucursal>> {
     return this.http.get<PageResponse<Sucursal>>(this.base);
+  }
+
+  getById(id: number): Observable<Sucursal> {
+    return this.http.get<Sucursal>(`${this.base}/${id}`);
   }
 
   create(input: SucursalCreateInput): Observable<Sucursal> {

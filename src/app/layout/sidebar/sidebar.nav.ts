@@ -12,8 +12,16 @@ export type NavItem =
       badge?: NavBadge;
       chip?: string;
       moduleKey?: ModuleKey;
-      roleKey?: string;
+      roleKey?: string;    // required role to show the item
       sectionKey?: AccessSection;
+      exact?: boolean;     // routerLinkActive exact match — útil para paths padre que tienen sub-rutas en el mismo nav
+    }
+  | {
+      kind: 'external';
+      label: string;
+      icon: string;
+      href: string;        // URL absoluta o ruta fuera del admin-shell; abre en nueva pestaña
+      chip?: string;
     }
   | {
       kind: 'expandable';
@@ -41,8 +49,53 @@ export const NAV_SECTIONS: NavSection[] = [
         ],
       },
       { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes', sectionKey: 'PACIENTES' },
-      { kind: 'link', label: 'Turnos', icon: 'pi pi-calendar', path: '/turnos', moduleKey: ModuleKey.Turnos, sectionKey: 'TURNOS', badge: { text: '4', tone: 'red' } },
-      { kind: 'link', label: 'Atención', icon: 'pi pi-users', path: '/analitica/atencion', sectionKey: 'ATENCION', badge: { text: '3', tone: 'green' } },
+      {
+        kind: 'link',
+        label: 'Turnos',
+        icon: 'pi pi-calendar',
+        path: '/turnos',
+        moduleKey: ModuleKey.Turnos,
+        sectionKey: 'TURNOS',
+        badge: { text: '4', tone: 'red' },
+        exact: true,
+      },
+      {
+        kind: 'link',
+        label: 'Recepción',
+        icon: 'pi pi-bell',
+        path: '/turnos/recepcion',
+        moduleKey: ModuleKey.Turnos,
+        sectionKey: 'TURNOS',
+      },
+      {
+        kind: 'external',
+        label: 'TV sala de espera',
+        icon: 'pi pi-desktop',
+        href: '/display/lab-demo/1',
+        chip: 'Smoke',
+      },
+      {
+        kind: 'external',
+        label: 'Tótem',
+        icon: 'pi pi-mobile',
+        href: '/turnos/totem',
+        chip: 'Smoke',
+      },
+      {
+        kind: 'link',
+        label: 'Configuración de agendas',
+        icon: 'pi pi-calendar-plus',
+        path: '/turnos/configuracion',
+        roleKey: 'ADMINISTRADOR',
+      },
+      {
+        kind: 'link',
+        label: 'Atención',
+        icon: 'pi pi-users',
+        path: '/analitica/atencion',
+        sectionKey: 'ATENCION',
+        badge: { text: '3', tone: 'green' },
+      },
     ],
   },
   {

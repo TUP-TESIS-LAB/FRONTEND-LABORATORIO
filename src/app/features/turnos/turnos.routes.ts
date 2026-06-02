@@ -45,14 +45,14 @@ export const TURNOS_ROUTES: Routes = [
             path: 'nueva',
             canActivate: [agendaWriteGuard],
             loadComponent: () =>
-              import('./pages/configuracion/agenda-wizard.page').then(m => m.AgendaWizardPage),
+              import('./pages/configuracion/agenda-wizard/agenda-wizard.page').then(m => m.AgendaWizardPage),
           },
           {
             path: ':id/editar',
             canActivate: [agendaWriteGuard],
             resolve: { agenda: agendaConfigResolver },
             loadComponent: () =>
-              import('./pages/configuracion/agenda-wizard.page').then(m => m.AgendaWizardPage),
+              import('./pages/configuracion/agenda-wizard/agenda-wizard.page').then(m => m.AgendaWizardPage),
           },
         ],
       },

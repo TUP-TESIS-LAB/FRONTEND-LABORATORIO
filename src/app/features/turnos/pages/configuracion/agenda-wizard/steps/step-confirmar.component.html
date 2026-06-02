@@ -1,0 +1,26 @@
+<div class="step">
+  <h2>Confirmar</h2>
+  <p class="muted">Revisá los datos antes de guardar.</p>
+
+  <div class="summary-cards">
+    <div class="card">
+      <h3>Sucursal</h3>
+      <p>{{ summary.branchName }}</p>
+    </div>
+
+    <div class="card">
+      <h3>Horario</h3>
+      <p>{{ summary.horario.fromTime }} – {{ summary.horario.toTime }}</p>
+      <p>{{ summary.horario.slotDurationMinutes }} min · {{ summary.horario.patientsPerSlot }} pacientes/turno</p>
+    </div>
+
+    <div class="card">
+      <h3>Período</h3>
+      <p>Días: {{ formatDays(summary.periodo.daysOfWeek) }}</p>
+      <p>
+        {{ summary.periodo.validFrom | date:'dd/MM/yyyy' }} –
+        {{ summary.periodo.validTo | date:'dd/MM/yyyy' }}
+      </p>
+    </div>
+  </div>
+</div>

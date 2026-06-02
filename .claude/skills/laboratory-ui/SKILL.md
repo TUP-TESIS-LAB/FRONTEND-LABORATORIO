@@ -15,7 +15,9 @@ description: >
 
 # Laboratory UI — Design System multi-tenant white-label
 
-Stack: **Angular 17+ standalone + PrimeNG v17 + SCSS**.
+Stack: **Angular 21 standalone + PrimeNG 21 (Aura theme) + SCSS**.
+
+> **PrimeNG 21 ≠ v17.** Los tokens CSS legacy (`--primary-color`, `--surface-card`, `--text-color-secondary`, etc.) NO están definidos en v21 — usar los del proyecto (`--brand-primary`, `--ds-text`, `--ds-text-muted`, `--p-primary-contrast-color`). Ver `references/tokens.md` sección "Tokens legacy de PrimeNG".
 Distribución: **PWA instalable**, una sola base de código que renderiza dos experiencias distintas según breakpoint:
 mobile se siente como app nativa (bottom nav, full screen), desktop se ve como portal web clásico (sidebar).
 

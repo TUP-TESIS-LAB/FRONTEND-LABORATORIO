@@ -1,0 +1,22 @@
+<div class="step">
+  <h2>Sucursal</h2>
+  <p class="muted">Elegí la sucursal para la que estás configurando la agenda.</p>
+
+  <form [formGroup]="form" class="form">
+    <div class="form-field">
+      <label for="branchId">Sucursal *</label>
+      <p-select
+        inputId="branchId"
+        formControlName="branchId"
+        [options]="branches()"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Seleccionar sucursal"
+        appendTo="body"
+      />
+      @if (form.controls.branchId.touched && form.controls.branchId.invalid) {
+        <small class="field-error">Seleccioná una sucursal para continuar.</small>
+      }
+    </div>
+  </form>
+</div>

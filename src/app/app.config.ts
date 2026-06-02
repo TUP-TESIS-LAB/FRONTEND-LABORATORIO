@@ -18,6 +18,7 @@ import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
 import { TokenService } from '@core/auth/token.service';
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
 import { loadMySections } from '@core/access/store/access.actions';
+import { metaReducers } from '@core/store/logger.meta-reducer';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
 import { tenantReducer } from '@core/tenant/store/tenant.reducer';
@@ -38,6 +39,9 @@ import { AnaliticaEffects } from '@features/analitica/store/analitica.effects';
 import { ATENCION_FEATURE_KEY } from '@features/analitica/store/atencion/atencion.state';
 import { atencionReducer } from '@features/analitica/store/atencion/atencion.reducer';
 import { AtencionEffects } from '@features/analitica/store/atencion/atencion.effects';
+
+// Turnos stores son provistos por turnos.routes.ts (per-feature: queue, agendas,
+// appointments, branchTotemConfig, totem). No hay reducer/effects singular global.
 
 import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.state';
 import { financieroReducer } from '@features/financiero/store/financiero.reducer';
@@ -77,7 +81,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authTokenInterceptor, tenantIdInterceptor]),
     ),
-    provideStore({}),
+    provideStore({}, { metaReducers }),
     provideEffects([]),
     provideRouterStore(),
     provideState(TENANT_FEATURE_KEY, tenantReducer),

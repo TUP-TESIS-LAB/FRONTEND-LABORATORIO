@@ -281,6 +281,38 @@ Esta es la opción más flexible para white-label dinámico real.
 
 ---
 
+## Tokens legacy de PrimeNG — NO usar (undefined en v21)
+
+PrimeNG 21 (Aura theme) migró de los tokens viejos `--primary-color`, `--surface-card`, etc., a un namespace `--p-*`. **Los tokens viejos NO están definidos en este proyecto** — si los usás, el CSS resuelve a vacío y aplica `inherit` o nada, generando bugs visuales silenciosos.
+
+❌ **NO usar — undefined en PrimeNG 21:**
+
+| Variable rota                 | Reemplazo correcto                              |
+|------------------------------|------------------------------------------------|
+| `var(--primary-color)`        | `var(--brand-primary)` o `var(--p-primary-color)` |
+| `var(--primary-color-text)`   | `var(--p-primary-contrast-color)`             |
+| `var(--surface-card)`         | `#ffffff` o `var(--ds-bg)` (según contexto)   |
+| `var(--surface-border)`       | `#e5e7eb` (gray-200)                          |
+| `var(--surface-hover)`        | `#f3f4f6` (gray-100)                          |
+| `var(--surface-200)`          | `#e5e7eb` (gray-200)                          |
+| `var(--text-color)`           | `var(--ds-text)` (`#1a1a2e`)                  |
+| `var(--text-color-secondary)` | `var(--ds-text-muted)` (`#6b7280`)            |
+| `var(--red-500)`              | `var(--ds-danger)` (`#e23a47`)                |
+| `var(--green-500)`            | `var(--ds-success)` (`#22c55e`)               |
+
+✅ **Sí usar — definidos en este proyecto:**
+
+- Marca (tenant): `--brand-primary`, `--brand-secondary`, `--brand-accent`.
+- DS fijo: `--ds-text`, `--ds-text-muted`, `--ds-bg`, `--ds-surface`, `--ds-success`, `--ds-danger`, `--ds-warning`, `--ds-info`.
+- PrimeNG v21 (auto-mapeados desde `--brand-primary`): `--p-primary-color`, `--p-primary-contrast-color`.
+- Grises hardcoded para neutrales: `#ffffff`, `#f9fafb`, `#f3f4f6`, `#e5e7eb`, `#d1d5db`, `#9ca3af`, `#6b7280` (gray-50 a gray-500 de Tailwind).
+
+**Síntoma típico** de usar un token roto: el elemento no muestra contraste visible (un chip "seleccionado" se ve igual que uno no seleccionado; un texto "muted" se ve igual que el texto normal; un círculo "activo" del stepper sin background). Si reportás un bug así, **lo primero a chequear** es si el SCSS está usando una de las vars rotas de la tabla.
+
+**Fallback inline como excepción:** si por algún motivo necesitás mantener compatibilidad con el token viejo, usar fallback CSS explícito: `var(--primary-color, var(--brand-primary))`. Pero preferir migrar directamente al nuevo token cuando estás tocando el archivo.
+
+---
+
 ## Breakpoints (SCSS)
 
 `styles/_breakpoints.scss`:

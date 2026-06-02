@@ -1,0 +1,45 @@
+<div class="detalle-page">
+  <header class="page-header">
+    <button class="back-btn" (click)="goBack()" type="button" aria-label="Volver al listado">
+      <i class="pi pi-arrow-left"></i>
+    </button>
+    @if (current(); as s) {
+      <h1>{{ s.code }} — {{ s.description }}</h1>
+    } @else if (loading()) {
+      <h1 class="muted">Cargando...</h1>
+    } @else {
+      <h1 class="muted">Sucursal #{{ branchId() }}</h1>
+    }
+  </header>
+
+  @if (branchId() != null) {
+    <p-tabs value="datos" class="detalle-tabs">
+      <p-tablist>
+        <p-tab value="datos">Datos</p-tab>
+        <p-tab value="horarios">Horarios</p-tab>
+        <p-tab value="contactos">Contactos</p-tab>
+        <p-tab value="workspaces">Workspaces</p-tab>
+        <p-tab value="totem">Tótem</p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <p-tabpanel value="datos">
+          <app-datos-tab [branchId]="branchId()!" />
+        </p-tabpanel>
+        <p-tabpanel value="horarios">
+          <app-horarios-tab [branchId]="branchId()!" />
+        </p-tabpanel>
+        <p-tabpanel value="contactos">
+          <app-contactos-tab [branchId]="branchId()!" />
+        </p-tabpanel>
+        <p-tabpanel value="workspaces">
+          <app-workspaces-tab [branchId]="branchId()!" />
+        </p-tabpanel>
+        <p-tabpanel value="totem">
+          <app-totem-tab [branchId]="branchId()!" />
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  }
+
+  <p-toast />
+</div>

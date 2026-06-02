@@ -27,44 +27,22 @@
     }
   </div>
 } @else {
-  <p-table [value]="filtered" [responsiveLayout]="'stack'" [breakpoint]="'768px'">
+  <p-table [value]="filtered">
     <ng-template pTemplate="header">
       <tr>
         <th>Horario</th>
         <th>Días</th>
-        <th>Slot</th>
-        <th>Cap.</th>
-        <th>Vigencia</th>
         @if (canWrite) {
-          <th>Acciones</th>
+          <th class="branch-section__actions-th">Acciones</th>
         }
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-a>
       <tr>
-        <td>
-          <span class="p-column-title">Horario</span>
-          {{ formatRange(a) }}
-        </td>
-        <td>
-          <span class="p-column-title">Días</span>
-          {{ formatDays(a.recurringDaysOfWeek) }}
-        </td>
-        <td>
-          <span class="p-column-title">Slot</span>
-          {{ a.slotDurationMinutes }} min
-        </td>
-        <td>
-          <span class="p-column-title">Cap.</span>
-          {{ a.patientsPerSlot }}
-        </td>
-        <td>
-          <span class="p-column-title">Vigencia</span>
-          {{ formatVigencia(a) }}
-        </td>
+        <td>{{ formatRange(a) }}</td>
+        <td>{{ formatDays(a.recurringDaysOfWeek) }}</td>
         @if (canWrite) {
           <td class="branch-section__actions-cell">
-            <span class="p-column-title">Acciones</span>
             <p-button
               icon="pi pi-pencil"
               severity="secondary"
