@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ChipModule } from 'primeng/chip';
 import { TooltipModule } from 'primeng/tooltip';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
@@ -45,7 +45,7 @@ import { OperatorBranchContextService } from '@features/turnos/services/operator
 export class BranchBadgeComponent {
   private readonly ctx = inject(OperatorBranchContextService);
 
-  protected readonly branchName = computed(() => this.ctx.branchName());
+  protected readonly branchName = this.ctx.branchName;
 
   protected readonly tooltipSet = 'Para cambiar de sucursal, pedile al administrador.';
   protected readonly tooltipUnset = 'No tenés sucursal asignada. Avisá al administrador.';
