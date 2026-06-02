@@ -10,6 +10,7 @@ function entry(over: Partial<QueueEntry>): QueueEntry {
     nationalId: '',
     patientId: null,
     branchId: 1,
+    appointmentId: null,
     hasAppointment: true,
     status: QueueStatus.PENDING,
     lastCalledAt: null,
