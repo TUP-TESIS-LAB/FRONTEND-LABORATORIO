@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { filter, take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
@@ -88,6 +89,7 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
 })
 export class UsuariosPage implements OnInit {
   private readonly store = inject(Store);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly usuarios = this.store.selectSignal(selectAllUsuarios);
   readonly roles = this.store.selectSignal(selectAllRoles);
@@ -124,10 +126,15 @@ export class UsuariosPage implements OnInit {
     this.store.dispatch(selectUser({ userId: u.id }));
     // Abrir el drawer recién cuando terminó de cargar las secciones del usuario,
     // para que el drawer tome las secciones correctas y no pise/borre nada.
+    // takeUntilDestroyed + guard por id: si el usuario cancela o cambia de fila antes de
+    // que `pending` sea false, la suscripción stale no abre el drawer del usuario equivocado.
     this.store.select(selectRpPending).pipe(
       filter((pending) => !pending),
       take(1),
-    ).subscribe(() => this.formOpen.set(true));
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => {
+      if (this.editingUser()?.id === u.id) this.formOpen.set(true);
+    });
   }
   closeForm(): void { this.formOpen.set(false); this.editingUser.set(null); }
 

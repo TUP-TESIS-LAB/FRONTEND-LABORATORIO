@@ -293,7 +293,7 @@ describe('SucursalEffects', () => {
         effects.addSchedule$.subscribe((action) => {
           results.push(action);
           if (results.length === 2) {
-            const ids = results.map((a) => (a as { schedule: BranchSchedule }).schedule.id).sort();
+            const ids = results.map((a) => (a as unknown as { schedule: BranchSchedule }).schedule.id).sort();
             expect(ids).toEqual([1, 2]);
             expect(scheduleService.create).toHaveBeenCalledTimes(2);
             resolve();

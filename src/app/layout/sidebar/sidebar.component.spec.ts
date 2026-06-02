@@ -34,11 +34,11 @@ describe('SidebarComponent visibility', () => {
     expect(core2?.items.some((i) => i.label === 'Turnos') ?? false).toBe(false);
   });
 
-  it('Roles y permisos visible solo para ADMINISTRADOR', () => {
+  it('Empresa (admin-only) visible solo para ADMINISTRADOR', () => {
     const admin = setup([], ['ADMINISTRADOR']);
-    expect(admin.visibleSections().some((s) => s.items.some((i) => i.label === 'Roles y permisos'))).toBe(true);
+    expect(admin.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(true);
     const noAdmin = setup([], []);
-    expect(noAdmin.visibleSections().some((s) => s.items.some((i) => i.label === 'Roles y permisos'))).toBe(false);
+    expect(noAdmin.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(false);
   });
 
   it('Analítica filtra sus hijos por seccion', () => {

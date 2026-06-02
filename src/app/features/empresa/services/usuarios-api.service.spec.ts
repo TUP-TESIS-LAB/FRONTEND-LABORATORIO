@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { UsuariosApiService } from './usuarios-api.service';
+import { CrearUsuarioPayload } from '../models/usuario.model';
 
 describe('UsuariosApiService', () => {
   let service: UsuariosApiService;
@@ -28,9 +29,9 @@ describe('UsuariosApiService', () => {
   });
 
   it('create POST a /internal', () => {
-    const payload = {
+    const payload: CrearUsuarioPayload = {
       firstName: 'A', lastName: 'B', email: 'a@b.com',
-      document: '1', username: 'ab', roleIds: [1], sections: [] as any[],
+      document: '1', username: 'ab', roleIds: [1], sections: [],
     };
     service.create(payload).subscribe();
     const req = http.expectOne('/api/v1/user/internal');
