@@ -11,6 +11,7 @@ import { DrawerModule } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { loadTodayAppointments } from '../store/appointments/appointments.actions';
+import { callAppointmentForAttention } from '../store/queue/queue.actions';
 import { selectScheduledAppointmentsForDrawer } from '../store/appointments/appointments.derived.selectors';
 import { selectAppointmentsLoading } from '../store/appointments/appointments.selectors';
 import { OperatorBranchContextService } from '../services/operator-branch.context';
@@ -41,6 +42,17 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
                 [value]="estadoLabel(row.estado)"
                 [severity]="estadoSeverity(row.estado)"
                 styleClass="row-estado" />
+              @if (row.estado !== 'Cancelado') {
+                <p-button
+                  icon="pi pi-arrow-right"
+                  severity="primary"
+                  [rounded]="true"
+                  size="small"
+                  (onClick)="onAtender(row.id)"
+                  [ariaLabel]="'Atender turno ' + row.id" />
+              } @else {
+                <span class="row-action-placeholder"></span>
+              }
             </li>
           }
         </ul>
@@ -48,7 +60,7 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
     </p-drawer>
   `,
   styles: [`
-    :host ::ng-deep .ui-scheduled-drawer { width: 320px; }
+    :host ::ng-deep .ui-scheduled-drawer { width: 420px; }
 
     .drawer-loading,
     .drawer-empty {
@@ -67,7 +79,7 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
     }
     .drawer-row {
       display: grid;
-      grid-template-columns: 72px 1fr auto;
+      grid-template-columns: 72px 1fr auto auto;
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 0.75rem;
@@ -92,6 +104,9 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
       padding: 0.125rem 0.4rem;
       line-height: 1;
     }
+    .row-action-placeholder {
+      width: 32px;  /* mismo ancho que el p-button rounded small, mantiene grid alineada */
+    }
   `],
 })
 export class ScheduledAppointmentsDrawerComponent {
@@ -111,6 +126,15 @@ export class ScheduledAppointmentsDrawerComponent {
         this.dispatchLoad();
       }
     });
+  }
+
+  /**
+   * Atender un turno desde el drawer (sin haber pasado por totem): el effect
+   * `callAppointmentForAttention$` crea el queue entry, hace POST
+   * /queue/by-appointment/:id/call y navega a la pantalla de atencion.
+   */
+  protected onAtender(appointmentId: number): void {
+    this.store.dispatch(callAppointmentForAttention({ appointmentId }));
   }
 
   protected estadoSeverity(estado: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
