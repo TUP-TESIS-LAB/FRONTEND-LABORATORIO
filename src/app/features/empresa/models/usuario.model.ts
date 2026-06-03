@@ -1,4 +1,5 @@
 import { Rol } from './rol.model';
+import { AccessSection } from '@core/access/access.model';
 
 export interface Usuario {
   id: number;
@@ -23,6 +24,7 @@ export interface CrearUsuarioPayload {
   document: string;
   username: string;
   roleIds: number[];
+  sections: AccessSection[];
 }
 
 export type ActualizarUsuarioPayload = CrearUsuarioPayload;

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from '@core/guards/auth.guard';
 import { rootGuard } from '@core/guards/root.guard';
 import { moduleActiveGuard } from '@core/guards/module-active.guard';
+import { sectionGuard } from '@core/guards/section.guard';
 import { guestGuard } from '@core/guards/guest.guard';
 import { tenantResolver } from '@core/tenant/tenant.resolver';
 import { ModuleKey } from '@core/models/module-key.enum';
@@ -22,6 +23,7 @@ export const routes: Routes = [
       },
       {
         path: 'sucursales',
+        canMatch: [sectionGuard('SUCURSALES')],
         loadChildren: () =>
           import('./features/sucursales/sucursales.routes').then((m) => m.SUCURSALES_ROUTES),
       },
@@ -32,6 +34,7 @@ export const routes: Routes = [
       },
       {
         path: 'pacientes',
+        canMatch: [sectionGuard('PACIENTES')],
         loadChildren: () =>
           import('./features/pacientes/pacientes.routes').then((m) => m.PACIENTES_ROUTES),
       },
@@ -45,13 +48,13 @@ export const routes: Routes = [
       },
       {
         path: 'turnos',
-        canMatch: [moduleActiveGuard(ModuleKey.Turnos)],
+        canMatch: [moduleActiveGuard(ModuleKey.Turnos), sectionGuard('TURNOS')],
         loadChildren: () =>
           import('./features/turnos/turnos.routes').then((m) => m.TURNOS_ROUTES),
       },
       {
         path: 'financiero',
-        canMatch: [moduleActiveGuard(ModuleKey.Financiero)],
+        canMatch: [moduleActiveGuard(ModuleKey.Financiero), sectionGuard('FINANCIERO')],
         loadChildren: () =>
           import('./features/financiero/financiero.routes').then((m) => m.FINANCIERO_ROUTES),
       },
@@ -73,11 +76,6 @@ export const routes: Routes = [
         path: 'home',
         loadChildren: () =>
           import('./features/home/home.routes').then((m) => m.HOME_ROUTES),
-      },
-      {
-        path: 'roles',
-        loadComponent: () =>
-          import('./features/empresa/pages/roles/roles.page').then((m) => m.RolesPage),
       },
       {
         path: 'obras-sociales',

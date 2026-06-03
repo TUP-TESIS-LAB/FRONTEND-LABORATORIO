@@ -8,19 +8,20 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { interval, startWith, switchMap } from 'rxjs';
+import { catchError, EMPTY, interval, startWith, switchMap } from 'rxjs';
 import { DisplaySnapshot, PublicQueueEntry } from '../../models/public-display.model';
-import { QueueStatus } from '../../models/queue-status.enum';
 import { PublicDisplayService } from '../../services/public-display.service';
 import { EmptyStateComponent } from './empty-state.component';
 import { ClosedStateComponent } from './closed-state.component';
+import { AdCarouselComponent } from './ad-carousel.component';
 
 @Component({
   selector: 'app-sala-espera-page',
   standalone: true,
-  imports: [EmptyStateComponent, ClosedStateComponent],
+  imports: [DatePipe, EmptyStateComponent, ClosedStateComponent, AdCarouselComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sala-espera.page.html',
   styleUrl: './sala-espera.page.scss',
@@ -35,66 +36,119 @@ export class SalaEsperaPage implements OnInit {
 
   protected snapshot = signal<DisplaySnapshot | null>(null);
   protected lastSuccessfulFetch = signal<number>(0);
-  protected previousCalledId = signal<number | null>(null);
+  protected previousMostRecentCalledId = signal<number | null>(null);
+
+  protected readonly audioUnlocked = signal<boolean>(
+    typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tv-audio-unlocked') === '1',
+  );
 
   protected connectionLost = computed(() => {
     const last = this.lastSuccessfulFetch();
     return last > 0 && Date.now() - last > 15000;
   });
 
-  protected calledEntry = computed<PublicQueueEntry | null>(() => {
+  /**
+   * Últimos llamados del día: entries con lastCalledAt no nulo, ordenados desc por hora de llamado.
+   * El backend ya devuelve sólo los que tienen callCount > 0 y lastCalledAt hoy (máx 10).
+   */
+  protected calledEntries = computed<PublicQueueEntry[]>(() => {
     const entries = this.snapshot()?.entries ?? [];
-    const pending = entries.filter(e => e.status === QueueStatus.PENDING && e.lastCalledAt);
-    if (!pending.length) return null;
-    const mostRecent = pending.reduce((a, b) =>
-      new Date(a.lastCalledAt!) > new Date(b.lastCalledAt!) ? a : b,
-    );
-    const ageSeconds = (Date.now() - new Date(mostRecent.lastCalledAt!).getTime()) / 1000;
-    return ageSeconds < 15 ? mostRecent : null;
+    return entries
+      .filter(e => !!e.lastCalledAt)
+      .sort((a, b) => (b.lastCalledAt ?? '').localeCompare(a.lastCalledAt ?? ''));
   });
 
-  protected upcomingEntries = computed<PublicQueueEntry[]>(() => {
-    const entries = this.snapshot()?.entries ?? [];
-    const called = this.calledEntry();
-    return entries
-      .filter(e => e.status === QueueStatus.PENDING && e.id !== called?.id && !e.lastCalledAt)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .slice(0, 5);
+  private static readonly PAGE_SIZE = 5;
+  private static readonly ROTATE_MS = 15000;
+
+  /** Página actual del carousel (0 = primeros 5, 1 = siguientes 5). */
+  protected currentPage = signal<number>(0);
+
+  /** Total de páginas según cantidad de entries (ceil(count / 5)). 0 si no hay entries. */
+  protected totalPages = computed<number>(() => {
+    const n = this.calledEntries().length;
+    return n === 0 ? 0 : Math.ceil(n / SalaEsperaPage.PAGE_SIZE);
+  });
+
+  /** Slice de los 5 entries visibles según currentPage. */
+  protected visibleEntries = computed<PublicQueueEntry[]>(() => {
+    const all = this.calledEntries();
+    const start = this.currentPage() * SalaEsperaPage.PAGE_SIZE;
+    return all.slice(start, start + SalaEsperaPage.PAGE_SIZE);
   });
 
   protected viewMode = computed<'loading' | 'queue' | 'empty' | 'closed'>(() => {
     const snap = this.snapshot();
     if (!snap) return 'loading';
     if (this.isClosed(snap)) return 'closed';
-    if (snap.entries.filter(e => e.status === QueueStatus.PENDING).length === 0) return 'empty';
+    if ((snap.entries ?? []).length === 0) return 'empty';
     return 'queue';
   });
 
   constructor() {
     effect(() => {
-      const current = this.calledEntry();
-      if (current && current.id !== this.previousCalledId()) {
+      const list = this.calledEntries();
+      const mostRecent = list[0] ?? null;
+      if (mostRecent && mostRecent.id !== this.previousMostRecentCalledId()) {
         this.playBeep();
-        this.previousCalledId.set(current.id);
+        this.previousMostRecentCalledId.set(mostRecent.id);
       }
+    });
+
+    // Reset a página 0 cuando entran nuevos llamados o cambia la cantidad total
+    // (evita quedarse en una página fuera de rango).
+    effect(() => {
+      const total = this.totalPages();
+      if (this.currentPage() >= total) this.currentPage.set(0);
     });
   }
 
   ngOnInit(): void {
     if (!this.tenantSlug || !this.branchId) return;
+    // Polling cada 3s. switchMap cancela peticiones en vuelo cuando llega un nuevo tick.
+    // catchError INSIDE switchMap convierte el error a EMPTY para que NO termine el stream
+    // outer — sin esto, el primer error mata el polling y la TV no se recupera.
+    // Mantenemos el último snapshot; connectionLost() se activa cuando lastSuccessfulFetch
+    // queda más viejo que 15s.
     interval(3000)
       .pipe(
         startWith(0),
-        switchMap(() => this.service.fetchSnapshot(this.tenantSlug, this.branchId)),
+        switchMap(() =>
+          this.service.fetchSnapshot(this.tenantSlug, this.branchId).pipe(
+            catchError(() => EMPTY),
+          ),
+        ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe({
-        next: snap => {
-          this.snapshot.set(snap);
-          this.lastSuccessfulFetch.set(Date.now());
-        },
-        // network error: mantenemos último snapshot
+      .subscribe(snap => {
+        this.snapshot.set(snap);
+        this.lastSuccessfulFetch.set(Date.now());
       });
+
+    // Carousel: rotar página cada ROTATE_MS si hay más de una página.
+    interval(SalaEsperaPage.ROTATE_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const total = this.totalPages();
+        if (total > 1) {
+          this.currentPage.set((this.currentPage() + 1) % total);
+        }
+      });
+  }
+
+  unlockAudio(): void {
+    const a = new Audio('/assets/audio/beep.mp3');
+    a.volume = 0;
+    a.play().then(() => {
+      this.audioUnlocked.set(true);
+      sessionStorage.setItem('tv-audio-unlocked', '1');
+    }).catch(err => {
+      console.warn('[display] audio unlock failed', err);
+      // even on play failure, mark as unlocked — user has interacted now,
+      // so subsequent .play() calls should work in most browsers.
+      this.audioUnlocked.set(true);
+      sessionStorage.setItem('tv-audio-unlocked', '1');
+    });
   }
 
   private isClosed(snap: DisplaySnapshot): boolean {

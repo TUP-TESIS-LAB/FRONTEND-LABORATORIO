@@ -1,3 +1,18 @@
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 .col { min-height: 60vh; }
+
+.call-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: 9999px;
+  background: var(--ds-warning, #f59e0b);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}

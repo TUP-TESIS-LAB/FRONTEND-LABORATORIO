@@ -83,4 +83,26 @@ describe('mapAgendaError', () => {
       retryable: true,
     });
   });
+
+  it('reconoce mensaje literal de overlap aunque no venga el code AGENDA_CONFIG_OVERLAP', () => {
+    const err = new HttpErrorResponse({
+      status: 400,
+      error: { message: 'An agenda configuration with overlapping time range and date period already exists for this branch' },
+    });
+    const result = mapAgendaError(err);
+    expect(result.display).toBe('toast');
+    expect(result.severity).toBe('error');
+    expect(result.message).toContain('superpone');
+    expect(result.returnToStep).toBe(3);
+  });
+
+  it('reemplaza mensajes técnicos de bean validation por texto en español', () => {
+    const err = new HttpErrorResponse({
+      status: 400,
+      error: { message: 'must not be null' },
+    });
+    const result = mapAgendaError(err);
+    expect(result.message).not.toContain('must not be null');
+    expect(result.message).toMatch(/revis|complet|requerid/i);
+  });
 });

@@ -18,6 +18,8 @@ import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
 import { etagInterceptor } from '@core/refresh';
 import { TokenService } from '@core/auth/token.service';
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
+import { loadMySections } from '@core/access/store/access.actions';
+import { metaReducers } from '@core/store/logger.meta-reducer';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
 import { tenantReducer } from '@core/tenant/store/tenant.reducer';
@@ -39,6 +41,9 @@ import { ATENCION_FEATURE_KEY } from '@features/analitica/store/atencion/atencio
 import { atencionReducer } from '@features/analitica/store/atencion/atencion.reducer';
 import { AtencionEffects } from '@features/analitica/store/atencion/atencion.effects';
 
+// Turnos stores son provistos por turnos.routes.ts (per-feature: queue, agendas,
+// appointments, branchTotemConfig, totem). No hay reducer/effects singular global.
+
 import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.state';
 import { financieroReducer } from '@features/financiero/store/financiero.reducer';
 import { FinancieroEffects } from '@features/financiero/store/financiero.effects';
@@ -55,6 +60,14 @@ import { EXTRACTION_FEATURE_KEY } from '@features/analitica/store/extraction/ext
 import { extractionReducer } from '@features/analitica/store/extraction/extraction.reducer';
 import { ExtractionEffects } from '@features/analitica/store/extraction/extraction.effects';
 
+import { ACCESS_FEATURE_KEY } from '@core/access/store/access.state';
+import { accessReducer } from '@core/access/store/access.reducer';
+import { AccessEffects } from '@core/access/store/access.effects';
+
+import { ROLES_PERMISOS_FEATURE_KEY } from '@features/roles-permisos/store/roles-permisos.state';
+import { rolesPermisosReducer } from '@features/roles-permisos/store/roles-permisos.reducer';
+import { RolesPermisosEffects } from '@features/roles-permisos/store/roles-permisos.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -66,13 +79,14 @@ export const appConfig: ApplicationConfig = {
       const store = inject(Store);
       if (tokens.isTokenValid() && !tokens.getRoles().includes('SAAS_ADMIN')) {
         store.dispatch(loadTenantConfig());
+        store.dispatch(loadMySections());
       }
     }),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(
       withInterceptors([etagInterceptor, authTokenInterceptor, tenantIdInterceptor]),
     ),
-    provideStore({}),
+    provideStore({}, { metaReducers }),
     provideEffects([]),
     provideRouterStore(),
     provideState(TENANT_FEATURE_KEY, tenantReducer),
@@ -93,6 +107,10 @@ export const appConfig: ApplicationConfig = {
     provideEffects(SaasAdminEffects),
     provideState(EXTRACTION_FEATURE_KEY, extractionReducer),
     provideEffects(ExtractionEffects),
+    provideState(ACCESS_FEATURE_KEY, accessReducer),
+    provideEffects(AccessEffects),
+    provideState(ROLES_PERMISOS_FEATURE_KEY, rolesPermisosReducer),
+    provideEffects(RolesPermisosEffects),
     providePrimeNG({
       theme: {
         preset: Aura,

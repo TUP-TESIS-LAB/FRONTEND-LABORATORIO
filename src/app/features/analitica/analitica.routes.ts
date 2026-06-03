@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { hasRoleGuard } from '@core/guards/has-role.guard';
+import { sectionGuard } from '@core/guards/section.guard';
 
 export const ANALITICA_ROUTES: Routes = [
   {
@@ -15,6 +16,7 @@ export const ANALITICA_ROUTES: Routes = [
       },
       {
         path: 'atencion',
+        canMatch: [sectionGuard('ATENCION')],
         loadComponent: () => import('./pages/atencion/atencion-dashboard/atencion-dashboard.component')
           .then(m => m.AtencionDashboardComponent),
       },
@@ -30,9 +32,21 @@ export const ANALITICA_ROUTES: Routes = [
       },
       { path: 'protocolos',     loadComponent: () => import('./pages/protocolos/protocolos.component').then(m => m.ProtocolosComponent) },
       { path: 'rotulos',        loadComponent: () => import('./pages/rotulos/rotulos.component').then(m => m.RotulosComponent) },
-      { path: 'pre-analitica',  loadComponent: () => import('./pages/pre-analitica/pre-analitica.component').then(m => m.PreAnaliticaComponent) },
-      { path: 'analitica',      loadComponent: () => import('./pages/analitica/analitica-work.component').then(m => m.AnaliticaWorkComponent) },
-      { path: 'post-analitica', loadComponent: () => import('./pages/post-analitica/post-analitica.component').then(m => m.PostAnaliticaComponent) },
+      {
+        path: 'pre-analitica',
+        canMatch: [sectionGuard('PREANALITICA')],
+        loadComponent: () => import('./pages/pre-analitica/pre-analitica.component').then(m => m.PreAnaliticaComponent),
+      },
+      {
+        path: 'analitica',
+        canMatch: [sectionGuard('ANALITICA')],
+        loadComponent: () => import('./pages/analitica/analitica-work.component').then(m => m.AnaliticaWorkComponent),
+      },
+      {
+        path: 'post-analitica',
+        canMatch: [sectionGuard('POSTANALITICA')],
+        loadComponent: () => import('./pages/post-analitica/post-analitica.component').then(m => m.PostAnaliticaComponent),
+      },
       { path: 'nbu',            loadComponent: () => import('./pages/nbu/nbu.component').then(m => m.NbuComponent) },
     ],
   },

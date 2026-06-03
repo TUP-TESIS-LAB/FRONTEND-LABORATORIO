@@ -1,0 +1,17 @@
+<div class="totem-step">
+  <h2>Tótem</h2>
+  <p class="muted">
+    Habilitá el tótem para aceptar walk-ins (pacientes sin turno previo).
+    Sin él, recepción muestra solo turnos agendados.
+  </p>
+
+  <div class="totem-content-center">
+    <div class="big-switch">
+      <p-toggleswitch [ngModel]="enabled()" (ngModelChange)="onToggle($event)" />
+      <span class="switch-label">{{ enabled() ? 'Tótem habilitado' : 'Tótem deshabilitado' }}</span>
+    </div>
+    @if (!enabled()) {
+      <p class="helper-text">Podés activarlo más tarde desde la configuración de la sucursal.</p>
+    }
+  </div>
+</div>

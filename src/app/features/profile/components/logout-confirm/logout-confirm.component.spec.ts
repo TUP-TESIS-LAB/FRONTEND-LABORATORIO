@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { vi } from 'vitest';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuService } from '@features/profile/services/profile-menu.service';
+import { clearMySections } from '@core/access/store/access.actions';
 import { LogoutConfirmComponent } from './logout-confirm.component';
 
 describe('LogoutConfirmComponent', () => {
@@ -18,6 +20,7 @@ describe('LogoutConfirmComponent', () => {
       imports: [LogoutConfirmComponent],
       providers: [
         provideRouter([]),
+        provideMockStore({ initialState: {} }),
         { provide: TokenService, useValue: tokenStub },
         { provide: UserSessionService, useValue: userSessionStub },
       ],
@@ -58,10 +61,13 @@ describe('LogoutConfirmComponent', () => {
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
+    const dispatchSpy = vi.spyOn(TestBed.inject(MockStore), 'dispatch');
+
     await comp.confirm();
 
     expect(removeSpy).toHaveBeenCalled();
     expect(clearSpy).toHaveBeenCalled();
+    expect(dispatchSpy).toHaveBeenCalledWith(clearMySections());
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
     expect(profileMenu.logoutConfirmOpen()).toBe(false);
   });

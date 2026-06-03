@@ -1,46 +1,73 @@
 @if (!tenantSlug || !branchId) {
   <div class="invalid-url">URL inválida — falta tenantSlug o branchId</div>
 } @else {
-  @if (connectionLost()) {
-    <div class="banner-disconnected">⚠ Reconectando...</div>
-  }
-
-  @switch (viewMode()) {
-    @case ('loading') {
-      <div class="loading">Cargando...</div>
-    }
-    @case ('empty') {
-      <app-empty-state
-        [serverTime]="snapshot()?.serverTime ?? ''"
-        [branchName]="snapshot()?.branchName ?? ''" />
-    }
-    @case ('closed') {
-      <app-closed-state [reopenTime]="snapshot()?.openWindow?.startTime ?? ''" />
-    }
-    @case ('queue') {
-      <div class="layout">
-        @if (calledEntry(); as called) {
-          <div class="destacado">
-            <h1>LLAMANDO AHORA</h1>
-            <div class="code">{{ called.publicCode }}</div>
-            <div class="hint">→ acercate al mostrador</div>
-          </div>
-        }
-        @if (upcomingEntries().length) {
-          <div class="proximos">
-            <h2>Próximos turnos:</h2>
-            <ul>
-              @for (e of upcomingEntries(); track e.id) {
-                <li>{{ e.publicCode }}</li>
-              }
-            </ul>
-          </div>
-        }
-        <div class="footer">
-          {{ snapshot()?.serverTime }} hs &mdash;
-          {{ snapshot()?.tenantName }} — {{ snapshot()?.branchName }}
+  <div class="display-page">
+    @if (!audioUnlocked()) {
+      <div class="audio-overlay" (click)="unlockAudio()">
+        <div class="audio-overlay-content">
+          <i class="pi pi-volume-up" style="font-size: 4rem;"></i>
+          <h2>Click para activar sonido</h2>
+          <p>Hacé click en cualquier parte de la pantalla para habilitar las notificaciones sonoras.</p>
         </div>
       </div>
     }
-  }
+
+    <main class="cola-section">
+      @if (connectionLost()) {
+        <div class="banner-disconnected">
+          <i class="pi pi-wifi" style="margin-right: 0.5rem;"></i>
+          Reconectando...
+        </div>
+      }
+
+      @switch (viewMode()) {
+        @case ('loading') {
+          <div class="loading">Cargando...</div>
+        }
+        @case ('empty') {
+          <app-empty-state
+            [serverTime]="snapshot()?.serverTime ?? ''"
+            [branchName]="snapshot()?.branchName ?? ''" />
+        }
+        @case ('closed') {
+          <app-closed-state [reopenTime]="snapshot()?.openWindow?.startTime ?? ''" />
+        }
+        @case ('queue') {
+          <div class="layout">
+            <div class="proximos">
+              <h2>Últimos llamados:</h2>
+              @if (calledEntries().length === 0) {
+                <div class="empty-state">
+                  <i class="pi pi-info-circle"></i>
+                  <span>Aún no se llamó a ningún paciente hoy</span>
+                </div>
+              } @else {
+                <ul>
+                  @for (e of visibleEntries(); track e.id) {
+                    <li>
+                      <span class="code">{{ e.publicCode }}</span>
+                      @if (e.lastCalledAt) {
+                        <span class="hour">{{ e.lastCalledAt | date:'HH:mm':'America/Argentina/Buenos_Aires' }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+                @if (totalPages() > 1) {
+                  <div class="page-indicator">
+                    @for (p of [].constructor(totalPages()); track $index) {
+                      <span class="dot" [class.active]="$index === currentPage()"></span>
+                    }
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      }
+    </main>
+
+    <aside class="ad-section">
+      <app-ad-carousel />
+    </aside>
+  </div>
 }

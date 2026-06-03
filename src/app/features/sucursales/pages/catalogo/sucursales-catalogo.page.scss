@@ -1,0 +1,37 @@
+/* .catalogo-page sin padding propio — el admin-shell ya da 24px (var(--space-6)). */
+
+.catalogo-page header {
+  margin-bottom: 1.5rem;
+}
+
+.catalogo-page header h1 {
+  margin: 0 0 0.5rem;
+}
+
+.muted {
+  color: var(--p-text-muted-color);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel-placeholder {
+  padding: 2rem;
+  background: #ffffff;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.panel-placeholder h2 {
+  margin: 0 0 0.5rem;
+}

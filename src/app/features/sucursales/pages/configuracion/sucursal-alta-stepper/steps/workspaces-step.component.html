@@ -1,0 +1,48 @@
+<div class="workspaces-step">
+  <h2>Workspaces</h2>
+  <p class="muted">Asociá las áreas y secciones que operan en esta sucursal.</p>
+
+  @if (areas().length === 0) {
+    <div class="empty-state-cta">
+      <i class="pi pi-th-large"></i>
+      <h3>No hay áreas en el catálogo</h3>
+      <p>Necesitás crear áreas y secciones en el catálogo antes de poder configurar workspaces.</p>
+      <div class="cta-actions">
+        <p-button label="Ir al catálogo" icon="pi pi-external-link" routerLink="/sucursales/catalogo" />
+      </div>
+      <p class="helper-text">Podés continuar al siguiente paso y volver más tarde a configurar workspaces.</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="add()" class="inline-form">
+      <div class="form-field">
+        <label>Área *</label>
+        <p-select formControlName="areaId" [options]="areaOptions()" optionLabel="label" optionValue="value" placeholder="Seleccionar" appendTo="body" />
+      </div>
+      <div class="form-field">
+        <label>Sección *</label>
+        <p-select formControlName="sectionId" [options]="sectionOptions()" optionLabel="label" optionValue="value" placeholder="Seleccionar" appendTo="body" [disabled]="!form.value.areaId" />
+      </div>
+      <div class="form-action">
+        <p-button icon="pi pi-plus" label="Agregar" type="submit" [disabled]="form.invalid" />
+      </div>
+    </form>
+
+    <p class="counter muted">{{ workspaces().length }} workspace{{ workspaces().length !== 1 ? 's' : '' }} configurado{{ workspaces().length !== 1 ? 's' : '' }}</p>
+
+    <p-table [value]="workspaces()" dataKey="id" [scrollable]="true" scrollHeight="20rem">
+      <ng-template pTemplate="header">
+        <tr><th>Área</th><th>Sección</th><th style="width: 4rem"></th></tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-w>
+        <tr>
+          <td>{{ areaName(w.areaId) }}</td>
+          <td>{{ sectionName(w.sectionId) }}</td>
+          <td><p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="remove(w)" /></td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="3" class="muted">Sin workspaces configurados.</td></tr>
+      </ng-template>
+    </p-table>
+  }
+</div>

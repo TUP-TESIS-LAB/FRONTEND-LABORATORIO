@@ -20,7 +20,7 @@ import { selectAllAreas, selectSucursalesPending } from '../../store/sucursales.
         <h2>Áreas</h2>
         <ul>
           @for (a of areas(); track a.id) {
-            <li>{{ a.nombre }}</li>
+            <li>{{ a.name }}</li>
           }
         </ul>
       }
@@ -34,6 +34,6 @@ export class AreasComponent implements OnInit {
   readonly pending = this.store.selectSignal(selectSucursalesPending);
 
   ngOnInit(): void {
-    this.store.dispatch(loadAreas({ sucursalId: 'default' }));
+    this.store.dispatch(loadAreas());
   }
 }

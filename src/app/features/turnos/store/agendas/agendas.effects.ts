@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { MessageService } from 'primeng/api';
-import { catchError, map, mergeMap, of, switchMap } from 'rxjs';
+import { catchError, map, mergeMap, of } from 'rxjs';
 import { AgendaConfigService } from '../../services/agenda-config.service';
 import * as A from './agendas.actions';
 
@@ -14,7 +14,7 @@ export class AgendasEffects {
   loadAgendas$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.loadAgendas),
-      switchMap(({ branchId }) =>
+      mergeMap(({ branchId }) =>
         this.service.list(branchId).pipe(
           map((configs) => A.loadAgendasSuccess({ branchId, configs })),
           catchError((error) => of(A.loadAgendasFailure({ branchId, error })))

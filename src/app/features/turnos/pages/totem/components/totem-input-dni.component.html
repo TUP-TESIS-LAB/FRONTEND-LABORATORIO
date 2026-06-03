@@ -1,28 +1,17 @@
-<div class="kiosk-card">
-  <h1>Tu DNI</h1>
-  <p>Ingresá tu DNI para registrarte en la cola.</p>
+<div class="totem-input-dni">
+  <h1>Ingresá tu DNI</h1>
 
-  <input
-    pInputText
-    type="text"
-    inputmode="numeric"
-    autocomplete="off"
-    autofocus
-    [(ngModel)]="dni"
-    [disabled]="submitting()"
-    (keydown.enter)="submit()"
-  />
+  <div class="dni-display">
+    {{ dni() || '—' }}
+  </div>
 
-  <p-button
-    label="Continuar"
-    [loading]="submitting()"
-    [disabled]="!dni.trim() || submitting()"
-    (onClick)="submit()"
-  />
+  <app-totem-numpad
+    [submitDisabled]="submitDisabled()"
+    (digitPressed)="appendDigit($event)"
+    (clearPressed)="clear()"
+    (submitPressed)="submit()" />
 
-  @if (error() === 'PATIENT_NOT_FOUND') {
-    <p-message severity="warn" text="No te encontramos en el sistema. Acercate a recepción." />
-  } @else if (error() === 'UNKNOWN') {
+  @if (error() === 'UNKNOWN') {
     <p-message severity="error" text="Hubo un error. Probá de nuevo en un momento." />
   }
 </div>
