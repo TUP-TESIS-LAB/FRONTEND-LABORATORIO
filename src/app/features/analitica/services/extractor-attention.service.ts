@@ -3,9 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { NotModified, withPolling } from '@core/refresh';
 import {
-  AssignExtractorRequest,
   AwaitingExtractionItem,
+  BoxAssignment,
   BoxOccupancyItem,
+  BranchExtractor,
   BranchOption,
   CancelExtractionRequest,
   ExtractionStats,
@@ -54,9 +55,39 @@ export class ExtractorAttentionService {
     );
   }
 
-  assignExtractor(id: number, box: number, branchId: number): Observable<void> {
-    const body: AssignExtractorRequest = { attentionBox: box, branchId };
-    return this.http.patch<void>(`${this.base}/attentions/${id}/assign/extractor`, body);
+  /** Extractores disponibles en una sucursal. */
+  getBranchExtractors(branchId: number): Observable<BranchExtractor[] | NotModified> {
+    return this.http.get<BranchExtractor[] | NotModified>(
+      `${this.base}/branches/${branchId}/extractors`,
+      { context: withPolling() },
+    );
+  }
+
+  /** Asignaciones actuales de extractores a boxes de una sucursal. */
+  getBoxAssignments(branchId: number): Observable<BoxAssignment[] | NotModified> {
+    return this.http.get<BoxAssignment[] | NotModified>(
+      `${this.base}/branches/${branchId}/box-assignments`,
+      { context: withPolling() },
+    );
+  }
+
+  /** Persiste la configuración de boxes de una sucursal. */
+  saveBoxAssignments(
+    branchId: number,
+    boxes: { boxNumber: number; extractorUserId: number | null }[],
+  ): Observable<BoxAssignment[]> {
+    return this.http.put<BoxAssignment[]>(
+      `${this.base}/branches/${branchId}/box-assignments`,
+      { boxes },
+    );
+  }
+
+  assignExtractor(id: number, boxNumber: number, branchId: number): Observable<void> {
+    return this.http.patch<void>(`${this.base}/attentions/${id}/assign/extractor`, { branchId, boxNumber });
+  }
+
+  unassignExtraction(id: number): Observable<void> {
+    return this.http.patch<void>(`${this.base}/attentions/${id}/unassign`, null);
   }
 
   /** Cancelar requiere motivo obligatorio (min 5 chars). */

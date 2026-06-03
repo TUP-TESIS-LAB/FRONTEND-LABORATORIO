@@ -61,12 +61,44 @@ describe('ExtractorAttentionService', () => {
     req.flush({ queueSize: 0, averageWaitMinutes: null, finishedTodayByMe: 0 });
   });
 
-  it('assignExtractor sends attentionBox AND branchId in the body', () => {
+  it('getBranchExtractors hits /branches/{id}/extractors with POLLING_REQUEST context', () => {
+    service.getBranchExtractors(3).subscribe();
+    const req = httpMock.expectOne('/api/v1/branches/3/extractors');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.context.get(POLLING_REQUEST)).toBe(true);
+    req.flush([]);
+  });
+
+  it('getBoxAssignments hits /branches/{id}/box-assignments with POLLING_REQUEST context', () => {
+    service.getBoxAssignments(3).subscribe();
+    const req = httpMock.expectOne('/api/v1/branches/3/box-assignments');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.context.get(POLLING_REQUEST)).toBe(true);
+    req.flush([]);
+  });
+
+  it('saveBoxAssignments PUTs boxes to /branches/{id}/box-assignments', () => {
+    const boxes = [{ boxNumber: 1, extractorUserId: 5 }, { boxNumber: 2, extractorUserId: null }];
+    service.saveBoxAssignments(3, boxes).subscribe();
+    const req = httpMock.expectOne('/api/v1/branches/3/box-assignments');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ boxes });
+    req.flush([]);
+  });
+
+  it('assignExtractor sends boxNumber AND branchId in the body (new contract)', () => {
     service.assignExtractor(99, 3, 7).subscribe();
     const req = httpMock.expectOne('/api/v1/attentions/99/assign/extractor');
     expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({ attentionBox: 3, branchId: 7 });
-    expect((req.request.body as Record<string, unknown>)['extractorId']).toBeUndefined();
+    expect(req.request.body).toEqual({ branchId: 7, boxNumber: 3 });
+    expect((req.request.body as Record<string, unknown>)['attentionBox']).toBeUndefined();
+    req.flush(null);
+  });
+
+  it('unassignExtraction PATCHes /attentions/{id}/unassign', () => {
+    service.unassignExtraction(42).subscribe();
+    const req = httpMock.expectOne('/api/v1/attentions/42/unassign');
+    expect(req.request.method).toBe('PATCH');
     req.flush(null);
   });
 
