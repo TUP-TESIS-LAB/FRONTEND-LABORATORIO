@@ -25,6 +25,12 @@
   border-radius: 6px;
 }
 
+.waiting-cell {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-muted, #64748b);
+  font-size: 0.875rem;
+}
+
 .call-count {
   display: inline-flex;
   align-items: center;

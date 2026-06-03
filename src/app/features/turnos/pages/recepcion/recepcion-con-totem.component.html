@@ -25,6 +25,7 @@
         <tr>
           <th>Código</th>
           <th>DNI</th>
+          <th>Esperando</th>
           <th>Llamadas</th>
           <th></th>
         </tr>
@@ -33,6 +34,7 @@
         <tr [class]="rowClass(row)">
           <td>{{ row.publicCode }}</td>
           <td>{{ row.nationalId }}</td>
+          <td class="waiting-cell">{{ row.createdAt | waitingTime }}</td>
           <td>
             @if (row.callCount > 0) {
               <span class="call-count">{{ row.callCount }}</span>
@@ -47,7 +49,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
-        <tr><td colspan="4">No hay pacientes en cola.</td></tr>
+        <tr><td colspan="5">No hay pacientes en cola.</td></tr>
       </ng-template>
     </p-table>
   }

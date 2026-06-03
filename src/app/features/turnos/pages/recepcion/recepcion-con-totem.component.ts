@@ -22,11 +22,12 @@ import { QueueRowActionsComponent } from '../../components/queue-row-actions.com
 import { ScheduledAppointmentsDrawerComponent } from '../../components/scheduled-appointments-drawer.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import { QueueEntry } from '../../models/queue-entry.model';
+import { WaitingTimePipe } from '../../pipes/waiting-time.pipe';
 
 @Component({
   selector: 'app-recepcion-con-totem',
   standalone: true,
-  imports: [TableModule, ButtonModule, CardModule, QueueRowActionsComponent, ScheduledAppointmentsDrawerComponent],
+  imports: [TableModule, ButtonModule, CardModule, QueueRowActionsComponent, ScheduledAppointmentsDrawerComponent, WaitingTimePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion-con-totem.component.html',
   styleUrl: './recepcion-con-totem.component.scss',
