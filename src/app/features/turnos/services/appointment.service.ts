@@ -4,8 +4,7 @@ import { Observable, map } from 'rxjs';
 import { Appointment } from '../models/appointment.model';
 
 // Shape real del backend (AppointmentResponse): patientId pero NO patientName,
-// scheduledAt en vez de appointmentTime. Mapeamos en este service para no
-// arrastrar la fricción al store ni a la página.
+// scheduledAt en vez de appointmentTime, nationalId (KAN-73 PR #36).
 interface BackendAppointment {
   id: number;
   patientId: number;
@@ -15,6 +14,7 @@ interface BackendAppointment {
   status: string;
   patientFirstName?: string | null;
   patientLastName?: string | null;
+  nationalId?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -34,6 +34,7 @@ export class AppointmentService {
         patientName: r.patientFirstName && r.patientLastName
           ? `${r.patientFirstName} ${r.patientLastName}`
           : `Turno ${r.confirmationNumber}`,
+        nationalId: r.nationalId ?? null,
         appointmentTime: r.scheduledAt,
         branchId: r.branchId,
         status: r.status,
