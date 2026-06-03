@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { provideMockStore } from '@ngrx/store/testing';
@@ -47,6 +47,8 @@ describe('AtencionWizardComponent (CORE flow)', () => {
         { provide: ModuleRegistry, useValue: registry },
         { provide: NbuService, useValue: { getCurrent: vi.fn().mockReturnValue(of(null)) } },
         { provide: Router, useValue: { navigate: vi.fn() } },
+        // DatosGeneralesStep ahora lee el dni del queryParam (KAN-73).
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
       ],
     });
     fixture = TestBed.createComponent(AtencionWizardComponent);
