@@ -8,6 +8,7 @@ function apt(over: Partial<Appointment>): Appointment {
     id: 0,
     patientId: 1,
     patientName: 'X',
+    nationalId: null,
     appointmentTime: '2026-06-02T09:00:00Z',
     branchId: 1,
     status: 'SCHEDULED',
