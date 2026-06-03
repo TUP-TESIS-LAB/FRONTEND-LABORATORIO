@@ -46,7 +46,7 @@ export class RecepcionSinTotemComponent implements OnInit {
   }
 
   protected onAtender(appointmentId: number): void {
-    this.store.dispatch(callAppointmentForAttention({ appointmentId }));
+    this.store.dispatch(callAppointmentForAttention({ appointmentId, dni: null }));
   }
 
   protected onWalkIn(): void {

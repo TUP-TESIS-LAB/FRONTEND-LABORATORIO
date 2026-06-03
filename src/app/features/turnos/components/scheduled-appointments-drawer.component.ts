@@ -47,7 +47,7 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
                   type="button"
                   class="row-atender-btn"
                   title="Atender"
-                  (click)="onAtender(row.id)"
+                  (click)="onAtender(row.id, row.dni)"
                   [attr.aria-label]="'Atender turno ' + row.id">
                   <i class="pi pi-arrow-right"></i>
                 </button>
@@ -155,8 +155,8 @@ export class ScheduledAppointmentsDrawerComponent {
    * `callAppointmentForAttention$` crea el queue entry, hace POST
    * /queue/by-appointment/:id/call y navega a la pantalla de atencion.
    */
-  protected onAtender(appointmentId: number): void {
-    this.store.dispatch(callAppointmentForAttention({ appointmentId }));
+  protected onAtender(appointmentId: number, dni: string | null): void {
+    this.store.dispatch(callAppointmentForAttention({ appointmentId, dni }));
   }
 
   protected estadoSeverity(estado: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
