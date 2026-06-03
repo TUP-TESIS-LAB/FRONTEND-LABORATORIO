@@ -27,17 +27,6 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
       position="right"
       header="Turnos del día"
       styleClass="ui-scheduled-drawer">
-      <ng-template pTemplate="headericons">
-        <p-button
-          icon="pi pi-refresh"
-          severity="secondary"
-          [text]="true"
-          [rounded]="true"
-          size="small"
-          (onClick)="onRefresh()"
-          ariaLabel="Refrescar" />
-      </ng-template>
-
       @if (loading()) {
         <div class="drawer-loading">Cargando turnos…</div>
       } @else if (rows().length === 0) {
@@ -124,10 +113,6 @@ export class ScheduledAppointmentsDrawerComponent {
     });
   }
 
-  protected onRefresh(): void {
-    this.dispatchLoad();
-  }
-
   protected estadoSeverity(estado: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     switch (estado) {
       case 'Llego': return 'success';
@@ -139,10 +124,11 @@ export class ScheduledAppointmentsDrawerComponent {
 
   /**
    * El discriminator TS es 'Llego' (sin acento) para evitar caracteres
-   * especiales en string literals; en la UI mostramos 'Llegó' correcto.
+   * especiales en literals; en la UI mostramos 'En cola' que refleja
+   * mejor el estado real del paciente (anunciado, esperando ser llamado).
    */
   protected estadoLabel(estado: string): string {
-    return estado === 'Llego' ? 'Llegó' : estado;
+    return estado === 'Llego' ? 'En cola' : estado;
   }
 
   /**

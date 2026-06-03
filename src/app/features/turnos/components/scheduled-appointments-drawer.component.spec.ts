@@ -42,15 +42,17 @@ describe('ScheduledAppointmentsDrawerComponent', () => {
     expect(store.dispatch).toHaveBeenCalledWith(loadTodayAppointments({ branchId: 5 }));
   });
 
-  it('refresh button despacha loadTodayAppointments de nuevo', () => {
+  it('re-despacha cada vez que visible pasa de false a true (auto-refresh on open)', () => {
     const fixture = TestBed.createComponent(ScheduledAppointmentsDrawerComponent);
     fixture.componentRef.setInput('visible', true);
     fixture.detectChanges();
-    (store.dispatch as ReturnType<typeof vi.fn>).mockClear();
+    expect(store.dispatch).toHaveBeenCalledTimes(1);
 
-    const refreshBtn = fixture.nativeElement.querySelector('button[aria-label="Refrescar"]') as HTMLButtonElement;
-    refreshBtn.click();
-    expect(store.dispatch).toHaveBeenCalledWith(loadTodayAppointments({ branchId: 5 }));
+    fixture.componentRef.setInput('visible', false);
+    fixture.detectChanges();
+    fixture.componentRef.setInput('visible', true);
+    fixture.detectChanges();
+    expect(store.dispatch).toHaveBeenCalledTimes(2);
   });
 
   it('no despacha si no hay branchId en el context', () => {
