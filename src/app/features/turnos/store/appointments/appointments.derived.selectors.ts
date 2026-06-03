@@ -9,6 +9,7 @@ export interface DrawerAppointmentRow {
   id: number;
   hora: string;       // HH:MM
   paciente: string;
+  dni: string | null;
   estado: DrawerEstado;
 }
 
@@ -20,6 +21,9 @@ export interface DrawerAppointmentRow {
  *   - resto -> 'Pendiente'
  *
  * Orden: hora asc, con cancelados al final (independiente de la hora).
+ *
+ * `dni` se pasa desde el backend para que el boton Atender pueda navegar
+ * directo a /analitica/atencion/nueva?dni=X sin lookup extra (KAN-73 B).
  */
 export const selectScheduledAppointmentsForDrawer = createSelector(
   selectTodayAppointments,
@@ -35,6 +39,7 @@ export const selectScheduledAppointmentsForDrawer = createSelector(
       id: a.id,
       hora: a.appointmentTime.slice(11, 16),  // HH:MM del ISO 2026-06-02T09:00:00Z
       paciente: a.patientName,
+      dni: a.nationalId ?? null,
       estado: deriveEstado(a, arrivedIds),
     }));
 

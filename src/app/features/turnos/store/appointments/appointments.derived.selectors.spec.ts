@@ -35,28 +35,30 @@ function queueEntry(appointmentId: number | null): QueueEntry {
 describe('selectScheduledAppointmentsForDrawer', () => {
   it('marca como Cancelado los appointments con status CANCELLED', () => {
     const result = selectScheduledAppointmentsForDrawer.projector(
-      [apt({ id: 1, status: 'CANCELLED', patientName: 'Juan', appointmentTime: '2026-06-02T09:00:00Z' })],
+      [apt({ id: 1, status: 'CANCELLED', patientName: 'Juan', nationalId: '12345678', appointmentTime: '2026-06-02T09:00:00Z' })],
       { entries: [], loading: false, callingId: null, error: null },
     );
     expect(result).toEqual([
-      { id: 1, hora: '09:00', paciente: 'Juan', estado: 'Cancelado' },
+      { id: 1, hora: '09:00', paciente: 'Juan', dni: '12345678', estado: 'Cancelado' },
     ]);
   });
 
   it('marca como Llego los appointments con QueueEntry en la cola actual', () => {
     const result = selectScheduledAppointmentsForDrawer.projector(
-      [apt({ id: 5, patientName: 'Ana', appointmentTime: '2026-06-02T10:30:00Z' })],
+      [apt({ id: 5, patientName: 'Ana', nationalId: '30111222', appointmentTime: '2026-06-02T10:30:00Z' })],
       { entries: [queueEntry(5)], loading: false, callingId: null, error: null },
     );
     expect(result[0].estado).toBe('Llego');
+    expect(result[0].dni).toBe('30111222');
   });
 
-  it('marca como Pendiente el resto', () => {
+  it('marca como Pendiente el resto y propaga dni null cuando falta', () => {
     const result = selectScheduledAppointmentsForDrawer.projector(
-      [apt({ id: 2, patientName: 'Pepe', appointmentTime: '2026-06-02T11:00:00Z' })],
+      [apt({ id: 2, patientName: 'Pepe', nationalId: null, appointmentTime: '2026-06-02T11:00:00Z' })],
       { entries: [], loading: false, callingId: null, error: null },
     );
     expect(result[0].estado).toBe('Pendiente');
+    expect(result[0].dni).toBeNull();
   });
 
   it('ordena por hora ascendente y pone los cancelados al final', () => {
