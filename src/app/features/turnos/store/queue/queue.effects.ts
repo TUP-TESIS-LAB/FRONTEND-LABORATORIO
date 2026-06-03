@@ -50,9 +50,9 @@ export class QueueEffects {
 
   callAppointmentForAttention$ = createEffect(() => this.actions$.pipe(
     ofType(A.callAppointmentForAttention),
-    switchMap(({ appointmentId }) =>
+    switchMap(({ appointmentId, dni }) =>
       this.service.callByAppointment(appointmentId).pipe(
-        map(() => A.callAppointmentForAttentionSuccess({ appointmentId })),
+        map(() => A.callAppointmentForAttentionSuccess({ appointmentId, dni })),
         catchError(error => of(A.callAppointmentForAttentionFailure({ error }))),
       )
     ),
@@ -60,9 +60,10 @@ export class QueueEffects {
 
   navigateAfterCall$ = createEffect(() => this.actions$.pipe(
     ofType(A.callAppointmentForAttentionSuccess),
-    tap(({ appointmentId }) =>
-      this.router.navigate(['/turnos/atencion-turno'], { queryParams: { appointmentId } })
-    ),
+    tap(({ dni }) => {
+      const queryParams = dni ? { dni } : {};
+      this.router.navigate(['/analitica/atencion/nueva'], { queryParams });
+    }),
   ), { dispatch: false });
 
   showErrorToast$ = createEffect(() => this.actions$.pipe(

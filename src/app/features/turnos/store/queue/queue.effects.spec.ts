@@ -113,26 +113,40 @@ describe('QueueEffects — callAppointmentForAttention', () => {
     });
   });
 
-  it('on success: dispatches callAppointmentForAttentionSuccess', () => {
+  it('on success: dispatches callAppointmentForAttentionSuccess con dni', () => {
     return new Promise<void>((resolve) => {
       queueService.callByAppointment.mockReturnValue(of({ queueEntryId: 50 }));
-      actions$ = of(callAppointmentForAttention({ appointmentId: 100 }));
+      actions$ = of(callAppointmentForAttention({ appointmentId: 100, dni: '12345678' }));
 
       TestBed.inject(QueueEffects).callAppointmentForAttention$.subscribe((action) => {
-        expect(action).toEqual(callAppointmentForAttentionSuccess({ appointmentId: 100 }));
+        expect(action).toEqual(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: '12345678' }));
         resolve();
       });
     });
   });
 
-  it('navigateAfterCall$: navigates to atencion-turno with appointmentId as query param', () => {
+  it('navigateAfterCall$: navigates to /analitica/atencion/nueva con dni en queryParams', () => {
     return new Promise<void>((resolve) => {
-      actions$ = of(callAppointmentForAttentionSuccess({ appointmentId: 100 }));
+      actions$ = of(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: '12345678' }));
 
       TestBed.inject(QueueEffects).navigateAfterCall$.subscribe(() => {
         expect(router.navigate).toHaveBeenCalledWith(
-          ['/turnos/atencion-turno'],
-          { queryParams: { appointmentId: 100 } }
+          ['/analitica/atencion/nueva'],
+          { queryParams: { dni: '12345678' } }
+        );
+        resolve();
+      });
+    });
+  });
+
+  it('navigateAfterCall$: navega sin dni en queryParams si dni es null', () => {
+    return new Promise<void>((resolve) => {
+      actions$ = of(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: null }));
+
+      TestBed.inject(QueueEffects).navigateAfterCall$.subscribe(() => {
+        expect(router.navigate).toHaveBeenCalledWith(
+          ['/analitica/atencion/nueva'],
+          { queryParams: {} }
         );
         resolve();
       });
@@ -142,7 +156,7 @@ describe('QueueEffects — callAppointmentForAttention', () => {
   it('on failure: dispatches callAppointmentForAttentionFailure and does not navigate', () => {
     return new Promise<void>((resolve) => {
       queueService.callByAppointment.mockReturnValue(throwError(() => new Error('500')));
-      actions$ = of(callAppointmentForAttention({ appointmentId: 100 }));
+      actions$ = of(callAppointmentForAttention({ appointmentId: 100, dni: '12345678' }));
 
       TestBed.inject(QueueEffects).callAppointmentForAttention$.subscribe((action) => {
         expect(action.type).toBe(callAppointmentForAttentionFailure.type);
