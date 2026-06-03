@@ -15,7 +15,7 @@ export interface DrawerAppointmentRow {
 /**
  * Proyecta los appointments del dia con el estado UI derivado del cruce
  * con la cola actual. Reglas:
- *   - status=CANCELED -> 'Cancelado'
+ *   - status=CANCELLED -> 'Cancelado'
  *   - existe QueueEntry con appointmentId == apt.id -> 'Llego'
  *   - resto -> 'Pendiente'
  *
@@ -47,7 +47,7 @@ export const selectScheduledAppointmentsForDrawer = createSelector(
 );
 
 function deriveEstado(a: Appointment, arrivedIds: Set<number>): DrawerEstado {
-  if (a.status === 'CANCELED') return 'Cancelado';
+  if (a.status === 'CANCELLED') return 'Cancelado';
   if (arrivedIds.has(a.id)) return 'Llego';
   return 'Pendiente';
 }

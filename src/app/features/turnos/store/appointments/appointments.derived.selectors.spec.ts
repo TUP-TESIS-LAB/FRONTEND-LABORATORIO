@@ -32,9 +32,9 @@ function queueEntry(appointmentId: number | null): QueueEntry {
 }
 
 describe('selectScheduledAppointmentsForDrawer', () => {
-  it('marca como Cancelado los appointments con status CANCELED', () => {
+  it('marca como Cancelado los appointments con status CANCELLED', () => {
     const result = selectScheduledAppointmentsForDrawer.projector(
-      [apt({ id: 1, status: 'CANCELED', patientName: 'Juan', appointmentTime: '2026-06-02T09:00:00Z' })],
+      [apt({ id: 1, status: 'CANCELLED', patientName: 'Juan', appointmentTime: '2026-06-02T09:00:00Z' })],
       { entries: [], loading: false, callingId: null, error: null },
     );
     expect(result).toEqual([
@@ -62,7 +62,7 @@ describe('selectScheduledAppointmentsForDrawer', () => {
     const result = selectScheduledAppointmentsForDrawer.projector(
       [
         apt({ id: 1, appointmentTime: '2026-06-02T11:00:00Z', patientName: 'A' }),
-        apt({ id: 2, status: 'CANCELED', appointmentTime: '2026-06-02T09:00:00Z', patientName: 'B' }),
+        apt({ id: 2, status: 'CANCELLED', appointmentTime: '2026-06-02T09:00:00Z', patientName: 'B' }),
         apt({ id: 3, appointmentTime: '2026-06-02T10:00:00Z', patientName: 'C' }),
       ],
       { entries: [], loading: false, callingId: null, error: null },
