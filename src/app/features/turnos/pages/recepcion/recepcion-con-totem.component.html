@@ -1,4 +1,5 @@
-<div class="recepcion-toolbar">
+<header class="recepcion-header">
+  <h2 class="recepcion-title">Cola de espera</h2>
   <p-button
     icon="pi pi-calendar"
     label="Turnos del día"
@@ -7,9 +8,9 @@
     size="small"
     [disabled]="!hasBranch()"
     (onClick)="toggleDrawer()" />
-</div>
+</header>
 
-<p-card header="Cola de espera">
+<p-card>
   @if (!hasBranch()) {
     <div class="empty-branch">
       <i class="pi pi-info-circle"></i>

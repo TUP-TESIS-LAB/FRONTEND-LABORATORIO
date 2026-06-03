@@ -27,17 +27,15 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
       position="right"
       header="Turnos del día"
       styleClass="ui-scheduled-drawer">
-      <ng-template pTemplate="header">
-        <div class="drawer-header">
-          <span class="drawer-title">Turnos del día</span>
-          <p-button
-            icon="pi pi-refresh"
-            severity="secondary"
-            [text]="true"
-            [rounded]="true"
-            (onClick)="onRefresh()"
-            ariaLabel="Refrescar" />
-        </div>
+      <ng-template pTemplate="headericons">
+        <p-button
+          icon="pi pi-refresh"
+          severity="secondary"
+          [text]="true"
+          [rounded]="true"
+          size="small"
+          (onClick)="onRefresh()"
+          ariaLabel="Refrescar" />
       </ng-template>
 
       @if (loading()) {
@@ -48,7 +46,7 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
         <ul class="drawer-list">
           @for (row of rows(); track row.id) {
             <li class="drawer-row" [class.row-cancelado]="row.estado === 'Cancelado'">
-              <span class="row-hora">{{ row.hora }}</span>
+              <span class="row-hora">{{ horaLabel(row.hora) }}</span>
               <span class="row-paciente">{{ row.paciente }}</span>
               <p-tag
                 [value]="estadoLabel(row.estado)"
@@ -62,14 +60,6 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
   `,
   styles: [`
     :host ::ng-deep .ui-scheduled-drawer { width: 320px; }
-
-    .drawer-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-    }
-    .drawer-title { font-weight: 600; font-size: 1rem; }
 
     .drawer-loading,
     .drawer-empty {
@@ -88,7 +78,7 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
     }
     .drawer-row {
       display: grid;
-      grid-template-columns: 56px 1fr auto;
+      grid-template-columns: 72px 1fr auto;
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 0.75rem;
@@ -101,11 +91,17 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
     .row-hora {
       font-weight: 600;
       font-variant-numeric: tabular-nums;
+      font-size: 0.8125rem;
     }
     .row-paciente {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    :host ::ng-deep .row-estado {
+      font-size: 0.6875rem;
+      padding: 0.125rem 0.4rem;
+      line-height: 1;
     }
   `],
 })
@@ -147,6 +143,19 @@ export class ScheduledAppointmentsDrawerComponent {
    */
   protected estadoLabel(estado: string): string {
     return estado === 'Llego' ? 'Llegó' : estado;
+  }
+
+  /**
+   * Convierte 'HH:MM' 24h a '12h AM/PM'. Mantiene la UTC del backend
+   * (mismo offset que el ISO original).
+   */
+  protected horaLabel(hora24: string): string {
+    const [hStr, m] = hora24.split(':');
+    const h = Number(hStr);
+    if (!Number.isFinite(h)) return hora24;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${m} ${period}`;
   }
 
   private dispatchLoad(): void {

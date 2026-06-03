@@ -1,10 +1,18 @@
-.recepcion-toolbar {
+:host { display: block; }
+
+.recepcion-header {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 0.75rem;
 }
-
-:host { display: block; }
+.recepcion-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ds-text, #0f172a);
+}
 
 .empty-branch {
   display: flex;
