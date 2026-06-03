@@ -64,7 +64,11 @@ export class RecepcionConTotemComponent implements OnInit {
   }
 
   protected onNuevaAtencion(id: number): void {
-    this.router.navigate(['/turnos/atencion-turno', id]);
+    // Buscar el entry para extraer el dni (nationalId).
+    const entry = this.entries().find(e => e.id === id);
+    const dni = entry?.nationalId ?? null;
+    const queryParams = dni ? { dni } : {};
+    this.router.navigate(['/analitica/atencion/nueva'], { queryParams });
   }
 
   protected toggleDrawer(): void {
