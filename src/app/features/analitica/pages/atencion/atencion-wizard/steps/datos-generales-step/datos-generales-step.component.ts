@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -40,6 +40,7 @@ import {
 export class DatosGeneralesStepComponent {
   private readonly store  = inject(Store);
   private readonly router = inject(Router);
+  private readonly route  = inject(ActivatedRoute);
 
   /**
    * Atención id. Null = modo "crear nueva atención" (en `/analitica/atencion/nueva`):
@@ -52,7 +53,18 @@ export class DatosGeneralesStepComponent {
   readonly patient = signal<Patient | null>(null);
   form = { indications: '' };
 
+  /**
+   * Prioridad:
+   *   1) queryParam `dni` del URL (botón Atender en Recepción → KAN-73).
+   *   2) sessionStorage `readPendingDni()` (flujo `/pacientes/nuevo` →
+   *      vuelta al wizard preservando el DNI tipeado).
+   *
+   * clearPendingDni solo si vino de sessionStorage — el queryParam no
+   * se limpia para que un reload de la pantalla mantenga el DNI.
+   */
   initialDni(): string | null {
+    const fromQuery = this.route.snapshot.queryParamMap.get('dni');
+    if (fromQuery) return fromQuery;
     const pending = readPendingDni();
     if (pending) clearPendingDni();
     return pending;

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { provideMockStore } from '@ngrx/store/testing';
 import { DatosGeneralesStepComponent } from './datos-generales-step.component';
 import { Patient } from '@features/pacientes/models/patient.model';
@@ -26,6 +26,10 @@ describe('DatosGeneralesStepComponent', () => {
       providers: [
         provideMockStore({ selectors: [] }),
         { provide: Router, useValue: router },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: () => null } } },
+        },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(DatosGeneralesStepComponent);
