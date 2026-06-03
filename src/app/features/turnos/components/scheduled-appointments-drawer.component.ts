@@ -43,13 +43,14 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
                 [severity]="estadoSeverity(row.estado)"
                 styleClass="row-estado" />
               @if (row.estado !== 'Cancelado') {
-                <p-button
-                  icon="pi pi-arrow-right"
-                  severity="primary"
-                  [rounded]="true"
-                  size="small"
-                  (onClick)="onAtender(row.id)"
-                  [ariaLabel]="'Atender turno ' + row.id" />
+                <button
+                  type="button"
+                  class="row-atender-btn"
+                  title="Atender"
+                  (click)="onAtender(row.id)"
+                  [attr.aria-label]="'Atender turno ' + row.id">
+                  <i class="pi pi-arrow-right"></i>
+                </button>
               } @else {
                 <span class="row-action-placeholder"></span>
               }
@@ -104,18 +105,29 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
       padding: 0.125rem 0.4rem;
       line-height: 1;
     }
-    /* Forzar centrado del icono dentro del p-button rounded (PrimeNG deja
-       un slot vacio para label que descentra cuando solo hay icon). */
-    .drawer-row :host ::ng-deep p-button .p-button.p-button-rounded {
-      width: 2rem;
-      height: 2rem;
+    .row-atender-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: transparent;
+      border: none;
       padding: 0;
+      cursor: pointer;
+      color: var(--brand-primary, #3b82f6);
+      line-height: 1;
+      transition: opacity 0.15s;
     }
-    .drawer-row :host ::ng-deep p-button .p-button.p-button-rounded .p-button-label {
-      display: none;
+    .row-atender-btn:hover { opacity: 0.7; }
+    .row-atender-btn:focus-visible {
+      outline: 2px solid var(--brand-primary, #3b82f6);
+      outline-offset: 2px;
+      border-radius: 4px;
     }
+    .row-atender-btn .pi { font-size: 1rem; }
     .row-action-placeholder {
-      width: 2rem;
+      width: 1.75rem;
     }
   `],
 })
