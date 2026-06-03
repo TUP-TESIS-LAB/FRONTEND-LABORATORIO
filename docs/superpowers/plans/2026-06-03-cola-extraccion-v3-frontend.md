@@ -4,7 +4,7 @@
 
 > **Spec:** `docs/superpowers/specs/2026-06-03-cola-extraccion-v3-rediseno-design.md`
 > **Depende de:** plan backend `Backend/docs/plans/2026-06-03-cola-extraccion-v3-backend.md` (endpoints nuevos). Se puede desarrollar el FE en paralelo mockeando los services, pero la integración real necesita el BE.
-> **Jira:** _(pendiente — crear con jira-workflow antes de implementar)_
+> **Jira:** [KAN-76](https://exequielsantoro.atlassian.net/browse/KAN-76)
 
 **Goal:** Rediseñar `/analitica/extraccion` al modelo "operador único": barra de config box→extractor, dos listas en paralelo (cola | en curso múltiple), modal de "Tomar" con muestras + teclas F + deshacer 5s, y finalizar/cancelar desde la lista.
 

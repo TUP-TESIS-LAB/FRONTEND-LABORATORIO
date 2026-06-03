@@ -4,7 +4,7 @@
 > **Fecha:** 2026-06-03
 > **Rama:** `feat/cola-extraccion` (continuación de KAN-65 backend / KAN-66 frontend, ya mergeadas con development)
 > **Depende de:** v2 (cola por sucursal + box occupancy + cancel con motivo) ya en el branch.
-> **Jira:** _(pendiente — se crea con el plan vía jira-workflow)_
+> **Jira:** [KAN-75](https://exequielsantoro.atlassian.net/browse/KAN-75) (backend) · [KAN-76](https://exequielsantoro.atlassian.net/browse/KAN-76) (frontend)
 
 ---
 
