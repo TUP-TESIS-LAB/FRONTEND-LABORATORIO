@@ -104,8 +104,18 @@ import { OperatorBranchContextService } from '../services/operator-branch.contex
       padding: 0.125rem 0.4rem;
       line-height: 1;
     }
+    /* Forzar centrado del icono dentro del p-button rounded (PrimeNG deja
+       un slot vacio para label que descentra cuando solo hay icon). */
+    .drawer-row :host ::ng-deep p-button .p-button.p-button-rounded {
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+    }
+    .drawer-row :host ::ng-deep p-button .p-button.p-button-rounded .p-button-label {
+      display: none;
+    }
     .row-action-placeholder {
-      width: 32px;  /* mismo ancho que el p-button rounded small, mantiene grid alineada */
+      width: 2rem;
     }
   `],
 })
