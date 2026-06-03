@@ -29,11 +29,11 @@ export const callQueueEntryFailure = createAction(
 
 export const callAppointmentForAttention = createAction(
   '[Queue] Call Appointment For Attention',
-  props<{ appointmentId: number }>()
+  props<{ appointmentId: number; dni: string | null }>()
 );
 export const callAppointmentForAttentionSuccess = createAction(
   '[Queue] Call Appointment For Attention Success',
-  props<{ appointmentId: number }>()
+  props<{ appointmentId: number; dni: string | null }>()
 );
 export const callAppointmentForAttentionFailure = createAction(
   '[Queue] Call Appointment For Attention Failure',
