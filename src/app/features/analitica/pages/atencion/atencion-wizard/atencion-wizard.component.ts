@@ -137,11 +137,11 @@ export class AtencionWizardComponent {
    * En cuanto el usuario complete el paso 1, createBlank dispatcha y el effect del
    * store navega a /atencion/{newId}, dejando el modo "creating" automáticamente.
    */
-  protected readonly creating = computed(() =>
-    this.id() == null
-      && this.appointmentId() == null
-      && (this.router.url ?? '').endsWith('/atencion/nueva'),
-  );
+  protected readonly creating = computed(() => {
+    if (this.id() != null || this.appointmentId() != null) return false;
+    const path = (this.router.url ?? '').split('?')[0];
+    return path.endsWith('/atencion/nueva');
+  });
 
   protected readonly detail   = this.store.selectSignal(selectDetail);
   protected readonly loading  = this.store.selectSignal(selectDetailLoading);
