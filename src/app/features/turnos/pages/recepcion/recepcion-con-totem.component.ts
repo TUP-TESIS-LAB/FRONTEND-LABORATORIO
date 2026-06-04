@@ -110,7 +110,17 @@ export class RecepcionConTotemComponent implements OnInit {
   }
 
   protected rowClass(entry: QueueEntry): string {
-    return entry.publicCode.startsWith('ST') ? 'row-st' : '';
+    // CT (con turno) → fondo amarillo suave para diferenciarlos a primera
+    // vista del walk-in. ST sigue con el naranja claro existente.
+    if (entry.publicCode.startsWith('ST')) return 'row-st';
+    if (entry.appointmentId != null) return 'row-ct';
+    return '';
+  }
+
+  protected onNuevaAtencionBlanco(): void {
+    // Atencion arrancada desde cero (sin DNI prellenado) — el operador
+    // tipea todo en el wizard. NO pasa por la cola.
+    this.router.navigate(['/analitica/atencion/nueva']);
   }
 
   protected trackById = (_: number, e: QueueEntry) => e.id;
