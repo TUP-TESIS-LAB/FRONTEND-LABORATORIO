@@ -1,11 +1,11 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TvExtraccionPage } from './tv-extraccion.page';
 import { TvExtraccionMockService } from './tv-extraccion-mock.service';
 
 describe('TvExtraccionPage', () => {
-  let fixture: any;
+  let fixture: ComponentFixture<TvExtraccionPage>;
   let mockService: TvExtraccionMockService;
 
   beforeEach(async () => {
@@ -24,7 +24,7 @@ describe('TvExtraccionPage', () => {
     fixture = TestBed.createComponent(TvExtraccionPage);
     mockService = TestBed.inject(TvExtraccionMockService);
     fixture.detectChanges();
-    // Esperar el primer fetch del mock (delay 30ms).
+    // Esperar el primer fetch del mock (delay 30ms). 60ms da margen para CI.
     await new Promise(r => setTimeout(r, 60));
     fixture.detectChanges();
   });
