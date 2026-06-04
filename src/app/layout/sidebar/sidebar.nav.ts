@@ -79,6 +79,13 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         kind: 'external',
+        label: 'TV extracción',
+        icon: 'pi pi-desktop',
+        href: '/display/extraccion/lab-demo/1001',
+        chip: 'Smoke',
+      },
+      {
+        kind: 'external',
         label: 'Tótem',
         icon: 'pi pi-mobile',
         href: '/turnos/totem',
