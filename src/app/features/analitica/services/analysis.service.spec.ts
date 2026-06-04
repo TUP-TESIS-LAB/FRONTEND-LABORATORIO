@@ -43,4 +43,13 @@ describe('AnalysisService', () => {
     expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis/5');
     expect(r.nbuCode).toBe('NBU-123');
   });
+
+  it('searchByShortCodePrefix calls /api/v1/analitica/analysis?shortCodePrefix=...&limit=...', async () => {
+    http.get.mockReturnValue(of([
+      { id: 5, shortCode: 1001, name: 'Hemograma', familyName: null, ubCount: 3 },
+    ]));
+    const r = await firstValueFrom(service.searchByShortCodePrefix('100', 5));
+    expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis', { params: { shortCodePrefix: '100', limit: '5' } });
+    expect(r).toHaveLength(1);
+  });
 });

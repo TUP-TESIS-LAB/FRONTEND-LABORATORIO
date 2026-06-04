@@ -16,7 +16,6 @@ import {
   attentionStateLabel,
   attentionStateSeverity,
 } from '../../../models/atencion-state-label';
-import { AnalysisService } from '../../../services/analysis.service';
 import { loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
@@ -55,15 +54,6 @@ interface KpiTile {
             severity="primary"
             size="small"
             (onClick)="openNewAttention()" />
-          <div class="flex items-center gap-2">
-            <span class="opacity-60">Modo demo análisis</span>
-            <p-button
-              [label]="analysisService.demoMode() ? 'ON' : 'OFF'"
-              [severity]="analysisService.demoMode() ? 'success' : 'secondary'"
-              size="small"
-              [outlined]="!analysisService.demoMode()"
-              (onClick)="toggleDemoMode()" />
-          </div>
         </div>
       </header>
 
@@ -148,8 +138,6 @@ interface KpiTile {
 export class AtencionDashboardComponent implements OnInit {
   private readonly store  = inject(Store);
   private readonly router = inject(Router);
-  // Public — used directly in the template for the demo-mode toggle.
-  readonly analysisService = inject(AnalysisService);
 
   protected readonly rows    = this.store.selectSignal(selectFilteredAtenciones);
   protected readonly filters = this.store.selectSignal(selectFilters);
@@ -197,10 +185,6 @@ export class AtencionDashboardComponent implements OnInit {
 
   open(row: AttentionResponse): void {
     this.router.navigate(['/analitica/atencion', row.id]);
-  }
-
-  toggleDemoMode(): void {
-    this.analysisService.setDemoMode(!this.analysisService.demoMode());
   }
 
   /**
