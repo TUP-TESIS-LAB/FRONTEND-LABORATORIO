@@ -155,6 +155,51 @@ describe('AtencionEffects', () => {
     expect(out).toEqual(A.atencionMutationFailure({ error }));
   });
 
+  it('createPatientInline$ → create OK → patientResolved', async () => {
+    const patient = { id: 9, dni: '5' } as Patient;
+    (patients.create as ReturnType<typeof vi.fn>).mockReturnValue(of(patient));
+    actions$.next(A.createPatientInline({ payload: {} as any }));
+    const out = await firstValueFrom(effects.createPatientInline$.pipe(take(1)));
+    expect(out).toEqual(A.patientResolved({ patient }));
+  });
+
+  it('createPatientInline$ → error → patientResolutionFailure', async () => {
+    const error = new HttpErrorResponse({ status: 400 });
+    (patients.create as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.createPatientInline({ payload: {} as any }));
+    const out = await firstValueFrom(effects.createPatientInline$.pipe(take(1)));
+    expect(out).toEqual(A.patientResolutionFailure({ error }));
+  });
+
+  it('updatePatientInline$ → update OK → patientResolved', async () => {
+    const patient = { id: 9, dni: '5' } as Patient;
+    (patients.update as ReturnType<typeof vi.fn>).mockReturnValue(of(patient));
+    actions$.next(A.updatePatientInline({ id: 9, payload: {} as any }));
+    const out = await firstValueFrom(effects.updatePatientInline$.pipe(take(1)));
+    expect(out).toEqual(A.patientResolved({ patient }));
+  });
+
+  it('startAttentionForPatient$ → createBlank + assign OK → mutationSuccess + navega', async () => {
+    const created = { id: 10 } as any;
+    const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
+    (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
+    (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, indications: null }));
+    const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
+    expect(api.createBlank).toHaveBeenCalled();
+    expect(api.assignGeneralData).toHaveBeenCalledWith(10, { patientId: 5, doctorId: null, insurancePlanId: null, indications: null });
+    expect(router.navigate).toHaveBeenCalledWith(['/analitica/atencion', 10]);
+    expect(out).toEqual(A.atencionMutationSuccess({ item: assigned }));
+  });
+
+  it('startAttentionForPatient$ → createBlank falla → mutationFailure, sin navegar', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, indications: null }));
+    const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
+    expect(out).toEqual(A.atencionMutationFailure({ error }));
+  });
+
   it('resolvePatient$ → existe → patientResolved', async () => {
     const patient = { id: 5, dni: '18901234' } as Patient;
     (patients.existsByDni as ReturnType<typeof vi.fn>).mockReturnValue(of(true));

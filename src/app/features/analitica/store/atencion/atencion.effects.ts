@@ -226,11 +226,15 @@ export class AtencionEffects {
     this.actions$.pipe(
       ofType(startAttentionForPatient),
       exhaustMap(({ patientId, indications }) =>
+        // TODO(KAN-77): branchId real (multi-sucursal) y attentionNumber sin colision — hoy igual que el flujo previo
         this.api.createBlank({ branchId: 1, patientId, attentionNumber: `A-${Date.now().toString().slice(-6)}`, deskAttentionBox: null }).pipe(
           concatMap(created =>
             this.api.assignGeneralData(created.id, { patientId, doctorId: null, insurancePlanId: null, indications }).pipe(
               tap(item => this.router.navigate(['/analitica/atencion', item.id])),
               map(item => atencionMutationSuccess({ item })))),
+          // Si createBlank ok pero assignGeneralData falla, queda una atención en blanco en estado
+          // REGISTERING_GENERAL_DATA (sin paciente ni datos). El usuario puede reintentar; aceptable
+          // por ahora — no compensamos con cancel.
           catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error }))),
         ))));
 }
