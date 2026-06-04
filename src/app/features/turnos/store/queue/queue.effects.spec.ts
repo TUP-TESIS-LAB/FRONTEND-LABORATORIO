@@ -92,12 +92,18 @@ describe('QueueEffects — callAppointmentForAttention', () => {
     list: ReturnType<typeof vi.fn>;
     call: ReturnType<typeof vi.fn>;
     callByAppointment: ReturnType<typeof vi.fn>;
+    attendByAppointment: ReturnType<typeof vi.fn>;
   };
   let router: { navigate: ReturnType<typeof vi.fn> };
   let messageService: { add: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    queueService = { list: vi.fn(), call: vi.fn(), callByAppointment: vi.fn() };
+    queueService = {
+      list: vi.fn(),
+      call: vi.fn(),
+      callByAppointment: vi.fn(),
+      attendByAppointment: vi.fn(),
+    };
     router = { navigate: vi.fn() };
     messageService = { add: vi.fn() };
 
@@ -115,7 +121,7 @@ describe('QueueEffects — callAppointmentForAttention', () => {
 
   it('on success: dispatches callAppointmentForAttentionSuccess con dni', () => {
     return new Promise<void>((resolve) => {
-      queueService.callByAppointment.mockReturnValue(of({ queueEntryId: 50 }));
+      queueService.attendByAppointment.mockReturnValue(of({ id: 50, lastCalledAt: '', callCount: 1, status: 'COMPLETED' }));
       actions$ = of(callAppointmentForAttention({ appointmentId: 100, dni: '12345678' }));
 
       TestBed.inject(QueueEffects).callAppointmentForAttention$.subscribe((action) => {
@@ -155,7 +161,7 @@ describe('QueueEffects — callAppointmentForAttention', () => {
 
   it('on failure: dispatches callAppointmentForAttentionFailure and does not navigate', () => {
     return new Promise<void>((resolve) => {
-      queueService.callByAppointment.mockReturnValue(throwError(() => new Error('500')));
+      queueService.attendByAppointment.mockReturnValue(throwError(() => new Error('500')));
       actions$ = of(callAppointmentForAttention({ appointmentId: 100, dni: '12345678' }));
 
       TestBed.inject(QueueEffects).callAppointmentForAttention$.subscribe((action) => {

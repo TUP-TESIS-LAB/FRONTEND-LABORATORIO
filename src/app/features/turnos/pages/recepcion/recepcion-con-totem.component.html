@@ -1,3 +1,4 @@
+<p-confirmDialog />
 <header class="recepcion-header">
   <h2 class="recepcion-title">Cola de espera</h2>
   <p-button
@@ -44,7 +45,8 @@
             <app-queue-row-actions
               [entryId]="row.id"
               (call)="onCall(row.id)"
-              (nuevaAtencion)="onNuevaAtencion(row.id)" />
+              (nuevaAtencion)="onNuevaAtencion(row.id)"
+              (cancel)="onCancel(row.id, row.publicCode)" />
           </td>
         </tr>
       </ng-template>

@@ -13,3 +13,12 @@
   size="small"
   (onClick)="nuevaAtencion.emit()"
   [ariaLabel]="'Atender turno ' + entryId" />
+<p-button
+  icon="pi pi-times"
+  severity="danger"
+  [outlined]="true"
+  [rounded]="true"
+  size="small"
+  (onClick)="cancel.emit()"
+  pTooltip="Cancelar atención"
+  [ariaLabel]="'Cancelar atención ' + entryId" />
