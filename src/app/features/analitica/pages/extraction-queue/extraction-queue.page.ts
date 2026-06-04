@@ -114,7 +114,6 @@ const UNDO_WINDOW_MS = 5000;
           [assignments]="boxAssignments()"
           [extractors]="branchExtractors()"
           (assign)="onBoxAssign($event)"
-          (addBox)="onAddBox()"
         />
 
         <div class="columns">
@@ -260,13 +259,13 @@ const UNDO_WINDOW_MS = 5000;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
-      align-items: start;
+      align-items: stretch;
     }
     @media (max-width: 1023px) {
       .columns { grid-template-columns: 1fr; }
     }
 
-    .block { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .block { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); height: 100%; box-sizing: border-box; }
     .block__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
     .block__search { display: inline-flex; align-items: center; gap: 6px; }
     .block__search input { min-width: 220px; }
@@ -466,17 +465,6 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     const next = this.boxAssignments().map((b) =>
       b.boxNumber === ev.boxNumber ? { ...b, extractorId: ev.extractorId } : b,
     );
-    this.saveBoxes(next);
-  }
-
-  /** Agrega un box nuevo (boxNumber = max + 1, sin extractor) y persiste. */
-  onAddBox(): void {
-    const current = this.boxAssignments();
-    const maxBox = current.reduce((max, b) => Math.max(max, b.boxNumber), 0);
-    const next: BoxAssignment[] = [
-      ...current,
-      { boxNumber: maxBox + 1, extractorId: null, extractorFullName: null },
-    ];
     this.saveBoxes(next);
   }
 

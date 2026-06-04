@@ -4,12 +4,10 @@ import {
   Component,
   EventEmitter,
   Output,
-  computed,
   input,
   viewChildren,
 } from '@angular/core';
 import { MenuItem } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
 import { Menu, MenuModule } from 'primeng/menu';
 import { BoxAssignment, BranchExtractor } from '../../models/extraction.model';
 
@@ -17,17 +15,17 @@ import { BoxAssignment, BranchExtractor } from '../../models/extraction.model';
  * Barra de configuración box → extractor para una sucursal.
  *
  * Muestra cada box con su extractor asignado (o "Sin asignar") y un menú
- * desplegable para elegir/cambiar el extractor. Incluye un botón "Agregar box"
- * que emite `addBox`.
+ * desplegable para elegir/cambiar el extractor. Los boxes son definidos por
+ * el backend (via `assignments`) — no se pueden agregar manualmente.
  *
  * Componente puramente presentacional: no accede al store ni a servicios.
- * La page (Task 7) conecta los inputs desde el store y suscribe los outputs.
+ * La page conecta los inputs desde el store y suscribe los outputs.
  */
 @Component({
   selector: 'app-box-config-bar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, MenuModule, ButtonModule],
+  imports: [CommonModule, MenuModule],
   template: `
     <div class="box-config-bar">
       <div class="box-config-bar__list">
@@ -73,13 +71,6 @@ import { BoxAssignment, BranchExtractor } from '../../models/extraction.model';
         }
       </div>
 
-      <p-button
-        label="Agregar box"
-        icon="pi pi-plus"
-        severity="secondary"
-        (onClick)="onAddBox()"
-        styleClass="box-config-bar__add-btn"
-      />
     </div>
   `,
   styles: [`
@@ -180,9 +171,6 @@ import { BoxAssignment, BranchExtractor } from '../../models/extraction.model';
     }
     .box-config-bar__empty .pi { font-size: 14px; }
 
-    .box-config-bar__add-btn {
-      flex-shrink: 0;
-    }
   `],
 })
 export class BoxConfigBarComponent {
@@ -190,7 +178,6 @@ export class BoxConfigBarComponent {
   readonly extractors = input<BranchExtractor[]>([]);
 
   @Output() readonly assign = new EventEmitter<{ boxNumber: number; extractorId: number | null }>();
-  @Output() readonly addBox = new EventEmitter<void>();
 
   private readonly menus = viewChildren(Menu);
 
@@ -200,7 +187,22 @@ export class BoxConfigBarComponent {
     if (!assignment) return [];
 
     const boxNumber = assignment.boxNumber;
-    const extractorItems: MenuItem[] = this.extractors().map((ext) => ({
+    const allAssignments = this.assignments();
+
+    /**
+     * Un extractor es elegible si:
+     * - Es el que está asignado actualmente a ESTE box (para que aparezca seleccionado), O
+     * - No está asignado a ningún OTRO box (boxNumber distinto).
+     */
+    const eligibleExtractors = this.extractors().filter(
+      (ext) =>
+        ext.id === assignment.extractorId ||
+        !allAssignments.some(
+          (a) => a.boxNumber !== boxNumber && a.extractorId === ext.id,
+        ),
+    );
+
+    const extractorItems: MenuItem[] = eligibleExtractors.map((ext) => ({
       label: ext.fullName,
       icon: assignment.extractorId === ext.id ? 'pi pi-check' : 'pi pi-user',
       command: () => this.assign.emit({ boxNumber, extractorId: ext.id }),
@@ -223,9 +225,5 @@ export class BoxConfigBarComponent {
   onSelectorClick(event: MouseEvent, index: number): void {
     const allMenus = this.menus();
     allMenus[index]?.toggle(event);
-  }
-
-  onAddBox(): void {
-    this.addBox.emit();
   }
 }

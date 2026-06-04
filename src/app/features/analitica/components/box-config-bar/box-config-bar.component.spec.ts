@@ -83,29 +83,16 @@ describe('BoxConfigBarComponent', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Botón Agregar box
+  // Sin botón "Agregar box" (boxes definidos por backend)
   // -------------------------------------------------------------------------
 
-  it('renders the "Agregar box" button', () => {
+  it('does NOT render an "Agregar box" button', () => {
     const fixture = TestBed.createComponent(BoxConfigBarComponent);
     fixture.componentRef.setInput('assignments', []);
     fixture.componentRef.setInput('extractors', []);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Agregar box');
-  });
-
-  it('emits addBox when clicking "Agregar box"', () => {
-    const fixture = TestBed.createComponent(BoxConfigBarComponent);
-    fixture.componentRef.setInput('assignments', []);
-    fixture.componentRef.setInput('extractors', []);
-    fixture.detectChanges();
-
-    let count = 0;
-    fixture.componentInstance.addBox.subscribe(() => count++);
-    fixture.componentInstance.onAddBox();
-
-    expect(count).toBe(1);
+    expect(fixture.nativeElement.textContent).not.toContain('Agregar box');
   });
 
   // -------------------------------------------------------------------------
@@ -201,5 +188,65 @@ describe('BoxConfigBarComponent', () => {
 
     const items = fixture.componentInstance.menuItemsFor(99);
     expect(items).toEqual([]);
+  });
+
+  // -------------------------------------------------------------------------
+  // Menu items — exclusión de extractores ya asignados a otro box (Fix 2)
+  // -------------------------------------------------------------------------
+
+  it('extractor assigned to box 1 does NOT appear in the dropdown of box 2', () => {
+    const fixture = TestBed.createComponent(BoxConfigBarComponent);
+    fixture.componentRef.setInput('assignments', [
+      assignment({ boxNumber: 1, extractorId: 10, extractorFullName: 'Romero, Pablo' }),
+      assignment({ boxNumber: 2, extractorId: null, extractorFullName: null }),
+    ]);
+    fixture.componentRef.setInput('extractors', [
+      extractor({ id: 10, fullName: 'Romero, Pablo' }),
+      extractor({ id: 20, fullName: 'García, Marta' }),
+    ]);
+    fixture.detectChanges();
+
+    const items = fixture.componentInstance.menuItemsFor(1); // box 2
+    const labels = items.filter((i) => !i.separator).map((i) => i.label);
+    expect(labels).not.toContain('Romero, Pablo');
+    expect(labels).toContain('García, Marta');
+    expect(labels).toContain('Sin asignar');
+  });
+
+  it('extractor currently assigned to a box IS included in its own dropdown (shown as selected)', () => {
+    const fixture = TestBed.createComponent(BoxConfigBarComponent);
+    fixture.componentRef.setInput('assignments', [
+      assignment({ boxNumber: 1, extractorId: 10, extractorFullName: 'Romero, Pablo' }),
+      assignment({ boxNumber: 2, extractorId: 20, extractorFullName: 'García, Marta' }),
+    ]);
+    fixture.componentRef.setInput('extractors', [
+      extractor({ id: 10, fullName: 'Romero, Pablo' }),
+      extractor({ id: 20, fullName: 'García, Marta' }),
+    ]);
+    fixture.detectChanges();
+
+    const items = fixture.componentInstance.menuItemsFor(0); // box 1
+    const extItems = items.filter((i) => !i.separator && i.label !== 'Sin asignar');
+    expect(extItems.map((i) => i.label)).toContain('Romero, Pablo');
+    // el extractor del box 1 aparece con check (está seleccionado)
+    const romeroItem = extItems.find((i) => i.label === 'Romero, Pablo');
+    expect(romeroItem?.icon).toBe('pi pi-check');
+  });
+
+  it('"Sin asignar" always appears in every box dropdown', () => {
+    const fixture = TestBed.createComponent(BoxConfigBarComponent);
+    fixture.componentRef.setInput('assignments', [
+      assignment({ boxNumber: 1, extractorId: 10, extractorFullName: 'Romero, Pablo' }),
+      assignment({ boxNumber: 2, extractorId: null, extractorFullName: null }),
+    ]);
+    fixture.componentRef.setInput('extractors', [
+      extractor({ id: 10, fullName: 'Romero, Pablo' }),
+    ]);
+    fixture.detectChanges();
+
+    const itemsBox1 = fixture.componentInstance.menuItemsFor(0);
+    const itemsBox2 = fixture.componentInstance.menuItemsFor(1);
+    expect(itemsBox1.some((i) => i.label === 'Sin asignar')).toBe(true);
+    expect(itemsBox2.some((i) => i.label === 'Sin asignar')).toBe(true);
   });
 });

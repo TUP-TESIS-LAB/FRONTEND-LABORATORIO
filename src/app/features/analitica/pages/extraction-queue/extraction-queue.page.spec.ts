@@ -158,30 +158,4 @@ describe('ExtractionQueuePage (smoke)', () => {
     );
   });
 
-  it('onAddBox appends a box with max+1 number and dispatches saveBoxAssignments', () => {
-    configure({
-      branches,
-      selectedBranchId: 1,
-      boxAssignments: [
-        { boxNumber: 1, extractorId: null, extractorFullName: null },
-        { boxNumber: 4, extractorId: null, extractorFullName: null },
-      ],
-    });
-    const fixture = TestBed.createComponent(ExtractionQueuePage);
-    fixture.detectChanges();
-    const page = fixture.componentInstance;
-    const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    page.onAddBox();
-
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      A.saveBoxAssignments({
-        boxes: [
-          { boxNumber: 1, extractorUserId: null },
-          { boxNumber: 4, extractorUserId: null },
-          { boxNumber: 5, extractorUserId: null },
-        ],
-      }),
-    );
-  });
 });
