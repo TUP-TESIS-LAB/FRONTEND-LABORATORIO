@@ -1,5 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { AwaitingExtractionItem, BranchOption } from '../../models/extraction.model';
+import { AwaitingExtractionItem, BoxAssignment, BranchOption } from '../../models/extraction.model';
 import { EXTRACTION_FEATURE_KEY, ExtractionFeatureState } from './extraction.state';
 
 export const selectExtractionState =
@@ -7,7 +7,7 @@ export const selectExtractionState =
 
 const rawAwaiting = createSelector(selectExtractionState, (s) => s.awaiting);
 
-export const selectMine = createSelector(selectExtractionState, (s) => s.mine);
+export const selectInProgress = createSelector(selectExtractionState, (s) => s.inProgress);
 export const selectStats = createSelector(selectExtractionState, (s) => s.stats);
 export const selectSearch = createSelector(selectExtractionState, (s) => s.search);
 export const selectPending = createSelector(selectExtractionState, (s) => s.pending);
@@ -16,6 +16,10 @@ export const selectError = createSelector(selectExtractionState, (s) => s.error)
 export const selectLastRefreshAt = createSelector(
   selectExtractionState,
   (s) => (s.lastRefreshAt ? new Date(s.lastRefreshAt) : null),
+);
+export const selectLastAssigned = createSelector(
+  selectExtractionState,
+  (s) => s.lastAssigned,
 );
 
 export const selectBranches = createSelector(selectExtractionState, (s) => s.branches);
@@ -36,6 +40,27 @@ export const selectBoxOccupancy = createSelector(
   selectExtractionState,
   (s) => s.boxOccupancy,
 );
+
+export const selectBoxAssignments = createSelector(
+  selectExtractionState,
+  (s) => s.boxAssignments,
+);
+
+export const selectBranchExtractors = createSelector(
+  selectExtractionState,
+  (s) => s.branchExtractors,
+);
+
+/**
+ * Factory selector: devuelve la asignación de un box específico.
+ * Útil para mostrar qué extractor está asignado a un box dado.
+ */
+export const selectBoxFor = (boxNumber: number) =>
+  createSelector(
+    selectBoxAssignments,
+    (assignments): BoxAssignment | null =>
+      assignments.find((a) => a.boxNumber === boxNumber) ?? null,
+  );
 
 /**
  * Devuelve la fila de occupancy del usuario actual (si está ocupando un box
@@ -71,10 +96,4 @@ export const selectAwaiting = createSelector(
       item.patientDni.toLowerCase().includes(q),
     );
   },
-);
-
-/** MAX 1 extracción simultánea — regla cerrada del spec. */
-export const selectCanTakeMore = createSelector(
-  selectMine,
-  (mine) => mine.length === 0,
 );

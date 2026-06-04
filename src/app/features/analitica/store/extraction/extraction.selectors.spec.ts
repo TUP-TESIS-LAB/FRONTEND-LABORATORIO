@@ -1,15 +1,21 @@
 import {
   AwaitingExtractionItem,
+  BoxAssignment,
   BoxOccupancyItem,
+  BranchExtractor,
   BranchOption,
   InExtractionItem,
 } from '../../models/extraction.model';
 import {
   selectAwaiting,
+  selectBoxAssignments,
+  selectBoxFor,
   selectBoxIsOccupied,
+  selectBranchExtractors,
   selectBranches,
-  selectCanTakeMore,
   selectExtractionState,
+  selectInProgress,
+  selectLastAssigned,
   selectMyBoxOccupancy,
   selectSelectedBranch,
 } from './extraction.selectors';
@@ -21,15 +27,17 @@ function aw(over: Partial<AwaitingExtractionItem>): AwaitingExtractionItem {
     patientBirthDate: null, patientGender: null,
     attentionNumber: 'A-1', isUrgent: false, analysisCount: 1,
     insurancePlanLabel: null, createdAt: '', waitMinutes: 0,
+    samples: [],
     ...over,
   };
 }
-function mine(over: Partial<InExtractionItem>): InExtractionItem {
+function ip(over: Partial<InExtractionItem>): InExtractionItem {
   return {
     ...aw({}),
     attentionBox: 1,
     extractionStartedAt: '',
     extractorId: 1,
+    extractorFullName: 'Juan',
     ...over,
   };
 }
@@ -42,6 +50,12 @@ function occ(over: Partial<BoxOccupancyItem> = {}): BoxOccupancyItem {
     attentionId: 11, attentionNumber: 'A-1', ...over,
   };
 }
+function boxAsgn(over: Partial<BoxAssignment> = {}): BoxAssignment {
+  return { boxNumber: 1, extractorId: null, extractorFullName: null, ...over };
+}
+function brExtractor(over: Partial<BranchExtractor> = {}): BranchExtractor {
+  return { id: 1, fullName: 'Juan Pérez', ...over };
+}
 
 function stateWith(patch: Partial<ExtractionFeatureState>): { [EXTRACTION_FEATURE_KEY]: ExtractionFeatureState } {
   return { [EXTRACTION_FEATURE_KEY]: { ...initialExtractionState, ...patch } };
@@ -53,6 +67,7 @@ describe('extraction selectors', () => {
     expect(selectExtractionState(root).search).toBe('foo');
   });
 
+  // --- selectAwaiting -----------------------------------------------------
   it('selectAwaiting returns unfiltered items when search is empty', () => {
     const items = [aw({ id: 1 }), aw({ id: 2 })];
     const root = stateWith({ awaiting: items });
@@ -89,16 +104,60 @@ describe('extraction selectors', () => {
     expect(selectAwaiting(root).map((i) => i.id)).toEqual([1, 2, 3]);
   });
 
-  it('selectCanTakeMore is true when mine is empty', () => {
-    const root = stateWith({ mine: [] });
-    expect(selectCanTakeMore(root)).toBe(true);
+  // --- selectInProgress ---------------------------------------------------
+  it('selectInProgress returns inProgress slice', () => {
+    const list = [ip({ id: 1 }), ip({ id: 2 })];
+    const root = stateWith({ inProgress: list });
+    expect(selectInProgress(root)).toBe(list);
   });
 
-  it('selectCanTakeMore is false when mine has at least 1', () => {
-    const root = stateWith({ mine: [mine({ id: 1 })] });
-    expect(selectCanTakeMore(root)).toBe(false);
+  it('selectInProgress is empty in initial state', () => {
+    const root = stateWith({});
+    expect(selectInProgress(root)).toEqual([]);
   });
 
+  // --- selectBranchExtractors ---------------------------------------------
+  it('selectBranchExtractors returns the branchExtractors slice', () => {
+    const list = [brExtractor({ id: 1 }), brExtractor({ id: 2, fullName: 'María García' })];
+    const root = stateWith({ branchExtractors: list });
+    expect(selectBranchExtractors(root)).toBe(list);
+  });
+
+  // --- selectBoxAssignments -----------------------------------------------
+  it('selectBoxAssignments returns the boxAssignments slice', () => {
+    const list = [boxAsgn({ boxNumber: 1 }), boxAsgn({ boxNumber: 2, extractorId: 5, extractorFullName: 'Ana' })];
+    const root = stateWith({ boxAssignments: list });
+    expect(selectBoxAssignments(root)).toBe(list);
+  });
+
+  // --- selectBoxFor -------------------------------------------------------
+  it('selectBoxFor returns the assignment for the given boxNumber', () => {
+    const list = [
+      boxAsgn({ boxNumber: 1, extractorId: 99, extractorFullName: 'Juan' }),
+      boxAsgn({ boxNumber: 2 }),
+    ];
+    const root = stateWith({ boxAssignments: list });
+    const result = selectBoxFor(1)(root);
+    expect(result).toEqual({ boxNumber: 1, extractorId: 99, extractorFullName: 'Juan' });
+  });
+
+  it('selectBoxFor returns null when boxNumber is not found', () => {
+    const root = stateWith({ boxAssignments: [boxAsgn({ boxNumber: 1 })] });
+    expect(selectBoxFor(99)(root)).toBeNull();
+  });
+
+  // --- selectLastAssigned -------------------------------------------------
+  it('selectLastAssigned returns null in initial state', () => {
+    expect(selectLastAssigned(stateWith({}))).toBeNull();
+  });
+
+  it('selectLastAssigned returns the stored lastAssigned value', () => {
+    const lastAssigned = { attentionId: 10, boxNumber: 2, extractorFullName: 'María García' };
+    const root = stateWith({ lastAssigned });
+    expect(selectLastAssigned(root)).toEqual(lastAssigned);
+  });
+
+  // --- selectBranches / selectSelectedBranch ------------------------------
   it('selectBranches returns the branches slice', () => {
     const list = [br({ id: 1 }), br({ id: 2, name: 'Sucursal Sur' })];
     const root = stateWith({ branches: list });
@@ -116,6 +175,7 @@ describe('extraction selectors', () => {
     expect(selectSelectedBranch(root)).toBeNull();
   });
 
+  // --- selectMyBoxOccupancy / selectBoxIsOccupied -------------------------
   it('selectMyBoxOccupancy returns the row where extractorId matches', () => {
     const rows = [occ({ box: 1, extractorId: 100 }), occ({ box: 3, extractorId: 50 })];
     const root = stateWith({ boxOccupancy: rows });

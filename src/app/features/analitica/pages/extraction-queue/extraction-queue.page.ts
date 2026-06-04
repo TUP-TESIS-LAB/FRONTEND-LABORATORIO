@@ -37,8 +37,8 @@ import {
   selectAwaiting,
   selectBoxOccupancy,
   selectBranches,
+  selectInProgress,
   selectLastRefreshAt,
-  selectMine,
   selectMutating,
   selectSelectedBranch,
   selectSelectedBranchId,
@@ -279,7 +279,7 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
   readonly pollIntervalMs = POLL_INTERVAL_MS;
 
   readonly awaiting = this.store.selectSignal(selectAwaiting);
-  readonly mine = this.store.selectSignal(selectMine);
+  readonly mine = this.store.selectSignal(selectInProgress);
   readonly stats = this.store.selectSignal(selectStats);
   readonly mutating = this.store.selectSignal(selectMutating);
   readonly lastRefreshAt = this.store.selectSignal(selectLastRefreshAt);
@@ -424,7 +424,7 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     this.boxService.setBox(payload.box);
     this.store.dispatch(A.assignExtractor({
       id: patient.id,
-      box: payload.box,
+      boxNumber: payload.box,
       branchId,
     }));
   }

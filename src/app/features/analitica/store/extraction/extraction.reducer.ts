@@ -35,9 +35,11 @@ export const extractionReducer = createReducer(
       ...s,
       selectedBranchId: branchId,
       awaiting: [],
-      mine: [],
+      inProgress: [],
       stats: null,
       boxOccupancy: [],
+      boxAssignments: [],
+      branchExtractors: [],
       error: null,
     };
   }),
@@ -59,20 +61,20 @@ export const extractionReducer = createReducer(
     error: extractErrorText(error),
   })),
 
-  // --- Mine --------------------------------------------------------------
-  on(A.loadMine, (s): ExtractionFeatureState => setPending(s, { mine: true })),
-  on(A.loadMineSuccess, (s, { items }): ExtractionFeatureState => ({
-    ...setPending(s, { mine: false }),
-    mine: items,
+  // --- InProgress --------------------------------------------------------
+  on(A.loadInProgress, (s): ExtractionFeatureState => setPending(s, { inProgress: true })),
+  on(A.loadInProgressSuccess, (s, { items }): ExtractionFeatureState => ({
+    ...setPending(s, { inProgress: false }),
+    inProgress: items,
     lastRefreshAt: Date.now(),
     error: null,
   })),
-  on(A.loadMineNotModified, (s): ExtractionFeatureState => ({
-    ...setPending(s, { mine: false }),
+  on(A.loadInProgressNotModified, (s): ExtractionFeatureState => ({
+    ...setPending(s, { inProgress: false }),
     lastRefreshAt: Date.now(),
   })),
-  on(A.loadMineFailure, (s, { error }): ExtractionFeatureState => ({
-    ...setPending(s, { mine: false }),
+  on(A.loadInProgressFailure, (s, { error }): ExtractionFeatureState => ({
+    ...setPending(s, { inProgress: false }),
     error: extractErrorText(error),
   })),
 
@@ -110,20 +112,82 @@ export const extractionReducer = createReducer(
     error: extractErrorText(error),
   })),
 
+  // --- Box assignments ---------------------------------------------------
+  on(A.loadBoxAssignments, (s): ExtractionFeatureState => setPending(s, { boxAssignments: true })),
+  on(A.loadBoxAssignmentsSuccess, (s, { items }): ExtractionFeatureState => ({
+    ...setPending(s, { boxAssignments: false }),
+    boxAssignments: items,
+    error: null,
+  })),
+  on(A.loadBoxAssignmentsNotModified, (s): ExtractionFeatureState =>
+    setPending(s, { boxAssignments: false }),
+  ),
+  on(A.loadBoxAssignmentsFailure, (s, { error }): ExtractionFeatureState => ({
+    ...setPending(s, { boxAssignments: false }),
+    error: extractErrorText(error),
+  })),
+
+  on(A.saveBoxAssignments, (s): ExtractionFeatureState => setPending(s, { mutation: true })),
+  on(A.saveBoxAssignmentsSuccess, (s, { items }): ExtractionFeatureState => ({
+    ...setPending(s, { mutation: false }),
+    boxAssignments: items,
+    error: null,
+  })),
+  on(A.saveBoxAssignmentsFailure, (s, { error }): ExtractionFeatureState => ({
+    ...setPending(s, { mutation: false }),
+    error: extractErrorText(error),
+  })),
+
+  // --- Branch extractors -------------------------------------------------
+  on(A.loadBranchExtractors, (s): ExtractionFeatureState =>
+    setPending(s, { branchExtractors: true }),
+  ),
+  on(A.loadBranchExtractorsSuccess, (s, { items }): ExtractionFeatureState => ({
+    ...setPending(s, { branchExtractors: false }),
+    branchExtractors: items,
+    error: null,
+  })),
+  on(A.loadBranchExtractorsNotModified, (s): ExtractionFeatureState =>
+    setPending(s, { branchExtractors: false }),
+  ),
+  on(A.loadBranchExtractorsFailure, (s, { error }): ExtractionFeatureState => ({
+    ...setPending(s, { branchExtractors: false }),
+    error: extractErrorText(error),
+  })),
+
   // --- UI ----------------------------------------------------------------
   on(A.setSearch, (s, { search }): ExtractionFeatureState => ({ ...s, search })),
 
   // --- Mutations ---------------------------------------------------------
   on(
-    A.assignExtractor, A.cancelExtraction, A.endExtraction,
+    A.assignExtractor, A.cancelExtraction, A.endExtraction, A.unassignExtraction,
     (s): ExtractionFeatureState => setPending(s, { mutation: true }),
   ),
+
+  /**
+   * assignExtractorSuccess: guarda lastAssigned para que la page (Task 7) arme
+   * el toast de undo. NO toca inProgress directamente; el refresh posterior lo trae.
+   */
+  on(A.assignExtractorSuccess, (s, { attentionId, boxNumber, extractorFullName }): ExtractionFeatureState => ({
+    ...setPending(s, { mutation: false }),
+    lastAssigned: { attentionId, boxNumber, extractorFullName },
+    error: null,
+  })),
+
+  /** unassignExtractionSuccess: limpia lastAssigned. */
+  on(A.unassignExtractionSuccess, (s): ExtractionFeatureState => ({
+    ...setPending(s, { mutation: false }),
+    lastAssigned: null,
+    error: null,
+  })),
+
   on(
-    A.assignExtractorSuccess, A.cancelExtractionSuccess, A.endExtractionSuccess,
+    A.cancelExtractionSuccess, A.endExtractionSuccess,
     (s): ExtractionFeatureState => setPending(s, { mutation: false }),
   ),
   on(
     A.assignExtractorFailure, A.cancelExtractionFailure, A.endExtractionFailure,
+    A.unassignExtractionFailure,
     (s, { error }): ExtractionFeatureState => ({
       ...setPending(s, { mutation: false }),
       error: extractErrorText(error),

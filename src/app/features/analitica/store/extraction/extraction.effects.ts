@@ -18,17 +18,23 @@ import {
 import { NotModified, isNotModified } from '@core/refresh';
 import { NotificationService } from '@core/services/notification.service';
 import { ExtractorBoxService } from '@core/services/extractor-box.service';
+import { TokenService } from '@core/auth/token.service';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import { ExtractorAttentionService } from '../../services/extractor-attention.service';
 import {
   AwaitingExtractionItem,
+  BoxAssignment,
   BoxOccupancyItem,
+  BranchExtractor,
   BranchOption,
   ExtractionStats,
   InExtractionItem,
 } from '../../models/extraction.model';
 import * as A from './extraction.actions';
-import { selectSelectedBranchId } from './extraction.selectors';
+import {
+  selectBranchExtractors,
+  selectSelectedBranchId,
+} from './extraction.selectors';
 
 @Injectable()
 export class ExtractionEffects {
@@ -37,8 +43,12 @@ export class ExtractionEffects {
   private readonly notifier = inject(NotificationService);
   private readonly store = inject(Store);
   private readonly boxService = inject(ExtractorBoxService);
+  private readonly tokenService = inject(TokenService);
 
-  // refreshAll dispara los 4 loads cuando hay sucursal seleccionada.
+  /**
+   * refreshAll dispara los loads cuando hay sucursal seleccionada.
+   * v3: incluye loadBoxAssignments + loadInProgress + loadAwaiting (+ stats, occupancy).
+   */
   refreshAll$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.refreshAll),
@@ -47,20 +57,24 @@ export class ExtractionEffects {
         if (branchId == null) return EMPTY;
         return of(
           A.loadAwaiting(),
-          A.loadMine(),
+          A.loadInProgress(),
           A.loadStats(),
           A.loadOccupancy(),
+          A.loadBoxAssignments(),
         );
       }),
     ),
   );
 
-  // Al cambiar la sucursal seleccionada, refrescamos todo.
+  /**
+   * Al cambiar la sucursal seleccionada, refrescamos todo + cargamos extractors
+   * y box assignments de la nueva sucursal.
+   */
   branchChangeRefresh$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.setSelectedBranch),
       filter(({ branchId }) => branchId != null),
-      map(() => A.refreshAll()),
+      mergeMap(() => of(A.refreshAll(), A.loadBranchExtractors(), A.loadBoxAssignments())),
     ),
   );
 
@@ -98,19 +112,19 @@ export class ExtractionEffects {
     ),
   );
 
-  loadMine$ = createEffect(() =>
+  loadInProgress$ = createEffect(() =>
     this.actions$.pipe(
-      ofType(A.loadMine),
+      ofType(A.loadInProgress),
       withLatestFrom(this.store.select(selectSelectedBranchId)),
       switchMap(([, branchId]) => {
         if (branchId == null) return EMPTY;
         return this.api.getMine(branchId).pipe(
           map((r) => mapLoad<InExtractionItem[]>(
             r,
-            (items) => A.loadMineSuccess({ items }),
-            () => A.loadMineNotModified(),
+            (items) => A.loadInProgressSuccess({ items }),
+            () => A.loadInProgressNotModified(),
           )),
-          catchError((error: HttpErrorResponse) => of(A.loadMineFailure({ error }))),
+          catchError((error: HttpErrorResponse) => of(A.loadInProgressFailure({ error }))),
         );
       }),
     ),
@@ -152,13 +166,69 @@ export class ExtractionEffects {
     ),
   );
 
+  loadBoxAssignments$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.loadBoxAssignments),
+      withLatestFrom(this.store.select(selectSelectedBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getBoxAssignments(branchId).pipe(
+          map((r) => mapLoad<BoxAssignment[]>(
+            r,
+            (items) => A.loadBoxAssignmentsSuccess({ items }),
+            () => A.loadBoxAssignmentsNotModified(),
+          )),
+          catchError((error: HttpErrorResponse) => of(A.loadBoxAssignmentsFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  loadBranchExtractors$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.loadBranchExtractors),
+      withLatestFrom(this.store.select(selectSelectedBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getBranchExtractors(branchId).pipe(
+          map((r) => mapLoad<BranchExtractor[]>(
+            r,
+            (items) => A.loadBranchExtractorsSuccess({ items }),
+            () => A.loadBranchExtractorsNotModified(),
+          )),
+          catchError((error: HttpErrorResponse) => of(A.loadBranchExtractorsFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
   // --- Mutations -----------------------------------------------------------
   assignExtractor$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.assignExtractor),
-      exhaustMap(({ id, box, branchId }) => this.api.assignExtractor(id, box, branchId).pipe(
-        map(() => A.assignExtractorSuccess({ id })),
-        catchError((error: HttpErrorResponse) => of(A.assignExtractorFailure({ error }))),
+      withLatestFrom(this.store.select(selectBranchExtractors)),
+      exhaustMap(([{ id, boxNumber, branchId }, extractors]) => {
+        const myUserId = this.tokenService.getUserId();
+        const extractorFullName =
+          extractors.find((e) => e.id === myUserId)?.fullName ?? '';
+        return this.api.assignExtractor(id, boxNumber, branchId).pipe(
+          map(() => A.assignExtractorSuccess({
+            attentionId: id,
+            boxNumber,
+            extractorFullName,
+          })),
+          catchError((error: HttpErrorResponse) => of(A.assignExtractorFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  unassignExtraction$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.unassignExtraction),
+      exhaustMap(({ id }) => this.api.unassignExtraction(id).pipe(
+        map(() => A.unassignExtractionSuccess({ id })),
+        catchError((error: HttpErrorResponse) => of(A.unassignExtractionFailure({ error }))),
       )),
     ),
   );
@@ -183,13 +253,29 @@ export class ExtractionEffects {
     ),
   );
 
-  // Toda mutation exitosa refresca toda la pantalla (incluye occupancy).
+  saveBoxAssignments$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.saveBoxAssignments),
+      withLatestFrom(this.store.select(selectSelectedBranchId)),
+      exhaustMap(([{ boxes }, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.saveBoxAssignments(branchId, boxes).pipe(
+          map((items) => A.saveBoxAssignmentsSuccess({ items })),
+          catchError((error: HttpErrorResponse) => of(A.saveBoxAssignmentsFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  /** Toda mutation exitosa refresca toda la pantalla. */
   mutationRefresh$ = createEffect(() =>
     this.actions$.pipe(
       ofType(
         A.assignExtractorSuccess,
+        A.unassignExtractionSuccess,
         A.cancelExtractionSuccess,
         A.endExtractionSuccess,
+        A.saveBoxAssignmentsSuccess,
       ),
       map(() => A.refreshAll()),
     ),
@@ -199,7 +285,10 @@ export class ExtractionEffects {
   branchAccessDenied$ = createEffect(() =>
     this.actions$.pipe(
       ofType(
-        A.loadAwaitingFailure, A.loadMineFailure, A.loadStatsFailure, A.loadOccupancyFailure,
+        A.loadAwaitingFailure,
+        A.loadInProgressFailure,
+        A.loadStatsFailure,
+        A.loadOccupancyFailure,
       ),
       filter((a: { error: HttpErrorResponse }) => a.error.status === 403),
       take(1),
@@ -220,8 +309,10 @@ export class ExtractionEffects {
     this.actions$.pipe(
       ofType(
         A.assignExtractorSuccess, A.assignExtractorFailure,
+        A.unassignExtractionSuccess, A.unassignExtractionFailure,
         A.cancelExtractionSuccess, A.cancelExtractionFailure,
         A.endExtractionSuccess, A.endExtractionFailure,
+        A.saveBoxAssignmentsSuccess, A.saveBoxAssignmentsFailure,
       ),
       tap((action: Action) => this.toastForMutation(action)),
     ),
@@ -243,13 +334,19 @@ export class ExtractionEffects {
   private toastForMutation(action: Action): void {
     switch (action.type) {
       case A.assignExtractorSuccess.type:
-        this.notifier.success('Tomaste la extracción correctamente.');
+        // El toast de undo con timer de 5s lo arma la page (Task 7) observando lastAssigned.
+        return;
+      case A.unassignExtractionSuccess.type:
+        this.notifier.success('Extracción desasignada.');
         return;
       case A.cancelExtractionSuccess.type:
         this.notifier.success('Extracción cancelada.');
         return;
       case A.endExtractionSuccess.type:
         this.notifier.success('Extracción finalizada.');
+        return;
+      case A.saveBoxAssignmentsSuccess.type:
+        this.notifier.success('Asignación de boxes guardada.');
         return;
       case A.assignExtractorFailure.type: {
         const err = (action as ReturnType<typeof A.assignExtractorFailure>).error;
@@ -262,6 +359,13 @@ export class ExtractionEffects {
           },
         });
         this.notifier.error(msg);
+        return;
+      }
+      case A.unassignExtractionFailure.type: {
+        const err = (action as ReturnType<typeof A.unassignExtractionFailure>).error;
+        this.notifier.error(humanizeBackendError(err, {
+          fallback: 'No pudimos desasignar la extracción.',
+        }));
         return;
       }
       case A.cancelExtractionFailure.type: {
@@ -279,6 +383,13 @@ export class ExtractionEffects {
         const err = (action as ReturnType<typeof A.endExtractionFailure>).error;
         this.notifier.error(humanizeBackendError(err, {
           fallback: 'No pudimos finalizar la extracción.',
+        }));
+        return;
+      }
+      case A.saveBoxAssignmentsFailure.type: {
+        const err = (action as ReturnType<typeof A.saveBoxAssignmentsFailure>).error;
+        this.notifier.error(humanizeBackendError(err, {
+          fallback: 'No pudimos guardar la asignación de boxes.',
         }));
         return;
       }

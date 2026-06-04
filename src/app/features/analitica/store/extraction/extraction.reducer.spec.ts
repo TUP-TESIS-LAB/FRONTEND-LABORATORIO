@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   AwaitingExtractionItem,
+  BoxAssignment,
   BoxOccupancyItem,
+  BranchExtractor,
   BranchOption,
   ExtractionStats,
   InExtractionItem,
@@ -16,15 +18,17 @@ function awaitingItem(over: Partial<AwaitingExtractionItem> = {}): AwaitingExtra
     patientBirthDate: null, patientGender: null,
     attentionNumber: 'A-1', isUrgent: false, analysisCount: 2,
     insurancePlanLabel: null, createdAt: '2026-01-01T00:00:00Z', waitMinutes: 5,
+    samples: [],
     ...over,
   };
 }
-function mineItem(over: Partial<InExtractionItem> = {}): InExtractionItem {
+function inProgressItem(over: Partial<InExtractionItem> = {}): InExtractionItem {
   return {
     ...awaitingItem(),
     attentionBox: 1,
     extractionStartedAt: '2026-01-01T00:05:00Z',
     extractorId: 99,
+    extractorFullName: 'Juan Pérez',
     ...over,
   };
 }
@@ -41,8 +45,15 @@ function occItem(over: Partial<BoxOccupancyItem> = {}): BoxOccupancyItem {
     ...over,
   };
 }
+function boxAssignment(over: Partial<BoxAssignment> = {}): BoxAssignment {
+  return { boxNumber: 1, extractorId: null, extractorFullName: null, ...over };
+}
+function branchExtractor(over: Partial<BranchExtractor> = {}): BranchExtractor {
+  return { id: 99, fullName: 'Juan Pérez', ...over };
+}
 
 describe('extractionReducer', () => {
+  // --- Awaiting -----------------------------------------------------------
   it('loadAwaiting sets pending.awaiting=true', () => {
     const out = extractionReducer(initialExtractionState, A.loadAwaiting());
     expect(out.pending.awaiting).toBe(true);
@@ -72,30 +83,145 @@ describe('extractionReducer', () => {
     expect(out.pending.awaiting).toBe(false);
   });
 
-  it('loadMineSuccess + loadMineNotModified handle mine list', () => {
-    const items = [mineItem({ id: 3 })];
-    const s1 = extractionReducer(initialExtractionState, A.loadMineSuccess({ items }));
-    expect(s1.mine).toBe(items);
-    const s2 = extractionReducer(s1, A.loadMineNotModified());
-    expect(s2.mine).toBe(items);
+  // --- InProgress ---------------------------------------------------------
+  it('loadInProgress sets pending.inProgress=true', () => {
+    const out = extractionReducer(initialExtractionState, A.loadInProgress());
+    expect(out.pending.inProgress).toBe(true);
   });
 
+  it('loadInProgressSuccess stores items, clears pending, sets lastRefreshAt', () => {
+    const items = [inProgressItem({ id: 3 })];
+    const start = { ...initialExtractionState, pending: { ...initialExtractionState.pending, inProgress: true } };
+    const out = extractionReducer(start, A.loadInProgressSuccess({ items }));
+    expect(out.inProgress).toBe(items);
+    expect(out.pending.inProgress).toBe(false);
+    expect(out.lastRefreshAt).not.toBeNull();
+  });
+
+  it('loadInProgressNotModified keeps existing inProgress list and bumps lastRefreshAt', () => {
+    const items = [inProgressItem({ id: 5 })];
+    const start = { ...initialExtractionState, inProgress: items };
+    const out = extractionReducer(start, A.loadInProgressNotModified());
+    expect(out.inProgress).toBe(items);
+    expect(out.lastRefreshAt).not.toBeNull();
+  });
+
+  it('loadInProgressFailure stores error and clears pending', () => {
+    const error = new HttpErrorResponse({ status: 500, statusText: 'X' });
+    const out = extractionReducer(initialExtractionState, A.loadInProgressFailure({ error }));
+    expect(out.error).not.toBeNull();
+    expect(out.pending.inProgress).toBe(false);
+  });
+
+  // --- Stats --------------------------------------------------------------
   it('loadStatsSuccess stores stats', () => {
     const stats: ExtractionStats = { queueSize: 4, averageWaitMinutes: 10, finishedTodayByMe: 2 };
     const out = extractionReducer(initialExtractionState, A.loadStatsSuccess({ stats }));
     expect(out.stats).toEqual(stats);
   });
 
+  // --- BoxAssignments -----------------------------------------------------
+  it('loadBoxAssignments sets pending.boxAssignments=true', () => {
+    const out = extractionReducer(initialExtractionState, A.loadBoxAssignments());
+    expect(out.pending.boxAssignments).toBe(true);
+  });
+
+  it('loadBoxAssignmentsSuccess stores items and clears pending', () => {
+    const items = [boxAssignment({ boxNumber: 1 }), boxAssignment({ boxNumber: 2, extractorId: 99, extractorFullName: 'Juan' })];
+    const start = { ...initialExtractionState, pending: { ...initialExtractionState.pending, boxAssignments: true } };
+    const out = extractionReducer(start, A.loadBoxAssignmentsSuccess({ items }));
+    expect(out.boxAssignments).toBe(items);
+    expect(out.pending.boxAssignments).toBe(false);
+  });
+
+  it('loadBoxAssignmentsNotModified clears pending', () => {
+    const items = [boxAssignment()];
+    const start = { ...initialExtractionState, boxAssignments: items, pending: { ...initialExtractionState.pending, boxAssignments: true } };
+    const out = extractionReducer(start, A.loadBoxAssignmentsNotModified());
+    expect(out.boxAssignments).toBe(items);
+    expect(out.pending.boxAssignments).toBe(false);
+  });
+
+  it('loadBoxAssignmentsFailure stores error and clears pending', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const out = extractionReducer(initialExtractionState, A.loadBoxAssignmentsFailure({ error }));
+    expect(out.error).not.toBeNull();
+    expect(out.pending.boxAssignments).toBe(false);
+  });
+
+  it('saveBoxAssignmentsSuccess updates boxAssignments and clears mutation pending', () => {
+    const items = [boxAssignment({ boxNumber: 1, extractorId: 99, extractorFullName: 'Juan' })];
+    const start = { ...initialExtractionState, pending: { ...initialExtractionState.pending, mutation: true } };
+    const out = extractionReducer(start, A.saveBoxAssignmentsSuccess({ items }));
+    expect(out.boxAssignments).toBe(items);
+    expect(out.pending.mutation).toBe(false);
+  });
+
+  // --- BranchExtractors ---------------------------------------------------
+  it('loadBranchExtractors sets pending.branchExtractors=true', () => {
+    const out = extractionReducer(initialExtractionState, A.loadBranchExtractors());
+    expect(out.pending.branchExtractors).toBe(true);
+  });
+
+  it('loadBranchExtractorsSuccess stores items and clears pending', () => {
+    const items = [branchExtractor({ id: 1 }), branchExtractor({ id: 2, fullName: 'María García' })];
+    const start = { ...initialExtractionState, pending: { ...initialExtractionState.pending, branchExtractors: true } };
+    const out = extractionReducer(start, A.loadBranchExtractorsSuccess({ items }));
+    expect(out.branchExtractors).toBe(items);
+    expect(out.pending.branchExtractors).toBe(false);
+  });
+
+  it('loadBranchExtractorsNotModified clears pending', () => {
+    const items = [branchExtractor()];
+    const start = { ...initialExtractionState, branchExtractors: items, pending: { ...initialExtractionState.pending, branchExtractors: true } };
+    const out = extractionReducer(start, A.loadBranchExtractorsNotModified());
+    expect(out.branchExtractors).toBe(items);
+    expect(out.pending.branchExtractors).toBe(false);
+  });
+
+  it('loadBranchExtractorsFailure stores error and clears pending', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const out = extractionReducer(initialExtractionState, A.loadBranchExtractorsFailure({ error }));
+    expect(out.error).not.toBeNull();
+    expect(out.pending.branchExtractors).toBe(false);
+  });
+
+  // --- UI -----------------------------------------------------------------
   it('setSearch updates search', () => {
     const out = extractionReducer(initialExtractionState, A.setSearch({ search: 'lopez' }));
     expect(out.search).toBe('lopez');
   });
 
-  it('assignExtractor sets mutation pending, success clears it', () => {
-    const s1 = extractionReducer(initialExtractionState, A.assignExtractor({ id: 1, box: 2, branchId: 7 }));
+  // --- Mutations ----------------------------------------------------------
+  it('assignExtractor sets mutation pending', () => {
+    const s1 = extractionReducer(initialExtractionState, A.assignExtractor({ id: 1, boxNumber: 2, branchId: 7 }));
     expect(s1.pending.mutation).toBe(true);
-    const s2 = extractionReducer(s1, A.assignExtractorSuccess({ id: 1 }));
-    expect(s2.pending.mutation).toBe(false);
+  });
+
+  it('assignExtractorSuccess saves lastAssigned and clears mutation pending (does NOT touch inProgress)', () => {
+    const withPending = { ...initialExtractionState, pending: { ...initialExtractionState.pending, mutation: true } };
+    const items = [inProgressItem({ id: 10 })];
+    const withItems = { ...withPending, inProgress: items };
+    const out = extractionReducer(withItems, A.assignExtractorSuccess({
+      attentionId: 10,
+      boxNumber: 2,
+      extractorFullName: 'María García',
+    }));
+    expect(out.pending.mutation).toBe(false);
+    expect(out.lastAssigned).toEqual({ attentionId: 10, boxNumber: 2, extractorFullName: 'María García' });
+    // inProgress queda intacto; el refresh posterior lo actualiza
+    expect(out.inProgress).toBe(items);
+  });
+
+  it('unassignExtractionSuccess clears lastAssigned and mutation pending', () => {
+    const start = {
+      ...initialExtractionState,
+      pending: { ...initialExtractionState.pending, mutation: true },
+      lastAssigned: { attentionId: 5, boxNumber: 1, extractorFullName: 'Juan' },
+    };
+    const out = extractionReducer(start, A.unassignExtractionSuccess({ id: 5 }));
+    expect(out.lastAssigned).toBeNull();
+    expect(out.pending.mutation).toBe(false);
   });
 
   it('cancel + end mutations toggle pending', () => {
@@ -110,6 +236,12 @@ describe('extractionReducer', () => {
     expect(s4.pending.mutation).toBe(false);
   });
 
+  it('unassignExtraction sets mutation pending', () => {
+    const out = extractionReducer(initialExtractionState, A.unassignExtraction({ id: 5 }));
+    expect(out.pending.mutation).toBe(true);
+  });
+
+  // --- Branches -----------------------------------------------------------
   it('loadBranchesSuccess stores branches and clears pending', () => {
     const items = [branch({ id: 1 }), branch({ id: 2, code: 'SUR', name: 'Sucursal Sur' })];
     const start = { ...initialExtractionState, pending: { ...initialExtractionState.pending, branches: true } };
@@ -122,17 +254,21 @@ describe('extractionReducer', () => {
     const start = {
       ...initialExtractionState,
       awaiting: [awaitingItem({ id: 9 })],
-      mine: [mineItem({ id: 10 })],
+      inProgress: [inProgressItem({ id: 10 })],
       stats: { queueSize: 5, averageWaitMinutes: 3, finishedTodayByMe: 1 },
       boxOccupancy: [occItem()],
+      boxAssignments: [boxAssignment()],
+      branchExtractors: [branchExtractor()],
       selectedBranchId: 1,
     };
     const out = extractionReducer(start, A.setSelectedBranch({ branchId: 2 }));
     expect(out.selectedBranchId).toBe(2);
     expect(out.awaiting).toEqual([]);
-    expect(out.mine).toEqual([]);
+    expect(out.inProgress).toEqual([]);
     expect(out.stats).toBeNull();
     expect(out.boxOccupancy).toEqual([]);
+    expect(out.boxAssignments).toEqual([]);
+    expect(out.branchExtractors).toEqual([]);
   });
 
   it('setSelectedBranch with same id is a no-op', () => {
