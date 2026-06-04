@@ -9,7 +9,7 @@ function sample(): AwaitingExtractionItem {
     id: 1, patientId: 10, patientFullName: 'Ana',
     patientDni: '111', patientBirthDate: null, patientGender: null,
     attentionNumber: 'A-1', isUrgent: false, analysisCount: 2,
-    insurancePlanLabel: null, createdAt: '', waitMinutes: 0,
+    insurancePlanLabel: null, createdAt: '', waitMinutes: 0, samples: [],
   };
 }
 

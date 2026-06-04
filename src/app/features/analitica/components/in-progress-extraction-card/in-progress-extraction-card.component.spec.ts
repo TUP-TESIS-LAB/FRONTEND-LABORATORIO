@@ -12,6 +12,8 @@ function mineItem(over: Partial<InExtractionItem> = {}): InExtractionItem {
     attentionBox: 3,
     extractionStartedAt: new Date(Date.now() - 8 * 60_000).toISOString(),
     extractorId: 50,
+    extractorFullName: 'Extractor Prueba',
+    samples: [],
     ...over,
   };
 }

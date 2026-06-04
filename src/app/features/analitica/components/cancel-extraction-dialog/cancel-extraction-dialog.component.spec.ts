@@ -9,7 +9,7 @@ function mineItem(): InExtractionItem {
     patientBirthDate: null, patientGender: null,
     attentionNumber: 'A-1', isUrgent: false, analysisCount: 2,
     insurancePlanLabel: null, createdAt: '', waitMinutes: 0,
-    attentionBox: 3, extractionStartedAt: '', extractorId: 50,
+    attentionBox: 3, extractionStartedAt: '', extractorId: 50, extractorFullName: 'Extractor', samples: [],
   };
 }
 
