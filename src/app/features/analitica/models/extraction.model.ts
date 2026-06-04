@@ -34,11 +34,6 @@ export interface ExtractionStats {
   finishedTodayByMe: number;
 }
 
-export interface AssignExtractorRequest {
-  attentionBox: number;
-  branchId: number;
-}
-
 export interface CancelExtractionRequest {
   reason: string;
 }

@@ -1,5 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { AwaitingExtractionItem, BoxAssignment, BranchOption } from '../../models/extraction.model';
+import { AwaitingExtractionItem, BranchOption } from '../../models/extraction.model';
 import { EXTRACTION_FEATURE_KEY, ExtractionFeatureState } from './extraction.state';
 
 export const selectExtractionState =
@@ -50,17 +50,6 @@ export const selectBranchExtractors = createSelector(
   selectExtractionState,
   (s) => s.branchExtractors,
 );
-
-/**
- * Factory selector: devuelve la asignación de un box específico.
- * Útil para mostrar qué extractor está asignado a un box dado.
- */
-export const selectBoxFor = (boxNumber: number) =>
-  createSelector(
-    selectBoxAssignments,
-    (assignments): BoxAssignment | null =>
-      assignments.find((a) => a.boxNumber === boxNumber) ?? null,
-  );
 
 /**
  * Devuelve la fila de occupancy del usuario actual (si está ocupando un box

@@ -9,7 +9,6 @@ import {
 import {
   selectAwaiting,
   selectBoxAssignments,
-  selectBoxFor,
   selectBoxIsOccupied,
   selectBranchExtractors,
   selectBranches,
@@ -128,22 +127,6 @@ describe('extraction selectors', () => {
     const list = [boxAsgn({ boxNumber: 1 }), boxAsgn({ boxNumber: 2, extractorId: 5, extractorFullName: 'Ana' })];
     const root = stateWith({ boxAssignments: list });
     expect(selectBoxAssignments(root)).toBe(list);
-  });
-
-  // --- selectBoxFor -------------------------------------------------------
-  it('selectBoxFor returns the assignment for the given boxNumber', () => {
-    const list = [
-      boxAsgn({ boxNumber: 1, extractorId: 99, extractorFullName: 'Juan' }),
-      boxAsgn({ boxNumber: 2 }),
-    ];
-    const root = stateWith({ boxAssignments: list });
-    const result = selectBoxFor(1)(root);
-    expect(result).toEqual({ boxNumber: 1, extractorId: 99, extractorFullName: 'Juan' });
-  });
-
-  it('selectBoxFor returns null when boxNumber is not found', () => {
-    const root = stateWith({ boxAssignments: [boxAsgn({ boxNumber: 1 })] });
-    expect(selectBoxFor(99)(root)).toBeNull();
   });
 
   // --- selectLastAssigned -------------------------------------------------

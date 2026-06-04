@@ -8,7 +8,6 @@ import { take, toArray } from 'rxjs/operators';
 import { NOT_MODIFIED } from '@core/refresh';
 import { ExtractorBoxService } from '@core/services/extractor-box.service';
 import { NotificationService } from '@core/services/notification.service';
-import { TokenService } from '@core/auth/token.service';
 import { ExtractorAttentionService } from '../../services/extractor-attention.service';
 import * as A from './extraction.actions';
 import { ExtractionEffects } from './extraction.effects';
@@ -19,7 +18,6 @@ describe('ExtractionEffects', () => {
   let api: Partial<Record<keyof ExtractorAttentionService, ReturnType<typeof vi.fn>>>;
   let notifier: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
   let boxService: { setSelectedBranch: ReturnType<typeof vi.fn> };
-  let tokenService: { getUserId: ReturnType<typeof vi.fn> };
   let effects: ExtractionEffects;
 
   function setup(branchId: number | null = 7): void {
@@ -40,7 +38,6 @@ describe('ExtractionEffects', () => {
     };
     notifier = { success: vi.fn(), error: vi.fn() };
     boxService = { setSelectedBranch: vi.fn() };
-    tokenService = { getUserId: vi.fn().mockReturnValue(99) };
     TestBed.configureTestingModule({
       providers: [
         ExtractionEffects,
@@ -62,7 +59,6 @@ describe('ExtractionEffects', () => {
         { provide: ExtractorAttentionService, useValue: api },
         { provide: NotificationService, useValue: notifier },
         { provide: ExtractorBoxService, useValue: boxService },
-        { provide: TokenService, useValue: tokenService },
       ],
     });
     effects = TestBed.inject(ExtractionEffects);
