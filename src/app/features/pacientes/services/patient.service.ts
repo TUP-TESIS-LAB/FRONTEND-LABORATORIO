@@ -23,6 +23,10 @@ export class PatientService {
     return this.http.get<Patient>(`${this.baseUrl}/${id}`);
   }
 
+  getByDni(dni: string): Observable<Patient> {
+    return this.http.get<Patient>(`${this.baseUrl}/dni/${dni}`);
+  }
+
   existsByDni(dni: string): Observable<boolean> {
     return this.http
       .get<{ exists: boolean }>(`${this.baseUrl}/exists`, { params: { dni } })
