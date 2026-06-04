@@ -60,7 +60,7 @@ const ALL_STEPS: WizardStepDef[] = [
           </div>
           <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
         </header>
-        <lab-datos-generales-step [atencionId]="null" />
+        <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
       } @else if (mutating() && !detail()) {
         <!-- Caso: createPreFilledAtencion en vuelo (?appointmentId=X). Mientras la
              creación va, detail() es null pero mutating() es true. Mostramos un
@@ -103,7 +103,7 @@ const ALL_STEPS: WizardStepDef[] = [
 
           @switch (uiStep()?.key) {
             @case ('datos') {
-              <lab-datos-generales-step [atencionId]="detail()!.id" />
+              <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null" />
             }
             @case ('analisis') {
               <lab-analisis-step [atencionId]="detail()!.id" (stepAdvanced)="onAnalysisAdvanced()" />
@@ -130,6 +130,7 @@ export class AtencionWizardComponent {
 
   readonly id            = input<string | undefined>(undefined);
   readonly appointmentId = input<string | undefined>(undefined);
+  readonly dni           = input<string | undefined>(undefined);
 
   /**
    * "creating" = estamos en la ruta /atencion/nueva y todavía no se creó la atención.
