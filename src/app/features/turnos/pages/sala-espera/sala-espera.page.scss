@@ -143,6 +143,7 @@
 
 // ─── Cola section (left 70 %) ───────────────────────────────────────────────
 .cola-section {
+  position: relative;
   padding: 2rem;
   display: flex;
   flex-direction: column;
@@ -307,4 +308,34 @@
     font-size: 1.25rem;
     color: #d0d0d0;
   }
+}
+
+// ─── Badge identificador (TV atención / TV extracción) ─────────────────────
+// Compartido por ambas TVs en concepto, pero cada una define su variante de color
+// en su propio SCSS (view-encapsulated).
+.tv-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 5;
+  pointer-events: none;
+
+  &__dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.tv-badge--atencion {
+  color: var(--brand-primary, #2563eb);
 }
