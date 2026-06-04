@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { Patient } from '../../../pacientes/models/patient.model';
 import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 
 /**
@@ -21,6 +22,10 @@ export interface AtencionFeatureState {
   detailLoading: boolean;
   detailError: HttpErrorResponse | null;
   mutating: boolean;
+  resolvedPatient: Patient | null;
+  patientResolving: boolean;
+  patientNotFoundDni: string | null;
+  patientResolutionError: HttpErrorResponse | null;
 }
 
 export const initialAtencionState: AtencionFeatureState = {
@@ -35,6 +40,10 @@ export const initialAtencionState: AtencionFeatureState = {
   detailLoading: false,
   detailError: null,
   mutating: false,
+  resolvedPatient: null,
+  patientResolving: false,
+  patientNotFoundDni: null,
+  patientResolutionError: null,
 };
 
 export const ATENCION_FEATURE_KEY = 'atencion';

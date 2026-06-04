@@ -8,6 +8,7 @@ import {
   atencionMutationSuccess,
   cancelAtencion,
   createBlankAtencion,
+  createPatientInline,
   createPreFilledAtencion,
   endBilling,
   endCollection,
@@ -18,8 +19,14 @@ import {
   loadAtenciones,
   loadAtencionesFailure,
   loadAtencionesSuccess,
+  patientNotFound,
+  patientResolutionFailure,
+  patientResolved,
+  resolvePatientByDni,
   returnPhase,
   setAtencionFilters,
+  startAttentionForPatient,
+  updatePatientInline,
 } from './atencion.actions';
 import { AtencionFeatureState, initialAtencionState } from './atencion.state';
 
@@ -51,6 +58,13 @@ export const atencionReducer = createReducer(
     list: replaceInList(s.list, item),
   })),
   on(atencionMutationFailure, (s, { error }): AtencionFeatureState => ({ ...s, mutating: false, detailError: error })),
+
+  on(resolvePatientByDni, (s): AtencionFeatureState => ({ ...s, patientResolving: true, patientResolutionError: null, resolvedPatient: null, patientNotFoundDni: null })),
+  on(patientResolved, (s, { patient }): AtencionFeatureState => ({ ...s, patientResolving: false, resolvedPatient: patient, patientNotFoundDni: null })),
+  on(patientNotFound, (s, { dni }): AtencionFeatureState => ({ ...s, patientResolving: false, resolvedPatient: null, patientNotFoundDni: dni })),
+  on(patientResolutionFailure, (s, { error }): AtencionFeatureState => ({ ...s, patientResolving: false, patientResolutionError: error })),
+  on(createPatientInline, updatePatientInline, (s): AtencionFeatureState => ({ ...s, patientResolving: true, patientResolutionError: null })),
+  on(startAttentionForPatient, (s): AtencionFeatureState => ({ ...s, mutating: true, detailError: null })),
 );
 
 function replaceInList<T extends { id: number }>(list: T[], item: T): T[] {

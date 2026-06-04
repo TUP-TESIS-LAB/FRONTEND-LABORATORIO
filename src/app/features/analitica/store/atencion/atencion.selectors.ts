@@ -10,7 +10,11 @@ export const selectFilters         = createSelector(selectAtencionState, s => s.
 export const selectDetail          = createSelector(selectAtencionState, s => s.detail);
 export const selectDetailLoading   = createSelector(selectAtencionState, s => s.detailLoading);
 export const selectDetailError     = createSelector(selectAtencionState, s => s.detailError);
-export const selectMutating        = createSelector(selectAtencionState, s => s.mutating);
+export const selectMutating               = createSelector(selectAtencionState, s => s.mutating);
+export const selectResolvedPatient        = createSelector(selectAtencionState, s => s.resolvedPatient);
+export const selectPatientResolving       = createSelector(selectAtencionState, s => s.patientResolving);
+export const selectPatientNotFoundDni     = createSelector(selectAtencionState, s => s.patientNotFoundDni);
+export const selectPatientResolutionError = createSelector(selectAtencionState, s => s.patientResolutionError);
 
 export const selectFilteredAtenciones = createSelector(
   selectAtencionList,

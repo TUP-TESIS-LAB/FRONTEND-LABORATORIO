@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { catchError, concatMap, exhaustMap, map, of, switchMap, tap } from 'rxjs';
+import { PatientService } from '../../../pacientes/services/patient.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
 import {
   addAnalysisList,
@@ -13,6 +14,7 @@ import {
   atencionMutationSuccess,
   cancelAtencion,
   createBlankAtencion,
+  createPatientInline,
   createPreFilledAtencion,
   endBilling,
   endCollection,
@@ -23,7 +25,13 @@ import {
   loadAtenciones,
   loadAtencionesFailure,
   loadAtencionesSuccess,
+  patientNotFound,
+  patientResolutionFailure,
+  patientResolved,
+  resolvePatientByDni,
   returnPhase,
+  startAttentionForPatient,
+  updatePatientInline,
 } from './atencion.actions';
 
 /**
@@ -39,9 +47,10 @@ import {
  */
 @Injectable()
 export class AtencionEffects {
-  private readonly actions$ = inject(Actions);
-  private readonly api      = inject(AtencionApiService);
-  private readonly router   = inject(Router);
+  private readonly actions$  = inject(Actions);
+  private readonly api       = inject(AtencionApiService);
+  private readonly patients  = inject(PatientService);
+  private readonly router    = inject(Router);
 
   loadList$ = createEffect(() =>
     this.actions$.pipe(
@@ -182,4 +191,46 @@ export class AtencionEffects {
       ))
     )
   );
+
+  resolvePatient$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(resolvePatientByDni),
+      switchMap(({ dni }) =>
+        this.patients.existsByDni(dni).pipe(
+          switchMap(exists =>
+            exists
+              ? this.patients.getByDni(dni).pipe(map(patient => patientResolved({ patient })))
+              : of(patientNotFound({ dni }))),
+          catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
+        ))));
+
+  createPatientInline$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(createPatientInline),
+      concatMap(({ payload }) =>
+        this.patients.create(payload).pipe(
+          map(patient => patientResolved({ patient })),
+          catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
+        ))));
+
+  updatePatientInline$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(updatePatientInline),
+      concatMap(({ id, payload }) =>
+        this.patients.update(id, payload).pipe(
+          map(patient => patientResolved({ patient })),
+          catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
+        ))));
+
+  startAttentionForPatient$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(startAttentionForPatient),
+      exhaustMap(({ patientId, indications }) =>
+        this.api.createBlank({ branchId: 1, patientId, attentionNumber: `A-${Date.now().toString().slice(-6)}`, deskAttentionBox: null }).pipe(
+          concatMap(created =>
+            this.api.assignGeneralData(created.id, { patientId, doctorId: null, insurancePlanId: null, indications }).pipe(
+              tap(item => this.router.navigate(['/analitica/atencion', item.id])),
+              map(item => atencionMutationSuccess({ item })))),
+          catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error }))),
+        ))));
 }

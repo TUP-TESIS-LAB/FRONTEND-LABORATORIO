@@ -7,6 +7,8 @@ import { Observable, ReplaySubject, firstValueFrom, of, throwError } from 'rxjs'
 import { take, toArray } from 'rxjs/operators';
 import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 import { AtencionApiService } from '../../services/atencion-api.service';
+import { Patient } from '../../../pacientes/models/patient.model';
+import { PatientService } from '../../../pacientes/services/patient.service';
 import * as A from './atencion.actions';
 import { AtencionEffects } from './atencion.effects';
 
@@ -29,6 +31,7 @@ function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
 describe('AtencionEffects', () => {
   let actions$: ReplaySubject<Action>;
   let api: Partial<Record<keyof AtencionApiService, ReturnType<typeof vi.fn>>>;
+  let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
   let effects: AtencionEffects;
 
@@ -49,6 +52,7 @@ describe('AtencionEffects', () => {
       cancel: vi.fn(),
       addObservations: vi.fn(),
     };
+    patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn() };
     router = { navigate: vi.fn() };
 
     TestBed.configureTestingModule({
@@ -56,6 +60,7 @@ describe('AtencionEffects', () => {
         AtencionEffects,
         provideMockActions(() => actions$ as unknown as Observable<Action>),
         { provide: AtencionApiService, useValue: api },
+        { provide: PatientService, useValue: patients },
         { provide: Router, useValue: router },
       ],
     });
@@ -148,5 +153,21 @@ describe('AtencionEffects', () => {
     actions$.next(A.endBilling({ id: 1 }));
     const out = await firstValueFrom(effects.endBilling$.pipe(take(1)));
     expect(out).toEqual(A.atencionMutationFailure({ error }));
+  });
+
+  it('resolvePatient$ → existe → patientResolved', async () => {
+    const patient = { id: 5, dni: '18901234' } as Patient;
+    (patients.existsByDni as ReturnType<typeof vi.fn>).mockReturnValue(of(true));
+    (patients.getByDni as ReturnType<typeof vi.fn>).mockReturnValue(of(patient));
+    actions$.next(A.resolvePatientByDni({ dni: '18901234' }));
+    const out = await firstValueFrom(effects.resolvePatient$.pipe(take(1)));
+    expect(out).toEqual(A.patientResolved({ patient }));
+  });
+
+  it('resolvePatient$ → no existe → patientNotFound', async () => {
+    (patients.existsByDni as ReturnType<typeof vi.fn>).mockReturnValue(of(false));
+    actions$.next(A.resolvePatientByDni({ dni: '18901234' }));
+    const out = await firstValueFrom(effects.resolvePatient$.pipe(take(1)));
+    expect(out).toEqual(A.patientNotFound({ dni: '18901234' }));
   });
 });
