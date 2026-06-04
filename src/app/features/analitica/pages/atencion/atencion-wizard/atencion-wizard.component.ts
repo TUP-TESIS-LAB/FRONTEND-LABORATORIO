@@ -17,7 +17,7 @@ import {
   selectDetail, selectDetailLoading, selectMutating,
 } from '../../../store/atencion/atencion.selectors';
 import {
-  clearAtencionSession, clearPendingDni, readAtencionSession, writeAtencionSession,
+  clearAtencionSession, readAtencionSession, writeAtencionSession,
 } from '../../../utils/atencion-session-store';
 import { DatosGeneralesStepComponent } from './steps/datos-generales-step/datos-generales-step.component';
 import { AnalisisStepComponent } from './steps/analisis-step/analisis-step.component';
@@ -175,10 +175,6 @@ export class AtencionWizardComponent {
       const apptId = this.appointmentId();
       this.uiStepOverride.set(null);
       if (idv) {
-        // Retomar una atención existente: cualquier pending DNI viejo en sessionStorage
-        // pertenece a otro flow — limpiarlo evita el auto-search y el redirect-loop
-        // al paciente-form si ese DNI no existía.
-        clearPendingDni();
         this.store.dispatch(loadAtencion({ id: Number(idv) }));
         writeAtencionSession({ atencionId: Number(idv), uiStep: 'datos' });
       } else if (apptId) {
@@ -187,8 +183,7 @@ export class AtencionWizardComponent {
         }));
       } else if (this.creating()) {
         // Modo crear nueva: el step de datos arranca en blanco sin loadAtencion.
-        // Si veníamos de /pacientes/nuevo, el pending DNI sobrevive y el patient-search
-        // auto-pre-fillea (sin emitir notFound en el silent path).
+        // El DNI inicial llega vía query param `?dni=` (input `dni`), manejado por el template.
       } else {
         const restored = readAtencionSession();
         if (restored && restored.atencionId > 0) {
