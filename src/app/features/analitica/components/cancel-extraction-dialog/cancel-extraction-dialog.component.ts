@@ -44,6 +44,32 @@ const MAX_REASON_LENGTH = 500;
         <p class="info">
           Vas a cancelar la extracción. Indicá el motivo — queda registrado para auditoría.
         </p>
+        <div class="quick-reasons">
+          <p-button
+            label="No se presentó"
+            severity="secondary"
+            [outlined]="true"
+            size="small"
+            [disabled]="saving()"
+            (onClick)="setQuickReason('Paciente no se presentó al box')"
+          />
+          <p-button
+            label="Vía difícil"
+            severity="secondary"
+            [outlined]="true"
+            size="small"
+            [disabled]="saving()"
+            (onClick)="setQuickReason('No se pudo canalizar (vía difícil)')"
+          />
+          <p-button
+            label="Descompensado"
+            severity="secondary"
+            [outlined]="true"
+            size="small"
+            [disabled]="saving()"
+            (onClick)="setQuickReason('Paciente descompensado')"
+          />
+        </div>
         <label class="field">
           <span class="field__label">Motivo <span class="required">*</span></span>
           <textarea
@@ -90,6 +116,7 @@ const MAX_REASON_LENGTH = 500;
   styles: [`
     :host { display: contents; }
     .body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
+    .quick-reasons { display: flex; flex-wrap: wrap; gap: 8px; }
     .info { margin: 0; font-size: 13px; color: #475569; line-height: 1.5; }
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field__label { font-size: 13px; font-weight: 500; }
@@ -147,6 +174,10 @@ export class CancelExtractionDialogComponent {
 
   onReasonChange(value: string): void {
     this.reason.set(value ?? '');
+  }
+
+  setQuickReason(text: string): void {
+    this.reason.set(text);
   }
 
   onCancel(): void {

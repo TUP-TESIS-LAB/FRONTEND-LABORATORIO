@@ -76,4 +76,67 @@ describe('CancelExtractionDialogComponent', () => {
     fixture.componentInstance.onConfirm();
     expect(emissions).toEqual([]);
   });
+
+  it('setQuickReason "No se presentó" sets reason to full text', () => {
+    const fixture = TestBed.createComponent(CancelExtractionDialogComponent);
+    fixture.componentRef.setInput('patient', mineItem());
+    fixture.componentRef.setInput('saving', false);
+    fixture.detectChanges();
+
+    fixture.componentInstance.setQuickReason('Paciente no se presentó al box');
+    expect(fixture.componentInstance.reason()).toBe('Paciente no se presentó al box');
+    expect(fixture.componentInstance.canConfirm()).toBe(true);
+  });
+
+  it('setQuickReason "Vía difícil" sets reason to full text', () => {
+    const fixture = TestBed.createComponent(CancelExtractionDialogComponent);
+    fixture.componentRef.setInput('patient', mineItem());
+    fixture.componentRef.setInput('saving', false);
+    fixture.detectChanges();
+
+    fixture.componentInstance.setQuickReason('No se pudo canalizar (vía difícil)');
+    expect(fixture.componentInstance.reason()).toBe('No se pudo canalizar (vía difícil)');
+    expect(fixture.componentInstance.canConfirm()).toBe(true);
+  });
+
+  it('setQuickReason "Descompensado" sets reason to full text', () => {
+    const fixture = TestBed.createComponent(CancelExtractionDialogComponent);
+    fixture.componentRef.setInput('patient', mineItem());
+    fixture.componentRef.setInput('saving', false);
+    fixture.detectChanges();
+
+    fixture.componentInstance.setQuickReason('Paciente descompensado');
+    expect(fixture.componentInstance.reason()).toBe('Paciente descompensado');
+    expect(fixture.componentInstance.canConfirm()).toBe(true);
+  });
+
+  it('confirm button stays disabled until reason has 5+ chars after quick reason', () => {
+    const fixture = TestBed.createComponent(CancelExtractionDialogComponent);
+    fixture.componentRef.setInput('patient', mineItem());
+    fixture.componentRef.setInput('saving', false);
+    fixture.detectChanges();
+
+    // Manually set a short reason (less than 5 chars)
+    fixture.componentInstance.onReasonChange('hi');
+    expect(fixture.componentInstance.canConfirm()).toBe(false);
+
+    // Quick reason sets full text → confirm should be enabled
+    fixture.componentInstance.setQuickReason('Paciente no se presentó al box');
+    expect(fixture.componentInstance.canConfirm()).toBe(true);
+  });
+
+  it('emits cancelConfirmed with reason after selecting quick reason', () => {
+    const fixture = TestBed.createComponent(CancelExtractionDialogComponent);
+    fixture.componentRef.setInput('patient', mineItem());
+    fixture.componentRef.setInput('saving', false);
+    fixture.detectChanges();
+
+    const emissions: { reason: string }[] = [];
+    fixture.componentInstance.cancelConfirmed.subscribe((p) => emissions.push(p));
+
+    fixture.componentInstance.setQuickReason('Paciente descompensado');
+    fixture.componentInstance.onConfirm();
+
+    expect(emissions).toEqual([{ reason: 'Paciente descompensado' }]);
+  });
 });
