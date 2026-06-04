@@ -15,6 +15,121 @@
   height: 100vh;
 }
 
+// ─── Error state (recuperacion: pedir cambio de sucursal) ──────────────────
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  text-align: center;
+  height: 100%;
+  padding: 4rem 2rem;
+  color: #1a1a1a;
+
+  .pi-exclamation-triangle {
+    font-size: 5rem;
+    color: #f59e0b;
+  }
+
+  h2 {
+    font-size: 2.25rem;
+    margin: 0;
+    color: #1a1a1a;
+  }
+
+  p {
+    font-size: 1.25rem;
+    margin: 0;
+    color: #6b7280;
+    max-width: 640px;
+    line-height: 1.5;
+  }
+
+  &__btn {
+    margin-top: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.6rem;
+    background: var(--p-primary-color, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.05s;
+
+    &:hover  { filter: brightness(0.92); }
+    &:active { transform: scale(0.98); }
+
+    .pi { font-size: 1.1rem; }
+  }
+}
+
+// ─── Dialog: lista de sucursales ───────────────────────────────────────────
+.tv-dialog-loading,
+.tv-dialog-error {
+  padding: 1.5rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 1rem;
+
+  .pi {
+    font-size: 1.5rem;
+    color: #f59e0b;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.tv-branch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &__item {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover {
+      background: #f3f4f6;
+      border-color: var(--p-primary-color, #2563eb);
+    }
+  }
+
+  &__code {
+    font-weight: 700;
+    color: var(--p-primary-color, #2563eb);
+    font-family: ui-monospace, monospace;
+    font-size: 0.875rem;
+  }
+
+  &__name {
+    color: #1a1a1a;
+    font-weight: 500;
+  }
+
+  .pi-chevron-right {
+    color: #9ca3af;
+    font-size: 0.875rem;
+  }
+}
+
 // ─── Main 70/30 grid ────────────────────────────────────────────────────────
 .display-page {
   display: grid;

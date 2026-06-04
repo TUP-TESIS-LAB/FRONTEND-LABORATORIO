@@ -24,6 +24,20 @@
         @case ('loading') {
           <div class="loading">Cargando...</div>
         }
+        @case ('error') {
+          <div class="error-state">
+            <i class="pi pi-exclamation-triangle"></i>
+            <h2>Sin conexión con la sucursal</h2>
+            <p>
+              No se pudo cargar la sucursal <strong>#{{ branchId }}</strong>
+              del tenant <strong>{{ tenantSlug }}</strong>.
+            </p>
+            <button type="button" class="error-state__btn" (click)="openBranchDialog()">
+              <i class="pi pi-th-large"></i>
+              Cambiar sucursal
+            </button>
+          </div>
+        }
         @case ('empty') {
           <app-empty-state
             [serverTime]="snapshot()?.serverTime ?? ''"
@@ -70,4 +84,36 @@
       <app-ad-carousel />
     </aside>
   </div>
+
+  <!-- Dialog: cambio de sucursal (recuperacion de error) -->
+  <p-dialog
+    [visible]="dialogOpen()"
+    (visibleChange)="dialogOpen.set($event)"
+    [modal]="true"
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    header="Elegir sucursal"
+    styleClass="ui-tv-branch-dialog">
+    @if (dialogLoading()) {
+      <div class="tv-dialog-loading">Cargando sucursales...</div>
+    } @else if (dialogError(); as err) {
+      <div class="tv-dialog-error">
+        <i class="pi pi-info-circle"></i>
+        <p>{{ err }}</p>
+      </div>
+    } @else {
+      <ul class="tv-branch-list">
+        @for (b of branchOptions(); track b.id) {
+          <li>
+            <button type="button" class="tv-branch-list__item" (click)="selectBranch(b)">
+              <span class="tv-branch-list__code">{{ b.code }}</span>
+              <span class="tv-branch-list__name">{{ b.description }}</span>
+              <i class="pi pi-chevron-right"></i>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </p-dialog>
 }

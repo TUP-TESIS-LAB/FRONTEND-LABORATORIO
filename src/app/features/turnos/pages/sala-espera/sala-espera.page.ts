@@ -10,10 +10,11 @@ import {
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
-import { catchError, EMPTY, interval, startWith, switchMap } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { catchError, EMPTY, interval, startWith, switchMap, tap } from 'rxjs';
+import { DialogModule } from 'primeng/dialog';
 import { DisplaySnapshot, PublicQueueEntry } from '../../models/public-display.model';
-import { PublicDisplayService } from '../../services/public-display.service';
+import { PublicBranch, PublicDisplayService } from '../../services/public-display.service';
 import { EmptyStateComponent } from './empty-state.component';
 import { ClosedStateComponent } from './closed-state.component';
 import { AdCarouselComponent } from './ad-carousel.component';
@@ -21,13 +22,14 @@ import { AdCarouselComponent } from './ad-carousel.component';
 @Component({
   selector: 'app-sala-espera-page',
   standalone: true,
-  imports: [DatePipe, EmptyStateComponent, ClosedStateComponent, AdCarouselComponent],
+  imports: [DatePipe, DialogModule, EmptyStateComponent, ClosedStateComponent, AdCarouselComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sala-espera.page.html',
   styleUrl: './sala-espera.page.scss',
 })
 export class SalaEsperaPage implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private service = inject(PublicDisplayService);
   private destroyRef = inject(DestroyRef);
 
@@ -37,6 +39,14 @@ export class SalaEsperaPage implements OnInit {
   protected snapshot = signal<DisplaySnapshot | null>(null);
   protected lastSuccessfulFetch = signal<number>(0);
   protected previousMostRecentCalledId = signal<number | null>(null);
+  /** True una vez que el primer fetch resolvio (ok o error). Si sigue false → 'loading'. */
+  protected firstAttemptDone = signal(false);
+
+  // ── Dialog de cambio de sucursal ───────────────────────────
+  protected dialogOpen = signal(false);
+  protected dialogLoading = signal(false);
+  protected dialogError = signal<string | null>(null);
+  protected branchOptions = signal<PublicBranch[]>([]);
 
   protected readonly audioUnlocked = signal<boolean>(
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tv-audio-unlocked') === '1',
@@ -77,9 +87,13 @@ export class SalaEsperaPage implements OnInit {
     return all.slice(start, start + SalaEsperaPage.PAGE_SIZE);
   });
 
-  protected viewMode = computed<'loading' | 'queue' | 'empty' | 'closed'>(() => {
+  protected viewMode = computed<'loading' | 'queue' | 'empty' | 'closed' | 'error'>(() => {
     const snap = this.snapshot();
-    if (!snap) return 'loading';
+    if (!snap) {
+      // Si el primer fetch ya termino (ok o error) y no hay snapshot,
+      // estamos en error persistente — mostramos UI de recuperacion.
+      return this.firstAttemptDone() ? 'error' : 'loading';
+    }
     if (this.isClosed(snap)) return 'closed';
     if ((snap.entries ?? []).length === 0) return 'empty';
     return 'queue';
@@ -115,7 +129,13 @@ export class SalaEsperaPage implements OnInit {
         startWith(0),
         switchMap(() =>
           this.service.fetchSnapshot(this.tenantSlug, this.branchId).pipe(
-            catchError(() => EMPTY),
+            // tap solo se ejecuta en next — marca el primer intento como done en exito.
+            tap(() => this.firstAttemptDone.set(true)),
+            // catchError tambien marca done — sino el viewMode queda en 'loading' eterno.
+            catchError(() => {
+              this.firstAttemptDone.set(true);
+              return EMPTY;
+            }),
           ),
         ),
         takeUntilDestroyed(this.destroyRef),
@@ -134,6 +154,35 @@ export class SalaEsperaPage implements OnInit {
           this.currentPage.set((this.currentPage() + 1) % total);
         }
       });
+  }
+
+  // ── Cambio de sucursal (UI de recuperacion) ─────────────────────
+  openBranchDialog(): void {
+    this.dialogOpen.set(true);
+    this.dialogError.set(null);
+    this.dialogLoading.set(true);
+    this.service.listPublicBranches(this.tenantSlug).subscribe({
+      next: branches => {
+        this.branchOptions.set(branches);
+        this.dialogLoading.set(false);
+        if (branches.length === 0) {
+          this.dialogError.set(
+            `No hay sucursales registradas para el tenant "${this.tenantSlug}". Verificá la URL.`,
+          );
+        }
+      },
+      error: () => {
+        this.dialogLoading.set(false);
+        this.dialogError.set('No se pudo cargar la lista de sucursales. Reintentá.');
+      },
+    });
+  }
+
+  selectBranch(branch: PublicBranch): void {
+    this.dialogOpen.set(false);
+    // navegacion full (reemplaza la URL) — el snapshot signal se reinicia
+    // automaticamente al re-crear el componente con los nuevos params.
+    this.router.navigate(['/display', this.tenantSlug, branch.id]);
   }
 
   unlockAudio(): void {

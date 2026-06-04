@@ -71,7 +71,10 @@ export const NAV_SECTIONS: NavSection[] = [
         kind: 'external',
         label: 'TV sala de espera',
         icon: 'pi pi-desktop',
-        href: '/display/lab-demo/1',
+        // branch 1001 = Sede Central del seed local-dev (V902).
+        // El backend devuelve 404 si la branch no existe; usar id < 1000 hardcodeado
+        // hace que cualquier dev clon de fresh vea el 404 hasta tocar la URL a mano.
+        href: '/display/lab-demo/1001',
         chip: 'Smoke',
       },
       {
