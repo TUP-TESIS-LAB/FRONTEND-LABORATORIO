@@ -3,7 +3,7 @@
 > **Fecha:** 2026-06-04
 > **Rama:** `feat/atencion-recepcion` (worktrees en `Backend/` y `FRONTEND-LABORATORIO/`, base `origin/development`)
 > **Estado:** Diseño aprobado (brainstorming). Pendiente: plan de implementación + ticket de Jira.
-> **Jira:** _(pendiente — se crea en la transición a implementación)_
+> **Jira:** [KAN-77](https://exequielsantoro.atlassian.net/browse/KAN-77)
 
 ## 1. Contexto y problema
 

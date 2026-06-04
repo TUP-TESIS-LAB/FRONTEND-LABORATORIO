@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Spec:** `docs/superpowers/specs/2026-06-04-atencion-recepcion-design.md`
-> **Jira:** _(pendiente — se crea con `jira-workflow` antes de ejecutar)_
+> **Jira:** [KAN-77](https://exequielsantoro.atlassian.net/browse/KAN-77)
 > **Worktrees:** `FRONTEND-LABORATORIO/.worktrees/atencion-recepcion` y `Backend/.worktrees/atencion-recepcion` (rama `feat/atencion-recepcion`, base `origin/development`).
 
 **Goal:** Que la atención entre por `…/atencion/nueva?dni=<dni>`, resuelva el paciente (verificar o alta mínima inline) antes de crear la atención, cargue análisis del catálogo real, y al terminar genere el protocolo e imprima los rótulos antes de mandar a la cola de extracción.
