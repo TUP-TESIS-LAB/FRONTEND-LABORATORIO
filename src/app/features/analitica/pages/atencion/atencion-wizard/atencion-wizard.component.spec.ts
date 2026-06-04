@@ -10,6 +10,8 @@ import { NbuService } from '../../../services/nbu.service';
 import { AttentionResponse, AttentionState } from '../../../models/atencion.model';
 import {
   selectDetail, selectDetailLoading, selectMutating,
+  selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
+  selectPatientResolutionError,
 } from '../../../store/atencion/atencion.selectors';
 
 function makeDetail(state: AttentionState): AttentionResponse {
@@ -38,6 +40,11 @@ describe('AtencionWizardComponent (CORE flow)', () => {
             { selector: selectDetail, value: makeDetail(state) },
             { selector: selectDetailLoading, value: false },
             { selector: selectMutating, value: false },
+            // El paso 1 (datos-generales-step) lee estos selectors al renderizar.
+            { selector: selectResolvedPatient, value: null },
+            { selector: selectPatientResolving, value: false },
+            { selector: selectPatientNotFoundDni, value: null },
+            { selector: selectPatientResolutionError, value: null },
           ],
         }),
         // El wizard renderiza step components que ahora inyectan Actions
