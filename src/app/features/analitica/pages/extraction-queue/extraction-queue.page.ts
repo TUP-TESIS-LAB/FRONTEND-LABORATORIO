@@ -13,67 +13,76 @@ import {
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { Subject, debounceTime, of } from 'rxjs';
 import { PollingHandle, PollingService } from '@core/refresh';
-import { TokenService } from '@core/auth/token.service';
 import { ExtractorBoxService } from '@core/services/extractor-box.service';
 import { NotificationService } from '@core/services/notification.service';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicator/refresh-indicator.component';
-import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
+import { BoxConfigBarComponent } from '../../components/box-config-bar/box-config-bar.component';
 import { BranchSelectorChipComponent } from '../../components/branch-selector-chip/branch-selector-chip.component';
-import { BoxFabComponent } from '../../components/box-fab/box-fab.component';
 import { CancelExtractionDialogComponent } from '../../components/cancel-extraction-dialog/cancel-extraction-dialog.component';
-import { InProgressExtractionCardComponent } from '../../components/in-progress-extraction-card/in-progress-extraction-card.component';
-import { TakePatientDrawerComponent } from '../../components/take-patient-drawer/take-patient-drawer.component';
-import { AwaitingExtractionItem, BranchOption, InExtractionItem } from '../../models/extraction.model';
+import { InProgressListComponent } from '../../components/in-progress-list/in-progress-list.component';
+import { TakePatientModalComponent } from '../../components/take-patient-modal/take-patient-modal.component';
+import {
+  AwaitingExtractionItem,
+  BoxAssignment,
+  BranchOption,
+  InExtractionItem,
+} from '../../models/extraction.model';
 import * as A from '../../store/extraction/extraction.actions';
 import {
   selectAwaiting,
-  selectBoxOccupancy,
+  selectBoxAssignments,
+  selectBranchExtractors,
   selectBranches,
   selectInProgress,
+  selectLastAssigned,
   selectLastRefreshAt,
   selectMutating,
   selectSelectedBranch,
   selectSelectedBranchId,
-  selectStats,
 } from '../../store/extraction/extraction.selectors';
 
 const POLL_INTERVAL_MS = 5000;
+const UNDO_TOAST_KEY = 'extraction-undo';
+const UNDO_WINDOW_MS = 5000;
 
 @Component({
   selector: 'app-extraction-queue-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [MessageService],
   imports: [
     CommonModule,
     FormsModule,
     TableModule,
     ButtonModule,
     TagModule,
+    ToastModule,
     InputTextModule,
     TooltipModule,
     EmptyStateComponent,
     RefreshIndicatorComponent,
-    StatCardComponent,
     BranchSelectorChipComponent,
-    BoxFabComponent,
-    InProgressExtractionCardComponent,
+    BoxConfigBarComponent,
+    InProgressListComponent,
+    TakePatientModalComponent,
     CancelExtractionDialogComponent,
-    TakePatientDrawerComponent,
   ],
   template: `
     <section class="page">
       <header class="page__header">
         <div class="page__title">
           <h1>Cola de extracción</h1>
-          <p class="muted">Pacientes esperando ser atendidos por extracción.</p>
+          <p class="muted">Operá la cola y las extracciones en curso de la sucursal.</p>
         </div>
         <div class="head-right">
           <ui-refresh-indicator
@@ -84,13 +93,6 @@ const POLL_INTERVAL_MS = 5000;
             [selected]="selectedBranch()"
             [options]="branches()"
             (selectBranch)="onBranchChange($event)"
-          />
-          <app-box-fab
-            [occupancy]="occupancy()"
-            [myBox]="myBox()"
-            [myUserId]="myUserId()"
-            [mutating]="mutating()"
-            (boxSelected)="onBoxChange($event)"
           />
         </div>
       </header>
@@ -108,95 +110,99 @@ const POLL_INTERVAL_MS = 5000;
           }
         </div>
       } @else {
-        @if (stats(); as st) {
-          <div class="stats-strip">
-            <ui-stat-card label="En cola" [value]="st.queueSize" />
-            <ui-stat-card label="Mis extracciones" [value]="mine().length" />
-            <ui-stat-card
-              label="Espera promedio"
-              [value]="st.averageWaitMinutes != null ? st.averageWaitMinutes + ' min' : '—'"
-            />
-            <ui-stat-card label="Hoy finalizadas por mí" [value]="st.finishedTodayByMe" />
-          </div>
-        }
-
-        <app-in-progress-extraction-card
-          [patient]="firstMine()"
-          [mutating]="mutating()"
-          (cancelClicked)="onCancelRequest(firstMine())"
-          (endClicked)="onEndRequest(firstMine())"
+        <app-box-config-bar
+          [assignments]="boxAssignments()"
+          [extractors]="branchExtractors()"
+          (assign)="onBoxAssign($event)"
+          (addBox)="onAddBox()"
         />
 
-        <section class="block">
-          <div class="block__header">
-            <h2><i class="pi pi-list"></i> Cola de extracción</h2>
-            <span class="block__search">
-              <i class="pi pi-search"></i>
-              <input
-                pInputText
-                type="text"
-                placeholder="Buscar por nombre o DNI"
-                [ngModel]="searchInput()"
-                (ngModelChange)="onSearchChange($event)"
-              />
-            </span>
-          </div>
+        <div class="columns">
+          <!-- Columna izquierda: la cola -->
+          <section class="block">
+            <div class="block__header">
+              <h2><i class="pi pi-list"></i> Cola de extracción</h2>
+              <span class="block__search">
+                <i class="pi pi-search"></i>
+                <input
+                  pInputText
+                  type="text"
+                  placeholder="Buscar por nombre o DNI"
+                  [ngModel]="searchInput()"
+                  (ngModelChange)="onSearchChange($event)"
+                />
+              </span>
+            </div>
 
-          @if (awaiting().length === 0) {
-            <ui-empty-state
-              icon="pi-check-circle"
-              heading="No hay pacientes esperando"
-              description="Cuando ingresen pacientes esperando extracción aparecerán acá."
+            @if (awaiting().length === 0) {
+              <ui-empty-state
+                icon="pi-check-circle"
+                heading="No hay pacientes esperando"
+                description="Cuando ingresen pacientes esperando extracción aparecerán acá."
+              />
+            } @else {
+              <p-table [value]="awaiting()" styleClass="p-datatable-sm">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th></th>
+                    <th>Paciente</th>
+                    <th>DNI</th>
+                    <th>Atención</th>
+                    <th>Análisis</th>
+                    <th>Espera</th>
+                    <th class="actions-col">Acciones</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-row>
+                  <tr [class.is-urgent]="row.isUrgent">
+                    <td>
+                      @if (row.isUrgent) {
+                        <p-tag value="URGENTE" severity="danger" icon="pi pi-exclamation-triangle" />
+                      }
+                    </td>
+                    <td>{{ row.patientFullName }}</td>
+                    <td>{{ row.patientDni }}</td>
+                    <td>{{ row.attentionNumber }}</td>
+                    <td>{{ row.analysisCount }}</td>
+                    <td>{{ row.waitMinutes }} min</td>
+                    <td class="actions-col">
+                      <div class="actions-cell">
+                        <p-button
+                          label="Tomar"
+                          icon="pi pi-arrow-right"
+                          size="small"
+                          [disabled]="mutating()"
+                          (onClick)="onTake(row)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+          </section>
+
+          <!-- Columna derecha: en curso -->
+          <section class="block">
+            <div class="block__header">
+              <h2><i class="pi pi-spinner"></i> En curso</h2>
+            </div>
+            <app-in-progress-list
+              [items]="inProgress()"
+              [mutating]="mutating()"
+              (cancel)="onCancelRequest($event)"
+              (end)="onEnd($event)"
             />
-          } @else {
-            <p-table [value]="awaiting()" styleClass="p-datatable-sm">
-              <ng-template pTemplate="header">
-                <tr>
-                  <th></th>
-                  <th>Paciente</th>
-                  <th>DNI</th>
-                  <th>Atención</th>
-                  <th>Análisis</th>
-                  <th>Espera</th>
-                  <th class="actions-col">Acciones</th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-row>
-                <tr [class.is-urgent]="row.isUrgent">
-                  <td>
-                    @if (row.isUrgent) {
-                      <p-tag value="URGENTE" severity="danger" icon="pi pi-exclamation-triangle" />
-                    }
-                  </td>
-                  <td>{{ row.patientFullName }}</td>
-                  <td>{{ row.patientDni }}</td>
-                  <td>{{ row.attentionNumber }}</td>
-                  <td>{{ row.analysisCount }}</td>
-                  <td>{{ row.waitMinutes }} min</td>
-                  <td class="actions-col">
-                    <div class="actions-cell">
-                      <p-button
-                        label="Tomar"
-                        icon="pi pi-arrow-right"
-                        size="small"
-                        [disabled]="!canTakeMore() || mutating()"
-                        [pTooltip]="takeTooltip()"
-                        (onClick)="onTake(row)"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </ng-template>
-            </p-table>
-          }
-        </section>
+          </section>
+        </div>
       }
 
-      <app-take-patient-drawer
-        [(visible)]="drawerOpen"
+      <app-take-patient-modal
+        [(visible)]="takeModalOpen"
         [patient]="selectedPatient()"
-        [saving]="mutating()"
-        (confirm)="onConfirmTake($event)"
+        [boxes]="boxAssignments()"
+        [inProgressExtractorIds]="inProgressExtractorIds()"
+        (assign)="onAssignToBox($event)"
       />
 
       <app-cancel-extraction-dialog
@@ -205,6 +211,29 @@ const POLL_INTERVAL_MS = 5000;
         [saving]="mutating()"
         (cancelConfirmed)="onCancelConfirmed($event)"
       />
+
+      <!-- Toast de undo (5s) — usa MessageService local a la page. -->
+      <p-toast [key]="undoToastKey" position="top-right">
+        <ng-template let-message pTemplate="message">
+          <div class="undo-toast">
+            <i class="pi pi-check-circle undo-toast__icon"></i>
+            <div class="undo-toast__body">
+              <span class="undo-toast__text">{{ message.summary }}</span>
+              @if (message.detail) {
+                <span class="undo-toast__detail">{{ message.detail }}</span>
+              }
+            </div>
+            <p-button
+              label="Deshacer"
+              icon="pi pi-undo"
+              severity="secondary"
+              size="small"
+              [text]="true"
+              (onClick)="onUndoAssign()"
+            />
+          </div>
+        </ng-template>
+      </p-toast>
     </section>
   `,
   styles: [`
@@ -224,13 +253,23 @@ const POLL_INTERVAL_MS = 5000;
       gap: 12px;
       flex-wrap: wrap;
     }
-    h2 { margin: 0 0 12px; font-size: 16px; display: inline-flex; align-items: center; gap: 8px; }
+    h2 { margin: 0; font-size: 16px; display: inline-flex; align-items: center; gap: 8px; }
     .muted { color: var(--ds-text-muted, #64748b); margin: 4px 0 0; font-size: 13px; }
-    .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+    .columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 1023px) {
+      .columns { grid-template-columns: 1fr; }
+    }
+
     .block { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-    .block__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .block__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
     .block__search { display: inline-flex; align-items: center; gap: 6px; }
-    .block__search input { min-width: 240px; }
+    .block__search input { min-width: 220px; }
     .actions-col { width: 1%; white-space: nowrap; text-align: right; }
     .actions-cell { display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center; }
     tr.is-urgent { background: rgba(239,68,68,.04); }
@@ -266,56 +305,65 @@ const POLL_INTERVAL_MS = 5000;
       font-size: 13px;
       line-height: 1.5;
     }
+
+    .undo-toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .undo-toast__icon { color: #16a34a; font-size: 18px; flex-shrink: 0; }
+    .undo-toast__body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+    .undo-toast__text { font-size: 13px; font-weight: 600; color: var(--ds-text, #1a1a2e); }
+    .undo-toast__detail { font-size: 12px; color: var(--ds-text-muted, #6b7280); }
   `],
 })
 export class ExtractionQueuePage implements OnInit, OnDestroy {
   private readonly store = inject(Store);
   private readonly polling = inject(PollingService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly boxService = inject(ExtractorBoxService);
   private readonly notifier = inject(NotificationService);
-  private readonly tokenService = inject(TokenService);
+  private readonly messages = inject(MessageService);
+  private readonly boxService = inject(ExtractorBoxService);
 
   readonly pollIntervalMs = POLL_INTERVAL_MS;
+  readonly undoToastKey = UNDO_TOAST_KEY;
 
   readonly awaiting = this.store.selectSignal(selectAwaiting);
-  readonly mine = this.store.selectSignal(selectInProgress);
-  readonly stats = this.store.selectSignal(selectStats);
+  readonly inProgress = this.store.selectSignal(selectInProgress);
   readonly mutating = this.store.selectSignal(selectMutating);
   readonly lastRefreshAt = this.store.selectSignal(selectLastRefreshAt);
   readonly branches = this.store.selectSignal(selectBranches);
   readonly selectedBranch = this.store.selectSignal(selectSelectedBranch);
   readonly selectedBranchId = this.store.selectSignal(selectSelectedBranchId);
-  readonly occupancy = this.store.selectSignal(selectBoxOccupancy);
+  readonly boxAssignments = this.store.selectSignal(selectBoxAssignments);
+  readonly branchExtractors = this.store.selectSignal(selectBranchExtractors);
+  readonly lastAssigned = this.store.selectSignal(selectLastAssigned);
 
-  readonly myBox = this.boxService.box;
-  readonly myUserId = signal<number | null>(this.tokenService.getUserId());
+  /** Extractores que ya tienen una extracción en curso (para marcar boxes ocupados). */
+  readonly inProgressExtractorIds = computed<number[]>(() =>
+    this.inProgress().map((i) => i.extractorId),
+  );
 
-  readonly canTakeMore = computed(() => this.mine().length === 0);
-  readonly firstMine = computed<InExtractionItem | null>(() => this.mine()[0] ?? null);
-
-  readonly drawerOpen = signal(false);
+  readonly takeModalOpen = signal(false);
   readonly cancelDialogOpen = signal(false);
   readonly cancelTarget = signal<InExtractionItem | null>(null);
   readonly selectedPatient = signal<AwaitingExtractionItem | null>(null);
   readonly searchInput = signal('');
-  readonly paused = computed(() => this.drawerOpen() || this.cancelDialogOpen());
-
-  readonly takeTooltip = computed(() => {
-    if (!this.canTakeMore()) return 'Ya tenés una extracción en curso.';
-    if (this.selectedBranchId() == null) return 'Elegí una sucursal arriba.';
-    return '';
-  });
+  readonly paused = computed(() => this.takeModalOpen() || this.cancelDialogOpen());
 
   private readonly search$ = new Subject<string>();
   private handle: PollingHandle | null = null;
   /**
-   * Guard para no auto-seleccionar la sucursal más de una vez.
-   * El effect que sincroniza branches → selectedBranch corre cada vez que
-   * cambia la lista (incluyendo después de un setSelectedBranch(null) por
-   * 403), y sin este flag entraríamos en loop.
+   * Guard para no auto-seleccionar la sucursal más de una vez. El effect que
+   * sincroniza branches → selectedBranch corre cada vez que cambia la lista, y
+   * sin este flag entraríamos en loop.
    */
   private autoSelectedOnce = false;
+  /** attentionId del último lastAssigned ya mostrado en toast (dedup). */
+  private lastAssignedShownId: number | null = null;
+  /** Timer de la ventana de 5s; se limpia si el usuario deshace antes. */
+  private undoTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.search$
@@ -339,8 +387,7 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
       const currentSelected = this.selectedBranchId();
       if (currentSelected != null) {
         // Validar que la persistida siga en la lista.
-        const stillThere = list.some((b) => b.id === currentSelected);
-        if (!stillThere) {
+        if (!list.some((b) => b.id === currentSelected)) {
           this.dispatchBranchChange(list[0].id);
         }
         this.autoSelectedOnce = true;
@@ -355,13 +402,21 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     });
 
     // Sincronizar el branchId del service con el del store cuando éste cambia
-    // (ej. effect de 403 lo nullea).
+    // (ej. el effect de 403 lo nullea).
     effect(() => {
       const fromStore = this.selectedBranchId();
-      const fromService = this.boxService.selectedBranchId();
-      if (fromStore !== fromService) {
+      if (fromStore !== this.boxService.selectedBranchId()) {
         this.boxService.setSelectedBranch(fromStore);
       }
+    });
+
+    // Ventana de undo de 5s: cuando aparece un lastAssigned nuevo (tras
+    // assignExtractorSuccess), mostramos el toast con acción "Deshacer".
+    effect(() => {
+      const la = this.lastAssigned();
+      if (!la || la.attentionId === this.lastAssignedShownId) return;
+      this.lastAssignedShownId = la.attentionId;
+      this.showUndoToast(la.boxNumber, la.attentionId);
     });
   }
 
@@ -381,6 +436,7 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.handle?.stop();
     this.handle = null;
+    this.clearUndoTimer();
     this.search$.complete();
   }
 
@@ -399,38 +455,61 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     this.store.dispatch(A.setSelectedBranch({ branchId }));
   }
 
-  onBoxChange(box: number): void {
-    this.boxService.setBox(box);
-    this.notifier.success(`Tu box ahora es ${box}.`);
+  // --- Box config bar ------------------------------------------------------
+
+  /**
+   * Asigna/desasigna un extractor a un box: hace merge por boxNumber sobre la
+   * lista actual y dispatch saveBoxAssignments con la lista completa (el backend
+   * hace replace del set).
+   */
+  onBoxAssign(ev: { boxNumber: number; extractorId: number | null }): void {
+    const next = this.boxAssignments().map((b) =>
+      b.boxNumber === ev.boxNumber ? { ...b, extractorId: ev.extractorId } : b,
+    );
+    this.saveBoxes(next);
   }
 
+  /** Agrega un box nuevo (boxNumber = max + 1, sin extractor) y persiste. */
+  onAddBox(): void {
+    const current = this.boxAssignments();
+    const maxBox = current.reduce((max, b) => Math.max(max, b.boxNumber), 0);
+    const next: BoxAssignment[] = [
+      ...current,
+      { boxNumber: maxBox + 1, extractorId: null, extractorFullName: null },
+    ];
+    this.saveBoxes(next);
+  }
+
+  private saveBoxes(boxes: BoxAssignment[]): void {
+    this.store.dispatch(A.saveBoxAssignments({
+      boxes: boxes.map((b) => ({ boxNumber: b.boxNumber, extractorUserId: b.extractorId })),
+    }));
+  }
+
+  // --- Cola / tomar --------------------------------------------------------
+
   onTake(item: AwaitingExtractionItem): void {
-    if (!this.canTakeMore()) return;
     if (this.selectedBranchId() == null) {
       this.notifier.error('Elegí una sucursal arriba antes de tomar pacientes.');
       return;
     }
     this.selectedPatient.set(item);
-    this.drawerOpen.set(true);
+    this.takeModalOpen.set(true);
   }
 
-  onConfirmTake(payload: { id: number; box: number }): void {
+  /** El modal emite el boxNumber elegido. Dispara la asignación y cierra. */
+  onAssignToBox(boxNumber: number): void {
     const patient = this.selectedPatient();
     const branchId = this.selectedBranchId();
-    this.drawerOpen.set(false);
+    this.takeModalOpen.set(false);
     this.selectedPatient.set(null);
     if (!patient || branchId == null) return;
-
-    this.boxService.setBox(payload.box);
-    this.store.dispatch(A.assignExtractor({
-      id: patient.id,
-      boxNumber: payload.box,
-      branchId,
-    }));
+    this.store.dispatch(A.assignExtractor({ id: patient.id, boxNumber, branchId }));
   }
 
-  onCancelRequest(target: InExtractionItem | null): void {
-    if (!target) return;
+  // --- En curso ------------------------------------------------------------
+
+  onCancelRequest(target: InExtractionItem): void {
     this.cancelTarget.set(target);
     this.cancelDialogOpen.set(true);
   }
@@ -443,8 +522,49 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     this.cancelTarget.set(null);
   }
 
-  onEndRequest(target: InExtractionItem | null): void {
-    if (!target) return;
+  onEnd(target: InExtractionItem): void {
     this.store.dispatch(A.endExtraction({ id: target.id }));
+  }
+
+  // --- Undo de 5s ----------------------------------------------------------
+
+  /**
+   * Muestra el toast de undo con timer de 5s. El nombre del extractor se resuelve
+   * desde boxAssignments por boxNumber (fuente de verdad de quién atiende ese box).
+   */
+  private showUndoToast(boxNumber: number, attentionId: number): void {
+    this.clearUndoTimer();
+    const extractorName =
+      this.boxAssignments().find((b) => b.boxNumber === boxNumber)?.extractorFullName ?? null;
+    const detail = extractorName ? `Box ${boxNumber} · ${extractorName}` : `Box ${boxNumber}`;
+    this.messages.add({
+      key: UNDO_TOAST_KEY,
+      severity: 'success',
+      summary: 'Extracción asignada',
+      detail,
+      data: { attentionId },
+      life: UNDO_WINDOW_MS,
+      closable: true,
+    });
+    // Cuando se cierra la ventana, el toast desaparece y la asignación queda firme.
+    this.undoTimer = setTimeout(() => {
+      this.undoTimer = null;
+    }, UNDO_WINDOW_MS);
+  }
+
+  /** Click en "Deshacer": revierte la asignación dentro de la ventana de 5s. */
+  onUndoAssign(): void {
+    const la = this.lastAssigned();
+    this.messages.clear(UNDO_TOAST_KEY);
+    this.clearUndoTimer();
+    if (!la) return;
+    this.store.dispatch(A.unassignExtraction({ id: la.attentionId }));
+  }
+
+  private clearUndoTimer(): void {
+    if (this.undoTimer != null) {
+      clearTimeout(this.undoTimer);
+      this.undoTimer = null;
+    }
   }
 }

@@ -51,6 +51,11 @@ describe('ExtractionEffects', () => {
               ...initialExtractionState,
               selectedBranchId: branchId,
               branchExtractors: [{ id: 99, fullName: 'Juan Pérez' }],
+              // El nombre del extractor del toast de undo se resuelve desde el
+              // box configurado (no desde el operador). Box 2 → Juan Pérez.
+              boxAssignments: [
+                { boxNumber: 2, extractorId: 99, extractorFullName: 'Juan Pérez' },
+              ],
             },
           },
         }),

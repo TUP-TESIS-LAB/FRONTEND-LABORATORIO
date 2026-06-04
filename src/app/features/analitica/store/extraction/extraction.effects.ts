@@ -18,7 +18,6 @@ import {
 import { NotModified, isNotModified } from '@core/refresh';
 import { NotificationService } from '@core/services/notification.service';
 import { ExtractorBoxService } from '@core/services/extractor-box.service';
-import { TokenService } from '@core/auth/token.service';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import { ExtractorAttentionService } from '../../services/extractor-attention.service';
 import {
@@ -32,7 +31,7 @@ import {
 } from '../../models/extraction.model';
 import * as A from './extraction.actions';
 import {
-  selectBranchExtractors,
+  selectBoxAssignments,
   selectSelectedBranchId,
 } from './extraction.selectors';
 
@@ -43,7 +42,6 @@ export class ExtractionEffects {
   private readonly notifier = inject(NotificationService);
   private readonly store = inject(Store);
   private readonly boxService = inject(ExtractorBoxService);
-  private readonly tokenService = inject(TokenService);
 
   /**
    * refreshAll dispara los loads cuando hay sucursal seleccionada.
@@ -206,11 +204,12 @@ export class ExtractionEffects {
   assignExtractor$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.assignExtractor),
-      withLatestFrom(this.store.select(selectBranchExtractors)),
-      exhaustMap(([{ id, boxNumber, branchId }, extractors]) => {
-        const myUserId = this.tokenService.getUserId();
+      withLatestFrom(this.store.select(selectBoxAssignments)),
+      exhaustMap(([{ id, boxNumber, branchId }, boxAssignments]) => {
+        // El extractor que atiende es el configurado en ESE box, no el operador
+        // que dispara la asignación. Resolvemos el nombre desde boxAssignments.
         const extractorFullName =
-          extractors.find((e) => e.id === myUserId)?.fullName ?? '';
+          boxAssignments.find((b) => b.boxNumber === boxNumber)?.extractorFullName ?? '';
         return this.api.assignExtractor(id, boxNumber, branchId).pipe(
           map(() => A.assignExtractorSuccess({
             attentionId: id,
