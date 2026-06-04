@@ -222,6 +222,8 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   protected dniInput   = '';
   protected indications = '';
+  // Alta form uses template-driven ngModel on a plain object; [disabled] on the button
+  // re-evaluates via ngModelChange's markForCheck triggered by FormsModule under OnPush.
   protected form = {
     dni:        '',
     firstName:  '',
@@ -235,12 +237,14 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected readonly sexOpts    = SEX_OPTS;
 
   // When backend confirms DNI not found, pre-fill the alta form's DNI field
-  private readonly _syncAlta = effect(() => {
-    const dni = this.notFoundDni();
-    if (dni && !this.form.dni) {
-      this.form.dni = dni;
-    }
-  });
+  constructor() {
+    effect(() => {
+      const dni = this.notFoundDni();
+      if (dni && !this.form.dni) {
+        this.form.dni = dni;
+      }
+    });
+  }
 
   ngOnInit(): void {
     const dni = this.initialDni();
@@ -250,7 +254,7 @@ export class DatosGeneralesStepComponent implements OnInit {
     }
   }
 
-  protected readonly canConfirm = computed(() => this.resolved() != null);
+  protected readonly canConfirm = computed(() => this.resolved() != null && !this.resolving());
 
   buscar(): void {
     const dni = this.dniInput.trim();
