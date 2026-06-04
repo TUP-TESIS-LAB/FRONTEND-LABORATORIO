@@ -132,6 +132,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'display/extraccion/:tenantSlug/:branchId',
+    loadComponent: () =>
+      import('./features/turnos/pages/tv-extraccion/tv-extraccion.page').then((m) => m.TvExtraccionPage),
+  },
+
+  {
     path: 'turnos/totem',
     loadComponent: () =>
       import('./layout/kiosk-shell/kiosk-shell.component').then((m) => m.KioskShellComponent),
