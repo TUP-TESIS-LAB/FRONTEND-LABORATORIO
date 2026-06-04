@@ -955,3 +955,37 @@ Levantar BE+FE del worktree con `start-worktree.ps1` y navegar a `/analitica/ate
 - **getByDni faltante:** Task F1. ✔
 - **Type consistency:** `Input(id, tenantId, userId)` usado igual en use case, test y controller (B1); `startAttentionForPatient({patientId, indications})`, `createPatientInline({payload})`, `updatePatientInline({id, payload})`, `resolvePatientByDni({dni})` consistentes entre actions/effects/reducer/componente. `CreatePatientRequest`/`UpdatePatientRequest` según `patient.model.ts`. ✔
 - **Placeholders:** sin TODO/TBD; los dos `(verificar contra el código previo...)` en F5 son chequeos de forma de response, no placeholders de implementación.
+
+---
+
+## Addendum — Paso 2 backend: endpoint de búsqueda de análisis (KAN-77)
+
+> Surgido del review final: la spec asumió que `/api/v1/analitica/analysis` (búsqueda) y `/api/v1/analitica/nbu/current` existían. **No existen.** Demo los tapaba; F5 los destapó. Decisiones del usuario (2026-06-04): la lista del paso 2 sale de **`TenantAnalysis`** (por tenant); **se construye la búsqueda ahora, el precio NBU (ubCount + valor UB) queda como follow-up** (el front oculta el precio cuando no hay valor NBU).
+
+**Datos existentes** (verificado): `analysis_catalog` GLOBAL `{id, name, family_name, code, nbu_code, unit, sample_type, active}` (sin shortCode numérico, sin ubCount). `tenant_analysis` por tenant `{id, tenant_id, catalog_id, short_code(String), custom_name, active, deleted_at}`. `determination_catalog {id, name, unit, reference_values, analysis_catalog_id}`. NO existe valor NBU/UB en ninguna tabla. Flyway máx = V82 (no se necesita migración: no agregamos columnas).
+
+**Contrato a servir** (el front ya consume estas URLs):
+- `GET /api/v1/analitica/analysis?shortCode={s}` → `Analysis` o vacío.
+- `GET /api/v1/analitica/analysis?shortCodePrefix={s}&limit={n}` → `Analysis[]`.
+- `GET /api/v1/analitica/analysis?nameLike={s}&limit={n}` → `Analysis[]`.
+- `GET /api/v1/analitica/analysis/{id}` → `AnalysisDetail`.
+Donde `Analysis = { id, shortCode(String), name, familyName, ubCount: null }` y `AnalysisDetail = Analysis & { description: null, determinations: {id,name}[], processingTime: null, processingTimeUnit: null, nbuCode }`.
+
+**Regla de mapeo (load-bearing):** `id = catalog_id` (la atención guarda analysisId = id del catálogo global; el protocolo resuelve por `AnalysisLookupPort` sobre `analysis_catalog`). `shortCode = tenant_analysis.short_code`. `name = COALESCE(tenant_analysis.custom_name, analysis_catalog.name)`. `familyName = analysis_catalog.family_name`. `nbuCode = analysis_catalog.nbu_code`. `ubCount = null` (precio diferido). Búsqueda SIEMPRE filtrada por `tenant_id` (del JWT) + `active`.
+
+### Task P2-BE-1: Read port + queries (tenant_analysis ⨝ analysis_catalog)
+- Puerto de lectura nuevo (p.ej. `TenantAnalysisSearchPort`) + proyección `{catalogId, shortCode, name, familyName, nbuCode}`.
+- Adapter JPA con queries: por `short_code` exacto, por prefijo de `short_code` (limit), por `custom_name`/`analysis_catalog.name` LIKE (limit), y getById (catalogId → catálogo + sus determinaciones), todo tenant-scoped + active.
+- Use case(s) `SearchTenantAnalysisUseCase` (byShortCode / byPrefix / byName) + `GetTenantAnalysisDetailUseCase`.
+- Tests unitarios de los use cases (mock del puerto).
+
+### Task P2-BE-2: Controller `/api/v1/analitica/analysis` + DTOs
+- `AnalysisQueryController` con los 4 GET; tenantId via `TenantContext.requireTenantId()`; `@PreAuthorize` autenticado (SECRETARIA/ADMIN).
+- DTOs `AnalysisResponse {id, shortCode, name, familyName, ubCount}` (ubCount null), `AnalysisDetailResponse {..., description, determinations[], processingTime, processingTimeUnit, nbuCode}` (description/processingTime null).
+- Errores en español sin leak (regla #4).
+
+### Task P2-FE-1: Reconciliar el modelo FE con el contrato real
+- `Analysis.shortCode: number → string` (es String en el dominio). Ajustar `AnalysisService.findByShortCode(shortCode: string)` y el `AnalysisPickerComponent` (handleEnter pasa el string crudo, sin `Number()`). Actualizar specs. `npm run build` + specs verdes.
+
+### Follow-up (NUEVO ticket, fuera de KAN-77): precio NBU
+- Modelar valor UB (entidad + tabla + `/api/v1/analitica/nbu/current`) y `ubCount` por práctica (columna en catálogo + seed). Definir quién carga el valor de la UB y el origen de los ubCount.
