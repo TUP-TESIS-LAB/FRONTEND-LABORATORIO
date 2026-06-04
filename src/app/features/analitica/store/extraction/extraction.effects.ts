@@ -43,6 +43,9 @@ export class ExtractionEffects {
   private readonly store = inject(Store);
   private readonly boxService = inject(ExtractorBoxService);
 
+  /** Evita apilar toasts de "boxes guardada" cuando se disparan saves rápidos en sucesión. */
+  private boxSaveToastTimer: ReturnType<typeof setTimeout> | null = null;
+
   /**
    * refreshAll dispara los loads cuando hay sucursal seleccionada.
    * v3: incluye loadBoxAssignments + loadInProgress + loadAwaiting (+ stats, occupancy).
@@ -256,7 +259,7 @@ export class ExtractionEffects {
     this.actions$.pipe(
       ofType(A.saveBoxAssignments),
       withLatestFrom(this.store.select(selectSelectedBranchId)),
-      exhaustMap(([{ boxes }, branchId]) => {
+      concatMap(([{ boxes }, branchId]) => {
         if (branchId == null) return EMPTY;
         return this.api.saveBoxAssignments(branchId, boxes).pipe(
           map((items) => A.saveBoxAssignmentsSuccess({ items })),
@@ -345,7 +348,15 @@ export class ExtractionEffects {
         this.notifier.success('Extracción finalizada.');
         return;
       case A.saveBoxAssignmentsSuccess.type:
-        this.notifier.success('Asignación de boxes guardada.');
+        // Debounce: si hay un timer pendiente del anterior save, lo cancelamos y
+        // programamos uno nuevo para que solo se muestre el toast del último save.
+        if (this.boxSaveToastTimer != null) {
+          clearTimeout(this.boxSaveToastTimer);
+        }
+        this.boxSaveToastTimer = setTimeout(() => {
+          this.boxSaveToastTimer = null;
+          this.notifier.success('Asignación de boxes guardada.');
+        }, 300);
         return;
       case A.assignExtractorFailure.type: {
         const err = (action as ReturnType<typeof A.assignExtractorFailure>).error;

@@ -157,6 +157,48 @@ describe('extractionReducer', () => {
     expect(out.pending.mutation).toBe(false);
   });
 
+  it('saveBoxAssignments (request) aplica actualización optimista de boxAssignments resolviendo nombre desde branchExtractors', () => {
+    const start = {
+      ...initialExtractionState,
+      branchExtractors: [
+        branchExtractor({ id: 10, fullName: 'María García' }),
+        branchExtractor({ id: 20, fullName: 'Pedro Ruiz' }),
+      ],
+      boxAssignments: [
+        boxAssignment({ boxNumber: 1, extractorId: null, extractorFullName: null }),
+        boxAssignment({ boxNumber: 2, extractorId: null, extractorFullName: null }),
+      ],
+    };
+
+    const out = extractionReducer(start, A.saveBoxAssignments({
+      boxes: [
+        { boxNumber: 1, extractorUserId: 10 },
+        { boxNumber: 2, extractorUserId: null },
+      ],
+    }));
+
+    expect(out.pending.mutation).toBe(true);
+    expect(out.boxAssignments).toEqual([
+      { boxNumber: 1, extractorId: 10, extractorFullName: 'María García' },
+      { boxNumber: 2, extractorId: null, extractorFullName: null },
+    ]);
+  });
+
+  it('saveBoxAssignments (request) deja extractorFullName null si el extractor no se encuentra en branchExtractors', () => {
+    const start = {
+      ...initialExtractionState,
+      branchExtractors: [branchExtractor({ id: 10, fullName: 'María García' })],
+    };
+
+    const out = extractionReducer(start, A.saveBoxAssignments({
+      boxes: [{ boxNumber: 3, extractorUserId: 99 }],
+    }));
+
+    expect(out.boxAssignments).toEqual([
+      { boxNumber: 3, extractorId: 99, extractorFullName: null },
+    ]);
+  });
+
   // --- BranchExtractors ---------------------------------------------------
   it('loadBranchExtractors sets pending.branchExtractors=true', () => {
     const out = extractionReducer(initialExtractionState, A.loadBranchExtractors());

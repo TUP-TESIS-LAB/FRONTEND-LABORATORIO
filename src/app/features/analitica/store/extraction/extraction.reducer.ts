@@ -127,7 +127,17 @@ export const extractionReducer = createReducer(
     error: extractErrorText(error),
   })),
 
-  on(A.saveBoxAssignments, (s): ExtractionFeatureState => setPending(s, { mutation: true })),
+  on(A.saveBoxAssignments, (s, { boxes }): ExtractionFeatureState => ({
+    ...setPending(s, { mutation: true }),
+    boxAssignments: boxes.map((b) => {
+      const ext = s.branchExtractors.find((e) => e.id === b.extractorUserId);
+      return {
+        boxNumber: b.boxNumber,
+        extractorId: b.extractorUserId ?? null,
+        extractorFullName: ext?.fullName ?? null,
+      };
+    }),
+  })),
   on(A.saveBoxAssignmentsSuccess, (s, { items }): ExtractionFeatureState => ({
     ...setPending(s, { mutation: false }),
     boxAssignments: items,

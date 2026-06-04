@@ -147,8 +147,6 @@ const UNDO_WINDOW_MS = 5000;
                     <th>Paciente</th>
                     <th>DNI</th>
                     <th>Atención</th>
-                    <th>Análisis</th>
-                    <th>Espera</th>
                     <th class="actions-col">Acciones</th>
                   </tr>
                 </ng-template>
@@ -162,8 +160,6 @@ const UNDO_WINDOW_MS = 5000;
                     <td>{{ row.patientFullName }}</td>
                     <td>{{ row.patientDni }}</td>
                     <td>{{ row.attentionNumber }}</td>
-                    <td>{{ row.analysisCount }}</td>
-                    <td>{{ row.waitMinutes }} min</td>
                     <td class="actions-col">
                       <div class="actions-cell">
                         <p-button
