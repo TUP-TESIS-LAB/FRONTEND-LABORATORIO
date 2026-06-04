@@ -1,5 +1,7 @@
 # TV de Extracción Implementation Plan
 
+> **Jira:** [KAN-78](https://exequielsantoro.atlassian.net/browse/KAN-78)
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Crear pantalla pública `/display/extraccion/:tenantSlug/:branchId` análoga a la TV de atención existente, con datos mockeados, paleta verde, badge `EXTRACCIÓN`, `→ Box N` por entry, botón "Simular llamada" y modificación mínima a la TV de atención (badge `ATENCIÓN`).
@@ -32,7 +34,7 @@
 
 ## Convención de commits
 
-Todos los commits siguen `<tipo>(<scope>): <descripción> (KAN-XXX)`. El ticket Jira se crea al final del plan; por ahora los commits llevan `(KAN-TBD)` que se reemplaza con `sed` en el último step antes del PR (Task 8).
+Todos los commits siguen `<tipo>(<scope>): <descripción> (KAN-78)`. El ticket ya está creado (KAN-78).
 
 ---
 
@@ -75,7 +77,7 @@ Expected: build OK (la sala-espera actual no usa `boxNumber`, así que no rompe)
 ```bash
 cd "C:/Users/Mateo/Desktop/tesis/FRONTEND-LABORATORIO"
 git add src/app/features/turnos/models/public-display.model.ts
-git commit -m "feat(turnos): agregar boxNumber opcional a PublicQueueEntry (KAN-TBD)"
+git commit -m "feat(turnos): agregar boxNumber opcional a PublicQueueEntry (KAN-78)"
 ```
 
 ---
@@ -233,7 +235,7 @@ Expected: PASS — 3 tests verdes.
 ```bash
 git add src/app/features/turnos/pages/tv-extraccion/tv-extraccion-mock.service.ts \
         src/app/features/turnos/pages/tv-extraccion/tv-extraccion-mock.service.spec.ts
-git commit -m "feat(turnos): TvExtraccionMockService con snapshot reactivo (KAN-TBD)"
+git commit -m "feat(turnos): TvExtraccionMockService con snapshot reactivo (KAN-78)"
 ```
 
 ---
@@ -678,7 +680,7 @@ Expected: build OK. Si falla por `@use` no resuelto, hacer fallback: copiar el S
 git add src/app/features/turnos/pages/tv-extraccion/tv-extraccion.page.ts \
         src/app/features/turnos/pages/tv-extraccion/tv-extraccion.page.html \
         src/app/features/turnos/pages/tv-extraccion/tv-extraccion.page.scss
-git commit -m "feat(turnos): TvExtraccionPage (mockup UI, paleta verde, boton simular) (KAN-TBD)"
+git commit -m "feat(turnos): TvExtraccionPage (mockup UI, paleta verde, boton simular) (KAN-78)"
 ```
 
 ---
@@ -754,7 +756,7 @@ Expected: PASS — 3 tests verdes. Si el primer fetch no terminó (timing), aume
 
 ```bash
 git add src/app/features/turnos/pages/tv-extraccion/tv-extraccion.page.spec.ts
-git commit -m "test(turnos): smoke spec de TvExtraccionPage (KAN-TBD)"
+git commit -m "test(turnos): smoke spec de TvExtraccionPage (KAN-78)"
 ```
 
 ---
@@ -828,7 +830,7 @@ Expected: build OK. Si SCSS error, revisar `position: relative` en `.cola-sectio
 ```bash
 git add src/app/features/turnos/pages/sala-espera/sala-espera.page.html \
         src/app/features/turnos/pages/sala-espera/sala-espera.page.scss
-git commit -m "feat(turnos): badge ATENCION en sala-espera TV (KAN-TBD)"
+git commit -m "feat(turnos): badge ATENCION en sala-espera TV (KAN-78)"
 ```
 
 ---
@@ -881,7 +883,7 @@ Expected: ve la pantalla TV de extracción con badge verde y 6 entries.
 
 ```bash
 git add src/app/app.routes.ts
-git commit -m "feat(turnos): registrar ruta /display/extraccion/:tenant/:branch (KAN-TBD)"
+git commit -m "feat(turnos): registrar ruta /display/extraccion/:tenant/:branch (KAN-78)"
 ```
 
 ---
@@ -936,63 +938,12 @@ Expected: la sidebar muestra "TV extracción" debajo de "TV sala de espera", amb
 
 ```bash
 git add src/app/layout/sidebar/sidebar.nav.ts
-git commit -m "feat(nav): link 'TV extraccion' en sidebar (KAN-TBD)"
+git commit -m "feat(nav): link 'TV extraccion' en sidebar (KAN-78)"
 ```
 
 ---
 
-## Task 8: Crear ticket Jira + reemplazar KAN-TBD
-
-**Files:**
-- Read: `docs/superpowers/specs/2026-06-04-tv-extraccion-design.md`
-- Modify: header del spec (línea `> **Jira:** ...`)
-
-- [ ] **Step 1: Invocar `jira-workflow` para crear el ticket**
-
-Run: invocar la skill `jira-workflow` con el path del spec.
-
-```
-Skill: jira-workflow
-Plan: docs/superpowers/specs/2026-06-04-tv-extraccion-design.md
-Title: "TV de extracción — mockup UI"
-Description: copiar la sección 1 (Propósito) + sección 3 (Requerimientos) del spec.
-```
-
-Resultado esperado: ticket creado tipo `KAN-XXX`. Guardar el número.
-
-- [ ] **Step 2: Actualizar el header del spec con el link a Jira**
-
-Editar `docs/superpowers/specs/2026-06-04-tv-extraccion-design.md`, línea con `> **Jira:** _pendiente_`:
-
-```diff
-- > **Jira:** _pendiente (se crea al cerrar plan)_
-+ > **Jira:** [KAN-XXX](https://tup-tesis.atlassian.net/browse/KAN-XXX)
-```
-
-(Reemplazar `KAN-XXX` por el número real devuelto.)
-
-- [ ] **Step 3: Reescribir los commits con el número real**
-
-Los commits anteriores tienen `(KAN-TBD)`. Reemplazar con el ticket real usando una rebase interactiva:
-
-```bash
-cd "C:/Users/Mateo/Desktop/tesis/FRONTEND-LABORATORIO"
-# Reemplazar KAN-TBD por KAN-XXX en los últimos 7 commits de mensaje
-git filter-branch -f --msg-filter "sed 's/KAN-TBD/KAN-XXX/g'" HEAD~7..HEAD
-```
-
-> **Alternativa más segura** si el operador no quiere rewrite: dejar `KAN-TBD` y agregar un commit final que documente el ticket. La filter-branch funciona si nadie pulleó esta rama todavía.
-
-- [ ] **Step 4: Commit del spec actualizado**
-
-```bash
-git add docs/superpowers/specs/2026-06-04-tv-extraccion-design.md
-git commit -m "docs(turnos): linkear spec TV extraccion a KAN-XXX"
-```
-
----
-
-## Task 9: Smoke manual end-to-end
+## Task 8: Smoke manual end-to-end
 
 - [ ] **Step 1: Levantar el frontend**
 
@@ -1046,6 +997,6 @@ Expected: todos los tests pasan, incluidos los nuevos de `tv-extraccion`.
 - ✅ Modelo extendido — Task 1
 - ✅ Jira — Task 8
 
-**Placeholder scan:** sin `TBD`/`TODO` bloqueantes. El único `KAN-TBD` es intencional y se reemplaza en Task 8.
+**Placeholder scan:** sin `TBD`/`TODO` bloqueantes. El único `KAN-78` es intencional y se reemplaza en Task 8.
 
 **Type consistency:** `TvExtraccionPage`, `TvExtraccionMockService`, `simulateNewCall()`, `boxNumber`, `fetchSnapshot()` — nombres consistentes a lo largo del plan.

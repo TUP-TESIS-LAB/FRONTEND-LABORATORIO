@@ -3,7 +3,7 @@
 > **Fecha:** 2026-06-04
 > **Estado:** spec aprobado, pendiente plan de implementación
 > **Scope:** UI/UX únicamente. Sin endpoint real. Datos mockeados en frontend.
-> **Jira:** _pendiente (se crea al cerrar plan)_
+> **Jira:** [KAN-78](https://exequielsantoro.atlassian.net/browse/KAN-78)
 
 ---
 
