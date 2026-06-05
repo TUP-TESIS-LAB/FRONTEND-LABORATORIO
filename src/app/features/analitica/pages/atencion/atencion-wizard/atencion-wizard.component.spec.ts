@@ -13,7 +13,7 @@ import {
   selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
   selectPatientResolutionError,
 } from '../../../store/atencion/atencion.selectors';
-import { cancelAtencion } from '../../../store/atencion/atencion.actions';
+import { cancelAtencion, downloadProtocolLabels } from '../../../store/atencion/atencion.actions';
 
 function makeDetail(state: AttentionState): AttentionResponse {
   return {
@@ -80,5 +80,15 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onCancelConfirmed('Error de carga');
     expect(spy).toHaveBeenCalledWith(cancelAtencion({ id: 1, payload: { cancellationReason: 'Error de carga' } }));
+  });
+
+  it('downloadLabels despacha downloadProtocolLabels cuando hay protocolId', () => {
+    setup(AttentionState.AWAITING_EXTRACTION);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.AWAITING_EXTRACTION), protocolId: 9 } as any);
+    store.refreshState();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.downloadLabels();
+    expect(spy).toHaveBeenCalledWith(downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
   });
 });

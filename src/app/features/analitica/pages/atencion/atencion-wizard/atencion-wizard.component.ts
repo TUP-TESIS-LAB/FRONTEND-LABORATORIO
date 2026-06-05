@@ -18,6 +18,7 @@ import {
   atencionMutationSuccess,
   cancelAtencion,
   createPreFilledAtencion,
+  downloadProtocolLabels,
   loadAtencion,
   returnPhase,
 } from '../../../store/atencion/atencion.actions';
@@ -100,6 +101,12 @@ const ALL_STEPS: WizardStepDef[] = [
         } @else if (isPostSecretary()) {
           <ui-empty-state heading="Fase de secretaría completada" icon="pi-clock"
                           [description]="postSecretaryDescription()" />
+          @if (detail()!.protocolId != null) {
+            <div class="flex justify-center mt-4">
+              <p-button label="Descargar rótulos" icon="pi pi-tag" severity="secondary"
+                        (onClick)="downloadLabels()" />
+            </div>
+          }
         } @else {
           <div class="flex items-center mb-6 px-2">
             @for (step of visibleSteps(); track step.key; let i = $index, last = $last) {
@@ -267,6 +274,12 @@ export class AtencionWizardComponent {
   }
   onFinished(): void { this.router.navigate(['/analitica/atencion']); }
   back(): void { this.router.navigate(['/analitica/atencion']); }
+  downloadLabels(): void {
+    const d = this.detail();
+    if (!d || d.protocolId == null) return;
+    this.store.dispatch(downloadProtocolLabels({ protocolId: d.protocolId, protocolNumber: `P-${d.protocolId}` }));
+  }
+
   isPostSecretary(): boolean {
     const s = this.detail()?.attentionState;
     return s === AttentionState.AWAITING_EXTRACTION || s === AttentionState.IN_EXTRACTION;
