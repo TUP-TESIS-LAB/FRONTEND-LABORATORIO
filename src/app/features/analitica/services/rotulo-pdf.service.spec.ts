@@ -14,15 +14,15 @@ describe('RotuloPdfService', () => {
     service = new RotuloPdfService();
   });
 
-  it('genera N etiquetas con el nº de protocolo y guarda el pdf', () => {
-    service.generate('P-5', [{ id: 1 }, { id: 2 }]);
+  it('genera N etiquetas con el nº de protocolo y guarda el pdf', async () => {
+    await service.generate('P-5', [{ id: 1 }, { id: 2 }]);
     expect(mockDoc.addImage).toHaveBeenCalledTimes(2);
     expect(mockDoc.text).toHaveBeenCalledWith('P-5', expect.any(Number), expect.any(Number), { align: 'center' });
     expect(mockDoc.save).toHaveBeenCalledWith('rotulos-P-5.pdf');
   });
 
-  it('con [] no genera ni guarda', () => {
-    service.generate('P-5', []);
+  it('con [] no genera ni guarda', async () => {
+    await service.generate('P-5', []);
     expect(mockDoc.save).not.toHaveBeenCalled();
   });
 });
