@@ -1,13 +1,15 @@
 import {
-  ChangeDetectionStrategy, Component, EventEmitter, Input, Output,
-  computed, inject,
+  ChangeDetectionStrategy, Component, DestroyRef, EventEmitter, Input, Output,
+  computed, inject, signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { BoxType, BoxOccupation } from '../models/box-occupation.model';
 import { selectAllOccupations } from '../store/box-occupation.selectors';
-import { occupyBox } from '../store/box-occupation.actions';
+import { occupyBox, occupyBoxSuccess, occupyBoxFailure } from '../store/box-occupation.actions';
 
 @Component({
   selector: 'app-box-selector-modal',
@@ -28,10 +30,18 @@ export class BoxSelectorModalComponent {
   @Output() closed = new EventEmitter<void>();
 
   private store = inject(Store);
+  private actions$ = inject(Actions);
+  private destroyRef = inject(DestroyRef);
+
   protected readonly allOccupations = this.store.selectSignal(selectAllOccupations);
   protected readonly myOccupation = computed(() =>
     this.allOccupations().find(o => o.userId === this.currentUserId) ?? null,
   );
+
+  /** Mientras está pendiente la respuesta del occupy. Bloquea clicks en el grid. */
+  protected readonly pending = signal<boolean>(false);
+  /** Mensaje warning inline cuando el último intento falló (ej. 409). Reset al elegir otro box. */
+  protected readonly warningMsg = signal<string | null>(null);
 
   protected slots = computed(() => {
     const map = new Map<number, BoxOccupation>();
@@ -46,13 +56,34 @@ export class BoxSelectorModalComponent {
 
   protected allOccupied = computed(() => this.slots().every(s => s.occupation !== null));
 
+  constructor() {
+    // Suscripción persistente: el modal se queda abierto durante el pending,
+    // y reacciona al action result para cerrar (success) o mostrar warning (failure).
+    this.actions$.pipe(ofType(occupyBoxSuccess), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.pending.set(false);
+        this.warningMsg.set(null);
+        this.closed.emit();
+      });
+    this.actions$.pipe(ofType(occupyBoxFailure), takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ error }) => {
+        this.pending.set(false);
+        this.warningMsg.set(error);
+      });
+  }
+
   onSlotClick(boxNumber: number, occupied: BoxOccupation | null): void {
-    if (occupied) return;  // ocupado por otro o por mí — no action
+    if (occupied || this.pending()) return;  // ocupado o esperando respuesta — no action
+    this.warningMsg.set(null);
+    this.pending.set(true);
     this.store.dispatch(occupyBox({ branchId: this.branchId, input: { boxType: this.boxType, boxNumber } }));
-    this.closed.emit();
+    // NO cerramos acá; esperamos al success/failure en la subscripción de arriba.
   }
 
   onClose(): void {
-    if (this.canClose) this.closed.emit();
+    if (this.canClose) {
+      this.warningMsg.set(null);
+      this.closed.emit();
+    }
   }
 }

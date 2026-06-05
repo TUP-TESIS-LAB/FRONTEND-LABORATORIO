@@ -27,11 +27,21 @@ export class BoxOccupationEffects {
         A.loadBoxOccupations({ branchId, boxType: input.boxType }),
       )),
       catchError(error => {
-        const msg = error?.status === 409
-          ? (error?.error?.message ?? 'Ese box ya fue ocupado, refrescá.')
+        // 409 (box ocupado por race) → warning inline en el modal; NO toast.
+        // Otros errores → toast genérico.
+        const is409 = error?.status === 409;
+        const msg = is409
+          ? (error?.error?.message ?? 'Ese box recién fue ocupado. Elegí otro.')
           : (error?.error?.message ?? 'No se pudo ocupar el box.');
-        this.toast.add({ severity: 'error', summary: msg });
-        return of(A.occupyBoxFailure({ error: msg }));
+        if (!is409) {
+          this.toast.add({ severity: 'error', summary: msg });
+        }
+        // Refrescar siempre — incluso en error, para sincronizar el grid con
+        // el estado real (ej. en el 409 mostrar el box recién tomado).
+        return of(
+          A.occupyBoxFailure({ error: msg }),
+          A.loadBoxOccupations({ branchId, boxType: input.boxType }),
+        );
       }),
     )),
   ));

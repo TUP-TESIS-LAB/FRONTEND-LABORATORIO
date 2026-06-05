@@ -26,7 +26,7 @@
           [class.box-slot--free]="!slot.occupation"
           [class.box-slot--occupied]="slot.occupation && slot.occupation.userId !== currentUserId"
           [class.box-slot--mine]="slot.occupation && slot.occupation.userId === currentUserId"
-          [disabled]="!!slot.occupation"
+          [disabled]="!!slot.occupation || pending()"
           (click)="onSlotClick(slot.boxNumber, slot.occupation)">
           <div class="box-slot__label">Box {{ slot.boxNumber }}</div>
           @if (slot.occupation && slot.occupation.userId !== currentUserId) {
@@ -37,6 +37,14 @@
         </button>
       }
     </div>
+
+    @if (warningMsg(); as msg) {
+      <div class="warning-inline">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>{{ msg }}</span>
+      </div>
+    }
+
     <div class="legend">Verde = libre · Gris = ocupado</div>
   }
 </p-dialog>
