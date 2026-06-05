@@ -22,6 +22,7 @@ import {
 import { DatosGeneralesStepComponent } from './steps/datos-generales-step/datos-generales-step.component';
 import { AnalisisStepComponent } from './steps/analisis-step/analisis-step.component';
 import { ResumenStepComponent } from './steps/resumen-step/resumen-step.component';
+import { CancelAttentionModalComponent } from '../../../components/cancel-attention-modal/cancel-attention-modal.component';
 
 type StepKey = 'datos' | 'analisis' | 'cobro' | 'facturacion' | 'confirmar';
 interface WizardStepDef {
@@ -46,6 +47,7 @@ const ALL_STEPS: WizardStepDef[] = [
   imports: [
     ButtonModule, TagModule, EmptyStateComponent,
     DatosGeneralesStepComponent, AnalisisStepComponent, ResumenStepComponent,
+    CancelAttentionModalComponent,
   ],
   template: `
     <div class="p-6 max-w-4xl mx-auto">
@@ -77,7 +79,12 @@ const ALL_STEPS: WizardStepDef[] = [
               <p-tag [value]="stateLabel(detail()!.attentionState)" [severity]="stateSeverity(detail()!.attentionState)" />
             </div>
           </div>
-          <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
+          <div class="flex items-center gap-2">
+            @if (canCancel()) {
+              <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
+            }
+            <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
+          </div>
         </header>
 
         @if (isTerminal(detail()!.attentionState)) {
@@ -116,11 +123,13 @@ const ALL_STEPS: WizardStepDef[] = [
           <div class="flex justify-between mt-4">
             <p-button label="Volver fase" severity="secondary" [outlined]="true"
                       [disabled]="mutating() || !canReturn()" (onClick)="onReturnPhase()" />
-            <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
           </div>
         }
       }
     </div>
+
+    <lab-cancel-attention-modal [visible]="cancelModalOpen()"
+      (confirmed)="onCancelConfirmed($event)" (dismissed)="cancelModalOpen.set(false)" />
   `,
 })
 export class AtencionWizardComponent {
@@ -150,6 +159,12 @@ export class AtencionWizardComponent {
   protected readonly stateLabel    = attentionStateLabel;
   protected readonly stateSeverity = attentionStateSeverity;
   protected readonly isTerminal    = isTerminal;
+
+  protected readonly cancelModalOpen = signal(false);
+  protected canCancel(): boolean {
+    const s = this.detail()?.attentionState;
+    return s != null && !isTerminal(s) && !this.isPostSecretary();
+  }
 
   protected readonly visibleSteps = computed<WizardStepDef[]>(() =>
     ALL_STEPS.filter((s) => !s.requires || this.registry.isActive(s.requires))
@@ -215,10 +230,13 @@ export class AtencionWizardComponent {
     this.store.dispatch(returnPhase({ id: d.id }));
   }
   onCancel(): void {
+    if (!this.detail()) return;
+    this.cancelModalOpen.set(true);
+  }
+  onCancelConfirmed(reason: string): void {
     const d = this.detail();
     if (!d) return;
-    const reason = window.prompt('Motivo de cancelación');
-    if (!reason?.trim()) return;
+    this.cancelModalOpen.set(false);
     this.store.dispatch(cancelAtencion({ id: d.id, payload: { cancellationReason: reason } }));
     clearAtencionSession();
   }

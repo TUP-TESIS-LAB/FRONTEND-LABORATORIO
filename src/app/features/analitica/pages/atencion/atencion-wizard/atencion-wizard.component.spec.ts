@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { ReplaySubject, of } from 'rxjs';
 import { AtencionWizardComponent } from './atencion-wizard.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
@@ -13,6 +13,7 @@ import {
   selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
   selectPatientResolutionError,
 } from '../../../store/atencion/atencion.selectors';
+import { cancelAtencion } from '../../../store/atencion/atencion.actions';
 
 function makeDetail(state: AttentionState): AttentionResponse {
   return {
@@ -71,5 +72,13 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     fixture.componentInstance.onAnalysisAdvanced();
     fixture.detectChanges();
     expect((fixture.componentInstance as any).uiStep().key).toBe('confirmar');
+  });
+
+  it('onCancelConfirmed despacha cancelAtencion con el motivo', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onCancelConfirmed('Error de carga');
+    expect(spy).toHaveBeenCalledWith(cancelAtencion({ id: 1, payload: { cancellationReason: 'Error de carga' } }));
   });
 });
