@@ -10,6 +10,8 @@ export interface Sucursal {
   address: Address | null;
   responsibleUserId: number | null;
   active: boolean;
+  atencionBoxesCount: number;
+  extraccionBoxesCount: number;
 }
 
 export interface SucursalCreateInput {
@@ -18,6 +20,8 @@ export interface SucursalCreateInput {
   status: SucursalStatus;
   address?: Address;
   responsibleUserId?: number | null;
+  atencionBoxesCount: number;
+  extraccionBoxesCount: number;
 }
 
 export type SucursalUpdateInput = SucursalCreateInput;

@@ -8,6 +8,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 
@@ -28,7 +29,7 @@ const STATUS_OPTIONS: { label: string; value: SucursalStatus }[] = [
   selector: 'app-datos-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, InputNumberModule, SelectModule],
   templateUrl: './datos-tab.component.html',
   styleUrl: './datos-tab.component.scss',
 })
@@ -49,6 +50,8 @@ export class DatosTabComponent {
     code: ['', [Validators.required, Validators.maxLength(30)]],
     description: ['', [Validators.required, Validators.maxLength(120)]],
     status: ['ACTIVE' as SucursalStatus, Validators.required],
+    atencionBoxesCount: [1, [Validators.required, Validators.min(1)]],
+    extraccionBoxesCount: [1, [Validators.required, Validators.min(1)]],
     address: this.fb.group({
       street: [''],
       streetNumber: [''],
@@ -65,6 +68,8 @@ export class DatosTabComponent {
           code: c.code,
           description: c.description,
           status: c.status,
+          atencionBoxesCount: c.atencionBoxesCount,
+          extraccionBoxesCount: c.extraccionBoxesCount,
           address: {
             street: c.address?.street ?? '',
             streetNumber: c.address?.streetNumber ?? '',
@@ -81,6 +86,8 @@ export class DatosTabComponent {
       code: raw.code.trim(),
       description: raw.description.trim(),
       status: raw.status,
+      atencionBoxesCount: raw.atencionBoxesCount,
+      extraccionBoxesCount: raw.extraccionBoxesCount,
       address: {
         street: raw.address.street?.trim() ?? '',
         streetNumber: raw.address.streetNumber?.trim() ?? '',

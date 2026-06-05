@@ -11,6 +11,39 @@
       }
     </div>
 
+    <div class="form-row">
+      <div class="form-field">
+        <label for="atencionBoxesCount">Cantidad de boxes de atención *</label>
+        <p-inputNumber
+          inputId="atencionBoxesCount"
+          formControlName="atencionBoxesCount"
+          [min]="1"
+          [showButtons]="true"
+          buttonLayout="horizontal"
+          decrementButtonIcon="pi pi-minus"
+          incrementButtonIcon="pi pi-plus"
+        />
+        @if (form.controls.atencionBoxesCount.invalid && form.controls.atencionBoxesCount.touched) {
+          <small class="form-error">Mínimo 1.</small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="extraccionBoxesCount">Cantidad de boxes de extracción *</label>
+        <p-inputNumber
+          inputId="extraccionBoxesCount"
+          formControlName="extraccionBoxesCount"
+          [min]="1"
+          [showButtons]="true"
+          buttonLayout="horizontal"
+          decrementButtonIcon="pi pi-minus"
+          incrementButtonIcon="pi pi-plus"
+        />
+        @if (form.controls.extraccionBoxesCount.invalid && form.controls.extraccionBoxesCount.touched) {
+          <small class="form-error">Mínimo 1.</small>
+        }
+      </div>
+    </div>
+
     <div class="address-section">
       <div class="form-row address-row" formGroupName="address">
         <div class="form-field">

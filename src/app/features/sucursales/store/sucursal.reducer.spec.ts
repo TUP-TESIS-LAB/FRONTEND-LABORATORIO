@@ -19,6 +19,8 @@ const mockSucursal: Sucursal = {
   address: null,
   responsibleUserId: null,
   active: true,
+  atencionBoxesCount: 1,
+  extraccionBoxesCount: 1,
 };
 
 const mockSchedule: BranchSchedule = {
