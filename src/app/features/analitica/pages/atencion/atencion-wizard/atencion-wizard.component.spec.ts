@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { ReplaySubject, of } from 'rxjs';
 import { AtencionWizardComponent } from './atencion-wizard.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
@@ -10,7 +10,10 @@ import { NbuService } from '../../../services/nbu.service';
 import { AttentionResponse, AttentionState } from '../../../models/atencion.model';
 import {
   selectDetail, selectDetailLoading, selectMutating,
+  selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
+  selectPatientResolutionError,
 } from '../../../store/atencion/atencion.selectors';
+import { cancelAtencion, downloadProtocolLabels } from '../../../store/atencion/atencion.actions';
 
 function makeDetail(state: AttentionState): AttentionResponse {
   return {
@@ -38,6 +41,11 @@ describe('AtencionWizardComponent (CORE flow)', () => {
             { selector: selectDetail, value: makeDetail(state) },
             { selector: selectDetailLoading, value: false },
             { selector: selectMutating, value: false },
+            // El paso 1 (datos-generales-step) lee estos selectors al renderizar.
+            { selector: selectResolvedPatient, value: null },
+            { selector: selectPatientResolving, value: false },
+            { selector: selectPatientNotFoundDni, value: null },
+            { selector: selectPatientResolutionError, value: null },
           ],
         }),
         // El wizard renderiza step components que ahora inyectan Actions
@@ -64,5 +72,23 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     fixture.componentInstance.onAnalysisAdvanced();
     fixture.detectChanges();
     expect((fixture.componentInstance as any).uiStep().key).toBe('confirmar');
+  });
+
+  it('onCancelConfirmed despacha cancelAtencion con el motivo', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onCancelConfirmed('Error de carga');
+    expect(spy).toHaveBeenCalledWith(cancelAtencion({ id: 1, payload: { cancellationReason: 'Error de carga' } }));
+  });
+
+  it('downloadLabels despacha downloadProtocolLabels cuando hay protocolId', () => {
+    setup(AttentionState.AWAITING_EXTRACTION);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.AWAITING_EXTRACTION), protocolId: 9 } as any);
+    store.refreshState();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.downloadLabels();
+    expect(spy).toHaveBeenCalledWith(downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
   });
 });

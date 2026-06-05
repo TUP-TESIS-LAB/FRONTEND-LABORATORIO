@@ -138,11 +138,10 @@ export class AnalysisPickerComponent implements OnInit {
 
   handleEnter(raw: string): void {
     if (/^\d+$/.test(raw)) {
-      const code = Number(raw);
-      this.api.findByShortCode(code).subscribe({
+      this.api.findByShortCode(raw).subscribe({
         next: (found) => {
           if (!found) {
-            this.errorText.set(`No se encontró análisis con código ${code}`);
+            this.errorText.set(`No se encontró análisis con código ${raw}`);
             return;
           }
           this.addAnalysis(found);

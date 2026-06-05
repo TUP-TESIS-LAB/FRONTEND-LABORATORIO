@@ -5,7 +5,7 @@ import { AnalysisService } from '../../services/analysis.service';
 import { Analysis } from '../../models/atencion.model';
 
 const a = (over: Partial<Analysis>): Analysis => ({
-  id: 1, shortCode: 1001, name: 'Hemograma', familyName: 'Hematología', ubCount: 3, ...over,
+  id: 1, shortCode: '1001', name: 'Hemograma', familyName: 'Hematología', ubCount: 3, ...over,
 });
 
 describe('AnalysisPickerComponent', () => {
@@ -27,21 +27,21 @@ describe('AnalysisPickerComponent', () => {
   });
 
   it('detects numeric input as shortCode and uses findByShortCode', () => {
-    api.findByShortCode.mockReturnValue(of(a({ id: 5, shortCode: 1001 })));
+    api.findByShortCode.mockReturnValue(of(a({ id: 5, shortCode: '1001' })));
     fixture.componentInstance.handleEnter('1001');
-    expect(api.findByShortCode).toHaveBeenCalledWith(1001);
+    expect(api.findByShortCode).toHaveBeenCalledWith('1001');
     expect(fixture.componentInstance.items()).toHaveLength(1);
   });
 
   it('text input → uses searchByName for suggestions', () => {
-    api.searchByName.mockReturnValue(of([a({ id: 5 }), a({ id: 6, shortCode: 1002, name: 'Glucemia' })]));
+    api.searchByName.mockReturnValue(of([a({ id: 5 }), a({ id: 6, shortCode: '1002', name: 'Glucemia' })]));
     fixture.componentInstance.onAutoCompleteSearch({ query: 'gluc' } as any);
     expect(api.searchByName).toHaveBeenCalledWith('gluc');
     expect(fixture.componentInstance.suggestions().length).toBe(2);
   });
 
   it('numeric input → uses searchByShortCodePrefix for suggestions (autocomplete by code)', () => {
-    api.searchByShortCodePrefix.mockReturnValue(of([a({ id: 5, shortCode: 1001 }), a({ id: 6, shortCode: 1002 })]));
+    api.searchByShortCodePrefix.mockReturnValue(of([a({ id: 5, shortCode: '1001' }), a({ id: 6, shortCode: '1002' })]));
     fixture.componentInstance.onAutoCompleteSearch({ query: '100' } as any);
     expect(api.searchByShortCodePrefix).toHaveBeenCalledWith('100');
     expect(api.searchByName).not.toHaveBeenCalled();
@@ -49,8 +49,8 @@ describe('AnalysisPickerComponent', () => {
   });
 
   it('addAnalysis blocks duplicates by shortCode', () => {
-    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: 1001 }));
-    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: 1001 }));
+    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
+    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
     expect(fixture.componentInstance.items().length).toBe(1);
     expect(fixture.componentInstance.errorText()).toContain('ya está');
   });
@@ -58,15 +58,15 @@ describe('AnalysisPickerComponent', () => {
   it('removeAnalysis filters by id and emits analysisRemoved', () => {
     const emitted: number[] = [];
     fixture.componentInstance.analysisRemoved.subscribe((id) => emitted.push(id));
-    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: 1001 }));
-    fixture.componentInstance.addAnalysis(a({ id: 2, shortCode: 1002, name: 'Glucemia' }));
+    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
+    fixture.componentInstance.addAnalysis(a({ id: 2, shortCode: '1002', name: 'Glucemia' }));
     fixture.componentInstance.removeAnalysis(1);
     expect(fixture.componentInstance.items().map((x) => x.id)).toEqual([2]);
     expect(emitted).toEqual([1]);
   });
 
   it('clearAll resets the list', () => {
-    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: 1001 }));
+    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
     fixture.componentInstance.clearAll();
     expect(fixture.componentInstance.items()).toEqual([]);
   });

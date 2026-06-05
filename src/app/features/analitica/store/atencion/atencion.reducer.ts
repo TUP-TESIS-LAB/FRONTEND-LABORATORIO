@@ -6,8 +6,11 @@ import {
   assignGeneralData,
   atencionMutationFailure,
   atencionMutationSuccess,
+  attentionAnalysesFailure,
+  attentionAnalysesLoaded,
   cancelAtencion,
   createBlankAtencion,
+  createPatientInline,
   createPreFilledAtencion,
   endBilling,
   endCollection,
@@ -18,8 +21,16 @@ import {
   loadAtenciones,
   loadAtencionesFailure,
   loadAtencionesSuccess,
+  loadAttentionAnalyses,
+  loadAttentionPatient,
+  patientNotFound,
+  patientResolutionFailure,
+  patientResolved,
+  resolvePatientByDni,
   returnPhase,
   setAtencionFilters,
+  startAttentionForPatient,
+  updatePatientInline,
 } from './atencion.actions';
 import { AtencionFeatureState, initialAtencionState } from './atencion.state';
 
@@ -51,6 +62,18 @@ export const atencionReducer = createReducer(
     list: replaceInList(s.list, item),
   })),
   on(atencionMutationFailure, (s, { error }): AtencionFeatureState => ({ ...s, mutating: false, detailError: error })),
+
+  on(loadAttentionPatient, (s): AtencionFeatureState => ({ ...s, resolvedPatient: null })),
+  on(resolvePatientByDni, (s): AtencionFeatureState => ({ ...s, patientResolving: true, patientResolutionError: null, resolvedPatient: null, patientNotFoundDni: null })),
+  on(patientResolved, (s, { patient }): AtencionFeatureState => ({ ...s, patientResolving: false, resolvedPatient: patient, patientNotFoundDni: null })),
+  on(patientNotFound, (s, { dni }): AtencionFeatureState => ({ ...s, patientResolving: false, resolvedPatient: null, patientNotFoundDni: dni })),
+  on(patientResolutionFailure, (s, { error }): AtencionFeatureState => ({ ...s, patientResolving: false, patientResolutionError: error })),
+  on(createPatientInline, updatePatientInline, (s): AtencionFeatureState => ({ ...s, patientResolving: true, patientResolutionError: null })),
+  on(startAttentionForPatient, (s): AtencionFeatureState => ({ ...s, mutating: true, detailError: null })),
+
+  on(loadAttentionAnalyses, (s): AtencionFeatureState => ({ ...s, summaryAnalysesLoading: true })),
+  on(attentionAnalysesLoaded, (s, { analyses }): AtencionFeatureState => ({ ...s, summaryAnalyses: analyses, summaryAnalysesLoading: false })),
+  on(attentionAnalysesFailure, (s): AtencionFeatureState => ({ ...s, summaryAnalysesLoading: false })),
 );
 
 function replaceInList<T extends { id: number }>(list: T[], item: T): T[] {

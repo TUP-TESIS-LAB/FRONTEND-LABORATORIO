@@ -2,8 +2,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, concatMap, exhaustMap, map, of, switchMap, tap } from 'rxjs';
+import { catchError, concatMap, exhaustMap, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { PatientService } from '../../../pacientes/services/patient.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
+import { AnalysisService } from '../../services/analysis.service';
+import { LabelsService } from '../../services/labels.service';
+import { RotuloPdfService } from '../../services/rotulo-pdf.service';
+import { NotificationService } from '@core/services/notification.service';
+import { Analysis } from '../../models/atencion.model';
 import {
   addAnalysisList,
   addObservations,
@@ -11,9 +17,13 @@ import {
   assignGeneralData,
   atencionMutationFailure,
   atencionMutationSuccess,
+  attentionAnalysesFailure,
+  attentionAnalysesLoaded,
   cancelAtencion,
   createBlankAtencion,
+  createPatientInline,
   createPreFilledAtencion,
+  downloadProtocolLabels,
   endBilling,
   endCollection,
   endSecretaryPhase,
@@ -23,7 +33,15 @@ import {
   loadAtenciones,
   loadAtencionesFailure,
   loadAtencionesSuccess,
+  loadAttentionAnalyses,
+  loadAttentionPatient,
+  patientNotFound,
+  patientResolutionFailure,
+  patientResolved,
+  resolvePatientByDni,
   returnPhase,
+  startAttentionForPatient,
+  updatePatientInline,
 } from './atencion.actions';
 
 /**
@@ -39,9 +57,14 @@ import {
  */
 @Injectable()
 export class AtencionEffects {
-  private readonly actions$ = inject(Actions);
-  private readonly api      = inject(AtencionApiService);
-  private readonly router   = inject(Router);
+  private readonly actions$      = inject(Actions);
+  private readonly api           = inject(AtencionApiService);
+  private readonly patients      = inject(PatientService);
+  private readonly router        = inject(Router);
+  private readonly analysis      = inject(AnalysisService);
+  private readonly labels        = inject(LabelsService);
+  private readonly rotuloPdf     = inject(RotuloPdfService);
+  private readonly notification  = inject(NotificationService);
 
   loadList$ = createEffect(() =>
     this.actions$.pipe(
@@ -182,4 +205,92 @@ export class AtencionEffects {
       ))
     )
   );
+
+  resolvePatient$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(resolvePatientByDni),
+      switchMap(({ dni }) =>
+        this.patients.existsByDni(dni).pipe(
+          switchMap(exists =>
+            exists
+              ? this.patients.getByDni(dni).pipe(map(patient => patientResolved({ patient })))
+              : of(patientNotFound({ dni }))),
+          catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
+        ))));
+
+  createPatientInline$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(createPatientInline),
+      concatMap(({ payload }) =>
+        this.patients.create(payload).pipe(
+          map(patient => patientResolved({ patient })),
+          catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
+        ))));
+
+  updatePatientInline$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(updatePatientInline),
+      concatMap(({ id, payload }) =>
+        this.patients.update(id, payload).pipe(
+          map(patient => patientResolved({ patient })),
+          catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
+        ))));
+
+  startAttentionForPatient$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(startAttentionForPatient),
+      exhaustMap(({ patientId, indications }) =>
+        // TODO(KAN-77): branchId real (multi-sucursal) y attentionNumber sin colision — hoy igual que el flujo previo
+        this.api.createBlank({ branchId: 1, patientId, attentionNumber: `A-${Date.now().toString().slice(-6)}`, deskAttentionBox: null }).pipe(
+          concatMap(created =>
+            this.api.assignGeneralData(created.id, { patientId, doctorId: null, insurancePlanId: null, indications }).pipe(
+              tap(item => this.router.navigate(['/analitica/atencion', item.id])),
+              map(item => atencionMutationSuccess({ item })))),
+          // Si createBlank ok pero assignGeneralData falla, queda una atención en blanco en estado
+          // REGISTERING_GENERAL_DATA (sin paciente ni datos). El usuario puede reintentar; aceptable
+          // por ahora — no compensamos con cancel.
+          catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error }))),
+        ))));
+
+  loadAttentionPatient$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadAttentionPatient),
+      switchMap(({ patientId }) =>
+        this.patients.getById(patientId).pipe(
+          map(patient => patientResolved({ patient })),
+          catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
+        ))));
+
+  loadAttentionAnalyses$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadAttentionAnalyses),
+      switchMap(({ analysisIds }) =>
+        (analysisIds.length === 0
+          ? of([] as Analysis[])
+          : forkJoin(analysisIds.map(id => this.analysis.getById(id)))
+        ).pipe(
+          map(analyses => attentionAnalysesLoaded({ analyses })),
+          catchError((error: HttpErrorResponse) => of(attentionAnalysesFailure({ error }))),
+        ))));
+
+  downloadProtocolLabels$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(downloadProtocolLabels),
+      switchMap(({ protocolId, protocolNumber }) =>
+        this.labels.getByProtocol(protocolId).pipe(
+          tap(ls => {
+            if (ls.length === 0) {
+              this.notification.error('Sin rótulos', 'Este protocolo todavía no tiene rótulos generados.');
+            } else {
+              this.rotuloPdf.generate(protocolNumber, ls).catch(() =>
+                this.notification.error('No se pudieron generar los rótulos', 'Reintentá en un momento.'),
+              );
+            }
+          }),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudieron generar los rótulos', 'Reintentá en un momento.');
+            return of(error);
+          }),
+        )),
+    ), { dispatch: false });
 }
