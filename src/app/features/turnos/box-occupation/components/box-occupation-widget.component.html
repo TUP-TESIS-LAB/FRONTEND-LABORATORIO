@@ -7,7 +7,10 @@
     </button>
     <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
   } @else {
-    <span class="box-widget__no-box">Sin box</span>
+    <button type="button" class="box-widget__no-box" (click)="modalVisible.set(true)">
+      <i class="pi pi-plus-circle"></i>
+      Elegir box
+    </button>
   }
 
   <app-box-selector-modal
@@ -16,6 +19,6 @@
     [boxType]="boxType"
     [currentUserId]="currentUserId"
     [visible]="modalVisible()"
-    [canClose]="!!myBox()"
+    [canClose]="true"
     (closed)="modalVisible.set(false)" />
 </div>
