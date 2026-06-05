@@ -18,16 +18,22 @@ describe('AnalysisService', () => {
     service = TestBed.inject(AnalysisService);
   });
 
-  it('findByShortCode calls /api/v1/analitica/analysis?shortCode=N', async () => {
-    http.get.mockReturnValue(of({ id: 5, shortCode: 1001, name: 'Hemograma', familyName: 'Hematología', ubCount: 3 }));
-    const r = await firstValueFrom(service.findByShortCode(1001));
+  it('findByShortCode calls /api/v1/analitica/analysis?shortCode=S and unwraps array[0]', async () => {
+    http.get.mockReturnValue(of([{ id: 5, shortCode: '1001', name: 'Hemograma', familyName: 'Hematología', ubCount: 3 }]));
+    const r = await firstValueFrom(service.findByShortCode('1001'));
     expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis', { params: { shortCode: '1001' } });
-    expect(r?.shortCode).toBe(1001);
+    expect(r?.shortCode).toBe('1001');
+  });
+
+  it('findByShortCode returns null when backend array is empty', async () => {
+    http.get.mockReturnValue(of([]));
+    const r = await firstValueFrom(service.findByShortCode('9999'));
+    expect(r).toBeNull();
   });
 
   it('searchByName calls /api/v1/analitica/analysis?nameLike=...&limit=10', async () => {
     http.get.mockReturnValue(of([
-      { id: 5, shortCode: 1001, name: 'Hemograma', familyName: null, ubCount: 3 },
+      { id: 5, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: 3 },
     ]));
     const r = await firstValueFrom(service.searchByName('hemo'));
     expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis', { params: { nameLike: 'hemo', limit: '10' } });
@@ -36,7 +42,7 @@ describe('AnalysisService', () => {
 
   it('getById calls /api/v1/analitica/analysis/{id} and returns AnalysisDetail', async () => {
     http.get.mockReturnValue(of({
-      id: 5, shortCode: 1001, name: 'Hemograma', familyName: 'Hematología', ubCount: 3,
+      id: 5, shortCode: '1001', name: 'Hemograma', familyName: 'Hematología', ubCount: 3,
       description: 'Recuento celular', determinations: [], processingTime: 30, processingTimeUnit: 'MINUTES', nbuCode: 'NBU-123',
     }));
     const r = await firstValueFrom(service.getById(5));
@@ -46,7 +52,7 @@ describe('AnalysisService', () => {
 
   it('searchByShortCodePrefix calls /api/v1/analitica/analysis?shortCodePrefix=...&limit=...', async () => {
     http.get.mockReturnValue(of([
-      { id: 5, shortCode: 1001, name: 'Hemograma', familyName: null, ubCount: 3 },
+      { id: 5, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: 3 },
     ]));
     const r = await firstValueFrom(service.searchByShortCodePrefix('100', 5));
     expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis', { params: { shortCodePrefix: '100', limit: '5' } });

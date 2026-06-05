@@ -5,7 +5,7 @@ import { AnalysisService } from '../../services/analysis.service';
 import { AnalysisDetail } from '../../models/atencion.model';
 
 const detail: AnalysisDetail = {
-  id: 5, shortCode: 1001, name: 'Hemograma', familyName: 'Hematología', ubCount: 3,
+  id: 5, shortCode: '1001', name: 'Hemograma', familyName: 'Hematología', ubCount: 3,
   description: 'Recuento celular', determinations: [{ id: 1, name: 'Globulos rojos' }],
   processingTime: 30, processingTimeUnit: 'MINUTES', nbuCode: 'NBU-123',
 };

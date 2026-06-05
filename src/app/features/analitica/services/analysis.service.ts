@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Analysis, AnalysisDetail } from '../models/atencion.model';
 
 @Injectable({ providedIn: 'root' })
@@ -8,10 +9,11 @@ export class AnalysisService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1/analitica/analysis';
 
-  findByShortCode(shortCode: number): Observable<Analysis | null> {
-    return this.http.get<Analysis | null>(this.baseUrl, {
-      params: { shortCode: String(shortCode) },
-    });
+  /** El backend devuelve un array de 0 ó 1 elementos; tomamos el primero o null. */
+  findByShortCode(shortCode: string): Observable<Analysis | null> {
+    return this.http.get<Analysis[]>(this.baseUrl, {
+      params: { shortCode },
+    }).pipe(map((list) => list[0] ?? null));
   }
 
   /** Sugerencias por prefijo numérico del shortCode — usado por el autocomplete del picker. */

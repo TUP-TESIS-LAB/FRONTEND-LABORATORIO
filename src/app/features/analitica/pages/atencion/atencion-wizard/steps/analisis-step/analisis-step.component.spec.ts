@@ -44,7 +44,7 @@ describe('AnalisisStepComponent', () => {
   });
 
   it('onContinue dispatches addAnalysisList immediately', () => {
-    fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: 1001, name: 'X', familyName: null, ubCount: null });
+    fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: '1001', name: 'X', familyName: null, ubCount: null });
     fixture.componentInstance.onContinue();
     expect(dispatched[0].type).toBe(A.addAnalysisList.type);
     expect(dispatched.find((a) => a.type === A.endSecretaryPhase.type)).toBeUndefined();
@@ -53,7 +53,7 @@ describe('AnalisisStepComponent', () => {
   it('stepAdvanced emits ONLY after atencionMutationSuccess (pessimistic)', () => {
     let stepAdvanced = false;
     fixture.componentInstance.stepAdvanced.subscribe(() => (stepAdvanced = true));
-    fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: 1001, name: 'X', familyName: null, ubCount: null });
+    fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: '1001', name: 'X', familyName: null, ubCount: null });
     fixture.componentInstance.onContinue();
     // Antes del success: no avanza
     expect(stepAdvanced).toBe(false);
@@ -65,7 +65,7 @@ describe('AnalisisStepComponent', () => {
   it('stepAdvanced does NOT emit when mutation fails', () => {
     let stepAdvanced = false;
     fixture.componentInstance.stepAdvanced.subscribe(() => (stepAdvanced = true));
-    fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: 1001, name: 'X', familyName: null, ubCount: null });
+    fixture.componentInstance.onAnalysisAdded({ id: 5, shortCode: '1001', name: 'X', familyName: null, ubCount: null });
     fixture.componentInstance.onContinue();
     actions$.next(A.atencionMutationFailure({ error: {} as any }));
     expect(stepAdvanced).toBe(false);
