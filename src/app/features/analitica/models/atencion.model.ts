@@ -96,7 +96,7 @@ export interface AddObservationsRequest {
 // Catalog model (CORE) — used by the analysis picker in the atención wizard
 export interface Analysis {
   id: number;
-  shortCode: number;
+  shortCode: string;
   name: string;
   familyName: string | null;
   ubCount: number | null; // unidades bioquímicas; null si no configurado

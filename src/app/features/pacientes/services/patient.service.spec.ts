@@ -92,4 +92,14 @@ describe('PatientService', () => {
     expect(req.request.body).toEqual({ deleted: true });
     req.flush(null);
   });
+
+  it('getByDni → GET /api/v1/analitica/patients/dni/{dni}', () => {
+    const patient = { id: 5, dni: '18901234', firstName: 'Juan', lastName: 'Pérez' } as Patient;
+    let result: Patient | undefined;
+    service.getByDni('18901234').subscribe((p) => (result = p));
+    const req = httpMock.expectOne('/api/v1/analitica/patients/dni/18901234');
+    expect(req.request.method).toBe('GET');
+    req.flush(patient);
+    expect(result).toEqual(patient);
+  });
 });

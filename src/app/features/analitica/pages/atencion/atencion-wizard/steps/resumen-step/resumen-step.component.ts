@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
@@ -11,8 +21,14 @@ import {
   atencionMutationFailure,
   atencionMutationSuccess,
   endSecretaryPhase,
+  loadAttentionAnalyses,
+  loadAttentionPatient,
 } from '../../../../../store/atencion/atencion.actions';
-import { selectMutating } from '../../../../../store/atencion/atencion.selectors';
+import {
+  selectMutating,
+  selectResolvedPatient,
+  selectSummaryAnalyses,
+} from '../../../../../store/atencion/atencion.selectors';
 import { clearAtencionSession } from '../../../../../utils/atencion-session-store';
 
 @Component({
@@ -31,7 +47,12 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
 
       <section>
         <div class="text-sm opacity-60">Paciente</div>
-        <div class="text-base">ID {{ atencion().patientId ?? '—' }}</div>
+        @if (patient(); as p) {
+          <div class="text-base font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
+          <div class="text-sm opacity-70">DNI {{ p.dni }}</div>
+        } @else {
+          <div class="text-base">ID {{ atencion().patientId ?? '—' }}</div>
+        }
       </section>
 
       <section>
@@ -43,7 +64,14 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         <div class="text-sm opacity-60">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
         <ul class="list-disc list-inside text-sm">
           @for (a of atencion().analysisAuthorizations; track a.analysisId) {
-            <li>#{{ a.analysisId }}</li>
+            @let info = analysisById().get(a.analysisId);
+            <li>
+              @if (info) {
+                <span class="font-mono opacity-70">{{ info.shortCode }}</span> — {{ info.name }}
+              } @else {
+                #{{ a.analysisId }}
+              }
+            </li>
           }
         </ul>
       </section>
@@ -63,7 +91,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
     </div>
   `,
 })
-export class ResumenStepComponent {
+export class ResumenStepComponent implements OnInit {
   private readonly store      = inject(Store);
   private readonly actions$   = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
@@ -73,8 +101,30 @@ export class ResumenStepComponent {
 
   readonly ticketModalOpen = signal(false);
   readonly mutating        = this.store.selectSignal(selectMutating);
+  readonly patient         = this.store.selectSignal(selectResolvedPatient);
+  readonly analyses        = this.store.selectSignal(selectSummaryAnalyses);
 
-  openFinalize(): void { this.ticketModalOpen.set(true); }
+  readonly analysisById = computed(
+    () => new Map(this.analyses().map(a => [a.id, a]))
+  );
+
+  ngOnInit(): void {
+    const attn = this.atencion();
+
+    // Only load patient if not already resolved for this atención
+    if (
+      attn.patientId != null &&
+      (this.patient() === null || this.patient()?.id !== attn.patientId)
+    ) {
+      this.store.dispatch(loadAttentionPatient({ patientId: attn.patientId }));
+    }
+
+    // Always load analysis details
+    const analysisIds = attn.analysisAuthorizations.map(x => x.analysisId);
+    this.store.dispatch(loadAttentionAnalyses({ analysisIds }));
+  }
+
+  openFinalize(): void  { this.ticketModalOpen.set(true); }
   closeFinalize(): void { this.ticketModalOpen.set(false); }
 
   /**

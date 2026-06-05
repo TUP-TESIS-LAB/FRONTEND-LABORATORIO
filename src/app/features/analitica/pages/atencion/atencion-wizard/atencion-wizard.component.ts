@@ -1,27 +1,37 @@
 import {
-  ChangeDetectionStrategy, Component, computed, effect, inject, input, signal,
+  ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { race, take } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { AttentionState, isTerminal } from '../../../models/atencion.model';
 import { attentionStateLabel, attentionStateSeverity } from '../../../models/atencion-state-label';
 import {
-  cancelAtencion, createPreFilledAtencion, loadAtencion, returnPhase,
+  atencionMutationFailure,
+  atencionMutationSuccess,
+  cancelAtencion,
+  createPreFilledAtencion,
+  downloadProtocolLabels,
+  loadAtencion,
+  returnPhase,
 } from '../../../store/atencion/atencion.actions';
 import {
   selectDetail, selectDetailLoading, selectMutating,
 } from '../../../store/atencion/atencion.selectors';
 import {
-  clearAtencionSession, clearPendingDni, readAtencionSession, writeAtencionSession,
+  clearAtencionSession, readAtencionSession, writeAtencionSession,
 } from '../../../utils/atencion-session-store';
 import { DatosGeneralesStepComponent } from './steps/datos-generales-step/datos-generales-step.component';
 import { AnalisisStepComponent } from './steps/analisis-step/analisis-step.component';
 import { ResumenStepComponent } from './steps/resumen-step/resumen-step.component';
+import { CancelAttentionModalComponent } from '../../../components/cancel-attention-modal/cancel-attention-modal.component';
 
 type StepKey = 'datos' | 'analisis' | 'cobro' | 'facturacion' | 'confirmar';
 interface WizardStepDef {
@@ -46,6 +56,7 @@ const ALL_STEPS: WizardStepDef[] = [
   imports: [
     ButtonModule, TagModule, EmptyStateComponent,
     DatosGeneralesStepComponent, AnalisisStepComponent, ResumenStepComponent,
+    CancelAttentionModalComponent,
   ],
   template: `
     <div class="p-6 max-w-4xl mx-auto">
@@ -60,7 +71,7 @@ const ALL_STEPS: WizardStepDef[] = [
           </div>
           <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
         </header>
-        <lab-datos-generales-step [atencionId]="null" />
+        <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
       } @else if (mutating() && !detail()) {
         <!-- Caso: createPreFilledAtencion en vuelo (?appointmentId=X). Mientras la
              creación va, detail() es null pero mutating() es true. Mostramos un
@@ -77,7 +88,12 @@ const ALL_STEPS: WizardStepDef[] = [
               <p-tag [value]="stateLabel(detail()!.attentionState)" [severity]="stateSeverity(detail()!.attentionState)" />
             </div>
           </div>
-          <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
+          <div class="flex items-center gap-2">
+            @if (canCancel()) {
+              <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
+            }
+            <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
+          </div>
         </header>
 
         @if (isTerminal(detail()!.attentionState)) {
@@ -85,6 +101,12 @@ const ALL_STEPS: WizardStepDef[] = [
         } @else if (isPostSecretary()) {
           <ui-empty-state heading="Fase de secretaría completada" icon="pi-clock"
                           [description]="postSecretaryDescription()" />
+          @if (detail()!.protocolId != null) {
+            <div class="flex justify-center mt-4">
+              <p-button label="Descargar rótulos" icon="pi pi-tag" severity="secondary"
+                        (onClick)="downloadLabels()" />
+            </div>
+          }
         } @else {
           <div class="flex items-center mb-6 px-2">
             @for (step of visibleSteps(); track step.key; let i = $index, last = $last) {
@@ -103,7 +125,7 @@ const ALL_STEPS: WizardStepDef[] = [
 
           @switch (uiStep()?.key) {
             @case ('datos') {
-              <lab-datos-generales-step [atencionId]="detail()!.id" />
+              <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null" />
             }
             @case ('analisis') {
               <lab-analisis-step [atencionId]="detail()!.id" (stepAdvanced)="onAnalysisAdvanced()" />
@@ -116,20 +138,25 @@ const ALL_STEPS: WizardStepDef[] = [
           <div class="flex justify-between mt-4">
             <p-button label="Volver fase" severity="secondary" [outlined]="true"
                       [disabled]="mutating() || !canReturn()" (onClick)="onReturnPhase()" />
-            <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
           </div>
         }
       }
     </div>
+
+    <lab-cancel-attention-modal [visible]="cancelModalOpen()"
+      (confirmed)="onCancelConfirmed($event)" (dismissed)="cancelModalOpen.set(false)" />
   `,
 })
 export class AtencionWizardComponent {
-  private readonly store    = inject(Store);
-  private readonly router   = inject(Router);
-  private readonly registry = inject(ModuleRegistry);
+  private readonly store      = inject(Store);
+  private readonly router     = inject(Router);
+  private readonly registry   = inject(ModuleRegistry);
+  private readonly actions$   = inject(Actions);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly id            = input<string | undefined>(undefined);
   readonly appointmentId = input<string | undefined>(undefined);
+  readonly dni           = input<string | undefined>(undefined);
 
   /**
    * "creating" = estamos en la ruta /atencion/nueva y todavía no se creó la atención.
@@ -149,6 +176,12 @@ export class AtencionWizardComponent {
   protected readonly stateLabel    = attentionStateLabel;
   protected readonly stateSeverity = attentionStateSeverity;
   protected readonly isTerminal    = isTerminal;
+
+  protected readonly cancelModalOpen = signal(false);
+  protected canCancel(): boolean {
+    const s = this.detail()?.attentionState;
+    return s != null && !isTerminal(s) && !this.isPostSecretary();
+  }
 
   protected readonly visibleSteps = computed<WizardStepDef[]>(() =>
     ALL_STEPS.filter((s) => !s.requires || this.registry.isActive(s.requires))
@@ -174,10 +207,6 @@ export class AtencionWizardComponent {
       const apptId = this.appointmentId();
       this.uiStepOverride.set(null);
       if (idv) {
-        // Retomar una atención existente: cualquier pending DNI viejo en sessionStorage
-        // pertenece a otro flow — limpiarlo evita el auto-search y el redirect-loop
-        // al paciente-form si ese DNI no existía.
-        clearPendingDni();
         this.store.dispatch(loadAtencion({ id: Number(idv) }));
         writeAtencionSession({ atencionId: Number(idv), uiStep: 'datos' });
       } else if (apptId) {
@@ -186,8 +215,7 @@ export class AtencionWizardComponent {
         }));
       } else if (this.creating()) {
         // Modo crear nueva: el step de datos arranca en blanco sin loadAtencion.
-        // Si veníamos de /pacientes/nuevo, el pending DNI sobrevive y el patient-search
-        // auto-pre-fillea (sin emitir notFound en el silent path).
+        // El DNI inicial llega vía query param `?dni=` (input `dni`), manejado por el template.
       } else {
         const restored = readAtencionSession();
         if (restored && restored.atencionId > 0) {
@@ -219,12 +247,24 @@ export class AtencionWizardComponent {
     this.store.dispatch(returnPhase({ id: d.id }));
   }
   onCancel(): void {
+    if (!this.detail()) return;
+    this.cancelModalOpen.set(true);
+  }
+  onCancelConfirmed(reason: string): void {
     const d = this.detail();
     if (!d) return;
-    const reason = window.prompt('Motivo de cancelación');
-    if (!reason?.trim()) return;
+    this.cancelModalOpen.set(false);
     this.store.dispatch(cancelAtencion({ id: d.id, payload: { cancellationReason: reason } }));
-    clearAtencionSession();
+    this.waitForMutation((ok) => { if (ok) clearAtencionSession(); });
+  }
+
+  private waitForMutation(cb: (ok: boolean) => void): void {
+    race(
+      this.actions$.pipe(ofType(atencionMutationSuccess), take(1)),
+      this.actions$.pipe(ofType(atencionMutationFailure), take(1)),
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((action) => cb(action.type === atencionMutationSuccess.type));
   }
   onAnalysisAdvanced(): void {
     const steps = this.visibleSteps();
@@ -234,6 +274,12 @@ export class AtencionWizardComponent {
   }
   onFinished(): void { this.router.navigate(['/analitica/atencion']); }
   back(): void { this.router.navigate(['/analitica/atencion']); }
+  downloadLabels(): void {
+    const d = this.detail();
+    if (!d || d.protocolId == null) return;
+    this.store.dispatch(downloadProtocolLabels({ protocolId: d.protocolId, protocolNumber: `P-${d.protocolId}` }));
+  }
+
   isPostSecretary(): boolean {
     const s = this.detail()?.attentionState;
     return s === AttentionState.AWAITING_EXTRACTION || s === AttentionState.IN_EXTRACTION;

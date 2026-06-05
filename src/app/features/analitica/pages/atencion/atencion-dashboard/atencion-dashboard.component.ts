@@ -16,8 +16,7 @@ import {
   attentionStateLabel,
   attentionStateSeverity,
 } from '../../../models/atencion-state-label';
-import { AnalysisService } from '../../../services/analysis.service';
-import { loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
+import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
   selectAtencionKpis,
@@ -55,15 +54,6 @@ interface KpiTile {
             severity="primary"
             size="small"
             (onClick)="openNewAttention()" />
-          <div class="flex items-center gap-2">
-            <span class="opacity-60">Modo demo análisis</span>
-            <p-button
-              [label]="analysisService.demoMode() ? 'ON' : 'OFF'"
-              [severity]="analysisService.demoMode() ? 'success' : 'secondary'"
-              size="small"
-              [outlined]="!analysisService.demoMode()"
-              (onClick)="toggleDemoMode()" />
-          </div>
         </div>
       </header>
 
@@ -129,11 +119,17 @@ interface KpiTile {
                 </td>
                 <td>@if (row.isUrgent) { <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i> }</td>
                 <td>
-                  <p-button
-                    [label]="isTerminal(row.attentionState) ? 'Ver' : 'Retomar'"
-                    size="small"
-                    [outlined]="isTerminal(row.attentionState)"
-                    (onClick)="open(row)" />
+                  <div class="flex items-center gap-1 justify-end">
+                    @if (row.protocolId != null) {
+                      <p-button label="Rótulos" icon="pi pi-tag" size="small" severity="secondary" [text]="true"
+                                (onClick)="downloadLabels(row)" />
+                    }
+                    <p-button
+                      [label]="isTerminal(row.attentionState) ? 'Ver' : 'Retomar'"
+                      size="small"
+                      [outlined]="isTerminal(row.attentionState)"
+                      (onClick)="open(row)" />
+                  </div>
                 </td>
               </tr>
             </ng-template>
@@ -148,8 +144,6 @@ interface KpiTile {
 export class AtencionDashboardComponent implements OnInit {
   private readonly store  = inject(Store);
   private readonly router = inject(Router);
-  // Public — used directly in the template for the demo-mode toggle.
-  readonly analysisService = inject(AnalysisService);
 
   protected readonly rows    = this.store.selectSignal(selectFilteredAtenciones);
   protected readonly filters = this.store.selectSignal(selectFilters);
@@ -199,8 +193,9 @@ export class AtencionDashboardComponent implements OnInit {
     this.router.navigate(['/analitica/atencion', row.id]);
   }
 
-  toggleDemoMode(): void {
-    this.analysisService.setDemoMode(!this.analysisService.demoMode());
+  downloadLabels(row: AttentionResponse): void {
+    if (row.protocolId == null) return;
+    this.store.dispatch(downloadProtocolLabels({ protocolId: row.protocolId, protocolNumber: `P-${row.protocolId}` }));
   }
 
   /**

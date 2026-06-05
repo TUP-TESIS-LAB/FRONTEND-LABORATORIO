@@ -125,4 +125,10 @@ describe('atencionReducer', () => {
     expect(next.detail).toBe(item);
     expect(next.detailLoading).toBe(false);
   });
+
+  it('loadAttentionPatient limpia resolvedPatient (evita mostrar el paciente anterior)', () => {
+    const prev = { ...initialAtencionState, resolvedPatient: { id: 5 } as any };
+    const state = atencionReducer(prev, A.loadAttentionPatient({ patientId: 9 }));
+    expect(state.resolvedPatient).toBeNull();
+  });
 });

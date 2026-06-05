@@ -1,9 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { createAction, props } from '@ngrx/store';
+import { CreatePatientRequest, Patient, UpdatePatientRequest } from '../../../pacientes/models/patient.model';
 import {
   AddAnalysisListRequest,
   AddObservationsRequest,
   AddPaymentRequest,
+  Analysis,
   AssignGeneralDataRequest,
   AttentionResponse,
   CancelAttentionRequest,
@@ -42,3 +44,22 @@ export const endSecretaryPhase   = createAction('[Atencion Wizard] End Secretary
 export const returnPhase         = createAction('[Atencion Wizard] Return Phase',        props<{ id: number }>());
 export const cancelAtencion      = createAction('[Atencion Wizard] Cancel',              props<{ id: number; payload: CancelAttentionRequest }>());
 export const addObservations     = createAction('[Atencion Wizard] Add Observations',    props<{ id: number; payload: AddObservationsRequest }>());
+
+// Patient resolution -----------------------------------------------------------
+export const resolvePatientByDni      = createAction('[Atencion Wizard] Resolve Patient By Dni',   props<{ dni: string }>());
+export const patientResolved          = createAction('[Atencion API] Patient Resolved',             props<{ patient: Patient }>());
+export const patientNotFound          = createAction('[Atencion API] Patient Not Found',            props<{ dni: string }>());
+export const patientResolutionFailure = createAction('[Atencion API] Patient Resolution Failure',   props<{ error: HttpErrorResponse }>());
+export const createPatientInline      = createAction('[Atencion Wizard] Create Patient Inline',     props<{ payload: CreatePatientRequest }>());
+export const updatePatientInline      = createAction('[Atencion Wizard] Update Patient Inline',     props<{ id: number; payload: UpdatePatientRequest }>());
+export const startAttentionForPatient = createAction('[Atencion Wizard] Start For Patient',         props<{ patientId: number; indications: string | null }>());
+
+// Rotulos -----------------------------------------------------------------------
+export const downloadProtocolLabels = createAction('[Atencion Rotulos] Download Protocol Labels', props<{ protocolId: number; protocolNumber: string }>());
+
+// Resumen -----------------------------------------------------------------------
+export const loadAttentionPatient = createAction('[Atencion Resumen] Load Patient', props<{ patientId: number }>());
+
+export const loadAttentionAnalyses    = createAction('[Atencion Resumen] Load Analyses', props<{ analysisIds: number[] }>());
+export const attentionAnalysesLoaded  = createAction('[Atencion API] Analyses Loaded', props<{ analyses: Analysis[] }>());
+export const attentionAnalysesFailure = createAction('[Atencion API] Analyses Failure', props<{ error: HttpErrorResponse }>());
