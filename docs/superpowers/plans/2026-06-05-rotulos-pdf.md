@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Spec:** `docs/superpowers/specs/2026-06-05-rotulos-pdf-design.md`
-> **Jira:** _(pendiente — se crea con `jira-workflow` antes de ejecutar)_
+> **Jira:** [KAN-83](https://exequielsantoro.atlassian.net/browse/KAN-83)
 > **Rama/worktree:** `feat/atencion-recepcion` en `FRONTEND-LABORATORIO/.worktrees/atencion-recepcion`. Solo frontend.
 
 **Goal:** Bajar un PDF de los rótulos de un protocolo (código de barras Code128 del `label.id` + nº de protocolo), desde la lista de atención y desde la vista post-terminar del wizard, sin tocar el backend.

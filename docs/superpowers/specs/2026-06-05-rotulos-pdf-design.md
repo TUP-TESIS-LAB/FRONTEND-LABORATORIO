@@ -2,7 +2,7 @@
 
 > **Fecha:** 2026-06-05
 > **Contexto:** Polish de la feature de Atención. Solo **frontend** — sin cambios de backend.
-> **Jira:** _(pendiente — se crea con `jira-workflow` antes de ejecutar)_
+> **Jira:** [KAN-83](https://exequielsantoro.atlassian.net/browse/KAN-83)
 > **Rama:** `feat/atencion-recepcion` (un trigger vive en el `resumen-step`/wizard de KAN-77/82). FE-only.
 
 ## 1. Problema
