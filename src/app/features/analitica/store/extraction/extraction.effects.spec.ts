@@ -164,8 +164,8 @@ describe('ExtractionEffects', () => {
       expect(await promise).toEqual(A.loadBranchExtractorsNotModified());
     });
 
-    it('refreshAll$ dispatches the 5 loads (v3: includes loadBoxAssignments + loadInProgress)', async () => {
-      const promise = firstValueFrom(effects.refreshAll$.pipe(take(5), toArray()));
+    it('refreshAll$ dispatches the 4 dynamic loads (NO boxAssignments: es config, no se pollea)', async () => {
+      const promise = firstValueFrom(effects.refreshAll$.pipe(take(4), toArray()));
       actions$.next(A.refreshAll());
       const out = await promise;
       expect(out).toEqual([
@@ -173,7 +173,6 @@ describe('ExtractionEffects', () => {
         A.loadInProgress(),
         A.loadStats(),
         A.loadOccupancy(),
-        A.loadBoxAssignments(),
       ]);
     });
 

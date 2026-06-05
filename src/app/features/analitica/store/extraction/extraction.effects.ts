@@ -56,12 +56,14 @@ export class ExtractionEffects {
       withLatestFrom(this.store.select(selectSelectedBranchId)),
       mergeMap(([, branchId]) => {
         if (branchId == null) return EMPTY;
+        // NOTA: boxAssignments NO se pollea (es config, no data dinámica). Se carga
+        // en branchChange y se actualiza con la respuesta del PUT. Pollearlo pisaba
+        // la asignación optimista del operador mientras un save estaba en vuelo.
         return of(
           A.loadAwaiting(),
           A.loadInProgress(),
           A.loadStats(),
           A.loadOccupancy(),
-          A.loadBoxAssignments(),
         );
       }),
     ),
