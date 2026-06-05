@@ -9,6 +9,7 @@ import {
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { InExtractionItem } from '../../models/extraction.model';
 
 /**
@@ -23,7 +24,7 @@ import { InExtractionItem } from '../../models/extraction.model';
   selector: 'app-in-progress-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TableModule, ButtonModule, TagModule],
+  imports: [CommonModule, TableModule, ButtonModule, TagModule, TooltipModule],
   template: `
     @if (items().length === 0) {
       <div class="empty-state" aria-label="No hay extracciones en curso">
@@ -61,11 +62,14 @@ import { InExtractionItem } from '../../models/extraction.model';
             <td class="actions-col">
               <div class="actions-cell">
                 <p-button
-                  label="Cancelar"
-                  icon="pi pi-times"
+                  icon="pi pi-trash"
                   severity="danger"
                   [outlined]="true"
+                  [rounded]="true"
                   size="small"
+                  ariaLabel="Cancelar extracción"
+                  pTooltip="Cancelar extracción"
+                  tooltipPosition="top"
                   [disabled]="mutating()"
                   (onClick)="cancel.emit(row)"
                 />
