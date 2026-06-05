@@ -8,6 +8,18 @@
   min-width: 0;
 }
 
+// Override: el min-width: 0 universal habilita truncate en flex/grid children,
+// pero rompe el centrado del icono en PrimeNG buttons (especialmente los
+// rounded icon-only como Cancelar de la cola). Restauramos min-width: auto
+// para las partes internas del p-button asi el icono queda centrado.
+.p-button,
+.p-button .p-button-icon,
+.p-button .p-button-label,
+.p-buttonset .p-button,
+.p-splitbutton .p-button {
+  min-width: auto;
+}
+
 body {
   font-family: 'Montserrat', system-ui, sans-serif;
   font-size: 14px;
