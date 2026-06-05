@@ -31,7 +31,7 @@ function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
 describe('AtencionEffects', () => {
   let actions$: ReplaySubject<Action>;
   let api: Partial<Record<keyof AtencionApiService, ReturnType<typeof vi.fn>>>;
-  let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+  let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
   let effects: AtencionEffects;
 
@@ -52,7 +52,7 @@ describe('AtencionEffects', () => {
       cancel: vi.fn(),
       addObservations: vi.fn(),
     };
-    patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn() };
+    patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn(), getById: vi.fn() };
     router = { navigate: vi.fn() };
 
     TestBed.configureTestingModule({
@@ -214,5 +214,14 @@ describe('AtencionEffects', () => {
     actions$.next(A.resolvePatientByDni({ dni: '18901234' }));
     const out = await firstValueFrom(effects.resolvePatient$.pipe(take(1)));
     expect(out).toEqual(A.patientNotFound({ dni: '18901234' }));
+  });
+
+  it('loadAttentionPatient$ → getById → patientResolved', async () => {
+    const patient = { id: 5, dni: '1' } as Patient;
+    (patients.getById as ReturnType<typeof vi.fn>).mockReturnValue(of(patient));
+    actions$.next(A.loadAttentionPatient({ patientId: 5 }));
+    const out = await firstValueFrom(effects.loadAttentionPatient$.pipe(take(1)));
+    expect(patients.getById).toHaveBeenCalledWith(5);
+    expect(out).toEqual(A.patientResolved({ patient }));
   });
 });

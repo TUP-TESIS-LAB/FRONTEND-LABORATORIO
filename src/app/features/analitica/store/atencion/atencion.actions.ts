@@ -52,3 +52,6 @@ export const patientResolutionFailure = createAction('[Atencion API] Patient Res
 export const createPatientInline      = createAction('[Atencion Wizard] Create Patient Inline',     props<{ payload: CreatePatientRequest }>());
 export const updatePatientInline      = createAction('[Atencion Wizard] Update Patient Inline',     props<{ id: number; payload: UpdatePatientRequest }>());
 export const startAttentionForPatient = createAction('[Atencion Wizard] Start For Patient',         props<{ patientId: number; indications: string | null }>());
+
+// Resumen -----------------------------------------------------------------------
+export const loadAttentionPatient = createAction('[Atencion Resumen] Load Patient', props<{ patientId: number }>());

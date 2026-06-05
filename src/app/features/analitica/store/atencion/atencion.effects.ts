@@ -25,6 +25,7 @@ import {
   loadAtenciones,
   loadAtencionesFailure,
   loadAtencionesSuccess,
+  loadAttentionPatient,
   patientNotFound,
   patientResolutionFailure,
   patientResolved,
@@ -236,5 +237,14 @@ export class AtencionEffects {
           // REGISTERING_GENERAL_DATA (sin paciente ni datos). El usuario puede reintentar; aceptable
           // por ahora — no compensamos con cancel.
           catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error }))),
+        ))));
+
+  loadAttentionPatient$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadAttentionPatient),
+      switchMap(({ patientId }) =>
+        this.patients.getById(patientId).pipe(
+          map(patient => patientResolved({ patient })),
+          catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
         ))));
 }
