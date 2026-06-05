@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideMockStore } from '@ngrx/store/testing';
+import { provideMockActions } from '@ngrx/effects/testing';
+import { EMPTY } from 'rxjs';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { BoxSelectorModalComponent } from './box-selector-modal.component';
 import { BOX_OCCUPATION_FEATURE_KEY } from '../store/box-occupation.state';
@@ -12,6 +14,7 @@ describe('BoxSelectorModalComponent', () => {
       imports: [BoxSelectorModalComponent],
       providers: [
         provideAnimationsAsync(),
+        provideMockActions(() => EMPTY),
         provideMockStore({
           initialState: {
             [BOX_OCCUPATION_FEATURE_KEY]: {
