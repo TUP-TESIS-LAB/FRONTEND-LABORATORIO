@@ -19,6 +19,7 @@ import { etagInterceptor } from '@core/refresh';
 import { TokenService } from '@core/auth/token.service';
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
 import { loadMySections } from '@core/access/store/access.actions';
+import { BranchBootstrapService } from '@core/branch/branch-bootstrap.service';
 import { metaReducers } from '@core/store/logger.meta-reducer';
 
 import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
@@ -82,9 +83,13 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const tokens = inject(TokenService);
       const store = inject(Store);
+      const branchBootstrap = inject(BranchBootstrapService);
       if (tokens.isTokenValid() && !tokens.getRoles().includes('SAAS_ADMIN')) {
         store.dispatch(loadTenantConfig());
         store.dispatch(loadMySections());
+        // No bloqueamos el boot: si la resolución de sucursal falla, las
+        // pantallas dependientes muestran fallback ("Sin sucursal").
+        branchBootstrap.init().subscribe();
       }
     }),
     provideRouter(routes, withComponentInputBinding()),

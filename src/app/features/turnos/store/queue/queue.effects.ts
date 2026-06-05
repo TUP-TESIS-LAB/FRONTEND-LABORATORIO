@@ -4,6 +4,8 @@ import { MessageService } from 'primeng/api';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { QueueService } from '../../services/queue.service';
+import { OperatorBranchContextService } from '../../services/operator-branch.context';
+import { QueueStatus } from '../../models/queue-status.enum';
 import * as A from './queue.actions';
 
 @Injectable()
@@ -12,13 +14,21 @@ export class QueueEffects {
   private service = inject(QueueService);
   private toast = inject(MessageService);
   private router = inject(Router);
+  private branchContext = inject(OperatorBranchContextService);
 
   load$ = createEffect(() => this.actions$.pipe(
     ofType(A.loadQueue),
-    switchMap(({ branchId }) => this.service.list(branchId).pipe(
-      map(entries => A.loadQueueSuccess({ entries })),
-      catchError(error => of(A.loadQueueFailure({ error }))),
-    )),
+    switchMap(({ branchId }) => {
+      const effectiveBranchId = branchId ?? this.branchContext.branchId();
+      if (effectiveBranchId == null) {
+        console.warn('[queue.effects] loadQueue dispatched sin branchId y sin context — skip');
+        return of(A.loadQueueFailure({ error: new Error('No branchId available') }));
+      }
+      return this.service.list(effectiveBranchId).pipe(
+        map(entries => A.loadQueueSuccess({ entries })),
+        catchError(error => of(A.loadQueueFailure({ error }))),
+      );
+    }),
   ));
 
   call$ = createEffect(() => this.actions$.pipe(
@@ -31,7 +41,7 @@ export class QueueEffects {
       )),
       catchError(error => {
         const msg = error?.status === 409
-          ? 'El turno ya fue completado o cancelado'
+          ? 'La atención ya fue completada o cancelada'
           : 'No se pudo registrar la llamada';
         this.toast.add({ severity: 'error', summary: msg });
         return of(A.callQueueEntryFailure({ error }));
@@ -41,19 +51,29 @@ export class QueueEffects {
 
   callAppointmentForAttention$ = createEffect(() => this.actions$.pipe(
     ofType(A.callAppointmentForAttention),
-    switchMap(({ appointmentId }) =>
-      this.service.callByAppointment(appointmentId).pipe(
-        map(() => A.callAppointmentForAttentionSuccess({ appointmentId })),
+    switchMap(({ appointmentId, dni }) =>
+      // attendByAppointment: registra el call + transiciona queue_entry
+      // a COMPLETED para que salga de la cola inmediatamente.
+      this.service.attendByAppointment(appointmentId).pipe(
+        map(() => A.callAppointmentForAttentionSuccess({ appointmentId, dni })),
         catchError(error => of(A.callAppointmentForAttentionFailure({ error }))),
       )
     ),
   ));
 
+  // Tras Atender exitoso, refrescar la cola silently para que el entry
+  // recien COMPLETED desaparezca de la lista sin esperar el polling.
+  refreshAfterAttend$ = createEffect(() => this.actions$.pipe(
+    ofType(A.callAppointmentForAttentionSuccess),
+    map(() => A.loadQueue({ silent: true })),
+  ));
+
   navigateAfterCall$ = createEffect(() => this.actions$.pipe(
     ofType(A.callAppointmentForAttentionSuccess),
-    tap(({ appointmentId }) =>
-      this.router.navigate(['/turnos/atencion-turno'], { queryParams: { appointmentId } })
-    ),
+    tap(({ dni }) => {
+      const queryParams = dni ? { dni } : {};
+      this.router.navigate(['/analitica/atencion/nueva'], { queryParams });
+    }),
   ), { dispatch: false });
 
   showErrorToast$ = createEffect(() => this.actions$.pipe(
@@ -61,7 +81,53 @@ export class QueueEffects {
     tap(() => this.toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'No se pudo llamar el turno. Intentá de nuevo.',
+      detail: 'No se pudo iniciar la atención. Intentá de nuevo.',
+    })),
+  ), { dispatch: false });
+
+  cancel$ = createEffect(() => this.actions$.pipe(
+    ofType(A.cancelQueueEntry),
+    switchMap(({ id }) => this.service.cancel(id).pipe(
+      tap(() => this.toast.add({ severity: 'success', summary: 'Atención cancelada' })),
+      switchMap(() => of(
+        A.cancelQueueEntrySuccess({ id }),
+        A.loadQueue({ silent: true }),
+      )),
+      catchError(error => {
+        const msg = error?.status === 409
+          ? 'La atención ya fue completada o cancelada'
+          : 'No se pudo cancelar la atención';
+        this.toast.add({ severity: 'error', summary: msg });
+        return of(A.cancelQueueEntryFailure({ error }));
+      }),
+    )),
+  ));
+
+  attendWalkin$ = createEffect(() => this.actions$.pipe(
+    ofType(A.attendWalkinEntry),
+    switchMap(({ entryId, dni }) =>
+      this.service.updateStatus(entryId, QueueStatus.COMPLETED).pipe(
+        map(() => A.attendWalkinEntrySuccess({ dni })),
+        catchError(error => of(A.attendWalkinEntryFailure({ error }))),
+      ),
+    ),
+  ));
+
+  refreshAndNavigateAfterAttendWalkin$ = createEffect(() => this.actions$.pipe(
+    ofType(A.attendWalkinEntrySuccess),
+    tap(({ dni }) => {
+      const queryParams = dni ? { dni } : {};
+      this.router.navigate(['/analitica/atencion/nueva'], { queryParams });
+    }),
+    map(() => A.loadQueue({ silent: true })),
+  ));
+
+  showWalkinErrorToast$ = createEffect(() => this.actions$.pipe(
+    ofType(A.attendWalkinEntryFailure),
+    tap(() => this.toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudo iniciar la atención. Intentá de nuevo.',
     })),
   ), { dispatch: false });
 }

@@ -7,6 +7,8 @@ import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuService } from '@features/profile/services/profile-menu.service';
 import { clearMySections } from '@core/access/store/access.actions';
+import { BoxOccupationService } from '@features/turnos/box-occupation/services/box-occupation.service';
+import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 
 @Component({
   selector: 'ui-logout-confirm',
@@ -93,6 +95,9 @@ export class LogoutConfirmComponent {
   private readonly userSession = inject(UserSessionService);
   private readonly router = inject(Router);
   private readonly store = inject(Store);
+  // Best-effort: release box before clearing the token so the DELETE is authenticated.
+  private readonly boxOccupationService = inject(BoxOccupationService);
+  private readonly branchContext = inject(OperatorBranchContextService);
 
   protected readonly visible = this.profileMenu.logoutConfirmOpen;
 
@@ -104,7 +109,21 @@ export class LogoutConfirmComponent {
     this.profileMenu.closeLogoutConfirm();
   }
 
-  protected async confirm(): Promise<void> {
+  protected confirm(): void {
+    // Release box occupation before clearing the token (HTTP requires valid JWT).
+    // Best-effort: if the DELETE fails the cron job will clean up stale records.
+    const branchId = this.branchContext.branchId();
+    if (branchId != null) {
+      this.boxOccupationService.release(branchId, 'ATENCION').subscribe({
+        complete: () => void this.doActualLogout(),
+        error: () => void this.doActualLogout(),
+      });
+    } else {
+      void this.doActualLogout();
+    }
+  }
+
+  private async doActualLogout(): Promise<void> {
     this.tokens.removeToken();
     this.userSession.clear();
     this.profileMenu.closeLogoutConfirm();

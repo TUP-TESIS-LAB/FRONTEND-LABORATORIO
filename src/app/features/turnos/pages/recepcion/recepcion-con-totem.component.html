@@ -1,41 +1,58 @@
-<div class="grid">
-  <p-card class="col" header="Con turno">
-    <p-table [value]="withAppointment()" [loading]="loading()">
-      <ng-template pTemplate="header">
-        <tr><th>Código</th><th>DNI</th><th>Llamadas</th><th></th></tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr>
-          <td>{{ row.publicCode }}</td>
-          <td>{{ row.nationalId }}</td>
-          <td>
-            @if (row.callCount > 0) {
-              <span class="call-count">{{ row.callCount }}</span>
-            }
-          </td>
-          <td>
-            <app-queue-row-actions
-              [entryId]="row.id"
-              (call)="onCall(row.id)"
-              (nuevaAtencion)="onNuevaAtencion(row.id)" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr><td colspan="4">Sin pacientes con turno en cola</td></tr>
-      </ng-template>
-    </p-table>
-  </p-card>
+<p-confirmDialog />
+<header class="recepcion-header">
+  <h2 class="recepcion-title">Cola de espera</h2>
+  <div class="recepcion-header__actions">
+    @if (boxBranchId != null && boxCurrentUserId > 0) {
+      <app-box-occupation-widget
+        [branchId]="boxBranchId"
+        [currentUserId]="boxCurrentUserId"
+        [totalBoxes]="boxTotalBoxes" />
+    }
+    <!-- Drawer de turnos del dia -->
+    <p-button
+      icon="pi pi-calendar"
+      label="Turnos del día"
+      severity="secondary"
+      [outlined]="true"
+      size="small"
+      [disabled]="!hasBranch()"
+      (onClick)="toggleDrawer()" />
+    <!-- Nueva atencion en blanco (sin DNI, sin queue entry) -->
+    <p-button
+      icon="pi pi-plus"
+      label="Nueva atención"
+      severity="primary"
+      size="small"
+      [disabled]="!hasBranch()"
+      (onClick)="onNuevaAtencionBlanco()" />
+  </div>
+</header>
 
-  <p-card class="col" header="Sin turno">
-    <p-table [value]="walkIn()" [loading]="loading()">
+<p-card>
+  @if (!hasBranch()) {
+    <div class="empty-branch">
+      <i class="pi pi-info-circle"></i>
+      <span>No hay sucursal asignada. Avisá al administrador.</span>
+    </div>
+  } @else {
+    <p-table
+      [value]="entries()"
+      [loading]="loading()"
+      [rowTrackBy]="trackById">
       <ng-template pTemplate="header">
-        <tr><th>Código</th><th>DNI</th><th>Llamadas</th><th></th></tr>
+        <tr>
+          <th>Código</th>
+          <th>DNI</th>
+          <th>Esperando</th>
+          <th>Llamadas</th>
+          <th></th>
+        </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
-        <tr>
+        <tr [class]="rowClass(row)">
           <td>{{ row.publicCode }}</td>
           <td>{{ row.nationalId }}</td>
+          <td class="waiting-cell">{{ row.createdAt | waitingTime }}</td>
           <td>
             @if (row.callCount > 0) {
               <span class="call-count">{{ row.callCount }}</span>
@@ -45,13 +62,18 @@
             <app-queue-row-actions
               [entryId]="row.id"
               (call)="onCall(row.id)"
-              (nuevaAtencion)="onNuevaAtencion(row.id)" />
+              (nuevaAtencion)="onNuevaAtencion(row.id)"
+              (cancel)="onCancel(row.id, row.publicCode)" />
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
-        <tr><td colspan="4">Sin walk-ins en cola</td></tr>
+        <tr><td colspan="5">No hay pacientes en cola.</td></tr>
       </ng-template>
     </p-table>
-  </p-card>
-</div>
+  }
+</p-card>
+
+<app-scheduled-appointments-drawer
+  [visible]="drawerOpen()"
+  (visibleChange)="onDrawerVisibleChange($event)" />

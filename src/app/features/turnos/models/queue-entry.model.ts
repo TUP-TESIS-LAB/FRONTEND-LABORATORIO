@@ -6,6 +6,7 @@ export interface QueueEntry {
   nationalId: string;
   patientId: number | null;
   branchId: number;
+  appointmentId: number | null;   // null para walk-ins (ST), no-null para CT
   hasAppointment: boolean;
   status: QueueStatus;
   lastCalledAt: string | null;    // ISO timestamp

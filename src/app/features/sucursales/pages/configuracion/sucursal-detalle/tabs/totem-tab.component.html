@@ -9,4 +9,31 @@
     <p-toggleswitch [ngModel]="enabled()" (ngModelChange)="onToggle($event)" />
     <span class="switch-label">{{ enabled() ? 'Tótem habilitado' : 'Tótem deshabilitado' }}</span>
   </div>
+
+  <div class="boxes-section">
+    <h3>Boxes</h3>
+    <p class="muted">Cantidad de boxes físicos disponibles en esta sucursal. Se usan para los llamados de los pacientes en la TV de sala de espera.</p>
+    <form [formGroup]="boxesForm" (ngSubmit)="submitBoxes()" class="form">
+      <div class="form-row">
+        <div class="form-field">
+          <label for="atencionBoxesCount">Cantidad de boxes de atención *</label>
+          <p-inputNumber inputId="atencionBoxesCount" formControlName="atencionBoxesCount" [min]="1" [showButtons]="true" buttonLayout="horizontal" decrementButtonIcon="pi pi-minus" incrementButtonIcon="pi pi-plus" />
+          @if (boxesForm.controls.atencionBoxesCount.invalid && boxesForm.controls.atencionBoxesCount.touched) {
+            <small class="form-error">Mínimo 1.</small>
+          }
+        </div>
+        <div class="form-field">
+          <label for="extraccionBoxesCount">Cantidad de boxes de extracción *</label>
+          <p-inputNumber inputId="extraccionBoxesCount" formControlName="extraccionBoxesCount" [min]="1" [showButtons]="true" buttonLayout="horizontal" decrementButtonIcon="pi pi-minus" incrementButtonIcon="pi pi-plus" />
+          @if (boxesForm.controls.extraccionBoxesCount.invalid && boxesForm.controls.extraccionBoxesCount.touched) {
+            <small class="form-error">Mínimo 1.</small>
+          }
+        </div>
+      </div>
+      <footer class="tab-footer">
+        <p-button label="Guardar boxes" type="submit" [disabled]="boxesForm.invalid || savingBoxes()" [loading]="savingBoxes()" />
+      </footer>
+    </form>
+  </div>
 </div>
+

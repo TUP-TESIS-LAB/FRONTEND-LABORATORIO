@@ -71,7 +71,17 @@ export const NAV_SECTIONS: NavSection[] = [
         kind: 'external',
         label: 'TV sala de espera',
         icon: 'pi pi-desktop',
-        href: '/display/lab-demo/1',
+        // branch 1001 = Sede Central del seed local-dev (V902).
+        // El backend devuelve 404 si la branch no existe; usar id < 1000 hardcodeado
+        // hace que cualquier dev clon de fresh vea el 404 hasta tocar la URL a mano.
+        href: '/display/lab-demo/1001',
+        chip: 'Smoke',
+      },
+      {
+        kind: 'external',
+        label: 'TV extracción',
+        icon: 'pi pi-desktop',
+        href: '/display/extraccion/lab-demo/1001',
         chip: 'Smoke',
       },
       {
@@ -108,7 +118,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Gestión',
     items: [
       { kind: 'link', label: 'Empresa',          icon: 'pi pi-building', path: '/empresa', roleKey: 'ADMINISTRADOR' },
-      { kind: 'link', label: 'Sucursales',       icon: 'pi pi-building', path: '/sucursales', sectionKey: 'SUCURSALES' },
+      { kind: 'link', label: 'Sucursales',       icon: 'pi pi-building', path: '/sucursales', sectionKey: 'SUCURSALES', roleKey: 'ADMINISTRADOR' },
       { kind: 'link', label: 'Financiero',       icon: 'pi pi-wallet',   path: '/financiero', moduleKey: ModuleKey.Financiero, sectionKey: 'FINANCIERO' },
       { kind: 'link', label: 'Obras Sociales',   icon: 'pi pi-id-card',  path: '/obras-sociales', sectionKey: 'OBRAS_SOCIALES' },
     ],

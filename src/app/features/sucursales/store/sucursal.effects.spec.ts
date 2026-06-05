@@ -32,6 +32,8 @@ const mockSucursal: Sucursal = {
   address: null,
   responsibleUserId: null,
   active: true,
+  atencionBoxesCount: 1,
+  extraccionBoxesCount: 1,
 };
 
 const mockSchedule: BranchSchedule = {
@@ -178,7 +180,7 @@ describe('SucursalEffects', () => {
     it('success: dispatches addSucursalSuccess with returned sucursal', () => {
       return new Promise<void>((resolve) => {
         sucursalService.create.mockReturnValue(of(mockSucursal));
-        const input = { code: 'SUC-001', description: 'Sucursal Central', status: 'ACTIVE' as const };
+        const input = { code: 'SUC-001', description: 'Sucursal Central', status: 'ACTIVE' as const, atencionBoxesCount: 1, extraccionBoxesCount: 1 };
         actions$ = of(A.addSucursal({ input }));
 
         effects.add$.subscribe((action) => {

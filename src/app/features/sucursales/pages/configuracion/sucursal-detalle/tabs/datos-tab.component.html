@@ -37,6 +37,36 @@
       </div>
     </fieldset>
 
+    <div class="form-row">
+      <div class="form-field">
+        <label for="provinceId">Provincia</label>
+        <p-select
+          inputId="provinceId"
+          formControlName="provinceId"
+          [options]="provinces()"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Seleccionar provincia"
+          [showClear]="true"
+          appendTo="body"
+        />
+      </div>
+      <div class="form-field" formGroupName="address">
+        <label for="cityId">Ciudad</label>
+        <p-select
+          inputId="cityId"
+          formControlName="cityId"
+          [options]="cities()"
+          optionLabel="name"
+          optionValue="id"
+          [placeholder]="form.controls.provinceId.value == null ? 'Elegí primero una provincia' : 'Seleccionar ciudad'"
+          [disabled]="form.controls.provinceId.value == null"
+          [showClear]="true"
+          appendTo="body"
+        />
+      </div>
+    </div>
+
     <footer class="tab-footer">
       <p-button label="Guardar cambios" type="submit" [disabled]="form.invalid || saving()" [loading]="saving()" />
     </footer>

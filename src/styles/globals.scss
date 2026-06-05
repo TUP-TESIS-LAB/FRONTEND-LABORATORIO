@@ -5,8 +5,11 @@
 
 * {
   box-sizing: border-box;
-  min-width: 0;
 }
+
+// NOTA: NO agregar min-width: 0 al selector universal — rompe el centrado
+// del icono en p-button icon-only (cancel/close rounded). Si algún componente
+// necesita truncate en flex/grid children, agregar min-width: 0 localmente.
 
 body {
   font-family: 'Montserrat', system-ui, sans-serif;

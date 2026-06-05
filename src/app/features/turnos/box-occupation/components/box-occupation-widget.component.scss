@@ -1,0 +1,46 @@
+.box-widget {
+  display: inline-flex;
+  align-items: center;
+
+  &__pill {
+    appearance: none;
+    border: 1px solid #059669;
+    background: #ecfdf5;
+    color: #059669;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #059669; }
+    &:hover { background: #d1fae5; }
+  }
+
+  &__no-box {
+    appearance: none;
+    border: 1px dashed #94a3b8;
+    background: transparent;
+    color: #64748b;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: inherit;
+    transition: background 120ms, border-color 120ms, color 120ms;
+
+    .pi-plus-circle { font-size: 0.95rem; }
+    &:hover {
+      background: #f1f5f9;
+      border-color: #059669;
+      color: #059669;
+    }
+  }
+}

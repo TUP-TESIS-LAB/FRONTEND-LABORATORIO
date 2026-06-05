@@ -44,7 +44,8 @@ export class OperatorBranchFabComponent implements OnInit {
       this.expanded.set(false);
       return;
     }
-    this.context.setBranchId(id);
+    const name = this.branches().find(b => b.id === id)?.name ?? `Sucursal #${id}`;
+    this.context.setBranch(id, name);
     this.expanded.set(false);
     // Hard reload para que toda la pagina se cargue con el nuevo branchId,
     // sin tener que propagar el cambio por la cadena de inputs.

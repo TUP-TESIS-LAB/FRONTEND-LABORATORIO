@@ -122,6 +122,9 @@ export class DatosStepComponent {
       // (no aportaba valor; ver tambien sucursales.service formato del selector).
       description: code,
       status: 'ACTIVE' as SucursalStatus,
+      // Default boxes=1 at creation; user sets the actual counts in totem-step.
+      atencionBoxesCount: 1,
+      extraccionBoxesCount: 1,
       ...(hasAddress ? {
         address: {
           ...(street.length > 0 ? { street } : {}),
