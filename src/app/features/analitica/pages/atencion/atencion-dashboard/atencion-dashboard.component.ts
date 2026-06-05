@@ -16,7 +16,7 @@ import {
   attentionStateLabel,
   attentionStateSeverity,
 } from '../../../models/atencion-state-label';
-import { loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
+import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
   selectAtencionKpis,
@@ -119,11 +119,17 @@ interface KpiTile {
                 </td>
                 <td>@if (row.isUrgent) { <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i> }</td>
                 <td>
-                  <p-button
-                    [label]="isTerminal(row.attentionState) ? 'Ver' : 'Retomar'"
-                    size="small"
-                    [outlined]="isTerminal(row.attentionState)"
-                    (onClick)="open(row)" />
+                  <div class="flex items-center gap-1 justify-end">
+                    @if (row.protocolId != null) {
+                      <p-button label="Rótulos" icon="pi pi-tag" size="small" severity="secondary" [text]="true"
+                                (onClick)="downloadLabels(row)" />
+                    }
+                    <p-button
+                      [label]="isTerminal(row.attentionState) ? 'Ver' : 'Retomar'"
+                      size="small"
+                      [outlined]="isTerminal(row.attentionState)"
+                      (onClick)="open(row)" />
+                  </div>
                 </td>
               </tr>
             </ng-template>
@@ -185,6 +191,11 @@ export class AtencionDashboardComponent implements OnInit {
 
   open(row: AttentionResponse): void {
     this.router.navigate(['/analitica/atencion', row.id]);
+  }
+
+  downloadLabels(row: AttentionResponse): void {
+    if (row.protocolId == null) return;
+    this.store.dispatch(downloadProtocolLabels({ protocolId: row.protocolId, protocolNumber: `P-${row.protocolId}` }));
   }
 
   /**
