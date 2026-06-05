@@ -13,6 +13,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { AwaitingExtractionItem, BoxAssignment } from '../../models/extraction.model';
+import { SampleTypeLabelPipe } from '../../models/sample-type-label.pipe';
 
 type BoxState = 'libre' | 'ocupado' | 'sin-asignar';
 
@@ -40,7 +41,7 @@ interface BoxRow {
   selector: 'app-take-patient-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DialogModule, ButtonModule, TagModule],
+  imports: [CommonModule, DialogModule, ButtonModule, TagModule, SampleTypeLabelPipe],
   template: `
     <p-dialog
       [(visible)]="visible"
@@ -90,7 +91,7 @@ interface BoxRow {
               @for (s of patient()!.samples; track s.sampleType) {
                 <span class="sample-chip">
                   <i class="pi pi-circle-fill"></i>
-                  {{ s.sampleType }}
+                  {{ s.sampleType | sampleTypeLabel }}
                   <span class="chip-count">× {{ s.count }}</span>
                 </span>
               }

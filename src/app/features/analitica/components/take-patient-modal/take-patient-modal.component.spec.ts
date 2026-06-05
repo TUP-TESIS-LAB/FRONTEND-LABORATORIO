@@ -20,8 +20,9 @@ function makePatient(overrides: Partial<AwaitingExtractionItem> = {}): AwaitingE
     createdAt: '2026-06-01T10:00:00Z',
     waitMinutes: 5,
     samples: [
-      { sampleType: 'Sangre', count: 2 },
-      { sampleType: 'Orina', count: 1 },
+      // Valores crudos del enum backend (SampleType). La UI los traduce.
+      { sampleType: 'BLOOD', count: 2 },
+      { sampleType: 'URINE', count: 1 },
     ],
     ...overrides,
   };
@@ -272,13 +273,25 @@ describe('TakePatientModalComponent', () => {
   describe('Sección muestras', () => {
     it('patient con muestras expone los samples en boxRows context (smoke)', () => {
       const fixture = TestBed.createComponent(TakePatientModalComponent);
-      const patient = makePatient({ samples: [{ sampleType: 'Sangre', count: 2 }] });
+      const patient = makePatient({ samples: [{ sampleType: 'BLOOD', count: 2 }] });
       fixture.componentRef.setInput('patient', patient);
       fixture.componentRef.setInput('visible', true);
       fixture.detectChanges();
 
       expect(fixture.componentInstance.patient()?.samples).toHaveLength(1);
-      expect(fixture.componentInstance.patient()?.samples[0].sampleType).toBe('Sangre');
+      expect(fixture.componentInstance.patient()?.samples[0].sampleType).toBe('BLOOD');
+    });
+
+    it('renderiza el tipo de muestra traducido al español, nunca el enum crudo', () => {
+      const fixture = TestBed.createComponent(TakePatientModalComponent);
+      const patient = makePatient({ samples: [{ sampleType: 'BLOOD', count: 3 }] });
+      fixture.componentRef.setInput('patient', patient);
+      fixture.componentRef.setInput('visible', true);
+      fixture.detectChanges();
+
+      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).toContain('Sangre');
+      expect(text).not.toContain('BLOOD');
     });
   });
 });
