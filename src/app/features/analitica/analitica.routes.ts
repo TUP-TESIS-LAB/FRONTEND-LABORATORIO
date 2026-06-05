@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { hasRoleGuard } from '@core/guards/has-role.guard';
 import { sectionGuard } from '@core/guards/section.guard';
 
 export const ANALITICA_ROUTES: Routes = [
@@ -6,6 +7,13 @@ export const ANALITICA_ROUTES: Routes = [
     path: '',
     children: [
       { path: '', redirectTo: 'atencion', pathMatch: 'full' },
+      {
+        path: 'extraccion',
+        loadComponent: () => import('./pages/extraction-queue/extraction-queue.page')
+          .then(m => m.ExtractionQueuePage),
+        canMatch: [hasRoleGuard(['EXTRACTOR', 'ADMINISTRADOR'])],
+        title: 'Cola de extracción',
+      },
       {
         path: 'atencion',
         canMatch: [sectionGuard('ATENCION')],

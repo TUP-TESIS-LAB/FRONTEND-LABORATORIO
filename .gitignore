@@ -8,6 +8,9 @@
 
 # Node
 /node_modules
+
+# Brainstorm visual companion (mockups efimeros)
+.superpowers/
 npm-debug.log
 yarn-error.log
 
