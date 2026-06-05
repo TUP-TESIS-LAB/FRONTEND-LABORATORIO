@@ -62,7 +62,7 @@ import { InExtractionItem } from '../../models/extraction.model';
             <td class="actions-col">
               <div class="actions-cell">
                 <p-button
-                  icon="pi pi-trash"
+                  icon="pi pi-times"
                   severity="danger"
                   [outlined]="true"
                   [rounded]="true"
