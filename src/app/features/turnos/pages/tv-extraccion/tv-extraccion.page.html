@@ -13,10 +13,6 @@
     }
 
     <main class="cola-section">
-      <div class="tv-badge tv-badge--extraccion">
-        <span class="tv-badge__dot"></span>EXTRACCIÓN
-      </div>
-
       @if (connectionLost()) {
         <div class="banner-disconnected">
           <i class="pi pi-wifi" style="margin-right: 0.5rem;"></i>
@@ -52,34 +48,34 @@
         }
         @case ('queue') {
           <div class="layout">
-            <div class="proximos">
-              <h2>Pasar a extracción:</h2>
-              @if (calledEntries().length === 0) {
-                <div class="empty-state">
-                  <i class="pi pi-info-circle"></i>
-                  <span>Aún no se llamó a ningún paciente hoy</span>
+            @if (calledEntries().length === 0) {
+              <div class="empty-state">
+                <i class="pi pi-info-circle"></i>
+                <span>Aún no se llamó a ningún paciente hoy</span>
+              </div>
+            } @else {
+              @let entries = calledEntries();
+              <section class="hero" [attr.data-current-id]="entries[0].id">
+                <span class="hero-label">Ahora llamando a extracción</span>
+                <div class="hero-row">
+                  <span class="hero-code">{{ entries[0].publicCode }}</span>
+                  <span class="hero-box">→ Box {{ entries[0].boxNumber ?? '?' }}</span>
                 </div>
-              } @else {
-                <ul>
-                  @for (e of visibleEntries(); track e.id) {
-                    <li>
-                      <span class="code">{{ e.publicCode }}</span>
-                      <span class="box">→ Box {{ e.boxNumber ?? '?' }}</span>
-                      @if (e.lastCalledAt) {
-                        <span class="hour">{{ e.lastCalledAt | date:'HH:mm':'America/Argentina/Buenos_Aires' }}</span>
-                      }
-                    </li>
-                  }
-                </ul>
-                @if (totalPages() > 1) {
-                  <div class="page-indicator">
-                    @for (p of [].constructor(totalPages()); track $index) {
-                      <span class="dot" [class.active]="$index === currentPage()"></span>
+              </section>
+              @if (entries.length > 1) {
+                <section class="previous">
+                  <span class="previous-label">Llamados anteriores</span>
+                  <ul>
+                    @for (e of entries.slice(1, 5); track e.id) {
+                      <li>
+                        <span class="code">{{ e.publicCode }}</span>
+                        <span class="box">→ Box {{ e.boxNumber ?? '?' }}</span>
+                      </li>
                     }
-                  </div>
-                }
+                  </ul>
+                </section>
               }
-            </div>
+            }
           </div>
         }
       }

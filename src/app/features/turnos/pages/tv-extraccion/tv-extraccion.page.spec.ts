@@ -29,16 +29,19 @@ describe('TvExtraccionPage', () => {
     fixture.detectChanges();
   });
 
-  it('renders the EXTRACCIÓN badge', () => {
-    const badge = fixture.nativeElement.querySelector('.tv-badge--extraccion');
-    expect(badge).not.toBeNull();
-    expect(badge.textContent).toContain('EXTRACCIÓN');
+  it('renders the hero with the most recent called publicCode and box', () => {
+    const hero = fixture.nativeElement.querySelector('.hero');
+    expect(hero).not.toBeNull();
+    expect(hero.querySelector('.hero-label').textContent).toContain('Ahora llamando');
+    expect(hero.querySelector('.hero-code').textContent.trim()).toMatch(/^EX-\d{3}$/);
+    expect(hero.querySelector('.hero-box').textContent).toMatch(/→ Box [123]/);
   });
 
-  it('renders entries with → Box N text', () => {
-    const boxes = fixture.nativeElement.querySelectorAll('.proximos li .box');
-    expect(boxes.length).toBeGreaterThan(0);
-    expect(boxes[0].textContent).toMatch(/→ Box [123]/);
+  it('renders up to 4 previous calls below the hero', () => {
+    const items = fixture.nativeElement.querySelectorAll('.previous li');
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.length).toBeLessThanOrEqual(4);
+    expect(items[0].querySelector('.box').textContent).toMatch(/→ Box [123]/);
   });
 
   it('clicking the simulate button calls simulateNewCall on the mock', () => {
