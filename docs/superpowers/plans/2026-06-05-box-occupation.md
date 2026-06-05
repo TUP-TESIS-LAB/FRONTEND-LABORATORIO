@@ -1,5 +1,7 @@
 # Box Occupation (ATENCION) Implementation Plan
 
+> **Jira:** [KAN-81](https://exequielsantoro.atlassian.net/browse/KAN-81)
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Permitir que cada secretaria elija/cambie su box de atención al entrar a recepción, ver organizativamente qué boxes están ocupados por otras, y propagar ese box al TV cuando llama un paciente.
@@ -70,7 +72,7 @@
 
 ## Convención de commits
 
-Todos los commits llevan `(KAN-XX)` placeholder hasta que se cree el ticket. Reemplazar con `sed` al final, o dejar como está si se confirma el ticket antes del primer commit. El usuario suele crear el ticket vía `jira-workflow` antes de la implementación, en cuyo caso poner directamente el número real.
+Todos los commits llevan `(KAN-81)` placeholder hasta que se cree el ticket. Reemplazar con `sed` al final, o dejar como está si se confirma el ticket antes del primer commit. El usuario suele crear el ticket vía `jira-workflow` antes de la implementación, en cuyo caso poner directamente el número real.
 
 ---
 
@@ -129,7 +131,7 @@ Expected (antes de migrar): `box_number  varchar(10)  YES`
 ```
 cd "C:/Users/Mateo/Desktop/tesis/Backend"
 git add src/main/resources/db/migration/V84__create_branch_box_occupation_and_repurpose_queue_box.sql
-git commit -m "feat(sucursales): tabla branch_box_occupation + queue_entries.box_number INT (KAN-XX)"
+git commit -m "feat(sucursales): tabla branch_box_occupation + queue_entries.box_number INT (KAN-81)"
 ```
 
 ---
@@ -279,7 +281,7 @@ git add src/main/java/lab/laboratorio/modules/sucursales/domain/model/BoxType.ja
         src/main/java/lab/laboratorio/modules/sucursales/domain/port/BranchBoxOccupationRepositoryPort.java \
         src/main/java/lab/laboratorio/modules/sucursales/domain/exception/InvalidBoxNumberException.java \
         src/main/java/lab/laboratorio/modules/sucursales/domain/exception/BoxAlreadyOccupiedException.java
-git commit -m "feat(sucursales): dominio BranchBoxOccupation + BoxType + port + exceptions (KAN-XX)"
+git commit -m "feat(sucursales): dominio BranchBoxOccupation + BoxType + port + exceptions (KAN-81)"
 ```
 
 ---
@@ -488,7 +490,7 @@ public class BranchBoxOccupationRepositoryAdapter implements BranchBoxOccupation
 
 ```
 git add src/main/java/lab/laboratorio/modules/sucursales/infrastructure/persistence/
-git commit -m "feat(sucursales): persistence layer de branch_box_occupation (KAN-XX)"
+git commit -m "feat(sucursales): persistence layer de branch_box_occupation (KAN-81)"
 ```
 
 ---
@@ -814,7 +816,7 @@ Expected: tests pass.
 ```
 git add src/main/java/lab/laboratorio/modules/sucursales/application/usecase/*Box* \
         src/test/java/lab/laboratorio/modules/sucursales/application/usecase/*Box*
-git commit -m "feat(sucursales): use cases Occupy/Release/List/ReleaseAll BoxOccupation (KAN-XX)"
+git commit -m "feat(sucursales): use cases Occupy/Release/List/ReleaseAll BoxOccupation (KAN-81)"
 ```
 
 ---
@@ -987,7 +989,7 @@ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 ```
 git add src/main/java/lab/laboratorio/modules/sucursales/presentation/
-git commit -m "feat(sucursales): REST BranchBoxOccupationController + DTOs (KAN-XX)"
+git commit -m "feat(sucursales): REST BranchBoxOccupationController + DTOs (KAN-81)"
 ```
 
 ---
@@ -1078,7 +1080,7 @@ git add src/main/java/lab/laboratorio/modules/turnos/domain/model/QueueEntry.jav
         src/main/java/lab/laboratorio/modules/turnos/infrastructure/persistence/mapper/QueueEntryJpaMapper.java \
         src/main/java/lab/laboratorio/modules/turnos/presentation/dto/QueueEntryResponse.java \
         src/main/java/lab/laboratorio/modules/turnos/presentation/public_/dto/PublicQueueEntryResponse.java
-git commit -m "refactor(turnos): QueueEntry.boxNumber String -> Integer + expose en PublicQueueEntry (KAN-XX)"
+git commit -m "refactor(turnos): QueueEntry.boxNumber String -> Integer + expose en PublicQueueEntry (KAN-81)"
 ```
 
 ---
@@ -1115,7 +1117,7 @@ public QueueEntry execute(Input input) {
         throw new QueueEntryNotCallableException(input.id(), entry.getStatus().name());
     }
 
-    // KAN-XX: leer occupation activa del operador para capturar su box.
+    // KAN-81: leer occupation activa del operador para capturar su box.
     Integer fromBox = currentUser.getUserId()
             .flatMap(uid -> occupationRepo.findActiveByUser(entry.getBranchId(), BoxType.ATENCION, uid, tenantId))
             .map(BranchBoxOccupation::getBoxNumber)
@@ -1178,7 +1180,7 @@ void execute_setsBoxNumberNull_whenNoOccupation() {
 ```
 git add src/main/java/lab/laboratorio/modules/turnos/application/usecase/CallQueueEntryUseCase.java \
         src/test/java/lab/laboratorio/modules/turnos/application/usecase/CallQueueEntryUseCaseTest.java
-git commit -m "feat(turnos): call captura box del operador desde branch_box_occupation (KAN-XX)"
+git commit -m "feat(turnos): call captura box del operador desde branch_box_occupation (KAN-81)"
 ```
 
 ---
@@ -1246,7 +1248,7 @@ Cambiar el cron a uno cada 5 minutos para validar (`"0 */5 * * * *"`), arrancar 
 ```
 git add src/main/java/lab/laboratorio/infrastructure/config/SchedulingConfig.java \
         src/main/java/lab/laboratorio/modules/sucursales/infrastructure/scheduling/BoxOccupationCleanupScheduler.java
-git commit -m "feat(sucursales): cron diario a 00:00 libera box occupations activas (KAN-XX)"
+git commit -m "feat(sucursales): cron diario a 00:00 libera box occupations activas (KAN-81)"
 ```
 
 ---
@@ -1512,7 +1514,7 @@ describe('boxOccupationReducer', () => {
 cd "C:/Users/Mateo/Desktop/tesis/FRONTEND-LABORATORIO"
 npx ng test --no-watch --include='src/app/features/turnos/box-occupation/**/*.spec.ts'
 git add src/app/features/turnos/box-occupation/
-git commit -m "feat(turnos): scaffold box-occupation feature (model + service + store) (KAN-XX)"
+git commit -m "feat(turnos): scaffold box-occupation feature (model + service + store) (KAN-81)"
 ```
 
 ---
@@ -1867,7 +1869,7 @@ export class BoxOccupationWidgetComponent {
 ```
 npx ng test --no-watch --include='src/app/features/turnos/box-occupation/**/*.spec.ts'
 git add src/app/features/turnos/box-occupation/components/
-git commit -m "feat(turnos): BoxSelectorModal + BoxOccupationWidget components (KAN-XX)"
+git commit -m "feat(turnos): BoxSelectorModal + BoxOccupationWidget components (KAN-81)"
 ```
 
 ---
@@ -1966,7 +1968,7 @@ git add src/app/features/turnos/turnos.routes.ts \
         src/app/features/turnos/pages/recepcion/recepcion-con-totem.component.html \
         src/app/features/turnos/pages/recepcion/recepcion-sin-totem.component.ts \
         src/app/features/turnos/pages/recepcion/recepcion-sin-totem.component.html
-git commit -m "feat(turnos): wire-up box-occupation en recepcion (modal blocking + widget) (KAN-XX)"
+git commit -m "feat(turnos): wire-up box-occupation en recepcion (modal blocking + widget) (KAN-81)"
 ```
 
 ---
@@ -2017,7 +2019,7 @@ private doLogout() {
 ```
 npm run build
 git add src/app/features/profile/components/logout-confirm/logout-confirm.component.ts
-git commit -m "feat(profile): release box occupation antes del logout (best-effort) (KAN-XX)"
+git commit -m "feat(profile): release box occupation antes del logout (best-effort) (KAN-81)"
 ```
 
 ---
@@ -2027,7 +2029,7 @@ git commit -m "feat(profile): release box occupation antes del logout (best-effo
 - [ ] **Step 1: Levantar todo**
 
 ```
-# Backend con feat/KAN-XX-box-occupation
+# Backend con feat/KAN-81-box-occupation
 cd "C:/Users/Mateo/Desktop/tesis/Backend"
 ./mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
 
@@ -2093,6 +2095,6 @@ npm start -- --port 4200
 | §7 Lifecycle (logout + cron) | Tasks 8, 12 |
 | §8 Testing | Tasks 4, 7, 9, 10 |
 
-**Placeholder scan**: el único placeholder intencional es `(KAN-XX)` en los commit messages, reemplazable con `sed` al crear el ticket Jira.
+**Placeholder scan**: el único placeholder intencional es `(KAN-81)` en los commit messages, reemplazable con `sed` al crear el ticket Jira.
 
 **Type consistency**: `BoxType` enum usado consistentemente. `boxNumber: number` (TS) ↔ `Integer` (Java) ↔ `INT` (SQL). `BranchBoxOccupation` shape consistente entre dominio Java, JPA entity, DTO response y TS model.

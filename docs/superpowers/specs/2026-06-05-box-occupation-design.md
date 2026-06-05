@@ -3,7 +3,7 @@
 > **Fecha:** 2026-06-05
 > **Estado:** spec aprobado, pendiente plan de implementación
 > **Scope:** UX recepción + persistencia backend + propagación a TV de atención. Solo tipo ATENCION; EXTRACCION queda para ticket siguiente.
-> **Jira:** _pendiente (se crea al cerrar plan)_
+> **Jira:** [KAN-81](https://exequielsantoro.atlassian.net/browse/KAN-81)
 
 ---
 
