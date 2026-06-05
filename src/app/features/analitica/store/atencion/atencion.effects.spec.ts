@@ -64,7 +64,7 @@ describe('AtencionEffects', () => {
     router = { navigate: vi.fn() };
     analysis = { getById: vi.fn() };
     labels = { getByProtocol: vi.fn() };
-    rotuloPdf = { generate: vi.fn() };
+    rotuloPdf = { generate: vi.fn().mockResolvedValue(undefined) };
     notification = { error: vi.fn(), success: vi.fn() };
 
     TestBed.configureTestingModule({

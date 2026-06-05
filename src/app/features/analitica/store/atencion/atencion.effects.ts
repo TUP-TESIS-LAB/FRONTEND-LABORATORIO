@@ -282,7 +282,9 @@ export class AtencionEffects {
             if (ls.length === 0) {
               this.notification.error('Sin rótulos', 'Este protocolo todavía no tiene rótulos generados.');
             } else {
-              void this.rotuloPdf.generate(protocolNumber, ls);
+              this.rotuloPdf.generate(protocolNumber, ls).catch(() =>
+                this.notification.error('No se pudieron generar los rótulos', 'Reintentá en un momento.'),
+              );
             }
           }),
           catchError((error: HttpErrorResponse) => {
