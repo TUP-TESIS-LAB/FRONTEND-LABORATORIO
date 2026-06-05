@@ -94,56 +94,6 @@ describe('InProgressListComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('URGENTE');
   });
 
-  it('shows timer text "en curso desde" for each item', () => {
-    const fixture = TestBed.createComponent(InProgressListComponent);
-    fixture.componentRef.setInput('items', [makeItem()]);
-    fixture.componentRef.setInput('mutating', false);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('en curso desde');
-  });
-
-  it('computes minutesElapsed from extractionStartedAt', () => {
-    const fixture = TestBed.createComponent(InProgressListComponent);
-    const item = makeItem({
-      extractionStartedAt: new Date(Date.now() - 7 * 60_000).toISOString(),
-    });
-    fixture.componentRef.setInput('items', [item]);
-    fixture.componentRef.setInput('mutating', false);
-    fixture.detectChanges();
-    expect(fixture.componentInstance.minutesElapsed(item)).toBeGreaterThanOrEqual(6);
-  });
-
-  it('returns 0 minutesElapsed for invalid extractionStartedAt', () => {
-    const fixture = TestBed.createComponent(InProgressListComponent);
-    const item = makeItem({ extractionStartedAt: 'not-a-date' });
-    fixture.componentRef.setInput('items', [item]);
-    fixture.componentRef.setInput('mutating', false);
-    fixture.detectChanges();
-    expect(fixture.componentInstance.minutesElapsed(item)).toBe(0);
-  });
-
-  it('returns "—" from startedLabel for invalid extractionStartedAt', () => {
-    const fixture = TestBed.createComponent(InProgressListComponent);
-    const item = makeItem({ extractionStartedAt: 'bad-date' });
-    fixture.componentRef.setInput('items', [item]);
-    fixture.componentRef.setInput('mutating', false);
-    fixture.detectChanges();
-    expect(fixture.componentInstance.startedLabel(item)).toBe('—');
-  });
-
-  it('formats startedLabel as HH:MM from ISO string', () => {
-    const fixture = TestBed.createComponent(InProgressListComponent);
-    // Use a fixed time to avoid flakiness: 2026-06-03T09:05:00.000Z
-    // This is UTC, local rendering depends on timezone — we just verify
-    // the format matches HH:MM (two digits colon two digits).
-    const item = makeItem({ extractionStartedAt: new Date(Date.now() - 10 * 60_000).toISOString() });
-    fixture.componentRef.setInput('items', [item]);
-    fixture.componentRef.setInput('mutating', false);
-    fixture.detectChanges();
-    const label = fixture.componentInstance.startedLabel(item);
-    expect(label).toMatch(/^\d{2}:\d{2}$/);
-  });
-
   it('emits cancel with the corresponding item when Cancelar is clicked', () => {
     const fixture = TestBed.createComponent(InProgressListComponent);
     const item = makeItem();

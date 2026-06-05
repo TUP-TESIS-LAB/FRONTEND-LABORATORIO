@@ -2,16 +2,10 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   EventEmitter,
   Output,
-  computed,
-  inject,
   input,
-  signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval, startWith } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -44,7 +38,6 @@ import { InExtractionItem } from '../../models/extraction.model';
             <th>Box</th>
             <th>Extractor</th>
             <th>Paciente</th>
-            <th>En curso desde</th>
             <th class="actions-col">Acciones</th>
           </tr>
         </ng-template>
@@ -63,12 +56,6 @@ import { InExtractionItem } from '../../models/extraction.model';
                   <p-tag value="URGENTE" severity="danger" icon="pi pi-exclamation-triangle" />
                 }
                 <span class="patient-meta">DNI {{ row.patientDni }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="timer-cell">
-                <span class="timer-label">en curso desde <strong>{{ startedLabel(row) }}</strong></span>
-                <span class="timer-since">{{ minutesElapsed(row) }} min</span>
               </div>
             </td>
             <td class="actions-col">
@@ -150,25 +137,6 @@ import { InExtractionItem } from '../../models/extraction.model';
       color: #64748b;
     }
 
-    .timer-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .timer-label {
-      font-size: 12px;
-      color: #64748b;
-    }
-    .timer-label strong {
-      font-weight: 700;
-      color: #0f172a;
-    }
-    .timer-since {
-      font-size: 12px;
-      font-weight: 600;
-      color: #0891b2;
-    }
-
     .actions-col { width: 1%; white-space: nowrap; text-align: right; }
     .actions-cell { display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center; }
 
@@ -181,32 +149,4 @@ export class InProgressListComponent {
 
   @Output() readonly cancel = new EventEmitter<InExtractionItem>();
   @Output() readonly end = new EventEmitter<InExtractionItem>();
-
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly now = signal<number>(Date.now());
-
-  constructor() {
-    interval(60_000)
-      .pipe(startWith(0), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.now.set(Date.now()));
-  }
-
-  startedLabel(item: InExtractionItem): string {
-    if (!item.extractionStartedAt) return '—';
-    const d = new Date(item.extractionStartedAt);
-    if (Number.isNaN(d.getTime())) return '—';
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-
-  minutesElapsed(item: InExtractionItem): number {
-    if (!item.extractionStartedAt) return 0;
-    const started = new Date(item.extractionStartedAt).getTime();
-    if (Number.isNaN(started)) return 0;
-    const diffMs = this.now() - started;
-    return Math.max(0, Math.floor(diffMs / 60_000));
-  }
-}
-
-function pad(n: number): string {
-  return n < 10 ? `0${n}` : String(n);
 }

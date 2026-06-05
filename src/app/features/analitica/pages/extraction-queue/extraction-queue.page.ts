@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   OnDestroy,
   OnInit,
   computed,
@@ -10,17 +9,14 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
-import { Subject, debounceTime, of } from 'rxjs';
+import { of } from 'rxjs';
 import { PollingHandle, PollingService } from '@core/refresh';
 import { ExtractorBoxService } from '@core/services/extractor-box.service';
 import { NotificationService } from '@core/services/notification.service';
@@ -62,12 +58,10 @@ const UNDO_WINDOW_MS = 5000;
   providers: [MessageService],
   imports: [
     CommonModule,
-    FormsModule,
     TableModule,
     ButtonModule,
     TagModule,
     ToastModule,
-    InputTextModule,
     TooltipModule,
     EmptyStateComponent,
     RefreshIndicatorComponent,
@@ -121,16 +115,6 @@ const UNDO_WINDOW_MS = 5000;
           <section class="block">
             <div class="block__header">
               <h2><i class="pi pi-list"></i> Cola de extracción</h2>
-              <span class="block__search">
-                <i class="pi pi-search"></i>
-                <input
-                  pInputText
-                  type="text"
-                  placeholder="Buscar por nombre o DNI"
-                  [ngModel]="searchInput()"
-                  (ngModelChange)="onSearchChange($event)"
-                />
-              </span>
             </div>
 
             @if (awaiting().length === 0) {
@@ -146,7 +130,6 @@ const UNDO_WINDOW_MS = 5000;
                     <th></th>
                     <th>Paciente</th>
                     <th>DNI</th>
-                    <th>Atención</th>
                     <th class="actions-col">Acciones</th>
                   </tr>
                 </ng-template>
@@ -159,7 +142,6 @@ const UNDO_WINDOW_MS = 5000;
                     </td>
                     <td>{{ row.patientFullName }}</td>
                     <td>{{ row.patientDni }}</td>
-                    <td>{{ row.attentionNumber }}</td>
                     <td class="actions-col">
                       <div class="actions-cell">
                         <p-button
@@ -263,8 +245,6 @@ const UNDO_WINDOW_MS = 5000;
 
     .block { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); height: 100%; box-sizing: border-box; }
     .block__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
-    .block__search { display: inline-flex; align-items: center; gap: 6px; }
-    .block__search input { min-width: 220px; }
     .actions-col { width: 1%; white-space: nowrap; text-align: right; }
     .actions-cell { display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center; }
     tr.is-urgent { background: rgba(239,68,68,.04); }
@@ -316,7 +296,6 @@ const UNDO_WINDOW_MS = 5000;
 export class ExtractionQueuePage implements OnInit, OnDestroy {
   private readonly store = inject(Store);
   private readonly polling = inject(PollingService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly notifier = inject(NotificationService);
   private readonly messages = inject(MessageService);
   private readonly boxService = inject(ExtractorBoxService);
@@ -344,10 +323,8 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
   readonly cancelDialogOpen = signal(false);
   readonly cancelTarget = signal<InExtractionItem | null>(null);
   readonly selectedPatient = signal<AwaitingExtractionItem | null>(null);
-  readonly searchInput = signal('');
   readonly paused = computed(() => this.takeModalOpen() || this.cancelDialogOpen());
 
-  private readonly search$ = new Subject<string>();
   private handle: PollingHandle | null = null;
   /**
    * Guard para no auto-seleccionar la sucursal más de una vez. El effect que
@@ -361,10 +338,6 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
   private undoTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    this.search$
-      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
-      .subscribe((q) => this.store.dispatch(A.setSearch({ search: q })));
-
     // Pausar el polling mientras un overlay está abierto. Al cerrar, dispara
     // un poke inmediato para sincronizar.
     effect(() => {
@@ -432,12 +405,6 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     this.handle?.stop();
     this.handle = null;
     this.clearUndoTimer();
-    this.search$.complete();
-  }
-
-  onSearchChange(value: string): void {
-    this.searchInput.set(value);
-    this.search$.next(value);
   }
 
   onBranchChange(branch: BranchOption): void {
