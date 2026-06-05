@@ -50,20 +50,31 @@ export class RecepcionPage implements OnInit {
   // Box-occupation signals — resolved on init and passed to child components.
   protected readonly currentUserId = signal<number>(0);
   protected readonly totalBoxes = signal<number>(1);
+  /** Si el user cierra el modal sin elegir box, lo respetamos hasta que vuelva a abrir manual. */
+  protected readonly selectorDismissed = signal<boolean>(false);
 
   private readonly allOccupations = this.store.selectSignal(selectAllOccupations);
   protected readonly myOccupation = computed(() =>
     this.allOccupations().find(o => o.userId === this.currentUserId()) ?? null,
   );
 
-  // Blocking modal: show when user id is known, branch is set, and user has no box.
+  // Modal abierto cuando: user conocido, branch valido, sin box, y no fue dismisseado.
+  // Closable: el user puede cancelar y operar sin box (la TV cae a fallback derivado).
   protected readonly selectorVisible = computed(
     () => this.currentUserId() > 0
        && this.branchContext.branchId() != null
-       && this.myOccupation() == null,
+       && this.myOccupation() == null
+       && !this.selectorDismissed(),
   );
 
   ngOnInit(): void {
+    // Si no hay branch resolvible, mostramos un warning visible en console.
+    // El usuario debe logoutear y loguear de nuevo para que el JWT tenga la branch
+    // actualizada (caso típico: admin recién asignado a sucursal por SQL).
+    if (this.branchId == null) {
+      console.warn('[recepcion] Sin sucursal asignada al user. Logueate de nuevo o pedile a un admin que te asigne una.');
+      return;
+    }
     if (this.branchContext.branchId() == null) {
       this.branchContext.setBranchId(this.branchId);
     }
@@ -79,18 +90,22 @@ export class RecepcionPage implements OnInit {
     this.sucursalService.getById(bid).subscribe(b => this.totalBoxes.set(b.atencionBoxesCount));
   }
 
+  protected onSelectorClosed(): void {
+    this.selectorDismissed.set(true);
+  }
+
   /**
-   * Prioridad: 1) branch persistida (localStorage via OperatorBranchContextService),
-   * 2) branch del user actual (currentUser.branch del JWT), 3) fallback 1
-   * (logueado con warning). Asi un operador sin branch fija puede elegir y
-   * la eleccion sobrevive reloads.
+   * Resuelve la sucursal del operador. Devuelve null si no tiene branch
+   * asignada — la pagina muestra warning en consola y NO inicializa box-occupation.
+   *
+   * Prioridad:
+   *  1) branch persistida (localStorage via OperatorBranchContextService)
+   *  2) branch del JWT del user (UserSessionService.currentUser.branch)
    */
-  private resolveBranchId(): number {
+  private resolveBranchId(): number | null {
     const stored = this.branchContext.branchId();
     if (stored != null) return stored;
     const fromUser = this.session.currentUser()?.branch ?? null;
-    if (fromUser != null) return fromUser;
-    console.warn('[recepcion] sin branch en localStorage ni en user — usando default branchId=1');
-    return 1;
+    return fromUser ?? null;
   }
 }
