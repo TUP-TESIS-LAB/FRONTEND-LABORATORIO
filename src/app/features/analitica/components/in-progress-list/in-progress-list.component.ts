@@ -141,8 +141,12 @@ import { InExtractionItem } from '../../models/extraction.model';
       color: #64748b;
     }
 
-    .actions-col { width: 1%; white-space: nowrap; text-align: right; }
-    .actions-cell { display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center; }
+    .actions-col { width: 1%; white-space: nowrap; }
+    .actions-cell { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+    /* Igualar la altura de ambos botones para que queden centrados y alineados.
+       El de cancelar es icon-only redondo → cuadrado perfecto = círculo. */
+    :host ::ng-deep .actions-cell .p-button { height: 2.25rem; }
+    :host ::ng-deep .actions-cell .p-button.p-button-icon-only { width: 2.25rem; padding: 0; }
 
     tr.is-urgent { background: rgba(239,68,68,.04); }
   `],
