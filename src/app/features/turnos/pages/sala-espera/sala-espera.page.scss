@@ -236,28 +236,6 @@
     line-height: 1;
   }
 
-  .hour {
-    font-size: 1.125rem;
-    font-weight: 500;
-    color: #1a1a1a;
-  }
-
-  .page-indicator {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    padding-top: 1rem;
-
-    .dot {
-      width: 0.625rem;
-      height: 0.625rem;
-      border-radius: 50%;
-      background: #d0d7e0;
-      transition: background 200ms ease;
-
-      &.active { background: var(--brand-primary, #1a1a1a); }
-    }
-  }
 }
 
 @keyframes fadeIn {

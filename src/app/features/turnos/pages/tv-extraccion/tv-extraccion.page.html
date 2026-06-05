@@ -48,34 +48,24 @@
         }
         @case ('queue') {
           <div class="layout">
-            @if (calledEntries().length === 0) {
-              <div class="empty-state">
-                <i class="pi pi-info-circle"></i>
-                <span>Aún no se llamó a ningún paciente hoy</span>
-              </div>
-            } @else {
-              @let entries = calledEntries();
-              <section class="hero" [attr.data-current-id]="entries[0].id">
-                <span class="hero-label">Ahora llamando a extracción</span>
-                <div class="hero-row">
-                  <span class="hero-code">{{ entries[0].publicCode }}</span>
-                  <span class="hero-box">→ Box {{ entries[0].boxNumber ?? '?' }}</span>
+            <div class="proximos">
+              <h2>Últimos llamados para extracción:</h2>
+              @if (calledEntries().length === 0) {
+                <div class="empty-state">
+                  <i class="pi pi-info-circle"></i>
+                  <span>Aún no se llamó a ningún paciente hoy</span>
                 </div>
-              </section>
-              @if (entries.length > 1) {
-                <section class="previous">
-                  <span class="previous-label">Llamados anteriores</span>
-                  <ul>
-                    @for (e of entries.slice(1, 5); track e.id) {
-                      <li>
-                        <span class="code">{{ e.publicCode }}</span>
-                        <span class="box">→ Box {{ e.boxNumber ?? '?' }}</span>
-                      </li>
-                    }
-                  </ul>
-                </section>
+              } @else {
+                <ul>
+                  @for (e of calledEntries().slice(0, 5); track e.id) {
+                    <li>
+                      <span class="code">{{ e.publicCode }}</span>
+                      <span class="box">→ Box {{ e.boxNumber ?? '?' }}</span>
+                    </li>
+                  }
+                </ul>
               }
-            }
+            </div>
           </div>
         }
       }

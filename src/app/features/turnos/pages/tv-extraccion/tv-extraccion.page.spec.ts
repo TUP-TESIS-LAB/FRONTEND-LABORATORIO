@@ -29,19 +29,17 @@ describe('TvExtraccionPage', () => {
     fixture.detectChanges();
   });
 
-  it('renders the hero with the most recent called publicCode and box', () => {
-    const hero = fixture.nativeElement.querySelector('.hero');
-    expect(hero).not.toBeNull();
-    expect(hero.querySelector('.hero-label').textContent).toContain('Ahora llamando');
-    expect(hero.querySelector('.hero-code').textContent.trim()).toMatch(/^EX-\d{3}$/);
-    expect(hero.querySelector('.hero-box').textContent).toMatch(/→ Box [123]/);
+  it('renders the title for extraccion calls', () => {
+    const h2 = fixture.nativeElement.querySelector('.proximos h2');
+    expect(h2.textContent).toContain('Últimos llamados para extracción');
   });
 
-  it('renders up to 4 previous calls below the hero', () => {
-    const items = fixture.nativeElement.querySelectorAll('.previous li');
+  it('renders entries with → Box N text (cap at 5 visible)', () => {
+    const items = fixture.nativeElement.querySelectorAll('.proximos li');
     expect(items.length).toBeGreaterThan(0);
-    expect(items.length).toBeLessThanOrEqual(4);
+    expect(items.length).toBeLessThanOrEqual(5);
     expect(items[0].querySelector('.box').textContent).toMatch(/→ Box [123]/);
+    expect(items[0].querySelector('.code').textContent.trim()).toMatch(/^EX-\d{3}$/);
   });
 
   it('clicking the simulate button calls simulateNewCall on the mock', () => {

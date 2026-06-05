@@ -57,22 +57,12 @@
                 </div>
               } @else {
                 <ul>
-                  @for (e of visibleEntries(); track e.id) {
+                  @for (e of calledEntries().slice(0, 5); track e.id) {
                     <li>
                       <span class="code">{{ e.publicCode }}</span>
-                      @if (e.lastCalledAt) {
-                        <span class="hour">{{ e.lastCalledAt | date:'HH:mm':'America/Argentina/Buenos_Aires' }}</span>
-                      }
                     </li>
                   }
                 </ul>
-                @if (totalPages() > 1) {
-                  <div class="page-indicator">
-                    @for (p of [].constructor(totalPages()); track $index) {
-                      <span class="dot" [class.active]="$index === currentPage()"></span>
-                    }
-                  </div>
-                }
               }
             </div>
           </div>
