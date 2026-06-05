@@ -1,6 +1,14 @@
 <div class="header">
   <h2>Turnos de hoy</h2>
-  <p-button label="Atención nueva (walk-in)" icon="pi pi-plus" (onClick)="onWalkIn()" />
+  <div class="header__actions">
+    @if (boxBranchId != null && boxCurrentUserId > 0) {
+      <app-box-occupation-widget
+        [branchId]="boxBranchId"
+        [currentUserId]="boxCurrentUserId"
+        [totalBoxes]="boxTotalBoxes" />
+    }
+    <p-button label="Atención nueva (walk-in)" icon="pi pi-plus" (onClick)="onWalkIn()" />
+  </div>
 </div>
 
 <p-table [value]="appointments()" [loading]="loading()">

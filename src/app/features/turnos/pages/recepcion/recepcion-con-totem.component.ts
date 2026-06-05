@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Input,
   OnInit,
   inject,
   signal,
@@ -31,17 +32,22 @@ import { ScheduledAppointmentsDrawerComponent } from '../../components/scheduled
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import { QueueEntry } from '../../models/queue-entry.model';
 import { WaitingTimePipe } from '../../pipes/waiting-time.pipe';
+import { BoxOccupationWidgetComponent } from '../../box-occupation/components/box-occupation-widget.component';
 
 @Component({
   selector: 'app-recepcion-con-totem',
   standalone: true,
-  imports: [TableModule, ButtonModule, CardModule, ConfirmDialogModule, QueueRowActionsComponent, ScheduledAppointmentsDrawerComponent, WaitingTimePipe],
+  imports: [TableModule, ButtonModule, CardModule, ConfirmDialogModule, QueueRowActionsComponent, ScheduledAppointmentsDrawerComponent, WaitingTimePipe, BoxOccupationWidgetComponent],
   providers: [ConfirmationService, MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion-con-totem.component.html',
   styleUrl: './recepcion-con-totem.component.scss',
 })
 export class RecepcionConTotemComponent implements OnInit {
+  /** Box-occupation inputs — resueltos por la página padre y propagados al widget. */
+  @Input() boxBranchId: number | null = null;
+  @Input() boxCurrentUserId: number = 0;
+  @Input() boxTotalBoxes: number = 1;
   private store = inject(Store);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);

@@ -2,7 +2,13 @@
 <header class="recepcion-header">
   <h2 class="recepcion-title">Cola de espera</h2>
   <div class="recepcion-header__actions">
-    <!-- Izquierda: drawer de turnos del dia -->
+    @if (boxBranchId != null && boxCurrentUserId > 0) {
+      <app-box-occupation-widget
+        [branchId]="boxBranchId"
+        [currentUserId]="boxCurrentUserId"
+        [totalBoxes]="boxTotalBoxes" />
+    }
+    <!-- Drawer de turnos del dia -->
     <p-button
       icon="pi pi-calendar"
       label="Turnos del día"
@@ -11,7 +17,7 @@
       size="small"
       [disabled]="!hasBranch()"
       (onClick)="toggleDrawer()" />
-    <!-- Derecha: nueva atencion en blanco (sin DNI, sin queue entry) -->
+    <!-- Nueva atencion en blanco (sin DNI, sin queue entry) -->
     <p-button
       icon="pi pi-plus"
       label="Nueva atención"
