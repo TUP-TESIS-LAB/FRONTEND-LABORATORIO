@@ -15,7 +15,7 @@ describe('TvExtraccionMockService', () => {
     expect(snap.entries.length).toBe(6);
     expect(snap.entries.every(e => e.boxNumber !== undefined && e.boxNumber >= 1 && e.boxNumber <= 3)).toBe(true);
     expect(snap.branchName).toBe('Sucursal Centro');
-    expect(snap.openWindow).toEqual({ startTime: '08:00', endTime: '18:00' });
+    expect(snap.openWindow).toEqual({ startTime: '00:00', endTime: '23:59' });
   });
 
   it('simulateNewCall prepends a new entry with lastCalledAt set to now', async () => {
