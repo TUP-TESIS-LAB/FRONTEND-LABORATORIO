@@ -1,0 +1,34 @@
+import { Injectable } from '@angular/core';
+import { jsPDF } from 'jspdf';
+import JsBarcode from 'jsbarcode';
+
+@Injectable({ providedIn: 'root' })
+export class RotuloPdfService {
+  /** Genera y descarga un PDF con una etiqueta por label (barcode Code128 del id + nº de protocolo). */
+  generate(protocolNumber: string, labels: { id: number }[]): void {
+    if (labels.length === 0) return;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const labelW = 60, labelH = 24, mX = 10, mY = 10, gX = 6, gY = 6, cols = 3;
+    const pageH = 297;
+    const rowsPerPage = Math.max(1, Math.floor((pageH - mY) / (labelH + gY)));
+    const perPage = cols * rowsPerPage;
+    labels.forEach((label, i) => {
+      const posInPage = i % perPage;
+      if (i > 0 && posInPage === 0) doc.addPage();
+      const col = posInPage % cols;
+      const row = Math.floor(posInPage / cols);
+      const x = mX + col * (labelW + gX);
+      const y = mY + row * (labelH + gY);
+      doc.addImage(this.barcodeDataUrl(String(label.id)), 'PNG', x, y, labelW, labelH - 8);
+      doc.setFontSize(10);
+      doc.text(protocolNumber, x + labelW / 2, y + labelH - 2, { align: 'center' });
+    });
+    doc.save(`rotulos-${protocolNumber}.pdf`);
+  }
+
+  private barcodeDataUrl(value: string): string {
+    const canvas = document.createElement('canvas');
+    JsBarcode(canvas, value, { format: 'CODE128', displayValue: false, margin: 0, height: 40 });
+    return canvas.toDataURL('image/png');
+  }
+}
