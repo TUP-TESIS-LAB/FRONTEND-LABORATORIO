@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Spec:** `docs/superpowers/specs/2026-06-05-resumen-atencion-refactor-design.md`
-> **Jira:** _(pendiente — se crea con `jira-workflow` antes de ejecutar)_
+> **Jira:** [KAN-82](https://exequielsantoro.atlassian.net/browse/KAN-82)
 > **Rama/worktree:** `feat/atencion-recepcion` en `FRONTEND-LABORATORIO/.worktrees/atencion-recepcion` (este refactor depende del `resumen-step`/store de KAN-77; NO sale de `development`). Solo frontend.
 
 **Goal:** Que el Resumen muestre el paciente (Apellido, Nombre · DNI) y los análisis por nombre, mueva "Cancelar atención" al header (izq de "Volver al listado") y reemplace el `window.prompt` de cancelación por un modal.

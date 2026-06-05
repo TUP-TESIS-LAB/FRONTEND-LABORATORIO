@@ -2,7 +2,7 @@
 
 > **Fecha:** 2026-06-05
 > **Contexto:** Polish de la feature de Atención (KAN-77, en review). Solo **frontend** — sin cambios de backend.
-> **Jira:** _(pendiente — se define en la transición a implementación)_
+> **Jira:** [KAN-82](https://exequielsantoro.atlassian.net/browse/KAN-82)
 > **Rama:** _(a decidir: nueva desde `development`, o sobre `feat/atencion-recepcion`)_
 
 ## 1. Problema
