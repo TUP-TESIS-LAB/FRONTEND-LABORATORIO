@@ -6,8 +6,8 @@ import { queueReducer } from './store/queue/queue.reducer';
 import { QueueEffects } from './store/queue/queue.effects';
 import { appointmentsReducer } from './store/appointments/appointments.reducer';
 import { AppointmentsEffects } from './store/appointments/appointments.effects';
-import { branchTotemConfigReducer } from './store/branch-totem-config/branch-totem-config.reducer';
-import { BranchTotemConfigEffects } from './store/branch-totem-config/branch-totem-config.effects';
+// branchTotemConfig se registra en el store root (app.config.ts), no acá: el
+// sidebar lo usa en todas las rutas. No re-registrar para no duplicar la slice.
 import { agendasReducer } from './store/agendas/agendas.reducer';
 import { AgendasEffects } from './store/agendas/agendas.effects';
 import { totemReducer } from './store/totem/totem.reducer';
@@ -26,10 +26,9 @@ export const TURNOS_ROUTES: Routes = [
       MessageService,
       provideState('queue', queueReducer),
       provideState('appointments', appointmentsReducer),
-      provideState('branchTotemConfig', branchTotemConfigReducer),
       provideState('agendas', agendasReducer),
       provideState('totem', totemReducer),
-      provideEffects([QueueEffects, AppointmentsEffects, BranchTotemConfigEffects, AgendasEffects, TotemEffects]),
+      provideEffects([QueueEffects, AppointmentsEffects, AgendasEffects, TotemEffects]),
     ],
     children: [
       { path: '', redirectTo: 'agenda', pathMatch: 'full' },

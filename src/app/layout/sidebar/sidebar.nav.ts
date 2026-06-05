@@ -106,6 +106,12 @@ export const NAV_SECTIONS: NavSection[] = [
         sectionKey: 'ATENCION',
         badge: { text: '3', tone: 'green' },
       },
+      {
+        kind: 'link',
+        label: 'Cola de extracción',
+        icon: 'pi pi-bolt',
+        path: '/analitica/extraccion',
+      },
     ],
   },
   {

@@ -44,6 +44,25 @@ Cualquier mensaje que se muestre en la UI (toast, alert, inline error, modal) de
 
 Aplica también a los emojis: NO usar emojis Unicode (📱 ✉ ☎ etc.) — usar PrimeIcons (`<i class="pi pi-mobile">`, `pi-envelope`, `pi-phone`) que están alineados con el design system y se renderizan consistentes en todos los browsers.
 
+### 5. Refresco en tiempo real — estándar del proyecto
+
+Pantallas que requieren ver cambios sin recargar (colas, dashboards, listas en curso) usan **HTTP polling con ETag/304**. La infra vive en `core/refresh/` y se compone de:
+- **`PollingService.startPolling({ key, intervalMs, poll })`** — orquesta el loop (visibility-paused, manual setActive, pokeNow). El componente lo inyecta y guarda el handle para `stop()` en `ngOnDestroy`.
+- **`withPolling()`** — `HttpContext` helper que marca la request como polleable. Pasar en cada `http.get(...)` que va al ciclo de refresco.
+- **`etagInterceptor`** — interceptor HTTP global. Sólo actúa sobre requests marcadas con `withPolling()`. Agrega `If-None-Match`, cachea el `ETag` que vuelve, y traduce `304` a un sentinel `{ notModified: true }` para que el effect distinga "vino data nueva" vs "todo igual".
+
+Es el estándar único — no improvisar `setInterval` en componentes, ni introducir SSE/WebSockets sin discusión previa.
+
+Reglas:
+- **Intervalo por defecto: 5 segundos.** Solo bajarlo con justificación explícita (latencia inaceptable comprobada en uso real, no en hipótesis).
+- El polling **debe pausarse cuando la pestaña no está visible** (`document.visibilityState === 'hidden'`) para no gastar ancho de banda ni cuota del usuario — `PollingService` lo hace por default si `pauseOnHidden !== false`.
+- Al volver visible: reanudar + disparar un poll extra inmediato (también lo hace el service).
+- El effect debe respetar el flag `pending` del feature para no encolar peticiones si hay una en vuelo (dedup).
+- El cliente debe enviar `If-None-Match` con el ETag del último response exitoso (lo hace `etagInterceptor`), y NO disparar acción de éxito si la respuesta es `304` — usar `isNotModified(res)` en el effect para distinguir y emitir `*NotModified` en vez de `*Success`.
+- Cuando agregues una pantalla nueva con refresco, reusá `PollingService` — no copies la lógica.
+
+Si una pantalla específica requiere latencia <2s comprobada (no asumida), abrir issue para evaluar SSE puntualmente; no migrar el estándar global por un caso.
+
 ---
 
 ## Stack del repo
