@@ -54,6 +54,9 @@ export const createPatientInline      = createAction('[Atencion Wizard] Create P
 export const updatePatientInline      = createAction('[Atencion Wizard] Update Patient Inline',     props<{ id: number; payload: UpdatePatientRequest }>());
 export const startAttentionForPatient = createAction('[Atencion Wizard] Start For Patient',         props<{ patientId: number; indications: string | null }>());
 
+// Rotulos -----------------------------------------------------------------------
+export const downloadProtocolLabels = createAction('[Atencion Rotulos] Download Protocol Labels', props<{ protocolId: number; protocolNumber: string }>());
+
 // Resumen -----------------------------------------------------------------------
 export const loadAttentionPatient = createAction('[Atencion Resumen] Load Patient', props<{ patientId: number }>());
 

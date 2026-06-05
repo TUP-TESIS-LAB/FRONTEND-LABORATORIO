@@ -10,6 +10,9 @@ import { AtencionApiService } from '../../services/atencion-api.service';
 import { Patient } from '../../../pacientes/models/patient.model';
 import { PatientService } from '../../../pacientes/services/patient.service';
 import { AnalysisService } from '../../services/analysis.service';
+import { LabelsService } from '../../services/labels.service';
+import { RotuloPdfService } from '../../services/rotulo-pdf.service';
+import { NotificationService } from '@core/services/notification.service';
 import * as A from './atencion.actions';
 import { AtencionEffects } from './atencion.effects';
 
@@ -35,6 +38,9 @@ describe('AtencionEffects', () => {
   let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
   let analysis: { getById: ReturnType<typeof vi.fn> };
+  let labels: { getByProtocol: ReturnType<typeof vi.fn> };
+  let rotuloPdf: { generate: ReturnType<typeof vi.fn> };
+  let notification: { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> };
   let effects: AtencionEffects;
 
   beforeEach(() => {
@@ -57,6 +63,9 @@ describe('AtencionEffects', () => {
     patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn(), getById: vi.fn() };
     router = { navigate: vi.fn() };
     analysis = { getById: vi.fn() };
+    labels = { getByProtocol: vi.fn() };
+    rotuloPdf = { generate: vi.fn() };
+    notification = { error: vi.fn(), success: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -66,6 +75,9 @@ describe('AtencionEffects', () => {
         { provide: PatientService, useValue: patients },
         { provide: Router, useValue: router },
         { provide: AnalysisService, useValue: analysis },
+        { provide: LabelsService, useValue: labels },
+        { provide: RotuloPdfService, useValue: rotuloPdf },
+        { provide: NotificationService, useValue: notification },
       ],
     });
     effects = TestBed.inject(AtencionEffects);
@@ -242,5 +254,23 @@ describe('AtencionEffects', () => {
     actions$.next(A.loadAttentionAnalyses({ analysisIds: [] }));
     const out = await firstValueFrom(effects.loadAttentionAnalyses$.pipe(take(1)));
     expect(out).toEqual(A.attentionAnalysesLoaded({ analyses: [] }));
+  });
+
+  it('downloadProtocolLabels$ con labels → genera el PDF', () => {
+    const ls = [{ id: 1, protocolId: 9, analysisId: 3 }];
+    (labels.getByProtocol as ReturnType<typeof vi.fn>).mockReturnValue(of(ls));
+    effects.downloadProtocolLabels$.subscribe();
+    actions$.next(A.downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
+    expect(labels.getByProtocol).toHaveBeenCalledWith(9);
+    expect(rotuloPdf.generate).toHaveBeenCalledWith('P-9', ls);
+    expect(notification.error).not.toHaveBeenCalled();
+  });
+
+  it('downloadProtocolLabels$ sin labels → notifica, no genera', () => {
+    (labels.getByProtocol as ReturnType<typeof vi.fn>).mockReturnValue(of([]));
+    effects.downloadProtocolLabels$.subscribe();
+    actions$.next(A.downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
+    expect(notification.error).toHaveBeenCalled();
+    expect(rotuloPdf.generate).not.toHaveBeenCalled();
   });
 });

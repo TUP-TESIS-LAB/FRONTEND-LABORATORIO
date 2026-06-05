@@ -6,6 +6,9 @@ import { catchError, concatMap, exhaustMap, forkJoin, map, of, switchMap, tap } 
 import { PatientService } from '../../../pacientes/services/patient.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
 import { AnalysisService } from '../../services/analysis.service';
+import { LabelsService } from '../../services/labels.service';
+import { RotuloPdfService } from '../../services/rotulo-pdf.service';
+import { NotificationService } from '@core/services/notification.service';
 import { Analysis } from '../../models/atencion.model';
 import {
   addAnalysisList,
@@ -20,6 +23,7 @@ import {
   createBlankAtencion,
   createPatientInline,
   createPreFilledAtencion,
+  downloadProtocolLabels,
   endBilling,
   endCollection,
   endSecretaryPhase,
@@ -53,11 +57,14 @@ import {
  */
 @Injectable()
 export class AtencionEffects {
-  private readonly actions$  = inject(Actions);
-  private readonly api       = inject(AtencionApiService);
-  private readonly patients  = inject(PatientService);
-  private readonly router    = inject(Router);
-  private readonly analysis  = inject(AnalysisService);
+  private readonly actions$      = inject(Actions);
+  private readonly api           = inject(AtencionApiService);
+  private readonly patients      = inject(PatientService);
+  private readonly router        = inject(Router);
+  private readonly analysis      = inject(AnalysisService);
+  private readonly labels        = inject(LabelsService);
+  private readonly rotuloPdf     = inject(RotuloPdfService);
+  private readonly notification  = inject(NotificationService);
 
   loadList$ = createEffect(() =>
     this.actions$.pipe(
@@ -265,4 +272,23 @@ export class AtencionEffects {
           map(analyses => attentionAnalysesLoaded({ analyses })),
           catchError((error: HttpErrorResponse) => of(attentionAnalysesFailure({ error }))),
         ))));
+
+  downloadProtocolLabels$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(downloadProtocolLabels),
+      switchMap(({ protocolId, protocolNumber }) =>
+        this.labels.getByProtocol(protocolId).pipe(
+          tap(ls => {
+            if (ls.length === 0) {
+              this.notification.error('Sin rótulos', 'Este protocolo todavía no tiene rótulos generados.');
+            } else {
+              this.rotuloPdf.generate(protocolNumber, ls);
+            }
+          }),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudieron generar los rótulos', 'Reintentá en un momento.');
+            return of(error);
+          }),
+        )),
+    ), { dispatch: false });
 }
