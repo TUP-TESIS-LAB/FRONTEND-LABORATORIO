@@ -5,6 +5,7 @@ import {
   AddAnalysisListRequest,
   AddObservationsRequest,
   AddPaymentRequest,
+  Analysis,
   AssignGeneralDataRequest,
   AttentionResponse,
   CancelAttentionRequest,
@@ -55,3 +56,7 @@ export const startAttentionForPatient = createAction('[Atencion Wizard] Start Fo
 
 // Resumen -----------------------------------------------------------------------
 export const loadAttentionPatient = createAction('[Atencion Resumen] Load Patient', props<{ patientId: number }>());
+
+export const loadAttentionAnalyses    = createAction('[Atencion Resumen] Load Analyses', props<{ analysisIds: number[] }>());
+export const attentionAnalysesLoaded  = createAction('[Atencion API] Analyses Loaded', props<{ analyses: Analysis[] }>());
+export const attentionAnalysesFailure = createAction('[Atencion API] Analyses Failure', props<{ error: HttpErrorResponse }>());

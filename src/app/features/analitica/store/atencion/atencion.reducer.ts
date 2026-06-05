@@ -6,6 +6,8 @@ import {
   assignGeneralData,
   atencionMutationFailure,
   atencionMutationSuccess,
+  attentionAnalysesFailure,
+  attentionAnalysesLoaded,
   cancelAtencion,
   createBlankAtencion,
   createPatientInline,
@@ -19,6 +21,7 @@ import {
   loadAtenciones,
   loadAtencionesFailure,
   loadAtencionesSuccess,
+  loadAttentionAnalyses,
   patientNotFound,
   patientResolutionFailure,
   patientResolved,
@@ -65,6 +68,10 @@ export const atencionReducer = createReducer(
   on(patientResolutionFailure, (s, { error }): AtencionFeatureState => ({ ...s, patientResolving: false, patientResolutionError: error })),
   on(createPatientInline, updatePatientInline, (s): AtencionFeatureState => ({ ...s, patientResolving: true, patientResolutionError: null })),
   on(startAttentionForPatient, (s): AtencionFeatureState => ({ ...s, mutating: true, detailError: null })),
+
+  on(loadAttentionAnalyses, (s): AtencionFeatureState => ({ ...s, summaryAnalysesLoading: true })),
+  on(attentionAnalysesLoaded, (s, { analyses }): AtencionFeatureState => ({ ...s, summaryAnalyses: analyses, summaryAnalysesLoading: false })),
+  on(attentionAnalysesFailure, (s): AtencionFeatureState => ({ ...s, summaryAnalysesLoading: false })),
 );
 
 function replaceInList<T extends { id: number }>(list: T[], item: T): T[] {

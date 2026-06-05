@@ -5,10 +5,11 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { Observable, ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
-import { AttentionResponse, AttentionState } from '../../models/atencion.model';
+import { Analysis, AttentionResponse, AttentionState } from '../../models/atencion.model';
 import { AtencionApiService } from '../../services/atencion-api.service';
 import { Patient } from '../../../pacientes/models/patient.model';
 import { PatientService } from '../../../pacientes/services/patient.service';
+import { AnalysisService } from '../../services/analysis.service';
 import * as A from './atencion.actions';
 import { AtencionEffects } from './atencion.effects';
 
@@ -33,6 +34,7 @@ describe('AtencionEffects', () => {
   let api: Partial<Record<keyof AtencionApiService, ReturnType<typeof vi.fn>>>;
   let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
+  let analysis: { getById: ReturnType<typeof vi.fn> };
   let effects: AtencionEffects;
 
   beforeEach(() => {
@@ -54,6 +56,7 @@ describe('AtencionEffects', () => {
     };
     patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn(), getById: vi.fn() };
     router = { navigate: vi.fn() };
+    analysis = { getById: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -62,6 +65,7 @@ describe('AtencionEffects', () => {
         { provide: AtencionApiService, useValue: api },
         { provide: PatientService, useValue: patients },
         { provide: Router, useValue: router },
+        { provide: AnalysisService, useValue: analysis },
       ],
     });
     effects = TestBed.inject(AtencionEffects);
@@ -223,5 +227,20 @@ describe('AtencionEffects', () => {
     const out = await firstValueFrom(effects.loadAttentionPatient$.pipe(take(1)));
     expect(patients.getById).toHaveBeenCalledWith(5);
     expect(out).toEqual(A.patientResolved({ patient }));
+  });
+
+  it('loadAttentionAnalyses$ → forkJoin getById → attentionAnalysesLoaded', async () => {
+    const a1 = { id: 3, shortCode: 'BIO001', name: 'Hemograma' } as Analysis;
+    const a2 = { id: 4, shortCode: 'BIO002', name: 'Glucemia' } as Analysis;
+    (analysis.getById as ReturnType<typeof vi.fn>).mockImplementation((id: number) => of(id === 3 ? a1 : a2));
+    actions$.next(A.loadAttentionAnalyses({ analysisIds: [3, 4] }));
+    const out = await firstValueFrom(effects.loadAttentionAnalyses$.pipe(take(1)));
+    expect(out).toEqual(A.attentionAnalysesLoaded({ analyses: [a1, a2] }));
+  });
+
+  it('loadAttentionAnalyses$ → ids vacío → loaded []', async () => {
+    actions$.next(A.loadAttentionAnalyses({ analysisIds: [] }));
+    const out = await firstValueFrom(effects.loadAttentionAnalyses$.pipe(take(1)));
+    expect(out).toEqual(A.attentionAnalysesLoaded({ analyses: [] }));
   });
 });

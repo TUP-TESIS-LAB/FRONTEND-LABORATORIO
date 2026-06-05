@@ -15,6 +15,7 @@ export const selectResolvedPatient        = createSelector(selectAtencionState, 
 export const selectPatientResolving       = createSelector(selectAtencionState, s => s.patientResolving);
 export const selectPatientNotFoundDni     = createSelector(selectAtencionState, s => s.patientNotFoundDni);
 export const selectPatientResolutionError = createSelector(selectAtencionState, s => s.patientResolutionError);
+export const selectSummaryAnalyses        = createSelector(selectAtencionState, s => s.summaryAnalyses);
 
 export const selectFilteredAtenciones = createSelector(
   selectAtencionList,

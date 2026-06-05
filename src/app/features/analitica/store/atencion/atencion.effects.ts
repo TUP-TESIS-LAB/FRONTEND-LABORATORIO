@@ -2,9 +2,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, concatMap, exhaustMap, map, of, switchMap, tap } from 'rxjs';
+import { catchError, concatMap, exhaustMap, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { PatientService } from '../../../pacientes/services/patient.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
+import { AnalysisService } from '../../services/analysis.service';
+import { Analysis } from '../../models/atencion.model';
 import {
   addAnalysisList,
   addObservations,
@@ -12,6 +14,8 @@ import {
   assignGeneralData,
   atencionMutationFailure,
   atencionMutationSuccess,
+  attentionAnalysesFailure,
+  attentionAnalysesLoaded,
   cancelAtencion,
   createBlankAtencion,
   createPatientInline,
@@ -25,6 +29,7 @@ import {
   loadAtenciones,
   loadAtencionesFailure,
   loadAtencionesSuccess,
+  loadAttentionAnalyses,
   loadAttentionPatient,
   patientNotFound,
   patientResolutionFailure,
@@ -52,6 +57,7 @@ export class AtencionEffects {
   private readonly api       = inject(AtencionApiService);
   private readonly patients  = inject(PatientService);
   private readonly router    = inject(Router);
+  private readonly analysis  = inject(AnalysisService);
 
   loadList$ = createEffect(() =>
     this.actions$.pipe(
@@ -246,5 +252,17 @@ export class AtencionEffects {
         this.patients.getById(patientId).pipe(
           map(patient => patientResolved({ patient })),
           catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
+        ))));
+
+  loadAttentionAnalyses$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadAttentionAnalyses),
+      switchMap(({ analysisIds }) =>
+        (analysisIds.length === 0
+          ? of([] as Analysis[])
+          : forkJoin(analysisIds.map(id => this.analysis.getById(id)))
+        ).pipe(
+          map(analyses => attentionAnalysesLoaded({ analyses })),
+          catchError((error: HttpErrorResponse) => of(attentionAnalysesFailure({ error }))),
         ))));
 }
