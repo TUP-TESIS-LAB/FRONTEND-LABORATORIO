@@ -9,15 +9,32 @@
 }
 
 // Override: el min-width: 0 universal habilita truncate en flex/grid children,
-// pero rompe el centrado del icono en PrimeNG buttons (especialmente los
-// rounded icon-only como Cancelar de la cola). Restauramos min-width: auto
-// para las partes internas del p-button asi el icono queda centrado.
+// pero rompe el centrado del icono en PrimeNG buttons (icon-only rounded como
+// el Cancel de la cola). Restauramos min-width: auto y forzamos centrado
+// completo para los icon-only.
 .p-button,
-.p-button .p-button-icon,
-.p-button .p-button-label,
 .p-buttonset .p-button,
 .p-splitbutton .p-button {
   min-width: auto;
+}
+
+// Centrado del icono en icon-only buttons (cualquier variante: rounded, sm, etc.).
+.p-button.p-button-icon-only {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  gap: 0 !important;
+
+  > .p-button-icon,
+  > .pi {
+    margin: 0 !important;
+    min-width: auto;
+  }
+
+  > .p-button-label {
+    display: none !important;
+  }
 }
 
 body {
