@@ -8,7 +8,6 @@ import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
 import { take } from 'rxjs/operators';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 
@@ -20,7 +19,7 @@ import { GeographyService, Province, City } from '../../../../services/geography
   selector: 'app-datos-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, InputTextModule, InputNumberModule, SelectModule],
+  imports: [ReactiveFormsModule, InputTextModule, SelectModule],
   templateUrl: './datos-step.component.html',
   styleUrl: './datos-step.component.scss',
 })
@@ -61,8 +60,6 @@ export class DatosStepComponent {
   // es lo que realmente persiste el backend (AddressRequest.cityId).
   protected readonly form = this.fb.nonNullable.group({
     code: ['', [Validators.required, Validators.maxLength(30)]],
-    atencionBoxesCount: [1, [Validators.required, Validators.min(1)]],
-    extraccionBoxesCount: [1, [Validators.required, Validators.min(1)]],
     provinceId: this.fb.control<number | null>(null),
     address: this.fb.group({
       street: [''],
@@ -125,8 +122,9 @@ export class DatosStepComponent {
       // (no aportaba valor; ver tambien sucursales.service formato del selector).
       description: code,
       status: 'ACTIVE' as SucursalStatus,
-      atencionBoxesCount: raw.atencionBoxesCount,
-      extraccionBoxesCount: raw.extraccionBoxesCount,
+      // Default boxes=1 at creation; user sets the actual counts in totem-step.
+      atencionBoxesCount: 1,
+      extraccionBoxesCount: 1,
       ...(hasAddress ? {
         address: {
           ...(street.length > 0 ? { street } : {}),

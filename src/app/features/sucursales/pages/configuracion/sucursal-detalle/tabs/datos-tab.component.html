@@ -23,39 +23,6 @@
       }
     </div>
 
-    <div class="form-row">
-      <div class="form-field">
-        <label for="atencionBoxesCount">Cantidad de boxes de atención *</label>
-        <p-inputNumber
-          inputId="atencionBoxesCount"
-          formControlName="atencionBoxesCount"
-          [min]="1"
-          [showButtons]="true"
-          buttonLayout="horizontal"
-          decrementButtonIcon="pi pi-minus"
-          incrementButtonIcon="pi pi-plus"
-        />
-        @if (form.controls.atencionBoxesCount.invalid && form.controls.atencionBoxesCount.touched) {
-          <small class="form-error">Mínimo 1.</small>
-        }
-      </div>
-      <div class="form-field">
-        <label for="extraccionBoxesCount">Cantidad de boxes de extracción *</label>
-        <p-inputNumber
-          inputId="extraccionBoxesCount"
-          formControlName="extraccionBoxesCount"
-          [min]="1"
-          [showButtons]="true"
-          buttonLayout="horizontal"
-          decrementButtonIcon="pi pi-minus"
-          incrementButtonIcon="pi pi-plus"
-        />
-        @if (form.controls.extraccionBoxesCount.invalid && form.controls.extraccionBoxesCount.touched) {
-          <small class="form-error">Mínimo 1.</small>
-        }
-      </div>
-    </div>
-
     <fieldset class="address-fieldset" formGroupName="address">
       <legend>Dirección</legend>
       <div class="form-row">
@@ -69,6 +36,36 @@
         </div>
       </div>
     </fieldset>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label for="provinceId">Provincia</label>
+        <p-select
+          inputId="provinceId"
+          formControlName="provinceId"
+          [options]="provinces()"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Seleccionar provincia"
+          [showClear]="true"
+          appendTo="body"
+        />
+      </div>
+      <div class="form-field" formGroupName="address">
+        <label for="cityId">Ciudad</label>
+        <p-select
+          inputId="cityId"
+          formControlName="cityId"
+          [options]="cities()"
+          optionLabel="name"
+          optionValue="id"
+          [placeholder]="form.controls.provinceId.value == null ? 'Elegí primero una provincia' : 'Seleccionar ciudad'"
+          [disabled]="form.controls.provinceId.value == null"
+          [showClear]="true"
+          appendTo="body"
+        />
+      </div>
+    </div>
 
     <footer class="tab-footer">
       <p-button label="Guardar cambios" type="submit" [disabled]="form.invalid || saving()" [loading]="saving()" />

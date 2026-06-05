@@ -22,3 +22,21 @@
   font-size: 1.125rem;
   font-weight: 500;
 }
+
+.boxes-section {
+  margin-top: var(--space-8, 2rem);
+  padding-top: var(--space-6, 1.5rem);
+  border-top: 1px solid #d1d5db;
+}
+
+.boxes-section h3 {
+  margin: 0 0 0.5rem;
+}
+
+.form { display: flex; flex-direction: column; gap: 1rem; }
+.form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.form-field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; min-width: 14rem; }
+.form-field label { font-size: 0.875rem; font-weight: 500; }
+.form-error { color: var(--p-red-500); font-size: 0.75rem; }
+
+.tab-footer { display: flex; justify-content: flex-end; margin-top: 1rem; }
