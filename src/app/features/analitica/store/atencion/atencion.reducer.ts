@@ -22,6 +22,7 @@ import {
   loadAtencionesFailure,
   loadAtencionesSuccess,
   loadAttentionAnalyses,
+  loadAttentionPatient,
   patientNotFound,
   patientResolutionFailure,
   patientResolved,
@@ -62,6 +63,7 @@ export const atencionReducer = createReducer(
   })),
   on(atencionMutationFailure, (s, { error }): AtencionFeatureState => ({ ...s, mutating: false, detailError: error })),
 
+  on(loadAttentionPatient, (s): AtencionFeatureState => ({ ...s, resolvedPatient: null })),
   on(resolvePatientByDni, (s): AtencionFeatureState => ({ ...s, patientResolving: true, patientResolutionError: null, resolvedPatient: null, patientNotFoundDni: null })),
   on(patientResolved, (s, { patient }): AtencionFeatureState => ({ ...s, patientResolving: false, resolvedPatient: patient, patientNotFoundDni: null })),
   on(patientNotFound, (s, { dni }): AtencionFeatureState => ({ ...s, patientResolving: false, resolvedPatient: null, patientNotFoundDni: dni })),
