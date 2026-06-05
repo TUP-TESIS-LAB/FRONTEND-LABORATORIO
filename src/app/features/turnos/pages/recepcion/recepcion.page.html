@@ -8,4 +8,21 @@
   <app-recepcion-sin-totem [branchId]="branchId" />
 }
 
+@if (branchContext.branchId() != null && currentUserId() > 0) {
+  <app-box-occupation-widget
+    [branchId]="branchContext.branchId()!"
+    [currentUserId]="currentUserId()"
+    [totalBoxes]="totalBoxes()" />
+
+  <!-- Modal bloqueante: visible cuando el operador no tiene box asignado.
+       canClose=false impide cerrar sin seleccionar; se cierra sólo cuando
+       el store actualiza myOccupation (computed selectorVisible → false). -->
+  <app-box-selector-modal
+    [branchId]="branchContext.branchId()!"
+    [currentUserId]="currentUserId()"
+    [totalBoxes]="totalBoxes()"
+    [visible]="selectorVisible()"
+    [canClose]="false" />
+}
+
 <app-operator-branch-fab />

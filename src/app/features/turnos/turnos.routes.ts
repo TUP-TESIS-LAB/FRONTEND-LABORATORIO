@@ -15,6 +15,9 @@ import { TotemEffects } from './store/totem/totem.effects';
 import { recepcionAccessGuard } from './guards/recepcion-access.guard';
 import { agendaWriteGuard } from './guards/agenda-write.guard';
 import { agendaConfigResolver } from './resolvers/agenda-config.resolver';
+import { BOX_OCCUPATION_FEATURE_KEY } from './box-occupation/store/box-occupation.state';
+import { boxOccupationReducer } from './box-occupation/store/box-occupation.reducer';
+import { BoxOccupationEffects } from './box-occupation/store/box-occupation.effects';
 
 export const TURNOS_ROUTES: Routes = [
   {
@@ -60,6 +63,10 @@ export const TURNOS_ROUTES: Routes = [
       {
         path: 'recepcion',
         canActivate: [recepcionAccessGuard],
+        providers: [
+          provideState(BOX_OCCUPATION_FEATURE_KEY, boxOccupationReducer),
+          provideEffects([BoxOccupationEffects]),
+        ],
         loadComponent: () => import('./pages/recepcion/recepcion.page').then(m => m.RecepcionPage),
       },
       // colas se elimina.
