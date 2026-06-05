@@ -1,0 +1,28 @@
+.box-widget {
+  display: inline-flex;
+  align-items: center;
+
+  &__pill {
+    appearance: none;
+    border: 1px solid #059669;
+    background: #ecfdf5;
+    color: #059669;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #059669; }
+    &:hover { background: #d1fae5; }
+  }
+
+  &__no-box {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-style: italic;
+  }
+}
