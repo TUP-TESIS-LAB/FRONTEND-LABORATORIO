@@ -5,12 +5,8 @@
 
 * {
   box-sizing: border-box;
+  min-width: 0;
 }
-
-// El min-width: 0 universal se sacó porque rompía el centrado de iconos
-// en PrimeNG icon-only buttons (Cancel de la cola, close de drawer, etc.).
-// Si un flex/grid child necesita truncate, agregar min-width: 0 localmente
-// donde se renderiza la columna que trunca.
 
 body {
   font-family: 'Montserrat', system-ui, sans-serif;
