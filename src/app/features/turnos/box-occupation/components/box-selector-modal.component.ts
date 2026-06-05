@@ -1,6 +1,6 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, EventEmitter, Input, Output,
-  computed, inject, signal,
+  ChangeDetectionStrategy, Component, DestroyRef, EventEmitter, Input, OnChanges, Output,
+  SimpleChanges, computed, inject, signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
@@ -9,7 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { BoxType, BoxOccupation } from '../models/box-occupation.model';
 import { selectAllOccupations } from '../store/box-occupation.selectors';
-import { occupyBox, occupyBoxSuccess, occupyBoxFailure } from '../store/box-occupation.actions';
+import { loadBoxOccupations, occupyBox, occupyBoxSuccess, occupyBoxFailure } from '../store/box-occupation.actions';
 
 @Component({
   selector: 'app-box-selector-modal',
@@ -19,7 +19,7 @@ import { occupyBox, occupyBoxSuccess, occupyBoxFailure } from '../store/box-occu
   templateUrl: './box-selector-modal.component.html',
   styleUrl: './box-selector-modal.component.scss',
 })
-export class BoxSelectorModalComponent {
+export class BoxSelectorModalComponent implements OnChanges {
   @Input({ required: true }) branchId!: number;
   @Input({ required: true }) totalBoxes!: number;
   @Input({ required: true }) currentUserId!: number;
@@ -70,6 +70,18 @@ export class BoxSelectorModalComponent {
         this.pending.set(false);
         this.warningMsg.set(error);
       });
+  }
+
+  /**
+   * Cuando el modal pasa de cerrado a abierto, dispara un refresh de la lista
+   * de occupations para que la grid refleje el estado real (otras secretarias
+   * pueden haber tomado boxes desde la última vez que se cargó el store).
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['visible'] && changes['visible'].currentValue === true && !changes['visible'].previousValue) {
+      this.warningMsg.set(null);
+      this.store.dispatch(loadBoxOccupations({ branchId: this.branchId, boxType: this.boxType }));
+    }
   }
 
   onSlotClick(boxNumber: number, occupied: BoxOccupation | null): void {
