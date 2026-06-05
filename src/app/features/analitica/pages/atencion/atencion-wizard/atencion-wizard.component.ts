@@ -1,17 +1,25 @@
 import {
-  ChangeDetectionStrategy, Component, computed, effect, inject, input, signal,
+  ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { race, take } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { AttentionState, isTerminal } from '../../../models/atencion.model';
 import { attentionStateLabel, attentionStateSeverity } from '../../../models/atencion-state-label';
 import {
-  cancelAtencion, createPreFilledAtencion, loadAtencion, returnPhase,
+  atencionMutationFailure,
+  atencionMutationSuccess,
+  cancelAtencion,
+  createPreFilledAtencion,
+  loadAtencion,
+  returnPhase,
 } from '../../../store/atencion/atencion.actions';
 import {
   selectDetail, selectDetailLoading, selectMutating,
@@ -133,9 +141,11 @@ const ALL_STEPS: WizardStepDef[] = [
   `,
 })
 export class AtencionWizardComponent {
-  private readonly store    = inject(Store);
-  private readonly router   = inject(Router);
-  private readonly registry = inject(ModuleRegistry);
+  private readonly store      = inject(Store);
+  private readonly router     = inject(Router);
+  private readonly registry   = inject(ModuleRegistry);
+  private readonly actions$   = inject(Actions);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly id            = input<string | undefined>(undefined);
   readonly appointmentId = input<string | undefined>(undefined);
@@ -238,7 +248,16 @@ export class AtencionWizardComponent {
     if (!d) return;
     this.cancelModalOpen.set(false);
     this.store.dispatch(cancelAtencion({ id: d.id, payload: { cancellationReason: reason } }));
-    clearAtencionSession();
+    this.waitForMutation((ok) => { if (ok) clearAtencionSession(); });
+  }
+
+  private waitForMutation(cb: (ok: boolean) => void): void {
+    race(
+      this.actions$.pipe(ofType(atencionMutationSuccess), take(1)),
+      this.actions$.pipe(ofType(atencionMutationFailure), take(1)),
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((action) => cb(action.type === atencionMutationSuccess.type));
   }
   onAnalysisAdvanced(): void {
     const steps = this.visibleSteps();

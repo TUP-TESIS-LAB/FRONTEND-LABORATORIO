@@ -45,5 +45,5 @@ export class CancelAttentionModalComponent {
     this.confirmed.emit(r);
     this.reasonValue = '';
   }
-  onHide(): void { this.dismissed.emit(); }
+  onHide(): void { this.reasonValue = ''; this.dismissed.emit(); }
 }

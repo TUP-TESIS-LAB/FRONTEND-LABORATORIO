@@ -19,4 +19,12 @@ describe('CancelAttentionModalComponent', () => {
     c.confirm();
     expect(emitted).toBe('Paciente no se presentó');
   });
+
+  it('onHide limpia el motivo', () => {
+    const f = TestBed.createComponent(CancelAttentionModalComponent);
+    const c = f.componentInstance;
+    c.setReason('algo');
+    c.onHide();
+    expect((c as any).reasonValue).toBe('');
+  });
 });
