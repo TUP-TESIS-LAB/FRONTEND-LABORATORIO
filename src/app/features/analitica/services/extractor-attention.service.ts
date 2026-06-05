@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-import { NotModified, withPolling } from '@core/refresh';
+import { Observable, map } from 'rxjs';
+import { NotModified, isNotModified, withPolling } from '@core/refresh';
 import {
   AwaitingExtractionItem,
   BoxAssignment,
@@ -12,6 +12,25 @@ import {
   ExtractionStats,
   InExtractionItem,
 } from '../models/extraction.model';
+
+/**
+ * Forma cruda que devuelve el backend para una asignación de box: usa
+ * {@code extractorUserId}, mientras el modelo de dominio del front usa
+ * {@code extractorId}. El service traduce wire → modelo (ver mapBoxAssignment).
+ */
+interface BoxAssignmentWire {
+  boxNumber: number;
+  extractorUserId: number | null;
+  extractorFullName: string | null;
+}
+
+function mapBoxAssignment(w: BoxAssignmentWire): BoxAssignment {
+  return {
+    boxNumber: w.boxNumber,
+    extractorId: w.extractorUserId ?? null,
+    extractorFullName: w.extractorFullName ?? null,
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class ExtractorAttentionService {
@@ -65,10 +84,12 @@ export class ExtractorAttentionService {
 
   /** Asignaciones actuales de extractores a boxes de una sucursal. */
   getBoxAssignments(branchId: number): Observable<BoxAssignment[] | NotModified> {
-    return this.http.get<BoxAssignment[] | NotModified>(
-      `${this.base}/branches/${branchId}/box-assignments`,
-      { context: withPolling() },
-    );
+    return this.http
+      .get<BoxAssignmentWire[] | NotModified>(
+        `${this.base}/branches/${branchId}/box-assignments`,
+        { context: withPolling() },
+      )
+      .pipe(map((res) => (isNotModified(res) ? res : res.map(mapBoxAssignment))));
   }
 
   /** Persiste la configuración de boxes de una sucursal. */
@@ -76,10 +97,12 @@ export class ExtractorAttentionService {
     branchId: number,
     boxes: { boxNumber: number; extractorUserId: number | null }[],
   ): Observable<BoxAssignment[]> {
-    return this.http.put<BoxAssignment[]>(
-      `${this.base}/branches/${branchId}/box-assignments`,
-      { boxes },
-    );
+    return this.http
+      .put<BoxAssignmentWire[]>(
+        `${this.base}/branches/${branchId}/box-assignments`,
+        { boxes },
+      )
+      .pipe(map((res) => res.map(mapBoxAssignment)));
   }
 
   assignExtractor(id: number, boxNumber: number, branchId: number): Observable<void> {

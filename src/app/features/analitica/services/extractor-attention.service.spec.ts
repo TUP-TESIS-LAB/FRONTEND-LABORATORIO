@@ -77,6 +77,20 @@ describe('ExtractorAttentionService', () => {
     req.flush([]);
   });
 
+  it('getBoxAssignments mapea extractorUserId del backend → extractorId del modelo', () => {
+    let emitted: unknown;
+    service.getBoxAssignments(3).subscribe((r) => (emitted = r));
+    const req = httpMock.expectOne('/api/v1/branches/3/box-assignments');
+    req.flush([
+      { boxNumber: 1, extractorUserId: null, extractorFullName: null },
+      { boxNumber: 3, extractorUserId: 10003, extractorFullName: 'Lucas Martínez' },
+    ]);
+    expect(emitted).toEqual([
+      { boxNumber: 1, extractorId: null, extractorFullName: null },
+      { boxNumber: 3, extractorId: 10003, extractorFullName: 'Lucas Martínez' },
+    ]);
+  });
+
   it('saveBoxAssignments PUTs boxes to /branches/{id}/box-assignments', () => {
     const boxes = [{ boxNumber: 1, extractorUserId: 5 }, { boxNumber: 2, extractorUserId: null }];
     service.saveBoxAssignments(3, boxes).subscribe();
@@ -84,6 +98,18 @@ describe('ExtractorAttentionService', () => {
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({ boxes });
     req.flush([]);
+  });
+
+  it('saveBoxAssignments mapea la respuesta extractorUserId → extractorId', () => {
+    let emitted: unknown;
+    service
+      .saveBoxAssignments(3, [{ boxNumber: 3, extractorUserId: 10003 }])
+      .subscribe((r) => (emitted = r));
+    const req = httpMock.expectOne('/api/v1/branches/3/box-assignments');
+    req.flush([{ boxNumber: 3, extractorUserId: 10003, extractorFullName: 'Lucas Martínez' }]);
+    expect(emitted).toEqual([
+      { boxNumber: 3, extractorId: 10003, extractorFullName: 'Lucas Martínez' },
+    ]);
   });
 
   it('assignExtractor sends boxNumber AND branchId in the body (new contract)', () => {
