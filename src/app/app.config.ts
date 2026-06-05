@@ -42,7 +42,12 @@ import { atencionReducer } from '@features/analitica/store/atencion/atencion.red
 import { AtencionEffects } from '@features/analitica/store/atencion/atencion.effects';
 
 // Turnos stores son provistos por turnos.routes.ts (per-feature: queue, agendas,
-// appointments, branchTotemConfig, totem). No hay reducer/effects singular global.
+// appointments, totem). EXCEPCIÓN: branchTotemConfig se registra en root (abajo)
+// porque el sidebar —montado en todas las rutas— lee su selector y dispara su
+// load aun fuera de Turnos; si viviera solo en el lazy route, NgRx warnea
+// ("feature does not exist") y el load del sidebar no tendría effect que lo atienda.
+import { branchTotemConfigReducer } from '@features/turnos/store/branch-totem-config/branch-totem-config.reducer';
+import { BranchTotemConfigEffects } from '@features/turnos/store/branch-totem-config/branch-totem-config.effects';
 
 import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.state';
 import { financieroReducer } from '@features/financiero/store/financiero.reducer';
@@ -111,6 +116,9 @@ export const appConfig: ApplicationConfig = {
     provideEffects(AccessEffects),
     provideState(ROLES_PERMISOS_FEATURE_KEY, rolesPermisosReducer),
     provideEffects(RolesPermisosEffects),
+    // Slice de turnos registrada en root a propósito (ver comentario arriba).
+    provideState('branchTotemConfig', branchTotemConfigReducer),
+    provideEffects(BranchTotemConfigEffects),
     providePrimeNG({
       theme: {
         preset: Aura,
