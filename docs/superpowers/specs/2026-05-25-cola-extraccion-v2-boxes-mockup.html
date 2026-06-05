@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cola de Extracción v2 — Mockup</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons@7.0.0/primeicons.css">
+<style>
+  :root{
+    /* Match the actual app palette */
+    --bg:#f8fafc;
+    --surface:#fff;
+    --border:#e2e8f0;
+    --border-soft:#f1f5f9;
+    --muted:#64748b;
+    --text:#0f172a;
+
+    /* Sidebar / topbar (dark navy from current app) */
+    --shell-bg:#1e3a5f;
+    --shell-bg-2:#2c4a72;
+    --shell-text:#cbd5e1;
+    --shell-text-active:#fff;
+    --shell-section:#94a3b8;
+    --shell-active-bg:rgba(255,255,255,0.08);
+
+    /* Brand */
+    --primary:#0f766e;
+    --primary-strong:#0d6b63;
+    --primary-soft:#ccfbf1;
+    --primary-fg:#fff;
+
+    /* Status */
+    --success:#10b981;
+    --success-soft:#d1fae5;
+    --warn:#f59e0b;
+    --warn-soft:#fef3c7;
+    --warn-fg:#b45309;
+    --danger:#dc2626;
+    --danger-soft:#fee2e2;
+    --info:#0891b2;
+    --info-soft:#cffafe;
+
+    /* Avatar (teal cyan from screenshot) */
+    --avatar-bg:#a7f3d0;
+    --avatar-fg:#065f46;
+
+    /* Branch chip pin */
+    --pin:#e11d48;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:24px;background:#e4e7eb;color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5
+  }
+  .wrap{max-width:1320px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px}
+  h2{font-size:18px;margin:32px 0 8px}
+  .lead{color:var(--muted);font-size:13px;margin:0 0 24px}
+  .summary{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:24px;font-size:13px}
+  .summary ul{margin:6px 0 0 18px;padding:0}
+  .summary li{margin-bottom:3px}
+  code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px}
+  kbd{background:#f1f5f9;border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:3px;padding:0 5px;font-family:inherit;font-size:11px}
+
+  /* ============================
+     APP SHELL — matches current
+     ============================ */
+  .app{
+    background:#fff;border-radius:10px;overflow:hidden;
+    box-shadow:0 4px 18px rgba(15,23,42,0.10);
+    margin-bottom:28px;display:grid;grid-template-columns:220px 1fr;min-height:760px;position:relative;
+  }
+
+  /* Sidebar */
+  .sidebar{background:var(--shell-bg);color:var(--shell-text);padding:14px 0;display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+  .sb-section{font-size:10px;font-weight:700;color:var(--shell-section);letter-spacing:0.8px;text-transform:uppercase;padding:14px 18px 6px}
+  .sb-item{display:flex;align-items:center;gap:10px;padding:9px 18px;color:var(--shell-text);cursor:default;position:relative}
+  .sb-item i{font-size:14px;width:16px}
+  .sb-item.active{background:var(--shell-active-bg);color:var(--shell-text-active);font-weight:600;border-left:3px solid var(--primary);padding-left:15px}
+  .sb-item .badge{
+    margin-left:auto;background:var(--danger);color:#fff;font-size:9px;font-weight:700;
+    width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  }
+  .sb-item .badge.green{background:var(--success)}
+  .sb-item .chip{margin-left:auto;background:rgba(255,255,255,0.12);color:var(--shell-text);font-size:9px;padding:2px 6px;border-radius:8px;letter-spacing:0.5px;font-weight:600}
+
+  /* Topbar */
+  .main{display:flex;flex-direction:column;min-width:0}
+  .topbar{
+    background:var(--shell-bg);color:var(--shell-text);
+    display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+  .topbar .brand{display:flex;align-items:center;gap:8px;color:#fff;font-weight:600;font-size:13px}
+  .topbar .brand i{color:#fff;opacity:0.9;font-size:16px}
+  .topbar .brand .role-chip{background:rgba(255,255,255,0.12);color:#fff;font-size:9px;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;font-weight:600;text-transform:uppercase}
+  .topbar .search{
+    flex:1;background:rgba(255,255,255,0.08);border-radius:20px;display:flex;align-items:center;gap:8px;
+    padding:6px 14px;color:var(--shell-section);font-size:12px;max-width:380px;
+  }
+  .topbar .search i{font-size:12px}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:14px;color:var(--shell-text)}
+  .topbar .right i{font-size:14px;cursor:default;position:relative}
+  .topbar .right i .dot{
+    position:absolute;top:-3px;right:-5px;background:var(--danger);color:#fff;font-size:8px;font-weight:700;
+    border-radius:50%;width:13px;height:13px;display:inline-flex;align-items:center;justify-content:center;
+  }
+  .topbar .avatar{
+    width:30px;height:30px;border-radius:50%;background:var(--avatar-bg);color:var(--avatar-fg);
+    display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;
+  }
+
+  /* Content */
+  .content{padding:18px 24px;flex:1;background:var(--bg)}
+
+  /* Page header */
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+  .page-title{font-size:20px;font-weight:700;margin:0}
+  .page-sub{font-size:12px;color:var(--muted);margin:2px 0 0}
+
+  .head-right{display:flex;align-items:center;gap:10px;position:relative}
+
+  /* Branch chip */
+  .branch-chip{
+    display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:24px;
+    background:#fff;border:1px solid var(--border);font-size:12.5px;color:var(--text);cursor:default;
+    box-shadow:0 1px 2px rgba(15,23,42,0.04);
+  }
+  .branch-chip .pin{color:var(--pin);font-size:14px}
+  .branch-chip .caret{color:var(--muted);font-size:10px;margin-left:2px}
+
+  /* Box FAB at top-right */
+  .box-fab{
+    display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border-radius:30px;
+    background:var(--primary);color:#fff;font-size:13px;font-weight:700;cursor:default;
+    box-shadow:0 6px 18px rgba(15,118,110,0.30);border:none;
+  }
+  .box-fab i{font-size:15px}
+  .box-fab .me{
+    background:rgba(255,255,255,0.22);padding:2px 8px;border-radius:10px;font-size:10px;letter-spacing:0.6px;
+  }
+
+  /* Patient card */
+  .pcard{
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    padding:18px 22px;margin-bottom:18px;display:grid;grid-template-columns:72px 1fr auto;gap:18px;align-items:center;
+    box-shadow:0 1px 3px rgba(15,23,42,0.04);
+  }
+  .pcard .avatar{
+    width:72px;height:72px;border-radius:50%;background:var(--avatar-bg);color:var(--avatar-fg);
+    display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;
+  }
+  .pcard .info{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .pcard .row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pcard .name{font-size:19px;font-weight:700;color:var(--text);margin:0}
+  .pcard .urgent{
+    background:var(--danger-soft);color:var(--danger);font-size:10px;font-weight:700;
+    padding:3px 9px;border-radius:10px;letter-spacing:0.5px;
+  }
+  .pcard .meta{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted)}
+  .pcard .meta .kv strong{color:var(--text);font-weight:600;margin-right:2px}
+  .pcard .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .pcard .pill{
+    background:#fff;border:1px solid var(--border);padding:3px 10px;border-radius:12px;
+    font-size:11px;color:var(--text);font-weight:500;
+  }
+  .pcard .right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:200px}
+  .pcard .timer{font-size:11px;color:var(--muted);text-align:right}
+  .pcard .timer strong{font-size:17px;color:var(--text);font-weight:700;display:block;line-height:1.1}
+  .pcard .timer .since{color:var(--info);font-weight:600;display:block;margin-top:2px}
+  .pcard .actions{display:flex;gap:8px}
+
+  /* Empty patient card (no extraction) */
+  .pcard-empty{
+    background:#fff;border:1px dashed var(--border);border-radius:12px;padding:28px;text-align:center;color:var(--muted);
+    margin-bottom:18px;
+  }
+  .pcard-empty i{font-size:32px;color:var(--info);opacity:0.55;display:block;margin-bottom:8px}
+  .pcard-empty .h{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .pcard-empty .d{font-size:12px}
+
+  /* Cola section */
+  .section{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .section-head{
+    padding:14px 18px;border-bottom:1px solid var(--border-soft);background:#fff;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+  }
+  .section-head h3{margin:0;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px;color:var(--text)}
+  .section-head h3 i{font-size:13px;color:var(--muted)}
+  .section-search{
+    display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);
+    padding:6px 12px;border-radius:6px;background:#fff;font-size:12px;color:var(--muted);min-width:260px;
+  }
+  .section-search input{
+    border:none;outline:none;background:transparent;flex:1;font-size:12px;color:var(--text);font-family:inherit;
+  }
+  .section-body{padding:18px}
+
+  /* Empty state cola */
+  .empty{padding:46px 16px;text-align:center;color:var(--muted)}
+  .empty .ico{
+    width:46px;height:46px;border-radius:50%;border:2px solid var(--border);
+    display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;color:var(--muted);
+  }
+  .empty .ico i{font-size:22px}
+  .empty .h{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .empty .d{font-size:12px;max-width:280px;margin:0 auto}
+
+  /* Cola rows */
+  .crow{
+    display:grid;grid-template-columns:90px 1fr 130px 90px 110px 160px;
+    gap:14px;padding:12px 14px;border-radius:6px;align-items:center;border:1px solid transparent;margin-bottom:4px;
+  }
+  .crow:hover{background:#f8fafc;border-color:var(--border-soft)}
+  .crow .lead-flag{display:flex;align-items:center;gap:6px}
+  .crow .tag-urg{background:var(--danger-soft);color:var(--danger);font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;letter-spacing:0.5px}
+  .crow .pname{font-weight:600;font-size:13px}
+  .crow .pmeta{font-size:11px;color:var(--muted);margin-top:2px}
+  .crow .pdni{font-size:12.5px;color:var(--text)}
+  .crow .pord{font-size:11px;color:var(--muted)}
+  .crow .pord .code{display:block;color:var(--text);font-weight:600;font-size:12px}
+  .crow .pwait{font-size:13px;font-weight:600;color:var(--warn-fg)}
+  .crow .pacts{display:flex;gap:6px;justify-content:flex-end}
+
+  /* Buttons */
+  .btn{
+    padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid var(--border);
+    background:#fff;color:var(--text);cursor:default;display:inline-flex;align-items:center;gap:6px;font-family:inherit;
+  }
+  .btn i{font-size:11px}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn.success{background:var(--success);color:#fff;border-color:var(--success)}
+  .btn.danger-outline{color:var(--danger);border-color:var(--danger);background:#fff}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+  .btn.sm{padding:5px 10px;font-size:11px}
+  .btn.lg{padding:9px 16px;font-size:13px}
+
+  /* ============================
+     FAB DROPDOWN
+     ============================ */
+  .dropdown{
+    position:absolute;top:calc(100% + 8px);right:0;width:330px;background:#fff;
+    border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,0.18);border:1px solid var(--border);
+    overflow:hidden;z-index:5;
+  }
+  .dd-head{
+    padding:12px 16px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;background:#fff;
+  }
+  .dd-head .title{font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+  .dd-head .title i{color:var(--primary);font-size:13px}
+  .dd-head .close{color:var(--muted);font-size:14px;cursor:default}
+  .dd-list{max-height:380px;overflow:auto}
+  .dd-row{
+    display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:center;
+    padding:11px 16px;border-bottom:1px solid var(--border-soft);
+  }
+  .dd-row:last-child{border-bottom:0}
+  .dd-row.mine{background:var(--primary-soft);border-left:3px solid var(--primary);padding-left:13px}
+  .dd-row .n{
+    width:32px;height:32px;border-radius:8px;background:#f1f5f9;color:var(--text);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;
+  }
+  .dd-row.mine .n{background:var(--primary);color:#fff}
+  .dd-row .who{font-size:12.5px;font-weight:600;color:var(--text);min-width:0}
+  .dd-row .who .sub{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px}
+  .dd-row .who .sub.italic{font-style:italic}
+  .dd-row .pill-state{
+    font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+    padding:3px 8px;border-radius:8px;white-space:nowrap;
+  }
+  .dd-row .pill-state.busy{background:var(--warn-soft);color:var(--warn-fg)}
+  .dd-row .pill-state.free{background:var(--success-soft);color:#047857}
+  .dd-row .pill-state.you{background:var(--primary);color:#fff}
+  .dd-foot{
+    padding:10px 14px;border-top:1px solid var(--border-soft);background:#fafbfc;
+    display:flex;justify-content:flex-end;
+  }
+  .dd-foot .btn{font-size:11px;padding:6px 12px}
+
+  /* Stats strip (optional) */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .stat{border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:#fff}
+  .stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-weight:600}
+  .stat .val{font-size:22px;font-weight:700;line-height:1}
+  .stat .delta{font-size:10px;color:var(--muted);margin-top:4px}
+  .stat.warn .val{color:var(--warn)}
+  .stat.success .val{color:var(--success)}
+  .stat.info .val{color:var(--info)}
+
+  /* Scene label */
+  .scene-label{
+    font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;
+    margin:36px 0 10px;display:flex;align-items:center;gap:10px;
+  }
+  .scene-label::before{content:"";flex:0 0 16px;height:1px;background:var(--border)}
+  .scene-label::after{content:"";flex:1;height:1px;background:var(--border)}
+
+  .note{
+    background:var(--warn-soft);border:1px solid #fde68a;border-radius:6px;padding:10px 14px;
+    font-size:12px;margin:12px 0;color:#78350f;
+  }
+  .note strong{color:#451a03}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Cola de Extracción v2 — Mockup</h1>
+<p class="lead">Rediseño basado en el estado actual del laboratorio, con el FAB de box en el header de la página (arriba a la derecha), card grande de paciente en curso, y selector de sucursal. Sin emojis — todos los íconos son PrimeIcons.</p>
+
+<div class="summary">
+  <strong>Decisiones aplicadas en este mockup</strong>
+  <ul>
+    <li>FAB de box en <strong>top-right del header de página</strong> (no bottom-right).</li>
+    <li><strong>Sucursal Norte</strong> como chip a la izquierda del FAB. Dropdown para cambiar.</li>
+    <li>Mis extracciones = <strong>1 card grande</strong> (sin tabla, sin section header — la card es el contenido).</li>
+    <li>Click en el FAB abre el <strong>dropdown de boxes</strong> alineado a la derecha, con la fila propia destacada arriba.</li>
+    <li>Stats strip <strong>opcional</strong> (incluido un toggle abajo para comparar).</li>
+    <li>Cancelar exige motivo en un dialog aparte (no incluido en este mockup, se ve al confirmar la acción).</li>
+  </ul>
+</div>
+
+<!-- ============================================================
+     ESCENA 1 — Estado por defecto
+     ============================================================ -->
+
+<div class="scene-label">Escena 1 — Estado por defecto (con extracción en curso)</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-section">Principal</div>
+    <div class="sb-item"><i class="pi pi-home"></i> Inicio</div>
+
+    <div class="sb-section">Core clínico</div>
+    <div class="sb-item"><i class="pi pi-wave-pulse"></i> Analítica <i class="pi pi-chevron-down" style="margin-left:auto;font-size:10px"></i></div>
+    <div class="sb-item"><i class="pi pi-address-book"></i> Pacientes</div>
+    <div class="sb-item"><i class="pi pi-calendar"></i> Turnos <span class="badge">4</span></div>
+    <div class="sb-item"><i class="pi pi-users"></i> Atención <span class="badge green">3</span></div>
+    <div class="sb-item active"><i class="pi pi-bolt"></i> Cola de extracción</div>
+
+    <div class="sb-section">Gestión</div>
+    <div class="sb-item"><i class="pi pi-building"></i> Empresa</div>
+    <div class="sb-item"><i class="pi pi-shield"></i> Roles y permisos</div>
+    <div class="sb-item"><i class="pi pi-map-marker"></i> Sucursales</div>
+    <div class="sb-item"><i class="pi pi-wallet"></i> Financiero</div>
+    <div class="sb-item"><i class="pi pi-id-card"></i> Obras Sociales</div>
+
+    <div class="sb-section">Servicios clínicos</div>
+    <div class="sb-item"><i class="pi pi-box"></i> Stock e insumos <span class="chip">BETA</span></div>
+    <div class="sb-item"><i class="pi pi-globe"></i> Portal paciente</div>
+  </aside>
+
+  <div class="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="brand">
+        <i class="pi pi-prime"></i> Laboratorio Demo <span class="role-chip">Admin</span>
+      </div>
+      <div class="search">
+        <i class="pi pi-search"></i> Buscar pacientes, turnos, estudios...
+      </div>
+      <div class="right">
+        <i class="pi pi-bell"><span class="dot">3</span></i>
+        <i class="pi pi-question-circle"></i>
+        <span class="avatar">AD</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Header de página -->
+      <div class="page-head">
+        <div>
+          <h2 class="page-title">Cola de extracción</h2>
+          <p class="page-sub">Pacientes esperando ser atendidos por extracción.</p>
+        </div>
+        <div class="head-right">
+          <span class="branch-chip"><i class="pi pi-map-marker pin"></i> Sucursal Norte <i class="pi pi-chevron-down caret"></i></span>
+          <button class="box-fab"><i class="pi pi-box"></i> Box 3 <span class="me">TÚ</span></button>
+        </div>
+      </div>
+
+      <!-- Card paciente en curso -->
+      <div class="pcard">
+        <div class="avatar">SM</div>
+        <div class="info">
+          <div class="row1">
+            <h3 class="name">Sosa, Mariana</h3>
+            <span class="urgent">URGENTE</span>
+          </div>
+          <div class="meta">
+            <span class="kv"><strong>DNI</strong> 35.220.118</span>
+            <span class="kv"><strong>33</strong> años · F</span>
+            <span class="kv"><strong>OSDE 410</strong></span>
+            <span class="kv"><strong>Orden</strong> A-FX0001</span>
+          </div>
+          <div class="pills">
+            <span class="pill">Hemograma</span>
+            <span class="pill">Glucemia</span>
+            <span class="pill">Perfil tiroideo</span>
+            <span class="pill">Vitamina D</span>
+          </div>
+        </div>
+        <div class="right">
+          <div class="timer">
+            en curso desde <strong>10:32</strong>
+            <span class="since">(8 min)</span>
+          </div>
+          <div class="actions">
+            <button class="btn danger-outline"><i class="pi pi-times"></i> Cancelar</button>
+            <button class="btn success"><i class="pi pi-check"></i> Finalizar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección cola -->
+      <div class="section">
+        <div class="section-head">
+          <h3><i class="pi pi-list"></i> Cola de extracción</h3>
+          <div class="section-search">
+            <i class="pi pi-search"></i>
+            <input type="text" placeholder="Buscar por nombre o DNI"/>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="empty">
+            <span class="ico"><i class="pi pi-check"></i></span>
+            <div class="h">No hay pacientes esperando</div>
+            <div class="d">Cuando ingresen pacientes esperando extracción aparecerán acá.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ESCENA 2 — FAB dropdown abierto
+     ============================================================ -->
+
+<div class="scene-label">Escena 2 — Click en el FAB de box → dropdown abierto</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-section">Principal</div>
+    <div class="sb-item"><i class="pi pi-home"></i> Inicio</div>
+    <div class="sb-section">Core clínico</div>
+    <div class="sb-item"><i class="pi pi-wave-pulse"></i> Analítica <i class="pi pi-chevron-down" style="margin-left:auto;font-size:10px"></i></div>
+    <div class="sb-item"><i class="pi pi-address-book"></i> Pacientes</div>
+    <div class="sb-item"><i class="pi pi-calendar"></i> Turnos <span class="badge">4</span></div>
+    <div class="sb-item"><i class="pi pi-users"></i> Atención <span class="badge green">3</span></div>
+    <div class="sb-item active"><i class="pi pi-bolt"></i> Cola de extracción</div>
+    <div class="sb-section">Gestión</div>
+    <div class="sb-item"><i class="pi pi-building"></i> Empresa</div>
+    <div class="sb-item"><i class="pi pi-shield"></i> Roles y permisos</div>
+    <div class="sb-item"><i class="pi pi-map-marker"></i> Sucursales</div>
+    <div class="sb-item"><i class="pi pi-wallet"></i> Financiero</div>
+    <div class="sb-item"><i class="pi pi-id-card"></i> Obras Sociales</div>
+    <div class="sb-section">Servicios clínicos</div>
+    <div class="sb-item"><i class="pi pi-box"></i> Stock e insumos <span class="chip">BETA</span></div>
+    <div class="sb-item"><i class="pi pi-globe"></i> Portal paciente</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="brand"><i class="pi pi-prime"></i> Laboratorio Demo <span class="role-chip">Admin</span></div>
+      <div class="search"><i class="pi pi-search"></i> Buscar pacientes, turnos, estudios...</div>
+      <div class="right">
+        <i class="pi pi-bell"><span class="dot">3</span></i>
+        <i class="pi pi-question-circle"></i>
+        <span class="avatar">AD</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <h2 class="page-title">Cola de extracción</h2>
+          <p class="page-sub">Pacientes esperando ser atendidos por extracción.</p>
+        </div>
+        <div class="head-right">
+          <span class="branch-chip"><i class="pi pi-map-marker pin"></i> Sucursal Norte <i class="pi pi-chevron-down caret"></i></span>
+          <button class="box-fab"><i class="pi pi-box"></i> Box 3 <span class="me">TÚ</span></button>
+
+          <!-- DROPDOWN -->
+          <div class="dropdown">
+            <div class="dd-head">
+              <div class="title"><i class="pi pi-box"></i> Boxes de Sucursal Norte</div>
+              <i class="pi pi-times close"></i>
+            </div>
+            <div class="dd-list">
+              <div class="dd-row mine">
+                <div class="n">3</div>
+                <div class="who">
+                  María Rodríguez <span style="color:var(--muted);font-weight:400">(vos)</span>
+                  <span class="sub">Sosa, Mariana · 8 min</span>
+                </div>
+                <span class="pill-state you">TÚ</span>
+              </div>
+              <div class="dd-row">
+                <div class="n">1</div>
+                <div class="who">
+                  Juan Pérez
+                  <span class="sub">Tomando paciente</span>
+                </div>
+                <span class="pill-state busy">En ext.</span>
+              </div>
+              <div class="dd-row">
+                <div class="n">2</div>
+                <div class="who">
+                  Sofía Díaz
+                  <span class="sub">Tomando paciente</span>
+                </div>
+                <span class="pill-state busy">En ext.</span>
+              </div>
+              <div class="dd-row">
+                <div class="n">4</div>
+                <div class="who">
+                  <span class="sub italic">Sin asignar</span>
+                </div>
+                <span class="pill-state free">Libre</span>
+              </div>
+              <div class="dd-row">
+                <div class="n">5</div>
+                <div class="who">
+                  Tomás Vega
+                  <span class="sub">Tomando paciente</span>
+                </div>
+                <span class="pill-state busy">En ext.</span>
+              </div>
+              <div class="dd-row">
+                <div class="n">6</div>
+                <div class="who">
+                  <span class="sub italic">Sin asignar</span>
+                </div>
+                <span class="pill-state free">Libre</span>
+              </div>
+            </div>
+            <div class="dd-foot">
+              <button class="btn"><i class="pi pi-pencil"></i> Cambiar mi box</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resto de la página queda igual debajo del dropdown -->
+      <div class="pcard">
+        <div class="avatar">SM</div>
+        <div class="info">
+          <div class="row1">
+            <h3 class="name">Sosa, Mariana</h3>
+            <span class="urgent">URGENTE</span>
+          </div>
+          <div class="meta">
+            <span class="kv"><strong>DNI</strong> 35.220.118</span>
+            <span class="kv"><strong>33</strong> años · F</span>
+            <span class="kv"><strong>OSDE 410</strong></span>
+            <span class="kv"><strong>Orden</strong> A-FX0001</span>
+          </div>
+          <div class="pills">
+            <span class="pill">Hemograma</span>
+            <span class="pill">Glucemia</span>
+            <span class="pill">Perfil tiroideo</span>
+            <span class="pill">Vitamina D</span>
+          </div>
+        </div>
+        <div class="right">
+          <div class="timer">
+            en curso desde <strong>10:32</strong>
+            <span class="since">(8 min)</span>
+          </div>
+          <div class="actions">
+            <button class="btn danger-outline"><i class="pi pi-times"></i> Cancelar</button>
+            <button class="btn success"><i class="pi pi-check"></i> Finalizar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h3><i class="pi pi-list"></i> Cola de extracción</h3>
+          <div class="section-search">
+            <i class="pi pi-search"></i>
+            <input type="text" placeholder="Buscar por nombre o DNI"/>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="empty">
+            <span class="ico"><i class="pi pi-check"></i></span>
+            <div class="h">No hay pacientes esperando</div>
+            <div class="d">Cuando ingresen pacientes esperando extracción aparecerán acá.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ESCENA 3 — Sin extracción + cola con pacientes
+     ============================================================ -->
+
+<div class="scene-label">Escena 3 — Sin extracción en curso + cola con pacientes</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-section">Principal</div>
+    <div class="sb-item"><i class="pi pi-home"></i> Inicio</div>
+    <div class="sb-section">Core clínico</div>
+    <div class="sb-item"><i class="pi pi-wave-pulse"></i> Analítica <i class="pi pi-chevron-down" style="margin-left:auto;font-size:10px"></i></div>
+    <div class="sb-item"><i class="pi pi-address-book"></i> Pacientes</div>
+    <div class="sb-item"><i class="pi pi-calendar"></i> Turnos <span class="badge">4</span></div>
+    <div class="sb-item"><i class="pi pi-users"></i> Atención <span class="badge green">3</span></div>
+    <div class="sb-item active"><i class="pi pi-bolt"></i> Cola de extracción</div>
+    <div class="sb-section">Gestión</div>
+    <div class="sb-item"><i class="pi pi-building"></i> Empresa</div>
+    <div class="sb-item"><i class="pi pi-shield"></i> Roles y permisos</div>
+    <div class="sb-item"><i class="pi pi-map-marker"></i> Sucursales</div>
+    <div class="sb-item"><i class="pi pi-wallet"></i> Financiero</div>
+    <div class="sb-item"><i class="pi pi-id-card"></i> Obras Sociales</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="brand"><i class="pi pi-prime"></i> Laboratorio Demo <span class="role-chip">Admin</span></div>
+      <div class="search"><i class="pi pi-search"></i> Buscar pacientes, turnos, estudios...</div>
+      <div class="right">
+        <i class="pi pi-bell"><span class="dot">3</span></i>
+        <i class="pi pi-question-circle"></i>
+        <span class="avatar">AD</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <h2 class="page-title">Cola de extracción</h2>
+          <p class="page-sub">Pacientes esperando ser atendidos por extracción.</p>
+        </div>
+        <div class="head-right">
+          <span class="branch-chip"><i class="pi pi-map-marker pin"></i> Sucursal Norte <i class="pi pi-chevron-down caret"></i></span>
+          <button class="box-fab"><i class="pi pi-box"></i> Box 3 <span class="me">TÚ</span></button>
+        </div>
+      </div>
+
+      <!-- Card vacío -->
+      <div class="pcard-empty">
+        <i class="pi pi-inbox"></i>
+        <div class="h">Sin extracción en curso</div>
+        <div class="d">Cuando tomes un paciente de la cola va a aparecer acá con todos sus datos.</div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h3><i class="pi pi-list"></i> Cola de extracción</h3>
+          <div class="section-search">
+            <i class="pi pi-search"></i>
+            <input type="text" placeholder="Buscar por nombre o DNI"/>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="crow">
+            <div class="lead-flag"><span class="tag-urg">URGENTE</span></div>
+            <div class="pat">
+              <div class="pname">Fernández, Roberto</div>
+              <div class="pmeta">58 años · M · IOMA</div>
+            </div>
+            <div class="pdni">22.118.405</div>
+            <div class="pord"><span class="code">A-FX0008</span><span>3 análisis</span></div>
+            <div class="pwait">18 min</div>
+            <div class="pacts">
+              <button class="btn ghost sm"><i class="pi pi-eye"></i> Ver</button>
+              <button class="btn primary sm"><i class="pi pi-arrow-right"></i> Tomar</button>
+            </div>
+          </div>
+          <div class="crow">
+            <div class="lead-flag"></div>
+            <div class="pat">
+              <div class="pname">Molina, Camila Andrea</div>
+              <div class="pmeta">22 años · F · OSDE 210</div>
+            </div>
+            <div class="pdni">41.567.012</div>
+            <div class="pord"><span class="code">A-FX0009</span><span>6 análisis</span></div>
+            <div class="pwait">14 min</div>
+            <div class="pacts">
+              <button class="btn ghost sm"><i class="pi pi-eye"></i> Ver</button>
+              <button class="btn primary sm"><i class="pi pi-arrow-right"></i> Tomar</button>
+            </div>
+          </div>
+          <div class="crow">
+            <div class="lead-flag"></div>
+            <div class="pat">
+              <div class="pname">Torres, Diego</div>
+              <div class="pmeta">39 años · M · Swiss Medical</div>
+            </div>
+            <div class="pdni">30.998.221</div>
+            <div class="pord"><span class="code">A-FX0010</span><span>2 análisis</span></div>
+            <div class="pwait">9 min</div>
+            <div class="pacts">
+              <button class="btn ghost sm"><i class="pi pi-eye"></i> Ver</button>
+              <button class="btn primary sm"><i class="pi pi-arrow-right"></i> Tomar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Notas de comportamiento:</strong>
+  <ul style="margin:6px 0 0 18px;padding:0">
+    <li>El <strong>FAB de box</strong> queda fijo en el header de la página, NO en bottom-right. Reemplaza al FAB flotante actual.</li>
+    <li>Click en el FAB → abre el <strong>dropdown alineado a la derecha</strong> con la lista de boxes de la sucursal seleccionada. Tu box queda destacado arriba.</li>
+    <li>Click en <strong>"Cambiar mi box"</strong> (footer) → abre un sub-dialog para elegir entre boxes libres. Boxes ocupados no son clickeables.</li>
+    <li>El <strong>chip de Sucursal</strong> también es un dropdown — si el extractor tiene más de una sucursal asignada (tabla <code>user_branches</code> backend), las lista. Si tiene solo una, no es clickeable.</li>
+    <li><strong>Atajos teclado:</strong> <kbd>1</kbd>–<kbd>9</kbd> mientras el dropdown está abierto → cambia rápido al box correspondiente (si está libre).</li>
+    <li><strong>Cancelar</strong> abre un dialog con textarea obligatoria para el motivo (mínimo 5 caracteres) — no incluido en este mockup, se ve al confirmar.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>
