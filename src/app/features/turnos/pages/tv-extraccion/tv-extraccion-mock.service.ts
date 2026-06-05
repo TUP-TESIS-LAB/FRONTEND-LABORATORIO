@@ -51,7 +51,7 @@ export class TvExtraccionMockService {
       tenantName: 'Laboratorio Demo',
       branchName: 'Sucursal Centro',
       serverTime: this.hhmm(new Date()),
-      openWindow: { startTime: '08:00', endTime: '18:00' },
+      openWindow: { startTime: '00:00', endTime: '23:59' },
       entries,
     };
   }
