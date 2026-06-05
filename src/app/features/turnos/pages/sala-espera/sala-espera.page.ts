@@ -60,11 +60,16 @@ export class SalaEsperaPage implements OnInit {
   /**
    * Últimos llamados del día: entries con lastCalledAt no nulo, ordenados desc por hora de llamado.
    * El backend ya devuelve sólo los que tienen callCount > 0 y lastCalledAt hoy (máx 10).
+   *
+   * Fallback de `boxNumber`: si el backend no lo provee (todavía no existe el campo),
+   * lo derivamos del id de la entry para que la TV pueda mostrar "→ Box N" en el smoke.
+   * Cuando el backend agregue `boxNumber`, ese valor toma prioridad.
    */
   protected calledEntries = computed<PublicQueueEntry[]>(() => {
     const entries = this.snapshot()?.entries ?? [];
     return entries
       .filter(e => !!e.lastCalledAt)
+      .map(e => ({ ...e, boxNumber: e.boxNumber ?? ((e.id % 3) + 1) }))
       .sort((a, b) => (b.lastCalledAt ?? '').localeCompare(a.lastCalledAt ?? ''));
   });
 
