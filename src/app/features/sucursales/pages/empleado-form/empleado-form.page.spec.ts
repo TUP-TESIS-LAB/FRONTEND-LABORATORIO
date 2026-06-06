@@ -39,12 +39,31 @@ describe('EmpleadoFormPage (smoke)', () => {
     cmp.contactosArray.push(
       (cmp as unknown as { contactGroup: (r: unknown) => unknown })['contactGroup']({ contactType: 'EMAIL', value: 'eva@x.com' }) as never,
     );
-    cmp.goNext();
+    cmp.goNext(); // direccion
+    cmp.goNext(); // resumen (último)
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(addEmployee({
-      req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: true, registration: 'B-1' },
+      req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: true, registration: 'B-1', address: null },
       contacts: [{ contactType: 'EMAIL', value: 'eva@x.com' }],
+    }));
+  });
+
+  it('includes a structured address when a street is provided', () => {
+    const fixture = TestBed.createComponent(EmpleadoFormPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    cmp.datosGroup.setValue({ firstName: 'Eva', lastName: 'Ruiz', document: '30111222', registration: '', isBiochemist: false });
+    cmp.direccionGroup.setValue({ street: 'Av. Mitre', streetNumber: '500' });
+    cmp.goNext(); cmp.goNext(); cmp.goNext();
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onSubmit();
+    expect(spy).toHaveBeenCalledWith(addEmployee({
+      req: {
+        firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null,
+        address: { street: 'Av. Mitre', streetNumber: '500' },
+      },
+      contacts: [],
     }));
   });
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { EmployeeContactInput } from '../../../../models/employee.model';
 
@@ -8,6 +8,8 @@ export interface EmployeeSummaryView {
   document: string;
   registration: string | null;
   isBiochemist: boolean;
+  street?: string | null;
+  streetNumber?: string | null;
   contacts: EmployeeContactInput[];
 }
 
@@ -45,12 +47,25 @@ export interface EmployeeSummaryView {
           </ul>
         }
       </section>
+      <section>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-base font-semibold m-0">Dirección</h3>
+          <p-button label="Editar" icon="pi pi-pencil" [text]="true" (onClick)="editStep.emit(2)" />
+        </div>
+        <p class="text-sm">{{ addressLabel() }}</p>
+      </section>
     </div>
   `,
 })
 export class ResumenStepComponent {
   readonly data = input.required<EmployeeSummaryView>();
   readonly editStep = output<number>();
+
+  readonly addressLabel = computed(() => {
+    const d = this.data();
+    if (!d.street) return 'Sin dirección.';
+    return d.streetNumber ? `${d.street} ${d.streetNumber}` : d.street;
+  });
 
   typeLabel(t: string): string {
     const map: Record<string, string> = {

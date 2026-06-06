@@ -1,3 +1,5 @@
+import { Address } from './address.model';
+
 export type EmployeeContactType = 'PHONE' | 'MOBILE' | 'EMAIL' | 'WHATSAPP' | 'FAX' | 'WEBSITE';
 
 export interface Employee {
@@ -9,6 +11,7 @@ export interface Employee {
   registration: string | null;
   userId: number | null;
   active: boolean;
+  address?: Address | null;
 }
 
 export interface CreateEmployeeRequest {
@@ -17,6 +20,8 @@ export interface CreateEmployeeRequest {
   document: string;
   isBiochemist: boolean;
   registration?: string | null;
+  userId?: number | null;
+  address?: Address | null;
 }
 
 export type UpdateEmployeeRequest = CreateEmployeeRequest;

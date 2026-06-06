@@ -24,6 +24,7 @@ import {
 import { EMPLOYEE_FORM_STEPS } from './employee-form-steps';
 import { DatosStepComponent } from './steps/datos-step/datos-step.component';
 import { ContactosStepComponent } from './steps/contactos-step/contactos-step.component';
+import { DireccionStepComponent } from './steps/direccion-step/direccion-step.component';
 import { ResumenStepComponent, EmployeeSummaryView } from './steps/resumen-step/resumen-step.component';
 
 interface ContactRow { id: number | null; contactType: EmployeeContactType; value: string; }
@@ -34,7 +35,7 @@ interface ContactRow { id: number | null; contactType: EmployeeContactType; valu
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    FormStepperHeaderComponent, DatosStepComponent, ContactosStepComponent, ResumenStepComponent,
+    FormStepperHeaderComponent, DatosStepComponent, ContactosStepComponent, DireccionStepComponent, ResumenStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
@@ -63,7 +64,8 @@ interface ContactRow { id: number | null; contactType: EmployeeContactType; valu
         @switch (currentStep()) {
           @case (0) { <emp-datos-step [group]="datosGroup" /> }
           @case (1) { <emp-contactos-step [array]="contactosArray" /> }
-          @case (2) { <emp-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
+          @case (2) { <emp-direccion-step [group]="direccionGroup" /> }
+          @case (3) { <emp-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
         }
       </div>
 
@@ -115,6 +117,10 @@ export class EmpleadoFormPage implements OnDestroy {
       isBiochemist: [false],
     }),
     contactos: this.fb.array<FormGroup>([]),
+    direccion: this.fb.group({
+      street: [''],
+      streetNumber: [''],
+    }),
   });
 
   readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
@@ -151,15 +157,18 @@ export class EmpleadoFormPage implements OnDestroy {
     const d = this.datosGroup.getRawValue() as {
       firstName: string; lastName: string; document: string; registration: string; isBiochemist: boolean;
     };
+    const dir = this.direccionGroup.getRawValue() as { street: string; streetNumber: string };
     return {
       firstName: d.firstName, lastName: d.lastName, document: d.document,
       registration: d.registration || null, isBiochemist: d.isBiochemist,
+      street: dir.street?.trim() || null, streetNumber: dir.streetNumber?.trim() || null,
       contacts: this.filledContacts().map((c) => ({ contactType: c.contactType, value: c.value })),
     };
   });
 
   get datosGroup(): FormGroup { return this.form.get('datos') as FormGroup; }
   get contactosArray(): FormArray<FormGroup> { return this.form.get('contactos') as FormArray<FormGroup>; }
+  get direccionGroup(): FormGroup { return this.form.get('direccion') as FormGroup; }
 
   private hydratedForId: string | undefined = undefined;
 
@@ -183,7 +192,7 @@ export class EmpleadoFormPage implements OnDestroy {
       const e = this.employee();
       if (this.isEdit() && e && String(e.id) === this.id()) {
         this.hydrateDatos(e);
-        this.visited.set(new Set([0, 1, 2]));
+        this.visited.set(new Set([0, 1, 2, 3]));
       }
     });
 
@@ -223,7 +232,10 @@ export class EmpleadoFormPage implements OnDestroy {
   }
 
   private resetForCreate(): void {
-    this.form.reset({ datos: { firstName: '', lastName: '', document: '', registration: '', isBiochemist: false } });
+    this.form.reset({
+      datos: { firstName: '', lastName: '', document: '', registration: '', isBiochemist: false },
+      direccion: { street: '', streetNumber: '' },
+    });
     this.contactosArray.clear();
     this.originalContacts = [];
     this.currentStep.set(0);
@@ -234,6 +246,9 @@ export class EmpleadoFormPage implements OnDestroy {
     this.datosGroup.patchValue({
       firstName: e.firstName, lastName: e.lastName, document: e.document,
       registration: e.registration ?? '', isBiochemist: e.isBiochemist,
+    });
+    this.direccionGroup.patchValue({
+      street: e.address?.street ?? '', streetNumber: e.address?.streetNumber ?? '',
     });
     this.form.markAsPristine();
   }
@@ -273,9 +288,12 @@ export class EmpleadoFormPage implements OnDestroy {
     const d = this.datosGroup.getRawValue() as {
       firstName: string; lastName: string; document: string; registration: string; isBiochemist: boolean;
     };
+    const dir = this.direccionGroup.getRawValue() as { street: string; streetNumber: string };
+    const street = (dir.street ?? '').trim();
     const req: CreateEmployeeRequest = {
       firstName: d.firstName, lastName: d.lastName, document: d.document,
       isBiochemist: d.isBiochemist, registration: d.registration?.trim() ? d.registration.trim() : null,
+      address: street ? { street, streetNumber: (dir.streetNumber ?? '').trim() || undefined } : null,
     };
     const rows = this.filledContacts();
     const editId = this.id();
