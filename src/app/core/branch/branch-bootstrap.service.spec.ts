@@ -55,6 +55,18 @@ describe('BranchBootstrapService', () => {
     expect(ctx.setBranch).toHaveBeenCalledWith(5, 'Central');
   });
 
+  it('si el id persistido NO existe en el tenant (stale), cae al fallback (auto-cura)', async () => {
+    ctx.branchId.set(1); // id viejo/stale que ya no existe (ej. localStorage previo)
+    ctx.branchName.set(null);
+    sucursales.listBranchesForSelector.mockReturnValue(of([
+      { id: 1001, name: 'Central' },
+      { id: 1002, name: 'Norte' },
+    ]));
+    const svc = TestBed.inject(BranchBootstrapService);
+    await firstValueFrom(svc.init());
+    expect(ctx.setBranch).toHaveBeenCalledWith(1001, 'Central');
+  });
+
   it('si no hay id en context pero el user tiene branch, usa ese id y resuelve name', async () => {
     user.currentUser.set({ id: 1, branch: 7 } as any);
     sucursales.listBranchesForSelector.mockReturnValue(of([

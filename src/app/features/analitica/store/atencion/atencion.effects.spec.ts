@@ -13,6 +13,7 @@ import { AnalysisService } from '../../services/analysis.service';
 import { LabelsService } from '../../services/labels.service';
 import { RotuloPdfService } from '../../services/rotulo-pdf.service';
 import { NotificationService } from '@core/services/notification.service';
+import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import * as A from './atencion.actions';
 import { AtencionEffects } from './atencion.effects';
 
@@ -78,6 +79,7 @@ describe('AtencionEffects', () => {
         { provide: LabelsService, useValue: labels },
         { provide: RotuloPdfService, useValue: rotuloPdf },
         { provide: NotificationService, useValue: notification },
+        { provide: OperatorBranchContextService, useValue: { branchId: () => 1001, branchName: () => 'Central' } },
       ],
     });
     effects = TestBed.inject(AtencionEffects);

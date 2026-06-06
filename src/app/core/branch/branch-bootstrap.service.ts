@@ -40,8 +40,13 @@ export class BranchBootstrapService {
         // Caso 2: hay id pero falta name -> matchear contra la lista
         if (currentId != null) {
           const match = branches.find(b => b.id === currentId);
-          if (match) this.ctx.setBranch(match.id, match.name);
-          return;
+          if (match) {
+            this.ctx.setBranch(match.id, match.name);
+            return;
+          }
+          // Si el id persistido NO existe en el tenant (stale: ej. localStorage
+          // viejo o sucursal eliminada), NO lo dejamos inválido — seguimos al
+          // fallback para auto-curar el contexto.
         }
 
         // Caso 3: hay branch en user -> usar y resolver name
