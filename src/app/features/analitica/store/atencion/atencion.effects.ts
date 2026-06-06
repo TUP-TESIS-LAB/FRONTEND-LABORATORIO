@@ -2,7 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, concatMap, exhaustMap, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, concatMap, exhaustMap, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { PatientService } from '../../../pacientes/services/patient.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
 import { AnalysisService } from '../../services/analysis.service';
@@ -65,6 +66,7 @@ export class AtencionEffects {
   private readonly labels        = inject(LabelsService);
   private readonly rotuloPdf     = inject(RotuloPdfService);
   private readonly notification  = inject(NotificationService);
+  private readonly branchCtx     = inject(OperatorBranchContextService);
 
   loadList$ = createEffect(() =>
     this.actions$.pipe(
@@ -239,9 +241,15 @@ export class AtencionEffects {
   startAttentionForPatient$ = createEffect(() =>
     this.actions$.pipe(
       ofType(startAttentionForPatient),
-      exhaustMap(({ patientId, indications }) =>
-        // TODO(KAN-77): branchId real (multi-sucursal) y attentionNumber sin colision — hoy igual que el flujo previo
-        this.api.createBlank({ branchId: 1, patientId, attentionNumber: `A-${Date.now().toString().slice(-6)}`, deskAttentionBox: null }).pipe(
+      exhaustMap(({ patientId, indications }) => {
+        // branchId real: la sucursal seleccionada del operador (no hardcodeado).
+        const branchId = this.branchCtx.branchId();
+        if (branchId == null) {
+          this.notification.error('Elegí una sucursal arriba antes de crear la atención.');
+          return EMPTY;
+        }
+        // TODO(KAN-77): attentionNumber sin colisión (hoy basado en timestamp).
+        return this.api.createBlank({ branchId, patientId, attentionNumber: `A-${Date.now().toString().slice(-6)}`, deskAttentionBox: null }).pipe(
           concatMap(created =>
             this.api.assignGeneralData(created.id, { patientId, doctorId: null, insurancePlanId: null, indications }).pipe(
               tap(item => this.router.navigate(['/analitica/atencion', item.id])),
@@ -250,7 +258,8 @@ export class AtencionEffects {
           // REGISTERING_GENERAL_DATA (sin paciente ni datos). El usuario puede reintentar; aceptable
           // por ahora — no compensamos con cancel.
           catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error }))),
-        ))));
+        );
+      })));
 
   loadAttentionPatient$ = createEffect(() =>
     this.actions$.pipe(
