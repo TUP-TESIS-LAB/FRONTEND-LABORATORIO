@@ -7,7 +7,8 @@ import { Patient, CreatePatientRequest } from '../models/patient.model';
 const mockPatient: Patient = {
   id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
   birthDate: '1991-03-15', gender: 'FEMALE', sexAtBirth: 'FEMALE',
-  status: 'COMPLETE', contacts: [], addresses: [], coverages: [], active: true,
+  status: 'COMPLETE', source: 'STAFF', verifiedAt: null,
+  contacts: [], addresses: [], coverages: [], active: true,
 };
 
 describe('PatientService', () => {

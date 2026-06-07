@@ -17,7 +17,7 @@ import { Patient } from '../models/patient.model';
 
 const patient: Patient = {
   id: 1, dni: '32456789', firstName: 'a', lastName: 'b', birthDate: null,
-  gender: null, sexAtBirth: null, status: 'MIN',
+  gender: null, sexAtBirth: null, status: 'MIN', source: 'STAFF', verifiedAt: null,
   contacts: [], addresses: [], coverages: [], active: true,
 };
 
