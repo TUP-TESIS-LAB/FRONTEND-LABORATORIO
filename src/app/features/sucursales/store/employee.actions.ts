@@ -1,5 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
+import { CrearUsuarioPayload } from '@features/empresa/models/usuario.model';
 import {
   CreateEmployeeRequest, Employee, EmployeeContact, EmployeeContactInput, UpdateEmployeeRequest,
 } from '../models/employee.model';
@@ -28,6 +29,11 @@ export const clearSelectedEmployee = createAction('[Employee Form] Clear Selecte
 export const addEmployee = createAction(
   '[Employee Form] Add Employee',
   props<{ req: CreateEmployeeRequest; contacts: EmployeeContactInput[] }>());
+// Crea primero el usuario interno (POST /user/internal con roles+secciones) y luego, con su
+// id, delega en addEmployee. Comparte addEmployeeSuccess/Failure.
+export const createEmployeeWithUser = createAction(
+  '[Employee Form] Create Employee With New User',
+  props<{ userPayload: CrearUsuarioPayload; req: CreateEmployeeRequest; contacts: EmployeeContactInput[] }>());
 export const addEmployeeSuccess = createAction(
   '[Employees API] Add Employee Success', props<{ employee: Employee }>());
 export const addEmployeeFailure = createAction(

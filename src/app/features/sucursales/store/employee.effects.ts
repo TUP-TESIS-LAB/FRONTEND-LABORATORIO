@@ -3,12 +3,13 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { HttpErrorResponse } from '@angular/common/http';
 import { catchError, concat, concatMap, exhaustMap, last, map, Observable, of, switchMap } from 'rxjs';
 import { EmployeeService } from '../services/employee.service';
+import { UsuariosApiService } from '@features/empresa/services/usuarios-api.service';
 import { NotificationService } from '@core/services/notification.service';
 import {
   loadEmployees, loadEmployeesSuccess, loadEmployeesFailure,
   loadEmployee, loadEmployeeSuccess, loadEmployeeFailure,
   loadEmployeeContacts, loadEmployeeContactsSuccess, loadEmployeeContactsFailure,
-  addEmployee, addEmployeeSuccess, addEmployeeFailure,
+  addEmployee, addEmployeeSuccess, addEmployeeFailure, createEmployeeWithUser,
   updateEmployee, updateEmployeeSuccess, updateEmployeeFailure,
   toggleEmployeeStatus, toggleEmployeeStatusSuccess, toggleEmployeeStatusFailure,
 } from './employee.actions';
@@ -17,6 +18,7 @@ import {
 export class EmployeeEffects {
   private readonly actions$ = inject(Actions);
   private readonly service = inject(EmployeeService);
+  private readonly usersApi = inject(UsuariosApiService);
   private readonly notifications = inject(NotificationService);
 
   /** Corre operaciones HTTP en serie; emite una vez al terminar todas (o inmediato si no hay). */
@@ -80,6 +82,22 @@ export class EmployeeEffects {
               }),
             ),
           ),
+          catchError((error: HttpErrorResponse) => of(addEmployeeFailure({ error }))),
+        ),
+      ),
+    ),
+  );
+
+  // Opcion B: crea el usuario interno (con roles + secciones) y, con su id, delega en
+  // addEmployee (que crea el empleado + contactos). Si falla la creacion del usuario, no
+  // se crea el empleado. Si el empleado falla despues, el usuario queda creado (editable
+  // desde el ABM de usuarios) — trade-off explicito de orquestar en el front.
+  createEmployeeWithUser$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(createEmployeeWithUser),
+      exhaustMap(({ userPayload, req, contacts }) =>
+        this.usersApi.create(userPayload).pipe(
+          map((resp) => addEmployee({ req: { ...req, userId: resp.user.id }, contacts })),
           catchError((error: HttpErrorResponse) => of(addEmployeeFailure({ error }))),
         ),
       ),

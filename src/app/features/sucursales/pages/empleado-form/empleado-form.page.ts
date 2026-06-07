@@ -12,19 +12,22 @@ import { ConfirmationService } from 'primeng/api';
 import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import {
-  addEmployee, addEmployeeSuccess, updateEmployee, updateEmployeeSuccess,
+  addEmployee, addEmployeeSuccess, updateEmployee, updateEmployeeSuccess, createEmployeeWithUser,
   loadEmployee, loadEmployeeContacts, clearSelectedEmployee,
 } from '../../store/employee.actions';
 import {
   selectEmployeePending, selectEmployeeError, selectSelectedEmployee, selectSelectedEmployeeContacts,
 } from '../../store/employee.selectors';
 import {
-  CreateEmployeeRequest, Employee, EmployeeContact, EmployeeContactInput, EmployeeContactType,
+  CreateEmployeeRequest, Employee, EmployeeContact, EmployeeContactInput, EmployeeContactType, UpdateEmployeeRequest,
 } from '../../models/employee.model';
+import { CrearUsuarioPayload } from '@features/empresa/models/usuario.model';
+import { AccessSection } from '@core/access/access.model';
 import { EMPLOYEE_FORM_STEPS } from './employee-form-steps';
 import { DatosStepComponent } from './steps/datos-step/datos-step.component';
 import { ContactosStepComponent } from './steps/contactos-step/contactos-step.component';
 import { DireccionStepComponent } from './steps/direccion-step/direccion-step.component';
+import { UsuarioStepComponent } from './steps/usuario-step/usuario-step.component';
 import { ResumenStepComponent, EmployeeSummaryView } from './steps/resumen-step/resumen-step.component';
 
 interface ContactRow { id: number | null; contactType: EmployeeContactType; value: string; }
@@ -35,7 +38,8 @@ interface ContactRow { id: number | null; contactType: EmployeeContactType; valu
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    FormStepperHeaderComponent, DatosStepComponent, ContactosStepComponent, DireccionStepComponent, ResumenStepComponent,
+    FormStepperHeaderComponent, DatosStepComponent, ContactosStepComponent, DireccionStepComponent,
+    UsuarioStepComponent, ResumenStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
@@ -65,7 +69,11 @@ interface ContactRow { id: number | null; contactType: EmployeeContactType; valu
           @case (0) { <emp-datos-step [group]="datosGroup" /> }
           @case (1) { <emp-contactos-step [array]="contactosArray" /> }
           @case (2) { <emp-direccion-step [group]="direccionGroup" /> }
-          @case (3) { <emp-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
+          @case (3) {
+            <emp-usuario-step [group]="usuarioGroup" [mode]="usuarioMode()"
+                              [isEdit]="isEdit()" [currentUserId]="employee()?.userId ?? null" />
+          }
+          @case (4) { <emp-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
         }
       </div>
 
@@ -121,6 +129,19 @@ export class EmpleadoFormPage implements OnDestroy {
       street: [''],
       streetNumber: [''],
     }),
+    usuario: this.fb.group({
+      mode: ['none' as 'none' | 'existing' | 'new'],
+      existingUserId: [null as number | null],
+      newUser: this.fb.group({
+        firstName: [''],
+        lastName: [''],
+        email: ['', Validators.email],
+        username: [''],
+        document: [''],
+        roleId: [null as number | null],
+      }),
+      sections: [[] as AccessSection[]],
+    }),
   });
 
   readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
@@ -129,6 +150,19 @@ export class EmpleadoFormPage implements OnDestroy {
   readonly isEdit = computed(() => { const v = this.id(); return v != null && v !== ''; });
   readonly datosValid = computed(() => { void this.value(); void this.status(); return this.datosGroup.valid; });
   readonly contactosValid = computed(() => { void this.value(); void this.status(); return this.contactosArray.valid; });
+  readonly usuarioMode = computed<string>(() => { void this.value(); return this.usuarioGroup.get('mode')!.value as string; });
+  readonly usuarioValid = computed(() => {
+    void this.value(); void this.status();
+    const mode = this.usuarioMode();
+    if (mode === 'existing') return this.usuarioGroup.get('existingUserId')!.value != null;
+    if (mode === 'new') {
+      const n = this.usuarioGroup.get('newUser') as FormGroup;
+      const v = n.getRawValue() as { firstName: string; lastName: string; email: string; username: string; document: string };
+      const emailOk = !n.get('email')!.hasError('email');
+      return !!(v.firstName?.trim() && v.lastName?.trim() && v.username?.trim() && v.document?.trim() && v.email?.trim() && emailOk);
+    }
+    return true;
+  });
 
   readonly currentStep = signal(0);
   readonly visited = signal<ReadonlySet<number>>(new Set([0]));
@@ -139,10 +173,11 @@ export class EmpleadoFormPage implements OnDestroy {
   readonly canContinue = computed(() => {
     if (this.currentStep() === 0) return this.datosValid();
     if (this.currentStep() === 1) return this.contactosValid();
+    if (this.currentStep() === 3) return this.usuarioValid();
     return true;
   });
   readonly canSubmit = computed(() =>
-    this.datosValid() && this.contactosValid() && !this.pending() && (this.isEdit() || this.isLastStep()));
+    this.datosValid() && this.contactosValid() && this.usuarioValid() && !this.pending() && (this.isEdit() || this.isLastStep()));
   readonly showContinueButton = computed(() => !this.isLastStep() && !this.isEdit());
   readonly showSubmitButton = computed(() => this.isEdit() || this.isLastStep());
 
@@ -162,6 +197,7 @@ export class EmpleadoFormPage implements OnDestroy {
       firstName: d.firstName, lastName: d.lastName, document: d.document,
       registration: d.registration || null, isBiochemist: d.isBiochemist,
       street: dir.street?.trim() || null, streetNumber: dir.streetNumber?.trim() || null,
+      userLabel: this.userSummaryLabel(),
       contacts: this.filledContacts().map((c) => ({ contactType: c.contactType, value: c.value })),
     };
   });
@@ -169,6 +205,7 @@ export class EmpleadoFormPage implements OnDestroy {
   get datosGroup(): FormGroup { return this.form.get('datos') as FormGroup; }
   get contactosArray(): FormArray<FormGroup> { return this.form.get('contactos') as FormArray<FormGroup>; }
   get direccionGroup(): FormGroup { return this.form.get('direccion') as FormGroup; }
+  get usuarioGroup(): FormGroup { return this.form.get('usuario') as FormGroup; }
 
   private hydratedForId: string | undefined = undefined;
 
@@ -192,7 +229,7 @@ export class EmpleadoFormPage implements OnDestroy {
       const e = this.employee();
       if (this.isEdit() && e && String(e.id) === this.id()) {
         this.hydrateDatos(e);
-        this.visited.set(new Set([0, 1, 2, 3]));
+        this.visited.set(new Set([0, 1, 2, 3, 4]));
       }
     });
 
@@ -235,6 +272,11 @@ export class EmpleadoFormPage implements OnDestroy {
     this.form.reset({
       datos: { firstName: '', lastName: '', document: '', registration: '', isBiochemist: false },
       direccion: { street: '', streetNumber: '' },
+      usuario: {
+        mode: 'none', existingUserId: null,
+        newUser: { firstName: '', lastName: '', email: '', username: '', document: '', roleId: null },
+        sections: [],
+      },
     });
     this.contactosArray.clear();
     this.originalContacts = [];
@@ -300,10 +342,32 @@ export class EmpleadoFormPage implements OnDestroy {
 
     if (!editId) {
       const contacts: EmployeeContactInput[] = rows.map((r) => ({ contactType: r.contactType, value: r.value.trim() }));
-      this.store.dispatch(addEmployee({ req, contacts }));
+      const u = this.usuarioGroup.getRawValue() as {
+        mode: string; existingUserId: number | null;
+        newUser: { firstName: string; lastName: string; email: string; username: string; document: string; roleId: number | null };
+        sections: AccessSection[];
+      };
+      if (u.mode === 'new') {
+        const userPayload: CrearUsuarioPayload = {
+          firstName: u.newUser.firstName.trim(),
+          lastName: u.newUser.lastName.trim(),
+          email: u.newUser.email.trim(),
+          username: u.newUser.username.trim(),
+          document: u.newUser.document.trim(),
+          roleIds: u.newUser.roleId != null ? [u.newUser.roleId] : [],
+          sections: u.sections ?? [],
+        };
+        this.store.dispatch(createEmployeeWithUser({ userPayload, req, contacts }));
+        return;
+      }
+      const createReq: CreateEmployeeRequest = u.mode === 'existing' && u.existingUserId != null
+        ? { ...req, userId: u.existingUserId } : req;
+      this.store.dispatch(addEmployee({ req: createReq, contacts }));
       return;
     }
 
+    // Update: preservamos el userId actual (el alta/vinculación de usuario solo ocurre en el create).
+    const updateReq: UpdateEmployeeRequest = { ...req, userId: this.employee()?.userId ?? null };
     const toCreate: EmployeeContactInput[] = rows
       .filter((r) => r.id == null)
       .map((r) => ({ contactType: r.contactType, value: r.value.trim() }));
@@ -317,7 +381,24 @@ export class EmpleadoFormPage implements OnDestroy {
     const currentIds = new Set(rows.filter((r) => r.id != null).map((r) => r.id as number));
     const toDelete = this.originalContacts.filter((o) => !currentIds.has(o.id)).map((o) => o.id);
 
-    this.store.dispatch(updateEmployee({ id: Number(editId), req, toCreate, toUpdate, toDelete }));
+    this.store.dispatch(updateEmployee({ id: Number(editId), req: updateReq, toCreate, toUpdate, toDelete }));
+  }
+
+  private userSummaryLabel(): string {
+    if (this.isEdit()) {
+      const uid = this.employee()?.userId;
+      return uid ? `Usuario vinculado (#${uid})` : 'Sin usuario';
+    }
+    const mode = this.usuarioMode();
+    if (mode === 'existing') {
+      const uid = this.usuarioGroup.get('existingUserId')!.value as number | null;
+      return uid ? `Usuario existente (#${uid})` : 'Usuario existente (sin seleccionar)';
+    }
+    if (mode === 'new') {
+      const username = (this.usuarioGroup.get('newUser.username')!.value as string) || '';
+      return username ? `Nuevo usuario (${username})` : 'Nuevo usuario';
+    }
+    return 'Sin usuario';
   }
 
   onBack(): void {

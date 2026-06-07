@@ -10,6 +10,7 @@ export interface EmployeeSummaryView {
   isBiochemist: boolean;
   street?: string | null;
   streetNumber?: string | null;
+  userLabel?: string;
   contacts: EmployeeContactInput[];
 }
 
@@ -53,6 +54,13 @@ export interface EmployeeSummaryView {
           <p-button label="Editar" icon="pi pi-pencil" [text]="true" (onClick)="editStep.emit(2)" />
         </div>
         <p class="text-sm">{{ addressLabel() }}</p>
+      </section>
+      <section>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-base font-semibold m-0">Usuario</h3>
+          <p-button label="Editar" icon="pi pi-pencil" [text]="true" (onClick)="editStep.emit(3)" />
+        </div>
+        <p class="text-sm">{{ data().userLabel || 'Sin usuario' }}</p>
       </section>
     </div>
   `,
