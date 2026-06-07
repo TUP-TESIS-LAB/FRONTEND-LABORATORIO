@@ -65,7 +65,7 @@ interface BoxRow {
                   <i class="pi pi-id-card"></i> {{ p.patientDni }}
                 </span>
                 <span class="meta-item">
-                  <i class="pi pi-ticket"></i> {{ p.attentionNumber }}
+                  <i class="pi pi-ticket"></i> {{ p.publicCode ?? p.attentionNumber }}
                 </span>
                 @if (p.isUrgent) {
                   <span class="urgent-badge">

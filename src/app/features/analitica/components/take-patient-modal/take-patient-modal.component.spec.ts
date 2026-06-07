@@ -14,6 +14,7 @@ function makePatient(overrides: Partial<AwaitingExtractionItem> = {}): AwaitingE
     patientBirthDate: null,
     patientGender: null,
     attentionNumber: 'A-42',
+    publicCode: null,
     isUrgent: false,
     analysisCount: 3,
     insurancePlanLabel: null,
@@ -292,6 +293,32 @@ describe('TakePatientModalComponent', () => {
       const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
       expect(text).toContain('Sangre');
       expect(text).not.toContain('BLOOD');
+    });
+  });
+
+  // ── publicCode display ────────────────────────────────────────────────────────
+
+  describe('Número de turno (publicCode)', () => {
+    it('muestra publicCode cuando está presente', () => {
+      const fixture = TestBed.createComponent(TakePatientModalComponent);
+      const patient = makePatient({ publicCode: 'CT-0001', attentionNumber: 'A-1' });
+      fixture.componentRef.setInput('patient', patient);
+      fixture.componentRef.setInput('visible', true);
+      fixture.detectChanges();
+
+      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).toContain('CT-0001');
+    });
+
+    it('cae en attentionNumber cuando publicCode es null', () => {
+      const fixture = TestBed.createComponent(TakePatientModalComponent);
+      const patient = makePatient({ publicCode: null, attentionNumber: 'A-1' });
+      fixture.componentRef.setInput('patient', patient);
+      fixture.componentRef.setInput('visible', true);
+      fixture.detectChanges();
+
+      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).toContain('A-1');
     });
   });
 });

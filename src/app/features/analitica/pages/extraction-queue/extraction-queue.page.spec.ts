@@ -17,6 +17,7 @@ function awaitingItem(over: Partial<AwaitingExtractionItem> = {}): AwaitingExtra
     patientBirthDate: null,
     patientGender: null,
     attentionNumber: 'A-1',
+    publicCode: null,
     isUrgent: false,
     analysisCount: 2,
     insurancePlanLabel: null,

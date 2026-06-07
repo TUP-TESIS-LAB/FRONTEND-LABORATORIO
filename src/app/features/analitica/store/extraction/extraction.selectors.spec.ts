@@ -24,7 +24,7 @@ function aw(over: Partial<AwaitingExtractionItem>): AwaitingExtractionItem {
   return {
     id: 1, patientId: 10, patientFullName: 'Ana', patientDni: '111',
     patientBirthDate: null, patientGender: null,
-    attentionNumber: 'A-1', isUrgent: false, analysisCount: 1,
+    attentionNumber: 'A-1', publicCode: null, isUrgent: false, analysisCount: 1,
     insurancePlanLabel: null, createdAt: '', waitMinutes: 0,
     samples: [],
     ...over,

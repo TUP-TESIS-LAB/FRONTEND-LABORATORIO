@@ -32,6 +32,7 @@ export interface AttentionResponse {
   id: number;
   tenantId: number;
   attentionNumber: string;
+  publicCode: string | null;
   patientId: number | null;
   doctorId: number | null;
   branchId: number | null;
@@ -61,12 +62,14 @@ export interface CreateBlankAttentionRequest {
   patientId: number;
   attentionNumber: string;
   deskAttentionBox?: number | null;
+  queueEntryId?: number | null;
 }
 
 export interface CreatePreFilledAttentionRequest {
   appointmentId: number;
   attentionNumber: string;
   deskAttentionBox?: number | null;
+  queueEntryId?: number | null;
 }
 
 export interface AssignGeneralDataRequest {

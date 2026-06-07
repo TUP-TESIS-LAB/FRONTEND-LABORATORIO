@@ -89,7 +89,7 @@ export class RecepcionConTotemComponent implements OnInit {
     // si no existe + marca COMPLETED. ST walk-in no tiene appointment asi que
     // marcamos el entry directo via PATCH.
     if (entry.appointmentId != null) {
-      this.store.dispatch(callAppointmentForAttention({ appointmentId: entry.appointmentId, dni }));
+      this.store.dispatch(callAppointmentForAttention({ appointmentId: entry.appointmentId, dni, queueEntryId: id }));
     } else {
       this.store.dispatch(attendWalkinEntry({ entryId: id, dni }));
     }

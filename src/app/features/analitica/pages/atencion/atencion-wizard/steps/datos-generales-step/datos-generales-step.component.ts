@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -209,6 +210,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
 })
 export class DatosGeneralesStepComponent implements OnInit {
   private readonly store = inject(Store);
+  private readonly route = inject(ActivatedRoute);
 
   readonly atencionId = input<number | null>(null);
   readonly initialDni = input<string | null>(null);
@@ -328,10 +330,13 @@ export class DatosGeneralesStepComponent implements OnInit {
     if (!p) return;
     const id = this.atencionId();
     if (id == null) {
+      const qid = this.route.snapshot.queryParamMap.get('queueEntryId');
+      const queueEntryId = qid ? Number(qid) : null;
       this.store.dispatch(
         startAttentionForPatient({
           patientId:   p.id,
           indications: this.indications || null,
+          queueEntryId,
         }),
       );
       return;
