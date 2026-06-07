@@ -1,15 +1,13 @@
 export interface TotemState {
   submitting: boolean;
   lastQueueNumber: string | null;
-  lastPatientFirstName: string | null;
-  lastPatientLastName: string | null;
+  lastHasAppointment: boolean;
   error: 'UNKNOWN' | null;
 }
 
 export const initialTotemState: TotemState = {
   submitting: false,
   lastQueueNumber: null,
-  lastPatientFirstName: null,
-  lastPatientLastName: null,
+  lastHasAppointment: false,
   error: null,
 };

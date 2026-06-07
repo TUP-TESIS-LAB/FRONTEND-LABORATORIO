@@ -1,18 +1,18 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   Input,
+  OnDestroy,
   OnInit,
   inject,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval } from 'rxjs';
+import { EMPTY } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
+import { PollingHandle, PollingService } from '@core/refresh';
 import { loadTodayAppointments } from '../../store/appointments/appointments.actions';
 import {
   selectAppointmentsLoading,
@@ -29,7 +29,7 @@ import { BoxOccupationWidgetComponent } from '../../box-occupation/components/bo
   templateUrl: './recepcion-sin-totem.component.html',
   styleUrl: './recepcion-sin-totem.component.scss',
 })
-export class RecepcionSinTotemComponent implements OnInit {
+export class RecepcionSinTotemComponent implements OnInit, OnDestroy {
   @Input({ required: true }) branchId!: number;
   /** Box-occupation inputs — resueltos por la página padre. */
   @Input() boxBranchId: number | null = null;
@@ -38,16 +38,25 @@ export class RecepcionSinTotemComponent implements OnInit {
 
   private store = inject(Store);
   private router = inject(Router);
-  private destroyRef = inject(DestroyRef);
+  private readonly polling = inject(PollingService);
+  private pollHandle: PollingHandle | null = null;
 
   protected appointments = this.store.selectSignal(selectTodayAppointments);
   protected loading = this.store.selectSignal(selectAppointmentsLoading);
 
   ngOnInit(): void {
-    this.store.dispatch(loadTodayAppointments({ branchId: this.branchId }));
-    interval(5000)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.store.dispatch(loadTodayAppointments({ branchId: this.branchId })));
+    this.pollHandle = this.polling.startPolling({
+      key: `recepcion:${this.branchId}`,
+      intervalMs: 5000,
+      poll: () => {
+        this.store.dispatch(loadTodayAppointments({ branchId: this.branchId }));
+        return EMPTY;
+      },
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.pollHandle?.stop();
   }
 
   protected onAtender(appointmentId: number): void {

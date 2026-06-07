@@ -1,20 +1,67 @@
 <div class="kiosk-card">
-  <h2>Seleccionar sucursal</h2>
-  <p>Esta configuración se guarda en este dispositivo.</p>
 
-  <p-select
-    [options]="branches()"
-    [(ngModel)]="selectedId"
-    optionLabel="description"
-    optionValue="id"
-    placeholder="Elegí una sucursal"
-    [disabled]="loading()"
-    appendTo="body"
-  />
+  @if (step() === 'slug') {
+    <h2>Configuración del tótem</h2>
+    <p>Ingresá el código del laboratorio para continuar.</p>
 
-  <p-button
-    label="Confirmar"
-    [disabled]="selectedId === null || loading()"
-    (onClick)="confirm()"
-  />
+    <div class="field">
+      <label for="slug-input">Código del laboratorio</label>
+      <input
+        id="slug-input"
+        pInputText
+        type="text"
+        [(ngModel)]="slugInput"
+        placeholder="ej: lab-demo"
+        [disabled]="loading()"
+        (keyup.enter)="loadBranches()"
+      />
+    </div>
+
+    @if (errorMsg()) {
+      <p class="error-msg">
+        <i class="pi pi-exclamation-circle"></i>
+        {{ errorMsg() }}
+      </p>
+    }
+
+    <p-button
+      label="Continuar"
+      icon="pi pi-arrow-right"
+      iconPos="right"
+      [loading]="loading()"
+      [disabled]="!slugInput.trim() || loading()"
+      (onClick)="loadBranches()"
+    />
+  }
+
+  @if (step() === 'branch') {
+    <h2>Seleccionar sucursal</h2>
+    <p>Esta configuración se guarda en este dispositivo.</p>
+
+    <p-select
+      [options]="branches()"
+      [(ngModel)]="selectedId"
+      optionLabel="description"
+      optionValue="id"
+      placeholder="Elegí una sucursal"
+      appendTo="body"
+    />
+
+    <div class="actions">
+      <p-button
+        label="Volver"
+        icon="pi pi-arrow-left"
+        severity="secondary"
+        [text]="true"
+        (onClick)="backToSlug()"
+      />
+      <p-button
+        label="Confirmar"
+        icon="pi pi-check"
+        [disabled]="selectedId === null"
+        (onClick)="confirm()"
+      />
+    </div>
+  }
+
 </div>

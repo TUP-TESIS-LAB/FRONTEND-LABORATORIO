@@ -36,8 +36,9 @@ export class TotemInputDniComponent {
 
   submit(): void {
     const branchId = this.config.branchId();
+    const slug = this.config.slug();
     const normalizedDni = this.dni().replace(/\D/g, '');
-    if (branchId === null || !normalizedDni) return;
-    this.store.dispatch(submitTotemEntry({ dni: normalizedDni, branchId }));
+    if (branchId === null || slug === null || !normalizedDni) return;
+    this.store.dispatch(submitTotemEntry({ dni: normalizedDni, slug, branchId }));
   }
 }

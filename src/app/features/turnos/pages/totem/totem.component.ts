@@ -20,7 +20,7 @@ type View = 'branch-selector' | 'input-dni' | 'confirmation';
   template: `
     @switch (currentView()) {
       @case ('branch-selector') {
-        <app-totem-branch-selector (branchSelected)="onBranchSelected($event)" />
+        <app-totem-branch-selector (configured)="onConfigured($event)" />
       }
       @case ('input-dni') {
         <app-totem-input-dni />
@@ -40,7 +40,8 @@ export class TotemComponent {
   private readonly lastQueueNumber = this.store.selectSignal(selectLastQueueNumber);
 
   readonly currentView = computed<View>(() => {
-    if (this.config.branchId() === null) return 'branch-selector';
+    // Show kiosk-config screen when either branchId or slug is not configured.
+    if (this.config.branchId() === null || this.config.slug() === null) return 'branch-selector';
     if (this.forcedConfirmation() && this.lastQueueNumber()) return 'confirmation';
     return 'input-dni';
   });
@@ -52,8 +53,9 @@ export class TotemComponent {
     ).subscribe(() => this.forcedConfirmation.set(true));
   }
 
-  onBranchSelected(id: number): void {
-    this.config.setBranchId(id);
+  onConfigured(cfg: { slug: string; branchId: number }): void {
+    this.config.setSlug(cfg.slug);
+    this.config.setBranchId(cfg.branchId);
   }
 
   onReset(): void {
