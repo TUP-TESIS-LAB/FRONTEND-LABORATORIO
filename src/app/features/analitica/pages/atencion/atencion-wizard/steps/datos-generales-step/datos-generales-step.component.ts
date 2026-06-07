@@ -16,8 +16,6 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { NgClass } from '@angular/common';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { Gender, SexAtBirth } from '@features/pacientes/models/patient.model';
 import { CoveragePlanOption } from '@features/pacientes/models/coverage-plans.catalog';
 import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
@@ -53,7 +51,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   selector: 'lab-datos-generales-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule, TagModule, TooltipModule],
+  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule],
   template: `
     <div class="space-y-4">
 

@@ -191,6 +191,54 @@ describe('DatosGeneralesStepComponent', () => {
     );
   });
 
+  it('saveEdit() incluye la cobertura elegida en el payload (paciente de portal sin cobertura)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: {
+          id: 5,
+          dni: '1',
+          firstName: 'A',
+          lastName: 'B',
+          birthDate: '2000-01-01',
+          gender: 'MALE',
+          sexAtBirth: 'MALE',
+          source: 'PORTAL',
+          verifiedAt: null,
+          contacts: [],
+          addresses: [],
+          coverages: [],
+        } as any,
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    fixture.componentInstance.startEdit();
+    // La secretaria elige una cobertura para el paciente de portal que no tenía
+    (fixture.componentInstance as any).form.planId = 1;
+    (fixture.componentInstance as any).form.memberNumber = 'OS-123';
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.saveEdit();
+    expect(spy).toHaveBeenCalledWith(
+      updatePatientInline({
+        id: 5,
+        payload: {
+          firstName: 'A',
+          lastName: 'B',
+          birthDate: '2000-01-01',
+          gender: 'MALE',
+          sexAtBirth: 'MALE',
+          contacts: [],
+          addresses: [],
+          coverages: [{ planId: 1, memberNumber: 'OS-123', isPrimary: true, active: true }],
+        },
+      }),
+    );
+  });
+
   // ── New tests: 3-state badge ─────────────────────────────────────────────
 
   it('badge data-estado VERDE cuando el paciente tiene verifiedAt', () => {
