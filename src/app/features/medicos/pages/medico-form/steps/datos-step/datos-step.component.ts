@@ -28,6 +28,14 @@ import { RegistrationType } from '../../../../models/doctor.model';
         <p-select formControlName="registrationType" [options]="registrationOptions"
                   optionLabel="label" optionValue="value" placeholder="Seleccioná…" />
       </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm font-medium">Especialidad</span>
+        <input pInputText formControlName="specialty" autocomplete="off" placeholder="Ej. Cardiología" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm font-medium">Institución</span>
+        <input pInputText formControlName="institution" autocomplete="off" placeholder="Ej. Clínica Central" />
+      </label>
     </div>
   `,
 })

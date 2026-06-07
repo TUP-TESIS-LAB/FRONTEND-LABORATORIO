@@ -42,12 +42,41 @@ describe('MedicoFormPage (smoke)', () => {
     const fixture = TestBed.createComponent(MedicoFormPage);
     fixture.detectChanges();
     const cmp = fixture.componentInstance;
-    cmp.datosGroup.setValue({ firstName: 'Ana', lastName: 'Gómez', tuition: 'MN123', registrationType: 'NACIONAL' });
-    cmp.goNext();
+    cmp.datosGroup.setValue({
+      firstName: 'Ana', lastName: 'Gómez', tuition: 'MN123', registrationType: 'NACIONAL',
+      specialty: '', institution: '',
+    });
+    cmp.goNext(); // contacto
+    cmp.goNext(); // firma
+    cmp.goNext(); // resumen (último)
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(addDoctor({
-      req: { firstName: 'Ana', lastName: 'Gómez', tuition: 'MN123', registrationType: 'NACIONAL' },
+      req: {
+        firstName: 'Ana', lastName: 'Gómez', tuition: 'MN123', registrationType: 'NACIONAL',
+        specialty: null, institution: null, email: null, phone: null, signature: null, address: null,
+      },
+    }));
+  });
+
+  it('includes a structured address when a street is provided', () => {
+    const fixture = TestBed.createComponent(MedicoFormPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    cmp.datosGroup.setValue({
+      firstName: 'Ana', lastName: 'Gómez', tuition: 'MN123', registrationType: 'NACIONAL',
+      specialty: 'Cardiología', institution: '',
+    });
+    cmp.contactoGroup.setValue({ email: '', phone: '', street: 'Av. Corrientes', streetNumber: '1234' });
+    cmp.goNext(); cmp.goNext(); cmp.goNext();
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onSubmit();
+    expect(spy).toHaveBeenCalledWith(addDoctor({
+      req: {
+        firstName: 'Ana', lastName: 'Gómez', tuition: 'MN123', registrationType: 'NACIONAL',
+        specialty: 'Cardiología', institution: null, email: null, phone: null, signature: null,
+        address: { street: 'Av. Corrientes', streetNumber: '1234' },
+      },
     }));
   });
 });
