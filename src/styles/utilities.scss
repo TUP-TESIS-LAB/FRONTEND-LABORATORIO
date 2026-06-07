@@ -85,15 +85,16 @@
   font-size: 11px;
   margin-top: 2px;
 }
-// Row item inside a repeatable list (contact / address / coverage)
+// Row item inside a repeatable list (contact / address / coverage) — flat + divider
+// (estándar del sistema: sin card, misma densidad que los inputs del form).
 .pat-form__row {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: var(--space-3);
-  background: #f9fafb;
+  padding: var(--space-3) 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+.pat-form__row + .pat-form__row {
+  border-top: 1px solid #e2e8f0;
 }
 .pat-form__row-header {
   display: flex;
@@ -122,4 +123,24 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
+}
+
+// Asterisco rojo para labels de campos obligatorios.
+.pat-form__req {
+  color: var(--ds-danger);
+  margin-left: 1px;
+}
+
+/* Estándar del sistema: feedback de campo requerido.
+   Angular agrega .ng-touched al perder foco (blur) y .ng-invalid si la validación
+   falla, así que el borde rojo aparece sólo al salir del campo dejándolo inválido.
+   Cubre inputs/textarea nativos + controles PrimeNG. Aplica a TODA la app. */
+input.ng-touched.ng-invalid,
+textarea.ng-touched.ng-invalid,
+select.ng-touched.ng-invalid,
+.p-inputtext.ng-touched.ng-invalid,
+.p-select.ng-touched.ng-invalid,
+.p-datepicker.ng-touched.ng-invalid .p-inputtext,
+.p-inputnumber.ng-touched.ng-invalid .p-inputtext {
+  border-color: var(--ds-danger);
 }

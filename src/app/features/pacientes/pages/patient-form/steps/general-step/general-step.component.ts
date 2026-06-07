@@ -28,22 +28,22 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   template: `
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" [formGroup]="group()">
       <div class="pat-form__field">
-        <label class="pat-form__label">Apellido*</label>
+        <label class="pat-form__label">Apellido<span class="pat-form__req">*</span></label>
         <input pInputText formControlName="lastName" class="pat-form__input" placeholder="García" />
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label">Nombre*</label>
+        <label class="pat-form__label">Nombre<span class="pat-form__req">*</span></label>
         <input pInputText formControlName="firstName" class="pat-form__input" placeholder="María Elena" />
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label">DNI*</label>
+        <label class="pat-form__label">DNI<span class="pat-form__req">*</span></label>
         <input pInputText formControlName="dni" class="pat-form__input" placeholder="32456789" />
         @if (dniDuplicate()) {
           <p class="pat-form__error" role="alert">Ya existe un paciente con ese DNI</p>
         }
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label">Fecha de nacimiento*</label>
+        <label class="pat-form__label">Fecha de nacimiento<span class="pat-form__req">*</span></label>
         <p-datepicker formControlName="birthDate"
                       dateFormat="dd/mm/yy"
                       appendTo="body"

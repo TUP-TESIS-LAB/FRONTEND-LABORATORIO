@@ -23,8 +23,7 @@ const TYPE_OPTIONS: { value: ContactType; label: string }[] = [
     <div class="flex flex-col gap-3">
       @for (group of array().controls; track group; let i = $index) {
         <div [formGroup]="$any(group)" class="pat-form__row">
-          <div class="pat-form__row-header">
-            <strong style="font-size:12px">Contacto #{{ i + 1 }}</strong>
+          <div class="pat-form__row-header" style="justify-content:flex-end">
             <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="remove(i)" ariaLabel="Eliminar contacto" />
           </div>
           <div class="pat-form__grid">
