@@ -337,7 +337,10 @@ export class AtencionEffects {
             setCopaymentSuccess({ item }),
             loadPricing({ attentionId }),
           ]),
-          catchError((error: HttpErrorResponse) => of(setCopaymentFailure({ error }))),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo guardar el copago. Revisá la conexión y volvé a intentarlo.');
+            return of(setCopaymentFailure({ error }));
+          }),
         )
       )
     )

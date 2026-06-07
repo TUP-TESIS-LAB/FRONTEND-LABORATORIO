@@ -168,9 +168,12 @@ describe('ResumenStepComponent', () => {
     f.componentRef.setInput('atencion', { ...attn(), id: 42 });
     f.detectChanges();
     const text = (f.nativeElement as HTMLElement).textContent ?? '';
-    // SAMPLE_PRICING tiene total: 0, debe mostrarse formateado
-    expect(text).toContain('Total');
-    expect(text).toContain('0');
+    // SAMPLE_PRICING tiene total: 0 → CurrencyArPipe (es-AR ARS) lo formatea como '$ 0,00'
+    // El separador entre $ y los dígitos es U+00A0 (espacio no separable); normalizamos
+    // antes de comparar para que el test no sea frágil ante diferencias de CLDR.
+    const normalized = text.replace(/ /g, ' ');
+    expect(normalized).toContain('Total');
+    expect(normalized).toContain('$ 0,00');
   });
 
   it('onCopaymentBlur despacha setCopayment cuando el valor cambia', () => {

@@ -321,11 +321,14 @@ describe('AtencionEffects', () => {
     expect(outs[1]).toEqual(A.loadPricing({ attentionId: 42 }));
   });
 
-  it('setCopayment$ → failure → setCopaymentFailure', async () => {
+  it('setCopayment$ → failure → toast + setCopaymentFailure', async () => {
     const error = new HttpErrorResponse({ status: 500 });
     (api.setCopayment as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
     actions$.next(A.setCopayment({ attentionId: 42, copaymentAmount: null }));
     const out = await firstValueFrom(effects.setCopayment$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo guardar el copago. Revisá la conexión y volvé a intentarlo.'
+    );
     expect(out).toEqual(A.setCopaymentFailure({ error }));
   });
 });
