@@ -1,5 +1,7 @@
 # SaaS Onboarding UI — Implementation Plan
 
+> **Jira:** [KAN-88](https://exequielsantoro.atlassian.net/browse/KAN-88)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Arreglar los 2 baches del wizard de creación de tenants: mandar los 7 campos que exige el BE y mostrar el token de primer login del admin en un modal compartible.
