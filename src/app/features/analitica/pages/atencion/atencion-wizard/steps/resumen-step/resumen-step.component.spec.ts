@@ -13,6 +13,7 @@ import {
   atencionMutationSuccess,
   atencionMutationFailure,
   setCopayment,
+  removeAnalysisFromResumen,
 } from '../../../../../store/atencion/atencion.actions';
 import { AttentionState } from '../../../../../models/atencion.model';
 import { AttentionPricing } from '../../../../../models/pricing.model';
@@ -200,5 +201,62 @@ describe('ResumenStepComponent', () => {
     f.componentInstance.copaymentValue.set(500);
     f.componentInstance.onCopaymentBlur();
     expect(dispatched.filter((a: any) => a.type === setCopayment.type)).toHaveLength(0);
+  });
+
+  // ── tests B3c: remover análisis desde el resumen ─────────────────────────
+
+  it('onRemoveAnalysis despacha removeAnalysisFromResumen excluyendo el id removido y preservando isAuthorized', () => {
+    const atencionConDosAnalisis: any = {
+      id: 42, patientId: 5, isUrgent: false, authorizationNumber: null,
+      copaymentAmount: null, indications: null,
+      analysisAuthorizations: [
+        { id: 1, analysisId: 3, isAuthorized: true, active: true },
+        { id: 2, analysisId: 7, isAuthorized: false, active: true },
+      ],
+    };
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', atencionConDosAnalisis);
+    f.detectChanges();
+
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+
+    // Quitar el análisis 3 → la lista reducida debe tener SOLO el análisis 7
+    f.componentInstance.onRemoveAnalysis(3);
+
+    const removals = dispatched.filter((a: any) => a.type === removeAnalysisFromResumen.type);
+    expect(removals).toHaveLength(1);
+    const action = removals[0];
+    expect(action.attentionId).toBe(42);
+    expect(action.analysisId).toBe(3);
+    // items debe excluir el análisis 3 y preservar el isAuthorized del 7
+    expect(action.payload.items).toEqual([{ analysisId: 7, isAuthorized: false }]);
+    expect(action.payload.isUrgent).toBe(false);
+    expect(action.payload.authorizationNumber).toBeNull();
+  });
+
+  it('onRemoveAnalysis con el último análisis despacha items vacío (no crashea)', () => {
+    const atencionConUnAnalisis: any = {
+      id: 42, patientId: 5, isUrgent: true, authorizationNumber: 'AUTH-1',
+      copaymentAmount: null, indications: null,
+      analysisAuthorizations: [
+        { id: 1, analysisId: 3, isAuthorized: true, active: true },
+      ],
+    };
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', atencionConUnAnalisis);
+    f.detectChanges();
+
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+
+    f.componentInstance.onRemoveAnalysis(3);
+
+    const removals = dispatched.filter((a: any) => a.type === removeAnalysisFromResumen.type);
+    expect(removals).toHaveLength(1);
+    const action = removals[0];
+    expect(action.payload.items).toEqual([]);
+    expect(action.payload.isUrgent).toBe(true);
+    expect(action.payload.authorizationNumber).toBe('AUTH-1');
   });
 });

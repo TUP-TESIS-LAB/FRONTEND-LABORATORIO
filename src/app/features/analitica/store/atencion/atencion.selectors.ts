@@ -20,6 +20,7 @@ export const selectPricing                = createSelector(selectAtencionState, 
 export const selectPricingLoading         = createSelector(selectAtencionState, s => s.pricingLoading);
 export const selectPricingError           = createSelector(selectAtencionState, s => s.pricingError);
 export const selectCopaymentMutating      = createSelector(selectAtencionState, s => s.copaymentMutating);
+export const selectRemovingAnalysis       = createSelector(selectAtencionState, s => s.removingAnalysis);
 
 export const selectFilteredAtenciones = createSelector(
   selectAtencionList,

@@ -331,4 +331,63 @@ describe('AtencionEffects', () => {
     );
     expect(out).toEqual(A.setCopaymentFailure({ error }));
   });
+
+  // ── B3c: removeAnalysisFromResumen$ ──────────────────────────────────────
+
+  it('removeAnalysisFromResumen$ → success → [removeAnalysisFromResumenSuccess, loadAttentionAnalyses, loadPricing]', async () => {
+    const item = sample({
+      id: 42,
+      analysisAuthorizations: [{ id: 2, analysisId: 7, isAuthorized: false, active: true }],
+    });
+    (api.addAnalysis as ReturnType<typeof vi.fn>).mockReturnValue(of(item));
+
+    actions$.next(A.removeAnalysisFromResumen({
+      attentionId: 42,
+      analysisId: 3,
+      payload: { items: [{ analysisId: 7, isAuthorized: false }], isUrgent: false, authorizationNumber: null },
+    }));
+
+    const outs = await firstValueFrom(effects.removeAnalysisFromResumen$.pipe(take(3), toArray()));
+    expect(api.addAnalysis).toHaveBeenCalledWith(42, {
+      items: [{ analysisId: 7, isAuthorized: false }], isUrgent: false, authorizationNumber: null,
+    });
+    // First action: success with updated item
+    expect(outs[0]).toEqual(A.removeAnalysisFromResumenSuccess({ item }));
+    // Second action: reload analyses with the IDs from the response
+    expect(outs[1]).toEqual(A.loadAttentionAnalyses({ analysisIds: [7] }));
+    // Third action: reload pricing
+    expect(outs[2]).toEqual(A.loadPricing({ attentionId: 42 }));
+  });
+
+  it('removeAnalysisFromResumen$ → success con lista vacía → loadAttentionAnalyses con []', async () => {
+    const item = sample({ id: 42, analysisAuthorizations: [] });
+    (api.addAnalysis as ReturnType<typeof vi.fn>).mockReturnValue(of(item));
+
+    actions$.next(A.removeAnalysisFromResumen({
+      attentionId: 42,
+      analysisId: 3,
+      payload: { items: [], isUrgent: false, authorizationNumber: null },
+    }));
+
+    const outs = await firstValueFrom(effects.removeAnalysisFromResumen$.pipe(take(3), toArray()));
+    expect(outs[1]).toEqual(A.loadAttentionAnalyses({ analysisIds: [] }));
+    expect(outs[2]).toEqual(A.loadPricing({ attentionId: 42 }));
+  });
+
+  it('removeAnalysisFromResumen$ → HTTP error → toast + removeAnalysisFromResumenFailure', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    (api.addAnalysis as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+
+    actions$.next(A.removeAnalysisFromResumen({
+      attentionId: 42,
+      analysisId: 3,
+      payload: { items: [], isUrgent: false, authorizationNumber: null },
+    }));
+
+    const out = await firstValueFrom(effects.removeAnalysisFromResumen$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo quitar el análisis. Revisá la conexión y volvé a intentarlo.'
+    );
+    expect(out).toEqual(A.removeAnalysisFromResumenFailure({ error }));
+  });
 });

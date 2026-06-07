@@ -37,6 +37,9 @@ import {
   setCopaymentSuccess,
   startAttentionForPatient,
   updatePatientInline,
+  removeAnalysisFromResumen,
+  removeAnalysisFromResumenSuccess,
+  removeAnalysisFromResumenFailure,
 } from './atencion.actions';
 import { AtencionFeatureState, initialAtencionState } from './atencion.state';
 
@@ -93,6 +96,15 @@ export const atencionReducer = createReducer(
     list: replaceInList(s.list, item),
   })),
   on(setCopaymentFailure, (s): AtencionFeatureState => ({ ...s, copaymentMutating: false })),
+
+  on(removeAnalysisFromResumen, (s): AtencionFeatureState => ({ ...s, removingAnalysis: true })),
+  on(removeAnalysisFromResumenSuccess, (s, { item }): AtencionFeatureState => ({
+    ...s,
+    removingAnalysis: false,
+    detail: item,
+    list: replaceInList(s.list, item),
+  })),
+  on(removeAnalysisFromResumenFailure, (s): AtencionFeatureState => ({ ...s, removingAnalysis: false })),
 );
 
 function replaceInList<T extends { id: number }>(list: T[], item: T): T[] {

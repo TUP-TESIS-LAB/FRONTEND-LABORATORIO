@@ -49,6 +49,9 @@ import {
   setCopaymentSuccess,
   startAttentionForPatient,
   updatePatientInline,
+  removeAnalysisFromResumen,
+  removeAnalysisFromResumenSuccess,
+  removeAnalysisFromResumenFailure,
 } from './atencion.actions';
 
 /**
@@ -340,6 +343,37 @@ export class AtencionEffects {
           catchError((error: HttpErrorResponse) => {
             this.notification.error('No se pudo guardar el copago. Revisá la conexión y volvé a intentarlo.');
             return of(setCopaymentFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
+
+  /**
+   * Quitar un análisis del resumen (B3c).
+   *
+   * Llama al endpoint de addAnalysis con la lista reducida (el backend
+   * soft-delete-all y re-inserta), luego refresca análisis + pricing.
+   * El refresh ocurre DENTRO del mergeMap para garantizar que no haya race
+   * condition: loadAttentionAnalyses y loadPricing se despachan sólo si el
+   * PATCH tuvo éxito.
+   *
+   * Usamos concatMap (no switchMap) para que si el usuario quitara dos
+   * análisis muy rápido, la segunda petición espere a la primera.
+   */
+  removeAnalysisFromResumen$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(removeAnalysisFromResumen),
+      concatMap(({ attentionId, payload }) =>
+        this.api.addAnalysis(attentionId, payload).pipe(
+          mergeMap(item => [
+            removeAnalysisFromResumenSuccess({ item }),
+            loadAttentionAnalyses({ analysisIds: item.analysisAuthorizations.map(a => a.analysisId) }),
+            loadPricing({ attentionId }),
+          ]),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo quitar el análisis. Revisá la conexión y volvé a intentarlo.');
+            return of(removeAnalysisFromResumenFailure({ error }));
           }),
         )
       )

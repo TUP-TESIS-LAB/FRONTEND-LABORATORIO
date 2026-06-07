@@ -74,3 +74,17 @@ export const loadPricingFailure = createAction('[Atencion API] Load Pricing Fail
 export const setCopayment        = createAction('[Atencion Resumen] Set Copayment',        props<{ attentionId: number; copaymentAmount: number | null }>());
 export const setCopaymentSuccess = createAction('[Atencion API] Set Copayment Success',   props<{ item: AttentionResponse }>());
 export const setCopaymentFailure = createAction('[Atencion API] Set Copayment Failure',   props<{ error: HttpErrorResponse }>());
+
+// Remove analysis from resumen (B3c) -------------------------------------------
+export const removeAnalysisFromResumen = createAction(
+  '[Atencion Resumen] Remove Analysis',
+  props<{ attentionId: number; analysisId: number; payload: AddAnalysisListRequest }>()
+);
+export const removeAnalysisFromResumenSuccess = createAction(
+  '[Atencion API] Remove Analysis From Resumen Success',
+  props<{ item: AttentionResponse }>()
+);
+export const removeAnalysisFromResumenFailure = createAction(
+  '[Atencion API] Remove Analysis From Resumen Failure',
+  props<{ error: HttpErrorResponse }>()
+);

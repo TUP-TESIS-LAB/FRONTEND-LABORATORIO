@@ -33,6 +33,7 @@ export interface AtencionFeatureState {
   pricingLoading: boolean;
   pricingError: HttpErrorResponse | null;
   copaymentMutating: boolean;
+  removingAnalysis: boolean;
 }
 
 export const initialAtencionState: AtencionFeatureState = {
@@ -57,6 +58,7 @@ export const initialAtencionState: AtencionFeatureState = {
   pricingLoading: false,
   pricingError: null,
   copaymentMutating: false,
+  removingAnalysis: false,
 };
 
 export const ATENCION_FEATURE_KEY = 'atencion';

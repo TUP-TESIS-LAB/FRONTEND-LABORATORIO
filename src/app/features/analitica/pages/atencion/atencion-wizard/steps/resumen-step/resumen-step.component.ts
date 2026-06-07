@@ -27,6 +27,7 @@ import {
   loadAttentionAnalyses,
   loadAttentionPatient,
   loadPricing,
+  removeAnalysisFromResumen,
   setCopayment,
 } from '../../../../../store/atencion/atencion.actions';
 import {
@@ -34,6 +35,7 @@ import {
   selectMutating,
   selectPricing,
   selectPricingLoading,
+  selectRemovingAnalysis,
   selectResolvedPatient,
   selectSummaryAnalyses,
 } from '../../../../../store/atencion/atencion.selectors';
@@ -70,12 +72,12 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
 
       <section>
         <div class="text-sm opacity-60">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
-        <ul class="list-disc list-inside text-sm">
+        <ul class="list-none text-sm space-y-1">
           @for (a of atencion().analysisAuthorizations; track a.analysisId) {
             @let info = analysisById().get(a.analysisId);
             @let priceItem = pricingById().get(a.analysisId);
             <li class="flex items-center justify-between gap-2">
-              <span>
+              <span class="flex-1">
                 @if (info) {
                   <span class="font-mono opacity-70">{{ info.shortCode }}</span> — {{ info.name }}
                 } @else {
@@ -87,6 +89,19 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
                   {{ priceItem.precioPaciente | currencyAr }}
                 </span>
               }
+              <p-button
+                icon="pi pi-times"
+                severity="danger"
+                [text]="true"
+                [rounded]="true"
+                size="small"
+                pTooltip="Quitar análisis"
+                tooltipPosition="left"
+                [disabled]="removingAnalysis() || copaymentMutating()"
+                [loading]="removingAnalysis()"
+                (onClick)="onRemoveAnalysis(a.analysisId)"
+                aria-label="Quitar análisis"
+              />
             </li>
           }
         </ul>
@@ -157,6 +172,7 @@ export class ResumenStepComponent implements OnInit {
   readonly pricing            = this.store.selectSignal(selectPricing);
   readonly pricingLoading     = this.store.selectSignal(selectPricingLoading);
   readonly copaymentMutating  = this.store.selectSignal(selectCopaymentMutating);
+  readonly removingAnalysis   = this.store.selectSignal(selectRemovingAnalysis);
 
   /** Valor local del input de copago — se inicializa desde la atención y se actualiza al cambiar */
   readonly copaymentValue = signal<number | null>(null);
@@ -191,6 +207,22 @@ export class ResumenStepComponent implements OnInit {
 
     // Load pricing for this attention
     this.store.dispatch(loadPricing({ attentionId: attn.id }));
+  }
+
+  onRemoveAnalysis(analysisId: number): void {
+    const attn = this.atencion();
+    const reducedItems = attn.analysisAuthorizations
+      .filter(a => a.analysisId !== analysisId)
+      .map(a => ({ analysisId: a.analysisId, isAuthorized: a.isAuthorized }));
+    this.store.dispatch(removeAnalysisFromResumen({
+      attentionId: attn.id,
+      analysisId,
+      payload: {
+        items: reducedItems,
+        isUrgent: attn.isUrgent,
+        authorizationNumber: attn.authorizationNumber,
+      },
+    }));
   }
 
   onCopaymentBlur(): void {
