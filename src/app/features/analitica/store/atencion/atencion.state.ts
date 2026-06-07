@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Patient } from '../../../pacientes/models/patient.model';
 import { Analysis, AttentionResponse, AttentionState } from '../../models/atencion.model';
+import { AttentionPricing } from '../../models/pricing.model';
 
 /**
  * Filtros del dashboard. Solo incluyen lo que efectivamente filtramos en el cliente.
@@ -28,6 +29,11 @@ export interface AtencionFeatureState {
   patientResolutionError: HttpErrorResponse | null;
   summaryAnalyses: Analysis[];
   summaryAnalysesLoading: boolean;
+  pricing: AttentionPricing | null;
+  pricingLoading: boolean;
+  pricingError: HttpErrorResponse | null;
+  copaymentMutating: boolean;
+  removingAnalysis: boolean;
 }
 
 export const initialAtencionState: AtencionFeatureState = {
@@ -48,6 +54,11 @@ export const initialAtencionState: AtencionFeatureState = {
   patientResolutionError: null,
   summaryAnalyses: [],
   summaryAnalysesLoading: false,
+  pricing: null,
+  pricingLoading: false,
+  pricingError: null,
+  copaymentMutating: false,
+  removingAnalysis: false,
 };
 
 export const ATENCION_FEATURE_KEY = 'atencion';

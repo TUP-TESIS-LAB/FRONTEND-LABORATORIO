@@ -3,15 +3,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { ReplaySubject, of } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 import { AtencionWizardComponent } from './atencion-wizard.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
-import { NbuService } from '../../../services/nbu.service';
 import { AttentionResponse, AttentionState } from '../../../models/atencion.model';
 import {
   selectDetail, selectDetailLoading, selectMutating,
   selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
-  selectPatientResolutionError,
+  selectPatientResolutionError, selectPricing, selectPricingLoading, selectCopaymentMutating,
 } from '../../../store/atencion/atencion.selectors';
 import { cancelAtencion, downloadProtocolLabels } from '../../../store/atencion/atencion.actions';
 
@@ -23,7 +22,7 @@ function makeDetail(state: AttentionState): AttentionResponse {
     deskAttentionBox: null, prescriptionFileUrl: null, isUrgent: false,
     authorizationNumber: null, observations: null, cancellationReason: null,
     cancelledAtState: null, attentionState: state, mostAdvancedState: state,
-    analysisAuthorizations: [],
+    analysisAuthorizations: [], copaymentAmount: null,
   };
 }
 
@@ -46,6 +45,10 @@ describe('AtencionWizardComponent (CORE flow)', () => {
             { selector: selectPatientResolving, value: false },
             { selector: selectPatientNotFoundDni, value: null },
             { selector: selectPatientResolutionError, value: null },
+            // Pricing selectors (resumen-step, Paso 3)
+            { selector: selectPricing, value: null },
+            { selector: selectPricingLoading, value: false },
+            { selector: selectCopaymentMutating, value: false },
           ],
         }),
         // El wizard renderiza step components que ahora inyectan Actions
@@ -53,7 +56,6 @@ describe('AtencionWizardComponent (CORE flow)', () => {
         // un stream mock o falla la DI con NG0201.
         provideMockActions(() => new ReplaySubject<Action>(1)),
         { provide: ModuleRegistry, useValue: registry },
-        { provide: NbuService, useValue: { getCurrent: vi.fn().mockReturnValue(of(null)) } },
         { provide: Router, useValue: { navigate: vi.fn() } },
         // DatosGeneralesStep ahora lee el dni del queryParam (KAN-73).
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },

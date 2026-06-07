@@ -16,6 +16,11 @@ export const selectPatientResolving       = createSelector(selectAtencionState, 
 export const selectPatientNotFoundDni     = createSelector(selectAtencionState, s => s.patientNotFoundDni);
 export const selectPatientResolutionError = createSelector(selectAtencionState, s => s.patientResolutionError);
 export const selectSummaryAnalyses        = createSelector(selectAtencionState, s => s.summaryAnalyses);
+export const selectPricing                = createSelector(selectAtencionState, s => s.pricing);
+export const selectPricingLoading         = createSelector(selectAtencionState, s => s.pricingLoading);
+export const selectPricingError           = createSelector(selectAtencionState, s => s.pricingError);
+export const selectCopaymentMutating      = createSelector(selectAtencionState, s => s.copaymentMutating);
+export const selectRemovingAnalysis       = createSelector(selectAtencionState, s => s.removingAnalysis);
 
 export const selectFilteredAtenciones = createSelector(
   selectAtencionList,

@@ -36,15 +36,15 @@ export const MOCK_INSURERS: InsurerComplete[] = [
         id: 11, insurerId: 1, insurerName: 'OSDE', code: '210', acronym: '210', name: 'Plan 210',
         description: 'Plan intermedio', isActive: true, iva: 21,
         actualAgreements: [
-          { id: 111, insurerPlanId: 11, insurerPlanName: 'Plan 210', versionNbu: 3, requiresCopayment: true, coveragePercentage: 80, ubValue: 1500, validFromDate: '2024-01-01', validToDate: null },
-          { id: 112, insurerPlanId: 11, insurerPlanName: 'Plan 210', versionNbu: 2, requiresCopayment: true, coveragePercentage: 70, ubValue: 1200, validFromDate: '2022-01-01', validToDate: '2023-12-31' },
+          { id: 111, insurerPlanId: 11, insurerPlanName: 'Plan 210', versionNbu: 3, ubValue: 1500, validFromDate: '2024-01-01', validToDate: null },
+          { id: 112, insurerPlanId: 11, insurerPlanName: 'Plan 210', versionNbu: 2, ubValue: 1200, validFromDate: '2022-01-01', validToDate: '2023-12-31' },
         ],
       },
       {
         id: 12, insurerId: 1, insurerName: 'OSDE', code: '410', acronym: '410', name: 'Plan 410',
         description: 'Plan superior', isActive: true, iva: 21,
         actualAgreements: [
-          { id: 121, insurerPlanId: 12, insurerPlanName: 'Plan 410', versionNbu: 3, requiresCopayment: false, coveragePercentage: 100, ubValue: 2000, validFromDate: '2024-01-01', validToDate: null },
+          { id: 121, insurerPlanId: 12, insurerPlanName: 'Plan 410', versionNbu: 3, ubValue: 2000, validFromDate: '2024-01-01', validToDate: null },
         ],
       },
     ],
@@ -62,7 +62,7 @@ export const MOCK_INSURERS: InsurerComplete[] = [
         id: 21, insurerId: 2, insurerName: 'Swiss Medical', code: 'SMG20', acronym: 'SMG20', name: 'SMG 20',
         description: 'Plan base', isActive: true, iva: 21,
         actualAgreements: [
-          { id: 211, insurerPlanId: 21, insurerPlanName: 'SMG 20', versionNbu: 3, requiresCopayment: true, coveragePercentage: 75, ubValue: 1400, validFromDate: '2024-03-01', validToDate: null },
+          { id: 211, insurerPlanId: 21, insurerPlanName: 'SMG 20', versionNbu: 3, ubValue: 1400, validFromDate: '2024-03-01', validToDate: null },
         ],
       },
     ],
@@ -80,7 +80,7 @@ export const MOCK_INSURERS: InsurerComplete[] = [
         id: 31, insurerId: 3, insurerName: 'IOMA', code: 'IOMA-GRAL', acronym: 'GRAL', name: 'General',
         description: 'Cobertura general', isActive: true, iva: 0,
         actualAgreements: [
-          { id: 311, insurerPlanId: 31, insurerPlanName: 'General', versionNbu: 2, requiresCopayment: true, coveragePercentage: 60, ubValue: 900, validFromDate: '2023-01-01', validToDate: null },
+          { id: 311, insurerPlanId: 31, insurerPlanName: 'General', versionNbu: 2, ubValue: 900, validFromDate: '2023-01-01', validToDate: null },
         ],
       },
     ],
@@ -97,7 +97,7 @@ export const MOCK_INSURERS: InsurerComplete[] = [
         id: 41, insurerId: 4, insurerName: 'PAMI', code: 'PAMI-AFIL', acronym: 'AFIL', name: 'Afiliado',
         description: 'Cobertura afiliados', isActive: true, iva: 0,
         actualAgreements: [
-          { id: 411, insurerPlanId: 41, insurerPlanName: 'Afiliado', versionNbu: 1, requiresCopayment: false, coveragePercentage: 100, ubValue: 800, validFromDate: '2021-06-01', validToDate: null },
+          { id: 411, insurerPlanId: 41, insurerPlanName: 'Afiliado', versionNbu: 1, ubValue: 800, validFromDate: '2021-06-01', validToDate: null },
         ],
       },
     ],
@@ -114,7 +114,7 @@ export const MOCK_INSURERS: InsurerComplete[] = [
         id: 51, insurerId: 5, insurerName: 'Particular', code: 'PART-STD', acronym: 'STD', name: 'Estándar',
         description: 'Lista de precios particular', isActive: true, iva: 21,
         actualAgreements: [
-          { id: 511, insurerPlanId: 51, insurerPlanName: 'Estándar', versionNbu: 3, requiresCopayment: false, coveragePercentage: 0, ubValue: 2500, validFromDate: '2024-01-01', validToDate: null },
+          { id: 511, insurerPlanId: 51, insurerPlanName: 'Estándar', versionNbu: 3, ubValue: 2500, validFromDate: '2024-01-01', validToDate: null },
         ],
       },
     ],

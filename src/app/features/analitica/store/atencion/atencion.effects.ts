@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { EMPTY, catchError, concatMap, exhaustMap, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, concatMap, exhaustMap, forkJoin, map, mergeMap, of, switchMap, tap } from 'rxjs';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { PatientService } from '../../../pacientes/services/patient.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
@@ -36,13 +36,22 @@ import {
   loadAtencionesSuccess,
   loadAttentionAnalyses,
   loadAttentionPatient,
+  loadPricing,
+  loadPricingFailure,
+  loadPricingSuccess,
   patientNotFound,
   patientResolutionFailure,
   patientResolved,
   resolvePatientByDni,
   returnPhase,
+  setCopayment,
+  setCopaymentFailure,
+  setCopaymentSuccess,
   startAttentionForPatient,
   updatePatientInline,
+  removeAnalysisFromResumen,
+  removeAnalysisFromResumenSuccess,
+  removeAnalysisFromResumenFailure,
 } from './atencion.actions';
 
 /**
@@ -302,4 +311,72 @@ export class AtencionEffects {
           }),
         )),
     ), { dispatch: false });
+
+  loadPricing$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadPricing),
+      switchMap(({ attentionId }) =>
+        this.api.getPricing(attentionId).pipe(
+          map(pricing => loadPricingSuccess({ pricing })),
+          catchError((error: HttpErrorResponse) => {
+            // Surface the "no particular plan" message as a toast; other errors are silent.
+            const msg: string = (error.error as { message?: string } | null)?.message ?? '';
+            if (msg) {
+              this.notification.error(msg);
+            }
+            return of(loadPricingFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
+
+  setCopayment$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(setCopayment),
+      concatMap(({ attentionId, copaymentAmount }) =>
+        this.api.setCopayment(attentionId, { copaymentAmount }).pipe(
+          mergeMap(item => [
+            setCopaymentSuccess({ item }),
+            loadPricing({ attentionId }),
+          ]),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo guardar el copago. Revisá la conexión y volvé a intentarlo.');
+            return of(setCopaymentFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
+
+  /**
+   * Quitar un análisis del resumen (B3c).
+   *
+   * Llama al endpoint de addAnalysis con la lista reducida (el backend
+   * soft-delete-all y re-inserta), luego refresca análisis + pricing.
+   * El refresh ocurre DENTRO del mergeMap para garantizar que no haya race
+   * condition: loadAttentionAnalyses y loadPricing se despachan sólo si el
+   * PATCH tuvo éxito.
+   *
+   * Usamos concatMap (no switchMap) para que si el usuario quitara dos
+   * análisis muy rápido, la segunda petición espere a la primera.
+   */
+  removeAnalysisFromResumen$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(removeAnalysisFromResumen),
+      concatMap(({ attentionId, payload }) =>
+        this.api.addAnalysis(attentionId, payload).pipe(
+          mergeMap(item => [
+            removeAnalysisFromResumenSuccess({ item }),
+            loadAttentionAnalyses({ analysisIds: item.analysisAuthorizations.map(a => a.analysisId) }),
+            loadPricing({ attentionId }),
+          ]),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo quitar el análisis. Revisá la conexión y volvé a intentarlo.');
+            return of(removeAnalysisFromResumenFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
 }

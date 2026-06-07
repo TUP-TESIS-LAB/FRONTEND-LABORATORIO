@@ -12,6 +12,7 @@ import {
   CreateBlankAttentionRequest,
   CreatePreFilledAttentionRequest,
 } from '../../models/atencion.model';
+import { AttentionPricing } from '../../models/pricing.model';
 import { AtencionFilters } from './atencion.state';
 
 // List ----------------------------------------------------------------------
@@ -63,3 +64,27 @@ export const loadAttentionPatient = createAction('[Atencion Resumen] Load Patien
 export const loadAttentionAnalyses    = createAction('[Atencion Resumen] Load Analyses', props<{ analysisIds: number[] }>());
 export const attentionAnalysesLoaded  = createAction('[Atencion API] Analyses Loaded', props<{ analyses: Analysis[] }>());
 export const attentionAnalysesFailure = createAction('[Atencion API] Analyses Failure', props<{ error: HttpErrorResponse }>());
+
+// Pricing -----------------------------------------------------------------------
+export const loadPricing        = createAction('[Atencion Resumen] Load Pricing',         props<{ attentionId: number }>());
+export const loadPricingSuccess = createAction('[Atencion API] Load Pricing Success',     props<{ pricing: AttentionPricing }>());
+export const loadPricingFailure = createAction('[Atencion API] Load Pricing Failure',     props<{ error: HttpErrorResponse }>());
+
+// Copayment ---------------------------------------------------------------------
+export const setCopayment        = createAction('[Atencion Resumen] Set Copayment',        props<{ attentionId: number; copaymentAmount: number | null }>());
+export const setCopaymentSuccess = createAction('[Atencion API] Set Copayment Success',   props<{ item: AttentionResponse }>());
+export const setCopaymentFailure = createAction('[Atencion API] Set Copayment Failure',   props<{ error: HttpErrorResponse }>());
+
+// Remove analysis from resumen (B3c) -------------------------------------------
+export const removeAnalysisFromResumen = createAction(
+  '[Atencion Resumen] Remove Analysis',
+  props<{ attentionId: number; analysisId: number; payload: AddAnalysisListRequest }>()
+);
+export const removeAnalysisFromResumenSuccess = createAction(
+  '[Atencion API] Remove Analysis From Resumen Success',
+  props<{ item: AttentionResponse }>()
+);
+export const removeAnalysisFromResumenFailure = createAction(
+  '[Atencion API] Remove Analysis From Resumen Failure',
+  props<{ error: HttpErrorResponse }>()
+);

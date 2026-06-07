@@ -23,14 +23,23 @@ import {
   loadAtencionesSuccess,
   loadAttentionAnalyses,
   loadAttentionPatient,
+  loadPricing,
+  loadPricingFailure,
+  loadPricingSuccess,
   patientNotFound,
   patientResolutionFailure,
   patientResolved,
   resolvePatientByDni,
   returnPhase,
   setAtencionFilters,
+  setCopayment,
+  setCopaymentFailure,
+  setCopaymentSuccess,
   startAttentionForPatient,
   updatePatientInline,
+  removeAnalysisFromResumen,
+  removeAnalysisFromResumenSuccess,
+  removeAnalysisFromResumenFailure,
 } from './atencion.actions';
 import { AtencionFeatureState, initialAtencionState } from './atencion.state';
 
@@ -74,6 +83,28 @@ export const atencionReducer = createReducer(
   on(loadAttentionAnalyses, (s): AtencionFeatureState => ({ ...s, summaryAnalysesLoading: true })),
   on(attentionAnalysesLoaded, (s, { analyses }): AtencionFeatureState => ({ ...s, summaryAnalyses: analyses, summaryAnalysesLoading: false })),
   on(attentionAnalysesFailure, (s): AtencionFeatureState => ({ ...s, summaryAnalysesLoading: false })),
+
+  on(loadPricing, (s): AtencionFeatureState => ({ ...s, pricingLoading: true, pricingError: null })),
+  on(loadPricingSuccess, (s, { pricing }): AtencionFeatureState => ({ ...s, pricingLoading: false, pricing })),
+  on(loadPricingFailure, (s, { error }): AtencionFeatureState => ({ ...s, pricingLoading: false, pricingError: error })),
+
+  on(setCopayment, (s): AtencionFeatureState => ({ ...s, copaymentMutating: true })),
+  on(setCopaymentSuccess, (s, { item }): AtencionFeatureState => ({
+    ...s,
+    copaymentMutating: false,
+    detail: item,
+    list: replaceInList(s.list, item),
+  })),
+  on(setCopaymentFailure, (s): AtencionFeatureState => ({ ...s, copaymentMutating: false })),
+
+  on(removeAnalysisFromResumen, (s): AtencionFeatureState => ({ ...s, removingAnalysis: true })),
+  on(removeAnalysisFromResumenSuccess, (s, { item }): AtencionFeatureState => ({
+    ...s,
+    removingAnalysis: false,
+    detail: item,
+    list: replaceInList(s.list, item),
+  })),
+  on(removeAnalysisFromResumenFailure, (s): AtencionFeatureState => ({ ...s, removingAnalysis: false })),
 );
 
 function replaceInList<T extends { id: number }>(list: T[], item: T): T[] {

@@ -51,6 +51,7 @@ export interface AttentionResponse {
   attentionState: AttentionState;
   mostAdvancedState: AttentionState;
   analysisAuthorizations: AnalysisAuthorizationResponse[];
+  copaymentAmount: number | null;
 }
 
 // Request DTOs ---------------------------------------------------------------
@@ -75,8 +76,13 @@ export interface AssignGeneralDataRequest {
   indications: string | null;
 }
 
+export interface AddAnalysisItemRequest {
+  analysisId: number;
+  isAuthorized: boolean;
+}
+
 export interface AddAnalysisListRequest {
-  analysisIds: number[];
+  items: AddAnalysisItemRequest[];
   isUrgent: boolean;
   authorizationNumber: number | null;
 }
@@ -91,6 +97,10 @@ export interface CancelAttentionRequest {
 
 export interface AddObservationsRequest {
   observations: string;
+}
+
+export interface SetCopaymentRequest {
+  copaymentAmount: number | null;
 }
 
 // Catalog model (CORE) — used by the analysis picker in the atención wizard

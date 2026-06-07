@@ -8,11 +8,15 @@ import { ATENCION_FEATURE_KEY, initialAtencionState } from '../../../../../store
 import {
   loadAttentionAnalyses,
   loadAttentionPatient,
+  loadPricing,
   endSecretaryPhase,
   atencionMutationSuccess,
   atencionMutationFailure,
+  setCopayment,
+  removeAnalysisFromResumen,
 } from '../../../../../store/atencion/atencion.actions';
 import { AttentionState } from '../../../../../models/atencion.model';
+import { AttentionPricing } from '../../../../../models/pricing.model';
 import { readAtencionSession, writeAtencionSession } from '../../../../../utils/atencion-session-store';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -20,6 +24,7 @@ import { readAtencionSession, writeAtencionSession } from '../../../../../utils/
 function attn(): any {
   return {
     id: 42, patientId: 5, isUrgent: false, indications: null,
+    copaymentAmount: null,
     analysisAuthorizations: [{ id: 1, analysisId: 3, isAuthorized: true, active: true }],
   };
 }
@@ -33,14 +38,26 @@ function fullAttn(): any {
     authorizationNumber: null, observations: null, cancellationReason: null,
     cancelledAtState: null, attentionState: AttentionState.AWAITING_CONFIRMATION,
     mostAdvancedState: AttentionState.AWAITING_CONFIRMATION, analysisAuthorizations: [],
+    copaymentAmount: null,
   };
 }
+
+const SAMPLE_PRICING: AttentionPricing = {
+  items: [{ analysisId: 3, authorized: true, cantidadUb: 2, valorUbParticular: null, precioPaciente: 0 }],
+  subtotal: 0,
+  copayment: 0,
+  total: 0,
+};
 
 const SEEDED_STATE = {
   [ATENCION_FEATURE_KEY]: {
     ...initialAtencionState,
     resolvedPatient: { id: 5, dni: '18901234', firstName: 'Tute', lastName: 'Gaymer' } as any,
     summaryAnalyses: [{ id: 3, shortCode: 'BIO001', name: 'Hemograma', familyName: null, ubCount: null }],
+    pricing: SAMPLE_PRICING,
+    pricingLoading: false,
+    pricingError: null,
+    copaymentMutating: false,
   },
 };
 
@@ -135,5 +152,111 @@ describe('ResumenStepComponent', () => {
     actions$.next(atencionMutationFailure({ error: {} as any }));
     expect(finished).toBe(false);
     expect(readAtencionSession()).not.toBeNull(); // session survives — user can retry
+  });
+
+  // ── tests de pricing ─────────────────────────────────────────────────────
+
+  it('despacha loadPricing en init', () => {
+    const spy = vi.spyOn(store, 'dispatch');
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    expect(spy).toHaveBeenCalledWith(loadPricing({ attentionId: 42 }));
+  });
+
+  it('muestra el total del pricing cuando está disponible', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), id: 42 });
+    f.detectChanges();
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    // SAMPLE_PRICING tiene total: 0 → CurrencyArPipe (es-AR ARS) lo formatea como '$ 0,00'
+    // El separador entre $ y los dígitos es U+00A0 (espacio no separable); normalizamos
+    // antes de comparar para que el test no sea frágil ante diferencias de CLDR.
+    const normalized = text.replace(/ /g, ' ');
+    expect(normalized).toContain('Total');
+    expect(normalized).toContain('$ 0,00');
+  });
+
+  it('onCopaymentBlur despacha setCopayment cuando el valor cambia', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), copaymentAmount: null });
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    f.componentInstance.copaymentValue.set(1500);
+    f.componentInstance.onCopaymentBlur();
+    expect(dispatched.length).toBeGreaterThan(0);
+    expect(dispatched[0].type).toBe(setCopayment.type);
+    expect(dispatched[0].attentionId).toBe(42);
+    expect(dispatched[0].copaymentAmount).toBe(1500);
+  });
+
+  it('onCopaymentBlur NO despacha si el valor no cambió', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), copaymentAmount: 500 });
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    // Same value as copaymentAmount
+    f.componentInstance.copaymentValue.set(500);
+    f.componentInstance.onCopaymentBlur();
+    expect(dispatched.filter((a: any) => a.type === setCopayment.type)).toHaveLength(0);
+  });
+
+  // ── tests B3c: remover análisis desde el resumen ─────────────────────────
+
+  it('onRemoveAnalysis despacha removeAnalysisFromResumen excluyendo el id removido y preservando isAuthorized', () => {
+    const atencionConDosAnalisis: any = {
+      id: 42, patientId: 5, isUrgent: false, authorizationNumber: null,
+      copaymentAmount: null, indications: null,
+      analysisAuthorizations: [
+        { id: 1, analysisId: 3, isAuthorized: true, active: true },
+        { id: 2, analysisId: 7, isAuthorized: false, active: true },
+      ],
+    };
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', atencionConDosAnalisis);
+    f.detectChanges();
+
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+
+    // Quitar el análisis 3 → la lista reducida debe tener SOLO el análisis 7
+    f.componentInstance.onRemoveAnalysis(3);
+
+    const removals = dispatched.filter((a: any) => a.type === removeAnalysisFromResumen.type);
+    expect(removals).toHaveLength(1);
+    const action = removals[0];
+    expect(action.attentionId).toBe(42);
+    expect(action.analysisId).toBe(3);
+    // items debe excluir el análisis 3 y preservar el isAuthorized del 7
+    expect(action.payload.items).toEqual([{ analysisId: 7, isAuthorized: false }]);
+    expect(action.payload.isUrgent).toBe(false);
+    expect(action.payload.authorizationNumber).toBeNull();
+  });
+
+  it('onRemoveAnalysis con el último análisis despacha items vacío (no crashea)', () => {
+    const atencionConUnAnalisis: any = {
+      id: 42, patientId: 5, isUrgent: true, authorizationNumber: 'AUTH-1',
+      copaymentAmount: null, indications: null,
+      analysisAuthorizations: [
+        { id: 1, analysisId: 3, isAuthorized: true, active: true },
+      ],
+    };
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', atencionConUnAnalisis);
+    f.detectChanges();
+
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+
+    f.componentInstance.onRemoveAnalysis(3);
+
+    const removals = dispatched.filter((a: any) => a.type === removeAnalysisFromResumen.type);
+    expect(removals).toHaveLength(1);
+    const action = removals[0];
+    expect(action.payload.items).toEqual([]);
+    expect(action.payload.isUrgent).toBe(true);
+    expect(action.payload.authorizationNumber).toBe('AUTH-1');
   });
 });

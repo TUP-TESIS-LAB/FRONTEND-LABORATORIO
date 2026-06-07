@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { AnalysisPickerComponent } from './analysis-picker.component';
+import { AnalysisPickerComponent, PickerRow } from './analysis-picker.component';
 import { AnalysisService } from '../../services/analysis.service';
 import { Analysis } from '../../models/atencion.model';
 
@@ -69,5 +69,33 @@ describe('AnalysisPickerComponent', () => {
     fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
     fixture.componentInstance.clearAll();
     expect(fixture.componentInstance.items()).toEqual([]);
+  });
+
+  it('addAnalysis crea fila con isAuthorized=false por defecto', () => {
+    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
+    expect(fixture.componentInstance.items()[0].isAuthorized).toBe(false);
+  });
+
+  it('analysisAdded emite un PickerRow con isAuthorized=false', () => {
+    const emitted: PickerRow[] = [];
+    fixture.componentInstance.analysisAdded.subscribe((row) => emitted.push(row));
+    fixture.componentInstance.addAnalysis(a({ id: 7, shortCode: '2001', name: 'Glucemia' }));
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0].isAuthorized).toBe(false);
+    expect(emitted[0].id).toBe(7);
+  });
+
+  it('itemsChanged emite la lista actualizada con isAuthorized correcto al llamar onAuthorizedChange', () => {
+    const row = a({ id: 1, shortCode: '1001' });
+    fixture.componentInstance.addAnalysis(row);
+    const snapshots: PickerRow[][] = [];
+    fixture.componentInstance.itemsChanged.subscribe((rows) => snapshots.push(rows));
+    const pickerRow = fixture.componentInstance.items()[0];
+    fixture.componentInstance.onAuthorizedChange(pickerRow, true);
+    expect(snapshots).toHaveLength(1);
+    expect(snapshots[0]).toHaveLength(1);
+    expect(snapshots[0][0].isAuthorized).toBe(true);
+    // Verifica inmutabilidad: el objeto emitido es una copia nueva
+    expect(snapshots[0][0]).not.toBe(pickerRow);
   });
 });

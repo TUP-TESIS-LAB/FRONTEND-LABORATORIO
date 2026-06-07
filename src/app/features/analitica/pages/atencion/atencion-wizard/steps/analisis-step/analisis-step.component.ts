@@ -1,7 +1,7 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
@@ -11,9 +11,7 @@ import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { race, take } from 'rxjs';
 import { AnalysisDetailModalComponent } from '../../../../../components/analysis-detail-modal/analysis-detail-modal.component';
-import { AnalysisPickerComponent } from '../../../../../components/analysis-picker/analysis-picker.component';
-import { Analysis } from '../../../../../models/atencion.model';
-import { NbuService } from '../../../../../services/nbu.service';
+import { AnalysisPickerComponent, PickerRow } from '../../../../../components/analysis-picker/analysis-picker.component';
 import {
   addAnalysisList,
   atencionMutationFailure,
@@ -34,9 +32,9 @@ import { selectMutating } from '../../../../../store/atencion/atencion.selectors
 
       <lab-analysis-picker
         [initialItems]="[]"
-        [ubValue]="ubValue()"
         (analysisAdded)="onAnalysisAdded($event)"
         (analysisRemoved)="onAnalysisRemoved($event)"
+        (itemsChanged)="onItemsChanged($event)"
         (detailRequested)="onDetailRequested($event)" />
 
       @if (!financieroActive()) {
@@ -64,27 +62,25 @@ export class AnalisisStepComponent {
   private readonly actions$   = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
   private readonly registry   = inject(ModuleRegistry);
-  private readonly nbu        = inject(NbuService);
 
   readonly atencionId   = input.required<number>();
   readonly stepAdvanced = output<void>();
 
-  readonly items      = signal<Analysis[]>([]);
+  readonly items      = signal<PickerRow[]>([]);
   readonly detailId   = signal<number | null>(null);
   readonly detailOpen = signal(false);
   isUrgentValue = false;
 
   readonly financieroActive = computed(() => this.registry.isActive(ModuleKey.Financiero));
   readonly mutating = this.store.selectSignal(selectMutating);
-  private readonly nbuCurrent = toSignal(this.nbu.getCurrent(), { initialValue: null });
-  readonly ubValue = computed(() => this.nbuCurrent()?.ubValue ?? null);
 
   continueLabel(): string {
     return 'Continuar →';
   }
 
-  onAnalysisAdded(a: Analysis): void { this.items.update((arr) => [...arr, a]); }
+  onAnalysisAdded(row: PickerRow): void { this.items.update((arr) => [...arr, row]); }
   onAnalysisRemoved(id: number): void { this.items.update((arr) => arr.filter((x) => x.id !== id)); }
+  onItemsChanged(rows: PickerRow[]): void { this.items.set(rows); }
   onDetailRequested(id: number): void { this.detailId.set(id); this.detailOpen.set(true); }
   closeDetail(): void { this.detailOpen.set(false); }
 
@@ -102,10 +98,10 @@ export class AnalisisStepComponent {
    */
   onContinue(): void {
     if (this.items().length === 0 || this.mutating()) return;
-    const ids = this.items().map((x) => x.id);
+    const analysisItems = this.items().map((x) => ({ analysisId: x.id, isAuthorized: x.isAuthorized }));
     this.store.dispatch(addAnalysisList({
       id: this.atencionId(),
-      payload: { analysisIds: ids, isUrgent: this.isUrgentValue, authorizationNumber: null },
+      payload: { items: analysisItems, isUrgent: this.isUrgentValue, authorizationNumber: null },
     }));
     this.waitForMutation((ok) => {
       if (ok) this.stepAdvanced.emit();

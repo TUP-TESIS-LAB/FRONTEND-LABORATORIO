@@ -34,9 +34,6 @@ import { NbuOption } from '../../../models/catalogs.model';
         <label class="flex flex-col gap-1 text-xs text-surface-500">Valor U.B. *
           <input type="number" pInputText formControlName="ubValue" min="0" step="0.01" class="w-full" />
         </label>
-        <label class="flex flex-col gap-1 text-xs text-surface-500">% Cobertura *
-          <input type="number" pInputText formControlName="coveragePercentage" min="0" max="100" class="w-full" />
-        </label>
         <label class="flex flex-col gap-1 text-xs text-surface-500">IVA % *
           <input type="number" pInputText formControlName="iva" min="0" max="100" class="w-full" />
         </label>
@@ -48,7 +45,7 @@ import { NbuOption } from '../../../models/catalogs.model';
 
       <p-table [value]="array().controls" dataKey="value.code">
         <ng-template pTemplate="header">
-          <tr><th>Código</th><th>Nombre</th><th>Vigente desde</th><th>NBU</th><th>Valor U.B.</th><th>% Cob.</th><th>IVA</th><th></th></tr>
+          <tr><th>Código</th><th>Nombre</th><th>Vigente desde</th><th>NBU</th><th>Valor U.B.</th><th>IVA</th><th></th></tr>
         </ng-template>
         <ng-template pTemplate="body" let-ctrl let-i="rowIndex">
           <tr>
@@ -57,7 +54,6 @@ import { NbuOption } from '../../../models/catalogs.model';
             <td>{{ ctrl.value.validFromDate }}</td>
             <td>{{ nbuLabel(ctrl.value.versionNbu) }}</td>
             <td>{{ ctrl.value.ubValue | currencyAr }}</td>
-            <td>{{ ctrl.value.coveragePercentage }}%</td>
             <td>{{ ctrl.value.iva }}%</td>
             <td class="text-right">
               <p-button [text]="true" icon="pi pi-trash" severity="danger" pTooltip="Quitar" (onClick)="removePlan(i)" />
@@ -65,7 +61,7 @@ import { NbuOption } from '../../../models/catalogs.model';
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <tr><td colspan="8" class="text-surface-500 text-sm py-3">Todavía no agregaste planes. Agregá al menos uno.</td></tr>
+          <tr><td colspan="7" class="text-surface-500 text-sm py-3">Todavía no agregaste planes. Agregá al menos uno.</td></tr>
         </ng-template>
       </p-table>
     </div>
@@ -84,7 +80,6 @@ export class PlanesStepComponent {
     validFromDate: ['', Validators.required],
     versionNbu: [null, Validators.required],
     ubValue: [null, [Validators.required, Validators.min(0.01)]],
-    coveragePercentage: [null, [Validators.required, Validators.min(0), Validators.max(100)]],
     iva: [null, [Validators.required, Validators.min(0), Validators.max(100)]],
   });
 
@@ -95,7 +90,7 @@ export class PlanesStepComponent {
     if (exists) { this.dupError.set(true); return; }
     this.dupError.set(false);
     this.array().push(this.fb.group({ ...this.draft.getRawValue() }));
-    this.draft.reset({ code: '', acronym: '', name: '', validFromDate: '', versionNbu: null, ubValue: null, coveragePercentage: null, iva: null });
+    this.draft.reset({ code: '', acronym: '', name: '', validFromDate: '', versionNbu: null, ubValue: null, iva: null });
   }
 
   removePlan(i: number): void { this.array().removeAt(i); }

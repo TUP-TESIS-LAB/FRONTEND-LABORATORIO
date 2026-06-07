@@ -10,11 +10,14 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
+import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { AttentionResponse } from '../../../../../models/atencion.model';
 import { AttentionTicketModalComponent } from '../../../../../components/attention-ticket-modal/attention-ticket-modal.component';
 import {
@@ -23,9 +26,16 @@ import {
   endSecretaryPhase,
   loadAttentionAnalyses,
   loadAttentionPatient,
+  loadPricing,
+  removeAnalysisFromResumen,
+  setCopayment,
 } from '../../../../../store/atencion/atencion.actions';
 import {
+  selectCopaymentMutating,
   selectMutating,
+  selectPricing,
+  selectPricingLoading,
+  selectRemovingAnalysis,
   selectResolvedPatient,
   selectSummaryAnalyses,
 } from '../../../../../store/atencion/atencion.selectors';
@@ -35,7 +45,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   selector: 'lab-resumen-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, TagModule, AttentionTicketModalComponent],
+  imports: [ButtonModule, TagModule, AttentionTicketModalComponent, InputNumberModule, FormsModule, CurrencyArPipe],
   template: `
     <div class="space-y-4">
       <header class="flex items-center justify-between">
@@ -62,19 +72,75 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
 
       <section>
         <div class="text-sm opacity-60">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
-        <ul class="list-disc list-inside text-sm">
+        <ul class="list-none text-sm space-y-1">
           @for (a of atencion().analysisAuthorizations; track a.analysisId) {
             @let info = analysisById().get(a.analysisId);
-            <li>
-              @if (info) {
-                <span class="font-mono opacity-70">{{ info.shortCode }}</span> — {{ info.name }}
-              } @else {
-                #{{ a.analysisId }}
+            @let priceItem = pricingById().get(a.analysisId);
+            <li class="flex items-center justify-between gap-2">
+              <span class="flex-1">
+                @if (info) {
+                  <span class="font-mono opacity-70">{{ info.shortCode }}</span> — {{ info.name }}
+                } @else {
+                  #{{ a.analysisId }}
+                }
+              </span>
+              @if (priceItem != null) {
+                <span class="text-sm font-medium">
+                  {{ priceItem.precioPaciente | currencyAr }}
+                </span>
               }
+              <p-button
+                icon="pi pi-times"
+                severity="danger"
+                [text]="true"
+                [rounded]="true"
+                size="small"
+                pTooltip="Quitar análisis"
+                tooltipPosition="left"
+                [disabled]="removingAnalysis() || copaymentMutating()"
+                [loading]="removingAnalysis()"
+                (onClick)="onRemoveAnalysis(a.analysisId)"
+                aria-label="Quitar análisis"
+              />
             </li>
           }
         </ul>
       </section>
+
+      <!-- Pricing totals -->
+      @if (pricing(); as p) {
+        <section class="border-t pt-3 space-y-1">
+          <div class="flex justify-between text-sm">
+            <span class="opacity-60">Subtotal</span>
+            <span>{{ p.subtotal | currencyAr }}</span>
+          </div>
+          <div class="flex justify-between text-sm items-center gap-4">
+            <label class="opacity-60 whitespace-nowrap" for="copago-input">Copago (orden médica)</label>
+            <p-inputNumber
+              inputId="copago-input"
+              [ngModel]="copaymentValue()"
+              (ngModelChange)="copaymentValue.set($event)"
+              (onBlur)="onCopaymentBlur()"
+              mode="decimal"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [min]="0"
+              [disabled]="copaymentMutating()"
+              styleClass="w-36"
+              inputStyleClass="text-right"
+              placeholder="0,00"
+            />
+          </div>
+          <div class="flex justify-between text-base font-semibold border-t pt-1">
+            <span>Total</span>
+            <span>{{ p.total | currencyAr }}</span>
+          </div>
+        </section>
+      } @else if (pricingLoading()) {
+        <section class="border-t pt-3">
+          <div class="text-sm opacity-60">Calculando precios…</div>
+        </section>
+      }
 
       <div class="flex justify-end">
         <p-button label="Finalizar atención"
@@ -99,17 +165,33 @@ export class ResumenStepComponent implements OnInit {
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
 
-  readonly ticketModalOpen = signal(false);
-  readonly mutating        = this.store.selectSignal(selectMutating);
-  readonly patient         = this.store.selectSignal(selectResolvedPatient);
-  readonly analyses        = this.store.selectSignal(selectSummaryAnalyses);
+  readonly ticketModalOpen    = signal(false);
+  readonly mutating           = this.store.selectSignal(selectMutating);
+  readonly patient            = this.store.selectSignal(selectResolvedPatient);
+  readonly analyses           = this.store.selectSignal(selectSummaryAnalyses);
+  readonly pricing            = this.store.selectSignal(selectPricing);
+  readonly pricingLoading     = this.store.selectSignal(selectPricingLoading);
+  readonly copaymentMutating  = this.store.selectSignal(selectCopaymentMutating);
+  readonly removingAnalysis   = this.store.selectSignal(selectRemovingAnalysis);
+
+  /** Valor local del input de copago — se inicializa desde la atención y se actualiza al cambiar */
+  readonly copaymentValue = signal<number | null>(null);
 
   readonly analysisById = computed(
     () => new Map(this.analyses().map(a => [a.id, a]))
   );
 
+  readonly pricingById = computed(() => {
+    const p = this.pricing();
+    if (!p) return new Map<number, { precioPaciente: number }>();
+    return new Map(p.items.map(item => [item.analysisId, item]));
+  });
+
   ngOnInit(): void {
     const attn = this.atencion();
+
+    // Initialize copago from attention
+    this.copaymentValue.set(attn.copaymentAmount ?? null);
 
     // Only load patient if not already resolved for this atención
     if (
@@ -122,6 +204,34 @@ export class ResumenStepComponent implements OnInit {
     // Always load analysis details
     const analysisIds = attn.analysisAuthorizations.map(x => x.analysisId);
     this.store.dispatch(loadAttentionAnalyses({ analysisIds }));
+
+    // Load pricing for this attention
+    this.store.dispatch(loadPricing({ attentionId: attn.id }));
+  }
+
+  onRemoveAnalysis(analysisId: number): void {
+    const attn = this.atencion();
+    const reducedItems = attn.analysisAuthorizations
+      .filter(a => a.analysisId !== analysisId)
+      .map(a => ({ analysisId: a.analysisId, isAuthorized: a.isAuthorized }));
+    this.store.dispatch(removeAnalysisFromResumen({
+      attentionId: attn.id,
+      analysisId,
+      payload: {
+        items: reducedItems,
+        isUrgent: attn.isUrgent,
+        authorizationNumber: attn.authorizationNumber,
+      },
+    }));
+  }
+
+  onCopaymentBlur(): void {
+    const attn = this.atencion();
+    const amount = this.copaymentValue();
+    // Only dispatch if the value actually changed
+    const current = attn.copaymentAmount ?? null;
+    if (amount === current) return;
+    this.store.dispatch(setCopayment({ attentionId: attn.id, copaymentAmount: amount }));
   }
 
   openFinalize(): void  { this.ticketModalOpen.set(true); }

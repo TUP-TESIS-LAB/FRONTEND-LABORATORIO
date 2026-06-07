@@ -9,7 +9,6 @@ export interface ResumenPlanView {
   validFromDate: string;
   nbuLabel: string;
   ubValue: number;
-  coveragePercentage: number;
   iva: number;
 }
 
@@ -64,13 +63,13 @@ export interface ResumenView {
         <h3 class="text-base font-semibold mb-2">Planes y convenios</h3>
         <p-table [value]="data().plans" dataKey="code">
           <ng-template pTemplate="header">
-            <tr><th>Código</th><th>Nombre</th><th>Sigla</th><th>Vigente desde</th><th>NBU</th><th>Valor U.B.</th><th>% Cob.</th><th>IVA</th></tr>
+            <tr><th>Código</th><th>Nombre</th><th>Sigla</th><th>Vigente desde</th><th>NBU</th><th>Valor U.B.</th><th>IVA</th></tr>
           </ng-template>
           <ng-template pTemplate="body" let-p>
             <tr>
               <td>{{ p.code }}</td><td>{{ p.name }}</td><td>{{ p.acronym }}</td>
               <td>{{ p.validFromDate }}</td><td>{{ p.nbuLabel }}</td>
-              <td>{{ p.ubValue | currencyAr }}</td><td>{{ p.coveragePercentage }}%</td><td>{{ p.iva }}%</td>
+              <td>{{ p.ubValue | currencyAr }}</td><td>{{ p.iva }}%</td>
             </tr>
           </ng-template>
         </p-table>

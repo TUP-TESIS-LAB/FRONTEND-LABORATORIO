@@ -64,8 +64,7 @@ export class ObraSocialService {
       const planId = this.nextId();
       const agreement: Agreement = {
         id: this.nextId(), insurerPlanId: planId, insurerPlanName: pw.plan.name,
-        versionNbu: pw.agreement.versionNbu, requiresCopayment: pw.agreement.requiresCopayment,
-        coveragePercentage: pw.agreement.coveragePercentage, ubValue: pw.agreement.ubValue,
+        versionNbu: pw.agreement.versionNbu, ubValue: pw.agreement.ubValue,
         validFromDate: pw.agreement.validFromDate, validToDate: null,
       };
       return {

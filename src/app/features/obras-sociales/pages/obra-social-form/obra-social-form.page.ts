@@ -142,12 +142,12 @@ export class ObraSocialFormPage implements OnInit {
     const plans = this.planesArray.controls.map((c) => {
       const v = c.getRawValue() as {
         code: string; name: string; acronym: string; validFromDate: string;
-        versionNbu: number; ubValue: number; coveragePercentage: number; iva: number;
+        versionNbu: number; ubValue: number; iva: number;
       };
       return {
         code: v.code, name: v.name, acronym: v.acronym, validFromDate: v.validFromDate,
         nbuLabel: this.nbuOptions().find((o) => o.value === Number(v.versionNbu))?.label ?? String(v.versionNbu),
-        ubValue: Number(v.ubValue), coveragePercentage: Number(v.coveragePercentage), iva: Number(v.iva),
+        ubValue: Number(v.ubValue), iva: Number(v.iva),
       };
     });
     return {
@@ -193,13 +193,12 @@ export class ObraSocialFormPage implements OnInit {
     const plans: PlanWithAgreement[] = this.planesArray.controls.map((c) => {
       const v = c.getRawValue() as {
         code: string; name: string; acronym: string; validFromDate: unknown;
-        versionNbu: number; ubValue: number; coveragePercentage: number; iva: number;
+        versionNbu: number; ubValue: number; iva: number;
       };
       return {
         plan: { code: v.code, acronym: v.acronym, name: v.name, iva: Number(v.iva) },
         agreement: {
-          versionNbu: Number(v.versionNbu), requiresCopayment: false,
-          coveragePercentage: Number(v.coveragePercentage), ubValue: Number(v.ubValue),
+          versionNbu: Number(v.versionNbu), ubValue: Number(v.ubValue),
           validFromDate: isoFromDate(v.validFromDate),
         },
       };

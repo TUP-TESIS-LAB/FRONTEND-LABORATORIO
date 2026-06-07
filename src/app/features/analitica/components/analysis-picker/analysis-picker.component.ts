@@ -4,15 +4,21 @@ import {
 import { FormsModule } from '@angular/forms';
 import { AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { TableModule } from 'primeng/table';
 import { Analysis } from '../../models/atencion.model';
 import { AnalysisService } from '../../services/analysis.service';
+
+/** Fila interna del picker: análisis de catálogo + estado de autorización. */
+export interface PickerRow extends Analysis {
+  isAuthorized: boolean;
+}
 
 @Component({
   selector: 'lab-analysis-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, AutoCompleteModule, ButtonModule, TableModule],
+  imports: [FormsModule, AutoCompleteModule, ButtonModule, CheckboxModule, TableModule],
   template: `
     <div class="flex flex-col gap-3">
       <div class="flex gap-2 items-end">
@@ -49,7 +55,7 @@ import { AnalysisService } from '../../services/analysis.service';
             <th>Código</th>
             <th>Práctica</th>
             <th>Familia</th>
-            @if (showBasePrice()) { <th class="text-right">Precio base</th> }
+            <th class="text-center w-28">Autorizado</th>
             <th class="w-24"></th>
           </tr>
         </ng-template>
@@ -58,9 +64,10 @@ import { AnalysisService } from '../../services/analysis.service';
             <td class="font-mono">{{ row.shortCode }}</td>
             <td>{{ row.name }}</td>
             <td>{{ row.familyName ?? '—' }}</td>
-            @if (showBasePrice()) {
-              <td class="text-right">{{ rowPrice(row) }}</td>
-            }
+            <td class="text-center">
+              <p-checkbox [ngModel]="row.isAuthorized" [binary]="true"
+                          (onChange)="onAuthorizedChange(row, $event.checked)" />
+            </td>
             <td class="text-right">
               <p-button icon="pi pi-eye" severity="secondary" [text]="true" size="small"
                         (onClick)="detailRequested.emit(row.id)" />
@@ -68,15 +75,6 @@ import { AnalysisService } from '../../services/analysis.service';
                         (onClick)="removeAnalysis(row.id)" />
             </td>
           </tr>
-        </ng-template>
-        <ng-template pTemplate="footer">
-          @if (showBasePrice() && items().length) {
-            <tr>
-              <td colspan="3" class="text-right font-semibold">Total base</td>
-              <td class="text-right font-semibold">{{ formatPrice(totalBase()) }} <span class="opacity-60">{{ hasUnpriced() ? '*' : '' }}</span></td>
-              <td></td>
-            </tr>
-          }
         </ng-template>
       </p-table>
     </div>
@@ -86,35 +84,28 @@ export class AnalysisPickerComponent implements OnInit {
   private readonly api = inject(AnalysisService);
 
   readonly initialItems = input<Analysis[]>([]);
-  readonly ubValue      = input<number | null>(null);
 
-  readonly analysisAdded   = output<Analysis>();
+  readonly analysisAdded   = output<PickerRow>();
   readonly analysisRemoved = output<number>();
   readonly detailRequested = output<number>();
+  /** Emite la lista actualizada cada vez que cambia un checkbox de autorización. */
+  readonly itemsChanged    = output<PickerRow[]>();
 
   protected autoModel: string | Analysis = '';
-  readonly items       = signal<Analysis[]>([]);
+  readonly items       = signal<PickerRow[]>([]);
   readonly suggestions = signal<Analysis[]>([]);
   readonly errorText   = signal<string | null>(null);
 
-  readonly showBasePrice = computed(() => this.ubValue() != null);
-  readonly totalBase     = computed(() => {
-    const v = this.ubValue();
-    if (v == null) return 0;
-    return this.items().reduce((acc, x) => acc + (x.ubCount != null ? x.ubCount * v : 0), 0);
-  });
-  readonly hasUnpriced = computed(() => this.items().some((x) => x.ubCount == null));
-
   ngOnInit(): void {
     const initial = this.initialItems();
-    if (initial?.length) this.items.set([...initial]);
+    if (initial?.length) {
+      this.items.set(initial.map((a) => ({ ...a, isAuthorized: false })));
+    }
   }
 
   onAutoCompleteSearch(e: AutoCompleteCompleteEvent): void {
     const q = (e.query ?? '').trim();
     if (!q) { this.suggestions.set([]); return; }
-    // Si el usuario tipea solo dígitos → autocomplete por prefijo de shortCode.
-    // Si tipea letras → autocomplete por nombre / familia.
     const obs = /^\d+$/.test(q)
       ? this.api.searchByShortCodePrefix(q)
       : this.api.searchByName(q);
@@ -158,8 +149,9 @@ export class AnalysisPickerComponent implements OnInit {
       return;
     }
     this.errorText.set(null);
-    this.items.update((arr) => [...arr, a]);
-    this.analysisAdded.emit(a);
+    const row: PickerRow = { ...a, isAuthorized: false };
+    this.items.update((arr) => [...arr, row]);
+    this.analysisAdded.emit(row);
   }
 
   removeAnalysis(id: number): void {
@@ -172,13 +164,9 @@ export class AnalysisPickerComponent implements OnInit {
     this.errorText.set(null);
   }
 
-  rowPrice(row: Analysis): string {
-    const v = this.ubValue();
-    if (v == null || row.ubCount == null) return '—';
-    return this.formatPrice(row.ubCount * v);
-  }
-
-  formatPrice(n: number): string {
-    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+  /** Actualiza isAuthorized de forma inmutable y notifica al padre. */
+  onAuthorizedChange(row: PickerRow, value: boolean): void {
+    this.items.update((arr) => arr.map((r) => r.id === row.id ? { ...r, isAuthorized: value } : r));
+    this.itemsChanged.emit(this.items());
   }
 }
