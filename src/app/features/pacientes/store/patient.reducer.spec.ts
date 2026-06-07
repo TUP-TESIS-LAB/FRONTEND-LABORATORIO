@@ -15,7 +15,7 @@ import { Patient } from '../models/patient.model';
 const mkPatient = (id: number, active = true): Patient => ({
   id, dni: `${id}`, firstName: `f${id}`, lastName: `l${id}`,
   birthDate: '1990-01-01', gender: 'FEMALE', sexAtBirth: 'FEMALE',
-  status: 'MIN', contacts: [], addresses: [], coverages: [], active,
+  status: 'MIN', source: 'STAFF', verifiedAt: null, contacts: [], addresses: [], coverages: [], active,
 });
 
 describe('patientReducer', () => {

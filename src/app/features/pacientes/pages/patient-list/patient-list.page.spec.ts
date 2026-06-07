@@ -3,10 +3,16 @@ import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
+import { of } from 'rxjs';
 import { PatientListPage } from './patient-list.page';
 import { PATIENT_FEATURE_KEY, initialPatientState } from '../../store/patient.state';
 import { setPatientPageRequest } from '../../store/patient.actions';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
+import { CoveragePlansService } from '../../services/coverage-plans.service';
+
+const mockPlansService = {
+  getActivePlans: () => of([{ planId: 1, label: 'Particular', particular: true }]),
+};
 
 describe('PatientListPage (smoke)', () => {
   let store: MockStore;
@@ -21,6 +27,10 @@ describe('PatientListPage (smoke)', () => {
         {
           provide: PatientPermissionsService,
           useValue: { canMutate: signal(true) },
+        },
+        {
+          provide: CoveragePlansService,
+          useValue: mockPlansService,
         },
       ],
     });

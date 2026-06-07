@@ -41,7 +41,7 @@ describe('AtencionEffects', () => {
     getPricing: ReturnType<typeof vi.fn>;
     setCopayment: ReturnType<typeof vi.fn>;
   };
-  let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn> };
+  let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn>; verify: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
   let analysis: { getById: ReturnType<typeof vi.fn> };
   let labels: { getByProtocol: ReturnType<typeof vi.fn> };
@@ -68,7 +68,7 @@ describe('AtencionEffects', () => {
       getPricing: vi.fn(),
       setCopayment: vi.fn(),
     };
-    patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn(), getById: vi.fn() };
+    patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn(), getById: vi.fn(), verify: vi.fn() };
     router = { navigate: vi.fn() };
     analysis = { getById: vi.fn() };
     labels = { getByProtocol: vi.fn() };
@@ -400,5 +400,24 @@ describe('AtencionEffects', () => {
       'No se pudo quitar el análisis. Revisá la conexión y volvé a intentarlo.'
     );
     expect(out).toEqual(A.removeAnalysisFromResumenFailure({ error }));
+  });
+
+  // ── verifyPatient$ ────────────────────────────────────────────────────────
+
+  it('verifyPatient$ → verify OK → verifyPatientSuccess', async () => {
+    const patient = { id: 9, dni: '12345678', status: 'VERIFIED', source: 'PORTAL', verifiedAt: '2026-06-07T10:00:00Z' } as Patient;
+    (patients.verify as ReturnType<typeof vi.fn>).mockReturnValue(of(patient));
+    actions$.next(A.verifyPatient({ id: 9 }));
+    const out = await firstValueFrom(effects.verifyPatient$.pipe(take(1)));
+    expect(patients.verify).toHaveBeenCalledWith(9);
+    expect(out).toEqual(A.verifyPatientSuccess({ patient }));
+  });
+
+  it('verifyPatient$ → HTTP error → verifyPatientFailure', async () => {
+    const error = new HttpErrorResponse({ status: 422 });
+    (patients.verify as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.verifyPatient({ id: 9 }));
+    const out = await firstValueFrom(effects.verifyPatient$.pipe(take(1)));
+    expect(out).toEqual(A.verifyPatientFailure({ error }));
   });
 });

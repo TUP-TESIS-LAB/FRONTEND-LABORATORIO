@@ -1,8 +1,29 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { AttentionResponse, AttentionState } from '../../models/atencion.model';
+import { Patient } from '../../../pacientes/models/patient.model';
 import * as A from './atencion.actions';
 import { atencionReducer } from './atencion.reducer';
 import { initialAtencionState } from './atencion.state';
+
+function samplePatient(over: Partial<Patient> = {}): Patient {
+  return {
+    id: 1,
+    dni: '12345678',
+    firstName: 'Juan',
+    lastName: 'Perez',
+    birthDate: '1990-01-01',
+    gender: 'MALE',
+    sexAtBirth: 'MALE',
+    status: 'COMPLETE',
+    source: 'STAFF',
+    verifiedAt: null,
+    contacts: [],
+    addresses: [],
+    coverages: [],
+    active: true,
+    ...over,
+  };
+}
 
 function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
   return {
@@ -132,5 +153,24 @@ describe('atencionReducer', () => {
     const prev = { ...initialAtencionState, resolvedPatient: { id: 5 } as any };
     const state = atencionReducer(prev, A.loadAttentionPatient({ patientId: 9 }));
     expect(state.resolvedPatient).toBeNull();
+  });
+
+  it('verifyPatient sets verifyingPatient=true', () => {
+    const next = atencionReducer(initialAtencionState, A.verifyPatient({ id: 1 }));
+    expect(next.verifyingPatient).toBe(true);
+  });
+
+  it('verifyPatientSuccess sets resolvedPatient to payload and verifyingPatient=false', () => {
+    const patient = samplePatient({ id: 7, status: 'VERIFIED', source: 'PORTAL', verifiedAt: '2026-06-07T10:00:00Z' });
+    const start = { ...initialAtencionState, verifyingPatient: true };
+    const next = atencionReducer(start, A.verifyPatientSuccess({ patient }));
+    expect(next.resolvedPatient).toBe(patient);
+    expect(next.verifyingPatient).toBe(false);
+  });
+
+  it('verifyPatientFailure sets verifyingPatient=false', () => {
+    const start = { ...initialAtencionState, verifyingPatient: true };
+    const next = atencionReducer(start, A.verifyPatientFailure({ error: new HttpErrorResponse({ status: 422 }) }));
+    expect(next.verifyingPatient).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
@@ -19,7 +19,8 @@ import {
   selectSelectedPatient, selectPatientPending,
 } from '../../store/patient.selectors';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
-import { getCoveragePlanLabel } from '../../models/coverage-plans.catalog';
+import { getCoveragePlanLabel, CoveragePlanOption } from '../../models/coverage-plans.catalog';
+import { CoveragePlansService } from '../../services/coverage-plans.service';
 
 @Component({
   selector: 'pat-patient-detail-page',
@@ -153,10 +154,13 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   private readonly confirm = inject(ConfirmationService);
   private readonly actions$ = inject(Actions);
   private readonly perms = inject(PatientPermissionsService);
+  private readonly plansService = inject(CoveragePlansService);
   readonly canMutate = this.perms.canMutate;
 
   readonly patient = this.store.selectSignal(selectSelectedPatient);
   readonly pending = this.store.selectSignal(selectPatientPending);
+
+  private readonly plans = signal<readonly CoveragePlanOption[]>([]);
 
   ngOnInit(): void {
     const numericId = Number(this.id());
@@ -165,11 +169,15 @@ export class PatientDetailPage implements OnInit, OnDestroy {
       return;
     }
     this.store.dispatch(loadPatient({ id: numericId }));
+    this.plansService.getActivePlans().subscribe({
+      next: (plans) => this.plans.set(plans),
+      error: () => { /* lista queda vacía; no se expone el error al usuario */ },
+    });
   }
 
   ngOnDestroy(): void { this.store.dispatch(clearSelectedPatient()); }
 
-  planLabel(planId: number): string { return getCoveragePlanLabel(planId); }
+  planLabel(planId: number): string { return getCoveragePlanLabel(planId, this.plans()); }
 
   confirmToggle(): void {
     const p = this.patient();

@@ -2,27 +2,17 @@
 export interface CoveragePlanOption {
   planId: number;
   label: string;
+  particular?: boolean;
 }
 
 /**
- * Local stub until the backend exposes a coverage-plans catalog endpoint.
- * Backend MUST have rows with these planIds seeded before alta with cobertura works.
+ * Pure helper: looks up the label for a planId within a provided plans list.
+ * Returns '—' for null/undefined planId, and 'Plan #N' when the id is not found.
  */
-export const COVERAGE_PLAN_CATALOG: readonly CoveragePlanOption[] = [
-  { planId: 1, label: 'Particular' },
-  { planId: 2, label: 'OSDE 210' },
-  { planId: 3, label: 'OSDE 310' },
-  { planId: 4, label: 'Swiss Medical' },
-  { planId: 5, label: 'PAMI' },
-  { planId: 6, label: 'IOMA' },
-  { planId: 7, label: 'Galeno' },
-];
-
-export const COVERAGE_PLAN_BY_ID: ReadonlyMap<number, CoveragePlanOption> = new Map(
-  COVERAGE_PLAN_CATALOG.map((p) => [p.planId, p]),
-);
-
-export function getCoveragePlanLabel(planId: number | undefined | null): string {
+export function getCoveragePlanLabel(
+  planId: number | null | undefined,
+  plans: readonly CoveragePlanOption[],
+): string {
   if (planId == null) return '—';
-  return COVERAGE_PLAN_BY_ID.get(planId)?.label ?? `Plan #${planId}`;
+  return plans.find((p) => p.planId === planId)?.label ?? `Plan #${planId}`;
 }

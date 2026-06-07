@@ -1,5 +1,6 @@
 // src/app/features/pacientes/models/patient.model.ts
 export type PatientStatus = 'MIN' | 'COMPLETE' | 'VERIFIED';
+export type PatientSource = 'STAFF' | 'PORTAL';
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'NOT_SPECIFIED';
 export type SexAtBirth = 'MALE' | 'FEMALE' | 'INTERSEX';
 // Tipos soportados por el backend (analitica.domain.ContactType). NO agregar
@@ -45,6 +46,8 @@ export interface Patient {
   gender: Gender | null;
   sexAtBirth: SexAtBirth | null;
   status: PatientStatus;
+  source: PatientSource;
+  verifiedAt: string | null;   // ISO instant or null
   contacts: Contact[];
   addresses: Address[];
   coverages: Coverage[];

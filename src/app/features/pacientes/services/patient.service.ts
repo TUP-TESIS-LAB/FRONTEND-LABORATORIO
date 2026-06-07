@@ -44,4 +44,8 @@ export class PatientService {
   toggleActive(id: number, deleted: boolean): Observable<void> {
     return this.http.patch<void>(`${this.baseUrl}/${id}`, { deleted });
   }
+
+  verify(id: number): Observable<Patient> {
+    return this.http.post<Patient>(`${this.baseUrl}/${id}/verify`, {});
+  }
 }
