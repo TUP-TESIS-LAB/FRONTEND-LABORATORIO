@@ -7,7 +7,7 @@ function mineItem(): InExtractionItem {
   return {
     id: 1, patientId: 1, patientFullName: 'Sosa, Mariana', patientDni: '35220118',
     patientBirthDate: null, patientGender: null,
-    attentionNumber: 'A-1', isUrgent: false, analysisCount: 2,
+    attentionNumber: 'A-1', publicCode: null, isUrgent: false, analysisCount: 2,
     insurancePlanLabel: null, createdAt: '', waitMinutes: 0,
     attentionBox: 3, extractionStartedAt: '', extractorId: 50, extractorFullName: 'Extractor', samples: [],
   };

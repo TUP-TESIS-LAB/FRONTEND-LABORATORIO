@@ -10,6 +10,7 @@ function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
     id: over.id ?? 0,
     tenantId: 1,
     attentionNumber: over.attentionNumber ?? 'A-000',
+    publicCode: null,
     patientId: over.patientId ?? null,
     doctorId: null,
     branchId: 1,

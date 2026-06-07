@@ -128,6 +128,7 @@ const UNDO_WINDOW_MS = 5000;
                 <ng-template pTemplate="header">
                   <tr>
                     <th></th>
+                    <th>Turno</th>
                     <th>Paciente</th>
                     <th>DNI</th>
                     <th class="actions-col">Acciones</th>
@@ -140,6 +141,7 @@ const UNDO_WINDOW_MS = 5000;
                         <p-tag value="URGENTE" severity="danger" icon="pi pi-exclamation-triangle" />
                       }
                     </td>
+                    <td><strong>{{ row.publicCode ?? row.attentionNumber }}</strong></td>
                     <td>{{ row.patientFullName }}</td>
                     <td>{{ row.patientDni }}</td>
                     <td class="actions-col">
