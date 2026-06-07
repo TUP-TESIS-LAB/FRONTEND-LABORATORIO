@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { selectLastPatientName, selectLastQueueNumber } from '../../../store/totem/totem.selectors';
+import { selectLastQueueNumber } from '../../../store/totem/totem.selectors';
 
 @Component({
   selector: 'app-totem-confirmation',
@@ -17,7 +17,6 @@ export class TotemConfirmationComponent implements OnInit, OnDestroy {
   private timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   readonly queueNumber = this.store.selectSignal(selectLastQueueNumber);
-  readonly patientName = this.store.selectSignal(selectLastPatientName);
 
   ngOnInit(): void {
     this.timeoutId = setTimeout(() => this.reset.emit(), 10_000);

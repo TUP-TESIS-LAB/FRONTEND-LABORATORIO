@@ -40,7 +40,8 @@ export class TotemComponent {
   private readonly lastQueueNumber = this.store.selectSignal(selectLastQueueNumber);
 
   readonly currentView = computed<View>(() => {
-    if (this.config.branchId() === null) return 'branch-selector';
+    // Show kiosk-config screen when either branchId or slug is not configured.
+    if (this.config.branchId() === null || this.config.slug() === null) return 'branch-selector';
     if (this.forcedConfirmation() && this.lastQueueNumber()) return 'confirmation';
     return 'input-dni';
   });

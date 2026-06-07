@@ -2,12 +2,12 @@ import { createAction, props } from '@ngrx/store';
 
 export const submitTotemEntry = createAction(
   '[Totem] Submit Entry',
-  props<{ dni: string; branchId: number }>()
+  props<{ dni: string; slug: string; branchId: number }>()
 );
 
 export const submitTotemEntrySuccess = createAction(
   '[Totem] Submit Entry Success',
-  props<{ queueNumber: string; patientFirstName: string | null; patientLastName: string | null }>()
+  props<{ queueNumber: string; hasAppointment: boolean }>()
 );
 
 export const submitTotemEntryFailure = createAction(
