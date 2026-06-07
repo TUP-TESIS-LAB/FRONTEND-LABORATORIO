@@ -54,6 +54,9 @@ export const patientResolutionFailure = createAction('[Atencion API] Patient Res
 export const createPatientInline      = createAction('[Atencion Wizard] Create Patient Inline',     props<{ payload: CreatePatientRequest }>());
 export const updatePatientInline      = createAction('[Atencion Wizard] Update Patient Inline',     props<{ id: number; payload: UpdatePatientRequest }>());
 export const startAttentionForPatient = createAction('[Atencion Wizard] Start For Patient',         props<{ patientId: number; indications: string | null }>());
+export const verifyPatient            = createAction('[Atencion Wizard] Verify Patient',             props<{ id: number }>());
+export const verifyPatientSuccess     = createAction('[Atencion API] Verify Patient Success',        props<{ patient: Patient }>());
+export const verifyPatientFailure     = createAction('[Atencion API] Verify Patient Failure',        props<{ error: HttpErrorResponse }>());
 
 // Rotulos -----------------------------------------------------------------------
 export const downloadProtocolLabels = createAction('[Atencion Rotulos] Download Protocol Labels', props<{ protocolId: number; protocolNumber: string }>());

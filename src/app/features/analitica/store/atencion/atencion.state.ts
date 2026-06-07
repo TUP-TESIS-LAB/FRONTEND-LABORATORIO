@@ -34,6 +34,7 @@ export interface AtencionFeatureState {
   pricingError: HttpErrorResponse | null;
   copaymentMutating: boolean;
   removingAnalysis: boolean;
+  verifyingPatient: boolean;
 }
 
 export const initialAtencionState: AtencionFeatureState = {
@@ -59,6 +60,7 @@ export const initialAtencionState: AtencionFeatureState = {
   pricingError: null,
   copaymentMutating: false,
   removingAnalysis: false,
+  verifyingPatient: false,
 };
 
 export const ATENCION_FEATURE_KEY = 'atencion';

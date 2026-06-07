@@ -52,6 +52,9 @@ import {
   removeAnalysisFromResumen,
   removeAnalysisFromResumenSuccess,
   removeAnalysisFromResumenFailure,
+  verifyPatient,
+  verifyPatientSuccess,
+  verifyPatientFailure,
 } from './atencion.actions';
 
 /**
@@ -347,6 +350,18 @@ export class AtencionEffects {
         )
       )
     )
+  );
+
+  verifyPatient$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(verifyPatient),
+      exhaustMap(({ id }) =>
+        this.patients.verify(id).pipe(
+          map(patient => verifyPatientSuccess({ patient })),
+          catchError((error: HttpErrorResponse) => of(verifyPatientFailure({ error }))),
+        ),
+      ),
+    ),
   );
 
   /**
