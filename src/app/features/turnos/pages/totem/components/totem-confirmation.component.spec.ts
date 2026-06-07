@@ -1,7 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideMockStore } from '@ngrx/store/testing';
+import { of } from 'rxjs';
+import { vi } from 'vitest';
 import { TotemConfirmationComponent } from './totem-confirmation.component';
 import { selectLastQueueNumber } from '../../../store/totem/totem.selectors';
+import { TotemTicketPdfService } from '../services/totem-ticket-pdf.service';
+import { PublicTenantBrandingService } from '../../../services/public-tenant-branding.service';
+import { PublicDisplayService } from '../../../services/public-display.service';
+import { TotemConfigService } from '../services/totem-config.service';
 
 describe('TotemConfirmationComponent', () => {
   let fixture: any;
@@ -14,6 +20,26 @@ describe('TotemConfirmationComponent', () => {
         provideMockStore({
           selectors: [{ selector: selectLastQueueNumber, value: 'ST-0001' }],
         }),
+        {
+          provide: TotemTicketPdfService,
+          useValue: { printTicket: vi.fn() },
+        },
+        {
+          provide: PublicTenantBrandingService,
+          useValue: {
+            getWhiteLabel: () => of({ systemName: 'Lab', tenantSlug: 'lab-demo', primaryColor: '#000', secondaryColor: '#fff', lightLogoUrl: null, darkLogoUrl: null }),
+          },
+        },
+        {
+          provide: PublicDisplayService,
+          useValue: {
+            listPublicBranches: () => of([{ id: 1, code: 'C', description: 'Centro' }]),
+          },
+        },
+        {
+          provide: TotemConfigService,
+          useValue: { slug: () => 'lab-demo', branchId: () => 1 },
+        },
       ],
     });
     fixture = TestBed.createComponent(TotemConfirmationComponent);
