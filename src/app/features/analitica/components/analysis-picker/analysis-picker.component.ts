@@ -65,8 +65,8 @@ export interface PickerRow extends Analysis {
             <td>{{ row.name }}</td>
             <td>{{ row.familyName ?? '—' }}</td>
             <td class="text-center">
-              <p-checkbox [(ngModel)]="row.isAuthorized" [binary]="true"
-                          (onChange)="onAuthorizedChange()" />
+              <p-checkbox [ngModel]="row.isAuthorized" [binary]="true"
+                          (onChange)="onAuthorizedChange(row, $event.checked)" />
             </td>
             <td class="text-right">
               <p-button icon="pi pi-eye" severity="secondary" [text]="true" size="small"
@@ -164,8 +164,9 @@ export class AnalysisPickerComponent implements OnInit {
     this.errorText.set(null);
   }
 
-  /** Llamado al cambiar cualquier checkbox de autorización para notificar al padre. */
-  onAuthorizedChange(): void {
-    this.itemsChanged.emit([...this.items()]);
+  /** Actualiza isAuthorized de forma inmutable y notifica al padre. */
+  onAuthorizedChange(row: PickerRow, value: boolean): void {
+    this.items.update((arr) => arr.map((r) => r.id === row.id ? { ...r, isAuthorized: value } : r));
+    this.itemsChanged.emit(this.items());
   }
 }

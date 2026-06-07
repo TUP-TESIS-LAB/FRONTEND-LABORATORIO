@@ -85,12 +85,17 @@ describe('AnalysisPickerComponent', () => {
     expect(emitted[0].id).toBe(7);
   });
 
-  it('itemsChanged emite la lista actualizada al llamar onAuthorizedChange', () => {
-    fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
+  it('itemsChanged emite la lista actualizada con isAuthorized correcto al llamar onAuthorizedChange', () => {
+    const row = a({ id: 1, shortCode: '1001' });
+    fixture.componentInstance.addAnalysis(row);
     const snapshots: PickerRow[][] = [];
     fixture.componentInstance.itemsChanged.subscribe((rows) => snapshots.push(rows));
-    fixture.componentInstance.onAuthorizedChange();
+    const pickerRow = fixture.componentInstance.items()[0];
+    fixture.componentInstance.onAuthorizedChange(pickerRow, true);
     expect(snapshots).toHaveLength(1);
     expect(snapshots[0]).toHaveLength(1);
+    expect(snapshots[0][0].isAuthorized).toBe(true);
+    // Verifica inmutabilidad: el objeto emitido es una copia nueva
+    expect(snapshots[0][0]).not.toBe(pickerRow);
   });
 });
