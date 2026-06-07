@@ -79,6 +79,36 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
     </div>
 
     <main class="wizard-body">
+      @if (showTokenModal()) {
+        <div class="token-modal-backdrop">
+          <div class="token-modal">
+            <div class="token-modal__header">
+              <i class="pi pi-check-circle token-modal__icon"></i>
+              <h2>Laboratorio creado correctamente</h2>
+            </div>
+            <div class="token-modal__section token-modal__section--primary">
+              <span class="token-modal__label">Link de primer acceso del administrador</span>
+              <code class="token-modal__value">{{ firstLoginLink() }}</code>
+              <div data-testid="copy-link-btn">
+                <p-button label="Copiar link" icon="pi pi-copy" [outlined]="true" severity="info"
+                          (onClick)="copyToClipboard(firstLoginLink())" />
+              </div>
+            </div>
+            <div class="token-modal__section">
+              <span class="token-modal__label">Token (alternativa)</span>
+              <code class="token-modal__value token-modal__value--muted">{{ firstLoginToken() }}</code>
+              <p-button label="Copiar token" icon="pi pi-copy" severity="secondary" [outlined]="true" size="small"
+                        (onClick)="copyToClipboard(firstLoginToken()!)" />
+            </div>
+            <p class="wizard-muted">Compartí el link con el administrador del laboratorio.</p>
+            <div data-testid="continue-btn">
+              <p-button label="Continuar a módulos" icon="pi pi-arrow-right" iconPos="right"
+                        (onClick)="closeTokenModal()" />
+            </div>
+          </div>
+        </div>
+      }
+
       @if (errorMessage(); as msg) {
         <div class="wizard-error" role="alert">{{ msg }}</div>
       }
@@ -100,13 +130,63 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
             <input pInputText formControlName="name" placeholder="Laboratorio Demo" />
           </label>
 
+          @if (mode() === 'create') {
+            <div class="wizard-owner-section" [formGroup]="ownerForm">
+              <div class="wizard-owner-divider"><span>Administrador inicial</span></div>
+              <div class="wizard-row">
+                <label class="wizard-field">
+                  <span>Nombre</span>
+                  <input pInputText formControlName="ownerFirstName" placeholder="Juan" />
+                  @if (ownerForm.get('ownerFirstName')?.touched && ownerForm.get('ownerFirstName')?.errors?.['required']) {
+                    <small class="wizard-field-error">Requerido.</small>
+                  }
+                </label>
+                <label class="wizard-field">
+                  <span>Apellido</span>
+                  <input pInputText formControlName="ownerLastName" placeholder="García" />
+                  @if (ownerForm.get('ownerLastName')?.touched && ownerForm.get('ownerLastName')?.errors?.['required']) {
+                    <small class="wizard-field-error">Requerido.</small>
+                  }
+                </label>
+              </div>
+              <label class="wizard-field">
+                <span>Email</span>
+                <input pInputText formControlName="ownerEmail" type="email" placeholder="admin@laboratorio.com" />
+                @if (ownerForm.get('ownerEmail')?.touched) {
+                  @if (ownerForm.get('ownerEmail')?.errors?.['required']) {
+                    <small class="wizard-field-error">Requerido.</small>
+                  } @else if (ownerForm.get('ownerEmail')?.errors?.['email']) {
+                    <small class="wizard-field-error">Ingresá un email válido.</small>
+                  }
+                }
+              </label>
+              <div class="wizard-row">
+                <label class="wizard-field">
+                  <span>DNI</span>
+                  <input pInputText formControlName="ownerDocument" placeholder="28345678" />
+                  @if (ownerForm.get('ownerDocument')?.touched && ownerForm.get('ownerDocument')?.errors?.['required']) {
+                    <small class="wizard-field-error">Requerido.</small>
+                  }
+                </label>
+                <label class="wizard-field">
+                  <span>Usuario</span>
+                  <input pInputText formControlName="ownerUsername" placeholder="jgarcia" />
+                  @if (ownerForm.get('ownerUsername')?.touched && ownerForm.get('ownerUsername')?.errors?.['required']) {
+                    <small class="wizard-field-error">Requerido.</small>
+                  }
+                </label>
+              </div>
+            </div>
+          }
+
           <div class="wizard-actions">
             <a routerLink="/saas/tenants">
               <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" [disabled]="pending()" />
             </a>
             <p-button [label]="mode() === 'edit' ? 'Guardar y siguiente' : 'Crear y continuar'"
                       icon="pi pi-arrow-right" iconPos="right" type="submit"
-                      [loading]="pending()" [disabled]="infoForm.invalid || pending()" />
+                      [loading]="pending()"
+                      [disabled]="infoForm.invalid || (mode() === 'create' && ownerForm.invalid) || pending()" />
           </div>
         </form>
       }
@@ -262,6 +342,46 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
 
     .wizard-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
     .wizard-actions a { text-decoration: none; }
+
+    .wizard-owner-section { margin-top: 16px; }
+    .wizard-owner-divider {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+    }
+    .wizard-owner-divider::before, .wizard-owner-divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.08);
+    }
+    .wizard-owner-divider span {
+      color: var(--saas-text-on-card, #fde68a); font-size: 11px;
+      text-transform: uppercase; letter-spacing: .06em; font-weight: 600; white-space: nowrap;
+    }
+
+    .token-modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.6);
+      display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
+    }
+    .token-modal {
+      background: var(--saas-bg-card, #232447); border-radius: 12px;
+      padding: 24px; max-width: 520px; width: 100%;
+      border: 1px solid var(--saas-border, rgba(255,255,255,.08));
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .token-modal__header { display: flex; align-items: center; gap: 10px; }
+    .token-modal__header h2 { margin: 0; font-size: 18px; color: var(--saas-text-on-card, #fde68a); }
+    .token-modal__icon { font-size: 22px; color: #4ade80; }
+    .token-modal__section {
+      background: rgba(255,255,255,.06); border-radius: 8px; padding: 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .token-modal__section--primary { border: 1px solid rgba(147,197,253,.2); }
+    .token-modal__label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+      color: var(--saas-text-muted, #94a3b8);
+    }
+    .token-modal__value {
+      font-family: monospace; font-size: 12px; word-break: break-all;
+      color: #93c5fd; background: rgba(0,0,0,.2); padding: 6px 8px; border-radius: 4px; display: block;
+    }
+    .token-modal__value--muted { color: var(--saas-text, #e2e8f0); }
   `],
 })
 export class TenantWizardPage implements OnInit, OnDestroy {
@@ -279,6 +399,13 @@ export class TenantWizardPage implements OnInit, OnDestroy {
   protected readonly enabledModules = signal<Set<ModuleCode>>(new Set());
   protected readonly errorMessage = signal<string | null>(null);
   private readonly pendingNav = signal<Step | null>(null);
+  protected readonly firstLoginToken = signal<string | null>(null);
+  protected readonly showTokenModal = signal(false);
+  protected readonly firstLoginLink = computed(() => {
+    const token = this.firstLoginToken();
+    if (!token) return '';
+    return `${window.location.origin}/first-login?token=${encodeURIComponent(token)}`;
+  });
 
   protected readonly pending = this.store.selectSignal(selectSaasAdminPending);
   protected readonly tenant = this.store.selectSignal(selectSelectedTenant);
@@ -311,6 +438,14 @@ export class TenantWizardPage implements OnInit, OnDestroy {
     darkLogoUrl: [null as string | null],
   });
 
+  protected readonly ownerForm = this.fb.nonNullable.group({
+    ownerFirstName: ['', Validators.required],
+    ownerLastName:  ['', Validators.required],
+    ownerEmail:     ['', [Validators.required, Validators.email]],
+    ownerDocument:  ['', Validators.required],
+    ownerUsername:  ['', Validators.required],
+  });
+
   constructor() {
     // Hydrate forms from store when editing
     effect(() => {
@@ -339,14 +474,15 @@ export class TenantWizardPage implements OnInit, OnDestroy {
       }
     });
 
-    // Create-mode: on success, capture id and advance
+    // Create-mode: on success, capture id and show token modal
     this.actions$
       .pipe(ofType(createTenantSuccess), takeUntilDestroyed())
       .subscribe(({ tenant }) => {
         this.createdTenantId.set(tenant.id);
+        this.firstLoginToken.set(tenant.ownerFirstLoginToken);
         this.wlForm.patchValue({ systemName: tenant.name });
         this.errorMessage.set(null);
-        this.step.set(2);
+        this.showTokenModal.set(true);
       });
 
     this.actions$
@@ -486,7 +622,9 @@ export class TenantWizardPage implements OnInit, OnDestroy {
     this.errorMessage.set(null);
     const raw = this.infoForm.getRawValue();
     if (this.mode() === 'create') {
-      this.store.dispatch(createTenant({ req: { code: raw.code, name: raw.name } }));
+      if (this.ownerForm.invalid) return;
+      const ownerRaw = this.ownerForm.getRawValue();
+      this.store.dispatch(createTenant({ req: { ...raw, ...ownerRaw } }));
     } else {
       const id = this.workingTenantId();
       if (id == null) return;
@@ -498,6 +636,15 @@ export class TenantWizardPage implements OnInit, OnDestroy {
         this.step.set(2);
       }
     }
+  }
+
+  protected copyToClipboard(text: string): void {
+    navigator.clipboard.writeText(text);
+  }
+
+  protected closeTokenModal(): void {
+    this.showTokenModal.set(false);
+    this.step.set(2);
   }
 
   protected submitStep3(): void {
