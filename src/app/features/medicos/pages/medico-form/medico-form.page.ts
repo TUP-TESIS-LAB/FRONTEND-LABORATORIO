@@ -19,7 +19,14 @@ import { selectDoctorPending, selectDoctorError, selectSelectedDoctor } from '..
 import { CreateDoctorRequest, Doctor, RegistrationType } from '../../models/doctor.model';
 import { DOCTOR_FORM_STEPS } from './doctor-form-steps';
 import { DatosStepComponent } from './steps/datos-step/datos-step.component';
+import { ContactoStepComponent } from './steps/contacto-step/contacto-step.component';
+import { FirmaStepComponent } from './steps/firma-step/firma-step.component';
 import { ResumenStepComponent, DoctorSummaryView } from './steps/resumen-step/resumen-step.component';
+
+function emptyToNull(v: string | null | undefined): string | null {
+  const t = (v ?? '').trim();
+  return t ? t : null;
+}
 
 @Component({
   selector: 'med-medico-form-page',
@@ -27,7 +34,7 @@ import { ResumenStepComponent, DoctorSummaryView } from './steps/resumen-step/re
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    FormStepperHeaderComponent, DatosStepComponent, ResumenStepComponent,
+    FormStepperHeaderComponent, DatosStepComponent, ContactoStepComponent, FirmaStepComponent, ResumenStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
@@ -55,7 +62,9 @@ import { ResumenStepComponent, DoctorSummaryView } from './steps/resumen-step/re
         }
         @switch (currentStep()) {
           @case (0) { <med-datos-step [group]="datosGroup" /> }
-          @case (1) { <med-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
+          @case (1) { <med-contacto-step [group]="contactoGroup" /> }
+          @case (2) { <med-firma-step [group]="firmaGroup" /> }
+          @case (3) { <med-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
         }
       </div>
 
@@ -101,6 +110,17 @@ export class MedicoFormPage implements OnDestroy {
       lastName: ['', Validators.required],
       tuition: ['', Validators.required],
       registrationType: [null as RegistrationType | null, Validators.required],
+      specialty: [''],
+      institution: [''],
+    }),
+    contacto: this.fb.group({
+      email: ['', Validators.email],
+      phone: [''],
+      street: [''],
+      streetNumber: [''],
+    }),
+    firma: this.fb.group({
+      signature: [null as string | null],
     }),
   });
 
@@ -109,7 +129,8 @@ export class MedicoFormPage implements OnDestroy {
 
   readonly isEdit = computed(() => { const v = this.id(); return v != null && v !== ''; });
 
-  readonly datosValid = computed(() => { void this.value(); void this.status(); return this.form.get('datos')!.valid; });
+  readonly datosValid = computed(() => { void this.value(); void this.status(); return this.datosGroup.valid; });
+  readonly contactoValid = computed(() => { void this.value(); void this.status(); return this.contactoGroup.valid; });
 
   readonly currentStep = signal(0);
   readonly visited = signal<ReadonlySet<number>>(new Set([0]));
@@ -117,8 +138,15 @@ export class MedicoFormPage implements OnDestroy {
   readonly isFirstStep = computed(() => this.currentStep() === 0);
   readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
 
-  readonly canContinue = computed(() => (this.currentStep() === 0 ? this.datosValid() : true));
-  readonly canSubmit = computed(() => this.datosValid() && !this.pending() && (this.isEdit() || this.isLastStep()));
+  readonly canContinue = computed(() => {
+    switch (this.currentStep()) {
+      case 0: return this.datosValid();
+      case 1: return this.contactoValid();
+      default: return true;
+    }
+  });
+  readonly canSubmit = computed(() =>
+    this.datosValid() && this.contactoValid() && !this.pending() && (this.isEdit() || this.isLastStep()));
   readonly showContinueButton = computed(() => !this.isLastStep() && !this.isEdit());
   readonly showSubmitButton = computed(() => this.isEdit() || this.isLastStep());
 
@@ -130,11 +158,20 @@ export class MedicoFormPage implements OnDestroy {
 
   readonly summaryView = computed<DoctorSummaryView>(() => {
     void this.value();
-    const d = this.datosGroup.getRawValue() as DoctorSummaryView;
-    return { firstName: d.firstName, lastName: d.lastName, tuition: d.tuition, registrationType: d.registrationType };
+    const d = this.datosGroup.getRawValue();
+    const c = this.contactoGroup.getRawValue();
+    const f = this.firmaGroup.getRawValue();
+    return {
+      firstName: d.firstName, lastName: d.lastName, tuition: d.tuition, registrationType: d.registrationType,
+      specialty: d.specialty, institution: d.institution,
+      email: c.email, phone: c.phone, street: c.street, streetNumber: c.streetNumber,
+      signature: f.signature,
+    };
   });
 
   get datosGroup(): FormGroup { return this.form.get('datos') as FormGroup; }
+  get contactoGroup(): FormGroup { return this.form.get('contacto') as FormGroup; }
+  get firmaGroup(): FormGroup { return this.form.get('firma') as FormGroup; }
 
   private hydratedForId: string | undefined = undefined;
 
@@ -154,7 +191,7 @@ export class MedicoFormPage implements OnDestroy {
       const d = this.doctor();
       if (this.isEdit() && d && String(d.id) === this.id()) {
         this.hydrate(d);
-        this.visited.set(new Set([0, 1]));
+        this.visited.set(new Set([0, 1, 2, 3]));
       }
     });
 
@@ -163,7 +200,11 @@ export class MedicoFormPage implements OnDestroy {
   }
 
   goNext(): void {
-    if (!this.canContinue()) { this.form.get('datos')?.markAllAsTouched(); return; }
+    if (!this.canContinue()) {
+      if (this.currentStep() === 0) this.datosGroup.markAllAsTouched();
+      if (this.currentStep() === 1) this.contactoGroup.markAllAsTouched();
+      return;
+    }
     const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
     this.currentStep.set(next);
     this.visited.update((s) => new Set(s).add(next));
@@ -172,14 +213,26 @@ export class MedicoFormPage implements OnDestroy {
   goToStep(i: number): void { if (this.visited().has(i)) this.currentStep.set(i); }
 
   private resetForCreate(): void {
-    this.form.reset({ datos: { firstName: '', lastName: '', tuition: '', registrationType: null } });
+    this.form.reset({
+      datos: { firstName: '', lastName: '', tuition: '', registrationType: null, specialty: '', institution: '' },
+      contacto: { email: '', phone: '', street: '', streetNumber: '' },
+      firma: { signature: null },
+    });
     this.currentStep.set(0);
     this.visited.set(new Set([0]));
   }
 
   private hydrate(d: Doctor): void {
     this.form.patchValue({
-      datos: { firstName: d.firstName, lastName: d.lastName, tuition: d.tuition, registrationType: d.registrationType },
+      datos: {
+        firstName: d.firstName, lastName: d.lastName, tuition: d.tuition, registrationType: d.registrationType,
+        specialty: d.specialty ?? '', institution: d.institution ?? '',
+      },
+      contacto: {
+        email: d.email ?? '', phone: d.phone ?? '',
+        street: d.address?.street ?? '', streetNumber: d.address?.streetNumber ?? '',
+      },
+      firma: { signature: d.signature ?? null },
     });
     this.form.markAsPristine();
   }
@@ -207,11 +260,21 @@ export class MedicoFormPage implements OnDestroy {
 
   onSubmit(): void {
     if (!this.canSubmit()) return;
-    const raw = this.datosGroup.getRawValue() as {
+    const d = this.datosGroup.getRawValue() as {
       firstName: string; lastName: string; tuition: string; registrationType: RegistrationType;
+      specialty: string; institution: string;
     };
+    const c = this.contactoGroup.getRawValue() as {
+      email: string; phone: string; street: string; streetNumber: string;
+    };
+    const f = this.firmaGroup.getRawValue() as { signature: string | null };
+    const street = (c.street ?? '').trim();
     const req: CreateDoctorRequest = {
-      firstName: raw.firstName, lastName: raw.lastName, tuition: raw.tuition, registrationType: raw.registrationType,
+      firstName: d.firstName, lastName: d.lastName, tuition: d.tuition, registrationType: d.registrationType,
+      specialty: emptyToNull(d.specialty), institution: emptyToNull(d.institution),
+      email: emptyToNull(c.email), phone: emptyToNull(c.phone),
+      signature: f.signature || null,
+      address: street ? { street, streetNumber: emptyToNull(c.streetNumber) } : null,
     };
     const editId = this.id();
     if (editId) this.store.dispatch(updateDoctor({ id: Number(editId), req }));
