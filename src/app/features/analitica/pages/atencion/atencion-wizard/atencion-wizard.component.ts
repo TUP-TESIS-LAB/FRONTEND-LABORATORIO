@@ -157,6 +157,7 @@ export class AtencionWizardComponent {
   readonly id            = input<string | undefined>(undefined);
   readonly appointmentId = input<string | undefined>(undefined);
   readonly dni           = input<string | undefined>(undefined);
+  readonly queueEntryId  = input<string | undefined>(undefined);
 
   /**
    * "creating" = estamos en la ruta /atencion/nueva y todavía no se creó la atención.
@@ -210,8 +211,10 @@ export class AtencionWizardComponent {
         this.store.dispatch(loadAtencion({ id: Number(idv) }));
         writeAtencionSession({ atencionId: Number(idv), uiStep: 'datos' });
       } else if (apptId) {
+        const qid = this.queueEntryId();
+        const queueEntryId = qid ? Number(qid) : null;
         this.store.dispatch(createPreFilledAtencion({
-          payload: { appointmentId: Number(apptId), attentionNumber: `A-${Date.now().toString().slice(-6)}` },
+          payload: { appointmentId: Number(apptId), attentionNumber: `A-${Date.now().toString().slice(-6)}`, queueEntryId },
         }));
       } else if (this.creating()) {
         // Modo crear nueva: el step de datos arranca en blanco sin loadAtencion.

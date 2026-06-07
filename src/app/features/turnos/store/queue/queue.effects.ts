@@ -51,11 +51,17 @@ export class QueueEffects {
 
   callAppointmentForAttention$ = createEffect(() => this.actions$.pipe(
     ofType(A.callAppointmentForAttention),
-    switchMap(({ appointmentId, dni }) =>
+    switchMap(({ appointmentId, dni, queueEntryId }) =>
       // attendByAppointment: registra el call + transiciona queue_entry
       // a COMPLETED para que salga de la cola inmediatamente.
+      // El response.id es el queueEntryId real (creado o recuperado por el BE).
       this.service.attendByAppointment(appointmentId).pipe(
-        map(() => A.callAppointmentForAttentionSuccess({ appointmentId, dni })),
+        map(response => A.callAppointmentForAttentionSuccess({
+          appointmentId,
+          dni,
+          // Si ya teníamos el id del totem, usarlo; si no, tomar el que devuelve el BE.
+          queueEntryId: queueEntryId ?? response.id,
+        })),
         catchError(error => of(A.callAppointmentForAttentionFailure({ error }))),
       )
     ),
@@ -70,8 +76,10 @@ export class QueueEffects {
 
   navigateAfterCall$ = createEffect(() => this.actions$.pipe(
     ofType(A.callAppointmentForAttentionSuccess),
-    tap(({ dni }) => {
-      const queryParams = dni ? { dni } : {};
+    tap(({ dni, queueEntryId }) => {
+      const queryParams: Record<string, string | number> = {};
+      if (queueEntryId != null) queryParams['queueEntryId'] = queueEntryId;
+      if (dni) queryParams['dni'] = dni;
       this.router.navigate(['/analitica/atencion/nueva'], { queryParams });
     }),
   ), { dispatch: false });
@@ -107,7 +115,7 @@ export class QueueEffects {
     ofType(A.attendWalkinEntry),
     switchMap(({ entryId, dni }) =>
       this.service.updateStatus(entryId, QueueStatus.COMPLETED).pipe(
-        map(() => A.attendWalkinEntrySuccess({ dni })),
+        map(() => A.attendWalkinEntrySuccess({ dni, queueEntryId: entryId })),
         catchError(error => of(A.attendWalkinEntryFailure({ error }))),
       ),
     ),
@@ -115,8 +123,9 @@ export class QueueEffects {
 
   refreshAndNavigateAfterAttendWalkin$ = createEffect(() => this.actions$.pipe(
     ofType(A.attendWalkinEntrySuccess),
-    tap(({ dni }) => {
-      const queryParams = dni ? { dni } : {};
+    tap(({ dni, queueEntryId }) => {
+      const queryParams: Record<string, string | number> = { queueEntryId };
+      if (dni) queryParams['dni'] = dni;
       this.router.navigate(['/analitica/atencion/nueva'], { queryParams });
     }),
     map(() => A.loadQueue({ silent: true })),
