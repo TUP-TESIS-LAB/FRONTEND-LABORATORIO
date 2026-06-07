@@ -151,10 +151,10 @@ describe('AtencionEffects', () => {
     // Subscribe first, then dispatch both — both emissions are captured by toArray.
     const collected = firstValueFrom(effects.addAnalysis$.pipe(take(2), toArray()));
     actions$.next(A.addAnalysisList({
-      id: 1, payload: { analysisIds: [1], isUrgent: false, authorizationNumber: null },
+      id: 1, payload: { items: [{ analysisId: 1, isAuthorized: false }], isUrgent: false, authorizationNumber: null },
     }));
     actions$.next(A.addAnalysisList({
-      id: 1, payload: { analysisIds: [1, 2], isUrgent: true, authorizationNumber: null },
+      id: 1, payload: { items: [{ analysisId: 1, isAuthorized: false }, { analysisId: 2, isAuthorized: true }], isUrgent: true, authorizationNumber: null },
     }));
 
     const results = await collected;

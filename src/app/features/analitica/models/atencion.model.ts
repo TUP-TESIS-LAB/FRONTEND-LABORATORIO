@@ -75,8 +75,13 @@ export interface AssignGeneralDataRequest {
   indications: string | null;
 }
 
+export interface AddAnalysisItemRequest {
+  analysisId: number;
+  isAuthorized: boolean;
+}
+
 export interface AddAnalysisListRequest {
-  analysisIds: number[];
+  items: AddAnalysisItemRequest[];
   isUrgent: boolean;
   authorizationNumber: number | null;
 }

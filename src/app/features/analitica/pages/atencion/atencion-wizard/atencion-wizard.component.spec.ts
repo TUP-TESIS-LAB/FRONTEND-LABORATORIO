@@ -3,10 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { ReplaySubject, of } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 import { AtencionWizardComponent } from './atencion-wizard.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
-import { NbuService } from '../../../services/nbu.service';
 import { AttentionResponse, AttentionState } from '../../../models/atencion.model';
 import {
   selectDetail, selectDetailLoading, selectMutating,
@@ -53,7 +52,6 @@ describe('AtencionWizardComponent (CORE flow)', () => {
         // un stream mock o falla la DI con NG0201.
         provideMockActions(() => new ReplaySubject<Action>(1)),
         { provide: ModuleRegistry, useValue: registry },
-        { provide: NbuService, useValue: { getCurrent: vi.fn().mockReturnValue(of(null)) } },
         { provide: Router, useValue: { navigate: vi.fn() } },
         // DatosGeneralesStep ahora lee el dni del queryParam (KAN-73).
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
