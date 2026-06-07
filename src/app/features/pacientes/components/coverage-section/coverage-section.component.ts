@@ -15,21 +15,22 @@ import { CoveragePlansService } from '../../services/coverage-plans.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule, RadioButtonModule],
   template: `
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-1">
+      <div class="flex justify-end">
+        <p-button icon="pi pi-plus" label="Agregar cobertura" severity="secondary" [text]="true" size="small" (onClick)="add()" />
+      </div>
       @for (group of array().controls; track group; let i = $index) {
         <div [formGroup]="$any(group)" class="pat-form__row">
-          <div class="pat-form__row-header" style="justify-content:flex-end">
-            <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="remove(i)" ariaLabel="Eliminar cobertura" />
-          </div>
-          <div class="pat-form__grid">
-            <div class="pat-form__field">
+          <div class="flex gap-3 items-end">
+            <div class="pat-form__field flex-1">
               <label class="pat-form__label">Obra social / Plan</label>
-              <p-select formControlName="planId" [options]="planOptions" optionLabel="label" optionValue="planId" placeholder="Seleccionar plan" appendTo="body" class="w-full" />
+              <p-select formControlName="planId" [options]="planOptions" optionLabel="label" optionValue="planId" appendTo="body" class="w-full" />
             </div>
-            <div class="pat-form__field">
+            <div class="pat-form__field flex-1">
               <label class="pat-form__label">N° afiliado</label>
               <input pInputText formControlName="memberNumber" class="pat-form__input">
             </div>
+            <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="remove(i)" ariaLabel="Eliminar cobertura" />
           </div>
           <div class="pat-form__row-flags">
             <label class="pat-form__row-flag">
@@ -43,7 +44,6 @@ import { CoveragePlansService } from '../../services/coverage-plans.service';
           </div>
         </div>
       }
-      <p-button icon="pi pi-plus" label="Agregar cobertura" severity="secondary" [outlined]="true" (onClick)="add()" />
     </div>
   `,
 })

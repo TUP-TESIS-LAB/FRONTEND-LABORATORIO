@@ -41,6 +41,11 @@ Las listas repetibles (Otros contactos, Coberturas, etc.) hoy son una **card por
 - Specs de componente (`ng test` / Vitest) para los step-components tocados (que rendericen sin el título, que el patrón repetible agregue/quite filas).
 - El SCSS global (patrón 2) es visual → se valida corriendo la app (no test unitario).
 
+## Refinamientos de la iteración visual (verificados en vivo)
+Al validar el stepper de pacientes en la app se ajustó el patrón de listas repetibles y se sumó uno nuevo:
+- **Listas repetibles compactas**: el botón **"+ Agregar X" va arriba, alineado en la misma línea que el label de la lista** (ej. "Otros contactos … + Agregar contacto"), no abajo. El **trash va inline, a la misma altura que los inputs** (no en una fila propia). Padding de fila mínimo (`.pat-form__row` con `padding: var(--space-2) 0`, `gap: 4px`). Filas separadas por divisor fino.
+- **Sin placeholders en inputs** (nuevo patrón estándar): ningún campo de formulario lleva `placeholder` (ni inputs de texto, ni datepicker, ni selects). Los campos vacíos quedan en blanco; los obligatorios se marcan con el `*` rojo + borde rojo al blur. (Los buscadores de listados — search boxes — son otro contexto y quedan fuera.)
+
 ## Criterio de hecho (este incremento)
 - Stepper de pacientes: pasos sin títulos redundantes; obligatorios con `*` + rojo-al-blur (global); listas repetibles como filas planas con divisor.
 - Specs verdes.
