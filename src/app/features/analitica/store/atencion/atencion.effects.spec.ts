@@ -20,7 +20,7 @@ import { AtencionEffects } from './atencion.effects';
 
 function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
   return {
-    id: 1, tenantId: 1, attentionNumber: 'A-001',
+    id: 1, tenantId: 1, attentionNumber: 'A-001', publicCode: null,
     patientId: 100, doctorId: null, branchId: 1,
     insurancePlanId: null, indications: null,
     paymentId: null, protocolId: null, extractorId: null,
@@ -209,7 +209,7 @@ describe('AtencionEffects', () => {
     const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
     (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, indications: null }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, indications: null, queueEntryId: null }));
     const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(api.createBlank).toHaveBeenCalled();
     expect(api.assignGeneralData).toHaveBeenCalledWith(10, { patientId: 5, doctorId: null, insurancePlanId: null, indications: null });
@@ -217,10 +217,21 @@ describe('AtencionEffects', () => {
     expect(out).toEqual(A.atencionMutationSuccess({ item: assigned }));
   });
 
+  it('startAttentionForPatient$ → createBlank con queueEntryId → lo pasa al payload', async () => {
+    const created = { id: 10 } as any;
+    const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
+    (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
+    (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, indications: null, queueEntryId: 42 }));
+    const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
+    expect(api.createBlank).toHaveBeenCalledWith(expect.objectContaining({ queueEntryId: 42 }));
+    expect(out).toEqual(A.atencionMutationSuccess({ item: assigned }));
+  });
+
   it('startAttentionForPatient$ → createBlank falla → mutationFailure, sin navegar', async () => {
     const error = new HttpErrorResponse({ status: 500 });
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, indications: null }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, indications: null, queueEntryId: null }));
     const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(out).toEqual(A.atencionMutationFailure({ error }));
   });

@@ -34,3 +34,15 @@ describe('TotemConfigService', () => {
     expect(service.branchId()).toBeNull();
   });
 });
+
+describe('TotemConfigService slug', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('persists and reads the tenant slug', () => {
+    const svc = new TotemConfigService();
+    expect(svc.slug()).toBeNull();
+    svc.setSlug('lab-demo');
+    expect(svc.slug()).toBe('lab-demo');
+    expect(new TotemConfigService().slug()).toBe('lab-demo');
+  });
+});

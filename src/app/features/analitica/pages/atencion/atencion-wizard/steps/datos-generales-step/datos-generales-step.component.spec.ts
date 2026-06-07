@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { DatosGeneralesStepComponent } from './datos-generales-step.component';
 import { initialAtencionState, ATENCION_FEATURE_KEY } from '../../../../../store/atencion/atencion.state';
 import {
@@ -19,6 +20,10 @@ const coveragePlansStub = {
   getActivePlans: () => of(STUB_PLANS),
 };
 
+const defaultRouteStub = {
+  snapshot: { queryParamMap: { get: () => null } },
+};
+
 describe('DatosGeneralesStepComponent', () => {
   let store: MockStore;
 
@@ -30,6 +35,7 @@ describe('DatosGeneralesStepComponent', () => {
           initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
         }),
         { provide: CoveragePlansService, useValue: coveragePlansStub },
+        { provide: ActivatedRoute, useValue: defaultRouteStub },
       ],
     }).compileComponents();
     store = TestBed.inject(MockStore);
@@ -56,7 +62,7 @@ describe('DatosGeneralesStepComponent', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, indications: null }),
+      startAttentionForPatient({ patientId: 5, indications: null, queueEntryId: null }),
     );
   });
 
@@ -443,6 +449,42 @@ describe('DatosGeneralesStepComponent', () => {
           coverages: [{ planId: 1, memberNumber: 'AF-001', isPrimary: true, active: true }],
         }),
       }),
+    );
+  });
+});
+
+describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DatosGeneralesStepComponent],
+      providers: [
+        provideMockStore({
+          initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
+        }),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: (k: string) => k === 'queueEntryId' ? '99' : null } } },
+        },
+      ],
+    }).compileComponents();
+    store = TestBed.inject(MockStore);
+  });
+
+  it('confirmar con queueEntryId en la ruta lo incluye en startAttentionForPatient', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: { id: 5 } as any },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onConfirm();
+    expect(spy).toHaveBeenCalledWith(
+      startAttentionForPatient({ patientId: 5, indications: null, queueEntryId: 99 }),
     );
   });
 });

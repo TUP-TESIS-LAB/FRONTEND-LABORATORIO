@@ -12,6 +12,7 @@ function makeItem(over: Partial<InExtractionItem> = {}): InExtractionItem {
     patientBirthDate: null,
     patientGender: null,
     attentionNumber: 'A-FX0001',
+    publicCode: null,
     isUrgent: false,
     analysisCount: 4,
     insurancePlanLabel: null,

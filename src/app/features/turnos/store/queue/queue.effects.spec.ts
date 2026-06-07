@@ -14,6 +14,8 @@ import {
   loadQueue,
   loadQueueSuccess,
   loadQueueFailure,
+  attendWalkinEntry,
+  attendWalkinEntrySuccess,
 } from './queue.actions';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 
@@ -119,40 +121,40 @@ describe('QueueEffects — callAppointmentForAttention', () => {
     });
   });
 
-  it('on success: dispatches callAppointmentForAttentionSuccess con dni', () => {
+  it('on success: dispatches callAppointmentForAttentionSuccess con dni y queueEntryId', () => {
     return new Promise<void>((resolve) => {
       queueService.attendByAppointment.mockReturnValue(of({ id: 50, lastCalledAt: '', callCount: 1, status: 'COMPLETED' }));
-      actions$ = of(callAppointmentForAttention({ appointmentId: 100, dni: '12345678' }));
+      actions$ = of(callAppointmentForAttention({ appointmentId: 100, dni: '12345678', queueEntryId: 50 }));
 
       TestBed.inject(QueueEffects).callAppointmentForAttention$.subscribe((action) => {
-        expect(action).toEqual(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: '12345678' }));
+        expect(action).toEqual(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: '12345678', queueEntryId: 50 }));
         resolve();
       });
     });
   });
 
-  it('navigateAfterCall$: navigates to /analitica/atencion/nueva con dni en queryParams', () => {
+  it('navigateAfterCall$: navigates to /analitica/atencion/nueva con dni y queueEntryId en queryParams', () => {
     return new Promise<void>((resolve) => {
-      actions$ = of(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: '12345678' }));
+      actions$ = of(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: '12345678', queueEntryId: 50 }));
 
       TestBed.inject(QueueEffects).navigateAfterCall$.subscribe(() => {
         expect(router.navigate).toHaveBeenCalledWith(
           ['/analitica/atencion/nueva'],
-          { queryParams: { dni: '12345678' } }
+          { queryParams: { queueEntryId: 50, dni: '12345678' } }
         );
         resolve();
       });
     });
   });
 
-  it('navigateAfterCall$: navega sin dni en queryParams si dni es null', () => {
+  it('navigateAfterCall$: navega con solo queueEntryId en queryParams si dni es null', () => {
     return new Promise<void>((resolve) => {
-      actions$ = of(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: null }));
+      actions$ = of(callAppointmentForAttentionSuccess({ appointmentId: 100, dni: null, queueEntryId: 50 }));
 
       TestBed.inject(QueueEffects).navigateAfterCall$.subscribe(() => {
         expect(router.navigate).toHaveBeenCalledWith(
           ['/analitica/atencion/nueva'],
-          { queryParams: {} }
+          { queryParams: { queueEntryId: 50 } }
         );
         resolve();
       });
@@ -162,11 +164,87 @@ describe('QueueEffects — callAppointmentForAttention', () => {
   it('on failure: dispatches callAppointmentForAttentionFailure and does not navigate', () => {
     return new Promise<void>((resolve) => {
       queueService.attendByAppointment.mockReturnValue(throwError(() => new Error('500')));
-      actions$ = of(callAppointmentForAttention({ appointmentId: 100, dni: '12345678' }));
+      actions$ = of(callAppointmentForAttention({ appointmentId: 100, dni: '12345678', queueEntryId: 50 }));
 
       TestBed.inject(QueueEffects).callAppointmentForAttention$.subscribe((action) => {
         expect(action.type).toBe(callAppointmentForAttentionFailure.type);
         expect(router.navigate).not.toHaveBeenCalled();
+        resolve();
+      });
+    });
+  });
+});
+
+describe('QueueEffects — attendWalkin$', () => {
+  let actions$: Observable<Action>;
+  let queueService: {
+    list: ReturnType<typeof vi.fn>;
+    call: ReturnType<typeof vi.fn>;
+    attendByAppointment: ReturnType<typeof vi.fn>;
+    updateStatus: ReturnType<typeof vi.fn>;
+    cancel: ReturnType<typeof vi.fn>;
+  };
+  let router: { navigate: ReturnType<typeof vi.fn> };
+  let messageService: { add: ReturnType<typeof vi.fn> };
+
+  beforeEach(() => {
+    queueService = {
+      list: vi.fn(),
+      call: vi.fn(),
+      attendByAppointment: vi.fn(),
+      updateStatus: vi.fn(),
+      cancel: vi.fn(),
+    };
+    router = { navigate: vi.fn() };
+    messageService = { add: vi.fn() };
+
+    TestBed.configureTestingModule({
+      providers: [
+        QueueEffects,
+        provideMockActions(() => actions$),
+        { provide: QueueService, useValue: queueService },
+        { provide: OperatorBranchContextService, useValue: { branchId: signal<number | null>(null) } },
+        { provide: Router, useValue: router },
+        { provide: MessageService, useValue: messageService },
+      ],
+    });
+  });
+
+  it('attendWalkin$: on success dispatches attendWalkinEntrySuccess with queueEntryId = entryId', () => {
+    return new Promise<void>((resolve) => {
+      queueService.updateStatus.mockReturnValue(of(undefined));
+      actions$ = of(attendWalkinEntry({ entryId: 77, dni: '30000001' }));
+
+      TestBed.inject(QueueEffects).attendWalkin$.subscribe((action) => {
+        expect(action).toEqual(attendWalkinEntrySuccess({ dni: '30000001', queueEntryId: 77 }));
+        resolve();
+      });
+    });
+  });
+
+  it('refreshAndNavigateAfterAttendWalkin$: navigates to /analitica/atencion/nueva with queueEntryId and dni', () => {
+    return new Promise<void>((resolve) => {
+      actions$ = of(attendWalkinEntrySuccess({ dni: '30000001', queueEntryId: 77 }));
+
+      TestBed.inject(QueueEffects).refreshAndNavigateAfterAttendWalkin$.subscribe(() => {
+        expect(router.navigate).toHaveBeenCalledWith(
+          ['/analitica/atencion/nueva'],
+          { queryParams: { queueEntryId: 77, dni: '30000001' } },
+        );
+        resolve();
+      });
+    });
+  });
+
+  it('refreshAndNavigateAfterAttendWalkin$: navigates with only queueEntryId when dni is null', () => {
+    return new Promise<void>((resolve) => {
+      actions$ = of(attendWalkinEntrySuccess({ dni: null, queueEntryId: 42 }));
+
+      TestBed.inject(QueueEffects).refreshAndNavigateAfterAttendWalkin$.subscribe(() => {
+        expect(router.navigate).toHaveBeenCalledWith(
+          ['/analitica/atencion/nueva'],
+          { queryParams: { queueEntryId: 42 } },
+        );
         resolve();
       });
     });
