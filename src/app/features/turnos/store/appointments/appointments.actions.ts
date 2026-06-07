@@ -9,6 +9,9 @@ export const loadTodayAppointmentsSuccess = createAction(
   '[Appointments] Load Today Success',
   props<{ appointments: Appointment[] }>()
 );
+export const loadTodayAppointmentsNotModified = createAction(
+  '[Appointments] Load Today Not Modified'
+);
 export const loadTodayAppointmentsFailure = createAction(
   '[Appointments] Load Today Failure',
   props<{ error: unknown }>()

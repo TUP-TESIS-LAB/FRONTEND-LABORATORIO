@@ -8,5 +8,6 @@ export const appointmentsReducer = createReducer(
   on(A.loadTodayAppointmentsSuccess, (s, { appointments }) => ({
     ...s, todayByBranch: appointments, loading: false,
   })),
+  on(A.loadTodayAppointmentsNotModified, (s) => ({ ...s, loading: false })),
   on(A.loadTodayAppointmentsFailure, (s, { error }) => ({ ...s, loading: false, error })),
 );
