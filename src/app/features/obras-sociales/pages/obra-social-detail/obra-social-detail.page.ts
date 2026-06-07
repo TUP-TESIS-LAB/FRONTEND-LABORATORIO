@@ -98,7 +98,7 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
               } @else {
                 <p-table [value]="o.plans" dataKey="id">
                   <ng-template pTemplate="header">
-                    <tr><th>Código</th><th>Nombre</th><th>Sigla</th><th>Vigente desde</th><th>NBU</th><th>Valor U.B.</th><th>% Cob.</th><th>IVA</th><th>Estado</th></tr>
+                    <tr><th>Código</th><th>Nombre</th><th>Sigla</th><th>Vigente desde</th><th>NBU</th><th>Valor U.B.</th><th>IVA</th><th>Estado</th></tr>
                   </ng-template>
                   <ng-template pTemplate="body" let-p>
                     <tr>
@@ -106,7 +106,6 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
                       <td>{{ currentAgreement(p)?.validFromDate | date:'dd/MM/yyyy' }}</td>
                       <td>{{ nbuLabel(currentAgreement(p)?.versionNbu) }}</td>
                       <td>{{ currentAgreement(p)?.ubValue | currencyAr }}</td>
-                      <td>{{ currentAgreement(p)?.coveragePercentage }}%</td>
                       <td>{{ p.iva }}%</td>
                       <td>
                         @if (p.isActive) { <p-tag severity="success" value="Activo" /> }
@@ -134,19 +133,18 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
                 </div>
                 <p-table [value]="selectedAgreements()" dataKey="id">
                   <ng-template pTemplate="header">
-                    <tr><th>NBU</th><th>Valor U.B.</th><th>% Cob.</th><th>Vigente desde</th><th>Vigente hasta</th></tr>
+                    <tr><th>NBU</th><th>Valor U.B.</th><th>Vigente desde</th><th>Vigente hasta</th></tr>
                   </ng-template>
                   <ng-template pTemplate="body" let-a>
                     <tr>
                       <td>{{ nbuLabel(a.versionNbu) }}</td>
                       <td>{{ a.ubValue | currencyAr }}</td>
-                      <td>{{ a.coveragePercentage }}%</td>
                       <td>{{ a.validFromDate | date:'dd/MM/yyyy' }}</td>
                       <td>{{ a.validToDate ? (a.validToDate | date:'dd/MM/yyyy') : '—' }}</td>
                     </tr>
                   </ng-template>
                   <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="5" class="text-surface-500 text-sm py-3">Elegí un plan para ver sus convenios.</td></tr>
+                    <tr><td colspan="4" class="text-surface-500 text-sm py-3">Elegí un plan para ver sus convenios.</td></tr>
                   </ng-template>
                 </p-table>
               }

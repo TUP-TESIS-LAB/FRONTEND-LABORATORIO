@@ -51,7 +51,7 @@ describe('ObraSocialService (mock)', () => {
       },
       plans: [{
         plan: { code: 'P1', acronym: 'P1', name: 'Plan 1', iva: 21 },
-        agreement: { versionNbu: 3, requiresCopayment: false, coveragePercentage: 90, ubValue: 1000, validFromDate: '2026-01-01' },
+        agreement: { versionNbu: 3, ubValue: 1000, validFromDate: '2026-01-01' },
       }],
       contacts: [{ contactType: 'PHONE', contact: '123' }],
     };
@@ -60,7 +60,7 @@ describe('ObraSocialService (mock)', () => {
     expect(created.insurerTypeName).toBe('Obra Social');
     const fetched = await firstValueFrom(service.getCompleteById(created.id));
     expect(fetched.name).toBe('Nueva OS');
-    expect(fetched.plans[0].actualAgreements[0].coveragePercentage).toBe(90);
+    expect(fetched.plans[0].actualAgreements[0].ubValue).toBe(1000);
   });
 
   it('getInsurerTypes / getNbuVersions / getContactTypes devuelven catálogos', async () => {

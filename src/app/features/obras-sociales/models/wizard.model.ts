@@ -21,8 +21,6 @@ export interface WizardPlan {
 
 export interface WizardAgreement {
   versionNbu: number;
-  requiresCopayment: boolean;
-  coveragePercentage: number;
   ubValue: number;
   validFromDate: string;          // ISO yyyy-MM-dd
 }
