@@ -11,7 +11,9 @@ import {
   CancelAttentionRequest,
   CreateBlankAttentionRequest,
   CreatePreFilledAttentionRequest,
+  SetCopaymentRequest,
 } from '../models/atencion.model';
+import { AttentionPricing } from '../models/pricing.model';
 
 @Injectable({ providedIn: 'root' })
 export class AtencionApiService {
@@ -72,5 +74,13 @@ export class AtencionApiService {
 
   addObservations(id: number, body: AddObservationsRequest): Observable<AttentionResponse> {
     return this.http.patch<AttentionResponse>(`${this.base}/${id}/add/observations`, body);
+  }
+
+  getPricing(id: number): Observable<AttentionPricing> {
+    return this.http.get<AttentionPricing>(`${this.base}/${id}/pricing`);
+  }
+
+  setCopayment(id: number, body: SetCopaymentRequest): Observable<AttentionResponse> {
+    return this.http.patch<AttentionResponse>(`${this.base}/${id}/copayment`, body);
   }
 }

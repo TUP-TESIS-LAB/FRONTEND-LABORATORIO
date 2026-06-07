@@ -6,6 +6,7 @@ import { Action } from '@ngrx/store';
 import { Observable, ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
 import { Analysis, AttentionResponse, AttentionState } from '../../models/atencion.model';
+import { AttentionPricing } from '../../models/pricing.model';
 import { AtencionApiService } from '../../services/atencion-api.service';
 import { Patient } from '../../../pacientes/models/patient.model';
 import { PatientService } from '../../../pacientes/services/patient.service';
@@ -29,13 +30,17 @@ function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
     attentionState: AttentionState.REGISTERING_GENERAL_DATA,
     mostAdvancedState: AttentionState.REGISTERING_GENERAL_DATA,
     analysisAuthorizations: [],
+    copaymentAmount: null,
     ...over,
   };
 }
 
 describe('AtencionEffects', () => {
   let actions$: ReplaySubject<Action>;
-  let api: Partial<Record<keyof AtencionApiService, ReturnType<typeof vi.fn>>>;
+  let api: Partial<Record<keyof AtencionApiService, ReturnType<typeof vi.fn>>> & {
+    getPricing: ReturnType<typeof vi.fn>;
+    setCopayment: ReturnType<typeof vi.fn>;
+  };
   let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
   let analysis: { getById: ReturnType<typeof vi.fn> };
@@ -60,6 +65,8 @@ describe('AtencionEffects', () => {
       returnPhase: vi.fn(),
       cancel: vi.fn(),
       addObservations: vi.fn(),
+      getPricing: vi.fn(),
+      setCopayment: vi.fn(),
     };
     patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn(), getById: vi.fn() };
     router = { navigate: vi.fn() };
@@ -274,5 +281,51 @@ describe('AtencionEffects', () => {
     actions$.next(A.downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
     expect(notification.error).toHaveBeenCalled();
     expect(rotuloPdf.generate).not.toHaveBeenCalled();
+  });
+
+  // ── Pricing effects ──────────────────────────────────────────────────────
+
+  it('loadPricing$ → success → loadPricingSuccess', async () => {
+    const pricing: AttentionPricing = {
+      items: [{ analysisId: 3, authorized: true, cantidadUb: 2, valorUbParticular: null, precioPaciente: 0 }],
+      subtotal: 0, copayment: 0, total: 0,
+    };
+    (api.getPricing as ReturnType<typeof vi.fn>).mockReturnValue(of(pricing));
+    actions$.next(A.loadPricing({ attentionId: 42 }));
+    const out = await firstValueFrom(effects.loadPricing$.pipe(take(1)));
+    expect(api.getPricing).toHaveBeenCalledWith(42);
+    expect(out).toEqual(A.loadPricingSuccess({ pricing }));
+  });
+
+  it('loadPricing$ → HTTP 400 con mensaje → notifica toast + loadPricingFailure', async () => {
+    const error = new HttpErrorResponse({
+      status: 400,
+      error: { message: 'No hay un plan particular configurado para el laboratorio.' },
+    });
+    (api.getPricing as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.loadPricing({ attentionId: 42 }));
+    const out = await firstValueFrom(effects.loadPricing$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No hay un plan particular configurado para el laboratorio.'
+    );
+    expect(out).toEqual(A.loadPricingFailure({ error }));
+  });
+
+  it('setCopayment$ → success → [setCopaymentSuccess, loadPricing]', async () => {
+    const item = sample({ id: 42 });
+    (api.setCopayment as ReturnType<typeof vi.fn>).mockReturnValue(of(item));
+    actions$.next(A.setCopayment({ attentionId: 42, copaymentAmount: 1500 }));
+    const outs = await firstValueFrom(effects.setCopayment$.pipe(take(2), toArray()));
+    expect(api.setCopayment).toHaveBeenCalledWith(42, { copaymentAmount: 1500 });
+    expect(outs[0]).toEqual(A.setCopaymentSuccess({ item }));
+    expect(outs[1]).toEqual(A.loadPricing({ attentionId: 42 }));
+  });
+
+  it('setCopayment$ → failure → setCopaymentFailure', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    (api.setCopayment as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.setCopayment({ attentionId: 42, copaymentAmount: null }));
+    const out = await firstValueFrom(effects.setCopayment$.pipe(take(1)));
+    expect(out).toEqual(A.setCopaymentFailure({ error }));
   });
 });

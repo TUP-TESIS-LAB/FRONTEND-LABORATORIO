@@ -10,7 +10,7 @@ import { AttentionResponse, AttentionState } from '../../../models/atencion.mode
 import {
   selectDetail, selectDetailLoading, selectMutating,
   selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
-  selectPatientResolutionError,
+  selectPatientResolutionError, selectPricing, selectPricingLoading, selectCopaymentMutating,
 } from '../../../store/atencion/atencion.selectors';
 import { cancelAtencion, downloadProtocolLabels } from '../../../store/atencion/atencion.actions';
 
@@ -22,7 +22,7 @@ function makeDetail(state: AttentionState): AttentionResponse {
     deskAttentionBox: null, prescriptionFileUrl: null, isUrgent: false,
     authorizationNumber: null, observations: null, cancellationReason: null,
     cancelledAtState: null, attentionState: state, mostAdvancedState: state,
-    analysisAuthorizations: [],
+    analysisAuthorizations: [], copaymentAmount: null,
   };
 }
 
@@ -45,6 +45,10 @@ describe('AtencionWizardComponent (CORE flow)', () => {
             { selector: selectPatientResolving, value: false },
             { selector: selectPatientNotFoundDni, value: null },
             { selector: selectPatientResolutionError, value: null },
+            // Pricing selectors (resumen-step, Paso 3)
+            { selector: selectPricing, value: null },
+            { selector: selectPricingLoading, value: false },
+            { selector: selectCopaymentMutating, value: false },
           ],
         }),
         // El wizard renderiza step components que ahora inyectan Actions

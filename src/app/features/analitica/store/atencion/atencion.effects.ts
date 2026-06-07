@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { EMPTY, catchError, concatMap, exhaustMap, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, concatMap, exhaustMap, forkJoin, map, mergeMap, of, switchMap, tap } from 'rxjs';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { PatientService } from '../../../pacientes/services/patient.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
@@ -36,11 +36,17 @@ import {
   loadAtencionesSuccess,
   loadAttentionAnalyses,
   loadAttentionPatient,
+  loadPricing,
+  loadPricingFailure,
+  loadPricingSuccess,
   patientNotFound,
   patientResolutionFailure,
   patientResolved,
   resolvePatientByDni,
   returnPhase,
+  setCopayment,
+  setCopaymentFailure,
+  setCopaymentSuccess,
   startAttentionForPatient,
   updatePatientInline,
 } from './atencion.actions';
@@ -302,4 +308,38 @@ export class AtencionEffects {
           }),
         )),
     ), { dispatch: false });
+
+  loadPricing$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadPricing),
+      switchMap(({ attentionId }) =>
+        this.api.getPricing(attentionId).pipe(
+          map(pricing => loadPricingSuccess({ pricing })),
+          catchError((error: HttpErrorResponse) => {
+            // Surface the "no particular plan" message as a toast; other errors are silent.
+            const msg: string = (error.error as { message?: string } | null)?.message ?? '';
+            if (msg) {
+              this.notification.error(msg);
+            }
+            return of(loadPricingFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
+
+  setCopayment$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(setCopayment),
+      concatMap(({ attentionId, copaymentAmount }) =>
+        this.api.setCopayment(attentionId, { copaymentAmount }).pipe(
+          mergeMap(item => [
+            setCopaymentSuccess({ item }),
+            loadPricing({ attentionId }),
+          ]),
+          catchError((error: HttpErrorResponse) => of(setCopaymentFailure({ error }))),
+        )
+      )
+    )
+  );
 }

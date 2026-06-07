@@ -29,6 +29,7 @@ function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
     attentionState: over.attentionState ?? AttentionState.REGISTERING_GENERAL_DATA,
     mostAdvancedState: over.attentionState ?? AttentionState.REGISTERING_GENERAL_DATA,
     analysisAuthorizations: [],
+    copaymentAmount: null,
     ...over,
   };
 }
