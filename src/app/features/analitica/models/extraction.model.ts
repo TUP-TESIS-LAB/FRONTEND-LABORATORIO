@@ -13,6 +13,7 @@ export interface AwaitingExtractionItem {
   patientBirthDate: string | null;
   patientGender: Gender | null;
   attentionNumber: string;
+  publicCode: string | null;
   isUrgent: boolean;
   analysisCount: number;
   insurancePlanLabel: string | null;
