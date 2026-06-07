@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Subject, debounceTime } from 'rxjs';
@@ -16,7 +16,8 @@ import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-sta
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { Patient, PatientStatus } from '../../models/patient.model';
 import { PatientStateFilter } from '../../models/patient-page.model';
-import { getCoveragePlanLabel } from '../../models/coverage-plans.catalog';
+import { getCoveragePlanLabel, CoveragePlanOption } from '../../models/coverage-plans.catalog';
+import { CoveragePlansService } from '../../services/coverage-plans.service';
 import {
   setPatientPageRequest, togglePatientActive,
 } from '../../store/patient.actions';
@@ -140,12 +141,15 @@ export class PatientListPage implements OnInit {
   private readonly confirm = inject(ConfirmationService);
   private readonly search$ = new Subject<string>();
   private readonly perms = inject(PatientPermissionsService);
+  private readonly plansService = inject(CoveragePlansService);
   readonly canMutate = this.perms.canMutate;
 
   readonly items = this.store.selectSignal(selectAllPatients);
   readonly pending = this.store.selectSignal(selectPatientPending);
   readonly total = this.store.selectSignal(selectPatientTotalElements);
   readonly pageRequest = this.store.selectSignal(selectPatientPageRequest);
+
+  private readonly plans = signal<readonly CoveragePlanOption[]>([]);
 
   readonly stateOptions: { value: PatientStateFilter; label: string }[] = [
     { value: 'active', label: 'Activos' },
@@ -157,6 +161,10 @@ export class PatientListPage implements OnInit {
     this.search$.pipe(debounceTime(300)).subscribe((q) =>
       this.store.dispatch(setPatientPageRequest({ patch: { q, page: 0 } })),
     );
+    this.plansService.getActivePlans().subscribe({
+      next: (plans) => this.plans.set(plans),
+      error: () => { /* lista queda vacía; no se expone el error al usuario */ },
+    });
   }
 
   onSearch(q: string): void { this.search$.next(q); }
@@ -189,7 +197,7 @@ export class PatientListPage implements OnInit {
 
   primaryCoverageLabel(p: Patient): string {
     const c = p.coverages.find((x) => x.isPrimary && x.active) ?? p.coverages.find((x) => x.active);
-    return c ? getCoveragePlanLabel(c.planId) : 'Particular';
+    return c ? getCoveragePlanLabel(c.planId, this.plans()) : 'Particular';
   }
 
   primaryPhone(p: Patient): string {

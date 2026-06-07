@@ -4,8 +4,14 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { ReplaySubject } from 'rxjs';
+import { of } from 'rxjs';
 import { PatientFormPage } from './patient-form.page';
 import { PATIENT_FEATURE_KEY, initialPatientState } from '../../store/patient.state';
+import { CoveragePlansService } from '../../services/coverage-plans.service';
+
+const mockPlansService = {
+  getActivePlans: () => of([{ planId: 1, label: 'Particular', particular: true }]),
+};
 
 describe('PatientFormPage', () => {
   let actions$: ReplaySubject<unknown>;
@@ -19,6 +25,7 @@ describe('PatientFormPage', () => {
         provideMockActions(() => actions$),
         provideNoopAnimations(),
         provideRouter([]),
+        { provide: CoveragePlansService, useValue: mockPlansService },
       ],
     });
   });
@@ -92,7 +99,7 @@ describe('PatientFormPage', () => {
     const patient = {
       id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
       birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
-      status: 'COMPLETE' as const, contacts: [], addresses: [], coverages: [], active: true,
+      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true,
     };
     actions$.next(addPatientSuccess({ patient }));
     expect(navSpy).toHaveBeenCalledWith('/pacientes');
@@ -109,7 +116,7 @@ describe('PatientFormPage', () => {
     const patient = {
       id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
       birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
-      status: 'COMPLETE' as const, contacts: [], addresses: [], coverages: [], active: true,
+      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true,
     };
     actions$.next(updatePatientSuccess({ patient }));
     expect(navSpy).toHaveBeenCalledWith('/pacientes');
@@ -221,7 +228,7 @@ describe('PatientFormPage', () => {
     const patient = {
       id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
       birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
-      status: 'COMPLETE' as const, contacts: [], addresses: [], coverages: [], active: true,
+      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true,
     };
     store.setState({ [KEY]: { ...initialPatientState, selected: patient } });
     store.refreshState();

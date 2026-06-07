@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -6,7 +6,8 @@ import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { Coverage } from '../../models/patient.model';
-import { COVERAGE_PLAN_CATALOG, CoveragePlanOption } from '../../models/coverage-plans.catalog';
+import { CoveragePlanOption } from '../../models/coverage-plans.catalog';
+import { CoveragePlansService } from '../../services/coverage-plans.service';
 
 @Component({
   selector: 'pat-coverage-section',
@@ -47,10 +48,18 @@ import { COVERAGE_PLAN_CATALOG, CoveragePlanOption } from '../../models/coverage
     </div>
   `,
 })
-export class CoverageSectionComponent {
+export class CoverageSectionComponent implements OnInit {
   readonly array = input.required<FormArray<FormGroup>>();
   private readonly fb = inject(FormBuilder);
-  readonly planOptions: CoveragePlanOption[] = [...COVERAGE_PLAN_CATALOG];
+  private readonly plansService = inject(CoveragePlansService);
+  planOptions: CoveragePlanOption[] = [];
+
+  ngOnInit(): void {
+    this.plansService.getActivePlans().subscribe({
+      next: (plans) => (this.planOptions = plans),
+      error: () => { /* dropdown queda vacío; error no se expone al usuario */ },
+    });
+  }
 
   primaryIndex(): number { return this.array().controls.findIndex((c) => c.value.isPrimary === true); }
 

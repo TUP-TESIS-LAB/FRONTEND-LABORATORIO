@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
-import { COVERAGE_PLAN_CATALOG } from '../../../../models/coverage-plans.catalog';
+import { getCoveragePlanLabel, CoveragePlanOption } from '../../../../models/coverage-plans.catalog';
+import { CoveragePlansService } from '../../../../services/coverage-plans.service';
 import { AgePipe } from '@shared/pipes/age.pipe';
+import { signal } from '@angular/core';
 
 export interface SummaryAddressView {
   street?: string; streetNumber?: string; apartment?: string;
@@ -129,11 +131,21 @@ const CONTACT_ICON_CLASS: Record<string, string> = {
     .pat-summary__contact .pi { color: var(--brand-secondary, #1976d2); font-size: 13px; }
   `],
 })
-export class SummaryStepComponent {
+export class SummaryStepComponent implements OnInit {
   readonly data = input.required<SummaryView>();
   readonly editStep = output<number>();
 
   private readonly agePipe = inject(AgePipe);
+  private readonly plansService = inject(CoveragePlansService);
+
+  private readonly plans = signal<readonly CoveragePlanOption[]>([]);
+
+  ngOnInit(): void {
+    this.plansService.getActivePlans().subscribe({
+      next: (plans) => this.plans.set(plans),
+      error: () => { /* lista queda vacía; no se expone el error al usuario */ },
+    });
+  }
 
   readonly fullName = computed(() => {
     const d = this.data();
@@ -170,9 +182,9 @@ export class SummaryStepComponent {
   });
 
   readonly coverageLines = computed(() => {
+    const plans = this.plans();
     return this.data().coverages.map((c) => {
-      const plan = COVERAGE_PLAN_CATALOG.find((p) => p.planId === c.planId);
-      const planLabel = plan?.label ?? `Plan ${c.planId ?? '?'}`;
+      const planLabel = getCoveragePlanLabel(c.planId, plans);
       const member = c.memberNumber ? ` · N° ${c.memberNumber}` : '';
       return { text: `${planLabel}${member}`, primary: !!c.isPrimary };
     });
