@@ -1,6 +1,7 @@
 import { HttpClient, HttpContext, HttpContextToken, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { NotModified, withPolling } from '@core/refresh';
 import { DisplaySnapshot } from '../models/public-display.model';
 
 // flag para que el auth-token.interceptor NO agregue Authorization header
@@ -17,10 +18,11 @@ export interface PublicBranch {
 export class PublicDisplayService {
   private http = inject(HttpClient);
 
-  fetchSnapshot(tenantSlug: string, branchId: number): Observable<DisplaySnapshot> {
-    return this.http.get<DisplaySnapshot>(
+  fetchSnapshot(tenantSlug: string, branchId: number): Observable<DisplaySnapshot | NotModified> {
+    const context = withPolling().set(SKIP_AUTH, true);
+    return this.http.get<DisplaySnapshot | NotModified>(
       `/public/display/${tenantSlug}/${branchId}/queue`,
-      { context: new HttpContext().set(SKIP_AUTH, true) }
+      { context }
     );
   }
 

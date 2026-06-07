@@ -1,7 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
+  OnDestroy,
   OnInit,
   computed,
   effect,
@@ -9,10 +9,10 @@ import {
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, EMPTY, interval, startWith, switchMap, tap } from 'rxjs';
+import { catchError, EMPTY, tap } from 'rxjs';
 import { DialogModule } from 'primeng/dialog';
+import { isNotModified, PollingHandle, PollingService } from '@core/refresh';
 import { DisplaySnapshot, PublicQueueEntry } from '../../models/public-display.model';
 import { PublicBranch, PublicDisplayService } from '../../services/public-display.service';
 import { EmptyStateComponent } from './empty-state.component';
@@ -27,11 +27,12 @@ import { AdCarouselComponent } from './ad-carousel.component';
   templateUrl: './sala-espera.page.html',
   styleUrl: './sala-espera.page.scss',
 })
-export class SalaEsperaPage implements OnInit {
+export class SalaEsperaPage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private service = inject(PublicDisplayService);
-  private destroyRef = inject(DestroyRef);
+  private readonly polling = inject(PollingService);
+  private pollHandle: PollingHandle | null = null;
 
   protected tenantSlug = this.route.snapshot.paramMap.get('tenantSlug') ?? '';
   protected branchId = Number(this.route.snapshot.paramMap.get('branchId') ?? '');
@@ -99,31 +100,27 @@ export class SalaEsperaPage implements OnInit {
 
   ngOnInit(): void {
     if (!this.tenantSlug || !this.branchId) return;
-    // Polling cada 3s. switchMap cancela peticiones en vuelo cuando llega un nuevo tick.
-    // catchError INSIDE switchMap convierte el error a EMPTY para que NO termine el stream
-    // outer — sin esto, el primer error mata el polling y la TV no se recupera.
-    // Mantenemos el último snapshot; connectionLost() se activa cuando lastSuccessfulFetch
-    // queda más viejo que 15s.
-    interval(3000)
-      .pipe(
-        startWith(0),
-        switchMap(() =>
-          this.service.fetchSnapshot(this.tenantSlug, this.branchId).pipe(
-            // tap solo se ejecuta en next — marca el primer intento como done en exito.
-            tap(() => this.firstAttemptDone.set(true)),
-            // catchError tambien marca done — sino el viewMode queda en 'loading' eterno.
-            catchError(() => {
-              this.firstAttemptDone.set(true);
-              return EMPTY;
-            }),
-          ),
-        ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(snap => {
-        this.snapshot.set(snap);
-        this.lastSuccessfulFetch.set(Date.now());
-      });
+    // Polling cada 3s usando el estándar core/refresh (ETag/304, visibility-paused).
+    // isNotModified() evita sobreescribir el snapshot cuando el servidor responde 304 —
+    // en ese caso los datos no cambiaron y la TV sigue mostrando el último estado correcto.
+    this.pollHandle = this.polling.startPolling({
+      key: `sala-espera:${this.tenantSlug}:${this.branchId}`,
+      intervalMs: 3000,
+      poll: () => this.service.fetchSnapshot(this.tenantSlug, this.branchId).pipe(
+        tap((res) => {
+          this.firstAttemptDone.set(true);
+          if (!isNotModified(res)) {
+            this.snapshot.set(res);
+            this.lastSuccessfulFetch.set(Date.now());
+          }
+        }),
+        catchError(() => { this.firstAttemptDone.set(true); return EMPTY; }),
+      ),
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.pollHandle?.stop();
   }
 
   // ── Cambio de sucursal (UI de recuperacion) ─────────────────────
