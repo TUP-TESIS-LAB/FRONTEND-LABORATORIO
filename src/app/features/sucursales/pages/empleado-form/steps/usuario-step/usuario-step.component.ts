@@ -1,0 +1,130 @@
+import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { InputTextModule } from 'primeng/inputtext';
+import { Select } from 'primeng/select';
+import { SeccionesChecklistComponent } from '@features/roles-permisos/components/secciones-checklist.component';
+import { RolesApiService } from '@features/empresa/services/roles-api.service';
+import { RolesPermisosApiService } from '@features/roles-permisos/services/roles-permisos-api.service';
+import { UsuariosApiService } from '@features/empresa/services/usuarios-api.service';
+import { Rol } from '@features/empresa/models/rol.model';
+import { AccessSection, SectionResponse } from '@core/access/access.model';
+
+interface UserOption { id: number; label: string; }
+
+/**
+ * Paso "Usuario" del alta de empleado. Permite no asociar usuario, vincular uno existente,
+ * o crear uno nuevo (con roles + secciones de acceso). El `mode` se recibe como input para
+ * que el @switch sea reactivo bajo OnPush (lo deriva el parent desde el value del form).
+ */
+@Component({
+  selector: 'emp-usuario-step',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ReactiveFormsModule, InputTextModule, Select, SeccionesChecklistComponent],
+  template: `
+    <div [formGroup]="group()" class="max-w-2xl flex flex-col gap-4">
+      @if (isEdit()) {
+        <p class="text-sm text-surface-600">
+          @if (currentUserId()) {
+            Usuario vinculado: <strong>#{{ currentUserId() }}</strong>.
+          } @else {
+            Este empleado no tiene un usuario vinculado.
+          }
+          <span class="block text-xs text-surface-400 mt-1">La vinculación o creación de usuario se hace en el alta.</span>
+        </p>
+      } @else {
+        <p class="text-sm text-surface-500">¿Asociar un usuario del sistema a este empleado?</p>
+        <div class="flex flex-col gap-2">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" formControlName="mode" value="none" /> Sin usuario
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" formControlName="mode" value="existing" /> Vincular un usuario existente
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" formControlName="mode" value="new" /> Crear un usuario nuevo
+          </label>
+        </div>
+
+        @switch (mode()) {
+          @case ('existing') {
+            <label class="flex flex-col gap-1 max-w-md">
+              <span class="text-sm font-medium">Usuario *</span>
+              <p-select formControlName="existingUserId" [options]="users()" [filter]="true"
+                        optionLabel="label" optionValue="id" placeholder="Buscá y seleccioná…" />
+            </label>
+          }
+          @case ('new') {
+            <div formGroupName="newUser" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Nombre *</span>
+                <input pInputText formControlName="firstName" autocomplete="off" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Apellido *</span>
+                <input pInputText formControlName="lastName" autocomplete="off" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Email *</span>
+                <input pInputText type="email" formControlName="email" autocomplete="off" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Usuario (username) *</span>
+                <input pInputText formControlName="username" autocomplete="off" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Documento *</span>
+                <input pInputText formControlName="document" autocomplete="off" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Rol</span>
+                <p-select formControlName="roleId" [options]="roles()" [showClear]="true"
+                          optionLabel="description" optionValue="id" placeholder="Seleccioná un rol…" />
+              </label>
+            </div>
+            <div class="mt-2">
+              <h4 class="text-sm font-semibold mb-2">Permisos (secciones)</h4>
+              <rp-secciones-checklist
+                [catalog]="catalog()" [workingSet]="workingSet()" (toggle)="onToggleSection($event)" />
+            </div>
+            <p class="text-xs text-surface-400">
+              El usuario se crea sin contraseña; recibe un acceso de primer login para definirla.
+            </p>
+          }
+        }
+      }
+    </div>
+  `,
+})
+export class UsuarioStepComponent {
+  readonly group = input.required<FormGroup>();
+  readonly mode = input<string>('none');
+  readonly isEdit = input(false);
+  readonly currentUserId = input<number | null>(null);
+
+  private readonly rolesApi = inject(RolesApiService);
+  private readonly sectionsApi = inject(RolesPermisosApiService);
+  private readonly usersApi = inject(UsuariosApiService);
+
+  readonly roles = signal<Rol[]>([]);
+  readonly catalog = signal<SectionResponse[]>([]);
+  readonly users = signal<UserOption[]>([]);
+
+  constructor() {
+    this.rolesApi.list().pipe(takeUntilDestroyed()).subscribe((r) => this.roles.set(r));
+    this.sectionsApi.getGrantable().pipe(takeUntilDestroyed()).subscribe((c) => this.catalog.set(c));
+    this.usersApi.search({ size: 100 }).pipe(takeUntilDestroyed()).subscribe((page) =>
+      this.users.set(page.content.map((u) => ({ id: u.id, label: `${u.lastName}, ${u.firstName} (${u.username})` }))));
+  }
+
+  private sectionsControl() { return this.group().get('sections')!; }
+  workingSet(): AccessSection[] { return (this.sectionsControl().value as AccessSection[]) ?? []; }
+
+  onToggleSection(code: AccessSection): void {
+    const cur = this.workingSet();
+    const next = cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code];
+    this.sectionsControl().setValue(next);
+    this.sectionsControl().markAsDirty();
+  }
+}
