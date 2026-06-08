@@ -63,7 +63,11 @@ const ALL_STEPS: WizardStepDef[] = [
   ],
   template: `
     <div class="p-6 max-w-4xl mx-auto">
-      @if (loading()) {
+      @if (loading() && !detail()) {
+        <!-- Solo en la carga INICIAL (sin detail). Durante un refresh con detail ya
+             cargado NO se gatea: si no, loadAtencion() del resumen-step (ngOnInit)
+             desmonta el step → al re-montar re-dispatcha loadAtencion → loop infinito
+             que deja la pantalla colgada en "Cargando atención…". -->
         <div class="text-center py-12 opacity-70">Cargando atención…</div>
       } @else if (creating()) {
         <!-- Modo "crear nueva atención" — sin detail todavía, solo el paso 1 -->
