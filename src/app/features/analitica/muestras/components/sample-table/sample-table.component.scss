@@ -1,0 +1,107 @@
+:host {
+  display: block;
+}
+
+.table-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #e8e9f0);
+  border-radius: var(--radius, 14px);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: inherit;
+}
+
+thead th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted, #7c8092);
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--line, #e8e9f0);
+  background: #fafbfd;
+}
+
+th.check, td.check {
+  width: 44px;
+  text-align: center;
+}
+
+tbody tr {
+  min-height: 64px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line-2, #eef0f5);
+  transition: background 0.12s ease;
+
+  &:hover { background: #fafbfd; }
+
+  &.selected {
+    background: var(--sel, #eef0ff);
+    box-shadow: inset 3px 0 0 var(--brand, #4b4ddb);
+  }
+
+  &.empty td {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted, #7c8092);
+  }
+}
+
+tbody td {
+  padding: 14px 16px;
+  font-size: 13.5px;
+  color: var(--ink, #22243a);
+  vertical-align: middle;
+}
+
+.barcode {
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.urgente {
+  font-size: 10px;
+  font-weight: 700;
+  background: #fdebeb;
+  color: #d83a3a;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+.patient {
+  font-size: 12px;
+  color: var(--muted, #7c8092);
+  margin-top: 2px;
+}
+
+.state-badge {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+
+  &[data-color="green"]  { background: #e3f6ec; color: #0f8a55; }
+  &[data-color="amber"]  { background: #fcf1dd; color: #b5740c; }
+  &[data-color="blue"]   { background: #e8f0ff; color: #2563eb; }
+  &[data-color="red"]    { background: #fdebeb; color: #d83a3a; }
+  &[data-color="purple"] { background: #f1ecfe; color: #7a4ddb; }
+  &[data-color="slate"]  { background: #eceef3; color: #5b6170; }
+}
+
+.state-sub {
+  font-size: 11px;
+  color: var(--muted, #7c8092);
+  margin-top: 4px;
+}
