@@ -12,7 +12,7 @@ import {
   selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
   selectPatientResolutionError, selectPricing, selectPricingLoading, selectCopaymentMutating,
 } from '../../../store/atencion/atencion.selectors';
-import { cancelAtencion, downloadProtocolLabels, returnPhase } from '../../../store/atencion/atencion.actions';
+import { cancelAtencion, downloadProtocolLabels, resetAtencionWizard, returnPhase } from '../../../store/atencion/atencion.actions';
 
 function makeDetail(state: AttentionState): AttentionResponse {
   return {
@@ -84,6 +84,17 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onCancelConfirmed('Error de carga');
     expect(spy).toHaveBeenCalledWith(cancelAtencion({ id: 1, payload: { cancellationReason: 'Error de carga' } }));
+  });
+
+  it('onFinished despacha resetAtencionWizard y navega a Recepción', () => {
+    setup(AttentionState.AWAITING_CONFIRMATION);
+    const store = TestBed.inject(MockStore);
+    const router = TestBed.inject(Router);
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+    const navigateSpy = router.navigate as ReturnType<typeof vi.fn>;
+    fixture.componentInstance.onFinished();
+    expect(dispatchSpy).toHaveBeenCalledWith(resetAtencionWizard());
+    expect(navigateSpy).toHaveBeenCalledWith(['/turnos/recepcion']);
   });
 
   it('onReturnPhase con uiStepOverride activo limpia el override y NO despacha returnPhase', () => {

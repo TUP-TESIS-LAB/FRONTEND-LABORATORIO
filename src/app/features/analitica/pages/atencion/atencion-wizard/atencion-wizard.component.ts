@@ -20,6 +20,7 @@ import {
   createPreFilledAtencion,
   downloadProtocolLabels,
   loadAtencion,
+  resetAtencionWizard,
   returnPhase,
 } from '../../../store/atencion/atencion.actions';
 import {
@@ -264,7 +265,13 @@ export class AtencionWizardComponent {
     if (!d) return;
     this.cancelModalOpen.set(false);
     this.store.dispatch(cancelAtencion({ id: d.id, payload: { cancellationReason: reason } }));
-    this.waitForMutation((ok) => { if (ok) clearAtencionSession(); });
+    this.waitForMutation((ok) => {
+      if (ok) {
+        clearAtencionSession();
+        this.store.dispatch(resetAtencionWizard());
+        this.router.navigate(['/turnos/recepcion']);
+      }
+    });
   }
 
   private waitForMutation(cb: (ok: boolean) => void): void {
@@ -281,7 +288,11 @@ export class AtencionWizardComponent {
     const next = steps[idx + 1]?.key;
     if (next) this.uiStepOverride.set(next);
   }
-  onFinished(): void { this.router.navigate(['/analitica/atencion']); }
+  onFinished(): void {
+    clearAtencionSession();
+    this.store.dispatch(resetAtencionWizard());
+    this.router.navigate(['/turnos/recepcion']);
+  }
   back(): void { this.router.navigate(['/analitica/atencion']); }
   downloadLabels(): void {
     const d = this.detail();

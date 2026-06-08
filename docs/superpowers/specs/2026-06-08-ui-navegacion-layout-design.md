@@ -278,3 +278,31 @@ trivial). El sidebar colapsado debe seguir mostrando los iconos y resaltar el it
 - **E:** Breadcrumb arriba-izquierda; logo+nombre en sidebar; topbar blanco sin branding;
   sidebar colapsable con hamburguesa.
 - Build verde, specs verdes, PR contra `development`.
+
+## B4 — Hallazgo (root cause logout)
+
+**Investigación (análisis estático):**
+
+- `core/interceptors/auth-token.interceptor.ts` desloguea **solo** ante `HttpErrorResponse`
+  con `err.status === 401` (línea: `if (err instanceof HttpErrorResponse && err.status === 401)`).
+  En ese caso hace `tokens.removeToken()` + `userSession.clear()` + `router.navigate([target])`
+  (`/login`, o `/saas/login` si la URL actual es del contexto SaaS). **NO actúa ante 403**
+  ni ante ningún otro status — confirmado, la hipótesis se sostiene.
+
+- `store/atencion/atencion.effects.ts` `cancel$` mapea el error con
+  `catchError((error) => of(atencionMutationFailure({ error })))`. Pero ese `catchError`
+  corre en el pipe RxJS del **effect**, que está aguas abajo del interceptor en la cadena
+  HTTP: el interceptor envuelve la respuesta con su propio `catchError` (capa
+  `HttpClient`/`next`) y ve el `401` crudo **primero**. Para cuando el error llega al
+  effect, el interceptor ya ejecutó `removeToken + clear + navigate`. Por eso mapear el
+  error a `atencionMutationFailure` no evita el logout: no es una cuestión de orden de
+  `catchError` dentro del effect, sino de capas (interceptor HTTP vs effect de NgRx).
+
+**Conclusión:** el logout intermitente al cancelar no es un bug de la lógica de cancelar.
+El disparador más probable es un **token JWT vencido**: la request de cancelación devuelve
+`401`, y el interceptor —correctamente— cierra la sesión y redirige a `/login`. Es
+comportamiento esperado del interceptor; cualquier request que tope con un token vencido
+produce lo mismo, cancelar solo lo hace visible por ser una acción puntual. **No se toca el
+interceptor.** El único cambio accionable en el FE es de navegación post-cancel: al éxito de
+la mutación, además de limpiar sesión + store, navegar a `/turnos/recepcion` (Recepción) en
+vez de quedarse en el listado de atenciones.
