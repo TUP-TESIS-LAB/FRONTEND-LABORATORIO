@@ -246,7 +246,13 @@ export class AtencionWizardComponent {
   onReturnPhase(): void {
     const d = this.detail();
     if (!d) return;
-    this.uiStepOverride.set(null);
+    // Si mostramos un paso "adelantado" sólo por UI (override), volver al paso
+    // real del backend SIN retroceder de estado.
+    if (this.uiStepOverride() != null) {
+      this.uiStepOverride.set(null);
+      return;
+    }
+    // Estamos en el paso real → retroceder de verdad en el backend.
     this.store.dispatch(returnPhase({ id: d.id }));
   }
   onCancel(): void {
