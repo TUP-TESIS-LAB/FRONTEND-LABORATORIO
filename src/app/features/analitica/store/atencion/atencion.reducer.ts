@@ -29,6 +29,7 @@ import {
   patientNotFound,
   patientResolutionFailure,
   patientResolved,
+  resetAtencionWizard,
   resolvePatientByDni,
   returnPhase,
   setAtencionFilters,
@@ -108,6 +109,16 @@ export const atencionReducer = createReducer(
     list: replaceInList(s.list, item),
   })),
   on(removeAnalysisFromResumenFailure, (s): AtencionFeatureState => ({ ...s, removingAnalysis: false })),
+
+  on(resetAtencionWizard, (s): AtencionFeatureState => ({
+    ...s,
+    detail: null,
+    detailError: null,
+    resolvedPatient: null,
+    patientNotFoundDni: null,
+    summaryAnalyses: [],
+    pricing: null,
+  })),
 
   on(verifyPatient, (s): AtencionFeatureState => ({ ...s, verifyingPatient: true })),
   on(verifyPatientSuccess, (s, { patient }): AtencionFeatureState => ({ ...s, resolvedPatient: patient, verifyingPatient: false })),
