@@ -2,14 +2,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   TemplateRef,
+  ViewChild,
   computed,
   contentChildren,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
+import { MenuModule, Menu } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 import { UiCellDirective } from './ui-cell.directive';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
@@ -18,7 +22,7 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
   selector: 'ui-table',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TableModule, NgTemplateOutlet, TooltipModule, EmptyStateComponent],
+  imports: [TableModule, NgTemplateOutlet, TooltipModule, MenuModule, EmptyStateComponent],
   template: `
     @if (!lazy() && value().length === 0 && !loading()) {
       <ui-empty-state
@@ -75,49 +79,51 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
                 <td class="ut-actions-td">
                   <div class="ut-actions-cell">
                     @if (showView()) {
-                      <button
-                        class="ut-ibtn"
-                        type="button"
-                        pTooltip="Ver"
-                        tooltipPosition="top"
-                        aria-label="Ver"
-                        (click)="view.emit(row)">
+                      <button class="ut-ibtn" type="button"
+                              pTooltip="Ver" tooltipPosition="top" aria-label="Ver"
+                              (click)="view.emit(row)">
                         <i class="pi pi-eye"></i>
                       </button>
                     }
                     @if (showEdit()) {
-                      <button
-                        class="ut-ibtn"
-                        type="button"
-                        pTooltip="Editar"
-                        tooltipPosition="top"
-                        aria-label="Editar"
-                        (click)="edit.emit(row)">
+                      <button class="ut-ibtn" type="button"
+                              pTooltip="Editar" tooltipPosition="top" aria-label="Editar"
+                              (click)="edit.emit(row)">
                         <i class="pi pi-pencil"></i>
                       </button>
                     }
                     @if (showDelete()) {
-                      <button
-                        class="ut-ibtn ut-ibtn--danger"
-                        type="button"
-                        pTooltip="Eliminar"
-                        tooltipPosition="top"
-                        aria-label="Eliminar"
-                        (click)="rowDelete.emit(row)">
+                      <button class="ut-ibtn ut-ibtn--danger" type="button"
+                              pTooltip="Eliminar" tooltipPosition="top" aria-label="Eliminar"
+                              (click)="rowDelete.emit(row)">
                         <i class="pi pi-trash"></i>
                       </button>
                     }
                     @for (a of actions(); track a.key) {
-                      <button
-                        class="ut-ibtn"
-                        [class.ut-ibtn--danger]="a.severity === 'danger'"
-                        type="button"
-                        [pTooltip]="a.label"
-                        tooltipPosition="top"
-                        [attr.aria-label]="a.label"
-                        (click)="action.emit({ key: a.key, row })">
-                        <i [class]="'pi ' + a.icon"></i>
-                      </button>
+                      @if ((a.type ?? 'button') === 'menu') {
+                        <button
+                          class="ut-ibtn"
+                          type="button"
+                          [pTooltip]="resolveLabel(a, row)"
+                          tooltipPosition="top"
+                          [attr.aria-label]="resolveLabel(a, row)"
+                          (click)="openMenu($event, a, row)">
+                          <i [class]="'pi ' + resolveIcon(a, row)"></i>
+                        </button>
+                      } @else {
+                        <button
+                          class="ut-ibtn"
+                          [class.ut-ibtn--danger]="resolveSeverity(a, row) === 'danger'"
+                          [class.ut-ibtn--warn]="resolveSeverity(a, row) === 'warn'"
+                          [class.ut-ibtn--success]="resolveSeverity(a, row) === 'success'"
+                          type="button"
+                          [pTooltip]="resolveLabel(a, row)"
+                          tooltipPosition="top"
+                          [attr.aria-label]="resolveLabel(a, row)"
+                          (click)="action.emit({ key: a.key, row })">
+                          <i [class]="'pi ' + resolveIcon(a, row)"></i>
+                        </button>
+                      }
                     }
                   </div>
                 </td>
@@ -141,6 +147,9 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           }
         </p-table>
       </div>
+      @if (hasMenuActions()) {
+        <p-menu #actionMenu [popup]="true" [model]="activeMenuItems()" />
+      }
     }
   `,
   styles: [`
@@ -205,7 +214,15 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
       padding: 0;
     }
     .ut-ibtn:hover { background: #eef2f7; color: #1a1a2e; }
+
+    .ut-ibtn--danger { color: #e23a47; }
     .ut-ibtn--danger:hover { background: #fdecee !important; color: #e23a47 !important; }
+
+    .ut-ibtn--warn { color: #c2410c; }
+    .ut-ibtn--warn:hover { background: #fff7ed !important; color: #c2410c !important; }
+
+    .ut-ibtn--success { color: #15803d; }
+    .ut-ibtn--success:hover { background: #f0fdf4 !important; color: #15803d !important; }
   `],
 })
 export class DataTableComponent {
@@ -237,21 +254,47 @@ export class DataTableComponent {
   readonly emptyCtaLabel    = input<string | null>(null);
 
   // ── Outputs ──
-  readonly lazyLoad     = output<TableLazyLoadEvent>();
-  readonly view         = output<unknown>();
-  readonly edit         = output<unknown>();
-  readonly rowDelete    = output<unknown>();
-  readonly action       = output<{ key: string; row: unknown }>();
+  readonly lazyLoad      = output<TableLazyLoadEvent>();
+  readonly view          = output<unknown>();
+  readonly edit          = output<unknown>();
+  readonly rowDelete     = output<unknown>();
+  readonly action        = output<{ key: string; row: unknown }>();
   readonly emptyCtaClick = output<void>();
 
   // ── Internal ──
   protected readonly hasActions = computed(() =>
     this.showView() || this.showEdit() || this.showDelete() || this.actions().length > 0,
   );
+  protected readonly hasMenuActions = computed(() =>
+    this.actions().some((a) => a.type === 'menu'),
+  );
+  protected readonly activeMenuItems = signal<MenuItem[]>([]);
+
+  @ViewChild('actionMenu') private actionMenuRef?: Menu;
 
   private readonly cells = contentChildren(UiCellDirective);
 
   protected tplFor(field: string): TemplateRef<unknown> | null {
     return this.cells().find((c) => c.field() === field)?.tpl ?? null;
+  }
+
+  protected resolveIcon(a: TableAction, row: unknown): string {
+    return typeof a.icon === 'function' ? a.icon(row) : a.icon;
+  }
+
+  protected resolveLabel(a: TableAction, row: unknown): string {
+    return typeof a.label === 'function' ? a.label(row) : a.label;
+  }
+
+  protected resolveSeverity(a: TableAction, row: unknown): string | undefined {
+    return typeof a.severity === 'function' ? a.severity(row) : a.severity;
+  }
+
+  protected openMenu(event: Event, action: TableAction, row: unknown): void {
+    const items = typeof action.menuItems === 'function'
+      ? action.menuItems(row)
+      : (action.menuItems ?? []);
+    this.activeMenuItems.set(items);
+    this.actionMenuRef?.toggle(event);
   }
 }
