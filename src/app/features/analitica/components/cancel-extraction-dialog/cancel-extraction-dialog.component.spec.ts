@@ -77,17 +77,6 @@ describe('CancelExtractionDialogComponent', () => {
     expect(emissions).toEqual([]);
   });
 
-  it('setQuickReason "No se presentó" sets reason to full text', () => {
-    const fixture = TestBed.createComponent(CancelExtractionDialogComponent);
-    fixture.componentRef.setInput('patient', mineItem());
-    fixture.componentRef.setInput('saving', false);
-    fixture.detectChanges();
-
-    fixture.componentInstance.setQuickReason('Paciente no se presentó al box');
-    expect(fixture.componentInstance.reason()).toBe('Paciente no se presentó al box');
-    expect(fixture.componentInstance.canConfirm()).toBe(true);
-  });
-
   it('setQuickReason "Vía difícil" sets reason to full text', () => {
     const fixture = TestBed.createComponent(CancelExtractionDialogComponent);
     fixture.componentRef.setInput('patient', mineItem());
@@ -121,7 +110,7 @@ describe('CancelExtractionDialogComponent', () => {
     expect(fixture.componentInstance.canConfirm()).toBe(false);
 
     // Quick reason sets full text → confirm should be enabled
-    fixture.componentInstance.setQuickReason('Paciente no se presentó al box');
+    fixture.componentInstance.setQuickReason('No se pudo canalizar (vía difícil)');
     expect(fixture.componentInstance.canConfirm()).toBe(true);
   });
 

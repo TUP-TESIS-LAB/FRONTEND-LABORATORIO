@@ -247,6 +247,16 @@ export class ExtractionEffects {
     ),
   );
 
+  cancelAttention$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(A.cancelAttention),
+      exhaustMap(({ id, reason }) => this.api.cancelAttention(id, reason).pipe(
+        map(() => A.cancelAttentionSuccess({ id })),
+        catchError((error: HttpErrorResponse) => of(A.cancelAttentionFailure({ error }))),
+      )),
+    ),
+  );
+
   endExtraction$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.endExtraction),
@@ -278,6 +288,7 @@ export class ExtractionEffects {
         A.assignExtractorSuccess,
         A.unassignExtractionSuccess,
         A.cancelExtractionSuccess,
+        A.cancelAttentionSuccess,
         A.endExtractionSuccess,
         A.saveBoxAssignmentsSuccess,
       ),
@@ -315,6 +326,7 @@ export class ExtractionEffects {
         A.assignExtractorSuccess, A.assignExtractorFailure,
         A.unassignExtractionSuccess, A.unassignExtractionFailure,
         A.cancelExtractionSuccess, A.cancelExtractionFailure,
+        A.cancelAttentionSuccess, A.cancelAttentionFailure,
         A.endExtractionSuccess, A.endExtractionFailure,
         A.saveBoxAssignmentsSuccess, A.saveBoxAssignmentsFailure,
       ),
@@ -345,6 +357,9 @@ export class ExtractionEffects {
         return;
       case A.cancelExtractionSuccess.type:
         this.notifier.success('Extracción cancelada.');
+        return;
+      case A.cancelAttentionSuccess.type:
+        this.notifier.success('Atención cancelada.');
         return;
       case A.endExtractionSuccess.type:
         this.notifier.success('Extracción finalizada.');
@@ -387,6 +402,18 @@ export class ExtractionEffects {
           byStatus: {
             400: 'El motivo de cancelación no es válido.',
             404: 'No encontramos la atención solicitada.',
+          },
+        }));
+        return;
+      }
+      case A.cancelAttentionFailure.type: {
+        const err = (action as ReturnType<typeof A.cancelAttentionFailure>).error;
+        this.notifier.error(humanizeBackendError(err, {
+          fallback: 'No pudimos cancelar la atención.',
+          byStatus: {
+            400: 'El motivo de cancelación no es válido.',
+            404: 'No encontramos la atención solicitada.',
+            409: 'La atención no se puede cancelar en su estado actual.',
           },
         }));
         return;

@@ -113,10 +113,23 @@ export class ExtractorAttentionService {
     return this.http.patch<void>(`${this.base}/attentions/${id}/unassign`, null);
   }
 
-  /** Cancelar requiere motivo obligatorio (min 5 chars). */
+  /**
+   * "No se presentó": libera la extracción de vuelta a la cola (AWAITING_EXTRACTION).
+   * Requiere motivo obligatorio (min 5 chars).
+   */
   cancelExtraction(id: number, reason: string): Observable<void> {
     const body: CancelExtractionRequest = { reason };
     return this.http.patch<void>(`${this.base}/attentions/${id}/cancel-extraction`, body);
+  }
+
+  /**
+   * "Cancelar extracción": cancelación TERMINAL — la atención pasa a CANCELED y
+   * muere el flujo (NO vuelve a la cola). Motivo obligatorio (min 5 chars).
+   */
+  cancelAttention(id: number, reason: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/attentions/${id}/cancel-attention`, {
+      cancellationReason: reason,
+    });
   }
 
   endExtraction(id: number): Observable<void> {

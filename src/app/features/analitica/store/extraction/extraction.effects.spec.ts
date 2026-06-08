@@ -33,6 +33,7 @@ describe('ExtractionEffects', () => {
       assignExtractor: vi.fn(),
       unassignExtraction: vi.fn(),
       cancelExtraction: vi.fn(),
+      cancelAttention: vi.fn(),
       endExtraction: vi.fn(),
       saveBoxAssignments: vi.fn(),
     };
@@ -259,6 +260,14 @@ describe('ExtractionEffects', () => {
       actions$.next(A.cancelExtraction({ id: 5, reason: 'paciente se fue' }));
       expect(await promise).toEqual(A.cancelExtractionSuccess({ id: 5 }));
       expect(api.cancelExtraction).toHaveBeenCalledWith(5, 'paciente se fue');
+    });
+
+    it('cancelAttention$ success emits cancelAttentionSuccess and passes reason', async () => {
+      (api.cancelAttention as ReturnType<typeof vi.fn>).mockReturnValue(of(void 0));
+      const promise = firstValueFrom(effects.cancelAttention$.pipe(take(1)));
+      actions$.next(A.cancelAttention({ id: 9, reason: 'Paciente descompensado' }));
+      expect(await promise).toEqual(A.cancelAttentionSuccess({ id: 9 }));
+      expect(api.cancelAttention).toHaveBeenCalledWith(9, 'Paciente descompensado');
     });
 
     it('endExtraction$ success emits endExtractionSuccess', async () => {

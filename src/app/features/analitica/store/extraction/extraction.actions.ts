@@ -175,6 +175,19 @@ export const cancelExtractionFailure = createAction(
   props<{ error: HttpErrorResponse }>(),
 );
 
+export const cancelAttention = createAction(
+  '[Extraction Queue] Cancel Attention',
+  props<{ id: number; reason: string }>(),
+);
+export const cancelAttentionSuccess = createAction(
+  '[Extraction API] Cancel Attention Success',
+  props<{ id: number }>(),
+);
+export const cancelAttentionFailure = createAction(
+  '[Extraction API] Cancel Attention Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
 export const endExtraction = createAction(
   '[Extraction Queue] End Extraction',
   props<{ id: number }>(),
