@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { Store } from '@ngrx/store';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ToastModule } from 'primeng/toast';
+import { TabsModule } from 'primeng/tabs';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { TokenService } from '@core/auth/token.service';
 import { SucursalService } from '@features/sucursales/services/sucursal.service';
@@ -17,6 +18,7 @@ import { BoxSelectorModalComponent } from '../../box-occupation/components/box-s
 import { RecepcionConTotemComponent } from './recepcion-con-totem.component';
 import { RecepcionSinTotemComponent } from './recepcion-sin-totem.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
+import { AtencionDashboardComponent } from '@features/analitica/pages/atencion/atencion-dashboard/atencion-dashboard.component';
 
 @Component({
   selector: 'app-recepcion-page',
@@ -24,10 +26,12 @@ import { OperatorBranchContextService } from '../../services/operator-branch.con
   imports: [
     SkeletonModule,
     ToastModule,
+    TabsModule,
     RecepcionConTotemComponent,
     RecepcionSinTotemComponent,
     BoxOccupationWidgetComponent,
     BoxSelectorModalComponent,
+    AtencionDashboardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion.page.html',
