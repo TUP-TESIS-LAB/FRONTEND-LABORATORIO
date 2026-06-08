@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { MockSamplesService } from './mock-samples.service';
+import type { Sample } from '../models/sample.model';
 
 function installLocalStorageMock(): Map<string, string> {
   const store = new Map<string, string>();
@@ -144,5 +145,49 @@ describe('MockSamplesService', () => {
     expect(moved.area).toBeUndefined();
     expect(moved.destino).toBeUndefined();
     vi.useRealTimers();
+  });
+
+  it('persiste cambios en localStorage tras debounce', async () => {
+    vi.useFakeTimers();
+    const svc = TestBed.inject(MockSamplesService);
+    const ids = svc.byState('collected')().slice(0, 2).map(s => s.id);
+    const target = {
+      key: 'transito' as const, label: '', toLabel: '', toState: 'transito' as const,
+      color: 'green' as const, icon: '', desc: '', fields: [],
+    };
+    const p = svc.transition(ids, target, {});
+    await vi.advanceTimersByTimeAsync(360);
+    await p;
+
+    // antes del debounce
+    expect(lsStore.has('muestras:samples:v1')).toBe(false);
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(lsStore.has('muestras:samples:v1')).toBe(true);
+    const persisted = JSON.parse(lsStore.get('muestras:samples:v1')!) as Sample[];
+    expect(persisted.find(s => s.id === ids[0])!.state).toBe('transito');
+    vi.useRealTimers();
+  });
+
+  it('al inicializar con storage previo válido, lo usa en lugar del seed', () => {
+    const seedOverride: Sample[] = [{
+      id: 'x-1', barcode: 'XX-0001', study: 'X', patient: 'X', branch: 'X',
+      date: '01/01', time: '00:00', urgent: false, state: 'collected',
+    }];
+    lsStore.set('muestras:samples:v1', JSON.stringify(seedOverride));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [MockSamplesService] });
+
+    const svc = TestBed.inject(MockSamplesService);
+    expect(svc.samples().length).toBe(1);
+    expect(svc.samples()[0].id).toBe('x-1');
+  });
+
+  it('si storage tiene JSON inválido, fallback a seed', () => {
+    lsStore.set('muestras:samples:v1', '{not json');
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [MockSamplesService] });
+    const svc = TestBed.inject(MockSamplesService);
+    expect(svc.samples().length).toBe(42);
   });
 });

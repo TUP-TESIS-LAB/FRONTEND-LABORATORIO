@@ -1,4 +1,4 @@
-import { Injectable, Signal, computed, signal } from '@angular/core';
+import { Injectable, Signal, computed, effect, signal, untracked } from '@angular/core';
 import type { Sample, SampleState } from '../models/sample.model';
 import type { Transition, TransitionDest } from '../models/transition.model';
 import { SEED } from '../data/seed';
@@ -17,8 +17,36 @@ export class MockSamplesService {
   private readonly _byStateCache = new Map<SampleState, Signal<Sample[]>>();
   private readonly _countCache = new Map<SampleState, Signal<number>>();
 
+  private persistTimer: ReturnType<typeof setTimeout> | null = null;
+  private skipNextPersist = true;
+
   constructor() {
     this.loadFromStorage();
+    effect(() => {
+      const snapshot = this._samples();
+      // saltar el primer run (carga inicial) para no persistir el seed antes de una mutación real
+      untracked(() => {
+        if (this.skipNextPersist) {
+          this.skipNextPersist = false;
+          return;
+        }
+        this.schedulePersist(snapshot);
+      });
+    });
+  }
+
+  private schedulePersist(samples: Sample[]): void {
+    if (this.persistTimer !== null) {
+      clearTimeout(this.persistTimer);
+    }
+    this.persistTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(samples));
+      } catch {
+        // storage lleno o no disponible: silenciar (mock no crítico)
+      }
+      this.persistTimer = null;
+    }, 100);
   }
 
   byState(state: SampleState): Signal<Sample[]> {
