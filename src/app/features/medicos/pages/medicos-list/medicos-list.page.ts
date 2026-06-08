@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 import { Doctor } from '../../models/doctor.model';
 import { loadDoctors, toggleDoctorStatus, deleteDoctor } from '../../store/doctor.actions';
 import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.selectors';
@@ -17,7 +18,7 @@ import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.select
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
-  imports: [RouterLink, TableModule, ButtonModule, TagModule, TooltipModule, ConfirmDialogModule, EmptyStateComponent],
+  imports: [RouterLink, ButtonModule, TagModule, ConfirmDialogModule, DataTableComponent, UiCellDirective],
   template: `
     <div class="p-6">
       <header class="flex items-center justify-between mb-4">
@@ -30,43 +31,35 @@ import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.select
         </a>
       </header>
 
-      <p-table [value]="items()" [loading]="pending()" responsiveLayout="scroll" dataKey="id">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Médico</th><th>Matrícula</th><th>Registro</th><th>Estado</th>
-            <th class="text-right" style="width:160px">Acciones</th>
-          </tr>
+      <ui-table
+        [value]="items()"
+        [loading]="pending()"
+        [columns]="columns"
+        [showEdit]="true"
+        [showDelete]="true"
+        [actions]="extraActions"
+        emptyHeading="Sin médicos derivantes"
+        emptyIcon="pi-heart"
+        emptyDescription="Agregá el primer médico derivante."
+        emptyCtaLabel="Nuevo médico"
+        (edit)="onEdit($any($event))"
+        (rowDelete)="confirmDelete($any($event))"
+        (action)="onAction($event)"
+        (emptyCtaClick)="router.navigate(['/medicos', 'nuevo'])">
+
+        <ng-template uiCell="nombre" let-row>
+          {{ $any(row).lastName }}, {{ $any(row).firstName }}
         </ng-template>
-        <ng-template pTemplate="body" let-d>
-          <tr>
-            <td>{{ d.lastName }}, {{ d.firstName }}</td>
-            <td>{{ d.tuition }}</td>
-            <td>{{ registrationLabel(d) }}</td>
-            <td>
-              <p-tag [severity]="d.active ? 'success' : 'secondary'" [value]="d.active ? 'Activo' : 'Inactivo'" />
-            </td>
-            <td class="text-right">
-              <a [routerLink]="['/medicos', d.id, 'editar']">
-                <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" />
-              </a>
-              <p-button [text]="true" icon="pi pi-refresh" pTooltip="Activar/Desactivar"
-                        ariaLabel="Activar/Desactivar" (onClick)="confirmToggle(d)" />
-              <p-button [text]="true" icon="pi pi-trash" severity="danger" pTooltip="Eliminar"
-                        ariaLabel="Eliminar" (onClick)="confirmDelete(d)" />
-            </td>
-          </tr>
+
+        <ng-template uiCell="registrationType" let-row>
+          {{ registrationLabel($any(row)) }}
         </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="5">
-              <a [routerLink]="['/medicos', 'nuevo']">
-                <ui-empty-state heading="Sin médicos derivantes" icon="pi-heart"
-                                description="Agregá el primer médico derivante." ctaLabel="Nuevo médico" />
-              </a>
-            </td>
-          </tr>
+
+        <ng-template uiCell="active" let-row>
+          <p-tag [severity]="$any(row).active ? 'success' : 'secondary'"
+                 [value]="$any(row).active ? 'Activo' : 'Inactivo'" />
         </ng-template>
-      </p-table>
+      </ui-table>
 
       <p-confirmDialog />
     </div>
@@ -75,14 +68,34 @@ import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.select
 export class MedicosListPage implements OnInit {
   private readonly store = inject(Store);
   private readonly confirm = inject(ConfirmationService);
+  protected readonly router = inject(Router);
 
   readonly items = this.store.selectSignal(selectAllDoctors);
   readonly pending = this.store.selectSignal(selectDoctorPending);
+
+  readonly columns: readonly TableColumn[] = [
+    { field: 'nombre',           header: 'Médico' },
+    { field: 'tuition',          header: 'Matrícula' },
+    { field: 'registrationType', header: 'Registro' },
+    { field: 'active',           header: 'Estado' },
+  ];
+
+  readonly extraActions: readonly TableAction[] = [
+    { key: 'toggle', icon: 'pi-refresh', label: 'Activar/Desactivar' },
+  ];
 
   ngOnInit(): void { this.store.dispatch(loadDoctors()); }
 
   registrationLabel(d: Doctor): string {
     return d.registrationType === 'NACIONAL' ? 'Nacional' : 'Provincial';
+  }
+
+  onEdit(d: Doctor): void {
+    this.router.navigate(['/medicos', d.id, 'editar']);
+  }
+
+  onAction(e: { key: string; row: unknown }): void {
+    if (e.key === 'toggle') this.confirmToggle(e.row as Doctor);
   }
 
   confirmToggle(d: Doctor): void {

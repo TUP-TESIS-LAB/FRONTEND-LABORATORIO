@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 import { Employee } from '../../models/employee.model';
 import { loadEmployees, toggleEmployeeStatus } from '../../store/employee.actions';
 import { selectAllEmployees, selectEmployeePending } from '../../store/employee.selectors';
@@ -17,7 +18,7 @@ import { selectAllEmployees, selectEmployeePending } from '../../store/employee.
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
-  imports: [RouterLink, TableModule, ButtonModule, TagModule, TooltipModule, ConfirmDialogModule, EmptyStateComponent],
+  imports: [RouterLink, ButtonModule, TagModule, ConfirmDialogModule, DataTableComponent, UiCellDirective],
   template: `
     <div class="py-2">
       <header class="flex items-center justify-between mb-4">
@@ -27,42 +28,41 @@ import { selectAllEmployees, selectEmployeePending } from '../../store/employee.
         </a>
       </header>
 
-      <p-table [value]="items()" [loading]="pending()" responsiveLayout="scroll" dataKey="id">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Empleado</th><th>Documento</th><th>Matrícula</th><th>Bioquímico</th><th>Estado</th>
-            <th class="text-right" style="width:140px">Acciones</th>
-          </tr>
+      <ui-table
+        [value]="items()"
+        [loading]="pending()"
+        [columns]="columns"
+        [showEdit]="true"
+        [actions]="extraActions"
+        emptyHeading="Sin empleados"
+        emptyIcon="pi-users"
+        emptyDescription="Agregá el primer empleado del laboratorio."
+        emptyCtaLabel="Nuevo empleado"
+        (edit)="onEdit($any($event))"
+        (action)="onAction($event)"
+        (emptyCtaClick)="router.navigate(['/sucursales', 'empleados', 'nuevo'])">
+
+        <ng-template uiCell="nombre" let-row>
+          {{ $any(row).lastName }}, {{ $any(row).firstName }}
         </ng-template>
-        <ng-template pTemplate="body" let-e>
-          <tr>
-            <td>{{ e.lastName }}, {{ e.firstName }}</td>
-            <td>{{ e.document }}</td>
-            <td>{{ e.registration || '—' }}</td>
-            <td>
-              @if (e.isBiochemist) { <p-tag severity="info" value="Sí" /> } @else { <span class="text-surface-400">No</span> }
-            </td>
-            <td><p-tag [severity]="e.active ? 'success' : 'secondary'" [value]="e.active ? 'Activo' : 'Inactivo'" /></td>
-            <td class="text-right">
-              <a [routerLink]="['/sucursales', 'empleados', e.id, 'editar']">
-                <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" />
-              </a>
-              <p-button [text]="true" icon="pi pi-refresh" pTooltip="Activar/Desactivar"
-                        ariaLabel="Activar/Desactivar" (onClick)="confirmToggle(e)" />
-            </td>
-          </tr>
+
+        <ng-template uiCell="registration" let-row>
+          {{ $any(row).registration || '—' }}
         </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="6">
-              <a [routerLink]="['/sucursales', 'empleados', 'nuevo']">
-                <ui-empty-state heading="Sin empleados" icon="pi-users"
-                                description="Agregá el primer empleado del laboratorio." ctaLabel="Nuevo empleado" />
-              </a>
-            </td>
-          </tr>
+
+        <ng-template uiCell="isBiochemist" let-row>
+          @if ($any(row).isBiochemist) {
+            <p-tag severity="info" value="Sí" />
+          } @else {
+            <span class="text-surface-400">No</span>
+          }
         </ng-template>
-      </p-table>
+
+        <ng-template uiCell="active" let-row>
+          <p-tag [severity]="$any(row).active ? 'success' : 'secondary'"
+                 [value]="$any(row).active ? 'Activo' : 'Inactivo'" />
+        </ng-template>
+      </ui-table>
 
       <p-confirmDialog />
     </div>
@@ -71,11 +71,32 @@ import { selectAllEmployees, selectEmployeePending } from '../../store/employee.
 export class EmpleadosListPage implements OnInit {
   private readonly store = inject(Store);
   private readonly confirm = inject(ConfirmationService);
+  protected readonly router = inject(Router);
 
   readonly items = this.store.selectSignal(selectAllEmployees);
   readonly pending = this.store.selectSignal(selectEmployeePending);
 
+  readonly columns: readonly TableColumn[] = [
+    { field: 'nombre',        header: 'Empleado' },
+    { field: 'document',      header: 'Documento' },
+    { field: 'registration',  header: 'Matrícula' },
+    { field: 'isBiochemist',  header: 'Bioquímico' },
+    { field: 'active',        header: 'Estado' },
+  ];
+
+  readonly extraActions: readonly TableAction[] = [
+    { key: 'toggle', icon: 'pi-refresh', label: 'Activar/Desactivar' },
+  ];
+
   ngOnInit(): void { this.store.dispatch(loadEmployees()); }
+
+  onEdit(e: Employee): void {
+    this.router.navigate(['/sucursales', 'empleados', e.id, 'editar']);
+  }
+
+  onAction(ev: { key: string; row: unknown }): void {
+    if (ev.key === 'toggle') this.confirmToggle(ev.row as Employee);
+  }
 
   confirmToggle(e: Employee): void {
     const verb = e.active ? 'desactivar' : 'reactivar';

@@ -1,18 +1,20 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Subject, debounceTime } from 'rxjs';
-import { TableModule, TableLazyLoadEvent } from 'primeng/table';
+import { TableLazyLoadEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { DatePipe } from '@angular/common';
 import { DniPipe } from '@shared/pipes/dni.pipe';
 import { AgePipe } from '@shared/pipes/age.pipe';
-import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { Patient, PatientStatus } from '../../models/patient.model';
 import { PatientStateFilter } from '../../models/patient-page.model';
@@ -31,9 +33,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   imports: [
-    RouterLink, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule,
+    RouterLink, ButtonModule, InputTextModule, TagModule,
     ConfirmDialogModule, DatePipe, DniPipe, AgePipe,
-    EmptyStateComponent,
+    DataTableComponent, UiCellDirective,
   ],
   template: `
     <div class="p-6">
@@ -74,63 +76,55 @@ import {
           (onClick)="toggleCompleteFilter()" />
       </div>
 
-      <p-table
+      <ui-table
         [value]="items()"
+        [loading]="pending()"
+        [columns]="columns"
         [lazy]="true"
         [paginator]="true"
         [rows]="pageRequest().size"
         [totalRecords]="total()"
         [first]="pageRequest().page * pageRequest().size"
-        [loading]="pending()"
-        (onLazyLoad)="onPage($event)"
-        dataKey="id">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Paciente</th><th>DNI</th><th>Fecha nac.</th><th>Obra social</th>
-              <th>Teléfono</th><th>Estado</th><th class="text-right" style="width:180px">Acciones</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-p>
-            <tr>
-              <td>
-                <div class="font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
-                <div class="text-xs text-surface-500">{{ p.gender }} · {{ p.birthDate | age }} años</div>
-              </td>
-              <td>{{ p.dni | dni }}</td>
-              <td>{{ p.birthDate | date:'dd/MM/yyyy' }}</td>
-              <td>{{ primaryCoverageLabel(p) }}</td>
-              <td>{{ primaryPhone(p) }}</td>
-              <td>
-                <p-tag [severity]="statusSeverity(p.status)" [value]="p.status" />
-                @if (!p.active) { <p-tag severity="danger" value="Inactivo" class="ml-1" /> }
-              </td>
-              <td class="text-right">
-                <a [routerLink]="['/pacientes', p.id]">
-                  <p-button [text]="true" icon="pi pi-eye" pTooltip="Ver detalle" ariaLabel="Ver detalle" />
-                </a>
-                @if (canMutate()) {
-                  <a [routerLink]="['/pacientes', p.id, 'editar']">
-                    <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" />
-                  </a>
-                  <p-button [text]="true" icon="pi pi-times-circle" pTooltip="Activar/Desactivar" ariaLabel="Activar/Desactivar" (onClick)="confirmToggle(p)" />
-                }
-              </td>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="7">
-                @if (canMutate()) {
-                  <a [routerLink]="['/pacientes', 'nuevo']">
-                    <ui-empty-state heading="Sin pacientes" icon="pi-users" ctaLabel="Nuevo paciente" />
-                  </a>
-                } @else {
-                  <ui-empty-state heading="Sin pacientes" icon="pi-users" />
-                }
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
+        [showView]="true"
+        [showEdit]="canMutate()"
+        [actions]="canMutate() ? toggleAction : []"
+        emptyHeading="Sin pacientes"
+        emptyIcon="pi-users"
+        [emptyCtaLabel]="canMutate() ? 'Nuevo paciente' : null"
+        (lazyLoad)="onPage($event)"
+        (view)="router.navigate(['/pacientes', $any($event).id])"
+        (edit)="router.navigate(['/pacientes', $any($event).id, 'editar'])"
+        (action)="onAction($event)"
+        (emptyCtaClick)="router.navigate(['/pacientes', 'nuevo'])">
+
+        <ng-template uiCell="paciente" let-row>
+          <div class="font-medium">{{ $any(row).lastName }}, {{ $any(row).firstName }}</div>
+          <div class="text-xs text-surface-500">{{ $any(row).gender }} · {{ $any(row).birthDate | age }} años</div>
+        </ng-template>
+
+        <ng-template uiCell="dni" let-row>
+          {{ $any(row).dni | dni }}
+        </ng-template>
+
+        <ng-template uiCell="birthDate" let-row>
+          {{ $any(row).birthDate | date:'dd/MM/yyyy' }}
+        </ng-template>
+
+        <ng-template uiCell="obraSocial" let-row>
+          {{ primaryCoverageLabel($any(row)) }}
+        </ng-template>
+
+        <ng-template uiCell="telefono" let-row>
+          {{ primaryPhone($any(row)) }}
+        </ng-template>
+
+        <ng-template uiCell="estado" let-row>
+          <p-tag [severity]="statusSeverity($any(row).status)" [value]="$any(row).status" />
+          @if (!$any(row).active) {
+            <p-tag severity="danger" value="Inactivo" class="ml-1" />
+          }
+        </ng-template>
+      </ui-table>
 
       <p-confirmDialog />
     </div>
@@ -142,6 +136,7 @@ export class PatientListPage implements OnInit {
   private readonly search$ = new Subject<string>();
   private readonly perms = inject(PatientPermissionsService);
   private readonly plansService = inject(CoveragePlansService);
+  protected readonly router = inject(Router);
   readonly canMutate = this.perms.canMutate;
 
   readonly items = this.store.selectSignal(selectAllPatients);
@@ -150,6 +145,19 @@ export class PatientListPage implements OnInit {
   readonly pageRequest = this.store.selectSignal(selectPatientPageRequest);
 
   private readonly plans = signal<readonly CoveragePlanOption[]>([]);
+
+  readonly columns: readonly TableColumn[] = [
+    { field: 'paciente',   header: 'Paciente' },
+    { field: 'dni',        header: 'DNI' },
+    { field: 'birthDate',  header: 'Fecha nac.' },
+    { field: 'obraSocial', header: 'Obra social' },
+    { field: 'telefono',   header: 'Teléfono' },
+    { field: 'estado',     header: 'Estado' },
+  ];
+
+  readonly toggleAction: readonly TableAction[] = [
+    { key: 'toggle', icon: 'pi-times-circle', label: 'Activar/Desactivar' },
+  ];
 
   readonly stateOptions: { value: PatientStateFilter; label: string }[] = [
     { value: 'active', label: 'Activos' },
@@ -168,17 +176,24 @@ export class PatientListPage implements OnInit {
   }
 
   onSearch(q: string): void { this.search$.next(q); }
+
   setState(state: PatientStateFilter): void {
     this.store.dispatch(setPatientPageRequest({ patch: { state, page: 0 } }));
   }
+
   toggleCompleteFilter(): void {
     const next: PatientStatus | undefined = this.pageRequest().status === 'COMPLETE' ? undefined : 'COMPLETE';
     this.store.dispatch(setPatientPageRequest({ patch: { status: next, page: 0 } }));
   }
+
   onPage(e: TableLazyLoadEvent): void {
     const rows = e.rows ?? this.pageRequest().size;
     const page = Math.floor((e.first ?? 0) / rows);
     this.store.dispatch(setPatientPageRequest({ patch: { page, size: rows } }));
+  }
+
+  onAction(ev: { key: string; row: unknown }): void {
+    if (ev.key === 'toggle') this.confirmToggle(ev.row as Patient);
   }
 
   confirmToggle(p: Patient): void {

@@ -1,52 +1,77 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { provideRouter, ActivatedRoute, convertToParamMap } from '@angular/router';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { of } from 'rxjs';
 import { TvExtraccionPage } from './tv-extraccion.page';
-import { TvExtraccionMockService } from './tv-extraccion-mock.service';
+import { ExtractionDisplayService } from '../../services/extraction-display.service';
+import { PollingService } from '@core/refresh';
+import { PublicDisplayService } from '../../services/public-display.service';
+import { ExtractionDisplaySnapshot } from '../../models/extraction-display.model';
+
+const mockSnapshot: ExtractionDisplaySnapshot = {
+  tenantName: 'Demo Lab',
+  branchName: 'Sucursal Centro',
+  entries: [
+    { publicCode: 'EX-001', displayStatus: 'CALLED', boxNumber: 2, calledAt: '2026-06-08T10:00:00Z' },
+    { publicCode: 'EX-002', displayStatus: 'WAITING', boxNumber: null, calledAt: null },
+  ],
+};
 
 describe('TvExtraccionPage', () => {
   let fixture: ComponentFixture<TvExtraccionPage>;
-  let mockService: TvExtraccionMockService;
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({
+    const pollingMock: Partial<PollingService> = {
+      startPolling: vi.fn((opts: any) => {
+        opts.poll().subscribe();
+        return { stop: vi.fn(), pokeNow: vi.fn(), setActive: vi.fn() };
+      }),
+    };
+
+    await TestBed.configureTestingModule({
       imports: [TvExtraccionPage],
       providers: [
         provideRouter([]),
+        provideNoopAnimations(),
         {
           provide: ActivatedRoute,
           useValue: {
             snapshot: { paramMap: convertToParamMap({ tenantSlug: 'lab-demo', branchId: '1001' }) },
           },
         },
+        {
+          provide: ExtractionDisplayService,
+          useValue: { fetchSnapshot: vi.fn(() => of(mockSnapshot)) },
+        },
+        { provide: PollingService, useValue: pollingMock },
+        {
+          provide: PublicDisplayService,
+          useValue: { listPublicBranches: vi.fn(() => of([])) },
+        },
       ],
-    });
+    }).compileComponents();
+
     fixture = TestBed.createComponent(TvExtraccionPage);
-    mockService = TestBed.inject(TvExtraccionMockService);
     fixture.detectChanges();
-    // Esperar el primer fetch del mock (delay 30ms). 60ms da margen para CI.
-    await new Promise(r => setTimeout(r, 60));
     fixture.detectChanges();
   });
 
-  it('renders the title for extraccion calls', () => {
-    const h2 = fixture.nativeElement.querySelector('.proximos h2');
-    expect(h2.textContent).toContain('Últimos llamados para extracción');
-  });
-
-  it('renders entries with → Box N text (cap at 5 visible)', () => {
+  it('shows a CALLED entry with publicCode and box number', () => {
     const items = fixture.nativeElement.querySelectorAll('.proximos li');
     expect(items.length).toBeGreaterThan(0);
-    expect(items.length).toBeLessThanOrEqual(5);
-    expect(items[0].querySelector('.box').textContent).toMatch(/→ Box [123]/);
-    expect(items[0].querySelector('.code').textContent.trim()).toMatch(/^EX-\d{3}$/);
+    const first = items[0];
+    expect(first.querySelector('.code').textContent.trim()).toBe('EX-001');
+    expect(first.querySelector('.box').textContent).toContain('Box 2');
   });
 
-  it('clicking the simulate button calls simulateNewCall on the mock', () => {
-    const spy = vi.spyOn(mockService, 'simulateNewCall');
-    const btn = fixture.nativeElement.querySelector('[data-testid="simulate-btn"]');
-    expect(btn).not.toBeNull();
-    btn.click();
-    expect(spy).toHaveBeenCalledTimes(1);
+  it('shows a WAITING entry with publicCode', () => {
+    const items = fixture.nativeElement.querySelectorAll('.en-espera li');
+    expect(items.length).toBeGreaterThan(0);
+    expect(items[0].querySelector('.code').textContent.trim()).toBe('EX-002');
+  });
+
+  it('does not contain a simulate button', () => {
+    expect(fixture.nativeElement.textContent).not.toContain('Simular llamada');
+    expect(fixture.nativeElement.querySelector('[data-testid="simulate-btn"]')).toBeNull();
   });
 });

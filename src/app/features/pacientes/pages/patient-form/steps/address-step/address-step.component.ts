@@ -9,7 +9,6 @@ import { AddressFieldsComponent } from '../../../../components/address-fields/ad
   imports: [AddressFieldsComponent],
   template: `
     <div class="pat-step">
-      <h2 class="pat-step__title">Dirección <span class="pat-step__opt">· opcional</span></h2>
       <p class="pat-step__hint">Domicilio del paciente. Podés saltarlo y registrarlo igual.</p>
       <pat-address-fields [group]="group()" />
     </div>

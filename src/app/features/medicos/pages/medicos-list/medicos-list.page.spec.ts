@@ -30,12 +30,12 @@ describe('MedicosListPage (smoke)', () => {
     expect(spy).toHaveBeenCalledWith(loadDoctors());
   });
 
-  it('renders the doctor row and a link to edit', () => {
+  it('renders the doctor row and the edit action button', () => {
     const fixture = TestBed.createComponent(MedicosListPage);
     fixture.detectChanges();
-    const html = (fixture.nativeElement as HTMLElement).innerHTML;
-    expect(html).toContain('Gómez, Ana');
-    expect(html).toMatch(/href="[^"]*\/medicos\/5\/editar"/);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.innerHTML).toContain('Gómez, Ana');
+    expect(el.querySelector('[aria-label="Editar"]')).toBeTruthy();
   });
 
   it('confirmToggle dispatches toggleDoctorStatus on accept', () => {

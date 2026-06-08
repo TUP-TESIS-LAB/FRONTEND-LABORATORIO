@@ -62,6 +62,18 @@ import { InExtractionItem } from '../../models/extraction.model';
             <td class="actions-col">
               <div class="actions-cell">
                 <p-button
+                  icon="pi pi-user-minus"
+                  severity="secondary"
+                  [outlined]="true"
+                  [rounded]="true"
+                  size="small"
+                  ariaLabel="No se presentó"
+                  pTooltip="No se presentó"
+                  tooltipPosition="top"
+                  [disabled]="mutating()"
+                  (onClick)="noShow.emit(row)"
+                />
+                <p-button
                   icon="pi pi-times"
                   severity="danger"
                   [outlined]="true"
@@ -156,5 +168,6 @@ export class InProgressListComponent {
   readonly mutating = input<boolean>(false);
 
   @Output() readonly cancel = new EventEmitter<InExtractionItem>();
+  @Output() readonly noShow = new EventEmitter<InExtractionItem>();
   @Output() readonly end = new EventEmitter<InExtractionItem>();
 }

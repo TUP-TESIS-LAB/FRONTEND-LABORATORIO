@@ -11,6 +11,8 @@ import { race, take } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { FormStep } from '@shared/ui/models/form-step';
 import { AttentionState, isTerminal } from '../../../models/atencion.model';
 import { attentionStateLabel, attentionStateSeverity } from '../../../models/atencion-state-label';
 import {
@@ -55,7 +57,7 @@ const ALL_STEPS: WizardStepDef[] = [
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ButtonModule, TagModule, EmptyStateComponent,
+    ButtonModule, TagModule, EmptyStateComponent, FormStepperHeaderComponent,
     DatosGeneralesStepComponent, AnalisisStepComponent, ResumenStepComponent,
     CancelAttentionModalComponent,
   ],
@@ -107,19 +109,12 @@ const ALL_STEPS: WizardStepDef[] = [
             </div>
           }
         } @else {
-          <div class="flex items-center mb-6 px-2">
-            @for (step of visibleSteps(); track step.key; let i = $index, last = $last) {
-              <div class="flex flex-col items-center text-xs flex-1">
-                <div class="w-7 h-7 rounded-full flex items-center justify-center font-semibold text-white"
-                     [style.background]="dotColor(step)">
-                  @if (isCompleted(step)) { ✓ } @else { {{ i + 1 }} }
-                </div>
-                <div class="mt-1">{{ step.label }}</div>
-              </div>
-              @if (!last) {
-                <div class="h-px flex-[0.5] mx-1" [style.background]="i < activeIndex() ? '#10b981' : '#cbd5e1'"></div>
-              }
-            }
+          <div class="mb-6 rounded-lg border border-surface-200 overflow-hidden">
+            <ui-form-stepper-header
+              [steps]="stepperSteps()"
+              [currentIndex]="activeIndex()"
+              [visited]="completedSteps()"
+              [clickable]="false" />
           </div>
 
           @switch (uiStep()?.key) {
@@ -200,6 +195,20 @@ export class AtencionWizardComponent {
     return a ? this.visibleSteps().findIndex((s) => s.key === a.key) : -1;
   });
 
+  /** Pasos para el header compartido (solo lectura: dirigido por la máquina de estados). */
+  protected readonly stepperSteps = computed<FormStep[]>(() =>
+    this.visibleSteps().map((s) => ({ key: s.key, title: s.label }))
+  );
+  /** Índices completados = los anteriores al paso real del backend (no al uiStep override). */
+  protected readonly completedSteps = computed<ReadonlySet<number>>(() => {
+    const a = this.stepFromState();
+    if (!a) return new Set<number>();
+    const activeIdx = this.visibleSteps().findIndex((s) => s.key === a.key);
+    const set = new Set<number>();
+    for (let i = 0; i < activeIdx; i++) set.add(i);
+    return set;
+  });
+
   constructor() {
     effect(() => {
       const idv = this.id();
@@ -226,17 +235,6 @@ export class AtencionWizardComponent {
     });
   }
 
-  isCompleted(step: WizardStepDef): boolean {
-    const a = this.stepFromState();
-    if (!a) return false;
-    return this.visibleSteps().findIndex((s) => s.key === step.key) <
-           this.visibleSteps().findIndex((s) => s.key === a.key);
-  }
-  dotColor(step: WizardStepDef): string {
-    if (this.isCompleted(step)) return '#10b981';
-    if (this.uiStep()?.key === step.key) return 'var(--brand-secondary, #3b82f6)';
-    return '#94a3b8';
-  }
   canReturn(): boolean {
     const s = this.detail()?.attentionState;
     return s != null && s !== AttentionState.REGISTERING_GENERAL_DATA && !isTerminal(s);

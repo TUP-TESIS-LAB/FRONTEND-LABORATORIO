@@ -56,7 +56,6 @@ const CONTACT_ICON_CLASS: Record<string, string> = {
   providers: [AgePipe],
   template: `
     <div class="flex flex-col gap-3 max-w-4xl">
-      <h2 class="pat-step__title">Resumen</h2>
       <p class="pat-step__hint">Revisá los datos antes de registrar. Tocá "Editar" para volver al paso correspondiente.</p>
 
       <section class="pat-summary__card">

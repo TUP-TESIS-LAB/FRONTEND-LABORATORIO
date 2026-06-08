@@ -62,11 +62,18 @@ export class FormStepperHeaderComponent {
   readonly steps = input.required<readonly FormStep[]>();
   readonly currentIndex = input.required<number>();
   readonly visited = input.required<ReadonlySet<number>>();
+  /**
+   * Cuando es `false`, el header funciona como indicador de progreso de solo
+   * lectura: los pasos visitados se muestran como completados pero no son
+   * navegables (sin cursor/role/tabindex ni `stepSelected`). Útil para wizards
+   * dirigidos por una máquina de estados, donde el avance no es libre.
+   */
+  readonly clickable = input<boolean>(true);
   readonly stepSelected = output<number>();
 
   readonly isDone = (i: number) => this.visited().has(i) && i !== this.currentIndex();
   readonly isLocked = (i: number) => !this.visited().has(i) && i !== this.currentIndex();
-  readonly isClickable = (i: number) => i !== this.currentIndex() && this.visited().has(i);
+  readonly isClickable = (i: number) => this.clickable() && i !== this.currentIndex() && this.visited().has(i);
 
   onClick(i: number): void {
     if (this.isClickable(i)) this.stepSelected.emit(i);

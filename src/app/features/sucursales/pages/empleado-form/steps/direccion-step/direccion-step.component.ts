@@ -12,11 +12,11 @@ import { InputTextModule } from 'primeng/inputtext';
       <p class="md:col-span-3 text-sm text-surface-500 -mb-1">Domicilio del empleado (opcional).</p>
       <label class="flex flex-col gap-1 md:col-span-2">
         <span class="text-sm font-medium">Calle</span>
-        <input pInputText formControlName="street" autocomplete="off" placeholder="Ej. Av. Mitre" />
+        <input pInputText formControlName="street" autocomplete="off" />
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Número</span>
-        <input pInputText formControlName="streetNumber" autocomplete="off" placeholder="Ej. 500" />
+        <input pInputText formControlName="streetNumber" autocomplete="off" />
       </label>
     </div>
   `,

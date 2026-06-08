@@ -1,0 +1,38 @@
+<div class="scan-bar">
+  <div class="input-group">
+    <i class="pi pi-barcode"></i>
+    <input
+      type="text"
+      class="scan-input"
+      placeholder="Escaneá o tipeá el código de muestra…"
+      [ngModel]="query()"
+      (ngModelChange)="onInput($event)"
+      (keydown.enter)="onEnter(query())"
+      autocomplete="off"
+    />
+    <span class="hint">Enter selecciona</span>
+  </div>
+
+  <button type="button" class="btn btn-secondary" (click)="simulate.emit()">
+    <i class="pi pi-bolt"></i>
+    Simular escaneo
+  </button>
+
+  <span class="divider"></span>
+
+  @if (hasSelection()) {
+    <button type="button" class="btn btn-ghost" (click)="clear.emit()">
+      Limpiar
+    </button>
+  }
+
+  <button
+    type="button"
+    class="btn btn-primary"
+    [disabled]="!hasSelection()"
+    (click)="openMenu.emit()"
+  >
+    Cambiar estado del lote · {{ selectionCount() }}
+    <i class="pi pi-chevron-down"></i>
+  </button>
+</div>

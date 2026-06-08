@@ -7,11 +7,6 @@ export interface PublicQueueEntry {
   lastCalledAt: string | null;
   callCount: number;
   createdAt: string;
-  /**
-   * Box de extracción asignado al paciente.
-   * Por ahora mockeado en frontend (`TvExtraccionMockService`).
-   * Backend agregará el campo cuando exista el modelo `Branch.boxes`.
-   */
   boxNumber?: number;
 }
 

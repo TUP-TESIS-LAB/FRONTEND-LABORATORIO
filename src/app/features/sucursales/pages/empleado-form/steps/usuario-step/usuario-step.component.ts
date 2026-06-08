@@ -50,37 +50,37 @@ interface UserOption { id: number; label: string; }
         @switch (mode()) {
           @case ('existing') {
             <label class="flex flex-col gap-1 max-w-md">
-              <span class="text-sm font-medium">Usuario *</span>
+              <span class="text-sm font-medium">Usuario <span class="pat-form__req">*</span></span>
               <p-select formControlName="existingUserId" [options]="users()" [filter]="true"
-                        optionLabel="label" optionValue="id" placeholder="Buscá y seleccioná…" />
+                        optionLabel="label" optionValue="id" />
             </label>
           }
           @case ('new') {
             <div formGroupName="newUser" class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label class="flex flex-col gap-1">
-                <span class="text-sm font-medium">Nombre *</span>
+                <span class="text-sm font-medium">Nombre <span class="pat-form__req">*</span></span>
                 <input pInputText formControlName="firstName" autocomplete="off" />
               </label>
               <label class="flex flex-col gap-1">
-                <span class="text-sm font-medium">Apellido *</span>
+                <span class="text-sm font-medium">Apellido <span class="pat-form__req">*</span></span>
                 <input pInputText formControlName="lastName" autocomplete="off" />
               </label>
               <label class="flex flex-col gap-1">
-                <span class="text-sm font-medium">Email *</span>
+                <span class="text-sm font-medium">Email <span class="pat-form__req">*</span></span>
                 <input pInputText type="email" formControlName="email" autocomplete="off" />
               </label>
               <label class="flex flex-col gap-1">
-                <span class="text-sm font-medium">Usuario (username) *</span>
+                <span class="text-sm font-medium">Usuario (username) <span class="pat-form__req">*</span></span>
                 <input pInputText formControlName="username" autocomplete="off" />
               </label>
               <label class="flex flex-col gap-1">
-                <span class="text-sm font-medium">Documento *</span>
+                <span class="text-sm font-medium">Documento <span class="pat-form__req">*</span></span>
                 <input pInputText formControlName="document" autocomplete="off" />
               </label>
               <label class="flex flex-col gap-1">
                 <span class="text-sm font-medium">Rol</span>
                 <p-select formControlName="roleId" [options]="roles()" [showClear]="true"
-                          optionLabel="description" optionValue="id" placeholder="Seleccioná un rol…" />
+                          optionLabel="description" optionValue="id" />
               </label>
             </div>
             <div class="mt-2">

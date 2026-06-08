@@ -71,13 +71,23 @@ describe('SidebarComponent visibility', () => {
     expect(fixture.nativeElement.querySelector('.ui-sidebar__icon')).not.toBeNull();
   });
 
-  it('Analítica filtra sus hijos por seccion', () => {
+  it('Muestras filtra sus hijos por seccion', () => {
     const onlyPre = setup(['PREANALITICA'], []);
     const core = onlyPre.visibleSections().find((s) => s.label === 'Core clínico');
-    const analitica = core?.items.find((i) => i.label === 'Analítica');
-    expect(analitica?.kind).toBe('expandable');
-    if (analitica?.kind === 'expandable') {
-      expect(analitica.children.map((c) => c.label)).toEqual(['Pre-analítica']);
+    const muestras = core?.items.find((i) => i.label === 'Muestras');
+    expect(muestras?.kind).toBe('expandable');
+    if (muestras?.kind === 'expandable') {
+      // PREANALITICA permite Recolección y Traslado
+      expect(muestras.children.map((c) => c.label)).toEqual(['Recolección', 'Traslado']);
+    }
+  });
+
+  it('Muestras muestra Descarte solo con POSTANALITICA', () => {
+    const onlyPost = setup(['POSTANALITICA'], []);
+    const core = onlyPost.visibleSections().find((s) => s.label === 'Core clínico');
+    const muestras = core?.items.find((i) => i.label === 'Muestras');
+    if (muestras?.kind === 'expandable') {
+      expect(muestras.children.map((c) => c.label)).toEqual(['Descarte']);
     }
   });
 });
