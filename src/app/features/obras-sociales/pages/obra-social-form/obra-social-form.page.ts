@@ -13,8 +13,8 @@ import { InsurerTypeCode, SpecificData, humanizeInsurerType } from '../../models
 import { WizardCreate, WizardContact, PlanWithAgreement } from '../../models/wizard.model';
 import { createObraSocial, createObraSocialSuccess, loadObraSocialCatalogs } from '../../store/obra-social.actions';
 import { selectObraSocialCreating, selectNbuOptions } from '../../store/obra-social.selectors';
+import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
 import { OBRA_SOCIAL_FORM_STEPS } from './obra-social-form-steps';
-import { ObraSocialStepperHeaderComponent } from './components/stepper-header/obra-social-stepper-header.component';
 import { AseguradoraStepComponent } from './steps/aseguradora-step.component';
 import { PlanesStepComponent } from './steps/planes-step.component';
 import { ResumenStepComponent, ResumenView } from './steps/resumen-step.component';
@@ -33,7 +33,7 @@ function isoFromDate(d: unknown): string {
   providers: [ConfirmationService],
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    ObraSocialStepperHeaderComponent, AseguradoraStepComponent, PlanesStepComponent, ResumenStepComponent,
+    FormStepperHeaderComponent, AseguradoraStepComponent, PlanesStepComponent, ResumenStepComponent,
   ],
   template: `
     <form [formGroup]="form" class="flex flex-col h-full">
@@ -43,7 +43,7 @@ function isoFromDate(d: unknown): string {
         <nav class="ml-auto text-xs text-surface-500">Obras Sociales › Nueva</nav>
       </header>
 
-      <os-stepper-header
+      <ui-form-stepper-header
         [steps]="steps"
         [currentIndex]="currentStep()"
         [visited]="visited()"

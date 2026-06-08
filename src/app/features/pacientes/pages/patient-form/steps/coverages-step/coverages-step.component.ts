@@ -9,7 +9,6 @@ import { CoverageSectionComponent } from '../../../../components/coverage-sectio
   imports: [CoverageSectionComponent],
   template: `
     <div class="pat-step">
-      <h2 class="pat-step__title">Coberturas <span class="pat-step__opt">· opcional</span></h2>
       <p class="pat-step__hint">Si no agregás ninguna, el paciente queda como particular. Podés sumarlas más tarde.</p>
       <pat-coverage-section [array]="array()" />
     </div>

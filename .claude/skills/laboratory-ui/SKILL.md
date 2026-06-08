@@ -176,7 +176,7 @@ Catálogo completo en `references/components.md`.
 ### Reglas generales
 - **Formularios:** siempre **Reactive Forms** (`FormBuilder`, `FormGroup`, `formControlName`). `ngModel` solo se permite en filtros de UI sin validación ni submit (búsquedas, selectores de vista).
 - **Botones:** `p-button` con `severity` mapeado a tokens. Nunca botones HTML planos. Tamaño mínimo `48×48` en mobile.
-- **Tablas:** `p-table` con `stripedRows`, `[paginator]="true"`, `[rows]="15"`. **En mobile se reemplaza por lista de cards** (patrón "tabla adaptativa").
+- **Tablas:** usar siempre `ui-table` (`DataTableComponent`) — ver skill `laboratory-ui-table`. **Nunca `p-table` inline** en list pages. En mobile se reemplaza por lista de cards (patrón "tabla adaptativa").
 - **Inputs:** `p-floatlabel` + componente PrimeNG. Inputs de mínimo 48px de alto en mobile, con `inputmode` y `autocomplete` correctos.
 - **Modales:** `p-dialog` con `[modal]="true"`, `[draggable]="false"`. **En mobile usar `[breakpoints]="{ '768px': '100vw' }"` y `styleClass="ui-dialog-fullscreen-mobile"`**.
 - **Notificaciones:** `p-toast` con posición `top-right` en desktop, `top-center` en mobile.
@@ -231,7 +231,7 @@ Estos son los patrones genéricos que el design system soporta. **No son pantall
 
 ### Listado de entidades
 Para cualquier vista que muestre una colección (pacientes, turnos, órdenes, sedes, etc.):
-- **Desktop:** `p-table` con columnas relevantes + acciones inline en la última columna.
+- **Desktop:** `ui-table` (`DataTableComponent`) — ver skill `laboratory-ui-table`. **Nunca `p-table` inline.**
 - **Mobile:** lista de cards (`ui-list-card`) con la información esencial + chevron.
 - Búsqueda: `p-iconField` arriba (sticky en mobile).
 - Filtros: `p-toolbar` en desktop / `p-drawer` lateral en mobile.
@@ -258,14 +258,16 @@ El patrón depende del **dominio de la operación**, no del conteo de campos.
 
 #### Stepper full-page — mecánicas obligatorias
 
+Ver skill `laboratory-ui-stepper` para la guía completa con código.
+
 - Ruta dedicada (`/feature/nuevo`, `/feature/:id/editar` si la edición también es compleja).
-- Header con botón "Atrás" + título "Paso N de M".
-- `p-progressBar` o stepper visual arriba.
+- Header con `ui-form-stepper-header` — **nunca un header custom**.
 - Body scrolleable, `max-width: 720px`, centrado.
 - Footer sticky con `Volver` + `Continuar` (o `Confirmar` en el último paso).
 - Validar solo el step actual antes de avanzar.
-- El estado del wizard se mantiene en memoria mientras dure la navegación; perderlo al salir es aceptable.
-- Confirmación si el usuario intenta salir con cambios sin guardar.
+- Sin títulos redundantes en el cuerpo del paso (el título vive en el header).
+- Sin placeholders en los inputs del stepper.
+- Listas repetibles con botón "Agregar" arriba y trash inline.
 
 ### Card expandible (acordeón)
 Para listas de items con detalle opcional:
@@ -468,6 +470,8 @@ Reglas estrictas que evitan inconsistencia y rompen el DS si se ignoran:
 - ❌ Usar `ngModel` en formularios con submit → ✅ Reactive Forms (`formControlName`)
 - ❌ Crear modales propios → ✅ usar `p-dialog` con `ui-dialog-fullscreen-mobile`
 - ❌ Renderizar tablas tal cual en mobile → ✅ patrón "tabla adaptativa" (cards en mobile)
+- ❌ Usar `p-table` inline en un list page → ✅ `ui-table` (skill `laboratory-ui-table`)
+- ❌ Crear header de stepper custom → ✅ `ui-form-stepper-header` (skill `laboratory-ui-stepper`)
 - ❌ Usar prefijos de tenant en clases (`.lcc-card`) → ✅ siempre `.ui-*`
 
 **Accesibilidad**

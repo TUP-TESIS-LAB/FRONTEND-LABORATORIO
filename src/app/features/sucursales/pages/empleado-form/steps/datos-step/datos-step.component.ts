@@ -11,15 +11,15 @@ import { ToggleSwitch } from 'primeng/toggleswitch';
   template: `
     <div [formGroup]="group()" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
       <label class="flex flex-col gap-1">
-        <span class="text-sm font-medium">Nombre *</span>
+        <span class="text-sm font-medium">Nombre <span class="pat-form__req">*</span></span>
         <input pInputText formControlName="firstName" autocomplete="off" />
       </label>
       <label class="flex flex-col gap-1">
-        <span class="text-sm font-medium">Apellido *</span>
+        <span class="text-sm font-medium">Apellido <span class="pat-form__req">*</span></span>
         <input pInputText formControlName="lastName" autocomplete="off" />
       </label>
       <label class="flex flex-col gap-1">
-        <span class="text-sm font-medium">Documento *</span>
+        <span class="text-sm font-medium">Documento <span class="pat-form__req">*</span></span>
         <input pInputText formControlName="document" autocomplete="off" />
       </label>
       <label class="flex flex-col gap-1">

@@ -1,5 +1,4 @@
 <div class="totem-step">
-  <h2>Configuraciones generales</h2>
   <p class="muted">
     Configurá el tótem y la cantidad de boxes físicos de esta sucursal.
     Podés modificar estos valores más tarde desde la configuración de la sucursal.
@@ -23,14 +22,14 @@
     <form [formGroup]="boxesForm" (ngSubmit)="saveBoxes()" class="form">
       <div class="form-row">
         <div class="form-field">
-          <label for="atencionBoxesCount">Cantidad de boxes de atención *</label>
+          <label for="atencionBoxesCount">Cantidad de boxes de atención <span class="pat-form__req">*</span></label>
           <p-inputNumber inputId="atencionBoxesCount" formControlName="atencionBoxesCount" [min]="1" [showButtons]="true" buttonLayout="horizontal" decrementButtonIcon="pi pi-minus" incrementButtonIcon="pi pi-plus" />
           @if (boxesForm.controls.atencionBoxesCount.invalid && boxesForm.controls.atencionBoxesCount.touched) {
             <small class="form-error">Mínimo 1.</small>
           }
         </div>
         <div class="form-field">
-          <label for="extraccionBoxesCount">Cantidad de boxes de extracción *</label>
+          <label for="extraccionBoxesCount">Cantidad de boxes de extracción <span class="pat-form__req">*</span></label>
           <p-inputNumber inputId="extraccionBoxesCount" formControlName="extraccionBoxesCount" [min]="1" [showButtons]="true" buttonLayout="horizontal" decrementButtonIcon="pi pi-minus" incrementButtonIcon="pi pi-plus" />
           @if (boxesForm.controls.extraccionBoxesCount.invalid && boxesForm.controls.extraccionBoxesCount.touched) {
             <small class="form-error">Mínimo 1.</small>

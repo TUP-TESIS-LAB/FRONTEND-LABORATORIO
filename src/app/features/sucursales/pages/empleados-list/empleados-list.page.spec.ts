@@ -30,11 +30,11 @@ describe('EmpleadosListPage (smoke)', () => {
     expect(spy).toHaveBeenCalledWith(loadEmployees());
   });
 
-  it('renders the employee row and a link to edit', () => {
+  it('renders the employee row and the edit action button', () => {
     const fixture = TestBed.createComponent(EmpleadosListPage);
     fixture.detectChanges();
-    const html = (fixture.nativeElement as HTMLElement).innerHTML;
-    expect(html).toContain('Ruiz, Eva');
-    expect(html).toMatch(/href="[^"]*\/sucursales\/empleados\/8\/editar"/);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.innerHTML).toContain('Ruiz, Eva');
+    expect(el.querySelector('[aria-label="Editar"]')).toBeTruthy();
   });
 });

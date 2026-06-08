@@ -11,22 +11,22 @@ import { InputTextModule } from 'primeng/inputtext';
     <div [formGroup]="group()" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Email</span>
-        <input pInputText type="email" formControlName="email" autocomplete="off" placeholder="medico@ejemplo.com" />
+        <input pInputText type="email" formControlName="email" autocomplete="off" />
         @if (group().get('email')?.touched && group().get('email')?.hasError('email')) {
           <span class="text-xs" style="color: var(--ds-danger);">Email inválido.</span>
         }
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Teléfono</span>
-        <input pInputText formControlName="phone" autocomplete="off" placeholder="Ej. 11-2222-3333" />
+        <input pInputText formControlName="phone" autocomplete="off" />
       </label>
       <label class="flex flex-col gap-1 md:col-span-2">
         <span class="text-sm font-medium">Dirección — Calle</span>
-        <input pInputText formControlName="street" autocomplete="off" placeholder="Ej. Av. Corrientes" />
+        <input pInputText formControlName="street" autocomplete="off" />
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium">Número</span>
-        <input pInputText formControlName="streetNumber" autocomplete="off" placeholder="Ej. 1234" />
+        <input pInputText formControlName="streetNumber" autocomplete="off" />
       </label>
     </div>
   `,

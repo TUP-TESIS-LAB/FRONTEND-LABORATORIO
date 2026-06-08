@@ -1,15 +1,19 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime } from 'rxjs';
-import { TableModule, TableLazyLoadEvent } from 'primeng/table';
+import { TableLazyLoadEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
 import { InsurerStateFilter } from '../../models/obra-social-page.model';
 import { InsurerTypeCode } from '../../models/insurer.model';
 import { setObraSocialPageRequest, loadObraSocialCatalogs } from '../../store/obra-social.actions';
@@ -25,8 +29,9 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink, FormsModule, TableModule, ButtonModule, InputTextModule, SelectModule,
-    TagModule, TooltipModule,
+    RouterLink, FormsModule,
+    ButtonModule, InputTextModule, SelectModule, TagModule, TooltipModule,
+    DataTableComponent, UiCellDirective,
   ],
   template: `
     <div class="p-6">
@@ -66,56 +71,31 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
           styleClass="w-48" />
       </div>
 
-      <p-table
+      <ui-table
         [value]="items()"
+        [loading]="pending()"
+        [columns]="columns"
         [lazy]="true"
         [paginator]="true"
         [rows]="pageRequest().size"
         [totalRecords]="total()"
         [first]="pageRequest().page * pageRequest().size"
-        [loading]="pending()"
-        (onLazyLoad)="onPage($event)"
-        dataKey="id">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Código</th><th>Sigla</th><th>Nombre</th><th>Tipo</th><th>Estado</th>
-              <th class="text-right" style="width:120px">Acciones</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-o>
-            <tr>
-              <td>{{ o.code }}</td>
-              <td>{{ o.acronym }}</td>
-              <td class="font-medium">{{ o.name }}</td>
-              <td>{{ o.insurerTypeName }}</td>
-              <td>
-                @if (o.active) {
-                  <p-tag severity="success" value="Activa" />
-                } @else {
-                  <p-tag severity="danger" value="Inactiva" />
-                }
-              </td>
-              <td class="text-right">
-                <a [routerLink]="['/obras-sociales', o.id]">
-                  <p-button [text]="true" icon="pi pi-eye" pTooltip="Ver detalle" ariaLabel="Ver detalle" />
-                </a>
-              </td>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="6">
-                <div class="ui-empty-state flex flex-col items-center gap-3 py-12 text-center">
-                  <i class="pi pi-id-card" style="font-size:48px;color:var(--ds-text-muted,#94a3b8)"></i>
-                  <h4 class="m-0">Sin obras sociales</h4>
-                  <a [routerLink]="['/obras-sociales', 'nueva']">
-                    <p-button label="Nueva obra social" severity="primary" />
-                  </a>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
+        [showView]="true"
+        emptyHeading="Sin obras sociales"
+        emptyIcon="pi-id-card"
+        emptyCtaLabel="Nueva obra social"
+        (lazyLoad)="onPage($event)"
+        (view)="onView($any($event))"
+        (emptyCtaClick)="router.navigate(['/obras-sociales', 'nueva'])">
+
+        <ng-template uiCell="active" let-row>
+          @if ($any(row).active) {
+            <p-tag severity="success" value="Activa" />
+          } @else {
+            <p-tag severity="danger" value="Inactiva" />
+          }
+        </ng-template>
+      </ui-table>
     </div>
   `,
 })
@@ -123,12 +103,21 @@ export class ObrasSocialesListPage implements OnInit {
   private readonly store = inject(Store);
   private readonly destroyRef = inject(DestroyRef);
   private readonly search$ = new Subject<string>();
+  protected readonly router = inject(Router);
 
   readonly items = this.store.selectSignal(selectObraSocialItems);
   readonly pending = this.store.selectSignal(selectObraSocialPending);
   readonly total = this.store.selectSignal(selectObraSocialTotalElements);
   readonly pageRequest = this.store.selectSignal(selectObraSocialPageRequest);
   private readonly insurerTypes = this.store.selectSignal(selectObraSocialInsurerTypes);
+
+  readonly columns: readonly TableColumn[] = [
+    { field: 'code',           header: 'Código' },
+    { field: 'acronym',        header: 'Sigla' },
+    { field: 'name',           header: 'Nombre' },
+    { field: 'insurerTypeName',header: 'Tipo' },
+    { field: 'active',         header: 'Estado' },
+  ];
 
   readonly stateOptions: { value: InsurerStateFilter; label: string }[] = [
     { value: 'active', label: 'Activas' },
@@ -162,5 +151,9 @@ export class ObrasSocialesListPage implements OnInit {
     const rows = e.rows ?? this.pageRequest().size;
     const page = Math.floor((e.first ?? 0) / rows);
     this.store.dispatch(setObraSocialPageRequest({ patch: { page, size: rows } }));
+  }
+
+  onView(row: { id: number }): void {
+    this.router.navigate(['/obras-sociales', row.id]);
   }
 }

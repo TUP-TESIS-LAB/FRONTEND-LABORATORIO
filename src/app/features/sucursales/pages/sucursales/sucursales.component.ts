@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit, s
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { MessageService } from 'primeng/api';
-import { TableModule } from 'primeng/table';
 import { ToggleSwitch } from 'primeng/toggleswitch';
 import { ToastModule } from 'primeng/toast';
-import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadSucursales } from '../../store/sucursales.actions';
 import { selectAllSucursales, selectSucursalesPending } from '../../store/sucursales.selectors';
@@ -15,41 +16,25 @@ import { BranchTotemConfigService } from '../../services/branch-totem-config.ser
   selector: 'app-sucursales',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, EmptyStateComponent, TableModule, ToggleSwitch, ToastModule],
+  imports: [FormsModule, ToggleSwitch, ToastModule, DataTableComponent, UiCellDirective],
   providers: [MessageService],
   template: `
     <p-toast />
-    @if (pending()) {
-      <p>Cargando sucursales...</p>
-    } @else {
-      @if (sucursales().length === 0) {
-        <ui-empty-state heading="Sin sucursales" icon="pi-map-marker"
-                        description="Agregá la primera sucursal para empezar." ctaLabel="Nueva sucursal" />
-      } @else {
-        <h2>Sucursales</h2>
-        <p-table [value]="sucursales()" [tableStyle]="{ 'min-width': '40rem' }">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Nombre</th>
-              <th>Dirección</th>
-              <th style="width: 8rem">Tótem</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-row>
-            <tr>
-              <td>{{ row.nombre }}</td>
-              <td>{{ row.direccion }}</td>
-              <td>
-                <p-toggleswitch
-                  [ngModel]="totemEnabledById()[branchIdNum(row.id)]"
-                  [disabled]="!isAdmin()"
-                  (onChange)="onToggleTotem(branchIdNum(row.id), $event.checked)" />
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
-      }
-    }
+    <ui-table
+      [value]="sucursales()"
+      [loading]="pending()"
+      [columns]="columns"
+      emptyHeading="Sin sucursales"
+      emptyIcon="pi-map-marker"
+      emptyDescription="Agregá la primera sucursal para empezar.">
+
+      <ng-template uiCell="totem" let-row>
+        <p-toggleswitch
+          [ngModel]="totemEnabledById()[branchIdNum($any(row).id)]"
+          [disabled]="!isAdmin()"
+          (onChange)="onToggleTotem(branchIdNum($any(row).id), $event.checked)" />
+      </ng-template>
+    </ui-table>
   `,
 })
 export class SucursalesPageComponent implements OnInit {
@@ -67,8 +52,13 @@ export class SucursalesPageComponent implements OnInit {
     this.session.currentUser()?.roles?.some(r => r.code === 'ADMINISTRADOR') ?? false,
   );
 
+  readonly columns: readonly TableColumn[] = [
+    { field: 'nombre',    header: 'Nombre' },
+    { field: 'direccion', header: 'Dirección' },
+    { field: 'totem',     header: 'Tótem' },
+  ];
+
   constructor() {
-    // Cuando llega la lista de sucursales, cargar config de tótem por cada una.
     effect(() => {
       const list = this.sucursales();
       for (const s of list) {
@@ -92,11 +82,11 @@ export class SucursalesPageComponent implements OnInit {
 
   protected onToggleTotem(branchId: number, enabled: boolean): void {
     const prev = this.totemEnabledById()[branchId];
-    this.totemEnabledById.update(m => ({ ...m, [branchId]: enabled })); // optimistic
+    this.totemEnabledById.update(m => ({ ...m, [branchId]: enabled }));
     this.totemConfigService.upsert(branchId, enabled).subscribe({
       next: () => this.toast.add({ severity: 'success', summary: 'Tótem actualizado' }),
       error: () => {
-        this.totemEnabledById.update(m => ({ ...m, [branchId]: prev })); // revert
+        this.totemEnabledById.update(m => ({ ...m, [branchId]: prev }));
         this.toast.add({ severity: 'error', summary: 'No se pudo actualizar' });
       },
     });

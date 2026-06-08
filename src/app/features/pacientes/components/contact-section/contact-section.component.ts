@@ -20,22 +20,19 @@ const TYPE_OPTIONS: { value: ContactType; label: string }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule, RadioButtonModule],
   template: `
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-1">
       @for (group of array().controls; track group; let i = $index) {
         <div [formGroup]="$any(group)" class="pat-form__row">
-          <div class="pat-form__row-header">
-            <strong style="font-size:12px">Contacto #{{ i + 1 }}</strong>
-            <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="remove(i)" ariaLabel="Eliminar contacto" />
-          </div>
-          <div class="pat-form__grid">
-            <div class="pat-form__field">
+          <div class="flex gap-3 items-end">
+            <div class="pat-form__field flex-1">
               <label class="pat-form__label">Tipo</label>
               <p-select formControlName="contactType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
             </div>
-            <div class="pat-form__field">
+            <div class="pat-form__field flex-1">
               <label class="pat-form__label">Valor</label>
-              <input pInputText formControlName="contactValue" class="pat-form__input" placeholder="Ej: 11 5555-1234 o email@dom.com" />
+              <input pInputText formControlName="contactValue" class="pat-form__input" />
             </div>
+            <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="remove(i)" ariaLabel="Eliminar contacto" />
           </div>
           <div class="pat-form__row-flags">
             <label class="pat-form__row-flag">
@@ -49,7 +46,6 @@ const TYPE_OPTIONS: { value: ContactType; label: string }[] = [
           </div>
         </div>
       }
-      <p-button icon="pi pi-plus" label="Agregar contacto" severity="secondary" [outlined]="true" (onClick)="add()" />
     </div>
   `,
 })
