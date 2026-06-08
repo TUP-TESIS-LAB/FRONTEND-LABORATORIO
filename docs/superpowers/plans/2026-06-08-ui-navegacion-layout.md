@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Jira:** [KAN-92](https://exequielsantoro.atlassian.net/browse/KAN-92)
+
 **Goal:** Reordenar la navegación (Atenciones → tab de Recepción), eliminar selectores de sucursal sin romper la resolución por contexto, arreglar los bugs de estado y layout del wizard de atención, y rehacer el chrome (breadcrumb, sidebar con logo, topbar limpio, sidebar colapsable).
 
 **Architecture:** Angular standalone + OnPush + signals. Estado de atención en NgRx (acciones/reducer/selectors en `store/atencion/`). UI con PrimeNG + Tailwind. El wizard muestra pasos "adelantados" por UI vía `uiStepOverride` sin avanzar el backend; varios bugs vienen de ese desfasaje. Los selectores de sucursal se eliminan de la UI pero la sucursal sigue resolviéndose de `OperatorBranchContextService`.
