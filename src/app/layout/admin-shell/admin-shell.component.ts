@@ -6,12 +6,13 @@ import { SidebarComponent } from '@layout/sidebar/sidebar.component';
 import { ChangePasswordDrawerComponent } from '@features/profile/components/change-password-drawer/change-password-drawer.component';
 import { LogoutConfirmComponent } from '@features/profile/components/logout-confirm/logout-confirm.component';
 import { NotificationHostComponent } from '@core/components/notification-host/notification-host.component';
+import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb.component';
 
 @Component({
   selector: 'ui-admin-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent, ChangePasswordDrawerComponent, LogoutConfirmComponent, NotificationHostComponent],
+  imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent, ChangePasswordDrawerComponent, LogoutConfirmComponent, NotificationHostComponent, BreadcrumbComponent],
   template: `
     <div class="ui-admin-shell">
       <ui-sidebar class="ui-admin-shell__sidebar" />
@@ -27,6 +28,7 @@ import { NotificationHostComponent } from '@core/components/notification-host/no
       <div class="ui-admin-shell__main">
         <ui-topbar (menuToggle)="drawerOpen.set(!drawerOpen())" />
         <main class="ui-admin-shell__content">
+          <ui-breadcrumb />
           <router-outlet />
         </main>
       </div>

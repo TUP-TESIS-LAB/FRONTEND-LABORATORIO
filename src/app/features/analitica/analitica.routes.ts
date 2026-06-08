@@ -13,22 +13,26 @@ export const ANALITICA_ROUTES: Routes = [
           .then(m => m.ExtractionQueuePage),
         canMatch: [hasRoleGuard(['EXTRACTOR', 'ADMINISTRADOR'])],
         title: 'Cola de extracción',
+        data: { breadcrumb: 'Extracción' },
       },
       {
         path: 'atencion',
         canMatch: [sectionGuard('ATENCION')],
         loadComponent: () => import('./pages/atencion/atencion-dashboard/atencion-dashboard.component')
           .then(m => m.AtencionDashboardComponent),
+        data: { breadcrumb: 'Atención' },
       },
       {
         path: 'atencion/nueva',
         loadComponent: () => import('./pages/atencion/atencion-wizard/atencion-wizard.component')
           .then(m => m.AtencionWizardComponent),
+        data: { breadcrumb: 'Atención' },
       },
       {
         path: 'atencion/:id',
         loadComponent: () => import('./pages/atencion/atencion-wizard/atencion-wizard.component')
           .then(m => m.AtencionWizardComponent),
+        data: { breadcrumb: 'Atención' },
       },
       { path: 'protocolos',     loadComponent: () => import('./pages/protocolos/protocolos.component').then(m => m.ProtocolosComponent) },
       { path: 'rotulos',        loadComponent: () => import('./pages/rotulos/rotulos.component').then(m => m.RotulosComponent) },

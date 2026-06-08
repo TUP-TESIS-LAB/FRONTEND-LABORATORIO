@@ -62,6 +62,7 @@ export const TURNOS_ROUTES: Routes = [
       {
         path: 'recepcion',
         canActivate: [recepcionAccessGuard],
+        data: { breadcrumb: 'Recepción' },
         providers: [
           provideState(BOX_OCCUPATION_FEATURE_KEY, boxOccupationReducer),
           provideEffects([BoxOccupationEffects]),
