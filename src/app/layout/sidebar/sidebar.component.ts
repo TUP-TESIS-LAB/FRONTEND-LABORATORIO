@@ -3,11 +3,13 @@ import {
   Component,
   computed,
   inject,
+  input,
   OnInit,
   output,
   signal,
 } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { TooltipModule } from 'primeng/tooltip';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
@@ -25,21 +27,25 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
   selector: 'ui-sidebar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, RouterLink, RouterLinkActive],
+  imports: [NgClass, RouterLink, RouterLinkActive, TooltipModule],
   template: `
-    <nav class="ui-sidebar" aria-label="Navegación principal">
+    <nav class="ui-sidebar" [class.ui-sidebar--collapsed]="collapsed()" aria-label="Navegación principal">
       <div class="ui-sidebar__brand">
         <img
           class="ui-sidebar__logo"
           [src]="logoSrc()"
           [alt]="tenantName()"
           (error)="onLogoError()" />
-        <span class="ui-sidebar__brand-name">{{ tenantName() }}</span>
+        @if (!collapsed()) {
+          <span class="ui-sidebar__brand-name">{{ tenantName() }}</span>
+        }
       </div>
 
       @for (section of visibleSections(); track section.label; let last = $last) {
         <div class="ui-sidebar__section">
-          <div class="ui-sidebar__section-label">{{ section.label }}</div>
+          @if (!collapsed()) {
+            <div class="ui-sidebar__section-label">{{ section.label }}</div>
+          }
           @for (item of section.items; track item.label) {
             @if (item.kind === 'link') {
               <a
@@ -47,17 +53,21 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
                 routerLinkActive="ui-sidebar__item--active"
                 [routerLinkActiveOptions]="{ exact: !!item.exact }"
                 class="ui-sidebar__item"
+                [pTooltip]="collapsed() ? item.label : ''"
+                tooltipPosition="right"
                 (click)="itemClick.emit()">
                 <span class="ui-sidebar__icon"><i [class]="item.icon"></i></span>
-                <span class="ui-sidebar__label">{{ item.label }}</span>
-                @if (item.badge) {
-                  <span class="ui-sidebar__badge"
-                        [ngClass]="'ui-sidebar__badge--' + item.badge.tone">
-                    {{ item.badge.text }}
-                  </span>
-                }
-                @if (item.chip) {
-                  <span class="ui-sidebar__chip">{{ item.chip }}</span>
+                @if (!collapsed()) {
+                  <span class="ui-sidebar__label">{{ item.label }}</span>
+                  @if (item.badge) {
+                    <span class="ui-sidebar__badge"
+                          [ngClass]="'ui-sidebar__badge--' + item.badge.tone">
+                      {{ item.badge.text }}
+                    </span>
+                  }
+                  @if (item.chip) {
+                    <span class="ui-sidebar__chip">{{ item.chip }}</span>
+                  }
                 }
               </a>
             } @else if (item.kind === 'external') {
@@ -66,13 +76,17 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
                 target="_blank"
                 rel="noopener"
                 class="ui-sidebar__item"
+                [pTooltip]="collapsed() ? item.label : ''"
+                tooltipPosition="right"
                 (click)="itemClick.emit()">
                 <span class="ui-sidebar__icon"><i [class]="item.icon"></i></span>
-                <span class="ui-sidebar__label">{{ item.label }}</span>
-                @if (item.chip) {
-                  <span class="ui-sidebar__chip">{{ item.chip }}</span>
+                @if (!collapsed()) {
+                  <span class="ui-sidebar__label">{{ item.label }}</span>
+                  @if (item.chip) {
+                    <span class="ui-sidebar__chip">{{ item.chip }}</span>
+                  }
+                  <i class="pi pi-external-link ui-sidebar__chevron"></i>
                 }
-                <i class="pi pi-external-link ui-sidebar__chevron"></i>
               </a>
             } @else {
               <button
@@ -80,23 +94,29 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
                 class="ui-sidebar__item ui-sidebar__item--expandable"
                 [class.ui-sidebar__item--active]="isGroupActive(item)"
                 [class.ui-sidebar__item--expanded]="isExpanded(item.label)"
+                [pTooltip]="collapsed() ? item.label : ''"
+                tooltipPosition="right"
                 (click)="toggleExpanded(item.label)">
                 <span class="ui-sidebar__icon"><i [class]="item.icon"></i></span>
-                <span class="ui-sidebar__label">{{ item.label }}</span>
-                <i class="pi pi-chevron-down ui-sidebar__chevron"></i>
-              </button>
-              <div class="ui-sidebar__sub" [class.ui-sidebar__sub--open]="isExpanded(item.label)">
-                @for (child of item.children; track child.path) {
-                  <a
-                    [routerLink]="child.path"
-                    routerLinkActive="ui-sidebar__subitem--active"
-                    class="ui-sidebar__subitem"
-                    (click)="itemClick.emit()">
-                    <span class="ui-sidebar__dot"></span>
-                    <span class="ui-sidebar__label">{{ child.label }}</span>
-                  </a>
+                @if (!collapsed()) {
+                  <span class="ui-sidebar__label">{{ item.label }}</span>
+                  <i class="pi pi-chevron-down ui-sidebar__chevron"></i>
                 }
-              </div>
+              </button>
+              @if (!collapsed()) {
+                <div class="ui-sidebar__sub" [class.ui-sidebar__sub--open]="isExpanded(item.label)">
+                  @for (child of item.children; track child.path) {
+                    <a
+                      [routerLink]="child.path"
+                      routerLinkActive="ui-sidebar__subitem--active"
+                      class="ui-sidebar__subitem"
+                      (click)="itemClick.emit()">
+                      <span class="ui-sidebar__dot"></span>
+                      <span class="ui-sidebar__label">{{ child.label }}</span>
+                    </a>
+                  }
+                </div>
+              }
             }
           }
         </div>
@@ -113,10 +133,14 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
             target="_blank"
             rel="noopener"
             class="ui-sidebar__item"
+            [pTooltip]="collapsed() ? 'Sala de espera' : ''"
+            tooltipPosition="right"
             (click)="itemClick.emit()">
             <span class="ui-sidebar__icon"><i class="pi pi-desktop"></i></span>
-            <span class="ui-sidebar__label">Sala de espera</span>
-            <i class="pi pi-external-link ui-sidebar__chevron"></i>
+            @if (!collapsed()) {
+              <span class="ui-sidebar__label">Sala de espera</span>
+              <i class="pi pi-external-link ui-sidebar__chevron"></i>
+            }
           </a>
         </div>
       }
@@ -306,9 +330,22 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
       background: rgba(255,255,255,.4);
       flex-shrink: 0;
     }
+
+    /* ---- Modo colapsado: solo iconos ---- */
+    .ui-sidebar--collapsed .ui-sidebar__brand {
+      justify-content: center;
+      padding: var(--space-2) 0 var(--space-3);
+    }
+    .ui-sidebar--collapsed .ui-sidebar__item {
+      justify-content: center;
+      gap: 0;
+      padding: 8px 0;
+    }
+    .ui-sidebar--collapsed .ui-sidebar__section-label { display: none; }
   `],
 })
 export class SidebarComponent implements OnInit {
+  readonly collapsed = input<boolean>(false);
   readonly itemClick = output<void>();
 
   private readonly registry = inject(ModuleRegistry);

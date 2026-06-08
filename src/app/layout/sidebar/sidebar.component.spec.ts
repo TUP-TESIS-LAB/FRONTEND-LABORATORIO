@@ -57,6 +57,20 @@ describe('SidebarComponent visibility', () => {
     expect(brand?.querySelector('.ui-sidebar__brand-name')?.textContent?.trim()).toBe('LabCore');
   });
 
+  it('en modo colapsado oculta los labels y aplica la clase collapsed al nav', () => {
+    setup(['TURNOS'], ['ADMINISTRADOR']);
+    const fixture = TestBed.createComponent(SidebarComponent);
+    fixture.componentRef.setInput('collapsed', true);
+    fixture.detectChanges();
+
+    const nav: HTMLElement = fixture.nativeElement.querySelector('.ui-sidebar');
+    expect(nav.classList.contains('ui-sidebar--collapsed')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.ui-sidebar__label')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.ui-sidebar__brand-name')).toBeNull();
+    // Los iconos siguen visibles.
+    expect(fixture.nativeElement.querySelector('.ui-sidebar__icon')).not.toBeNull();
+  });
+
   it('Analítica filtra sus hijos por seccion', () => {
     const onlyPre = setup(['PREANALITICA'], []);
     const core = onlyPre.visibleSections().find((s) => s.label === 'Core clínico');

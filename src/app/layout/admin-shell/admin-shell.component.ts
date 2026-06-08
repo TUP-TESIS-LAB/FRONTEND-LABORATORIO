@@ -15,7 +15,9 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
   imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent, ChangePasswordDrawerComponent, LogoutConfirmComponent, NotificationHostComponent, BreadcrumbComponent],
   template: `
     <div class="ui-admin-shell">
-      <ui-sidebar class="ui-admin-shell__sidebar" />
+      <ui-sidebar class="ui-admin-shell__sidebar"
+                  [class.ui-admin-shell__sidebar--collapsed]="collapsed()"
+                  [collapsed]="collapsed()" />
 
       <p-drawer
         [(visible)]="drawerOpen"
@@ -26,7 +28,7 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
       </p-drawer>
 
       <div class="ui-admin-shell__main">
-        <ui-topbar (menuToggle)="drawerOpen.set(!drawerOpen())" />
+        <ui-topbar (menuToggle)="onMenuToggle()" />
         <main class="ui-admin-shell__content">
           <ui-breadcrumb />
           <router-outlet />
@@ -48,6 +50,10 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
     .ui-admin-shell__sidebar {
       width: var(--ds-sidebar-w);
       flex-shrink: 0;
+      transition: width .2s ease;
+    }
+    .ui-admin-shell__sidebar--collapsed {
+      width: var(--ds-sidebar-w-collapsed, 64px);
     }
     @media (max-width: 767px) {
       .ui-admin-shell__sidebar { display: none; }
@@ -79,5 +85,37 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
   `],
 })
 export class AdminShellComponent {
+  private static readonly COLLAPSED_KEY = 'ui-admin-shell.sidebar-collapsed';
+
   readonly drawerOpen = signal(false);
+  readonly collapsed  = signal(this.readCollapsed());
+
+  onMenuToggle(): void {
+    // Desktop: colapsa/expande el sidebar. Mobile: abre/cierra el drawer.
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      this.drawerOpen.update(v => !v);
+    } else {
+      this.collapsed.update(v => !v);
+      this.writeCollapsed(this.collapsed());
+    }
+  }
+
+  private readCollapsed(): boolean {
+    try {
+      return typeof localStorage !== 'undefined'
+        && localStorage.getItem(AdminShellComponent.COLLAPSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private writeCollapsed(value: boolean): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(AdminShellComponent.COLLAPSED_KEY, value ? '1' : '0');
+      }
+    } catch {
+      // ignore persistence failures (private mode, etc.)
+    }
+  }
 }
