@@ -17,7 +17,6 @@ import { BoxSelectorModalComponent } from '../../box-occupation/components/box-s
 import { RecepcionConTotemComponent } from './recepcion-con-totem.component';
 import { RecepcionSinTotemComponent } from './recepcion-sin-totem.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
-import { OperatorBranchFabComponent } from '../../components/operator-branch-fab.component';
 
 @Component({
   selector: 'app-recepcion-page',
@@ -27,7 +26,6 @@ import { OperatorBranchFabComponent } from '../../components/operator-branch-fab
     ToastModule,
     RecepcionConTotemComponent,
     RecepcionSinTotemComponent,
-    OperatorBranchFabComponent,
     BoxOccupationWidgetComponent,
     BoxSelectorModalComponent,
   ],
