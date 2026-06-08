@@ -462,7 +462,9 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     const target = this.cancelTarget();
     this.cancelDialogOpen.set(false);
     if (!target) return;
-    this.store.dispatch(A.cancelExtraction({ id: target.id, reason: payload.reason }));
+    // Cancelación TERMINAL: la atención pasa a CANCELED y muere el flujo
+    // (NO vuelve a la cola). "No se presentó" sigue usando cancelExtraction.
+    this.store.dispatch(A.cancelAttention({ id: target.id, reason: payload.reason }));
     this.cancelTarget.set(null);
   }
 

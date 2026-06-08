@@ -170,7 +170,7 @@ export const extractionReducer = createReducer(
 
   // --- Mutations ---------------------------------------------------------
   on(
-    A.assignExtractor, A.cancelExtraction, A.endExtraction, A.unassignExtraction,
+    A.assignExtractor, A.cancelExtraction, A.cancelAttention, A.endExtraction, A.unassignExtraction,
     (s): ExtractionFeatureState => setPending(s, { mutation: true }),
   ),
 
@@ -192,12 +192,12 @@ export const extractionReducer = createReducer(
   })),
 
   on(
-    A.cancelExtractionSuccess, A.endExtractionSuccess,
+    A.cancelExtractionSuccess, A.cancelAttentionSuccess, A.endExtractionSuccess,
     (s): ExtractionFeatureState => setPending(s, { mutation: false }),
   ),
   on(
-    A.assignExtractorFailure, A.cancelExtractionFailure, A.endExtractionFailure,
-    A.unassignExtractionFailure,
+    A.assignExtractorFailure, A.cancelExtractionFailure, A.cancelAttentionFailure,
+    A.endExtractionFailure, A.unassignExtractionFailure,
     (s, { error }): ExtractionFeatureState => ({
       ...setPending(s, { mutation: false }),
       error: extractErrorText(error),

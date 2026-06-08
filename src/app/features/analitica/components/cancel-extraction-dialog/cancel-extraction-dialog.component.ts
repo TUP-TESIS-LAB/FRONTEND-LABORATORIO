@@ -42,17 +42,10 @@ const MAX_REASON_LENGTH = 500;
     >
       <div class="body">
         <p class="info">
-          Vas a cancelar la extracción. Indicá el motivo — queda registrado para auditoría.
+          Vas a cancelar la atención. El paciente <strong>NO</strong> vuelve a la cola — el flujo termina.
+          Indicá el motivo: queda registrado para auditoría.
         </p>
         <div class="quick-reasons">
-          <p-button
-            label="No se presentó"
-            severity="secondary"
-            [outlined]="true"
-            size="small"
-            [disabled]="saving()"
-            (onClick)="setQuickReason('Paciente no se presentó al box')"
-          />
           <p-button
             label="Vía difícil"
             severity="secondary"
@@ -77,7 +70,7 @@ const MAX_REASON_LENGTH = 500;
             class="reason-input"
             rows="4"
             [maxlength]="maxLength"
-            placeholder="Ej: paciente no se presentó al box"
+            placeholder="Ej: no se pudo canalizar (vía difícil)"
             [ngModel]="reason()"
             (ngModelChange)="onReasonChange($event)"
             [disabled]="saving()"
