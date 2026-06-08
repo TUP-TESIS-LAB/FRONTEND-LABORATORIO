@@ -1,0 +1,71 @@
+:host {
+  --brand: #4b4ddb;
+  --brand-700: #3a3cc0;
+  --sel: #eef0ff;
+  --sel-line: #c7caf6;
+  --bg: #f5f6f9;
+  --card: #ffffff;
+  --ink: #22243a;
+  --ink-2: #4a4d63;
+  --muted: #7c8092;
+  --line: #e8e9f0;
+  --line-2: #eef0f5;
+  --radius: 14px;
+  --shadow-sm: 0 1px 2px rgba(28,30,55,.06), 0 1px 1px rgba(28,30,55,.04);
+  --shadow-md: 0 8px 24px rgba(28,30,55,.10), 0 2px 6px rgba(28,30,55,.06);
+
+  display: block;
+  padding: 24px 30px 40px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100%;
+}
+
+.worklist-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .chip {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--ink-2);
+    box-shadow: var(--shadow-sm);
+
+    &.chip-selected {
+      background: var(--sel);
+      color: var(--brand-700);
+      border-color: var(--sel-line);
+    }
+  }
+}
+
+.toolbar-wrap {
+  position: relative;
+  display: block;
+}

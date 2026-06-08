@@ -1,0 +1,71 @@
+<div class="table-card">
+  <table>
+    <thead>
+      <tr>
+        <th class="check">
+          <input
+            type="checkbox"
+            [checked]="allVisibleSelected()"
+            (change)="toggleAll.emit()"
+            aria-label="Seleccionar todo"
+          />
+        </th>
+        <th>Muestra</th>
+        <th>Estudio</th>
+        <th>{{ sucursalHeader() }}</th>
+        <th>Toma</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of ordered(); track row.id) {
+        <tr
+          [class.selected]="isSelected(row.id)"
+          [class.leaving]="isLeaving(row.id)"
+          [class.flash]="isFlashing(row.id)"
+          (click)="toggleRow.emit(row.id)"
+        >
+          <td class="check">
+            <input
+              type="checkbox"
+              [checked]="isSelected(row.id)"
+              (click)="$event.stopPropagation()"
+              (change)="toggleRow.emit(row.id)"
+              [attr.aria-label]="'Seleccionar ' + row.barcode"
+            />
+          </td>
+          <td>
+            <div class="barcode">
+              {{ row.barcode }}
+              @if (row.urgent) {
+                <span class="urgente">URGENTE</span>
+              }
+            </div>
+            <div class="patient">{{ row.patient }}</div>
+          </td>
+          <td>{{ row.study }}</td>
+          <td>
+            <i class="pi pi-map-marker"></i>
+            {{ row.branch }}
+          </td>
+          <td>{{ row.date }} · {{ row.time }}</td>
+          <td>
+            <span class="state-badge" [attr.data-color]="stateColor(row.state)">
+              {{ stateLabel(row.state) }}
+            </span>
+            @if (row.destino) {
+              <div class="state-sub">→ {{ row.destino }}</div>
+            }
+            @if (row.area) {
+              <div class="state-sub">↧ {{ row.area }}</div>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr class="empty">
+          <td colspan="6">No hay muestras en este estado.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
