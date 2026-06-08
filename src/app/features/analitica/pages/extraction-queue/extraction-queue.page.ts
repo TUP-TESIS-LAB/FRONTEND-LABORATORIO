@@ -169,6 +169,7 @@ const UNDO_WINDOW_MS = 5000;
             <app-in-progress-list
               [items]="inProgress()"
               [mutating]="mutating()"
+              (noShow)="onNoShow($event)"
               (cancel)="onCancelRequest($event)"
               (end)="onEnd($event)"
             />
@@ -461,6 +462,10 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
   }
 
   // --- En curso ------------------------------------------------------------
+
+  onNoShow(target: InExtractionItem): void {
+    this.store.dispatch(A.cancelExtraction({ id: target.id, reason: 'NO_SE_PRESENTO' }));
+  }
 
   onCancelRequest(target: InExtractionItem): void {
     this.cancelTarget.set(target);

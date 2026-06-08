@@ -1,125 +1,97 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
+  OnDestroy,
   OnInit,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, EMPTY, interval, startWith, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, tap } from 'rxjs';
 import { DialogModule } from 'primeng/dialog';
-import { DisplaySnapshot, PublicQueueEntry } from '../../models/public-display.model';
-import { PublicBranch } from '../../services/public-display.service';
-import { EmptyStateComponent } from '../sala-espera/empty-state.component';
-import { ClosedStateComponent } from '../sala-espera/closed-state.component';
+import { ExtractionDisplayService } from '../../services/extraction-display.service';
+import { PublicDisplayService, PublicBranch } from '../../services/public-display.service';
+import { ExtractionDisplaySnapshot } from '../../models/extraction-display.model';
+import { PollingService, PollingHandle, isNotModified } from '@core/refresh';
 import { AdCarouselComponent } from '../sala-espera/ad-carousel.component';
-import { TvExtraccionMockService } from './tv-extraccion-mock.service';
 
 @Component({
   selector: 'app-tv-extraccion-page',
   standalone: true,
-  imports: [DatePipe, DialogModule, EmptyStateComponent, ClosedStateComponent, AdCarouselComponent],
+  imports: [DialogModule, AdCarouselComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tv-extraccion.page.html',
   styleUrl: './tv-extraccion.page.scss',
 })
-export class TvExtraccionPage implements OnInit {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private service = inject(TvExtraccionMockService);
-  private destroyRef = inject(DestroyRef);
+export class TvExtraccionPage implements OnInit, OnDestroy {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly displayService = inject(ExtractionDisplayService);
+  private readonly publicDisplayService = inject(PublicDisplayService);
+  private readonly polling = inject(PollingService);
 
-  protected tenantSlug = this.route.snapshot.paramMap.get('tenantSlug') ?? '';
-  protected branchId = Number(this.route.snapshot.paramMap.get('branchId') ?? '');
+  protected readonly tenantSlug = this.route.snapshot.paramMap.get('tenantSlug') ?? '';
+  protected readonly branchId = Number(this.route.snapshot.paramMap.get('branchId') ?? '');
 
-  protected snapshot = signal<DisplaySnapshot | null>(null);
-  protected lastSuccessfulFetch = signal<number>(0);
-  protected previousMostRecentCalledId = signal<number | null>(null);
-  protected firstAttemptDone = signal(false);
+  protected readonly snapshot = signal<ExtractionDisplaySnapshot | null>(null);
+  protected readonly firstAttemptDone = signal(false);
 
-  protected dialogOpen = signal(false);
-  protected dialogLoading = signal(false);
-  protected dialogError = signal<string | null>(null);
-  protected branchOptions = signal<PublicBranch[]>([]);
+  protected readonly calledEntries = computed(
+    () => this.snapshot()?.entries.filter(e => e.displayStatus === 'CALLED') ?? []
+  );
+
+  protected readonly waitingEntries = computed(
+    () => this.snapshot()?.entries.filter(e => e.displayStatus === 'WAITING') ?? []
+  );
 
   protected readonly audioUnlocked = signal<boolean>(
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tv-audio-unlocked') === '1',
   );
 
-  protected connectionLost = computed(() => {
-    const last = this.lastSuccessfulFetch();
-    return last > 0 && Date.now() - last > 15000;
-  });
+  protected readonly dialogOpen = signal(false);
+  protected readonly dialogLoading = signal(false);
+  protected readonly dialogError = signal<string | null>(null);
+  protected readonly branchOptions = signal<PublicBranch[]>([]);
 
-  protected calledEntries = computed<PublicQueueEntry[]>(() => {
-    const entries = this.snapshot()?.entries ?? [];
-    return entries
-      .filter(e => !!e.lastCalledAt)
-      .sort((a, b) => (b.lastCalledAt ?? '').localeCompare(a.lastCalledAt ?? ''));
-  });
-
-  protected viewMode = computed<'loading' | 'queue' | 'empty' | 'closed' | 'error'>(() => {
-    const snap = this.snapshot();
-    if (!snap) return this.firstAttemptDone() ? 'error' : 'loading';
-    if (this.isClosed(snap)) return 'closed';
-    if ((snap.entries ?? []).length === 0) return 'empty';
-    return 'queue';
-  });
-
-  constructor() {
-    effect(() => {
-      const list = this.calledEntries();
-      const mostRecent = list[0] ?? null;
-      if (mostRecent && mostRecent.id !== this.previousMostRecentCalledId()) {
-        this.playBeep();
-        this.previousMostRecentCalledId.set(mostRecent.id);
-      }
-    });
-  }
+  private pollingHandle: PollingHandle | null = null;
 
   ngOnInit(): void {
     if (!this.tenantSlug || !this.branchId) return;
 
-    interval(3000)
-      .pipe(
-        startWith(0),
-        switchMap(() =>
-          this.service.fetchSnapshot(this.tenantSlug, this.branchId).pipe(
-            tap(() => this.firstAttemptDone.set(true)),
-            catchError(() => {
-              this.firstAttemptDone.set(true);
-              return EMPTY;
-            }),
-          ),
+    this.pollingHandle = this.polling.startPolling({
+      key: 'tv-extraccion',
+      intervalMs: 5000,
+      poll: () =>
+        this.displayService.fetchSnapshot(this.tenantSlug, this.branchId).pipe(
+          tap(result => {
+            this.firstAttemptDone.set(true);
+            if (!isNotModified(result)) {
+              this.snapshot.set(result as ExtractionDisplaySnapshot);
+            }
+          }),
+          catchError(() => {
+            this.firstAttemptDone.set(true);
+            return EMPTY;
+          })
         ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(snap => {
-        this.snapshot.set(snap);
-        this.lastSuccessfulFetch.set(Date.now());
-      });
+    });
   }
 
-  /** Botón debug: prepende una entry random al mock. Remover cuando el endpoint real esté integrado. */
-  onSimulate(): void {
-    this.service.simulateNewCall();
+  ngOnDestroy(): void {
+    this.pollingHandle?.stop();
   }
 
   openBranchDialog(): void {
     this.dialogOpen.set(true);
     this.dialogError.set(null);
     this.dialogLoading.set(true);
-    this.service.listPublicBranches(this.tenantSlug).subscribe({
+    this.publicDisplayService.listPublicBranches(this.tenantSlug).subscribe({
       next: branches => {
         this.branchOptions.set(branches);
         this.dialogLoading.set(false);
         if (branches.length === 0) {
-          this.dialogError.set(`No hay sucursales registradas para el tenant "${this.tenantSlug}". Verificá la URL.`);
+          this.dialogError.set(`No hay sucursales registradas para el tenant "${this.tenantSlug}".`);
         }
       },
       error: () => {
@@ -140,26 +112,9 @@ export class TvExtraccionPage implements OnInit {
     a.play().then(() => {
       this.audioUnlocked.set(true);
       sessionStorage.setItem('tv-audio-unlocked', '1');
-    }).catch(err => {
-      console.warn('[tv-extraccion] audio unlock failed', err);
+    }).catch(() => {
       this.audioUnlocked.set(true);
       sessionStorage.setItem('tv-audio-unlocked', '1');
     });
-  }
-
-  private isClosed(snap: DisplaySnapshot): boolean {
-    if (!snap.openWindow) return false;
-    const now = new Date();
-    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    return hhmm < snap.openWindow.startTime || hhmm > snap.openWindow.endTime;
-  }
-
-  private playBeep(): void {
-    try {
-      const audio = new Audio('/assets/audio/beep-extraccion.mp3');
-      audio.play().catch(err => console.warn('[tv-extraccion] beep blocked or missing asset:', err));
-    } catch (e) {
-      console.warn('[tv-extraccion] beep error:', e);
-    }
   }
 }
