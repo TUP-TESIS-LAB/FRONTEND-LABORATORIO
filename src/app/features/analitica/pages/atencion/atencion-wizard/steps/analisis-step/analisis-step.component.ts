@@ -43,7 +43,9 @@ import { selectMutating } from '../../../../../store/atencion/atencion.selectors
         </p>
       }
 
-      <div class="flex justify-end">
+      <div class="flex justify-between items-center mt-4">
+        <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                  [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
         <p-button [label]="continueLabel()"
                   [loading]="mutating()"
                   [disabled]="items().length === 0 || mutating()"
@@ -65,6 +67,11 @@ export class AnalisisStepComponent {
 
   readonly atencionId   = input.required<number>();
   readonly stepAdvanced = output<void>();
+
+  /** Footer "Volver fase" — el wizard provee el estado y bindea el handler. */
+  readonly canReturn      = input<boolean>(false);
+  readonly returnDisabled = input<boolean>(false);
+  readonly returnPhase    = output<void>();
 
   readonly items      = signal<PickerRow[]>([]);
   readonly detailId   = signal<number | null>(null);

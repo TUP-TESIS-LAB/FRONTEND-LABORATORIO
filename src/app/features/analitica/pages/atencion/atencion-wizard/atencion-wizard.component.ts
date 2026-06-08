@@ -22,6 +22,7 @@ import {
   createPreFilledAtencion,
   downloadProtocolLabels,
   loadAtencion,
+  resetAtencionWizard,
   returnPhase,
 } from '../../../store/atencion/atencion.actions';
 import {
@@ -71,7 +72,6 @@ const ALL_STEPS: WizardStepDef[] = [
             <h2 class="text-xl font-semibold">Nueva atención</h2>
             <div class="text-sm opacity-70">Buscá el paciente para empezar</div>
           </div>
-          <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
         </header>
         <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
       } @else if (mutating() && !detail()) {
@@ -94,7 +94,6 @@ const ALL_STEPS: WizardStepDef[] = [
             @if (canCancel()) {
               <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
             }
-            <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
           </div>
         </header>
 
@@ -120,20 +119,19 @@ const ALL_STEPS: WizardStepDef[] = [
 
           @switch (uiStep()?.key) {
             @case ('datos') {
-              <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null" />
+              <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null"
+                                        [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                        (returnPhase)="onReturnPhase()" />
             }
             @case ('analisis') {
-              <lab-analisis-step [atencionId]="detail()!.id" (stepAdvanced)="onAnalysisAdvanced()" />
+              <lab-analisis-step [atencionId]="detail()!.id" [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                 (returnPhase)="onReturnPhase()" (stepAdvanced)="onAnalysisAdvanced()" />
             }
             @case ('confirmar') {
-              <lab-resumen-step [atencion]="detail()!" (finished)="onFinished()" />
+              <lab-resumen-step [atencion]="detail()!" [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                (returnPhase)="onReturnPhase()" (finished)="onFinished()" />
             }
           }
-
-          <div class="flex justify-between mt-4">
-            <p-button label="Volver fase" severity="secondary" [outlined]="true"
-                      [disabled]="mutating() || !canReturn()" (onClick)="onReturnPhase()" />
-          </div>
         }
       }
     </div>
@@ -244,7 +242,13 @@ export class AtencionWizardComponent {
   onReturnPhase(): void {
     const d = this.detail();
     if (!d) return;
-    this.uiStepOverride.set(null);
+    // Si mostramos un paso "adelantado" sólo por UI (override), volver al paso
+    // real del backend SIN retroceder de estado.
+    if (this.uiStepOverride() != null) {
+      this.uiStepOverride.set(null);
+      return;
+    }
+    // Estamos en el paso real → retroceder de verdad en el backend.
     this.store.dispatch(returnPhase({ id: d.id }));
   }
   onCancel(): void {
@@ -256,7 +260,13 @@ export class AtencionWizardComponent {
     if (!d) return;
     this.cancelModalOpen.set(false);
     this.store.dispatch(cancelAtencion({ id: d.id, payload: { cancellationReason: reason } }));
-    this.waitForMutation((ok) => { if (ok) clearAtencionSession(); });
+    this.waitForMutation((ok) => {
+      if (ok) {
+        clearAtencionSession();
+        this.store.dispatch(resetAtencionWizard());
+        this.router.navigate(['/turnos/recepcion']);
+      }
+    });
   }
 
   private waitForMutation(cb: (ok: boolean) => void): void {
@@ -273,8 +283,11 @@ export class AtencionWizardComponent {
     const next = steps[idx + 1]?.key;
     if (next) this.uiStepOverride.set(next);
   }
-  onFinished(): void { this.router.navigate(['/analitica/atencion']); }
-  back(): void { this.router.navigate(['/analitica/atencion']); }
+  onFinished(): void {
+    clearAtencionSession();
+    this.store.dispatch(resetAtencionWizard());
+    this.router.navigate(['/turnos/recepcion']);
+  }
   downloadLabels(): void {
     const d = this.detail();
     if (!d || d.protocolId == null) return;

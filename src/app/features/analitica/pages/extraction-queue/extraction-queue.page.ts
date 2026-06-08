@@ -20,17 +20,16 @@ import { of } from 'rxjs';
 import { PollingHandle, PollingService } from '@core/refresh';
 import { ExtractorBoxService } from '@core/services/extractor-box.service';
 import { NotificationService } from '@core/services/notification.service';
+import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicator/refresh-indicator.component';
 import { BoxConfigBarComponent } from '../../components/box-config-bar/box-config-bar.component';
-import { BranchSelectorChipComponent } from '../../components/branch-selector-chip/branch-selector-chip.component';
 import { CancelExtractionDialogComponent } from '../../components/cancel-extraction-dialog/cancel-extraction-dialog.component';
 import { InProgressListComponent } from '../../components/in-progress-list/in-progress-list.component';
 import { TakePatientModalComponent } from '../../components/take-patient-modal/take-patient-modal.component';
 import {
   AwaitingExtractionItem,
   BoxAssignment,
-  BranchOption,
   InExtractionItem,
 } from '../../models/extraction.model';
 import * as A from '../../store/extraction/extraction.actions';
@@ -43,7 +42,6 @@ import {
   selectLastAssigned,
   selectLastRefreshAt,
   selectMutating,
-  selectSelectedBranch,
   selectSelectedBranchId,
 } from '../../store/extraction/extraction.selectors';
 
@@ -65,7 +63,6 @@ const UNDO_WINDOW_MS = 5000;
     TooltipModule,
     EmptyStateComponent,
     RefreshIndicatorComponent,
-    BranchSelectorChipComponent,
     BoxConfigBarComponent,
     InProgressListComponent,
     TakePatientModalComponent,
@@ -83,27 +80,16 @@ const UNDO_WINDOW_MS = 5000;
             [lastRefreshAt]="lastRefreshAt()"
             [paused]="paused()"
           />
-          <app-branch-selector-chip
-            [selected]="selectedBranch()"
-            [options]="branches()"
-            (selectBranch)="onBranchChange($event)"
-          />
         </div>
       </header>
 
-      @if (selectedBranchId() == null) {
+      @if (branches().length === 0) {
         <div class="empty-state-big">
-          @if (branches().length > 0) {
-            <i class="pi pi-map-marker"></i>
-            <h2>Elegí una sucursal arriba para empezar</h2>
-            <p>Las extracciones se filtran por sucursal. Seleccioná una desde el chip para ver la cola.</p>
-          } @else {
-            <i class="pi pi-lock"></i>
-            <h2>No tenés sucursales asignadas</h2>
-            <p>Pedile al administrador que te asigne una sucursal. La pantalla queda bloqueada hasta entonces.</p>
-          }
+          <i class="pi pi-lock"></i>
+          <h2>No tenés sucursales asignadas</h2>
+          <p>Pedile al administrador que te asigne una sucursal. La pantalla queda bloqueada hasta entonces.</p>
         </div>
-      } @else {
+      } @else if (selectedBranchId() != null) {
         <app-box-config-bar
           [assignments]="boxAssignments()"
           [extractors]="branchExtractors()"
@@ -302,6 +288,7 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
   private readonly notifier = inject(NotificationService);
   private readonly messages = inject(MessageService);
   private readonly boxService = inject(ExtractorBoxService);
+  private readonly operatorBranch = inject(OperatorBranchContextService);
 
   readonly pollIntervalMs = POLL_INTERVAL_MS;
   readonly undoToastKey = UNDO_TOAST_KEY;
@@ -311,7 +298,6 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
   readonly mutating = this.store.selectSignal(selectMutating);
   readonly lastRefreshAt = this.store.selectSignal(selectLastRefreshAt);
   readonly branches = this.store.selectSignal(selectBranches);
-  readonly selectedBranch = this.store.selectSignal(selectSelectedBranch);
   readonly selectedBranchId = this.store.selectSignal(selectSelectedBranchId);
   readonly boxAssignments = this.store.selectSignal(selectBoxAssignments);
   readonly branchExtractors = this.store.selectSignal(selectBranchExtractors);
@@ -350,23 +336,28 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
       if (!open) this.handle.pokeNow();
     });
 
-    // Auto-elegir sucursal cuando branches está disponible: priorizar la
-    // persistida en localStorage si sigue en la lista; sino, la primera.
+    // Auto-seleccionar la sucursal del operador (regla: 1 usuario = 1 sucursal).
+    // Prioridad: contexto del operador → valor persistido en localStorage → primera de la lista.
+    // El selector de sucursal fue eliminado de la UI; la sucursal se siembra aquí
+    // una sola vez (autoSelectedOnce garantiza idempotencia ante re-runs del effect).
     effect(() => {
       const list = this.branches();
       if (list.length === 0 || this.autoSelectedOnce) return;
       const currentSelected = this.selectedBranchId();
       if (currentSelected != null) {
-        // Validar que la persistida siga en la lista.
+        // Validar que la selección vigente siga en la lista; si no, corregir.
         if (!list.some((b) => b.id === currentSelected)) {
           this.dispatchBranchChange(list[0].id);
         }
         this.autoSelectedOnce = true;
         return;
       }
+      // Sembrar desde el contexto del operador si está en la lista de sucursales permitidas.
+      const ctxBranchId = this.operatorBranch.branchId();
       const persisted = this.boxService.selectedBranchId();
-      const startId = persisted != null && list.some((b) => b.id === persisted)
-        ? persisted
+      const startId =
+        ctxBranchId != null && list.some((b) => b.id === ctxBranchId) ? ctxBranchId
+        : persisted != null && list.some((b) => b.id === persisted) ? persisted
         : list[0].id;
       this.dispatchBranchChange(startId);
       this.autoSelectedOnce = true;
@@ -410,11 +401,6 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     this.clearUndoTimer();
   }
 
-  onBranchChange(branch: BranchOption): void {
-    if (branch.id === this.selectedBranchId()) return;
-    this.dispatchBranchChange(branch.id);
-  }
-
   private dispatchBranchChange(branchId: number | null): void {
     this.boxService.setSelectedBranch(branchId);
     this.store.dispatch(A.setSelectedBranch({ branchId }));
@@ -444,7 +430,7 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
 
   onTake(item: AwaitingExtractionItem): void {
     if (this.selectedBranchId() == null) {
-      this.notifier.error('Elegí una sucursal arriba antes de tomar pacientes.');
+      this.notifier.error('No hay sucursal asignada. Pedile al administrador que te asigne una.');
       return;
     }
     this.selectedPatient.set(item);

@@ -82,6 +82,20 @@ describe('AnalisisStepComponent', () => {
     expect(stepAdvanced).toBe(false);
   });
 
+  it('el botón "Volver fase" emite returnPhase al clickear cuando canReturn es true', () => {
+    fixture.componentRef.setInput('canReturn', true);
+    fixture.componentRef.setInput('returnDisabled', false);
+    fixture.detectChanges();
+    let emitted = false;
+    fixture.componentInstance.returnPhase.subscribe(() => (emitted = true));
+    const el: HTMLElement = fixture.nativeElement;
+    const btn = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Volver fase'));
+    expect(btn).toBeTruthy();
+    expect(btn!.disabled).toBe(false);
+    btn!.click();
+    expect(emitted).toBe(true);
+  });
+
   it('onItemsChanged actualiza la lista de items para el dispatch', () => {
     const rows = [makeRow({ id: 3, isAuthorized: true }), makeRow({ id: 4, shortCode: '2001', name: 'Bio', isAuthorized: false })];
     fixture.componentInstance.onItemsChanged(rows);

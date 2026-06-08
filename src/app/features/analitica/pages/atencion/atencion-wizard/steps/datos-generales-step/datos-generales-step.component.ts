@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -283,7 +284,9 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
         <input pInputText [(ngModel)]="indications" class="w-full" placeholder="Ej: Ayuno 8 hs" />
       </div>
 
-      <div class="flex justify-end">
+      <div class="flex justify-between items-center mt-4">
+        <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                  [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
         <p-button
           label="Confirmar y seguir"
           icon="pi pi-arrow-right"
@@ -327,6 +330,15 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   readonly atencionId = input<number | null>(null);
   readonly initialDni = input<string | null>(null);
+
+  /**
+   * Footer "Volver fase" — el wizard provee el estado y bindea el handler.
+   * En el paso datos (paso 1) y en el modo "creating", canReturn es false,
+   * así que el botón queda visible pero deshabilitado, alineado a la izquierda.
+   */
+  readonly canReturn      = input<boolean>(false);
+  readonly returnDisabled = input<boolean>(false);
+  readonly returnPhase    = output<void>();
 
   protected readonly resolved        = this.store.selectSignal(selectResolvedPatient);
   protected readonly resolving        = this.store.selectSignal(selectPatientResolving);

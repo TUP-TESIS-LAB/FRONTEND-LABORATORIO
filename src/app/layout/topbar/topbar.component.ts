@@ -1,7 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
-import { Store } from '@ngrx/store';
+import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { Popover } from 'primeng/popover';
-import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuComponent } from '@features/profile/components/profile-menu/profile-menu.component';
@@ -21,16 +19,6 @@ import { BranchBadgeComponent } from './branch-badge.component';
         aria-label="Abrir menú">
         <i class="pi pi-bars"></i>
       </button>
-
-      <div class="ui-topbar__brand">
-        <img
-          class="ui-topbar__logo"
-          [src]="logoSrc()"
-          [alt]="tenantName()"
-          (error)="onLogoError()" />
-        <span class="ui-topbar__tenant-name">{{ tenantName() }}</span>
-        <span class="ui-topbar__tenant-badge">Admin</span>
-      </div>
 
       <!-- TODO: implementar búsqueda global -->
       <div class="ui-topbar__search" role="search" aria-disabled="true">
@@ -73,9 +61,10 @@ import { BranchBadgeComponent } from './branch-badge.component';
       gap: var(--space-2);
       height: var(--ds-topbar-h);
       padding: 0 var(--space-4);
-      background: var(--brand-shell-bg);
-      color: #f1f5f9;
-      box-shadow: 0 1px 3px rgba(0,0,0,.35);
+      background: #fff;
+      color: #1e293b;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
     }
 
     .ui-topbar__hamburger {
@@ -86,54 +75,21 @@ import { BranchBadgeComponent } from './branch-badge.component';
       justify-content: center;
       background: transparent;
       border: none;
-      color: rgba(255,255,255,.85);
+      color: rgba(30,41,59,.7);
       cursor: pointer;
       font-size: 18px;
     }
-    .ui-topbar__hamburger:hover { color: #fff; }
-
-    .ui-topbar__brand {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      min-width: 0;
-    }
-    .ui-topbar__logo {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      object-fit: contain;
-      background: rgba(255,255,255,.08);
-      color: var(--brand-primary);
-      flex-shrink: 0;
-      display: block;
-    }
-    .ui-topbar__tenant-name {
-      color: #f1f5f9;
-      font-weight: 600;
-      font-size: 13px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .ui-topbar__tenant-badge {
-      font-size: 9px;
-      background: var(--brand-primary);
-      color: #fff;
-      padding: 1px 6px;
-      border-radius: 8px;
-      letter-spacing: .04em;
-    }
+    .ui-topbar__hamburger:hover { color: #1e293b; }
 
     .ui-topbar__search {
       flex: 1;
       max-width: 420px;
       margin: 0 var(--space-3);
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(15,23,42,.04);
+      border: 1px solid rgba(15,23,42,.1);
       border-radius: 6px;
       padding: 7px 10px;
-      color: rgba(255,255,255,.6);
+      color: rgba(30,41,59,.55);
       font-size: 12px;
       display: flex;
       align-items: center;
@@ -152,21 +108,21 @@ import { BranchBadgeComponent } from './branch-badge.component';
     .ui-topbar__icon-btn {
       width: 32px;
       height: 32px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(15,23,42,.04);
+      border: 1px solid rgba(15,23,42,.1);
       border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: rgba(255,255,255,.7);
+      color: rgba(30,41,59,.65);
       font-size: 14px;
       transition: background .15s, color .15s;
       position: relative;
     }
     .ui-topbar__icon-btn:hover {
-      background: rgba(255,255,255,.16);
-      color: #fff;
+      background: rgba(15,23,42,.08);
+      color: #1e293b;
     }
     .ui-topbar__icon-btn--notif::after {
       content: '3';
@@ -201,7 +157,7 @@ import { BranchBadgeComponent } from './branch-badge.component';
       flex-shrink: 0;
       transition: border-color .15s;
     }
-    .ui-topbar__avatar:hover { border-color: rgba(255,255,255,.4); }
+    .ui-topbar__avatar:hover { border-color: rgba(15,23,42,.2); }
 
     @media (max-width: 767px) {
       .ui-topbar { padding: 0 var(--space-3); }
@@ -229,21 +185,8 @@ import { BranchBadgeComponent } from './branch-badge.component';
 export class TopbarComponent {
   readonly menuToggle = output<void>();
 
-  private readonly tenantConfig = inject(Store).selectSignal(selectTenantConfig);
   private readonly userSession = inject(UserSessionService);
   private readonly tokens = inject(TokenService);
-
-  protected readonly tenantName     = computed(() => this.tenantConfig()?.name ?? 'LabCore');
-  protected readonly tenantInitials = computed(() => initials(this.tenantName()));
-
-  private readonly defaultLogo = 'logo.svg';
-  private readonly logoFallback = signal(false);
-  protected readonly logoSrc = computed(() => {
-    if (this.logoFallback()) return this.defaultLogo;
-    const url = this.tenantConfig()?.logoUrl;
-    return url && url.length > 0 ? url : this.defaultLogo;
-  });
-  protected onLogoError(): void { this.logoFallback.set(true); }
 
   protected readonly userInitials = computed(() => {
     const u = this.userSession.currentUser();
@@ -253,11 +196,4 @@ export class TopbarComponent {
     const sub = this.tokens.getPayload()?.sub ?? '';
     return sub.slice(0, 2).toUpperCase() || '?';
   });
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
 }

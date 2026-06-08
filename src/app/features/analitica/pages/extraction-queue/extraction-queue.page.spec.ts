@@ -1,8 +1,11 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { Store } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { PollingService } from '@core/refresh';
+import { ExtractorBoxService } from '@core/services/extractor-box.service';
+import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { AwaitingExtractionItem, BranchOption, InExtractionItem } from '../../models/extraction.model';
 import * as A from '../../store/extraction/extraction.actions';
 import { EXTRACTION_FEATURE_KEY, initialExtractionState } from '../../store/extraction/extraction.state';
@@ -44,7 +47,13 @@ describe('ExtractionQueuePage (smoke)', () => {
   let setActiveSpy: ReturnType<typeof vi.fn>;
   let store: MockStore;
 
-  function configure(partialState: Partial<typeof initialExtractionState> = {}): void {
+  function configure(
+    partialState: Partial<typeof initialExtractionState> = {},
+    opts: {
+      operatorBranchId?: number | null;
+      persistedBranchId?: number | null;
+    } = {},
+  ): void {
     stopSpy = vi.fn();
     setActiveSpy = vi.fn();
     const pollingMock: Partial<PollingService> = {
@@ -53,6 +62,15 @@ describe('ExtractionQueuePage (smoke)', () => {
         pokeNow: vi.fn(),
         setActive: setActiveSpy,
       }),
+    };
+
+    const ctxBranchId = opts.operatorBranchId ?? null;
+    const operatorBranchMock = { branchId: signal(ctxBranchId) };
+
+    const persistedBranchId = opts.persistedBranchId ?? null;
+    const extractorBoxMock = {
+      selectedBranchId: signal(persistedBranchId),
+      setSelectedBranch: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -64,6 +82,8 @@ describe('ExtractionQueuePage (smoke)', () => {
           },
         }),
         { provide: PollingService, useValue: pollingMock },
+        { provide: OperatorBranchContextService, useValue: operatorBranchMock },
+        { provide: ExtractorBoxService, useValue: extractorBoxMock },
       ],
     });
     store = TestBed.inject(Store) as MockStore;
@@ -91,11 +111,24 @@ describe('ExtractionQueuePage (smoke)', () => {
     expect(fixture.nativeElement.textContent).toContain('Cola de extracción');
   });
 
-  it('shows the "elegí una sucursal" empty state when there are branches but none selected', () => {
-    configure({ branches, selectedBranchId: null });
+  it('auto-seeds the branch from context when selectedBranchId is null', () => {
+    // El effect de seed solo actúa cuando currentSelected == null. Proveemos
+    // OperatorBranchContextService con branchId() = 7, que existe en la lista.
+    // Verificamos que dispatch recibió setSelectedBranch({ branchId: 7 }),
+    // demostrando que el contexto del operador tiene prioridad sobre persisted/list[0].
+    const branchesWithCtx: BranchOption[] = [
+      { id: 5, code: 'SUR', name: 'Sucursal Sur' },
+      { id: 7, code: 'CTX', name: 'Sucursal Contexto' },
+    ];
+    configure(
+      { branches: branchesWithCtx, selectedBranchId: null },
+      { operatorBranchId: 7, persistedBranchId: null },
+    );
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
     const fixture = TestBed.createComponent(ExtractionQueuePage);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Elegí una sucursal arriba para empezar');
+
+    expect(dispatchSpy).toHaveBeenCalledWith(A.setSelectedBranch({ branchId: 7 }));
   });
 
   it('shows the "no branches assigned" empty state when branches is empty', () => {

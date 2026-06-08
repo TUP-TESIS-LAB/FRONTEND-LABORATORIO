@@ -173,4 +173,21 @@ describe('atencionReducer', () => {
     const next = atencionReducer(start, A.verifyPatientFailure({ error: new HttpErrorResponse({ status: 422 }) }));
     expect(next.verifyingPatient).toBe(false);
   });
+
+  it('resetAtencionWizard limpia detail, resolvedPatient, patientNotFoundDni, summaryAnalyses y pricing', () => {
+    const populated = {
+      ...initialAtencionState,
+      detail: { id: 1 } as any,
+      resolvedPatient: { id: 9 } as any,
+      patientNotFoundDni: '123',
+      summaryAnalyses: [{ id: 1 } as any],
+      pricing: { total: 5 } as any,
+    };
+    const state = atencionReducer(populated, A.resetAtencionWizard());
+    expect(state.detail).toBeNull();
+    expect(state.resolvedPatient).toBeNull();
+    expect(state.patientNotFoundDni).toBeNull();
+    expect(state.summaryAnalyses).toEqual([]);
+    expect(state.pricing).toBeNull();
+  });
 });

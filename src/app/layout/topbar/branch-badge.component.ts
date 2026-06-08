@@ -30,14 +30,14 @@ import { OperatorBranchContextService } from '@features/turnos/services/operator
     :host ::ng-deep .ui-branch-badge {
       font-size: 11px;
       height: 26px;
-      background: rgba(255,255,255,.08);
-      color: #f1f5f9;
-      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(15,23,42,.05);
+      color: #334155;
+      border: 1px solid rgba(15,23,42,.12);
     }
     :host ::ng-deep .ui-branch-badge--unset {
-      background: rgba(245,158,11,.18);
-      border-color: rgba(245,158,11,.35);
-      color: #fde68a;
+      background: rgba(245,158,11,.14);
+      border-color: rgba(245,158,11,.4);
+      color: #92400e;
     }
     :host ::ng-deep .ui-branch-badge .p-chip-icon { font-size: 12px; }
   `],

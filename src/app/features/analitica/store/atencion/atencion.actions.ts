@@ -27,6 +27,9 @@ export const loadAtencion        = createAction('[Atencion Wizard] Load',       
 export const loadAtencionSuccess = createAction('[Atencion API] Load Detail Success', props<{ item: AttentionResponse }>());
 export const loadAtencionFailure = createAction('[Atencion API] Load Detail Failure', props<{ error: HttpErrorResponse }>());
 
+// Wizard state reset --------------------------------------------------------
+export const resetAtencionWizard = createAction('[Atencion Wizard] Reset Wizard State');
+
 // Create --------------------------------------------------------------------
 export const createBlankAtencion         = createAction('[Atencion Wizard] Create Blank', props<{ payload: CreateBlankAttentionRequest }>());
 export const createPreFilledAtencion     = createAction('[Atencion Wizard] Create Prefilled', props<{ payload: CreatePreFilledAttentionRequest }>());

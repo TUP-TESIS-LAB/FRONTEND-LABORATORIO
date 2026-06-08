@@ -24,6 +24,7 @@ import {
   atencionMutationFailure,
   atencionMutationSuccess,
   endSecretaryPhase,
+  loadAtencion,
   loadAttentionAnalyses,
   loadAttentionPatient,
   loadPricing,
@@ -126,8 +127,8 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
               [maxFractionDigits]="2"
               [min]="0"
               [disabled]="copaymentMutating()"
-              styleClass="w-36"
-              inputStyleClass="text-right"
+              styleClass="w-40"
+              inputStyleClass="w-40 text-right"
               placeholder="0,00"
             />
           </div>
@@ -142,7 +143,9 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         </section>
       }
 
-      <div class="flex justify-end">
+      <div class="flex justify-between items-center mt-4">
+        <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                  [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
         <p-button label="Finalizar atención"
                   icon="pi pi-check"
                   [loading]="mutating()"
@@ -164,6 +167,11 @@ export class ResumenStepComponent implements OnInit {
 
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
+
+  /** Footer "Volver fase" — el wizard provee el estado y bindea el handler. */
+  readonly canReturn      = input<boolean>(false);
+  readonly returnDisabled = input<boolean>(false);
+  readonly returnPhase    = output<void>();
 
   readonly ticketModalOpen    = signal(false);
   readonly mutating           = this.store.selectSignal(selectMutating);
@@ -189,6 +197,9 @@ export class ResumenStepComponent implements OnInit {
 
   ngOnInit(): void {
     const attn = this.atencion();
+
+    // Refrescar el detail para que analysisAuthorizations refleje lo cargado en el paso 2.
+    this.store.dispatch(loadAtencion({ id: attn.id }));
 
     // Initialize copago from attention
     this.copaymentValue.set(attn.copaymentAmount ?? null);
