@@ -67,13 +67,10 @@ interface KpiTile {
 
       <section class="bg-white rounded-lg shadow-sm p-4">
         <div class="flex gap-2 items-center flex-wrap mb-3">
-          <span class="p-input-icon-left flex-1 min-w-[260px]">
-            <i class="pi pi-search"></i>
-            <input pInputText type="text" placeholder="Buscar por Nº de atención o ID de paciente"
-                   [ngModel]="filters().search"
-                   (ngModelChange)="updateSearch($event)"
-                   class="w-full" />
-          </span>
+          <input pInputText type="text" placeholder="Buscar por Nº de atención o ID de paciente"
+                 [ngModel]="filters().search"
+                 (ngModelChange)="updateSearch($event)"
+                 class="flex-1 min-w-[260px]" />
           <p-multiSelect
             [options]="stateOptions"
             [ngModel]="filters().states"
@@ -85,7 +82,7 @@ interface KpiTile {
             [maxSelectedLabels]="3"
             selectedItemsLabel="{0} estados"
             styleClass="min-w-[220px]" />
-          <p-button label="Limpiar" severity="secondary" [text]="true" (onClick)="clearFilters()" />
+          <p-button label="Limpiar" icon="pi pi-times" severity="secondary" [text]="true" (onClick)="clearFilters()" />
         </div>
 
         @if (loading()) {
