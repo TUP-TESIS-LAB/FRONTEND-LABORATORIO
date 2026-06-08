@@ -71,11 +71,13 @@ export class BreadcrumbComponent {
     let url = '';
 
     while (route) {
-      const segment = route.snapshot.url.map((s) => s.path).join('/');
+      // route.snapshot puede ser undefined durante el bootstrap / navegación inicial
+      // (el componente se construye antes de que el árbol de rutas tenga snapshots).
+      const segment = route.snapshot?.url.map((s) => s.path).join('/') ?? '';
       if (segment) {
         url += `/${segment}`;
       }
-      const label = route.snapshot.data?.['breadcrumb'];
+      const label = route.snapshot?.data?.['breadcrumb'];
       if (typeof label === 'string' && label) {
         out.push({ label, url });
       }
