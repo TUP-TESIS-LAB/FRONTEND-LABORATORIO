@@ -77,7 +77,9 @@ export class FirstLoginComponent implements OnInit {
 
   ngOnInit(): void {
     const state = window.history.state as { firstLoginToken?: string } | null;
-    this.token.set(state?.firstLoginToken ?? null);
+    const fromState = state?.firstLoginToken ?? null;
+    const fromQuery = new URLSearchParams(window.location.search).get('token');
+    this.token.set(fromState ?? fromQuery);
   }
 
   protected async onSubmit(): Promise<void> {

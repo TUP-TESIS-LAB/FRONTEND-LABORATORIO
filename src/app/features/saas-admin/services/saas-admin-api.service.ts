@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ModuleCode } from '../models/module-code';
-import { CreateTenantRequest, Tenant, UpdateTenantRequest } from '../models/tenant.model';
+import { CreateTenantRequest, CreateTenantResponse, Tenant, UpdateTenantRequest } from '../models/tenant.model';
 import { TenantModule } from '../models/tenant-module.model';
 import { TenantWhiteLabel, UpsertTenantWhiteLabelRequest } from '../models/tenant-white-label.model';
 
@@ -19,8 +19,8 @@ export class SaasAdminApiService {
   getTenant(id: number): Promise<Tenant> {
     return firstValueFrom(this.http.get<Tenant>(`${BASE}/tenants/${id}`));
   }
-  createTenant(req: CreateTenantRequest): Promise<Tenant> {
-    return firstValueFrom(this.http.post<Tenant>(`${BASE}/tenants`, req));
+  createTenant(req: CreateTenantRequest): Promise<CreateTenantResponse> {
+    return firstValueFrom(this.http.post<CreateTenantResponse>(`${BASE}/tenants`, req));
   }
   renameTenant(id: number, req: UpdateTenantRequest): Promise<Tenant> {
     return firstValueFrom(this.http.put<Tenant>(`${BASE}/tenants/${id}`, req));

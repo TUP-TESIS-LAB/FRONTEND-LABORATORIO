@@ -1,6 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Tenant, CreateTenantRequest, UpdateTenantRequest } from '../models/tenant.model';
+import { Tenant, CreateTenantRequest, CreateTenantResponse, UpdateTenantRequest } from '../models/tenant.model';
 import { TenantModule } from '../models/tenant-module.model';
 import { TenantWhiteLabel, UpsertTenantWhiteLabelRequest } from '../models/tenant-white-label.model';
 import { ModuleCode } from '../models/module-code';
@@ -18,7 +18,10 @@ export const clearSelectedTenant = createAction('[SaaS Admin] Clear Selected Ten
 
 // --- Create tenant ---
 export const createTenant = createAction('[SaaS Admin] Create Tenant', props<{ req: CreateTenantRequest }>());
-export const createTenantSuccess = createAction('[SaaS Admin API] Create Tenant Success', props<{ tenant: Tenant }>());
+export const createTenantSuccess = createAction(
+  '[SaaS Admin API] Create Tenant Success',
+  props<{ tenant: CreateTenantResponse }>(),
+);
 export const createTenantFailure = createAction('[SaaS Admin API] Create Tenant Failure', props<{ error: HttpErrorResponse }>());
 
 // --- Rename tenant ---

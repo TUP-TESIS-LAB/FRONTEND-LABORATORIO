@@ -49,10 +49,19 @@ describe('SaasAdminEffects', () => {
     expect(out.type).toBe(A.loadTenantsSuccess.type);
   });
 
-  it('createTenant$ → createTenantSuccess with the created tenant', async () => {
-    const created = { id: 2, code: 'x', name: 'X', status: 'ACTIVE' as const, active: true, deletedAt: null };
+  it('createTenant$ → createTenantSuccess con CreateTenantResponse', async () => {
+    const created = {
+      id: 2, code: 'x', name: 'X', status: 'ACTIVE' as const, active: true, deletedAt: null,
+      ownerFirstLoginToken: 'tok-xyz',
+    };
     api.createTenant!.mockResolvedValue(created);
-    actions$.next(A.createTenant({ req: { code: 'x', name: 'X' } }));
+    actions$.next(A.createTenant({
+      req: {
+        code: 'x', name: 'X',
+        ownerFirstName: 'Ana', ownerLastName: 'López',
+        ownerEmail: 'ana@lab.com', ownerDocument: '30111222', ownerUsername: 'alopez',
+      },
+    }));
     const out = await expectEmits(effects.createTenant$);
     expect(out).toEqual(A.createTenantSuccess({ tenant: created }));
   });
@@ -71,9 +80,15 @@ describe('SaasAdminEffects', () => {
     expect(out).toEqual(A.softDeleteTenantSuccess({ id: 7 }));
   });
 
-  it('createTenant$ emits createTenantFailure on rejection', async () => {
+  it('createTenant$ emite createTenantFailure cuando el servicio rechaza', async () => {
     api.createTenant!.mockRejectedValue({ status: 409 });
-    actions$.next(A.createTenant({ req: { code: 'x', name: 'X' } }));
+    actions$.next(A.createTenant({
+      req: {
+        code: 'x', name: 'X',
+        ownerFirstName: 'Ana', ownerLastName: 'López',
+        ownerEmail: 'ana@lab.com', ownerDocument: '30111222', ownerUsername: 'alopez',
+      },
+    }));
     const out = await expectEmits(effects.createTenant$);
     expect(out.type).toBe(A.createTenantFailure.type);
   });

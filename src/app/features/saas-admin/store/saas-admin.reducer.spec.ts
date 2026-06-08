@@ -24,9 +24,13 @@ describe('saasAdminReducer', () => {
 
   it('createTenantSuccess prepends to list', () => {
     const t1 = sampleTenant({ id: 1 });
-    const t2 = sampleTenant({ id: 2, code: 'b', name: 'B' });
-    const next = saasAdminReducer({ ...initialSaasAdminState, tenants: [t1] }, A.createTenantSuccess({ tenant: t2 }));
-    expect(next.tenants).toEqual([t2, t1]);
+    const t2 = { ...sampleTenant({ id: 2, code: 'b', name: 'B' }), ownerFirstLoginToken: 'tok-abc' };
+    const next = saasAdminReducer(
+      { ...initialSaasAdminState, tenants: [t1] },
+      A.createTenantSuccess({ tenant: t2 }),
+    );
+    expect(next.tenants[0]).toMatchObject({ id: 2, code: 'b', name: 'B' });
+    expect(next.tenants[1]).toMatchObject({ id: 1, code: 'demo' });
   });
 
   it('renameTenantSuccess updates the matching tenant in list and selected', () => {

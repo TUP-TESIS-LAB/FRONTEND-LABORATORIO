@@ -28,13 +28,24 @@ describe('SaasAdminApiService', () => {
     return p;
   });
 
-  it('POST /tenants', () => {
-    const p = service.createTenant({ code: 'demo', name: 'Demo' });
+  it('POST /tenants manda los 7 campos y tipa la respuesta con ownerFirstLoginToken', () => {
+    const req_body = {
+      code: 'lab-x', name: 'Lab X',
+      ownerFirstName: 'Juan', ownerLastName: 'García',
+      ownerEmail: 'juan@lab.com', ownerDocument: '28345678', ownerUsername: 'jgarcia',
+    };
+    const p = service.createTenant(req_body);
     const req = http.expectOne(`${BASE}/tenants`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ code: 'demo', name: 'Demo' });
-    req.flush({ id: 1, code: 'demo', name: 'Demo', status: 'ACTIVE', active: true, deletedAt: null });
-    return p;
+    expect(req.request.body).toEqual(req_body);
+    const response = {
+      id: 1, code: 'lab-x', name: 'Lab X', status: 'ACTIVE', active: true, deletedAt: null,
+      ownerFirstLoginToken: 'tok-abc123',
+    };
+    req.flush(response);
+    return p.then((res) => {
+      expect(res.ownerFirstLoginToken).toBe('tok-abc123');
+    });
   });
 
   it('PUT /tenants/:id', () => {
