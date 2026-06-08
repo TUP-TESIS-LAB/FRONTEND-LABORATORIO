@@ -6,6 +6,7 @@ import { ReplaySubject } from 'rxjs';
 import { ResumenStepComponent } from './resumen-step.component';
 import { ATENCION_FEATURE_KEY, initialAtencionState } from '../../../../../store/atencion/atencion.state';
 import {
+  loadAtencion,
   loadAttentionAnalyses,
   loadAttentionPatient,
   loadPricing,
@@ -91,6 +92,14 @@ describe('ResumenStepComponent', () => {
     f.detectChanges();
     expect(spy).toHaveBeenCalledWith(loadAttentionAnalyses({ analysisIds: [3] }));
     expect(spy).not.toHaveBeenCalledWith(loadAttentionPatient({ patientId: 5 }));
+  });
+
+  it('al iniciar refresca el detail de la atención (loadAtencion)', () => {
+    const spy = vi.spyOn(store, 'dispatch');
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    expect(spy).toHaveBeenCalledWith(loadAtencion({ id: 42 }));
   });
 
   it('muestra apellido, nombre, dni y el nombre del análisis', () => {

@@ -24,6 +24,7 @@ import {
   atencionMutationFailure,
   atencionMutationSuccess,
   endSecretaryPhase,
+  loadAtencion,
   loadAttentionAnalyses,
   loadAttentionPatient,
   loadPricing,
@@ -189,6 +190,9 @@ export class ResumenStepComponent implements OnInit {
 
   ngOnInit(): void {
     const attn = this.atencion();
+
+    // Refrescar el detail para que analysisAuthorizations refleje lo cargado en el paso 2.
+    this.store.dispatch(loadAtencion({ id: attn.id }));
 
     // Initialize copago from attention
     this.copaymentValue.set(attn.copaymentAmount ?? null);
