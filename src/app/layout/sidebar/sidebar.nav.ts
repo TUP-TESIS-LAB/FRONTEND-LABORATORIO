@@ -41,11 +41,12 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Core clínico',
     items: [
       {
-        kind: 'expandable', label: 'Analítica', icon: 'pi pi-wave-pulse',
+        kind: 'expandable', label: 'Muestras', icon: 'pi pi-flask',
         children: [
-          { label: 'Pre-analítica',  path: '/analitica/pre-analitica',  sectionKey: 'PREANALITICA' },
-          { label: 'Analítica',      path: '/analitica/analitica',      sectionKey: 'ANALITICA' },
-          { label: 'Post-analítica', path: '/analitica/post-analitica', sectionKey: 'POSTANALITICA' },
+          { label: 'Recolección',   path: '/analitica/recoleccion',   sectionKey: 'PREANALITICA' },
+          { label: 'Traslado',      path: '/analitica/traslado',      sectionKey: 'PREANALITICA' },
+          { label: 'Procesamiento', path: '/analitica/procesamiento', sectionKey: 'ANALITICA' },
+          { label: 'Descarte',      path: '/analitica/descarte',      sectionKey: 'POSTANALITICA' },
         ],
       },
       { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes', sectionKey: 'PACIENTES' },
