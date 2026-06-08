@@ -4,21 +4,24 @@ import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuComponent } from '@features/profile/components/profile-menu/profile-menu.component';
 import { BranchBadgeComponent } from './branch-badge.component';
+import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb.component';
 
 @Component({
   selector: 'ui-topbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Popover, ProfileMenuComponent, BranchBadgeComponent],
+  imports: [Popover, ProfileMenuComponent, BranchBadgeComponent, BreadcrumbComponent],
   template: `
     <header class="ui-topbar">
       <button
         type="button"
         class="ui-topbar__hamburger"
         (click)="menuToggle.emit()"
-        aria-label="Abrir menú">
+        aria-label="Colapsar menú">
         <i class="pi pi-bars"></i>
       </button>
+
+      <ui-breadcrumb class="ui-topbar__breadcrumb" />
 
       <!-- TODO: implementar búsqueda global -->
       <div class="ui-topbar__search" role="search" aria-disabled="true">
@@ -68,18 +71,26 @@ import { BranchBadgeComponent } from './branch-badge.component';
     }
 
     .ui-topbar__hamburger {
-      display: none;
-      width: var(--ds-touch-target);
-      height: var(--ds-touch-target);
+      display: flex;
+      width: 40px;
+      height: 40px;
       align-items: center;
       justify-content: center;
       background: transparent;
       border: none;
+      border-radius: 6px;
       color: rgba(30,41,59,.7);
       cursor: pointer;
       font-size: 18px;
+      flex-shrink: 0;
     }
-    .ui-topbar__hamburger:hover { color: #1e293b; }
+    .ui-topbar__hamburger:hover { color: #1e293b; background: rgba(15,23,42,.06); }
+
+    .ui-topbar__breadcrumb {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+    }
 
     .ui-topbar__search {
       flex: 1;
@@ -161,7 +172,7 @@ import { BranchBadgeComponent } from './branch-badge.component';
 
     @media (max-width: 767px) {
       .ui-topbar { padding: 0 var(--space-3); }
-      .ui-topbar__hamburger { display: flex; }
+      .ui-topbar__hamburger { width: var(--ds-touch-target); height: var(--ds-touch-target); }
       .ui-topbar__search    { display: none; }
       .ui-topbar__icon-btn,
       .ui-topbar__avatar {
