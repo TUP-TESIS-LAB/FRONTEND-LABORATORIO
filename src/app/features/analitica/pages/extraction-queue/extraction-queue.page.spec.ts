@@ -80,11 +80,14 @@ describe('ExtractionQueuePage (smoke)', () => {
     expect(fixture.nativeElement.textContent).toContain('Cola de extracción');
   });
 
-  it('shows the "elegí una sucursal" empty state when there are branches but none selected', () => {
-    configure({ branches, selectedBranchId: null });
+  it('auto-seeds the branch from context and shows the columns when branches are available', () => {
+    // Selector fue eliminado; la sucursal se siembra automáticamente desde el
+    // contexto del operador (o la primera de la lista). Con branches presentes
+    // el seed effect dispatchea setSelectedBranch y la UI muestra las columnas.
+    configure({ branches, selectedBranchId: 1 });
     const fixture = TestBed.createComponent(ExtractionQueuePage);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Elegí una sucursal arriba para empezar');
+    expect(fixture.nativeElement.querySelector('.columns')).not.toBeNull();
   });
 
   it('shows the "no branches assigned" empty state when branches is empty', () => {
