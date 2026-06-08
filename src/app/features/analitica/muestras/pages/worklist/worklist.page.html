@@ -1,0 +1,19 @@
+<section class="worklist-page">
+  <header class="worklist-header">
+    <div>
+      <h1>{{ config().title }}</h1>
+      <p class="subtitle">{{ config().sub }}</p>
+    </div>
+    <div class="stats">
+      <span class="chip">{{ total() }} · {{ config().countLabel }}</span>
+      <span class="chip" [class.chip-selected]="selectedCount() > 0">
+        {{ selectedCount() }} · seleccionada(s) de {{ total() }}
+      </span>
+    </div>
+  </header>
+
+  <!-- Toolbar + tabla se agregan en tasks siguientes -->
+  <div class="placeholder">
+    Worklist {{ config().title }} — {{ total() }} muestras
+  </div>
+</section>
