@@ -47,4 +47,18 @@ describe('FirstLoginComponent', () => {
     await submit;
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
   });
+
+  it('lee el token desde el query param ?token= cuando el state no lo trae', () => {
+    window.history.replaceState({}, '');
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, search: '?token=tok-from-url' },
+      configurable: true,
+    });
+    fixture.detectChanges();
+    expect((fixture.componentInstance as any).token()).toBe('tok-from-url');
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, search: '' },
+      configurable: true,
+    });
+  });
 });
