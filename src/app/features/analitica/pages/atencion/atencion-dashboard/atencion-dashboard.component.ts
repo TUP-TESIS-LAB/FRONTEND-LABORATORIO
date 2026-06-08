@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -43,26 +43,27 @@ interface KpiTile {
   ],
   template: `
     <div class="p-6">
-      <header class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-semibold">Atenciones</h2>
-          <div class="text-sm text-[var(--ds-text-muted)]">Pendientes para retomar y resumen del día</div>
-        </div>
-        <div class="flex items-center gap-3 text-xs">
-          <p-button
-            label="+ Nueva atención"
-            severity="primary"
-            size="small"
-            (onClick)="openNewAttention()" />
-        </div>
-      </header>
+      @if (!embedded()) {
+        <header class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-semibold">Atenciones</h2>
+            <div class="text-sm text-[var(--ds-text-muted)]">Pendientes para retomar y resumen del día</div>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <p-button
+              label="+ Nueva atención"
+              severity="primary"
+              size="small"
+              (onClick)="openNewAttention()" />
+          </div>
+        </header>
 
-
-      <section class="grid grid-cols-5 gap-3 mb-5">
-        @for (k of kpiTiles(); track k.label) {
-          <ui-stat-card [label]="k.label" [value]="k.value" [accentColor]="k.accent" [sub]="k.sub ?? null" />
-        }
-      </section>
+        <section class="grid grid-cols-5 gap-3 mb-5">
+          @for (k of kpiTiles(); track k.label) {
+            <ui-stat-card [label]="k.label" [value]="k.value" [accentColor]="k.accent" [sub]="k.sub ?? null" />
+          }
+        </section>
+      }
 
       <section class="bg-white rounded-lg shadow-sm p-4">
         <div class="flex gap-2 items-center flex-wrap mb-3">
@@ -142,6 +143,8 @@ interface KpiTile {
   `,
 })
 export class AtencionDashboardComponent implements OnInit {
+  readonly embedded = input<boolean>(false);
+
   private readonly store  = inject(Store);
   private readonly router = inject(Router);
 

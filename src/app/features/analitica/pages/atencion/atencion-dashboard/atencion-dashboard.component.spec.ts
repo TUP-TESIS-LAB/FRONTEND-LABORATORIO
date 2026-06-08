@@ -25,4 +25,18 @@ describe('AtencionDashboardComponent', () => {
     fixture.componentInstance.downloadLabels({ id: 1, protocolId: 9 } as any);
     expect(spy).toHaveBeenCalledWith(downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
   });
+
+  it('embedded=true oculta el header (título + Nueva atención) y las KPI cards', () => {
+    const fixture = TestBed.createComponent(AtencionDashboardComponent);
+    fixture.componentRef.setInput('embedded', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Nueva atención');
+    expect(fixture.nativeElement.querySelector('ui-stat-card')).toBeNull();
+  });
+
+  it('embedded=false (default) muestra header y KPIs', () => {
+    const fixture = TestBed.createComponent(AtencionDashboardComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Nueva atención');
+  });
 });
