@@ -70,7 +70,6 @@ const ALL_STEPS: WizardStepDef[] = [
             <h2 class="text-xl font-semibold">Nueva atención</h2>
             <div class="text-sm opacity-70">Buscá el paciente para empezar</div>
           </div>
-          <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
         </header>
         <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
       } @else if (mutating() && !detail()) {
@@ -93,7 +92,6 @@ const ALL_STEPS: WizardStepDef[] = [
             @if (canCancel()) {
               <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
             }
-            <p-button label="Volver al listado" severity="secondary" [text]="true" (onClick)="back()" />
           </div>
         </header>
 
@@ -292,7 +290,6 @@ export class AtencionWizardComponent {
     this.store.dispatch(resetAtencionWizard());
     this.router.navigate(['/turnos/recepcion']);
   }
-  back(): void { this.router.navigate(['/analitica/atencion']); }
   downloadLabels(): void {
     const d = this.detail();
     if (!d || d.protocolId == null) return;
