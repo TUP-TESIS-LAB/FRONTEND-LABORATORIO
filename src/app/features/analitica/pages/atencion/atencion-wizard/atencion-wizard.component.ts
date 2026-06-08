@@ -126,20 +126,19 @@ const ALL_STEPS: WizardStepDef[] = [
 
           @switch (uiStep()?.key) {
             @case ('datos') {
-              <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null" />
+              <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null"
+                                        [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                        (returnPhase)="onReturnPhase()" />
             }
             @case ('analisis') {
-              <lab-analisis-step [atencionId]="detail()!.id" (stepAdvanced)="onAnalysisAdvanced()" />
+              <lab-analisis-step [atencionId]="detail()!.id" [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                 (returnPhase)="onReturnPhase()" (stepAdvanced)="onAnalysisAdvanced()" />
             }
             @case ('confirmar') {
-              <lab-resumen-step [atencion]="detail()!" (finished)="onFinished()" />
+              <lab-resumen-step [atencion]="detail()!" [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                (returnPhase)="onReturnPhase()" (finished)="onFinished()" />
             }
           }
-
-          <div class="flex justify-between mt-4">
-            <p-button label="Volver fase" severity="secondary" [outlined]="true"
-                      [disabled]="mutating() || !canReturn()" (onClick)="onReturnPhase()" />
-          </div>
         }
       }
     </div>

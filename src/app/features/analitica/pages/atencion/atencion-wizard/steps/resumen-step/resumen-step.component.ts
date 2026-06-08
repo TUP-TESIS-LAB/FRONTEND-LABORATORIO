@@ -143,7 +143,9 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         </section>
       }
 
-      <div class="flex justify-end">
+      <div class="flex justify-between items-center mt-4">
+        <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                  [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
         <p-button label="Finalizar atención"
                   icon="pi pi-check"
                   [loading]="mutating()"
@@ -165,6 +167,11 @@ export class ResumenStepComponent implements OnInit {
 
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
+
+  /** Footer "Volver fase" — el wizard provee el estado y bindea el handler. */
+  readonly canReturn      = input<boolean>(false);
+  readonly returnDisabled = input<boolean>(false);
+  readonly returnPhase    = output<void>();
 
   readonly ticketModalOpen    = signal(false);
   readonly mutating           = this.store.selectSignal(selectMutating);
