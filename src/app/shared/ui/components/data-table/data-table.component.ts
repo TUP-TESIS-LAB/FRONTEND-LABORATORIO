@@ -20,7 +20,7 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TableModule, NgTemplateOutlet, TooltipModule, EmptyStateComponent],
   template: `
-    @if (value().length === 0 && !loading()) {
+    @if (!lazy() && value().length === 0 && !loading()) {
       <ui-empty-state
         [icon]="emptyIcon()"
         [heading]="emptyHeading()"
@@ -124,6 +124,21 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
               }
             </tr>
           </ng-template>
+
+          @if (lazy()) {
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td [attr.colspan]="columns().length + (hasActions() ? 1 : 0)" style="padding:0;border:none">
+                  <ui-empty-state
+                    [icon]="emptyIcon()"
+                    [heading]="emptyHeading()"
+                    [description]="emptyDescription()"
+                    [ctaLabel]="emptyCtaLabel()"
+                    (ctaClick)="emptyCtaClick.emit()" />
+                </td>
+              </tr>
+            </ng-template>
+          }
         </p-table>
       </div>
     }
