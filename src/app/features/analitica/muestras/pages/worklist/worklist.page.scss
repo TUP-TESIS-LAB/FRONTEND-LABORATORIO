@@ -65,12 +65,7 @@
   }
 }
 
-.placeholder {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 32px;
-  text-align: center;
-  color: var(--muted);
-  box-shadow: var(--shadow-sm);
+.toolbar-wrap {
+  position: relative;
+  display: block;
 }

@@ -12,8 +12,47 @@
     </div>
   </header>
 
-  <!-- Toolbar + tabla se agregan en tasks siguientes -->
-  <div class="placeholder">
-    Worklist {{ config().title }} — {{ total() }} muestras
+  <div class="toolbar-wrap">
+    <app-muestras-scan-bar
+      [query]="query()"
+      [selectionCount]="selectedCount()"
+      (queryChange)="setQuery($event)"
+      (enterPressed)="onEnterScan($event)"
+      (simulate)="simulateScan()"
+      (clear)="clearSelection()"
+      (openMenu)="openMenu()"
+    />
+    <app-muestras-batch-menu
+      [transitions]="config().targets"
+      [selectionCount]="selectedCount()"
+      [open]="menuOpen()"
+      (select)="selectTransition($event)"
+      (closeMenu)="closeMenu()"
+    />
   </div>
+
+  <app-muestras-sample-table
+    [rows]="rows()"
+    [selectedIds]="selectedIds()"
+    [leavingIds]="leavingIds()"
+    [flashId]="flashId()"
+    [screenKey]="config().key"
+    (toggleRow)="toggleRow($event)"
+    (toggleAll)="toggleAll()"
+  />
+
+  @if (activeTransition(); as t) {
+    <app-muestras-transition-dialog
+      [transition]="t"
+      [samples]="selectedSamples()"
+      [currentBranch]="currentBranch"
+      [branches]="branches"
+      [areas]="areas"
+      [labs]="labs"
+      (confirm)="confirmDialog($event)"
+      (cancel)="cancelDialog()"
+    />
+  }
+
+  <p-toast position="bottom-right" />
 </section>
