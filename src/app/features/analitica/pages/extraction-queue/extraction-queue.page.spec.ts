@@ -3,7 +3,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { Store } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { PollingService } from '@core/refresh';
-import { AwaitingExtractionItem, BranchOption } from '../../models/extraction.model';
+import { AwaitingExtractionItem, BranchOption, InExtractionItem } from '../../models/extraction.model';
 import * as A from '../../store/extraction/extraction.actions';
 import { EXTRACTION_FEATURE_KEY, initialExtractionState } from '../../store/extraction/extraction.state';
 import { ExtractionQueuePage } from './extraction-queue.page';
@@ -24,6 +24,17 @@ function awaitingItem(over: Partial<AwaitingExtractionItem> = {}): AwaitingExtra
     createdAt: new Date().toISOString(),
     waitMinutes: 5,
     samples: [],
+    ...over,
+  };
+}
+
+function inExtractionItem(over: Partial<InExtractionItem> = {}): InExtractionItem {
+  return {
+    ...awaitingItem(),
+    attentionBox: 2,
+    extractionStartedAt: new Date().toISOString(),
+    extractorId: 99,
+    extractorFullName: 'García, Luis',
     ...over,
   };
 }
@@ -131,6 +142,20 @@ describe('ExtractionQueuePage (smoke)', () => {
     );
     expect(page.takeModalOpen()).toBe(false);
     expect(page.selectedPatient()).toBeNull();
+  });
+
+  it('onNoShow dispatches cancelExtraction with reason NO_SE_PRESENTO', () => {
+    configure({ branches, selectedBranchId: 1 });
+    const fixture = TestBed.createComponent(ExtractionQueuePage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    page.onNoShow(inExtractionItem({ id: 7 }));
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      A.cancelExtraction({ id: 7, reason: 'NO_SE_PRESENTO' }),
+    );
   });
 
   it('onBoxAssign merges by boxNumber and dispatches saveBoxAssignments with the full list', () => {

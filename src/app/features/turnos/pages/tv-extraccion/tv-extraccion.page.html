@@ -13,68 +13,48 @@
     }
 
     <main class="cola-section">
-      @if (connectionLost()) {
-        <div class="banner-disconnected">
-          <i class="pi pi-wifi" style="margin-right: 0.5rem;"></i>
-          Reconectando...
+      @if (!firstAttemptDone()) {
+        <div class="loading">Cargando...</div>
+      } @else {
+        <div class="layout">
+          <div class="proximos">
+            <h2>Últimos llamados para extracción:</h2>
+            @if (calledEntries().length === 0) {
+              <div class="empty-state">
+                <i class="pi pi-info-circle"></i>
+                <span>Aún no se llamó a ningún paciente hoy</span>
+              </div>
+            } @else {
+              <ul>
+                @for (e of calledEntries().slice(0, 5); track e.publicCode) {
+                  <li>
+                    <span class="code">{{ e.publicCode }}</span>
+                    <span class="box">→ Box {{ e.boxNumber ?? '?' }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+
+          <div class="en-espera">
+            <h2>En espera:</h2>
+            @if (waitingEntries().length === 0) {
+              <div class="empty-state">
+                <i class="pi pi-check-circle"></i>
+                <span>Sin pacientes en espera</span>
+              </div>
+            } @else {
+              <ul>
+                @for (e of waitingEntries(); track e.publicCode) {
+                  <li>
+                    <span class="code">{{ e.publicCode }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
         </div>
       }
-
-      @switch (viewMode()) {
-        @case ('loading') {
-          <div class="loading">Cargando...</div>
-        }
-        @case ('error') {
-          <div class="error-state">
-            <i class="pi pi-exclamation-triangle"></i>
-            <h2>Sin conexión con la sucursal</h2>
-            <p>
-              No se pudo cargar la sucursal <strong>#{{ branchId }}</strong>
-              del tenant <strong>{{ tenantSlug }}</strong>.
-            </p>
-            <button type="button" class="error-state__btn" (click)="openBranchDialog()">
-              <i class="pi pi-th-large"></i>
-              Cambiar sucursal
-            </button>
-          </div>
-        }
-        @case ('empty') {
-          <app-empty-state
-            [serverTime]="snapshot()?.serverTime ?? ''"
-            [branchName]="snapshot()?.branchName ?? ''" />
-        }
-        @case ('closed') {
-          <app-closed-state [reopenTime]="snapshot()?.openWindow?.startTime ?? ''" />
-        }
-        @case ('queue') {
-          <div class="layout">
-            <div class="proximos">
-              <h2>Últimos llamados para extracción:</h2>
-              @if (calledEntries().length === 0) {
-                <div class="empty-state">
-                  <i class="pi pi-info-circle"></i>
-                  <span>Aún no se llamó a ningún paciente hoy</span>
-                </div>
-              } @else {
-                <ul>
-                  @for (e of calledEntries().slice(0, 5); track e.id) {
-                    <li>
-                      <span class="code">{{ e.publicCode }}</span>
-                      <span class="box">→ Box {{ e.boxNumber ?? '?' }}</span>
-                    </li>
-                  }
-                </ul>
-              }
-            </div>
-          </div>
-        }
-      }
-
-      <!-- Botón debug: simular un nuevo llamado (mockup). TODO: remover cuando exista endpoint real. -->
-      <button type="button" class="tv-simulate-btn" (click)="onSimulate()" data-testid="simulate-btn">
-        <i class="pi pi-bell"></i>
-        Simular llamada
-      </button>
     </main>
 
     <aside class="ad-section">
