@@ -127,8 +127,8 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
               [maxFractionDigits]="2"
               [min]="0"
               [disabled]="copaymentMutating()"
-              styleClass="w-36"
-              inputStyleClass="text-right"
+              styleClass="w-40"
+              inputStyleClass="w-40 text-right"
               placeholder="0,00"
             />
           </div>
