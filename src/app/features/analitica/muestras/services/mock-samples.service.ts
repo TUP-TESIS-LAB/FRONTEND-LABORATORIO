@@ -1,5 +1,6 @@
 import { Injectable, Signal, computed, signal } from '@angular/core';
 import type { Sample, SampleState } from '../models/sample.model';
+import type { Transition, TransitionDest } from '../models/transition.model';
 import { SEED } from '../data/seed';
 
 const STORAGE_KEY = 'muestras:samples:v1';
@@ -37,6 +38,39 @@ export class MockSamplesService {
       this._countCache.set(state, s);
     }
     return s;
+  }
+
+  async transition(ids: string[], target: Transition, dest: TransitionDest): Promise<void> {
+    if (ids.length === 0) return;
+
+    this._leavingIds.set(new Set(ids));
+    await new Promise(resolve => setTimeout(resolve, 360));
+
+    const idSet = new Set(ids);
+    const next = this._samples().map(s => {
+      if (!idSet.has(s.id)) return s;
+      return this.applyTransition(s, target, dest);
+    });
+    this._samples.set(next);
+    this._leavingIds.set(new Set());
+  }
+
+  private applyTransition(s: Sample, target: Transition, dest: TransitionDest): Sample {
+    const base: Sample = { ...s, state: target.toState, destino: undefined, area: undefined };
+
+    switch (target.key) {
+      case 'transito':
+        return { ...base, destino: 'Recepción central' };
+      case 'area':
+        return { ...base, area: dest.area };
+      case 'reroute':
+        return { ...base, destino: `${dest.sucursal ?? ''} · ${dest.area ?? ''}`.trim() };
+      case 'derived':
+        return { ...base, destino: dest.lab };
+      default:
+        // rejected, lost, completed, discard, rollback → solo cambia state
+        return base;
+    }
   }
 
   resetToSeed(): void {
