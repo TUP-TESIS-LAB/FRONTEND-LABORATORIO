@@ -1,0 +1,107 @@
+<div class="backdrop" (click)="onCancel()"></div>
+<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+  <header class="dlg-header" [attr.data-color]="transition().color">
+    <span class="icon"><i class="pi" [ngClass]="transition().icon"></i></span>
+    <div>
+      <h2 id="dlg-title">{{ transition().label }}</h2>
+      <p>{{ transition().desc }}</p>
+    </div>
+    <button type="button" class="close" (click)="onCancel()" aria-label="Cerrar">
+      <i class="pi pi-times"></i>
+    </button>
+  </header>
+
+  <div class="dlg-body">
+    <aside class="lot">
+      <h3 class="label">{{ samples().length }} muestras en el lote</h3>
+      <ul>
+        @for (s of samples(); track s.id) {
+          <li>
+            <span class="code">{{ s.barcode }}</span>
+            <span class="meta">{{ s.study }} · {{ s.branch }}</span>
+            @if (s.urgent) {
+              <span class="urg">URG</span>
+            }
+          </li>
+        }
+      </ul>
+    </aside>
+
+    <section class="form">
+      <div class="flow">
+        <span class="state-badge src">{{ sourceLabel() }}</span>
+        <span class="arrow">→</span>
+        <span class="state-badge dest" [attr.data-color]="transition().color">
+          {{ transition().toLabel }}
+        </span>
+        <span class="count">{{ samples().length }} muestras</span>
+      </div>
+
+      @if (needsSucursal()) {
+        <label class="field">
+          <span>Sucursal de destino <em>obligatorio</em></span>
+          <select [ngModel]="dest().sucursal" (ngModelChange)="dest.update(d => ({ ...d, sucursal: $event }))">
+            <option [ngValue]="undefined" disabled selected>Elegí una sucursal…</option>
+            @for (b of branches(); track b) {
+              <option [ngValue]="b">{{ b }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      @if (areaFixedBranch()) {
+        <label class="field readonly">
+          <span>Sucursal de destino</span>
+          <input type="text" [value]="currentBranch()" readonly />
+        </label>
+      }
+
+      @if (needsArea()) {
+        <label class="field">
+          <span>Área / sección <em>obligatorio</em></span>
+          <select [ngModel]="dest().area" (ngModelChange)="dest.update(d => ({ ...d, area: $event }))">
+            <option [ngValue]="undefined" disabled selected>Elegí un área…</option>
+            @for (a of areas(); track a) {
+              <option [ngValue]="a">{{ a }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      @if (needsLab()) {
+        <label class="field">
+          <span>Laboratorio externo <em>obligatorio</em></span>
+          <select [ngModel]="dest().lab" (ngModelChange)="dest.update(d => ({ ...d, lab: $event }))">
+            <option [ngValue]="undefined" disabled selected>Elegí un laboratorio…</option>
+            @for (l of labs(); track l) {
+              <option [ngValue]="l">{{ l }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <label class="field">
+        <span>Observaciones</span>
+        <textarea
+          rows="4"
+          [ngModel]="note()"
+          (ngModelChange)="note.set($event)"
+          [placeholder]="transition().reason ?? 'Observaciones (opcional)'"
+        ></textarea>
+      </label>
+    </section>
+  </div>
+
+  <footer class="dlg-footer">
+    <button type="button" class="btn-secondary" (click)="onCancel()">Cancelar</button>
+    <button
+      type="button"
+      class="btn-primary"
+      [attr.data-color]="transition().color"
+      [disabled]="!canConfirm()"
+      (click)="onConfirm()"
+    >
+      Confirmar · {{ samples().length }} muestras
+    </button>
+  </footer>
+</div>
