@@ -6,6 +6,7 @@ import { SidebarComponent } from './sidebar.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { AccessRegistry } from '@core/access/access-registry';
 import { TokenService } from '@core/auth/token.service';
+import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
 
 describe('SidebarComponent visibility', () => {
   function setup(sections: string[], roles: string[]) {
@@ -15,7 +16,10 @@ describe('SidebarComponent visibility', () => {
       providers: [
         provideNoopAnimations(),
         provideRouter([]),
-        provideMockStore({ initialState: {} }),
+        provideMockStore({
+          initialState: {},
+          selectors: [{ selector: selectTenantConfig, value: null }],
+        }),
         { provide: ModuleRegistry, useValue: { isActive: () => true } },
         { provide: AccessRegistry, useValue: { has: (s: string) => sections.includes(s) } },
         { provide: TokenService, useValue: { getRoles: () => roles } },
@@ -39,6 +43,18 @@ describe('SidebarComponent visibility', () => {
     expect(admin.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(true);
     const noAdmin = setup([], []);
     expect(noAdmin.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(false);
+  });
+
+  it('muestra el branding (logo + nombre) con fallback cuando no hay tenant config', () => {
+    setup([], []);
+    const fixture = TestBed.createComponent(SidebarComponent);
+    fixture.detectChanges();
+    const brand: HTMLElement | null = fixture.nativeElement.querySelector('.ui-sidebar__brand');
+    expect(brand).not.toBeNull();
+    const logo = brand?.querySelector('.ui-sidebar__logo') as HTMLImageElement | null;
+    expect(logo).not.toBeNull();
+    expect(logo?.getAttribute('src')).toBe('logo.svg');
+    expect(brand?.querySelector('.ui-sidebar__brand-name')?.textContent?.trim()).toBe('LabCore');
   });
 
   it('Analítica filtra sus hijos por seccion', () => {

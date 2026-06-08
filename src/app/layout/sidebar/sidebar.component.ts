@@ -17,6 +17,7 @@ import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadBranchTotemConfig } from '@features/turnos/store/branch-totem-config/branch-totem-config.actions';
 import { selectBranchTotemEnabled } from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
+import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
 import { AccessRegistry } from '@core/access/access-registry';
 import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
 
@@ -27,6 +28,15 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
   imports: [NgClass, RouterLink, RouterLinkActive],
   template: `
     <nav class="ui-sidebar" aria-label="Navegación principal">
+      <div class="ui-sidebar__brand">
+        <img
+          class="ui-sidebar__logo"
+          [src]="logoSrc()"
+          [alt]="tenantName()"
+          (error)="onLogoError()" />
+        <span class="ui-sidebar__brand-name">{{ tenantName() }}</span>
+      </div>
+
       @for (section of visibleSections(); track section.label; let last = $last) {
         <div class="ui-sidebar__section">
           <div class="ui-sidebar__section-label">{{ section.label }}</div>
@@ -128,6 +138,31 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
     .ui-sidebar::-webkit-scrollbar-thumb {
       background: rgba(255,255,255,.2);
       border-radius: 2px;
+    }
+
+    .ui-sidebar__brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3) var(--space-3);
+      min-width: 0;
+    }
+    .ui-sidebar__logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: contain;
+      background: rgba(255,255,255,.08);
+      flex-shrink: 0;
+      display: block;
+    }
+    .ui-sidebar__brand-name {
+      color: #f1f5f9;
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .ui-sidebar__section { padding: var(--space-2) 0 0; }
@@ -282,6 +317,18 @@ export class SidebarComponent implements OnInit {
   private readonly session  = inject(UserSessionService);
   private readonly token    = inject(TokenService);
   private readonly access   = inject(AccessRegistry);
+
+  private readonly tenantConfig = this.store.selectSignal(selectTenantConfig);
+  protected readonly tenantName = computed(() => this.tenantConfig()?.name ?? 'LabCore');
+
+  private readonly defaultLogo = 'logo.svg';
+  private readonly logoFallback = signal(false);
+  protected readonly logoSrc = computed(() => {
+    if (this.logoFallback()) return this.defaultLogo;
+    const url = this.tenantConfig()?.logoUrl;
+    return url && url.length > 0 ? url : this.defaultLogo;
+  });
+  protected onLogoError(): void { this.logoFallback.set(true); }
 
   private readonly url = toSignal(
     this.router.events.pipe(
