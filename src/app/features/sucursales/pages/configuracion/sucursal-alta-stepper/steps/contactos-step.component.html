@@ -1,15 +1,14 @@
 <div class="contactos-step">
-  <h2>Contactos</h2>
   <p class="muted">Agregá teléfonos, email, sitio web y otros canales de contacto.</p>
 
   <form [formGroup]="form" (ngSubmit)="add()" class="inline-form">
     <div class="form-field">
-      <label>Tipo *</label>
+      <label>Tipo <span class="pat-form__req">*</span></label>
       <p-select formControlName="contactType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body" />
     </div>
     <div class="form-field grow">
-      <label>Valor *</label>
-      <input pInputText [type]="currentTypeConfig().inputType" [placeholder]="currentTypeConfig().placeholder" formControlName="value" />
+      <label>Valor <span class="pat-form__req">*</span></label>
+      <input pInputText [type]="currentTypeConfig().inputType" formControlName="value" />
       @if (form.controls.value.invalid && form.controls.value.touched) {
         <small class="form-error">Ingresá un valor válido para el tipo seleccionado.</small>
       }

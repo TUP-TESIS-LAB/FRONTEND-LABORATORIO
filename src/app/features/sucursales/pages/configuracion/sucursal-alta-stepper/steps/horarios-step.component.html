@@ -1,10 +1,9 @@
 <div class="horarios-step">
-  <h2>Horarios de atención</h2>
   <p class="muted">Seleccioná los días, el horario y el tipo. Podés agregar múltiples bloques.</p>
 
   <form [formGroup]="form" (ngSubmit)="add()" class="inline-form">
     <div class="form-field full-width">
-      <label>Días *</label>
+      <label>Días <span class="pat-form__req">*</span></label>
       <div class="day-chips">
         @for (d of DAYS; track d.id) {
           <button
@@ -19,21 +18,21 @@
 
     <div class="form-row">
       <div class="form-field">
-        <label>Desde *</label>
+        <label>Desde <span class="pat-form__req">*</span></label>
         <input pInputText type="time" formControlName="fromTime" />
         @if (form.controls.fromTime.invalid && form.controls.fromTime.touched) {
           <small class="form-error">Formato HH:mm requerido.</small>
         }
       </div>
       <div class="form-field">
-        <label>Hasta *</label>
+        <label>Hasta <span class="pat-form__req">*</span></label>
         <input pInputText type="time" formControlName="toTime" />
         @if (form.controls.toTime.invalid && form.controls.toTime.touched) {
           <small class="form-error">Formato HH:mm requerido.</small>
         }
       </div>
       <div class="form-field">
-        <label>Tipo *</label>
+        <label>Tipo <span class="pat-form__req">*</span></label>
         <p-select formControlName="scheduleType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body"
                   pTooltip="Jornada completa, solo mañana, solo tarde o turno noche" tooltipPosition="top" />
       </div>

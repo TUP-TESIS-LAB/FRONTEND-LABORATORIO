@@ -1,5 +1,4 @@
 <div class="workspaces-step">
-  <h2>Workspaces</h2>
   <p class="muted">Asociá las áreas y secciones que operan en esta sucursal.</p>
 
   @if (areas().length === 0) {
@@ -15,12 +14,12 @@
   } @else {
     <form [formGroup]="form" (ngSubmit)="add()" class="inline-form">
       <div class="form-field">
-        <label>Área *</label>
-        <p-select formControlName="areaId" [options]="areaOptions()" optionLabel="label" optionValue="value" placeholder="Seleccionar" appendTo="body" />
+        <label>Área <span class="pat-form__req">*</span></label>
+        <p-select formControlName="areaId" [options]="areaOptions()" optionLabel="label" optionValue="value" appendTo="body" />
       </div>
       <div class="form-field">
-        <label>Sección *</label>
-        <p-select formControlName="sectionId" [options]="sectionOptions()" optionLabel="label" optionValue="value" placeholder="Seleccionar" appendTo="body" [disabled]="!form.value.areaId" />
+        <label>Sección <span class="pat-form__req">*</span></label>
+        <p-select formControlName="sectionId" [options]="sectionOptions()" optionLabel="label" optionValue="value" appendTo="body" [disabled]="!form.value.areaId" />
       </div>
       <div class="form-action">
         <p-button icon="pi pi-plus" label="Agregar" type="submit" [disabled]="form.invalid" />

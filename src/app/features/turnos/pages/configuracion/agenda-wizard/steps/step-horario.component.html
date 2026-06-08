@@ -1,11 +1,10 @@
 <div class="step">
-  <h2>Horario</h2>
   <p class="muted">Definí el rango de atención y la capacidad por turno.</p>
 
   <form [formGroup]="form" class="form">
     <div class="form-row">
       <div class="form-field">
-        <label for="fromTime">Desde *</label>
+        <label for="fromTime">Desde <span class="pat-form__req">*</span></label>
         <input
           id="fromTime"
           pInputText
@@ -17,7 +16,7 @@
         }
       </div>
       <div class="form-field">
-        <label for="toTime">Hasta *</label>
+        <label for="toTime">Hasta <span class="pat-form__req">*</span></label>
         <input
           id="toTime"
           pInputText
@@ -36,7 +35,7 @@
 
     <div class="form-row">
       <div class="form-field">
-        <label for="slotDuration">Duración de cada turno (min) *</label>
+        <label for="slotDuration">Duración de cada turno (min) <span class="pat-form__req">*</span></label>
         <p-inputNumber
           inputId="slotDuration"
           formControlName="slotDurationMinutes"
@@ -49,7 +48,7 @@
         }
       </div>
       <div class="form-field">
-        <label for="patientsPerSlot">Pacientes por turno *</label>
+        <label for="patientsPerSlot">Pacientes por turno <span class="pat-form__req">*</span></label>
         <p-inputNumber
           inputId="patientsPerSlot"
           formControlName="patientsPerSlot"
