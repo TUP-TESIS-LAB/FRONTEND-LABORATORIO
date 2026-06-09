@@ -297,30 +297,3 @@ $extraccion-bg: #ecfdf5;
     color: #d0d0d0;
   }
 }
-
-// ─── Botón "Simular llamada" (debug/mockup) ──────────────────────────────────
-// TODO: remover cuando el endpoint real esté integrado.
-.tv-simulate-btn {
-  position: absolute;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  z-index: 10;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: $extraccion-green;
-  background: white;
-  border: 1px solid rgba($extraccion-green, 0.4);
-  border-radius: 999px;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 150ms, transform 80ms;
-
-  &:hover  { opacity: 1; }
-  &:active { transform: scale(0.97); }
-
-  .pi { font-size: 0.95rem; }
-}

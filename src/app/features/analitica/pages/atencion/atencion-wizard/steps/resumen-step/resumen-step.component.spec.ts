@@ -114,23 +114,23 @@ describe('ResumenStepComponent', () => {
 
   // ── tests restaurados: flujo finalizar (contrato pessimistic-UI) ─────────
 
-  it('onFinishWithTicket dispatches endSecretaryPhase', () => {
+  it('onFinalize dispatches endSecretaryPhase', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', fullAttn());
     f.detectChanges();
     const dispatched: any[] = [];
     (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    f.componentInstance.onFinishWithTicket(false);
+    f.componentInstance.onFinalize();
     expect(dispatched[0].type).toBe(endSecretaryPhase.type);
   });
 
-  it('opens ticket modal when openFinalize is called', () => {
+  it('opens finalize modal when openFinalize is called', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', fullAttn());
     f.detectChanges();
-    expect(f.componentInstance.ticketModalOpen()).toBe(false);
+    expect(f.componentInstance.finalizeModalOpen()).toBe(false);
     f.componentInstance.openFinalize();
-    expect(f.componentInstance.ticketModalOpen()).toBe(true);
+    expect(f.componentInstance.finalizeModalOpen()).toBe(true);
   });
 
   it('emits finished + clears session ONLY after atencionMutationSuccess', () => {
@@ -140,7 +140,7 @@ describe('ResumenStepComponent', () => {
     f.detectChanges();
     let finished = false;
     f.componentInstance.finished.subscribe(() => (finished = true));
-    f.componentInstance.onFinishWithTicket(false);
+    f.componentInstance.onFinalize();
     // Before success: wizard stays open
     expect(finished).toBe(false);
     expect(readAtencionSession()).not.toBeNull();
@@ -157,7 +157,7 @@ describe('ResumenStepComponent', () => {
     f.detectChanges();
     let finished = false;
     f.componentInstance.finished.subscribe(() => (finished = true));
-    f.componentInstance.onFinishWithTicket(false);
+    f.componentInstance.onFinalize();
     actions$.next(atencionMutationFailure({ error: {} as any }));
     expect(finished).toBe(false);
     expect(readAtencionSession()).not.toBeNull(); // session survives — user can retry

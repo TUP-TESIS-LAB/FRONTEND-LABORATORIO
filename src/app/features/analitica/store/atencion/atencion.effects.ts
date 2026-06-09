@@ -294,6 +294,17 @@ export class AtencionEffects {
           catchError((error: HttpErrorResponse) => of(attentionAnalysesFailure({ error }))),
         ))));
 
+  /**
+   * Descarga el PDF de rótulos de un protocolo.
+   *
+   * Cantidad de rótulos = la cantidad de `LabelResponse` que devuelve el backend
+   * para el protocolo (uno por label), NO un `printCount` arbitrario del front.
+   * Hoy el backend emite un label por análisis autorizado. Si el negocio define
+   * que la regla correcta es "uno por tipo de muestra/tubo" (varios análisis que
+   * comparten tubo → un solo rótulo), ese agrupamiento se resuelve en la
+   * generación de labels del backend; el front sigue renderizando 1:1 lo que recibe.
+   * Ver pregunta abierta en el PR.
+   */
   downloadProtocolLabels$ = createEffect(() =>
     this.actions$.pipe(
       ofType(downloadProtocolLabels),
@@ -358,11 +369,31 @@ export class AtencionEffects {
       exhaustMap(({ id }) =>
         this.patients.verify(id).pipe(
           map(patient => verifyPatientSuccess({ patient })),
-          catchError((error: HttpErrorResponse) => of(verifyPatientFailure({ error }))),
+          catchError((error: HttpErrorResponse) => {
+            // Antes el 422 fallaba en silencio: el botón se rehabilitaba pero el
+            // usuario no veía por qué. Mostramos un toast mapeado por código HTTP,
+            // en español y sin leak de internals.
+            this.notification.error(this.verifyErrorMessage(error));
+            return of(verifyPatientFailure({ error }));
+          }),
         ),
       ),
     ),
   );
+
+  /** Mensaje de error de verificación de paciente, mapeado por código HTTP. Sin leak de internals. */
+  private verifyErrorMessage(error: HttpErrorResponse): string {
+    switch (error.status) {
+      case 422:
+        // El backend (PatientNotVerifiableException) rechaza la verificación cuando
+        // faltan datos obligatorios o una cobertura activa.
+        return 'No se pudo verificar el paciente: faltan datos obligatorios o una cobertura activa.';
+      case 404:
+        return 'No se encontró el paciente a verificar. Actualizá la atención e intentá de nuevo.';
+      default:
+        return 'No se pudo verificar el paciente. Revisá la conexión y volvé a intentarlo.';
+    }
+  }
 
   /**
    * Quitar un análisis del resumen (B3c).
