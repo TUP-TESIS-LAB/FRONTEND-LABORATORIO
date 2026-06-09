@@ -2,17 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  Input,
   OnInit,
   inject,
-  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
 import { Store } from '@ngrx/store';
-import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import {
@@ -27,28 +23,21 @@ import {
   selectQueueLoading,
 } from '../../store/queue/queue.selectors';
 import { QueueRowActionsComponent } from '../../components/queue-row-actions.component';
-import { ScheduledAppointmentsDrawerComponent } from '../../components/scheduled-appointments-drawer.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import { QueueEntry } from '../../models/queue-entry.model';
 import { WaitingTimePipe } from '../../pipes/waiting-time.pipe';
-import { BoxOccupationWidgetComponent } from '../../box-occupation/components/box-occupation-widget.component';
 
 @Component({
   selector: 'app-recepcion-con-totem',
   standalone: true,
-  imports: [TableModule, ButtonModule, ConfirmDialogModule, QueueRowActionsComponent, ScheduledAppointmentsDrawerComponent, WaitingTimePipe, BoxOccupationWidgetComponent],
+  imports: [TableModule, ConfirmDialogModule, QueueRowActionsComponent, WaitingTimePipe],
   providers: [ConfirmationService, MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion-con-totem.component.html',
   styleUrl: './recepcion-con-totem.component.scss',
 })
 export class RecepcionConTotemComponent implements OnInit {
-  /** Box-occupation inputs — resueltos por la página padre y propagados al widget. */
-  @Input() boxBranchId: number | null = null;
-  @Input() boxCurrentUserId: number = 0;
-  @Input() boxTotalBoxes: number = 1;
   private store = inject(Store);
-  private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private branchContext = inject(OperatorBranchContextService);
   private confirmService = inject(ConfirmationService);
@@ -56,7 +45,6 @@ export class RecepcionConTotemComponent implements OnInit {
   protected entries = this.store.selectSignal(selectQueueEntriesAll);
   protected loading = this.store.selectSignal(selectQueueLoading);
   protected hasBranch = this.branchContext.branchId;
-  protected drawerOpen = signal(false);
 
   ngOnInit(): void {
     // Primera carga: visible (muestra el spinner del p-table mientras carga).
@@ -106,26 +94,12 @@ export class RecepcionConTotemComponent implements OnInit {
     });
   }
 
-  protected toggleDrawer(): void {
-    this.drawerOpen.update(v => !v);
-  }
-
-  protected onDrawerVisibleChange(visible: boolean): void {
-    this.drawerOpen.set(visible);
-  }
-
   protected rowClass(entry: QueueEntry): string {
     // CT (con turno) → fondo amarillo suave para diferenciarlos a primera
     // vista del walk-in. ST sigue con el naranja claro existente.
     if (entry.publicCode.startsWith('ST')) return 'row-st';
     if (entry.appointmentId != null) return 'row-ct';
     return '';
-  }
-
-  protected onNuevaAtencionBlanco(): void {
-    // Atencion arrancada desde cero (sin DNI prellenado) — el operador
-    // tipea todo en el wizard. NO pasa por la cola.
-    this.router.navigate(['/analitica/atencion/nueva']);
   }
 
   protected trackById = (_: number, e: QueueEntry) => e.id;

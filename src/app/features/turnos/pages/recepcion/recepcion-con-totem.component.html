@@ -1,32 +1,4 @@
 <p-confirmDialog />
-<header class="recepcion-header">
-  <h2 class="recepcion-title">Cola de espera</h2>
-  <div class="recepcion-header__actions">
-    @if (boxBranchId != null && boxCurrentUserId > 0) {
-      <app-box-occupation-widget
-        [branchId]="boxBranchId"
-        [currentUserId]="boxCurrentUserId"
-        [totalBoxes]="boxTotalBoxes" />
-    }
-    <!-- Drawer de turnos del dia -->
-    <p-button
-      icon="pi pi-calendar"
-      label="Turnos del día"
-      severity="secondary"
-      [outlined]="true"
-      size="small"
-      [disabled]="!hasBranch()"
-      (onClick)="toggleDrawer()" />
-    <!-- Nueva atencion en blanco (sin DNI, sin queue entry) -->
-    <p-button
-      icon="pi pi-plus"
-      label="Nueva atención"
-      severity="primary"
-      size="small"
-      [disabled]="!hasBranch()"
-      (onClick)="onNuevaAtencionBlanco()" />
-  </div>
-</header>
 
 <div class="cola-espera">
   @if (!hasBranch()) {
@@ -73,7 +45,3 @@
     </p-table>
   }
 </div>
-
-<app-scheduled-appointments-drawer
-  [visible]="drawerOpen()"
-  (visibleChange)="onDrawerVisibleChange($event)" />

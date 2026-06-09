@@ -3,6 +3,8 @@ import { Store } from '@ngrx/store';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ToastModule } from 'primeng/toast';
 import { TabsModule } from 'primeng/tabs';
+import { ButtonModule } from 'primeng/button';
+import { Router } from '@angular/router';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { TokenService } from '@core/auth/token.service';
 import { SucursalService } from '@features/sucursales/services/sucursal.service';
@@ -16,6 +18,7 @@ import { selectAllOccupations } from '../../box-occupation/store/box-occupation.
 import { BoxOccupationWidgetComponent } from '../../box-occupation/components/box-occupation-widget.component';
 import { BoxSelectorModalComponent } from '../../box-occupation/components/box-selector-modal.component';
 import { RecepcionConTotemComponent } from './recepcion-con-totem.component';
+import { ScheduledAppointmentsDrawerComponent } from '../../components/scheduled-appointments-drawer.component';
 import { RecepcionSinTotemComponent } from './recepcion-sin-totem.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import { AtencionDashboardComponent } from '@features/analitica/pages/atencion/atencion-dashboard/atencion-dashboard.component';
@@ -32,6 +35,8 @@ import { AtencionDashboardComponent } from '@features/analitica/pages/atencion/a
     BoxOccupationWidgetComponent,
     BoxSelectorModalComponent,
     AtencionDashboardComponent,
+    ButtonModule,
+    ScheduledAppointmentsDrawerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion.page.html',
@@ -43,6 +48,10 @@ export class RecepcionPage implements OnInit {
   private tokens = inject(TokenService);
   private sucursalService = inject(SucursalService);
   protected readonly branchContext = inject(OperatorBranchContextService);
+  private readonly router = inject(Router);
+
+  /** Drawer de "Turnos del día" — controlado por el botón global del header. */
+  protected readonly drawerOpen = signal(false);
 
   protected enabled = this.store.selectSignal(selectBranchTotemEnabled);
   protected loading = this.store.selectSignal(selectBranchTotemLoading);
@@ -94,6 +103,19 @@ export class RecepcionPage implements OnInit {
 
   protected onSelectorClosed(): void {
     this.selectorDismissed.set(true);
+  }
+
+  protected toggleDrawer(): void {
+    this.drawerOpen.update(v => !v);
+  }
+
+  protected onDrawerVisibleChange(visible: boolean): void {
+    this.drawerOpen.set(visible);
+  }
+
+  /** Nueva atención en blanco (sin DNI ni queue entry). */
+  protected onNuevaAtencionBlanco(): void {
+    this.router.navigate(['/analitica/atencion/nueva']);
   }
 
   /**
