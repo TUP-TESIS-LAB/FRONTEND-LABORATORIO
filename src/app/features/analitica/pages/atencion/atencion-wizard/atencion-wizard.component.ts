@@ -124,6 +124,8 @@ const ALL_STEPS: WizardStepDef[] = [
           @switch (uiStep()?.key) {
             @case ('datos') {
               <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null"
+                                        [initialIndications]="detail()!.indications"
+                                        [initialDoctorId]="detail()!.doctorId"
                                         [canReturn]="canReturn()" [returnDisabled]="mutating()"
                                         (returnPhase)="onReturnPhase()" />
             }

@@ -37,3 +37,10 @@ export interface CreateDoctorRequest {
 }
 
 export type UpdateDoctorRequest = CreateDoctorRequest;
+
+/** Alta rápida (recepción): sólo nombre + matrícula; el backend asume registrationType=NACIONAL. */
+export interface QuickCreateDoctorRequest {
+  firstName: string;
+  lastName: string;
+  tuition: string;
+}

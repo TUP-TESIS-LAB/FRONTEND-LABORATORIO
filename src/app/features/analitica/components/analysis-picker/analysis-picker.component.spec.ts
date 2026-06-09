@@ -85,6 +85,24 @@ describe('AnalysisPickerComponent', () => {
     expect(emitted[0].id).toBe(7);
   });
 
+  it('hidrata initialItems preservando isAuthorized y emite itemsChanged (003)', () => {
+    const f = TestBed.createComponent(AnalysisPickerComponent);
+    const emitted: PickerRow[][] = [];
+    f.componentInstance.itemsChanged.subscribe((rows) => emitted.push(rows));
+    f.componentRef.setInput('initialItems', [
+      { id: 3, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: null, isAuthorized: true },
+      { id: 9, shortCode: '2001', name: 'Glucemia', familyName: null, ubCount: null, isAuthorized: false },
+    ]);
+    f.detectChanges();
+    expect(f.componentInstance.items().map((r) => ({ id: r.id, auth: r.isAuthorized }))).toEqual([
+      { id: 3, auth: true },
+      { id: 9, auth: false },
+    ]);
+    // El padre recibe la lista sembrada para su dispatch (mismo contrato que onAuthorizedChange).
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toHaveLength(2);
+  });
+
   it('itemsChanged emite la lista actualizada con isAuthorized correcto al llamar onAuthorizedChange', () => {
     const row = a({ id: 1, shortCode: '1001' });
     fixture.componentInstance.addAnalysis(row);

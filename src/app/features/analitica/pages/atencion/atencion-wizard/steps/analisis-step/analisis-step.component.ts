@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal,
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, output, signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -10,14 +10,16 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { race, take } from 'rxjs';
+import { Analysis } from '../../../../../models/atencion.model';
 import { AnalysisDetailModalComponent } from '../../../../../components/analysis-detail-modal/analysis-detail-modal.component';
 import { AnalysisPickerComponent, PickerRow } from '../../../../../components/analysis-picker/analysis-picker.component';
 import {
   addAnalysisList,
   atencionMutationFailure,
   atencionMutationSuccess,
+  loadAttentionAnalyses,
 } from '../../../../../store/atencion/atencion.actions';
-import { selectMutating } from '../../../../../store/atencion/atencion.selectors';
+import { selectDetail, selectMutating, selectSummaryAnalyses } from '../../../../../store/atencion/atencion.selectors';
 
 @Component({
   selector: 'lab-analisis-step',
@@ -31,7 +33,7 @@ import { selectMutating } from '../../../../../store/atencion/atencion.selectors
       </label>
 
       <lab-analysis-picker
-        [initialItems]="[]"
+        [initialItems]="initialItems()"
         (analysisAdded)="onAnalysisAdded($event)"
         (analysisRemoved)="onAnalysisRemoved($event)"
         (itemsChanged)="onItemsChanged($event)"
@@ -59,7 +61,7 @@ import { selectMutating } from '../../../../../store/atencion/atencion.selectors
     </div>
   `,
 })
-export class AnalisisStepComponent {
+export class AnalisisStepComponent implements OnInit {
   private readonly store      = inject(Store);
   private readonly actions$   = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
@@ -80,6 +82,44 @@ export class AnalisisStepComponent {
 
   readonly financieroActive = computed(() => this.registry.isActive(ModuleKey.Financiero));
   readonly mutating = this.store.selectSignal(selectMutating);
+
+  private readonly detail          = this.store.selectSignal(selectDetail);
+  private readonly summaryAnalyses = this.store.selectSignal(selectSummaryAnalyses);
+
+  /**
+   * Items con los que se rehidrata el picker al RETOMAR la atención. Une las
+   * autorizaciones guardadas en el backend (`detail.analysisAuthorizations`, que
+   * sólo traen analysisId + isAuthorized) con el catálogo cargado en
+   * `summaryAnalyses` (nombre, código, familia) vía loadAttentionAnalyses.
+   *
+   * Esto es el fix de 003 para el Paso 2: antes el picker arrancaba en `[]`, así
+   * que los análisis ya guardados NO aparecían al volver/retomar (aunque el
+   * backend sí los tenía persistidos).
+   */
+  readonly initialItems = computed<PickerRow[]>(() => {
+    const d = this.detail();
+    if (!d) return [];
+    const authById = new Map(
+      d.analysisAuthorizations.filter((x) => x.active).map((x) => [x.analysisId, x.isAuthorized]),
+    );
+    if (authById.size === 0) return [];
+    return ((this.summaryAnalyses() ?? []) as Analysis[])
+      .filter((a) => authById.has(a.id))
+      .map((a) => ({ ...a, isAuthorized: authById.get(a.id) ?? false }));
+  });
+
+  ngOnInit(): void {
+    const d = this.detail();
+    if (!d) return;
+    // Hidratar el flag urgente desde lo persistido.
+    this.isUrgentValue = d.isUrgent;
+    // Cargar el detalle de catálogo de los análisis ya autorizados para poder
+    // mostrarlos en el picker (nombre/código). Si no hay, no disparamos nada.
+    const analysisIds = d.analysisAuthorizations.filter((x) => x.active).map((x) => x.analysisId);
+    if (analysisIds.length > 0) {
+      this.store.dispatch(loadAttentionAnalyses({ analysisIds }));
+    }
+  }
 
   continueLabel(): string {
     return 'Continuar →';
