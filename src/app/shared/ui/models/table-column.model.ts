@@ -21,4 +21,6 @@ export interface TableAction {
   type?: 'button' | 'menu';
   /** Ítems del menú popup. Solo aplica cuando type='menu'. */
   menuItems?: MenuItem[] | ((row: unknown) => MenuItem[]);
+  /** Si retorna true, el botón no se renderiza para esa fila. */
+  hidden?: (row: unknown) => boolean;
 }

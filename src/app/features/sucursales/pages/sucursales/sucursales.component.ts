@@ -11,6 +11,7 @@ import { UserSessionService } from '@features/profile/services/user-session.serv
 import { loadSucursales } from '../../store/sucursales.actions';
 import { selectAllSucursales, selectSucursalesPending } from '../../store/sucursales.selectors';
 import { BranchTotemConfigService } from '../../services/branch-totem-config.service';
+import { Sucursal } from '../../models/sucursal.model';
 
 @Component({
   selector: 'app-sucursales',
@@ -27,6 +28,14 @@ import { BranchTotemConfigService } from '../../services/branch-totem-config.ser
       emptyHeading="Sin sucursales"
       emptyIcon="pi-map-marker"
       emptyDescription="Agregá la primera sucursal para empezar.">
+
+      <ng-template uiCell="direccion" let-row>
+        @if ($any(row).address; as addr) {
+          {{ addr.street }} {{ addr.streetNumber }}
+        } @else {
+          <span class="text-surface-400">—</span>
+        }
+      </ng-template>
 
       <ng-template uiCell="totem" let-row>
         <p-toggleswitch
@@ -53,9 +62,9 @@ export class SucursalesPageComponent implements OnInit {
   );
 
   readonly columns: readonly TableColumn[] = [
-    { field: 'nombre',    header: 'Nombre' },
-    { field: 'direccion', header: 'Dirección' },
-    { field: 'totem',     header: 'Tótem' },
+    { field: 'description', header: 'Nombre' },
+    { field: 'direccion',   header: 'Dirección' },
+    { field: 'totem',       header: 'Tótem' },
   ];
 
   constructor() {
