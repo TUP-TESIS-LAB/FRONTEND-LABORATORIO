@@ -1,1 +1,17 @@
 :host { display: block; padding: 1rem; }
+
+// Tabs planos como en Sucursales: el panel NO es una card blanca, vive sobre
+// el fondo de la página. Solo la barra de tabs marca la sección.
+:host ::ng-deep {
+  .p-tabs,
+  .p-tablist,
+  .p-tabpanels,
+  .p-tabpanel {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  .p-tabpanels {
+    padding: 1rem 0 0;
+  }
+}

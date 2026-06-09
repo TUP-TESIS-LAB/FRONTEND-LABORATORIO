@@ -13,7 +13,6 @@ import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import {
@@ -37,7 +36,7 @@ import { BoxOccupationWidgetComponent } from '../../box-occupation/components/bo
 @Component({
   selector: 'app-recepcion-con-totem',
   standalone: true,
-  imports: [TableModule, ButtonModule, CardModule, ConfirmDialogModule, QueueRowActionsComponent, ScheduledAppointmentsDrawerComponent, WaitingTimePipe, BoxOccupationWidgetComponent],
+  imports: [TableModule, ButtonModule, ConfirmDialogModule, QueueRowActionsComponent, ScheduledAppointmentsDrawerComponent, WaitingTimePipe, BoxOccupationWidgetComponent],
   providers: [ConfirmationService, MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion-con-totem.component.html',

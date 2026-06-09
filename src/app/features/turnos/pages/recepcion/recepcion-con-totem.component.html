@@ -28,7 +28,7 @@
   </div>
 </header>
 
-<p-card>
+<div class="cola-espera">
   @if (!hasBranch()) {
     <div class="empty-branch">
       <i class="pi pi-info-circle"></i>
@@ -72,7 +72,7 @@
       </ng-template>
     </p-table>
   }
-</p-card>
+</div>
 
 <app-scheduled-appointments-drawer
   [visible]="drawerOpen()"
