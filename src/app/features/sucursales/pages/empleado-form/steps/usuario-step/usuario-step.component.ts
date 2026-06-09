@@ -8,6 +8,8 @@ import { RolesApiService } from '@features/empresa/services/roles-api.service';
 import { RolesPermisosApiService } from '@features/roles-permisos/services/roles-permisos-api.service';
 import { UsuariosApiService } from '@features/empresa/services/usuarios-api.service';
 import { Rol } from '@features/empresa/models/rol.model';
+import { SucursalService } from '@features/sucursales/services/sucursal.service';
+import { Sucursal } from '@features/sucursales/models/sucursal.model';
 import { AccessSection, SectionResponse } from '@core/access/access.model';
 
 interface UserOption { id: number; label: string; }
@@ -82,6 +84,12 @@ interface UserOption { id: number; label: string; }
                 <p-select formControlName="roleId" [options]="roles()" [showClear]="true"
                           optionLabel="description" optionValue="id" />
               </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium">Sucursal <span class="pat-form__req">*</span></span>
+                <p-select formControlName="branchId" [options]="branches()"
+                          optionLabel="description" optionValue="id" placeholder="Seleccioná una sucursal" />
+                <span class="text-xs text-surface-400">El usuario opera en una sola sucursal.</span>
+              </label>
             </div>
             <div class="mt-2">
               <h4 class="text-sm font-semibold mb-2">Permisos (secciones)</h4>
@@ -106,16 +114,20 @@ export class UsuarioStepComponent {
   private readonly rolesApi = inject(RolesApiService);
   private readonly sectionsApi = inject(RolesPermisosApiService);
   private readonly usersApi = inject(UsuariosApiService);
+  private readonly sucursalService = inject(SucursalService);
 
   readonly roles = signal<Rol[]>([]);
   readonly catalog = signal<SectionResponse[]>([]);
   readonly users = signal<UserOption[]>([]);
+  readonly branches = signal<Sucursal[]>([]);
 
   constructor() {
     this.rolesApi.list().pipe(takeUntilDestroyed()).subscribe((r) => this.roles.set(r));
     this.sectionsApi.getGrantable().pipe(takeUntilDestroyed()).subscribe((c) => this.catalog.set(c));
     this.usersApi.search({ size: 100 }).pipe(takeUntilDestroyed()).subscribe((page) =>
       this.users.set(page.content.map((u) => ({ id: u.id, label: `${u.lastName}, ${u.firstName} (${u.username})` }))));
+    this.sucursalService.list().pipe(takeUntilDestroyed()).subscribe((res) =>
+      this.branches.set(res.content.filter((s) => s.active)));
   }
 
   private sectionsControl() { return this.group().get('sections')!; }

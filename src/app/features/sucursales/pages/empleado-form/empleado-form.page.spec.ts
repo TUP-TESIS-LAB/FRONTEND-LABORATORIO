@@ -95,7 +95,7 @@ describe('EmpleadoFormPage (smoke)', () => {
     fillDatos(cmp, true);
     cmp.usuarioGroup.patchValue({
       mode: 'new',
-      newUser: { firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222', roleId: 3 },
+      newUser: { firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222', roleId: 3, branchId: 8 },
       sections: ['ATENCION'],
     });
     cmp.currentStep.set(4);
@@ -104,13 +104,29 @@ describe('EmpleadoFormPage (smoke)', () => {
     expect(spy).toHaveBeenCalledWith(createEmployeeWithUser({
       userPayload: {
         firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222',
-        roleIds: [3], sections: ['ATENCION'],
+        roleIds: [3], sections: ['ATENCION'], branchId: 8,
       },
       req: {
         firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: true, registration: null, address: null,
       },
       contacts: [],
     }));
+  });
+
+  it('new user sin sucursal no permite submit', () => {
+    const fixture = TestBed.createComponent(EmpleadoFormPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    fillDatos(cmp, true);
+    cmp.usuarioGroup.patchValue({
+      mode: 'new',
+      newUser: { firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222', roleId: 3, branchId: null },
+      sections: ['ATENCION'],
+    });
+    cmp.currentStep.set(4);
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onSubmit();
+    expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: createEmployeeWithUser.type }));
   });
 
   it('does not submit while Datos is invalid', () => {
