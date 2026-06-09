@@ -186,6 +186,39 @@ describe('ResumenStepComponent', () => {
     expect(normalized).toContain('$ 0,00');
   });
 
+  it('liveTotal recalcula el total EN VIVO al cambiar el copago, sin dispatch (005)', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    // SAMPLE_PRICING.subtotal = 0 y copaymentValue arranca null → total 0
+    expect(f.componentInstance.liveTotal()).toBe(0);
+    // Tipear el coseguro recalcula el total localmente (subtotal + copago)
+    f.componentInstance.copaymentValue.set(1500);
+    expect(f.componentInstance.liveTotal()).toBe(1500);
+  });
+
+  it('muestra el NOMBRE COMPLETO + el código NBU del análisis (006)', () => {
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { id: 5, dni: '1', firstName: 'A', lastName: 'B' } as any,
+        summaryAnalyses: [
+          { id: 3, shortCode: 'BIO001', name: 'Hemograma completo', familyName: null, ubCount: null, nbuCode: '660101' },
+        ] as any,
+        pricing: SAMPLE_PRICING,
+      },
+    });
+    store.refreshState();
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Hemograma completo');
+    expect(text).toContain('NBU 660101');
+    // Ya no mostramos el short-code/ID como etiqueta principal
+    expect(text).not.toContain('BIO001');
+  });
+
   it('onCopaymentBlur despacha setCopayment cuando el valor cambia', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', { ...attn(), copaymentAmount: null });

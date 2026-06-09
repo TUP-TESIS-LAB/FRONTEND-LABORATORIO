@@ -18,7 +18,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
-import { AttentionResponse } from '../../../../../models/atencion.model';
+import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencion.model';
 import { FinalizeAttentionModalComponent } from '../../../../../components/finalize-attention-modal/finalize-attention-modal.component';
 import {
   atencionMutationFailure,
@@ -80,7 +80,10 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
             <li class="flex items-center justify-between gap-2">
               <span class="flex-1">
                 @if (info) {
-                  <span class="font-mono opacity-70">{{ info.shortCode }}</span> — {{ info.name }}
+                  {{ info.name }}
+                  @if (info.nbuCode) {
+                    <span class="font-mono text-xs opacity-70">· NBU {{ info.nbuCode }}</span>
+                  }
                 } @else {
                   #{{ a.analysisId }}
                 }
@@ -134,7 +137,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
           </div>
           <div class="flex justify-between text-base font-semibold border-t pt-1">
             <span>Total</span>
-            <span>{{ p.total | currencyAr }}</span>
+            <span>{{ liveTotal() | currencyAr }}</span>
           </div>
         </section>
       } @else if (pricingLoading()) {
@@ -186,13 +189,28 @@ export class ResumenStepComponent implements OnInit {
   readonly copaymentValue = signal<number | null>(null);
 
   readonly analysisById = computed(
-    () => new Map(this.analyses().map(a => [a.id, a]))
+    // `summaryAnalyses` se carga con AnalysisService.getById → AnalysisDetail (trae nbuCode/name),
+    // aunque el slice del store esté tipado como Analysis. Widening seguro para exponer el NBU.
+    () => new Map((this.analyses() as AnalysisDetail[]).map(a => [a.id, a]))
   );
 
   readonly pricingById = computed(() => {
     const p = this.pricing();
     if (!p) return new Map<number, { precioPaciente: number }>();
     return new Map(p.items.map(item => [item.analysisId, item]));
+  });
+
+  /**
+   * Total EN VIVO: subtotal del pricing + el coseguro tipeado en el input.
+   * El backend computa total = subtotal + copayment; replicamos esa fórmula localmente
+   * para que el total se recalcule mientras la secretaria escribe el monto, sin esperar
+   * al blur + round-trip que persiste y refresca el pricing. Cuando el pricing vuelve del
+   * backend ya incluye el copago, y como copaymentValue queda igual, el número coincide.
+   */
+  readonly liveTotal = computed<number | null>(() => {
+    const p = this.pricing();
+    if (!p) return null;
+    return p.subtotal + (this.copaymentValue() ?? 0);
   });
 
   ngOnInit(): void {

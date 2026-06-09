@@ -13,11 +13,23 @@ import {
   verifyPatient,
 } from '../../../../../store/atencion/atencion.actions';
 import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
+import { DoctorService } from '@features/medicos/services/doctor.service';
+import { NotificationService } from '@core/services/notification.service';
 
 const STUB_PLANS = [{ planId: 1, label: 'Particular', particular: true }];
 
 const coveragePlansStub = {
   getActivePlans: () => of(STUB_PLANS),
+};
+
+const doctorServiceStub = {
+  list: () => of([]),
+  quickCreate: vi.fn(),
+};
+
+const notificationStub = {
+  error: vi.fn(),
+  success: vi.fn(),
 };
 
 const defaultRouteStub = {
@@ -35,6 +47,8 @@ describe('DatosGeneralesStepComponent', () => {
           initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
         }),
         { provide: CoveragePlansService, useValue: coveragePlansStub },
+        { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: NotificationService, useValue: notificationStub },
         { provide: ActivatedRoute, useValue: defaultRouteStub },
       ],
     }).compileComponents();
@@ -62,7 +76,7 @@ describe('DatosGeneralesStepComponent', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, indications: null, queueEntryId: null }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: null }),
     );
   });
 
@@ -429,6 +443,97 @@ describe('DatosGeneralesStepComponent', () => {
     expect(options).toEqual(STUB_PLANS);
   });
 
+  // ── 003: hidratación de indicaciones al retomar ──────────────────────────
+
+  it('hidrata indications desde initialIndications al retomar (003)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('initialIndications', 'Ayuno 8 horas');
+    fixture.detectChanges();
+    expect((fixture.componentInstance as any).indications).toBe('Ayuno 8 horas');
+  });
+
+  it('onConfirm con atencionId incluye las indicaciones hidratadas en assignGeneralData (003)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('initialIndications', 'Ayuno 8 horas');
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: { id: 5 } as any },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onConfirm();
+    expect(spy).toHaveBeenCalledWith(
+      assignGeneralData({
+        id: 7,
+        payload: { patientId: 5, doctorId: null, insurancePlanId: null, indications: 'Ayuno 8 horas' },
+      }),
+    );
+  });
+
+  // ── 007: médico solicitante ──────────────────────────────────────────────
+
+  it('hidrata el médico seleccionado desde initialDoctorId (007)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('initialDoctorId', 42);
+    fixture.detectChanges();
+    expect((fixture.componentInstance as any).selectedDoctorId()).toBe(42);
+  });
+
+  it('onConfirm incluye el doctorId seleccionado en assignGeneralData (007)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: { id: 5 } as any },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    (fixture.componentInstance as any).selectedDoctorId.set(99);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onConfirm();
+    expect(spy).toHaveBeenCalledWith(
+      assignGeneralData({
+        id: 7,
+        payload: { patientId: 5, doctorId: 99, insurancePlanId: null, indications: null },
+      }),
+    );
+  });
+
+  it('altaMedicoValida exige nombre (≥2 palabras) + matrícula', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const c = fixture.componentInstance as any;
+    c.doctorForm = { fullName: 'Juan', tuition: '123' };
+    expect(c.altaMedicoValida()).toBe(false); // una sola palabra
+    c.doctorForm = { fullName: 'Juan Pérez', tuition: '' };
+    expect(c.altaMedicoValida()).toBe(false); // sin matrícula
+    c.doctorForm = { fullName: 'Juan Pérez', tuition: '12345' };
+    expect(c.altaMedicoValida()).toBe(true);
+  });
+
+  it('crearMedico parte el nombre completo, llama quickCreate y selecciona el médico creado (007)', () => {
+    const created = { id: 55, firstName: 'Juan', lastName: 'Pérez García', tuition: '12345', active: true } as any;
+    doctorServiceStub.quickCreate.mockReturnValue(of(created));
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const c = fixture.componentInstance as any;
+    c.addingDoctor.set(true);
+    c.doctorForm = { fullName: 'Juan Pérez García', tuition: '12345' };
+    c.crearMedico();
+    expect(doctorServiceStub.quickCreate).toHaveBeenCalledWith({
+      firstName: 'Juan', lastName: 'Pérez García', tuition: '12345',
+    });
+    expect(c.selectedDoctorId()).toBe(55);
+    expect(c.addingDoctor()).toBe(false);
+    expect(c.doctors().some((d: any) => d.id === 55)).toBe(true);
+  });
+
   it('crearPaciente() incluye la cobertura seleccionada en el payload', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
@@ -463,6 +568,9 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
         provideMockStore({
           initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
         }),
+        { provide: CoveragePlansService, useValue: coveragePlansStub },
+        { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: NotificationService, useValue: notificationStub },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: { get: (k: string) => k === 'queueEntryId' ? '99' : null } } },
@@ -484,7 +592,7 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, indications: null, queueEntryId: 99 }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: 99 }),
     );
   });
 });
