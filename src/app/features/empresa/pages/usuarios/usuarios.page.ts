@@ -20,6 +20,8 @@ import { selectCatalog, selectRpPending, selectWorkingSet } from '@features/role
 import {
   ActualizarUsuarioPayload, BuscarUsuariosParams, CambiarEstadoPayload, CrearUsuarioPayload, Usuario,
 } from '../../models/usuario.model';
+import { Sucursal } from '@features/sucursales/models/sucursal.model';
+import { SucursalService } from '@features/sucursales/services/sucursal.service';
 
 import { UsuariosFiltrosComponent } from './components/usuarios-filtros.component';
 import { UsuariosTableComponent } from './components/usuarios-table.component';
@@ -65,6 +67,7 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
       [visible]="formOpen()"
       [usuario]="editingUser()"
       [roles]="roles()"
+      [branches]="branches()"
       [catalog]="catalog()"
       [initialSections]="editingUser() ? editingSections() : []"
       [saving]="pending()"
@@ -90,7 +93,9 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
 export class UsuariosPage implements OnInit {
   private readonly store = inject(Store);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly sucursalService = inject(SucursalService);
 
+  readonly branches = signal<Sucursal[]>([]);
   readonly usuarios = this.store.selectSignal(selectAllUsuarios);
   readonly roles = this.store.selectSignal(selectAllRoles);
   readonly filters = this.store.selectSignal(selectUsuariosFilters);
@@ -111,6 +116,11 @@ export class UsuariosPage implements OnInit {
     this.store.dispatch(loadRoles());
     this.store.dispatch(loadCatalog());
     this.store.dispatch(loadUsuarios({ filters: this.filters() }));
+
+    // Sucursales del tenant para el selector del drawer (sólo activas).
+    this.sucursalService.list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => this.branches.set(res.content.filter((s) => s.active)));
   }
 
   onFiltersPatch(patch: Partial<BuscarUsuariosParams>): void {
