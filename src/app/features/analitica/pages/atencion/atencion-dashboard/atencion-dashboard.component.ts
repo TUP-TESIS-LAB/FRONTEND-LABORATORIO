@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -7,10 +8,13 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { ScrollToBottomFabComponent } from '@shared/ui/components/scroll-to-bottom-fab/scroll-to-bottom-fab.component';
-import { AttentionResponse, AttentionState, isTerminal } from '../../../models/atencion.model';
+import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import {
   ATTENTION_STATE_LABELS,
   attentionStateLabel,
@@ -25,20 +29,19 @@ import {
   selectListLoading,
 } from '../../../store/atencion/atencion.selectors';
 
-interface KpiTile {
-  label: string;
-  value: number;
-  accent: string;
-  sub?: string;
-}
+// Estados de la fase financiera: sólo se ofrecen como filtro si el módulo FINANCIERO está activo.
+const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
+  AttentionState.ON_COLLECTION_PROCESS,
+  AttentionState.ON_BILLING_PROCESS,
+]);
 
 @Component({
   selector: 'lab-atencion-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule,
-    TableModule, ButtonModule, InputTextModule, MultiSelectModule, TagModule,
+    FormsModule, DatePipe,
+    TableModule, ButtonModule, InputTextModule, MultiSelectModule, TagModule, TooltipModule,
     StatCardComponent, EmptyStateComponent, ScrollToBottomFabComponent,
   ],
   template: `
@@ -57,22 +60,16 @@ interface KpiTile {
               (onClick)="openNewAttention()" />
           </div>
         </header>
-
-        <section class="grid grid-cols-5 gap-3 mb-5">
-          @for (k of kpiTiles(); track k.label) {
-            <ui-stat-card [label]="k.label" [value]="k.value" [accentColor]="k.accent" [sub]="k.sub ?? null" />
-          }
-        </section>
       }
 
       <section class="bg-white rounded-lg shadow-sm p-4">
         <div class="flex gap-2 items-center flex-wrap mb-3">
-          <input pInputText type="text" placeholder="Buscar por Nº de atención o ID de paciente"
+          <input pInputText type="text" placeholder="Buscar por nombre o DNI"
                  [ngModel]="filters().search"
                  (ngModelChange)="updateSearch($event)"
                  class="flex-1 min-w-[260px]" />
           <p-multiSelect
-            [options]="stateOptions"
+            [options]="stateOptions()"
             [ngModel]="filters().states"
             (ngModelChange)="updateStates($event)"
             optionLabel="label"
@@ -99,7 +96,7 @@ interface KpiTile {
                    currentPageReportTemplate="{first}-{last} de {totalRecords}">
             <ng-template pTemplate="header">
               <tr>
-                <th>Nº</th>
+                <th class="w-36">Fecha</th>
                 <th>Paciente</th>
                 <th>Médico</th>
                 <th>Estado</th>
@@ -109,11 +106,21 @@ interface KpiTile {
             </ng-template>
             <ng-template pTemplate="body" let-row>
               <tr>
-                <td>{{ row.attentionNumber }}</td>
-                <td>{{ row.patientId ?? '—' }}</td>
+                <td>{{ row.createdAt ? (row.createdAt | date: 'dd/MM/yy HH:mm') : '—' }}</td>
+                <td>
+                  <div class="font-medium">{{ row.patientFullName ?? '—' }}</div>
+                  <div class="text-xs text-[var(--ds-text-muted)]">{{ row.patientDni ?? '—' }}</div>
+                </td>
                 <td>{{ row.doctorId ?? '—' }}</td>
                 <td>
-                  <p-tag [value]="stateLabel(row.attentionState)" [severity]="stateSeverity(row.attentionState)" />
+                  @if (cancellationTooltip(row); as motivo) {
+                    <span [pTooltip]="motivo" tooltipPosition="top"
+                          tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
+                      <p-tag [value]="stateLabel(row.attentionState)" [severity]="stateSeverity(row.attentionState)" />
+                    </span>
+                  } @else {
+                    <p-tag [value]="stateLabel(row.attentionState)" [severity]="stateSeverity(row.attentionState)" />
+                  }
                 </td>
                 <td>@if (row.isUrgent) { <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i> }</td>
                 <td>
@@ -123,9 +130,9 @@ interface KpiTile {
                                 (onClick)="downloadLabels(row)" />
                     }
                     <p-button
-                      [label]="isTerminal(row.attentionState) ? 'Ver' : 'Retomar'"
+                      [label]="resumable(row.attentionState) ? 'Retomar' : 'Ver'"
                       size="small"
-                      [outlined]="isTerminal(row.attentionState)"
+                      [outlined]="!resumable(row.attentionState)"
                       (onClick)="open(row)" />
                   </div>
                 </td>
@@ -135,42 +142,85 @@ interface KpiTile {
         }
       </section>
 
+      @if (!embedded()) {
+        <section class="bg-white rounded-lg shadow-sm mt-5">
+          <button type="button"
+                  class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[var(--ds-text)]"
+                  (click)="toggleKpis()"
+                  [attr.aria-expanded]="kpisExpanded()">
+            <span>Resumen del día</span>
+            <i class="pi" [class.pi-chevron-down]="!kpisExpanded()" [class.pi-chevron-up]="kpisExpanded()"></i>
+          </button>
+          @if (kpisExpanded()) {
+            <div class="grid grid-cols-2 gap-3 px-4 pb-4">
+              <ui-stat-card label="Canceladas hoy" [value]="kpis().canceladasHoy" accentColor="#ef4444" />
+              <ui-stat-card label="Finalizadas" [value]="kpis().finalizadas" accentColor="#10b981" />
+            </div>
+          }
+        </section>
+      }
+
       <ui-scroll-to-bottom-fab />
     </div>
   `,
+  styles: [`
+    /* Tooltip del motivo de cancelación: que respire y no se corte en una línea. */
+    :host ::ng-deep .atencion-cancel-tooltip .p-tooltip-text {
+      max-width: 320px;
+      white-space: normal;
+      line-height: 1.35;
+    }
+  `],
 })
 export class AtencionDashboardComponent implements OnInit {
   readonly embedded = input<boolean>(false);
 
-  private readonly store  = inject(Store);
-  private readonly router = inject(Router);
+  private readonly store          = inject(Store);
+  private readonly router         = inject(Router);
+  private readonly moduleRegistry = inject(ModuleRegistry);
 
   protected readonly rows    = this.store.selectSignal(selectFilteredAtenciones);
   protected readonly filters = this.store.selectSignal(selectFilters);
   protected readonly loading = this.store.selectSignal(selectListLoading);
   protected readonly kpis    = this.store.selectSignal(selectAtencionKpis);
 
-  protected readonly isTerminal    = isTerminal;
   protected readonly stateLabel    = attentionStateLabel;
   protected readonly stateSeverity = attentionStateSeverity;
+  protected readonly resumable     = isSecretaryResumable;
 
-  protected readonly stateOptions: Array<{ label: string; value: AttentionState }> =
-    (Object.keys(ATTENTION_STATE_LABELS) as AttentionState[])
+  protected readonly kpisExpanded = signal(false);
+
+  /**
+   * Opciones del filtro de estado, recortadas a los módulos activos del tenant:
+   * si FINANCIERO está apagado no ofrecemos Cobro/Facturación (estados que ese
+   * tenant nunca alcanza). Es un `computed` para reaccionar a la config del tenant.
+   */
+  protected readonly stateOptions = computed<Array<{ label: string; value: AttentionState }>>(() => {
+    const financieroActive = this.moduleRegistry.isActive(ModuleKey.Financiero);
+    return (Object.keys(ATTENTION_STATE_LABELS) as AttentionState[])
+      .filter(value => financieroActive || !FINANCIERO_STATES.has(value))
       .map(value => ({ value, label: ATTENTION_STATE_LABELS[value] }));
-
-  protected kpiTiles(): KpiTile[] {
-    const k = this.kpis();
-    return [
-      { label: 'Atenciones del día',  value: k.total,               accent: 'var(--brand-secondary)' },
-      { label: 'Pendientes',          value: k.pendientes,          accent: '#f59e0b', sub: 'en curso' },
-      { label: 'Esperando extracción', value: k.esperandoExtraccion, accent: '#3b82f6', sub: 'en cola'  },
-      { label: 'Finalizadas',         value: k.finalizadas,         accent: '#10b981' },
-      { label: 'Urgentes',            value: k.urgentes,            accent: '#ef4444', sub: 'prioritario' },
-    ];
-  }
+  });
 
   ngOnInit(): void {
     this.store.dispatch(loadAtenciones());
+  }
+
+  toggleKpis(): void {
+    this.kpisExpanded.update(v => !v);
+  }
+
+  /**
+   * Motivo a mostrar en el tooltip del tag de estado. Sólo para estados terminales
+   * (Cancelada / Fallida): preferimos la cancelación terminal y caemos al motivo de
+   * "no se presentó". Devuelve null cuando no hay motivo que mostrar.
+   */
+  cancellationTooltip(row: AttentionResponse): string | null {
+    if (row.attentionState !== AttentionState.CANCELED && row.attentionState !== AttentionState.FAILED) {
+      return null;
+    }
+    const motivo = row.cancellationReason ?? row.extractionCancellationReason;
+    return motivo && motivo.trim() ? motivo : null;
   }
 
   updateSearch(search: string): void {
