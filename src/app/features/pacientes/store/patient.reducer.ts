@@ -8,6 +8,7 @@ import {
   updatePatient, updatePatientSuccess, updatePatientFailure,
   checkPatientDni, checkPatientDniSuccess, checkPatientDniFailure,
   togglePatientActive, togglePatientActiveSuccess, togglePatientActiveFailure,
+  verifyPatientSuccess,
 } from './patient.actions';
 
 export const patientReducer = createReducer(
@@ -51,6 +52,15 @@ export const patientReducer = createReducer(
     pending: false,
     error: null,
   })),
+  // Auto-verify encadenado: refleja el paciente ya verificado en el listado y
+  // en el seleccionado. NO toca `pending` (el guardado ya lo limpió; el verify
+  // corre en background) ni `error` (un verify fallido es silencioso).
+  on(verifyPatientSuccess, (state, { patient }): PatientState => ({
+    ...state,
+    items: state.items.map((p) => (p.id === patient.id ? patient : p)),
+    selected: state.selected?.id === patient.id ? patient : state.selected,
+  })),
+
   on(togglePatientActiveSuccess, (state, { id, deleted }): PatientState => ({
     ...state,
     items: state.items.map((p) => (p.id === id ? { ...p, active: !deleted } : p)),

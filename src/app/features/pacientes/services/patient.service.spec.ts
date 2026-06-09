@@ -94,6 +94,17 @@ describe('PatientService', () => {
     req.flush(null);
   });
 
+  it('verify POSTs to /{id}/verify and returns the verified patient', () => {
+    const verified: Patient = { ...mockPatient, verifiedAt: '2026-06-09T10:00:00Z' };
+    let result: Patient | undefined;
+    service.verify(1).subscribe((p) => (result = p));
+    const req = httpMock.expectOne('/api/v1/analitica/patients/1/verify');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({});
+    req.flush(verified);
+    expect(result).toEqual(verified);
+  });
+
   it('getByDni → GET /api/v1/analitica/patients/dni/{dni}', () => {
     const patient = { id: 5, dni: '18901234', firstName: 'Juan', lastName: 'Pérez' } as Patient;
     let result: Patient | undefined;

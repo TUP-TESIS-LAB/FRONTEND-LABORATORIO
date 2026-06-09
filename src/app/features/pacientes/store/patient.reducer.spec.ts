@@ -9,6 +9,7 @@ import {
   updatePatient, updatePatientSuccess,
   togglePatientActive, togglePatientActiveSuccess,
   checkPatientDniSuccess,
+  verifyPatientSuccess,
 } from './patient.actions';
 import { Patient } from '../models/patient.model';
 
@@ -84,6 +85,17 @@ describe('patientReducer', () => {
     expect(next.items[0].firstName).toBe('changed');
     expect(next.items[1].firstName).toBe('f2');
     expect(next.selected?.firstName).toBe('changed');
+  });
+
+  it('verifyPatientSuccess replaces item by id and updates selected if matches (sin tocar pending)', () => {
+    const before = { ...initialPatientState, items: [mkPatient(1), mkPatient(2)], selected: mkPatient(1) };
+    const verified = { ...mkPatient(1), verifiedAt: '2026-06-09T10:00:00Z', status: 'VERIFIED' as const };
+    const next = patientReducer(before, verifyPatientSuccess({ patient: verified }));
+    expect(next.items[0].verifiedAt).toBe('2026-06-09T10:00:00Z');
+    expect(next.items[1].verifiedAt).toBeNull();
+    expect(next.selected?.verifiedAt).toBe('2026-06-09T10:00:00Z');
+    // El guardado ya limpió pending; verify es background y no debe alterarlo.
+    expect(next.pending).toBe(before.pending);
   });
 
   it('togglePatientActiveSuccess flips active on the targeted item only', () => {
