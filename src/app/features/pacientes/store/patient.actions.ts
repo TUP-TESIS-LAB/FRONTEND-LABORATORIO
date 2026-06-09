@@ -65,6 +65,24 @@ export const updatePatientFailure = createAction(
   props<{ error: HttpErrorResponse }>(),
 );
 
+// --- Auto-verify (chained after a STAFF create/update success) ---
+// El alta/edición manual desde el laboratorio (source=STAFF) auto-verifica al
+// guardar: el operador acaba de cargar/editar al paciente, no hace falta un
+// segundo botón. Los pacientes PORTAL (importados) NO se auto-verifican —
+// requieren verificación explícita en el flujo de atención.
+export const verifyPatient = createAction(
+  '[Patient Form] Verify Patient',
+  props<{ id: number }>(),
+);
+export const verifyPatientSuccess = createAction(
+  '[Patients API] Verify Patient Success',
+  props<{ patient: Patient }>(),
+);
+export const verifyPatientFailure = createAction(
+  '[Patients API] Verify Patient Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
 // --- DNI check (read with debounce in effect) ---
 export const checkPatientDni = createAction(
   '[Patient Form] Check Patient Dni',

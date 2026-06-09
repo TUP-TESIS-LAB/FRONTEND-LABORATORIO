@@ -119,7 +119,7 @@ import {
         </ng-template>
 
         <ng-template uiCell="estado" let-row>
-          <p-tag [severity]="statusSeverity($any(row).status)" [value]="$any(row).status" />
+          <p-tag [severity]="rowStatusSeverity($any(row))" [value]="rowStatusLabel($any(row))" />
           @if (!$any(row).active) {
             <p-tag severity="danger" value="Inactivo" class="ml-1" />
           }
@@ -208,6 +208,18 @@ export class PatientListPage implements OnInit {
 
   statusSeverity(status: PatientStatus): 'info' | 'success' | 'warn' {
     return status === 'COMPLETE' ? 'success' : status === 'VERIFIED' ? 'info' : 'warn';
+  }
+
+  // El estado "verificado" es un acto humano: se deriva de `verifiedAt`, no del
+  // enum de completitud (status MIN/COMPLETE). Un paciente verificado (p. ej. el
+  // alta/edición manual del laboratorio, auto-verificada al guardar) se muestra
+  // como "Verificado"; el resto cae al estado de completitud.
+  rowStatusSeverity(p: Patient): 'info' | 'success' | 'warn' {
+    return p.verifiedAt ? 'info' : this.statusSeverity(p.status);
+  }
+
+  rowStatusLabel(p: Patient): string {
+    return p.verifiedAt ? 'Verificado' : p.status;
   }
 
   primaryCoverageLabel(p: Patient): string {
