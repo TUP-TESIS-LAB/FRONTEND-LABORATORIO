@@ -60,7 +60,7 @@
                   @for (e of calledEntries().slice(0, 5); track e.id) {
                     <li>
                       <span class="code">{{ e.publicCode }}</span>
-                      <span class="box">→ Box {{ e.boxNumber }}</span>
+                      <span class="box">→ Box {{ e.boxNumber ?? '—' }}</span>
                     </li>
                   }
                 </ul>

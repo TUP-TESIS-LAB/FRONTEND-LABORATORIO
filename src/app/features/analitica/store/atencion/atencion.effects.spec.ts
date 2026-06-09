@@ -413,11 +413,25 @@ describe('AtencionEffects', () => {
     expect(out).toEqual(A.verifyPatientSuccess({ patient }));
   });
 
-  it('verifyPatient$ → HTTP error → verifyPatientFailure', async () => {
+  it('verifyPatient$ → 422 → toast mapeado + verifyPatientFailure', async () => {
     const error = new HttpErrorResponse({ status: 422 });
     (patients.verify as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
     actions$.next(A.verifyPatient({ id: 9 }));
     const out = await firstValueFrom(effects.verifyPatient$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo verificar el paciente: faltan datos obligatorios o una cobertura activa.'
+    );
+    expect(out).toEqual(A.verifyPatientFailure({ error }));
+  });
+
+  it('verifyPatient$ → error genérico → toast genérico + verifyPatientFailure', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    (patients.verify as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.verifyPatient({ id: 9 }));
+    const out = await firstValueFrom(effects.verifyPatient$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo verificar el paciente. Revisá la conexión y volvé a intentarlo.'
+    );
     expect(out).toEqual(A.verifyPatientFailure({ error }));
   });
 });

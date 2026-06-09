@@ -19,7 +19,7 @@ import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { AttentionResponse } from '../../../../../models/atencion.model';
-import { AttentionTicketModalComponent } from '../../../../../components/attention-ticket-modal/attention-ticket-modal.component';
+import { FinalizeAttentionModalComponent } from '../../../../../components/finalize-attention-modal/finalize-attention-modal.component';
 import {
   atencionMutationFailure,
   atencionMutationSuccess,
@@ -46,7 +46,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   selector: 'lab-resumen-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, TagModule, AttentionTicketModalComponent, InputNumberModule, FormsModule, CurrencyArPipe],
+  imports: [ButtonModule, TagModule, FinalizeAttentionModalComponent, InputNumberModule, FormsModule, CurrencyArPipe],
   template: `
     <div class="space-y-4">
       <header class="flex items-center justify-between">
@@ -153,9 +153,9 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
                   (onClick)="openFinalize()" />
       </div>
 
-      <lab-attention-ticket-modal
-        [visible]="ticketModalOpen()"
-        (confirmed)="onFinishWithTicket($event)"
+      <lab-finalize-attention-modal
+        [visible]="finalizeModalOpen()"
+        (confirmed)="onFinalize()"
         (dismissed)="closeFinalize()" />
     </div>
   `,
@@ -173,7 +173,7 @@ export class ResumenStepComponent implements OnInit {
   readonly returnDisabled = input<boolean>(false);
   readonly returnPhase    = output<void>();
 
-  readonly ticketModalOpen    = signal(false);
+  readonly finalizeModalOpen  = signal(false);
   readonly mutating           = this.store.selectSignal(selectMutating);
   readonly patient            = this.store.selectSignal(selectResolvedPatient);
   readonly analyses           = this.store.selectSignal(selectSummaryAnalyses);
@@ -245,8 +245,8 @@ export class ResumenStepComponent implements OnInit {
     this.store.dispatch(setCopayment({ attentionId: attn.id, copaymentAmount: amount }));
   }
 
-  openFinalize(): void  { this.ticketModalOpen.set(true); }
-  closeFinalize(): void { this.ticketModalOpen.set(false); }
+  openFinalize(): void  { this.finalizeModalOpen.set(true); }
+  closeFinalize(): void { this.finalizeModalOpen.set(false); }
 
   /**
    * Finalizar la atención — pessimistic UI.
@@ -256,12 +256,12 @@ export class ResumenStepComponent implements OnInit {
    * falla, el usuario queda en el wizard con el estado actual y puede
    * reintentar — antes navegaba afuera y perdía contexto.
    *
-   * `printTicket` queda como hook futuro — no hay endpoint de ticket todavía.
+   * (Se quitó el flag `printTicket`: era un stub vacío y no existe comprobante
+   *  de atención. Ver FinalizeAttentionModalComponent para el detalle.)
    */
-  onFinishWithTicket(printTicket: boolean): void {
-    this.ticketModalOpen.set(false);
+  onFinalize(): void {
+    this.finalizeModalOpen.set(false);
     this.store.dispatch(endSecretaryPhase({ id: this.atencion().id }));
-    void printTicket;
     this.waitForMutation((ok) => {
       if (!ok) return; // backend rechazó — el wizard queda como está, no salimos
       clearAtencionSession();
