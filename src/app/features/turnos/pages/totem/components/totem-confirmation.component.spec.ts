@@ -18,7 +18,7 @@ describe('TotemConfirmationComponent', () => {
       imports: [TotemConfirmationComponent],
       providers: [
         provideMockStore({
-          selectors: [{ selector: selectLastQueueNumber, value: 'ST-0001' }],
+          selectors: [{ selector: selectLastQueueNumber, value: 'ST-001' }],
         }),
         {
           provide: TotemTicketPdfService,
@@ -49,7 +49,7 @@ describe('TotemConfirmationComponent', () => {
 
   it('renders the call number from the store', () => {
     const queueNumberEl: HTMLElement = fixture.nativeElement.querySelector('.queue-number');
-    expect(queueNumberEl.textContent?.trim()).toBe('ST-0001');
+    expect(queueNumberEl.textContent?.trim()).toBe('ST-001');
   });
 
   it('shows the generic heading ¡Listo! without any patient name', () => {

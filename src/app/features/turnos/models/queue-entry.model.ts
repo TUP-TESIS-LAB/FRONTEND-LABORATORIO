@@ -2,7 +2,7 @@ import { QueueStatus } from './queue-status.enum';
 
 export interface QueueEntry {
   id: number;
-  publicCode: string;             // "CT-0023" | "ST-0007"
+  publicCode: string;             // "CT-023" | "ST-007" (3 dígitos; 4+ si supera 999)
   nationalId: string;
   patientId: number | null;
   branchId: number;
