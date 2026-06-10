@@ -39,10 +39,13 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           [dataKey]="dataKey()"
           [lazy]="lazy()"
           [rows]="rows()"
+          [rowsPerPageOptions]="rowsPerPageOptions().length ? $any(rowsPerPageOptions()) : undefined"
           [totalRecords]="totalRecords()"
           [first]="first()"
           [paginator]="paginator()"
           [pageLinks]="5"
+          [scrollable]="scrollHeight() !== null"
+          [scrollHeight]="scrollHeight() ?? undefined"
           (onLazyLoad)="lazyLoad.emit($event)">
 
           <ng-template pTemplate="header">
@@ -100,29 +103,31 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
                       </button>
                     }
                     @for (a of actions(); track a.key) {
-                      @if ((a.type ?? 'button') === 'menu') {
-                        <button
-                          class="ut-ibtn"
-                          type="button"
-                          [pTooltip]="resolveLabel(a, row)"
-                          tooltipPosition="top"
-                          [attr.aria-label]="resolveLabel(a, row)"
-                          (click)="openMenu($event, a, row)">
-                          <i [class]="'pi ' + resolveIcon(a, row)"></i>
-                        </button>
-                      } @else {
-                        <button
-                          class="ut-ibtn"
-                          [class.ut-ibtn--danger]="resolveSeverity(a, row) === 'danger'"
-                          [class.ut-ibtn--warn]="resolveSeverity(a, row) === 'warn'"
-                          [class.ut-ibtn--success]="resolveSeverity(a, row) === 'success'"
-                          type="button"
-                          [pTooltip]="resolveLabel(a, row)"
-                          tooltipPosition="top"
-                          [attr.aria-label]="resolveLabel(a, row)"
-                          (click)="action.emit({ key: a.key, row })">
-                          <i [class]="'pi ' + resolveIcon(a, row)"></i>
-                        </button>
+                      @if (!resolveHidden(a, row)) {
+                        @if ((a.type ?? 'button') === 'menu') {
+                          <button
+                            class="ut-ibtn"
+                            type="button"
+                            [pTooltip]="resolveLabel(a, row)"
+                            tooltipPosition="top"
+                            [attr.aria-label]="resolveLabel(a, row)"
+                            (click)="openMenu($event, a, row)">
+                            <i [class]="'pi ' + resolveIcon(a, row)"></i>
+                          </button>
+                        } @else {
+                          <button
+                            class="ut-ibtn"
+                            [class.ut-ibtn--danger]="resolveSeverity(a, row) === 'danger'"
+                            [class.ut-ibtn--warn]="resolveSeverity(a, row) === 'warn'"
+                            [class.ut-ibtn--success]="resolveSeverity(a, row) === 'success'"
+                            type="button"
+                            [pTooltip]="resolveLabel(a, row)"
+                            tooltipPosition="top"
+                            [attr.aria-label]="resolveLabel(a, row)"
+                            (click)="action.emit({ key: a.key, row })">
+                            <i [class]="'pi ' + resolveIcon(a, row)"></i>
+                          </button>
+                        }
                       }
                     }
                   </div>
@@ -233,11 +238,15 @@ export class DataTableComponent {
   readonly dataKey  = input<string>('id');
 
   // ── Pagination ──
-  readonly lazy         = input<boolean>(false);
-  readonly paginator    = input<boolean>(false);
-  readonly rows         = input<number>(10);
-  readonly totalRecords = input<number>(0);
-  readonly first        = input<number>(0);
+  readonly lazy               = input<boolean>(false);
+  readonly paginator          = input<boolean>(false);
+  readonly rows               = input<number>(10);
+  readonly rowsPerPageOptions = input<readonly number[]>([]);
+  readonly totalRecords       = input<number>(0);
+  readonly first              = input<number>(0);
+
+  // ── Scroll ──
+  readonly scrollHeight = input<string | null>(null);
 
   // ── Built-in actions ──
   readonly showView   = input<boolean>(false);
@@ -288,6 +297,10 @@ export class DataTableComponent {
 
   protected resolveSeverity(a: TableAction, row: unknown): string | undefined {
     return typeof a.severity === 'function' ? a.severity(row) : a.severity;
+  }
+
+  protected resolveHidden(a: TableAction, row: unknown): boolean {
+    return a.hidden ? a.hidden(row) : false;
   }
 
   protected openMenu(event: Event, action: TableAction, row: unknown): void {

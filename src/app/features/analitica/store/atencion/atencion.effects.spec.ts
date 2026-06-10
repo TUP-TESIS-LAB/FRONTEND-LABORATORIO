@@ -180,12 +180,25 @@ describe('AtencionEffects', () => {
     expect(out).toEqual(A.atencionMutationFailure({ error }));
   });
 
-  it('createPatientInline$ → create OK → patientResolved', async () => {
-    const patient = { id: 9, dni: '5' } as Patient;
-    (patients.create as ReturnType<typeof vi.fn>).mockReturnValue(of(patient));
+  it('createPatientInline$ → create OK → auto-verifica y emite patientResolved con el verificado', async () => {
+    const created  = { id: 9, dni: '5' } as Patient;
+    const verified = { id: 9, dni: '5', verifiedAt: '2026-06-10T10:00:00Z' } as Patient;
+    (patients.create as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
+    (patients.verify as ReturnType<typeof vi.fn>).mockReturnValue(of(verified));
     actions$.next(A.createPatientInline({ payload: {} as any }));
     const out = await firstValueFrom(effects.createPatientInline$.pipe(take(1)));
-    expect(out).toEqual(A.patientResolved({ patient }));
+    expect(patients.verify).toHaveBeenCalledWith(9);
+    expect(out).toEqual(A.patientResolved({ patient: verified }));
+  });
+
+  it('createPatientInline$ → create OK pero verify 422 → patientResolved con el creado (silencioso)', async () => {
+    const created = { id: 9, dni: '5' } as Patient;
+    (patients.create as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
+    (patients.verify as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
+    actions$.next(A.createPatientInline({ payload: {} as any }));
+    const out = await firstValueFrom(effects.createPatientInline$.pipe(take(1)));
+    expect(out).toEqual(A.patientResolved({ patient: created }));
+    expect(notification.error).not.toHaveBeenCalled();
   });
 
   it('createPatientInline$ → error → patientResolutionFailure', async () => {
@@ -196,12 +209,25 @@ describe('AtencionEffects', () => {
     expect(out).toEqual(A.patientResolutionFailure({ error }));
   });
 
-  it('updatePatientInline$ → update OK → patientResolved', async () => {
-    const patient = { id: 9, dni: '5' } as Patient;
-    (patients.update as ReturnType<typeof vi.fn>).mockReturnValue(of(patient));
+  it('updatePatientInline$ → update OK → auto-verifica y emite patientResolved con el verificado', async () => {
+    const updated  = { id: 9, dni: '5' } as Patient;
+    const verified = { id: 9, dni: '5', verifiedAt: '2026-06-10T10:00:00Z' } as Patient;
+    (patients.update as ReturnType<typeof vi.fn>).mockReturnValue(of(updated));
+    (patients.verify as ReturnType<typeof vi.fn>).mockReturnValue(of(verified));
     actions$.next(A.updatePatientInline({ id: 9, payload: {} as any }));
     const out = await firstValueFrom(effects.updatePatientInline$.pipe(take(1)));
-    expect(out).toEqual(A.patientResolved({ patient }));
+    expect(patients.verify).toHaveBeenCalledWith(9);
+    expect(out).toEqual(A.patientResolved({ patient: verified }));
+  });
+
+  it('updatePatientInline$ → update OK pero verify 422 → patientResolved con el actualizado (silencioso)', async () => {
+    const updated = { id: 9, dni: '5' } as Patient;
+    (patients.update as ReturnType<typeof vi.fn>).mockReturnValue(of(updated));
+    (patients.verify as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
+    actions$.next(A.updatePatientInline({ id: 9, payload: {} as any }));
+    const out = await firstValueFrom(effects.updatePatientInline$.pipe(take(1)));
+    expect(out).toEqual(A.patientResolved({ patient: updated }));
+    expect(notification.error).not.toHaveBeenCalled();
   });
 
   it('startAttentionForPatient$ → createBlank + assign OK → mutationSuccess + navega', async () => {

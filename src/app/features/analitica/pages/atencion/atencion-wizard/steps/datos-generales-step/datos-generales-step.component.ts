@@ -121,8 +121,11 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
               </div>
             }
 
-            <!-- Botón verificar -->
-            @if (estado() !== 'rojo' && !p.verifiedAt) {
+            <!-- Botón verificar: SOLO para pacientes de portal (autorregistrados o que
+                 modificaron sus datos desde el portal). La edición manual del laboratorio
+                 ya deja al paciente verificado automáticamente, así que este botón nunca
+                 aparece como consecuencia de una corrección manual. -->
+            @if (esPortal() && estado() !== 'rojo' && !p.verifiedAt) {
               <div class="flex items-center gap-2 pt-1">
                 <p-button
                   data-testid="btn-verificar"

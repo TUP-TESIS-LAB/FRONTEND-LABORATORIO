@@ -1,19 +1,17 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ConfirmationService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
-import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
+import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
 import { ScrollToBottomFabComponent } from '@shared/ui/components/scroll-to-bottom-fab/scroll-to-bottom-fab.component';
 import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import {
@@ -24,7 +22,6 @@ import {
 import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
-  selectFilters,
   selectListLoading,
   selectTodayAtenciones,
 } from '../../../store/atencion/atencion.selectors';
@@ -41,9 +38,11 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   imports: [
-    FormsModule, DatePipe,
-    TableModule, ButtonModule, InputTextModule, MultiSelectModule, TagModule, TooltipModule, ConfirmDialogModule,
-    EmptyStateComponent, ScrollToBottomFabComponent,
+    DatePipe,
+    TagModule, TooltipModule, ConfirmDialogModule,
+    DataTableComponent, UiCellDirective,
+    FilterBarComponent,
+    ScrollToBottomFabComponent,
   ],
   template: `
     <!-- Listado de atenciones SIN pantalla propia: se renderiza embebido en la tab
@@ -51,83 +50,59 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
          día" viven en el header global de Recepción, no acá. -->
     <div class="py-2">
       <section class="bg-white rounded-lg shadow-sm p-4">
-        <div class="flex gap-2 items-center flex-wrap mb-3">
-          <input pInputText type="text" placeholder="Buscar por nombre o DNI"
-                 [ngModel]="filters().search"
-                 (ngModelChange)="updateSearch($event)"
-                 class="flex-1 min-w-[260px]" />
-          <p-multiSelect
-            [options]="stateOptions()"
-            [ngModel]="filters().states"
-            (ngModelChange)="updateStates($event)"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Filtrar por estado"
-            display="chip"
-            [maxSelectedLabels]="3"
-            selectedItemsLabel="{0} estados"
-            styleClass="min-w-[220px]" />
-          <p-button label="Limpiar" icon="pi pi-times" severity="secondary" [text]="true" (onClick)="clearFilters()" />
+        <div class="mb-3">
+          <ui-filter-bar
+            [config]="filterConfig()"
+            (valueChange)="onFilterChange($event)" />
         </div>
 
-        @if (loading()) {
-          <div class="py-12 text-center text-[var(--ds-text-muted)]">Cargando…</div>
-        } @else if (rows().length === 0) {
-          <ui-empty-state heading="Sin atenciones para los filtros aplicados" icon="pi-inbox" />
-        } @else {
-          <p-table [value]="rows()"
-                   [rows]="20"
-                   [paginator]="true"
-                   [rowsPerPageOptions]="[10, 20, 50, 100]"
-                   [pageLinks]="5"
-                   [showCurrentPageReport]="true"
-                   currentPageReportTemplate="{first}-{last} de {totalRecords}">
-            <ng-template pTemplate="header">
-              <tr>
-                <th class="w-36">Fecha</th>
-                <th>Paciente</th>
-                <th>Médico</th>
-                <th>Estado</th>
-                <th>Urg.</th>
-                <th class="w-32"></th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-row>
-              <tr>
-                <td>{{ row.createdAt ? (row.createdAt | date: 'dd/MM/yy HH:mm') : '—' }}</td>
-                <td>
-                  <div class="font-medium">{{ row.patientFullName ?? '—' }}</div>
-                  <div class="text-xs text-[var(--ds-text-muted)]">{{ row.patientDni ?? '—' }}</div>
-                </td>
-                <td>{{ row.doctorId ?? '—' }}</td>
-                <td>
-                  @if (cancellationTooltip(row); as motivo) {
-                    <span [pTooltip]="motivo" tooltipPosition="top"
-                          tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
-                      <p-tag [value]="stateLabel(row.attentionState)" [severity]="stateSeverity(row.attentionState)" />
-                    </span>
-                  } @else {
-                    <p-tag [value]="stateLabel(row.attentionState)" [severity]="stateSeverity(row.attentionState)" />
-                  }
-                </td>
-                <td>@if (row.isUrgent) { <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i> }</td>
-                <td>
-                  <div class="flex items-center gap-1 justify-end">
-                    @if (row.protocolId != null) {
-                      <p-button label="Rótulos" icon="pi pi-tag" size="small" severity="secondary" [text]="true"
-                                (onClick)="downloadLabels(row)" />
-                    }
-                    <p-button
-                      [label]="resumable(row.attentionState) ? 'Retomar' : 'Ver'"
-                      size="small"
-                      [outlined]="!resumable(row.attentionState)"
-                      (onClick)="open(row)" />
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-        }
+        <ui-table
+          [value]="rows()"
+          [loading]="loading()"
+          [columns]="columns"
+          [paginator]="true"
+          [rows]="20"
+          [rowsPerPageOptions]="[10, 20, 50, 100]"
+          [actions]="rowActions"
+          emptyHeading="Sin atenciones para los filtros aplicados"
+          emptyIcon="pi-inbox"
+          (action)="onAction($event)">
+
+          <ng-template uiCell="fecha" let-row>
+            {{ $any(row).createdAt ? ($any(row).createdAt | date: 'dd/MM/yy HH:mm') : '—' }}
+          </ng-template>
+
+          <ng-template uiCell="paciente" let-row>
+            <div class="font-medium">{{ $any(row).patientFullName ?? '—' }}</div>
+            <div class="text-xs text-[var(--ds-text-muted)]">{{ $any(row).patientDni ?? '—' }}</div>
+          </ng-template>
+
+          <ng-template uiCell="doctorId" let-row>
+            {{ $any(row).doctorId ?? '—' }}
+          </ng-template>
+
+          <ng-template uiCell="estado" let-row>
+            @if (cancellationTooltip($any(row)); as motivo) {
+              <span [pTooltip]="motivo" tooltipPosition="top"
+                    tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
+                <p-tag
+                  [value]="stateLabel($any(row).attentionState)"
+                  [severity]="stateSeverity($any(row).attentionState)" />
+              </span>
+            } @else {
+              <p-tag
+                [value]="stateLabel($any(row).attentionState)"
+                [severity]="stateSeverity($any(row).attentionState)" />
+            }
+          </ng-template>
+
+          <ng-template uiCell="urgente" let-row>
+            @if ($any(row).isUrgent) {
+              <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i>
+            }
+          </ng-template>
+
+        </ui-table>
       </section>
 
       <ui-scroll-to-bottom-fab />
@@ -150,12 +125,10 @@ export class AtencionDashboardComponent implements OnInit {
   private readonly confirm        = inject(ConfirmationService);
 
   protected readonly rows    = this.store.selectSignal(selectTodayAtenciones);
-  protected readonly filters = this.store.selectSignal(selectFilters);
   protected readonly loading = this.store.selectSignal(selectListLoading);
 
   protected readonly stateLabel    = attentionStateLabel;
   protected readonly stateSeverity = attentionStateSeverity;
-  protected readonly resumable     = isSecretaryResumable;
 
   /**
    * Opciones del filtro de estado, recortadas a los módulos activos del tenant:
@@ -168,6 +141,36 @@ export class AtencionDashboardComponent implements OnInit {
       .filter(value => financieroActive || !FINANCIERO_STATES.has(value))
       .map(value => ({ value, label: ATTENTION_STATE_LABELS[value] }));
   });
+
+  /** Config de la barra de filtros; las opciones de estado vienen de `stateOptions()`. */
+  readonly filterConfig = computed<FilterBarConfig>(() => ({
+    searchPlaceholder: 'Buscar por nombre o DNI',
+    selects: [
+      { key: 'states', label: 'Estado', options: this.stateOptions() },
+    ],
+  }));
+
+  readonly columns: readonly TableColumn[] = [
+    { field: 'fecha',    header: 'Fecha' },
+    { field: 'paciente', header: 'Paciente' },
+    { field: 'doctorId', header: 'Médico' },
+    { field: 'estado',   header: 'Estado' },
+    { field: 'urgente',  header: 'Urg.', align: 'center' },
+  ];
+
+  readonly rowActions: readonly TableAction[] = [
+    {
+      key: 'rotulos',
+      icon: 'pi-tag',
+      label: 'Rótulos',
+      hidden: (row) => (row as AttentionResponse).protocolId == null,
+    },
+    {
+      key: 'open',
+      icon: (row) => isSecretaryResumable((row as AttentionResponse).attentionState) ? 'pi-arrow-right' : 'pi-eye',
+      label: (row) => isSecretaryResumable((row as AttentionResponse).attentionState) ? 'Retomar' : 'Ver',
+    },
+  ];
 
   ngOnInit(): void {
     this.store.dispatch(loadAtenciones());
@@ -186,24 +189,21 @@ export class AtencionDashboardComponent implements OnInit {
     return motivo && motivo.trim() ? motivo : null;
   }
 
-  updateSearch(search: string): void {
-    // FE-3: payload tipado como Partial<AtencionFilters> en lugar de `as any`.
-    const patch: Partial<AtencionFilters> = { search };
+  onFilterChange(value: FilterBarValue): void {
+    const patch: Partial<AtencionFilters> = {
+      search: value['search'] as string,
+      states: (value['states'] as AttentionState[]) ?? [],
+    };
     this.store.dispatch(setAtencionFilters({ filters: patch }));
   }
 
-  updateStates(states: AttentionState[]): void {
-    const patch: Partial<AtencionFilters> = { states };
-    this.store.dispatch(setAtencionFilters({ filters: patch }));
-  }
-
-  clearFilters(): void {
-    const patch: Partial<AtencionFilters> = { search: '', states: [] };
-    this.store.dispatch(setAtencionFilters({ filters: patch }));
-  }
-
-  open(row: AttentionResponse): void {
-    this.router.navigate(['/analitica/atencion', row.id]);
+  onAction(ev: { key: string; row: unknown }): void {
+    const row = ev.row as AttentionResponse;
+    if (ev.key === 'open') {
+      this.router.navigate(['/analitica/atencion', row.id]);
+    } else if (ev.key === 'rotulos') {
+      this.downloadLabels(row);
+    }
   }
 
   /**

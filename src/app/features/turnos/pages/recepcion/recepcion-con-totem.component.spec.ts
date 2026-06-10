@@ -8,6 +8,10 @@ import { OperatorBranchContextService } from '../../services/operator-branch.con
 import { QueueStatus } from '../../models/queue-status.enum';
 
 describe('RecepcionConTotemComponent', () => {
+  // El listado de la cola se acota al día actual (selectQueueEntriesToday filtra por
+  // createdAt). Datamos las fixtures con HOY para que no queden fuera del filtro.
+  const TODAY = new Date().toISOString();
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
@@ -17,8 +21,8 @@ describe('RecepcionConTotemComponent', () => {
           initialState: {
             queue: {
               entries: [
-                { id: 1, publicCode: 'CT-0001', nationalId: '123', patientId: null, branchId: 1, appointmentId: 10, hasAppointment: true, status: QueueStatus.PENDING, lastCalledAt: null, callCount: 0, createdAt: '2026-06-02T09:00:00Z' },
-                { id: 2, publicCode: 'ST-0001', nationalId: '', patientId: null, branchId: 1, appointmentId: null, hasAppointment: false, status: QueueStatus.PENDING, lastCalledAt: null, callCount: 0, createdAt: '2026-06-02T09:10:00Z' },
+                { id: 1, publicCode: 'CT-0001', nationalId: '123', patientId: null, branchId: 1, appointmentId: 10, hasAppointment: true, status: QueueStatus.PENDING, lastCalledAt: null, callCount: 0, createdAt: TODAY },
+                { id: 2, publicCode: 'ST-0001', nationalId: '', patientId: null, branchId: 1, appointmentId: null, hasAppointment: false, status: QueueStatus.PENDING, lastCalledAt: null, callCount: 0, createdAt: TODAY },
               ],
               loading: false, callingId: null, error: null,
             },

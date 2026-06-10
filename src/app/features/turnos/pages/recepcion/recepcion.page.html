@@ -12,10 +12,13 @@
   <!-- Header GLOBAL de Recepción: vive por fuera de los tabs, así Box / Turnos del día /
        Nueva atención no se pierden al cambiar entre "Cola de espera" y "Atenciones". -->
   <header class="recepcion-page-header">
-    <h2 class="recepcion-page-title">
-      <i class="pi pi-bell page-title-icon" aria-hidden="true"></i>
-      Recepción
-    </h2>
+    <div>
+      <div class="text-xs text-surface-500">Core clínico</div>
+      <h2 class="recepcion-page-title">
+        <i class="pi pi-bell page-title-icon" aria-hidden="true"></i>
+        Recepción
+      </h2>
+    </div>
     @if (enabled() === true) {
       <div class="recepcion-page-header__actions">
         @if (branchContext.branchId() != null && currentUserId() > 0) {

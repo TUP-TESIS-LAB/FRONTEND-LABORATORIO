@@ -43,6 +43,9 @@ export interface PickerRow extends Analysis {
             </ng-template>
           </p-autocomplete>
         </div>
+        <!-- Slot a la derecha del buscador (p. ej. el toggle "Urgente"). La tabla queda
+             debajo, a todo el ancho. -->
+        <ng-content />
       </div>
 
       @if (errorText()) {

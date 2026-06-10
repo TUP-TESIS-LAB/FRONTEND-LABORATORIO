@@ -72,7 +72,8 @@ const UNDO_WINDOW_MS = 5000;
     <section class="page">
       <header class="page__header">
         <div class="page__title">
-          <h1>Cola de extracción</h1>
+          <div class="text-xs text-surface-500">Core clínico</div>
+          <h1 class="flex items-center gap-2"><i class="pi pi-bolt"></i> Cola de extracción</h1>
           <p class="muted">Operá la cola y las extracciones en curso de la sucursal.</p>
         </div>
         <div class="head-right">
