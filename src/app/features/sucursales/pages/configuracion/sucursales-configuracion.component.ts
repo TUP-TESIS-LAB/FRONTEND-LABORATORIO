@@ -8,6 +8,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 
 import * as A from '../../store/sucursal.actions';
 import { selectSucursalList, selectSucursalLoading } from '../../store/sucursal.selectors';
@@ -17,10 +18,9 @@ import { Sucursal } from '../../models/sucursal.model';
   selector: 'app-sucursales-configuracion',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TableModule, ButtonModule, TagModule, ConfirmDialogModule, ToastModule, TooltipModule],
+  imports: [TableModule, ButtonModule, TagModule, ConfirmDialogModule, ToastModule, TooltipModule, EmptyStateComponent],
   providers: [ConfirmationService, MessageService],
   templateUrl: './sucursales-configuracion.component.html',
-  styleUrl: './sucursales-configuracion.component.scss',
 })
 export class SucursalesConfiguracionComponent implements OnInit {
   private readonly store = inject(Store);
