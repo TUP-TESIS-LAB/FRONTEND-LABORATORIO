@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ConfirmationService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
@@ -13,7 +12,6 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
-import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { ScrollToBottomFabComponent } from '@shared/ui/components/scroll-to-bottom-fab/scroll-to-bottom-fab.component';
 import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import {
@@ -24,9 +22,8 @@ import {
 import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
-  selectAtencionKpis,
-  selectFilteredAtenciones,
   selectListLoading,
+  selectTodayAtenciones,
 } from '../../../store/atencion/atencion.selectors';
 
 // Estados de la fase financiera: sólo se ofrecen como filtro si el módulo FINANCIERO está activo.
@@ -42,23 +39,16 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
   providers: [ConfirmationService],
   imports: [
     DatePipe,
-    ButtonModule, TagModule, TooltipModule, ConfirmDialogModule,
+    TagModule, TooltipModule, ConfirmDialogModule,
     DataTableComponent, UiCellDirective,
     FilterBarComponent,
-    StatCardComponent, ScrollToBottomFabComponent,
+    ScrollToBottomFabComponent,
   ],
   template: `
-    <div class="p-6">
-      @if (!embedded()) {
-        <header class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-xl font-semibold">Atenciones</h2>
-            <div class="text-sm text-[var(--ds-text-muted)]">Pendientes para retomar y resumen del día</div>
-          </div>
-          <p-button label="+ Nueva atención" severity="primary" size="small" (onClick)="openNewAttention()" />
-        </header>
-      }
-
+    <!-- Listado de atenciones SIN pantalla propia: se renderiza embebido en la tab
+         "Atenciones" de Recepción. El header (título + "Nueva atención") y el "Turnos del
+         día" viven en el header global de Recepción, no acá. -->
+    <div class="py-2">
       <section class="bg-white rounded-lg shadow-sm p-4">
         <div class="mb-3">
           <ui-filter-bar
@@ -115,24 +105,6 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
         </ui-table>
       </section>
 
-      @if (!embedded()) {
-        <section class="bg-white rounded-lg shadow-sm mt-5">
-          <button type="button"
-                  class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[var(--ds-text)]"
-                  (click)="toggleKpis()"
-                  [attr.aria-expanded]="kpisExpanded()">
-            <span>Resumen del día</span>
-            <i class="pi" [class.pi-chevron-down]="!kpisExpanded()" [class.pi-chevron-up]="kpisExpanded()"></i>
-          </button>
-          @if (kpisExpanded()) {
-            <div class="grid grid-cols-2 gap-3 px-4 pb-4">
-              <ui-stat-card label="Canceladas hoy" [value]="kpis().canceladasHoy" accentColor="#ef4444" />
-              <ui-stat-card label="Finalizadas" [value]="kpis().finalizadas" accentColor="#10b981" />
-            </div>
-          }
-        </section>
-      }
-
       <ui-scroll-to-bottom-fab />
       <p-confirmDialog />
     </div>
@@ -147,21 +119,16 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
   `],
 })
 export class AtencionDashboardComponent implements OnInit {
-  readonly embedded = input<boolean>(false);
-
   private readonly store          = inject(Store);
   private readonly router         = inject(Router);
   private readonly moduleRegistry = inject(ModuleRegistry);
   private readonly confirm        = inject(ConfirmationService);
 
-  protected readonly rows    = this.store.selectSignal(selectFilteredAtenciones);
+  protected readonly rows    = this.store.selectSignal(selectTodayAtenciones);
   protected readonly loading = this.store.selectSignal(selectListLoading);
-  protected readonly kpis    = this.store.selectSignal(selectAtencionKpis);
 
   protected readonly stateLabel    = attentionStateLabel;
   protected readonly stateSeverity = attentionStateSeverity;
-
-  protected readonly kpisExpanded = signal(false);
 
   /**
    * Opciones del filtro de estado, recortadas a los módulos activos del tenant:
@@ -207,10 +174,6 @@ export class AtencionDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(loadAtenciones());
-  }
-
-  toggleKpis(): void {
-    this.kpisExpanded.update(v => !v);
   }
 
   /**
@@ -260,15 +223,5 @@ export class AtencionDashboardComponent implements OnInit {
       accept: () =>
         this.store.dispatch(downloadProtocolLabels({ protocolId, protocolNumber: `P-${protocolId}` })),
     });
-  }
-
-  /**
-   * Nueva atención = navegar al paso 1 del wizard. La búsqueda de paciente y la
-   * creación de la atención pasan a vivir dentro del wizard mismo (más natural
-   * que un modal aparte). El wizard detecta /atencion/nueva via la signal
-   * `creating()` y renderiza DatosGeneralesStep en modo "crear nueva".
-   */
-  openNewAttention(): void {
-    this.router.navigate(['/analitica/atencion/nueva']);
   }
 }

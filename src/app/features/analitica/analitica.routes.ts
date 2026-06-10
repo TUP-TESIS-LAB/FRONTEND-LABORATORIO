@@ -6,7 +6,7 @@ export const ANALITICA_ROUTES: Routes = [
   {
     path: '',
     children: [
-      { path: '', redirectTo: 'atencion', pathMatch: 'full' },
+      { path: '', redirectTo: '/turnos/recepcion', pathMatch: 'full' },
       {
         path: 'extraccion',
         loadComponent: () => import('./pages/extraction-queue/extraction-queue.page')
@@ -15,13 +15,10 @@ export const ANALITICA_ROUTES: Routes = [
         title: 'Cola de extracción',
         data: { breadcrumb: 'Extracción' },
       },
-      {
-        path: 'atencion',
-        canMatch: [sectionGuard('ATENCION')],
-        loadComponent: () => import('./pages/atencion/atencion-dashboard/atencion-dashboard.component')
-          .then(m => m.AtencionDashboardComponent),
-        data: { breadcrumb: 'Atención' },
-      },
+      // El listado de atenciones NO tiene pantalla propia: vive embebido en la tab
+      // "Atenciones" de Recepción (/turnos/recepcion). Cualquier link viejo o URL directa
+      // a /analitica/atencion redirige ahí. El wizard sigue en atencion/nueva y atencion/:id.
+      { path: 'atencion', pathMatch: 'full', redirectTo: '/turnos/recepcion' },
       {
         path: 'atencion/nueva',
         loadComponent: () => import('./pages/atencion/atencion-wizard/atencion-wizard.component')

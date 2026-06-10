@@ -27,6 +27,7 @@ import { NotificationService } from '@core/services/notification.service';
 import {
   assignGeneralData,
   createPatientInline,
+  loadAttentionPatient,
   resolvePatientByDni,
   startAttentionForPatient,
   updatePatientInline,
@@ -380,6 +381,13 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   readonly atencionId = input<number | null>(null);
   readonly initialDni = input<string | null>(null);
+  /**
+   * Paciente ya asociado a la atención (al retomar). Cuando volvemos al paso 1 desde
+   * un paso posterior NO viene un DNI por query param, así que sin esto la tarjeta del
+   * paciente quedaba vacía aunque la atención ya tuviera paciente. Lo usamos para
+   * rehidratar el paciente por id (mismo `patientResolved` que resolver por DNI).
+   */
+  readonly initialPatientId = input<number | null>(null);
   /** Indicaciones ya persistidas (al retomar). Hidratamos el input para no perderlas. (003) */
   readonly initialIndications = input<string | null>(null);
   /** Médico solicitante ya asociado (al retomar). (007) */
@@ -498,6 +506,16 @@ export class DatosGeneralesStepComponent implements OnInit {
     if (dni) {
       this.dniInput = dni;
       this.store.dispatch(resolvePatientByDni({ dni }));
+      return;
+    }
+
+    // Sin DNI por query param pero retomando una atención con paciente ya asignado:
+    // rehidratamos el paciente por id para que la tarjeta no quede vacía al volver al
+    // paso 1. Si ya hay un paciente resuelto en el store (p. ej. venimos del mismo
+    // flujo sin recargar), no re-pegamos al back.
+    const patientId = this.initialPatientId();
+    if (patientId != null && this.resolved()?.id !== patientId) {
+      this.store.dispatch(loadAttentionPatient({ patientId }));
     }
   }
 

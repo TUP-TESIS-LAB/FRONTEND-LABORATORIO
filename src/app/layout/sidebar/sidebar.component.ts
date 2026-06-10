@@ -106,14 +106,27 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
               @if (!collapsed()) {
                 <div class="ui-sidebar__sub" [class.ui-sidebar__sub--open]="isExpanded(item.label)">
                   @for (child of item.children; track child.path) {
-                    <a
-                      [routerLink]="child.path"
-                      routerLinkActive="ui-sidebar__subitem--active"
-                      class="ui-sidebar__subitem"
-                      (click)="itemClick.emit()">
-                      <span class="ui-sidebar__dot"></span>
-                      <span class="ui-sidebar__label">{{ child.label }}</span>
-                    </a>
+                    @if (child.external) {
+                      <a
+                        [href]="child.path"
+                        target="_blank"
+                        rel="noopener"
+                        class="ui-sidebar__subitem"
+                        (click)="itemClick.emit()">
+                        <span class="ui-sidebar__dot"></span>
+                        <span class="ui-sidebar__label">{{ child.label }}</span>
+                        <i class="pi pi-external-link ui-sidebar__chevron"></i>
+                      </a>
+                    } @else {
+                      <a
+                        [routerLink]="child.path"
+                        routerLinkActive="ui-sidebar__subitem--active"
+                        class="ui-sidebar__subitem"
+                        (click)="itemClick.emit()">
+                        <span class="ui-sidebar__dot"></span>
+                        <span class="ui-sidebar__label">{{ child.label }}</span>
+                      </a>
+                    }
                   }
                 </div>
               }

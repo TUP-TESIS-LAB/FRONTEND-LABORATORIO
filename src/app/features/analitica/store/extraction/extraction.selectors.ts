@@ -1,5 +1,6 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { AwaitingExtractionItem, BranchOption } from '../../models/extraction.model';
+import { isSameLocalDay } from '@shared/utils/same-local-day';
+import { AwaitingExtractionItem, InExtractionItem, BranchOption } from '../../models/extraction.model';
 import { EXTRACTION_FEATURE_KEY, ExtractionFeatureState } from './extraction.state';
 
 export const selectExtractionState =
@@ -84,5 +85,27 @@ export const selectAwaiting = createSelector(
       item.patientFullName.toLowerCase().includes(q) ||
       item.patientDni.toLowerCase().includes(q),
     );
+  },
+);
+
+/**
+ * Cola de extracción del DÍA ACTUAL: solo las atenciones creadas hoy (hora local).
+ * La cola no debe arrastrar atenciones de días previos (p. ej. pacientes que no se
+ * presentaron y quedaron pendientes). Se filtra sobre el resultado ya buscado.
+ */
+export const selectAwaitingToday = createSelector(
+  selectAwaiting,
+  (items): AwaitingExtractionItem[] => {
+    const now = new Date();
+    return items.filter((item) => isSameLocalDay(item.createdAt, now));
+  },
+);
+
+/** Extracciones en curso del día actual (mismo criterio que la cola de espera). */
+export const selectInProgressToday = createSelector(
+  selectInProgress,
+  (items): InExtractionItem[] => {
+    const now = new Date();
+    return items.filter((item) => isSameLocalDay(item.createdAt, now));
   },
 );

@@ -60,33 +60,16 @@ describe('AtencionDashboardComponent', () => {
     expect(confirmSpy).not.toHaveBeenCalled();
   });
 
-  it('embedded=true oculta el header (Nueva atención) y el bloque de KPIs', () => {
+  it('es solo la lista embebida: sin header propio ("Nueva atención"), sin KPIs ("Resumen del día")', () => {
+    // El dashboard ya no tiene pantalla propia — vive embebido en la tab "Atenciones"
+    // de Recepción, cuyo header global aporta título + "Nueva atención" + "Turnos del día".
     const fixture = setup();
-    fixture.componentRef.setInput('embedded', true);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).not.toContain('Nueva atención');
     expect(fixture.nativeElement.textContent).not.toContain('Resumen del día');
     expect(fixture.nativeElement.querySelector('ui-stat-card')).toBeNull();
-  });
-
-  it('embedded=false (default) muestra header y el bloque colapsable de KPIs', () => {
-    const fixture = setup();
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Nueva atención');
-    expect(fixture.nativeElement.textContent).toContain('Resumen del día');
-    // 010: los KPIs arrancan colapsados (las cards no se renderizan hasta expandir).
-    expect(fixture.nativeElement.querySelector('ui-stat-card')).toBeNull();
-  });
-
-  it('010: toggleKpis expande y renderiza las stat-cards (Canceladas hoy + Finalizadas)', () => {
-    const fixture = setup();
-    fixture.detectChanges();
-    fixture.componentInstance.toggleKpis();
-    fixture.detectChanges();
-    const cards = fixture.nativeElement.querySelectorAll('ui-stat-card');
-    expect(cards.length).toBe(2);
-    expect(fixture.nativeElement.textContent).toContain('Canceladas hoy');
-    expect(fixture.nativeElement.textContent).toContain('Finalizadas');
+    // La búsqueda de la lista sí está presente.
+    expect(fixture.nativeElement.querySelector('input[placeholder="Buscar por nombre o DNI"]')).not.toBeNull();
   });
 
   it('009: con FINANCIERO activo el filtro ofrece Cobro y Facturación', () => {

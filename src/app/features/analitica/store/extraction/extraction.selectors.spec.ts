@@ -8,16 +8,24 @@ import {
 } from '../../models/extraction.model';
 import {
   selectAwaiting,
+  selectAwaitingToday,
   selectBoxAssignments,
   selectBoxIsOccupied,
   selectBranchExtractors,
   selectBranches,
   selectExtractionState,
   selectInProgress,
+  selectInProgressToday,
   selectLastAssigned,
   selectMyBoxOccupancy,
   selectSelectedBranch,
 } from './extraction.selectors';
+
+/** ISO local (sin Z) a las 10:00 del día de `d`. */
+function localIsoAt10(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T10:00:00`;
+}
 import { EXTRACTION_FEATURE_KEY, ExtractionFeatureState, initialExtractionState } from './extraction.state';
 
 function aw(over: Partial<AwaitingExtractionItem>): AwaitingExtractionItem {
@@ -101,6 +109,30 @@ describe('extraction selectors', () => {
     ];
     const root = stateWith({ awaiting: items });
     expect(selectAwaiting(root).map((i) => i.id)).toEqual([1, 2, 3]);
+  });
+
+  // --- selectAwaitingToday / selectInProgressToday ------------------------
+  it('selectAwaitingToday solo deja las atenciones creadas HOY', () => {
+    const now = new Date();
+    const ayer = new Date(now); ayer.setDate(now.getDate() - 1);
+    const items = [
+      aw({ id: 1, createdAt: localIsoAt10(now) }),
+      aw({ id: 2, createdAt: localIsoAt10(ayer) }),
+      aw({ id: 3, createdAt: '' }),
+    ];
+    const root = stateWith({ awaiting: items });
+    expect(selectAwaitingToday(root).map((i) => i.id)).toEqual([1]);
+  });
+
+  it('selectInProgressToday solo deja las extracciones cuya atención es de HOY', () => {
+    const now = new Date();
+    const ayer = new Date(now); ayer.setDate(now.getDate() - 1);
+    const list = [
+      ip({ id: 1, createdAt: localIsoAt10(now) }),
+      ip({ id: 2, createdAt: localIsoAt10(ayer) }),
+    ];
+    const root = stateWith({ inProgress: list });
+    expect(selectInProgressToday(root).map((i) => i.id)).toEqual([1]);
   });
 
   // --- selectInProgress ---------------------------------------------------

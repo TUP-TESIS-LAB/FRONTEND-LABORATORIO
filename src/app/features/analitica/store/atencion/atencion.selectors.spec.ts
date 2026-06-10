@@ -2,8 +2,15 @@ import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 import {
   selectAtencionKpis,
   selectFilteredAtenciones,
+  selectTodayAtenciones,
   summarizeAtenciones,
 } from './atencion.selectors';
+
+/** ISO local (sin Z) a las 10:00 del día de `d`. */
+function localIsoAt10(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T10:00:00`;
+}
 import { ATENCION_FEATURE_KEY, AtencionFeatureState, initialAtencionState } from './atencion.state';
 
 function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
@@ -111,6 +118,19 @@ describe('atencion selectors', () => {
         filters: { search: 'nope', states: [] },
       }));
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('selectTodayAtenciones', () => {
+    it('solo deja las atenciones creadas HOY (descarta días previos y sin fecha)', () => {
+      const now = new Date();
+      const ayer = new Date(now); ayer.setDate(now.getDate() - 1);
+      const list = [
+        sample({ id: 1, createdAt: localIsoAt10(now) }),   // hoy
+        sample({ id: 2, createdAt: localIsoAt10(ayer) }),  // ayer
+        sample({ id: 3, createdAt: null }),                // sin fecha
+      ];
+      expect(selectTodayAtenciones(wrap({ list })).map(r => r.id)).toEqual([1]);
     });
   });
 

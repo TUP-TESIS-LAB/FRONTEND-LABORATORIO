@@ -6,6 +6,7 @@ import { DatosGeneralesStepComponent } from './datos-generales-step.component';
 import { initialAtencionState, ATENCION_FEATURE_KEY } from '../../../../../store/atencion/atencion.state';
 import {
   resolvePatientByDni,
+  loadAttentionPatient,
   startAttentionForPatient,
   assignGeneralData,
   createPatientInline,
@@ -62,6 +63,29 @@ describe('DatosGeneralesStepComponent', () => {
     fixture.componentRef.setInput('initialDni', '18901234');
     fixture.detectChanges();
     expect(spy).toHaveBeenCalledWith(resolvePatientByDni({ dni: '18901234' }));
+  });
+
+  it('al retomar (sin DNI pero con initialPatientId) hidrata el paciente por id', () => {
+    // Reproduce el bug: volver al paso 1 desde análisis no traía un DNI por query param,
+    // así que la tarjeta del paciente quedaba vacía. Ahora se rehidrata por patientId.
+    const spy = vi.spyOn(store, 'dispatch');
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('initialDni', null);
+    fixture.componentRef.setInput('initialPatientId', 42);
+    fixture.detectChanges();
+    expect(spy).toHaveBeenCalledWith(loadAttentionPatient({ patientId: 42 }));
+  });
+
+  it('con initialDni presente NO hidrata por id (el DNI tiene prioridad)', () => {
+    const spy = vi.spyOn(store, 'dispatch');
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('initialDni', '18901234');
+    fixture.componentRef.setInput('initialPatientId', 42);
+    fixture.detectChanges();
+    expect(spy).toHaveBeenCalledWith(resolvePatientByDni({ dni: '18901234' }));
+    expect(spy).not.toHaveBeenCalledWith(loadAttentionPatient({ patientId: 42 }));
   });
 
   it('confirmar con paciente resuelto y sin atencionId despacha startAttentionForPatient', () => {
