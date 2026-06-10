@@ -2,6 +2,7 @@ import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 import {
   selectAtencionKpis,
   selectFilteredAtenciones,
+  summarizeAtenciones,
 } from './atencion.selectors';
 import { ATENCION_FEATURE_KEY, AtencionFeatureState, initialAtencionState } from './atencion.state';
 
@@ -26,11 +27,16 @@ function sample(over: Partial<AttentionResponse> = {}): AttentionResponse {
     authorizationNumber: null,
     observations: null,
     cancellationReason: null,
+    extractionCancellationReason: null,
     cancelledAtState: null,
     attentionState: over.attentionState ?? AttentionState.REGISTERING_GENERAL_DATA,
     mostAdvancedState: over.attentionState ?? AttentionState.REGISTERING_GENERAL_DATA,
     analysisAuthorizations: [],
     copaymentAmount: null,
+    patientFullName: over.patientFullName ?? null,
+    patientDni: over.patientDni ?? null,
+    createdAt: over.createdAt ?? null,
+    updatedAt: over.updatedAt ?? null,
     ...over,
   };
 }
@@ -46,6 +52,16 @@ describe('atencion selectors', () => {
       expect(selectFilteredAtenciones(wrap({ list }))).toEqual(list);
     });
 
+    it('orders by createdAt DESCENDING (most recent first); nulls last', () => {
+      const list = [
+        sample({ id: 1, createdAt: '2026-06-01T10:00:00Z' }),
+        sample({ id: 2, createdAt: '2026-06-09T10:00:00Z' }),
+        sample({ id: 3, createdAt: null }),
+        sample({ id: 4, createdAt: '2026-06-05T10:00:00Z' }),
+      ];
+      expect(selectFilteredAtenciones(wrap({ list })).map(r => r.id)).toEqual([2, 4, 1, 3]);
+    });
+
     it('filters by state (multi-select)', () => {
       const list = [
         sample({ id: 1, attentionState: AttentionState.REGISTERING_GENERAL_DATA }),
@@ -56,40 +72,40 @@ describe('atencion selectors', () => {
         list,
         filters: { search: '', states: [AttentionState.FINISHED, AttentionState.CANCELED] },
       }));
-      expect(result.map(r => r.id)).toEqual([2, 3]);
+      expect(result.map(r => r.id).sort()).toEqual([2, 3]);
     });
 
-    it('search matches attentionNumber, patientId and id (case-insensitive)', () => {
+    it('search matches patient full name and DNI (case-insensitive), plus attentionNumber', () => {
       const list = [
-        sample({ id: 10, attentionNumber: 'A-T010', patientId: 5555 }),
-        sample({ id: 20, attentionNumber: 'A-T020', patientId: 6666 }),
+        sample({ id: 10, attentionNumber: 'A-T010', patientFullName: 'Ada Lovelace', patientDni: '12345678' }),
+        sample({ id: 20, attentionNumber: 'A-T020', patientFullName: 'Alan Turing', patientDni: '87654321' }),
       ];
+
+      expect(selectFilteredAtenciones(wrap({ list, filters: { search: 'turing', states: [] } }))
+        .map(r => r.id)).toEqual([20]);
+
+      expect(selectFilteredAtenciones(wrap({ list, filters: { search: '12345678', states: [] } }))
+        .map(r => r.id)).toEqual([10]);
 
       expect(selectFilteredAtenciones(wrap({ list, filters: { search: 'a-t020', states: [] } }))
         .map(r => r.id)).toEqual([20]);
-
-      expect(selectFilteredAtenciones(wrap({ list, filters: { search: '5555', states: [] } }))
-        .map(r => r.id)).toEqual([10]);
-
-      expect(selectFilteredAtenciones(wrap({ list, filters: { search: '10', states: [] } }))
-        .map(r => r.id)).toEqual([10]);
     });
 
     it('state filter and search filter combine with AND semantics', () => {
       const list = [
-        sample({ id: 1, attentionNumber: 'A-001', attentionState: AttentionState.FINISHED }),
-        sample({ id: 2, attentionNumber: 'A-002', attentionState: AttentionState.FINISHED }),
-        sample({ id: 3, attentionNumber: 'A-001', attentionState: AttentionState.CANCELED }),
+        sample({ id: 1, patientFullName: 'Ada', attentionState: AttentionState.FINISHED }),
+        sample({ id: 2, patientFullName: 'Bob', attentionState: AttentionState.FINISHED }),
+        sample({ id: 3, patientFullName: 'Ada', attentionState: AttentionState.CANCELED }),
       ];
       const result = selectFilteredAtenciones(wrap({
         list,
-        filters: { search: 'a-001', states: [AttentionState.FINISHED] },
+        filters: { search: 'ada', states: [AttentionState.FINISHED] },
       }));
       expect(result.map(r => r.id)).toEqual([1]);
     });
 
     it('returns empty when search has no match', () => {
-      const list = [sample({ id: 1, attentionNumber: 'A-001' })];
+      const list = [sample({ id: 1, patientFullName: 'Ada' })];
       const result = selectFilteredAtenciones(wrap({
         list,
         filters: { search: 'nope', states: [] },
@@ -98,29 +114,26 @@ describe('atencion selectors', () => {
     });
   });
 
-  describe('selectAtencionKpis', () => {
-    it('counts total / pendientes / esperando-extracción / finalizadas / urgentes correctly', () => {
+  describe('summarizeAtenciones / selectAtencionKpis', () => {
+    const NOW = new Date('2026-06-09T18:00:00');
+
+    it('counts canceladasHoy (CANCELED + updatedAt today) and finalizadas', () => {
       const list = [
-        sample({ id: 1,  attentionState: AttentionState.REGISTERING_GENERAL_DATA }),
-        sample({ id: 2,  attentionState: AttentionState.REGISTERING_ANALYSES, isUrgent: true }),
-        sample({ id: 3,  attentionState: AttentionState.AWAITING_EXTRACTION }),
-        sample({ id: 4,  attentionState: AttentionState.AWAITING_EXTRACTION }),
-        sample({ id: 5,  attentionState: AttentionState.FINISHED }),
-        sample({ id: 6,  attentionState: AttentionState.CANCELED }),
-        sample({ id: 7,  attentionState: AttentionState.FAILED }),
-        sample({ id: 8,  attentionState: AttentionState.CANCELED, isUrgent: true }),
+        sample({ id: 1, attentionState: AttentionState.CANCELED, updatedAt: '2026-06-09T09:00:00' }), // hoy
+        sample({ id: 2, attentionState: AttentionState.CANCELED, updatedAt: '2026-06-08T23:00:00' }), // ayer
+        sample({ id: 3, attentionState: AttentionState.CANCELED, updatedAt: null }),                  // sin fecha
+        sample({ id: 4, attentionState: AttentionState.FINISHED }),
+        sample({ id: 5, attentionState: AttentionState.FINISHED }),
+        sample({ id: 6, attentionState: AttentionState.REGISTERING_ANALYSES }),
       ];
-      const kpis = selectAtencionKpis(wrap({ list }));
-      expect(kpis.total).toBe(8);
-      expect(kpis.pendientes).toBe(4);          // not terminal: 1,2,3,4
-      expect(kpis.esperandoExtraccion).toBe(2); // 3,4
-      expect(kpis.finalizadas).toBe(1);         // 5
-      expect(kpis.urgentes).toBe(1);            // 2 (urgente AND not terminal — 8 is canceled+urgent → excluded)
+      const kpis = summarizeAtenciones(list, NOW);
+      expect(kpis.canceladasHoy).toBe(1);
+      expect(kpis.finalizadas).toBe(2);
     });
 
     it('returns all-zero KPIs for empty list', () => {
-      const kpis = selectAtencionKpis(wrap({ list: [] }));
-      expect(kpis).toEqual({ total: 0, pendientes: 0, esperandoExtraccion: 0, finalizadas: 0, urgentes: 0 });
+      expect(summarizeAtenciones([], NOW)).toEqual({ canceladasHoy: 0, finalizadas: 0 });
+      expect(selectAtencionKpis(wrap({ list: [] }))).toEqual({ canceladasHoy: 0, finalizadas: 0 });
     });
   });
 });

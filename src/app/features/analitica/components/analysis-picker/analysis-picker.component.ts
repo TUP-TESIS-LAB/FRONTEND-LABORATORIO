@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal,
+  ChangeDetectionStrategy, Component, effect, inject, input, output, signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent } from 'primeng/autocomplete';
@@ -80,10 +80,15 @@ export interface PickerRow extends Analysis {
     </div>
   `,
 })
-export class AnalysisPickerComponent implements OnInit {
+export class AnalysisPickerComponent {
   private readonly api = inject(AnalysisService);
 
-  readonly initialItems = input<Analysis[]>([]);
+  /**
+   * Items con los que arranca el picker al retomar/rehidratar una atención.
+   * Acepta filas que ya traen `isAuthorized` (p. ej. las autorizaciones guardadas en
+   * el backend) y las respeta; si no lo traen, default `false`.
+   */
+  readonly initialItems = input<ReadonlyArray<Analysis & { isAuthorized?: boolean }>>([]);
 
   readonly analysisAdded   = output<PickerRow>();
   readonly analysisRemoved = output<number>();
@@ -96,11 +101,20 @@ export class AnalysisPickerComponent implements OnInit {
   readonly suggestions = signal<Analysis[]>([]);
   readonly errorText   = signal<string | null>(null);
 
-  ngOnInit(): void {
-    const initial = this.initialItems();
-    if (initial?.length) {
-      this.items.set(initial.map((a) => ({ ...a, isAuthorized: false })));
-    }
+  /** Una sola hidratación: cuando `initialItems` llega no-vacío (carga async al retomar). */
+  private hydrated = false;
+
+  constructor() {
+    effect(() => {
+      const initial = this.initialItems();
+      if (this.hydrated || !initial?.length) return;
+      this.hydrated = true;
+      this.items.set(initial.map((a) => ({ ...a, isAuthorized: a.isAuthorized ?? false })));
+      // Notificamos al padre para que su lista de dispatch quede sembrada con lo
+      // ya cargado (mismo contrato que onAuthorizedChange). Así, si el usuario
+      // confirma sin tocar nada, se re-envían los análisis existentes.
+      this.itemsChanged.emit(this.items());
+    });
   }
 
   onAutoCompleteSearch(e: AutoCompleteCompleteEvent): void {

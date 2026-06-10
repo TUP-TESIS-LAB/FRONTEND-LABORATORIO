@@ -4,6 +4,7 @@ import {
   DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -18,11 +19,12 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
-import { AttentionResponse } from '../../../../../models/atencion.model';
+import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencion.model';
 import { FinalizeAttentionModalComponent } from '../../../../../components/finalize-attention-modal/finalize-attention-modal.component';
 import {
   atencionMutationFailure,
   atencionMutationSuccess,
+  downloadProtocolLabels,
   endSecretaryPhase,
   loadAtencion,
   loadAttentionAnalyses,
@@ -74,13 +76,16 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
       <section>
         <div class="text-sm opacity-60">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
         <ul class="list-none text-sm space-y-1">
-          @for (a of atencion().analysisAuthorizations; track a.analysisId) {
+          @for (a of atencion().analysisAuthorizations; track $index) {
             @let info = analysisById().get(a.analysisId);
             @let priceItem = pricingById().get(a.analysisId);
             <li class="flex items-center justify-between gap-2">
               <span class="flex-1">
                 @if (info) {
-                  <span class="font-mono opacity-70">{{ info.shortCode }}</span> — {{ info.name }}
+                  {{ info.name }}
+                  @if (info.nbuCode) {
+                    <span class="font-mono text-xs opacity-70">· NBU {{ info.nbuCode }}</span>
+                  }
                 } @else {
                   #{{ a.analysisId }}
                 }
@@ -134,7 +139,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
           </div>
           <div class="flex justify-between text-base font-semibold border-t pt-1">
             <span>Total</span>
-            <span>{{ p.total | currencyAr }}</span>
+            <span>{{ liveTotal() | currencyAr }}</span>
           </div>
         </section>
       } @else if (pricingLoading()) {
@@ -186,13 +191,54 @@ export class ResumenStepComponent implements OnInit {
   readonly copaymentValue = signal<number | null>(null);
 
   readonly analysisById = computed(
-    () => new Map(this.analyses().map(a => [a.id, a]))
+    // `summaryAnalyses` se carga con AnalysisService.getById → AnalysisDetail (trae nbuCode/name),
+    // aunque el slice del store esté tipado como Analysis. Widening seguro para exponer el NBU.
+    () => new Map((this.analyses() as AnalysisDetail[]).map(a => [a.id, a]))
   );
+
+  /**
+   * Carga reactiva de los detalles de análisis.
+   *
+   * Antes esto vivía como dispatch one-shot en ngOnInit con un snapshot de
+   * `atencion().analysisAuthorizations`. Problema: el wizard puede montar el
+   * resumen con una atención cuyo set de autorizaciones todavía no refleja lo
+   * cargado en el paso 2 (loadAtencion refresca async DESPUÉS). En esa carrera
+   * `summaryAnalyses` quedaba sin los análisis que el `@for` termina mostrando
+   * y la fila caía al fallback `#{id}` en vez del nombre + NBU.
+   *
+   * Con un effect, re-disparamos loadAttentionAnalyses cada vez que cambia el
+   * set de autorizaciones (agregar/quitar análisis, refresh del detail), así
+   * los detalles siempre cubren lo que se renderiza. `lastLoadedKey` deduplica
+   * para no re-pegar al back cuando cambia otra cosa de la atención (copago,
+   * pricing) sin que cambien los ids.
+   */
+  private lastLoadedKey = '';
+  private readonly analysesLoader = effect(() => {
+    const ids = this.atencion().analysisAuthorizations.map(a => a.analysisId);
+    if (ids.length === 0) return;
+    const key = ids.join(',');
+    if (key === this.lastLoadedKey) return;
+    this.lastLoadedKey = key;
+    this.store.dispatch(loadAttentionAnalyses({ analysisIds: ids }));
+  });
 
   readonly pricingById = computed(() => {
     const p = this.pricing();
     if (!p) return new Map<number, { precioPaciente: number }>();
     return new Map(p.items.map(item => [item.analysisId, item]));
+  });
+
+  /**
+   * Total EN VIVO: subtotal del pricing + el coseguro tipeado en el input.
+   * El backend computa total = subtotal + copayment; replicamos esa fórmula localmente
+   * para que el total se recalcule mientras la secretaria escribe el monto, sin esperar
+   * al blur + round-trip que persiste y refresca el pricing. Cuando el pricing vuelve del
+   * backend ya incluye el copago, y como copaymentValue queda igual, el número coincide.
+   */
+  readonly liveTotal = computed<number | null>(() => {
+    const p = this.pricing();
+    if (!p) return null;
+    return p.subtotal + (this.copaymentValue() ?? 0);
   });
 
   ngOnInit(): void {
@@ -212,9 +258,7 @@ export class ResumenStepComponent implements OnInit {
       this.store.dispatch(loadAttentionPatient({ patientId: attn.patientId }));
     }
 
-    // Always load analysis details
-    const analysisIds = attn.analysisAuthorizations.map(x => x.analysisId);
-    this.store.dispatch(loadAttentionAnalyses({ analysisIds }));
+    // Los detalles de análisis se cargan reactivamente — ver `analysesLoader`.
 
     // Load pricing for this attention
     this.store.dispatch(loadPricing({ attentionId: attn.id }));
@@ -262,14 +306,23 @@ export class ResumenStepComponent implements OnInit {
   onFinalize(): void {
     this.finalizeModalOpen.set(false);
     this.store.dispatch(endSecretaryPhase({ id: this.atencion().id }));
-    this.waitForMutation((ok) => {
-      if (!ok) return; // backend rechazó — el wizard queda como está, no salimos
+    this.waitForMutation((success) => {
+      if (!success) return; // backend rechazó — el wizard queda como está, no salimos
+      // Auto-descarga de rótulos: al finalizar la fase de secretaría el backend
+      // ya generó un rótulo por análisis. Disparamos la descarga del PDF sin que el
+      // operador tenga que ir al listado y clickear "Rótulos" a mano.
+      // El protocolId fresco viene en el item del success (recién se le asigna el
+      // protocolo al cerrar la fase); caemos a la atención actual por si acaso.
+      const protocolId = success.item.protocolId ?? this.atencion().protocolId;
+      if (protocolId != null) {
+        this.store.dispatch(downloadProtocolLabels({ protocolId, protocolNumber: `P-${protocolId}` }));
+      }
       clearAtencionSession();
       this.finished.emit();
     });
   }
 
-  private waitForMutation(cb: (ok: boolean) => void): void {
+  private waitForMutation(cb: (success: ReturnType<typeof atencionMutationSuccess> | null) => void): void {
     race(
       this.actions$.pipe(ofType(atencionMutationSuccess), take(1)),
       this.actions$.pipe(ofType(atencionMutationFailure), take(1)),
@@ -278,6 +331,6 @@ export class ResumenStepComponent implements OnInit {
       // injection context (desde un click handler), donde takeUntilDestroyed()
       // sin argumentos lanza NG0203.
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((action) => cb(action.type === atencionMutationSuccess.type));
+      .subscribe((action) => cb(action.type === atencionMutationSuccess.type ? action : null));
   }
 }

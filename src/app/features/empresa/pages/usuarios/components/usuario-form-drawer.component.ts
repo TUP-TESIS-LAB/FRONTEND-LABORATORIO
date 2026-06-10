@@ -10,6 +10,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { Rol } from '../../../models/rol.model';
 import { ActualizarUsuarioPayload, CrearUsuarioPayload, Usuario } from '../../../models/usuario.model';
+import { Sucursal } from '@features/sucursales/models/sucursal.model';
 import { AccessSection, SectionResponse } from '@core/access/access.model';
 import { SeccionesChecklistComponent } from '@features/roles-permisos/components/secciones-checklist.component';
 import { presetForRole } from '../../../models/role-section-presets';
@@ -63,6 +64,26 @@ import { presetForRole } from '../../../models/role-section-presets';
 
           <section class="pat-form__card">
             <div class="pat-form__card-header">
+              <span><i class="pi pi-building" style="margin-right:6px"></i>Sucursal</span>
+            </div>
+            <div class="pat-form__grid pat-form__grid--full">
+              <div class="pat-form__field">
+                <label class="pat-form__label">Sucursal*</label>
+                <p-select
+                  [options]="branches"
+                  optionLabel="description"
+                  optionValue="id"
+                  formControlName="branchId"
+                  appendTo="body"
+                  placeholder="Seleccioná una sucursal"
+                  class="w-full" />
+                <small class="ui-text-muted">El usuario opera en una sola sucursal.</small>
+              </div>
+            </div>
+          </section>
+
+          <section class="pat-form__card">
+            <div class="pat-form__card-header">
               <span><i class="pi pi-id-card" style="margin-right:6px"></i>Rol</span>
             </div>
             <div class="pat-form__grid pat-form__grid--full">
@@ -110,6 +131,7 @@ export class UsuarioFormDrawerComponent implements OnChanges {
   @Input() visible = false;
   @Input({ required: true }) roles!: Rol[];
   @Input({ required: true }) catalog!: SectionResponse[];
+  @Input() branches: Sucursal[] = [];
   @Input() initialSections: AccessSection[] = [];
   @Input() usuario: Usuario | null = null;
   @Input() saving = false;
@@ -127,6 +149,7 @@ export class UsuarioFormDrawerComponent implements OnChanges {
     email: ['', [Validators.required, Validators.email]],
     document: ['', [Validators.required]],
     username: ['', [Validators.required]],
+    branchId: [null as number | null, [Validators.required]],
     roleId: [null as number | null],
   });
 
@@ -152,11 +175,12 @@ export class UsuarioFormDrawerComponent implements OnChanges {
             email: this.usuario.email,
             document: this.usuario.document,
             username: this.usuario.username,
+            branchId: this.usuario.branch,
             roleId: firstRoleId,
           });
           this.workingSet.set([...this.initialSections]);
         } else {
-          this.form.reset({ firstName: '', lastName: '', email: '', document: '', username: '', roleId: null });
+          this.form.reset({ firstName: '', lastName: '', email: '', document: '', username: '', branchId: null, roleId: null });
           this.workingSet.set([]);
         }
       }
@@ -194,6 +218,7 @@ export class UsuarioFormDrawerComponent implements OnChanges {
       username: raw.username!,
       roleIds: raw.roleId != null ? [raw.roleId] : [],
       sections: this.workingSet(),
+      branchId: raw.branchId!,
     };
     if (this.usuario) {
       this.update.emit({ id: this.usuario.id, payload });

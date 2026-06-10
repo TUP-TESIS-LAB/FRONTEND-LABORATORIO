@@ -21,6 +21,9 @@ import { NgClass } from '@angular/common';
 import { Gender, SexAtBirth } from '@features/pacientes/models/patient.model';
 import { CoveragePlanOption } from '@features/pacientes/models/coverage-plans.catalog';
 import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
+import { Doctor } from '@features/medicos/models/doctor.model';
+import { DoctorService } from '@features/medicos/services/doctor.service';
+import { NotificationService } from '@core/services/notification.service';
 import {
   assignGeneralData,
   createPatientInline,
@@ -278,6 +281,51 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
         </div>
       }
 
+      <!-- Médico solicitante (007) -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="block text-sm font-medium">Médico solicitante</label>
+          <button type="button" class="text-sm text-primary-600 hover:underline" (click)="toggleAddDoctor()">
+            <i class="pi pi-plus mr-1"></i>{{ addingDoctor() ? 'Cancelar' : 'Alta rápida' }}
+          </button>
+        </div>
+
+        @if (!addingDoctor()) {
+          <p-select
+            [ngModel]="selectedDoctorId()"
+            (ngModelChange)="selectedDoctorId.set($event)"
+            [options]="doctorOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [filter]="true"
+            [showClear]="true"
+            placeholder="— Sin médico / Seleccioná —"
+            appendTo="body"
+            class="w-full" />
+        } @else {
+          <div class="rounded border p-3 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm mb-1">Nombre completo <span class="text-red-500">*</span></label>
+                <input pInputText [(ngModel)]="doctorForm.fullName" class="w-full" placeholder="Nombre y apellido" />
+              </div>
+              <div>
+                <label class="block text-sm mb-1">N° de matrícula <span class="text-red-500">*</span></label>
+                <input pInputText [(ngModel)]="doctorForm.tuition" class="w-full" placeholder="Ej: 12345" />
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <p-button
+                label="Crear médico"
+                icon="pi pi-user-plus"
+                [loading]="doctorSaving()"
+                [disabled]="!altaMedicoValida() || doctorSaving()"
+                (onClick)="crearMedico()" />
+            </div>
+          </div>
+        }
+      </div>
+
       <!-- Indicaciones + confirmar -->
       <div>
         <label class="block text-sm font-medium mb-1">Indicaciones</label>
@@ -326,10 +374,16 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
 export class DatosGeneralesStepComponent implements OnInit {
   private readonly store = inject(Store);
   private readonly coveragePlans = inject(CoveragePlansService);
+  private readonly doctorsApi = inject(DoctorService);
+  private readonly notification = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
 
   readonly atencionId = input<number | null>(null);
   readonly initialDni = input<string | null>(null);
+  /** Indicaciones ya persistidas (al retomar). Hidratamos el input para no perderlas. (003) */
+  readonly initialIndications = input<string | null>(null);
+  /** Médico solicitante ya asociado (al retomar). (007) */
+  readonly initialDoctorId = input<number | null>(null);
 
   /**
    * Footer "Volver fase" — el wizard provee el estado y bindea el handler.
@@ -347,6 +401,16 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   protected readonly editing = signal(false);
   protected readonly planOptions = signal<CoveragePlanOption[]>([]);
+
+  // ── Médico solicitante (007) ────────────────────────────────────────────────
+  protected readonly doctors        = signal<Doctor[]>([]);
+  protected readonly selectedDoctorId = signal<number | null>(null);
+  protected readonly addingDoctor   = signal(false);
+  protected readonly doctorSaving   = signal(false);
+  protected doctorForm = { fullName: '', tuition: '' };
+  protected readonly doctorOptions = computed(() =>
+    this.doctors().map((d) => ({ value: d.id, label: `${d.lastName}, ${d.firstName} — Mat. ${d.tuition}` })),
+  );
 
   protected dniInput   = '';
   protected indications = '';
@@ -420,11 +484,59 @@ export class DatosGeneralesStepComponent implements OnInit {
       }
     });
 
+    // Cargar médicos solicitantes para el selector (errores silenciados → queda vacío). (007)
+    this.doctorsApi.list().pipe(
+      catchError(() => EMPTY),
+    ).subscribe(list => this.doctors.set(list.filter(d => d.active)));
+
+    // Hidratar lo ya persistido al retomar la atención. (003 / 007)
+    const ind = this.initialIndications();
+    if (ind != null) this.indications = ind;
+    this.selectedDoctorId.set(this.initialDoctorId());
+
     const dni = this.initialDni();
     if (dni) {
       this.dniInput = dni;
       this.store.dispatch(resolvePatientByDni({ dni }));
     }
+  }
+
+  // ── Médico solicitante (007) ────────────────────────────────────────────────
+  toggleAddDoctor(): void {
+    this.addingDoctor.update(v => !v);
+  }
+
+  /** Alta rápida: nombre completo (≥2 palabras) + matrícula, ambos requeridos. */
+  altaMedicoValida(): boolean {
+    const partes = this.doctorForm.fullName.trim().split(/\s+/).filter(Boolean);
+    return partes.length >= 2 && !!this.doctorForm.tuition.trim();
+  }
+
+  crearMedico(): void {
+    if (!this.altaMedicoValida() || this.doctorSaving()) return;
+    const partes = this.doctorForm.fullName.trim().split(/\s+/).filter(Boolean);
+    const firstName = partes[0];
+    const lastName  = partes.slice(1).join(' ');
+    this.doctorSaving.set(true);
+    this.doctorsApi.quickCreate({ firstName, lastName, tuition: this.doctorForm.tuition.trim() }).subscribe({
+      next: (doc) => {
+        this.doctors.update(list => [doc, ...list.filter(d => d.id !== doc.id)]);
+        this.selectedDoctorId.set(doc.id);
+        this.doctorForm = { fullName: '', tuition: '' };
+        this.addingDoctor.set(false);
+        this.doctorSaving.set(false);
+      },
+      error: (err) => {
+        this.doctorSaving.set(false);
+        this.notification.error(this.doctorErrorMessage(err?.status));
+      },
+    });
+  }
+
+  /** Mensaje en español, sin leak de internals (regla #4). */
+  private doctorErrorMessage(status: number | undefined): string {
+    if (status === 409) return 'Ya existe un médico con esa matrícula.';
+    return 'No se pudo dar de alta el médico. Revisá los datos y volvé a intentarlo.';
   }
 
   protected readonly canConfirm = computed(() => this.resolved() != null && !this.resolving());
@@ -516,6 +628,7 @@ export class DatosGeneralesStepComponent implements OnInit {
   onConfirm(): void {
     const p = this.resolved();
     if (!p) return;
+    const doctorId = this.selectedDoctorId();
     const id = this.atencionId();
     if (id == null) {
       const qid = this.route.snapshot.queryParamMap.get('queueEntryId');
@@ -523,6 +636,7 @@ export class DatosGeneralesStepComponent implements OnInit {
       this.store.dispatch(
         startAttentionForPatient({
           patientId:   p.id,
+          doctorId,
           indications: this.indications || null,
           queueEntryId,
         }),
@@ -534,7 +648,7 @@ export class DatosGeneralesStepComponent implements OnInit {
         id,
         payload: {
           patientId:       p.id,
-          doctorId:        null,
+          doctorId,
           insurancePlanId: null,
           indications:     this.indications || null,
         },

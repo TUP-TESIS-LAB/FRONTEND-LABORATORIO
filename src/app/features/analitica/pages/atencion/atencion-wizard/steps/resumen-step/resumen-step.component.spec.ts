@@ -15,6 +15,7 @@ import {
   atencionMutationFailure,
   setCopayment,
   removeAnalysisFromResumen,
+  downloadProtocolLabels,
 } from '../../../../../store/atencion/atencion.actions';
 import { AttentionState } from '../../../../../models/atencion.model';
 import { AttentionPricing } from '../../../../../models/pricing.model';
@@ -150,6 +151,29 @@ describe('ResumenStepComponent', () => {
     expect(readAtencionSession()).toBeNull();
   });
 
+  it('auto-descarga los rótulos tras finalizar OK (downloadProtocolLabels con el protocolId del success)', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', fullAttn());
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    f.componentInstance.onFinalize();
+    // El success trae el protocolId recién asignado al cerrar la fase.
+    actions$.next(atencionMutationSuccess({ item: { protocolId: 77 } as any }));
+    expect(dispatched).toContainEqual(downloadProtocolLabels({ protocolId: 77, protocolNumber: 'P-77' }));
+  });
+
+  it('si el success no trae protocolId no dispara la descarga de rótulos', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', fullAttn()); // fullAttn().protocolId === null
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    f.componentInstance.onFinalize();
+    actions$.next(atencionMutationSuccess({ item: {} as any }));
+    expect(dispatched.some((a: any) => a.type === downloadProtocolLabels.type)).toBe(false);
+  });
+
   it('does NOT emit finished / clear session when mutation fails', () => {
     writeAtencionSession({ atencionId: 42, uiStep: 'confirmar' });
     const f = TestBed.createComponent(ResumenStepComponent);
@@ -184,6 +208,39 @@ describe('ResumenStepComponent', () => {
     const normalized = text.replace(/ /g, ' ');
     expect(normalized).toContain('Total');
     expect(normalized).toContain('$ 0,00');
+  });
+
+  it('liveTotal recalcula el total EN VIVO al cambiar el copago, sin dispatch (005)', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    // SAMPLE_PRICING.subtotal = 0 y copaymentValue arranca null → total 0
+    expect(f.componentInstance.liveTotal()).toBe(0);
+    // Tipear el coseguro recalcula el total localmente (subtotal + copago)
+    f.componentInstance.copaymentValue.set(1500);
+    expect(f.componentInstance.liveTotal()).toBe(1500);
+  });
+
+  it('muestra el NOMBRE COMPLETO + el código NBU del análisis (006)', () => {
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { id: 5, dni: '1', firstName: 'A', lastName: 'B' } as any,
+        summaryAnalyses: [
+          { id: 3, shortCode: 'BIO001', name: 'Hemograma completo', familyName: null, ubCount: null, nbuCode: '660101' },
+        ] as any,
+        pricing: SAMPLE_PRICING,
+      },
+    });
+    store.refreshState();
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Hemograma completo');
+    expect(text).toContain('NBU 660101');
+    // Ya no mostramos el short-code/ID como etiqueta principal
+    expect(text).not.toContain('BIO001');
   });
 
   it('onCopaymentBlur despacha setCopayment cuando el valor cambia', () => {

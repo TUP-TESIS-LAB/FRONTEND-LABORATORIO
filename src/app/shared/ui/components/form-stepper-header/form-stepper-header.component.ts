@@ -1,10 +1,15 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output } from '@angular/core';
 import { FormStep } from '@shared/ui/models/form-step';
+import { StepAutofocusDirective } from '@shared/ui/directives/step-autofocus.directive';
 
 @Component({
   selector: 'ui-form-stepper-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // El autofoco se aplica acá, en la shell compartida, para que TODOS los
+  // steppers (atención, pacientes, sucursal, empleados, médicos) lo hereden
+  // sin tocar cada page.
+  hostDirectives: [StepAutofocusDirective],
   template: `
     <ol class="pat-stepper" role="list">
       @for (step of steps(); track step.key; let i = $index) {
@@ -69,18 +74,40 @@ export class FormStepperHeaderComponent {
    * dirigidos por una máquina de estados, donde el avance no es libre.
    */
   readonly clickable = input<boolean>(true);
+  /**
+   * Guard opcional de validación: se consulta ANTES de dejar el paso actual al
+   * navegar desde el header. Si devuelve `false`, no se emite `stepSelected` (no
+   * se avanza). Por defecto permite navegar — los steppers existentes ya validan
+   * el avance en su botón "Continuar", así que su comportamiento no cambia.
+   */
+  readonly canLeaveStep = input<(currentIndex: number) => boolean>(() => true);
   readonly stepSelected = output<number>();
+
+  private readonly autofocus = inject(StepAutofocusDirective);
+
+  constructor() {
+    let isInitial = true;
+    effect(() => {
+      this.currentIndex(); // track
+      // No robamos el foco en el montaje inicial; sólo al cambiar de paso.
+      if (isInitial) { isInitial = false; return; }
+      this.autofocus.onStepChanged();
+    });
+  }
 
   readonly isDone = (i: number) => this.visited().has(i) && i !== this.currentIndex();
   readonly isLocked = (i: number) => !this.visited().has(i) && i !== this.currentIndex();
   readonly isClickable = (i: number) => this.clickable() && i !== this.currentIndex() && this.visited().has(i);
 
   onClick(i: number): void {
-    if (this.isClickable(i)) this.stepSelected.emit(i);
+    if (!this.isClickable(i)) return;
+    if (!this.canLeaveStep()(this.currentIndex())) return;
+    this.stepSelected.emit(i);
   }
 
   onKey(event: Event, i: number): void {
     if (!this.isClickable(i)) return;
+    if (!this.canLeaveStep()(this.currentIndex())) return;
     event.preventDefault();
     this.stepSelected.emit(i);
   }

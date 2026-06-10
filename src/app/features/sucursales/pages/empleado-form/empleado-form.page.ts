@@ -139,6 +139,7 @@ export class EmpleadoFormPage implements OnDestroy {
         username: [''],
         document: [''],
         roleId: [null as number | null],
+        branchId: [null as number | null],
       }),
       sections: [[] as AccessSection[]],
     }),
@@ -157,9 +158,9 @@ export class EmpleadoFormPage implements OnDestroy {
     if (mode === 'existing') return this.usuarioGroup.get('existingUserId')!.value != null;
     if (mode === 'new') {
       const n = this.usuarioGroup.get('newUser') as FormGroup;
-      const v = n.getRawValue() as { firstName: string; lastName: string; email: string; username: string; document: string };
+      const v = n.getRawValue() as { firstName: string; lastName: string; email: string; username: string; document: string; branchId: number | null };
       const emailOk = !n.get('email')!.hasError('email');
-      return !!(v.firstName?.trim() && v.lastName?.trim() && v.username?.trim() && v.document?.trim() && v.email?.trim() && emailOk);
+      return !!(v.firstName?.trim() && v.lastName?.trim() && v.username?.trim() && v.document?.trim() && v.email?.trim() && emailOk && v.branchId != null);
     }
     return true;
   });
@@ -274,7 +275,7 @@ export class EmpleadoFormPage implements OnDestroy {
       direccion: { street: '', streetNumber: '' },
       usuario: {
         mode: 'none', existingUserId: null,
-        newUser: { firstName: '', lastName: '', email: '', username: '', document: '', roleId: null },
+        newUser: { firstName: '', lastName: '', email: '', username: '', document: '', roleId: null, branchId: null },
         sections: [],
       },
     });
@@ -344,7 +345,7 @@ export class EmpleadoFormPage implements OnDestroy {
       const contacts: EmployeeContactInput[] = rows.map((r) => ({ contactType: r.contactType, value: r.value.trim() }));
       const u = this.usuarioGroup.getRawValue() as {
         mode: string; existingUserId: number | null;
-        newUser: { firstName: string; lastName: string; email: string; username: string; document: string; roleId: number | null };
+        newUser: { firstName: string; lastName: string; email: string; username: string; document: string; roleId: number | null; branchId: number | null };
         sections: AccessSection[];
       };
       if (u.mode === 'new') {
@@ -356,6 +357,7 @@ export class EmpleadoFormPage implements OnDestroy {
           document: u.newUser.document.trim(),
           roleIds: u.newUser.roleId != null ? [u.newUser.roleId] : [],
           sections: u.sections ?? [],
+          branchId: u.newUser.branchId!,
         };
         this.store.dispatch(createEmployeeWithUser({ userPayload, req, contacts }));
         return;

@@ -4,8 +4,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  flex-wrap: wrap;            // en anchos chicos los botones bajan, no se superponen
+  gap: 0.75rem 1rem;
   margin-bottom: 0.75rem;
+}
+
+// Lista de cola: plana, sin card blanca (vive sobre el fondo de la página).
+.cola-espera :host ::ng-deep .p-datatable,
+:host ::ng-deep .cola-espera .p-datatable {
+  background: transparent;
 }
 .recepcion-title {
   margin: 0;

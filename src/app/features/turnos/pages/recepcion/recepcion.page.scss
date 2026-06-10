@@ -1,1 +1,39 @@
 :host { display: block; padding: 1rem; }
+
+// Header global de Recepción (fuera de los tabs): título + acciones siempre visibles.
+.recepcion-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+.recepcion-page-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ds-text, #0f172a);
+}
+.recepcion-page-header__actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+// Tabs planos como en Sucursales: el panel NO es una card blanca, vive sobre
+// el fondo de la página. Solo la barra de tabs marca la sección.
+:host ::ng-deep {
+  .p-tabs,
+  .p-tablist,
+  .p-tabpanels,
+  .p-tabpanel {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  .p-tabpanels {
+    padding: 1rem 0 0;
+  }
+}

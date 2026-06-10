@@ -25,6 +25,8 @@ export interface CrearUsuarioPayload {
   username: string;
   roleIds: number[];
   sections: AccessSection[];
+  /** Sucursal (única) en la que opera el usuario. Requerida. */
+  branchId: number;
 }
 
 export type ActualizarUsuarioPayload = CrearUsuarioPayload;

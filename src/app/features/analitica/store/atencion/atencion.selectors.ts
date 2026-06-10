@@ -1,5 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { AttentionResponse, AttentionState, isTerminal } from '../../models/atencion.model';
+import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 import { ATENCION_FEATURE_KEY, AtencionFeatureState } from './atencion.state';
 
 export const selectAtencionState = createFeatureSelector<AtencionFeatureState>(ATENCION_FEATURE_KEY);
@@ -28,30 +28,56 @@ export const selectFilteredAtenciones = createSelector(
   selectFilters,
   (list, filters): AttentionResponse[] => {
     const search = filters.search.trim().toLowerCase();
-    return list.filter(item => {
+    const filtered = list.filter(item => {
       if (filters.states.length > 0 && !filters.states.includes(item.attentionState)) {
         return false;
       }
       if (search) {
+        // Búsqueda por nombre / DNI del paciente (con N° de atención como apoyo).
         const haystack = [
+          item.patientFullName ?? '',
+          item.patientDni ?? '',
           item.attentionNumber ?? '',
-          String(item.patientId ?? ''),
-          String(item.id),
         ].join(' ').toLowerCase();
         if (!haystack.includes(search)) return false;
       }
       return true;
     });
+    // Orden por fecha de alta DESCENDENTE (más recientes primero). createdAt es ISO-8601,
+    // así que el orden lexicográfico coincide con el cronológico; los nulos quedan al final.
+    return [...filtered].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
   }
 );
 
+export interface AtencionKpis {
+  /** Atenciones canceladas cuyo último cambio (cancelación) ocurrió hoy. */
+  canceladasHoy: number;
+  /** Atenciones finalizadas en el listado actual. */
+  finalizadas: number;
+}
+
+/** Comparte año-mes-día en hora local entre dos fechas. */
+function isSameLocalDay(iso: string, now: Date): boolean {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate();
+}
+
+/** Helper puro (testeable con un `now` fijo) que arma las métricas del bloque colapsable. */
+export function summarizeAtenciones(list: AttentionResponse[], now: Date): AtencionKpis {
+  return {
+    canceladasHoy: list.filter(a =>
+      a.attentionState === AttentionState.CANCELED
+      && a.updatedAt != null
+      && isSameLocalDay(a.updatedAt, now),
+    ).length,
+    finalizadas: list.filter(a => a.attentionState === AttentionState.FINISHED).length,
+  };
+}
+
 export const selectAtencionKpis = createSelector(
   selectAtencionList,
-  (list) => ({
-    total:     list.length,
-    pendientes: list.filter(a => !isTerminal(a.attentionState)).length,
-    esperandoExtraccion: list.filter(a => a.attentionState === AttentionState.AWAITING_EXTRACTION).length,
-    finalizadas: list.filter(a => a.attentionState === AttentionState.FINISHED).length,
-    urgentes:    list.filter(a => a.isUrgent && !isTerminal(a.attentionState)).length,
-  })
+  (list): AtencionKpis => summarizeAtenciones(list, new Date()),
 );

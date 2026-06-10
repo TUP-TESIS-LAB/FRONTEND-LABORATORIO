@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class RotuloPdfService {
-  /** Genera y descarga un PDF con una etiqueta por label (barcode Code128 del id + nº de protocolo). Carga jsPDF/jsbarcode on-demand. */
+  /** Genera y abre/imprime un PDF (una etiqueta por label: barcode Code128 del id + nº de protocolo), igual que el ticket del tótem. Carga jsPDF/jsbarcode on-demand. */
   async generate(protocolNumber: string, labels: { id: number }[]): Promise<void> {
     if (labels.length === 0) return;
     const { jsPDF } = await import('jspdf');
@@ -23,7 +23,12 @@ export class RotuloPdfService {
       doc.setFontSize(10);
       doc.text(protocolNumber, x + labelW / 2, y + labelH - 2, { align: 'center' });
     });
-    doc.save(`rotulos-${protocolNumber}.pdf`);
+    // Igual que el ticket del tótem: abrimos el PDF en una pestaña nueva y disparamos
+    // el diálogo de impresión (autoPrint). NO descargamos un archivo — el operador
+    // ve e imprime los rótulos directo, como con el ticket del tótem.
+    doc.autoPrint();
+    const url = doc.output('bloburl') as unknown as string;
+    window.open(url, '_blank');
   }
 
   private barcodeDataUrl(JsBarcode: (canvas: HTMLCanvasElement, value: string, opts: object) => void, value: string): string {

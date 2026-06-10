@@ -5,8 +5,10 @@ import { Action } from '@ngrx/store';
 import { ReplaySubject, of } from 'rxjs';
 import { AnalisisStepComponent } from './analisis-step.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
+import { clearAnalisisDraft, writeAnalisisDraft } from '../../../../../utils/analisis-draft-store';
 import * as A from '../../../../../store/atencion/atencion.actions';
 import { selectMutating } from '../../../../../store/atencion/atencion.selectors';
+import { ATENCION_FEATURE_KEY, initialAtencionState } from '../../../../../store/atencion/atencion.state';
 
 const makeRow = (over: Partial<{ id: number; shortCode: string; name: string; isAuthorized: boolean }> = {}) => ({
   id: 5, shortCode: '1001', name: 'X', familyName: null, ubCount: null, isAuthorized: false, ...over,
@@ -25,6 +27,7 @@ describe('AnalisisStepComponent', () => {
       imports: [AnalisisStepComponent],
       providers: [
         provideMockStore({
+          initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
           selectors: [{ selector: selectMutating, value: false }],
         }),
         provideMockActions(() => actions$),
@@ -94,6 +97,80 @@ describe('AnalisisStepComponent', () => {
     expect(btn!.disabled).toBe(false);
     btn!.click();
     expect(emitted).toBe(true);
+  });
+
+  it('al retomar: dispatcha loadAttentionAnalyses, hidrata isUrgent y arma initialItems con isAuthorized (003)', () => {
+    const store = (fixture.componentInstance as any)['store'];
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        detail: {
+          id: 42, isUrgent: true,
+          analysisAuthorizations: [
+            { id: 1, analysisId: 3, isAuthorized: true, active: true },
+            { id: 2, analysisId: 9, isAuthorized: false, active: true },
+          ],
+        } as any,
+        summaryAnalyses: [
+          { id: 3, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: null },
+          { id: 9, shortCode: '2001', name: 'Glucemia', familyName: null, ubCount: null },
+        ] as any,
+      },
+    });
+    store.refreshState();
+    // beforeEach reemplazó store.dispatch por un push a `dispatched`; lo reseteamos.
+    dispatched = [];
+    store.dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+
+    const f = TestBed.createComponent(AnalisisStepComponent);
+    f.componentRef.setInput('atencionId', 42);
+    f.detectChanges();
+
+    expect(dispatched).toContainEqual(A.loadAttentionAnalyses({ analysisIds: [3, 9] }));
+    expect(f.componentInstance.isUrgentValue).toBe(true);
+    expect(f.componentInstance.initialItems()).toEqual([
+      { id: 3, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: null, isAuthorized: true },
+      { id: 9, shortCode: '2001', name: 'Glucemia', familyName: null, ubCount: null, isAuthorized: false },
+    ]);
+  });
+
+  it('al retomar SIN autorizaciones en el back: rehidrata desde el borrador local (persistencia)', () => {
+    clearAnalisisDraft(42);
+    writeAnalisisDraft(42, {
+      isUrgent: true,
+      rows: [{ id: 3, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: null, isAuthorized: true }],
+    });
+    const store = (fixture.componentInstance as any)['store'];
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        detail: { id: 42, isUrgent: false, analysisAuthorizations: [] } as any,
+      },
+    });
+    store.refreshState();
+
+    const f = TestBed.createComponent(AnalisisStepComponent);
+    f.componentRef.setInput('atencionId', 42);
+    f.detectChanges();
+
+    expect(f.componentInstance.isUrgentValue).toBe(true);
+    expect(f.componentInstance.initialItems()).toEqual([
+      { id: 3, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: null, isAuthorized: true },
+    ]);
+    clearAnalisisDraft(42);
+  });
+
+  it('onContinue deduplica items por analysisId antes de despachar', () => {
+    fixture.componentInstance.onItemsChanged([
+      makeRow({ id: 5, isAuthorized: false }),
+      makeRow({ id: 5, isAuthorized: true }),
+      makeRow({ id: 9, shortCode: '2001', name: 'Glucemia', isAuthorized: true }),
+    ]);
+    fixture.componentInstance.onContinue();
+    expect(dispatched[0].payload.items).toEqual([
+      { analysisId: 5, isAuthorized: false },
+      { analysisId: 9, isAuthorized: true },
+    ]);
   });
 
   it('onItemsChanged actualiza la lista de items para el dispatch', () => {

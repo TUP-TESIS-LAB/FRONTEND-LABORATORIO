@@ -62,6 +62,21 @@ describe('PatientListPage (smoke)', () => {
     expect(spy).toHaveBeenCalledWith(setPatientPageRequest({ patch: { page: 2, size: 20 } }));
   });
 
+  it('rowStatusLabel/Severity muestran "Verificado"/info cuando verifiedAt está seteado', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    const cmp = fixture.componentInstance;
+    const base = {
+      id: 1, dni: '1', firstName: 'a', lastName: 'b', birthDate: null,
+      gender: null, sexAtBirth: null, status: 'COMPLETE' as const,
+      source: 'STAFF' as const, contacts: [], addresses: [], coverages: [], active: true,
+    };
+    expect(cmp.rowStatusLabel({ ...base, verifiedAt: '2026-06-09T10:00:00Z' })).toBe('Verificado');
+    expect(cmp.rowStatusSeverity({ ...base, verifiedAt: '2026-06-09T10:00:00Z' })).toBe('info');
+    // Sin verificar cae al estado de completitud.
+    expect(cmp.rowStatusLabel({ ...base, verifiedAt: null })).toBe('COMPLETE');
+    expect(cmp.rowStatusSeverity({ ...base, verifiedAt: null })).toBe('success');
+  });
+
   it('renders a routerLink to /pacientes/nuevo on the "Nuevo paciente" button', () => {
     const fixture = TestBed.createComponent(PatientListPage);
     fixture.detectChanges();
