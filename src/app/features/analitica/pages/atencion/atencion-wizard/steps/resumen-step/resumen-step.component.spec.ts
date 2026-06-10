@@ -15,6 +15,7 @@ import {
   atencionMutationFailure,
   setCopayment,
   removeAnalysisFromResumen,
+  downloadProtocolLabels,
 } from '../../../../../store/atencion/atencion.actions';
 import { AttentionState } from '../../../../../models/atencion.model';
 import { AttentionPricing } from '../../../../../models/pricing.model';
@@ -148,6 +149,29 @@ describe('ResumenStepComponent', () => {
     actions$.next(atencionMutationSuccess({ item: {} as any }));
     expect(finished).toBe(true);
     expect(readAtencionSession()).toBeNull();
+  });
+
+  it('auto-descarga los rótulos tras finalizar OK (downloadProtocolLabels con el protocolId del success)', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', fullAttn());
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    f.componentInstance.onFinalize();
+    // El success trae el protocolId recién asignado al cerrar la fase.
+    actions$.next(atencionMutationSuccess({ item: { protocolId: 77 } as any }));
+    expect(dispatched).toContainEqual(downloadProtocolLabels({ protocolId: 77, protocolNumber: 'P-77' }));
+  });
+
+  it('si el success no trae protocolId no dispara la descarga de rótulos', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', fullAttn()); // fullAttn().protocolId === null
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    f.componentInstance.onFinalize();
+    actions$.next(atencionMutationSuccess({ item: {} as any }));
+    expect(dispatched.some((a: any) => a.type === downloadProtocolLabels.type)).toBe(false);
   });
 
   it('does NOT emit finished / clear session when mutation fails', () => {

@@ -3,7 +3,9 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TableModule } from 'primeng/table';
@@ -39,9 +41,10 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
   selector: 'lab-atencion-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [ConfirmationService],
   imports: [
     FormsModule, DatePipe,
-    TableModule, ButtonModule, InputTextModule, MultiSelectModule, TagModule, TooltipModule,
+    TableModule, ButtonModule, InputTextModule, MultiSelectModule, TagModule, TooltipModule, ConfirmDialogModule,
     StatCardComponent, EmptyStateComponent, ScrollToBottomFabComponent,
   ],
   template: `
@@ -161,6 +164,7 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
       }
 
       <ui-scroll-to-bottom-fab />
+      <p-confirmDialog />
     </div>
   `,
   styles: [`
@@ -178,6 +182,7 @@ export class AtencionDashboardComponent implements OnInit {
   private readonly store          = inject(Store);
   private readonly router         = inject(Router);
   private readonly moduleRegistry = inject(ModuleRegistry);
+  private readonly confirm        = inject(ConfirmationService);
 
   protected readonly rows    = this.store.selectSignal(selectFilteredAtenciones);
   protected readonly filters = this.store.selectSignal(selectFilters);
@@ -243,9 +248,23 @@ export class AtencionDashboardComponent implements OnInit {
     this.router.navigate(['/analitica/atencion', row.id]);
   }
 
+  /**
+   * Reimpresión de rótulos desde el listado. Como los rótulos ya se descargan solos al
+   * finalizar la atención, este botón es una REIMPRESIÓN: pedimos confirmación antes de
+   * volver a bajar el PDF para evitar descargas accidentales.
+   */
   downloadLabels(row: AttentionResponse): void {
-    if (row.protocolId == null) return;
-    this.store.dispatch(downloadProtocolLabels({ protocolId: row.protocolId, protocolNumber: `P-${row.protocolId}` }));
+    const protocolId = row.protocolId;
+    if (protocolId == null) return;
+    this.confirm.confirm({
+      header: '¿Reimprimir los rótulos?',
+      message: 'Se volverá a descargar el PDF de rótulos de esta atención.',
+      icon: 'pi pi-tag',
+      acceptLabel: 'Reimprimir',
+      rejectLabel: 'Cancelar',
+      accept: () =>
+        this.store.dispatch(downloadProtocolLabels({ protocolId, protocolNumber: `P-${protocolId}` })),
+    });
   }
 
   /**
