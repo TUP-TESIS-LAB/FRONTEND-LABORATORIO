@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
-import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
 
 import * as A from '../../store/sucursal.actions';
 import { selectSucursalList, selectSucursalLoading } from '../../store/sucursal.selectors';
@@ -18,17 +18,24 @@ import { Sucursal } from '../../models/sucursal.model';
   selector: 'app-sucursales-configuracion',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TableModule, ButtonModule, TagModule, ConfirmDialogModule, ToastModule, TooltipModule, EmptyStateComponent],
+  imports: [ButtonModule, TagModule, ConfirmDialogModule, ToastModule, DataTableComponent, UiCellDirective],
   providers: [ConfirmationService, MessageService],
   templateUrl: './sucursales-configuracion.component.html',
 })
 export class SucursalesConfiguracionComponent implements OnInit {
   private readonly store = inject(Store);
   private readonly confirm = inject(ConfirmationService);
-  private readonly router = inject(Router);
+  protected readonly router = inject(Router);
 
   readonly sucursales = this.store.selectSignal(selectSucursalList);
   readonly loading = this.store.selectSignal(selectSucursalLoading);
+
+  readonly columns: readonly TableColumn[] = [
+    { field: 'code',        header: 'Nombre' },
+    { field: 'description', header: 'Descripción' },
+    { field: 'estado',      header: 'Estado' },
+    { field: 'direccion',   header: 'Dirección' },
+  ];
 
   ngOnInit(): void {
     this.store.dispatch(A.loadSucursales());
@@ -41,8 +48,6 @@ export class SucursalesConfiguracionComponent implements OnInit {
   openDetail(sucursal: Sucursal): void {
     this.router.navigate(['/sucursales/configuracion', sucursal.id]);
   }
-
-  toggle(s: Sucursal): void { this.store.dispatch(A.toggleSucursalStatus({ id: s.id })); }
 
   remove(s: Sucursal): void {
     this.confirm.confirm({
