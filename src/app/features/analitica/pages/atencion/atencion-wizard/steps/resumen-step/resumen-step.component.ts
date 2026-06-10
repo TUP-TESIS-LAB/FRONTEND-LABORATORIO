@@ -4,6 +4,7 @@ import {
   DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -195,6 +196,32 @@ export class ResumenStepComponent implements OnInit {
     () => new Map((this.analyses() as AnalysisDetail[]).map(a => [a.id, a]))
   );
 
+  /**
+   * Carga reactiva de los detalles de análisis.
+   *
+   * Antes esto vivía como dispatch one-shot en ngOnInit con un snapshot de
+   * `atencion().analysisAuthorizations`. Problema: el wizard puede montar el
+   * resumen con una atención cuyo set de autorizaciones todavía no refleja lo
+   * cargado en el paso 2 (loadAtencion refresca async DESPUÉS). En esa carrera
+   * `summaryAnalyses` quedaba sin los análisis que el `@for` termina mostrando
+   * y la fila caía al fallback `#{id}` en vez del nombre + NBU.
+   *
+   * Con un effect, re-disparamos loadAttentionAnalyses cada vez que cambia el
+   * set de autorizaciones (agregar/quitar análisis, refresh del detail), así
+   * los detalles siempre cubren lo que se renderiza. `lastLoadedKey` deduplica
+   * para no re-pegar al back cuando cambia otra cosa de la atención (copago,
+   * pricing) sin que cambien los ids.
+   */
+  private lastLoadedKey = '';
+  private readonly analysesLoader = effect(() => {
+    const ids = this.atencion().analysisAuthorizations.map(a => a.analysisId);
+    if (ids.length === 0) return;
+    const key = ids.join(',');
+    if (key === this.lastLoadedKey) return;
+    this.lastLoadedKey = key;
+    this.store.dispatch(loadAttentionAnalyses({ analysisIds: ids }));
+  });
+
   readonly pricingById = computed(() => {
     const p = this.pricing();
     if (!p) return new Map<number, { precioPaciente: number }>();
@@ -231,9 +258,7 @@ export class ResumenStepComponent implements OnInit {
       this.store.dispatch(loadAttentionPatient({ patientId: attn.patientId }));
     }
 
-    // Always load analysis details
-    const analysisIds = attn.analysisAuthorizations.map(x => x.analysisId);
-    this.store.dispatch(loadAttentionAnalyses({ analysisIds }));
+    // Los detalles de análisis se cargan reactivamente — ver `analysesLoader`.
 
     // Load pricing for this attention
     this.store.dispatch(loadPricing({ attentionId: attn.id }));
