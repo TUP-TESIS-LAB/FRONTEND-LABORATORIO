@@ -253,6 +253,10 @@ export class AtencionWizardComponent {
    * (mismo cálculo), de modo que la navegación libre del header los muestre verdes.
    */
   protected readonly completedSteps = computed<ReadonlySet<number>>(() => {
+    const n = this.visibleSteps().length;
+    // En solo-lectura la atención ya recorrió todos los pasos: marcamos TODOS como
+    // visitados para que el header los deje clickear (navegación libre read-only).
+    if (this.readOnly()) return new Set<number>(Array.from({ length: n }, (_, i) => i));
     const activeIdx = this.activeIndex();
     if (activeIdx < 0) return new Set<number>();
     const set = new Set<number>();
