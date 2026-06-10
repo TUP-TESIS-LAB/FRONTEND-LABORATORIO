@@ -34,11 +34,11 @@ import {
 } from '../../models/extraction.model';
 import * as A from '../../store/extraction/extraction.actions';
 import {
-  selectAwaiting,
+  selectAwaitingToday,
   selectBoxAssignments,
   selectBranchExtractors,
   selectBranches,
-  selectInProgress,
+  selectInProgressToday,
   selectLastAssigned,
   selectLastRefreshAt,
   selectMutating,
@@ -293,8 +293,8 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
   readonly pollIntervalMs = POLL_INTERVAL_MS;
   readonly undoToastKey = UNDO_TOAST_KEY;
 
-  readonly awaiting = this.store.selectSignal(selectAwaiting);
-  readonly inProgress = this.store.selectSignal(selectInProgress);
+  readonly awaiting = this.store.selectSignal(selectAwaitingToday);
+  readonly inProgress = this.store.selectSignal(selectInProgressToday);
   readonly mutating = this.store.selectSignal(selectMutating);
   readonly lastRefreshAt = this.store.selectSignal(selectLastRefreshAt);
   readonly branches = this.store.selectSignal(selectBranches);

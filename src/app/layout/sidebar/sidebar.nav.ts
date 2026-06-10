@@ -27,7 +27,9 @@ export type NavItem =
       kind: 'expandable';
       label: string;
       icon: string;
-      children: { label: string; path: string; sectionKey?: AccessSection }[];
+      // `external: true` → el hijo abre en pestaña nueva (href = path), como los items
+      // `kind: 'external'`. Permite agrupar pantallas externas dentro de un desplegable.
+      children: { label: string; path: string; sectionKey?: AccessSection; external?: boolean }[];
     };
 
 export interface NavSection { label: string; items: NavItem[]; }
@@ -52,16 +54,6 @@ export const NAV_SECTIONS: NavSection[] = [
       { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes', sectionKey: 'PACIENTES' },
       {
         kind: 'link',
-        label: 'Turnos',
-        icon: 'pi pi-calendar',
-        path: '/turnos',
-        moduleKey: ModuleKey.Turnos,
-        sectionKey: 'TURNOS',
-        badge: { text: '4', tone: 'red' },
-        exact: true,
-      },
-      {
-        kind: 'link',
         label: 'Recepción',
         icon: 'pi pi-bell',
         path: '/turnos/recepcion',
@@ -69,28 +61,17 @@ export const NAV_SECTIONS: NavSection[] = [
         sectionKey: 'TURNOS',
       },
       {
-        kind: 'external',
-        label: 'TV sala de espera',
+        // Pantallas externas que el laboratorio expone en sala/recepción (TVs + tótem).
+        // Agrupadas en un desplegable porque se abren en otro dispositivo/pestaña, no
+        // son pantallas del shell admin. branch 1001 = Sede Central del seed local-dev (V902).
+        kind: 'expandable',
+        label: 'Pantallas en sala',
         icon: 'pi pi-desktop',
-        // branch 1001 = Sede Central del seed local-dev (V902).
-        // El backend devuelve 404 si la branch no existe; usar id < 1000 hardcodeado
-        // hace que cualquier dev clon de fresh vea el 404 hasta tocar la URL a mano.
-        href: '/display/lab-demo/1001',
-        chip: 'Smoke',
-      },
-      {
-        kind: 'external',
-        label: 'TV extracción',
-        icon: 'pi pi-desktop',
-        href: '/display/extraccion/lab-demo/1001',
-        chip: 'Smoke',
-      },
-      {
-        kind: 'external',
-        label: 'Tótem',
-        icon: 'pi pi-mobile',
-        href: '/turnos/totem',
-        chip: 'Smoke',
+        children: [
+          { label: 'TV sala de espera', path: '/display/lab-demo/1001',            external: true },
+          { label: 'TV extracción',     path: '/display/extraccion/lab-demo/1001', external: true },
+          { label: 'Tótem',             path: '/turnos/totem',                      external: true },
+        ],
       },
       {
         kind: 'link',

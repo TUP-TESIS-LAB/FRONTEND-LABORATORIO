@@ -1,7 +1,13 @@
 import { QueueStatus } from '../../models/queue-status.enum';
 import { QueueEntry } from '../../models/queue-entry.model';
 import { QueueState } from './queue.state';
-import { selectQueueEntriesAll } from './queue.selectors';
+import { selectQueueEntriesAll, selectQueueEntriesToday } from './queue.selectors';
+
+/** ISO local (sin Z) a las 10:00 del día de `d`. */
+function localIsoAt10(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T10:00:00`;
+}
 
 function entry(over: Partial<QueueEntry>): QueueEntry {
   return {
@@ -56,5 +62,22 @@ describe('selectQueueEntriesAll', () => {
       entry({ id: 2, publicCode: 'ST-0001', hasAppointment: false, createdAt: sameTime }),
     ]));
     expect(result.map(e => e.id)).toEqual([1, 2]);
+  });
+});
+
+describe('selectQueueEntriesToday', () => {
+  function state(entries: QueueEntry[]): { queue: QueueState } {
+    return { queue: { entries, loading: false, callingId: null, error: null } };
+  }
+
+  it('solo deja los que llegaron HOY; conserva los que no traen createdAt (defensivo)', () => {
+    const now = new Date();
+    const ayer = new Date(now); ayer.setDate(now.getDate() - 1);
+    const result = selectQueueEntriesToday(state([
+      entry({ id: 1, createdAt: localIsoAt10(now) }),   // hoy
+      entry({ id: 2, createdAt: localIsoAt10(ayer) }),  // ayer
+      entry({ id: 3, createdAt: '' }),                  // sin fecha → se conserva
+    ]));
+    expect(result.map(e => e.id).sort()).toEqual([1, 3]);
   });
 });

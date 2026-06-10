@@ -28,14 +28,35 @@ describe('SidebarComponent visibility', () => {
     return TestBed.createComponent(SidebarComponent).componentInstance;
   }
 
-  it('muestra Turnos solo si la seccion TURNOS esta concedida', () => {
+  it('NO existe un item "Turnos" en el sidebar (se quitó; queda Configuración de agendas)', () => {
+    const s = setup(['TURNOS'], ['ADMINISTRADOR']);
+    const allLabels = s.visibleSections().flatMap((sec) => sec.items.map((i) => i.label));
+    expect(allLabels).not.toContain('Turnos');
+    expect(allLabels).toContain('Configuración de agendas');
+  });
+
+  it('muestra Recepción solo si la seccion TURNOS esta concedida', () => {
     const withTurnos = setup(['TURNOS'], []);
     const core = withTurnos.visibleSections().find((s) => s.label === 'Core clínico');
-    expect(core?.items.some((i) => i.label === 'Turnos')).toBe(true);
+    expect(core?.items.some((i) => i.label === 'Recepción')).toBe(true);
 
     const withoutTurnos = setup([], []);
     const core2 = withoutTurnos.visibleSections().find((s) => s.label === 'Core clínico');
-    expect(core2?.items.some((i) => i.label === 'Turnos') ?? false).toBe(false);
+    expect(core2?.items.some((i) => i.label === 'Recepción') ?? false).toBe(false);
+  });
+
+  it('agrupa las pantallas externas en el desplegable "Pantallas en sala" (TV sala, TV extracción, Tótem), todas external', () => {
+    const s = setup([], []);
+    const core = s.visibleSections().find((sec) => sec.label === 'Core clínico');
+    const grupo = core?.items.find((i) => i.label === 'Pantallas en sala');
+    expect(grupo?.kind).toBe('expandable');
+    if (grupo?.kind === 'expandable') {
+      expect(grupo.children.map((c) => c.label)).toEqual(['TV sala de espera', 'TV extracción', 'Tótem']);
+      expect(grupo.children.every((c) => c.external === true)).toBe(true);
+    }
+    // Ya no existen como items sueltos con chip "Smoke".
+    const allLabels = core?.items.map((i) => i.label) ?? [];
+    expect(allLabels).not.toContain('TV sala de espera');
   });
 
   it('Empresa (admin-only) visible solo para ADMINISTRADOR', () => {

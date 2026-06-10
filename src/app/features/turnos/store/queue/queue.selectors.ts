@@ -1,4 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { isSameLocalDay } from '@shared/utils/same-local-day';
 import { QueueStatus } from '../../models/queue-status.enum';
 import { QueueState } from './queue.state';
 
@@ -36,4 +37,18 @@ export const selectQueueEntriesAll = createSelector(
       if (ac && bc) return ac.localeCompare(bc);
       return a.id - b.id;
     }),
+);
+
+/**
+ * Cola de espera del DÍA ACTUAL: la sala de espera no debe mostrar gente de días
+ * previos. Filtra los PENDING por `createdAt` de hoy (hora local). Defensivo: si un
+ * entry no trae `createdAt` lo conservamos (un PENDING sin fecha sigue siendo alguien
+ * esperando ahora; preferimos mostrarlo a esconderlo).
+ */
+export const selectQueueEntriesToday = createSelector(
+  selectQueueEntriesAll,
+  (entries) => {
+    const now = new Date();
+    return entries.filter(e => !e.createdAt || isSameLocalDay(e.createdAt, now));
+  },
 );

@@ -19,7 +19,7 @@ import {
   loadQueue,
 } from '../../store/queue/queue.actions';
 import {
-  selectQueueEntriesAll,
+  selectQueueEntriesToday,
   selectQueueLoading,
 } from '../../store/queue/queue.selectors';
 import { QueueRowActionsComponent } from '../../components/queue-row-actions.component';
@@ -42,7 +42,7 @@ export class RecepcionConTotemComponent implements OnInit {
   private branchContext = inject(OperatorBranchContextService);
   private confirmService = inject(ConfirmationService);
 
-  protected entries = this.store.selectSignal(selectQueueEntriesAll);
+  protected entries = this.store.selectSignal(selectQueueEntriesToday);
   protected loading = this.store.selectSignal(selectQueueLoading);
   protected hasBranch = this.branchContext.branchId;
 

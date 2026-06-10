@@ -1,4 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { isSameLocalDay } from '@shared/utils/same-local-day';
 import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 import { ATENCION_FEATURE_KEY, AtencionFeatureState } from './atencion.state';
 
@@ -49,20 +50,25 @@ export const selectFilteredAtenciones = createSelector(
   }
 );
 
+/**
+ * Listado del DÍA ACTUAL: solo las atenciones creadas hoy (en hora local). El
+ * listado de Recepción → tab "Atenciones" no debe arrastrar atenciones de días
+ * previos. Se filtra sobre el resultado ya filtrado por estado/búsqueda. Las
+ * atenciones sin `createdAt` (no deberían existir) quedan fuera por seguridad.
+ */
+export const selectTodayAtenciones = createSelector(
+  selectFilteredAtenciones,
+  (list): AttentionResponse[] => {
+    const now = new Date();
+    return list.filter(a => isSameLocalDay(a.createdAt, now));
+  },
+);
+
 export interface AtencionKpis {
   /** Atenciones canceladas cuyo último cambio (cancelación) ocurrió hoy. */
   canceladasHoy: number;
   /** Atenciones finalizadas en el listado actual. */
   finalizadas: number;
-}
-
-/** Comparte año-mes-día en hora local entre dos fechas. */
-function isSameLocalDay(iso: string, now: Date): boolean {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return false;
-  return d.getFullYear() === now.getFullYear()
-    && d.getMonth() === now.getMonth()
-    && d.getDate() === now.getDate();
 }
 
 /** Helper puro (testeable con un `now` fijo) que arma las métricas del bloque colapsable. */
