@@ -31,6 +31,7 @@ import {
 import {
   clearAtencionSession, readAtencionSession, writeAtencionSession,
 } from '../../../utils/atencion-session-store';
+import { clearAnalisisDraft } from '../../../utils/analisis-draft-store';
 import { DatosGeneralesStepComponent } from './steps/datos-generales-step/datos-generales-step.component';
 import { AnalisisStepComponent } from './steps/analisis-step/analisis-step.component';
 import { ResumenStepComponent } from './steps/resumen-step/resumen-step.component';
@@ -269,6 +270,7 @@ export class AtencionWizardComponent {
     this.waitForMutation((ok) => {
       if (ok) {
         clearAtencionSession();
+        clearAnalisisDraft(d.id);
         this.store.dispatch(resetAtencionWizard());
         this.router.navigate(['/turnos/recepcion']);
       }
@@ -290,7 +292,9 @@ export class AtencionWizardComponent {
     if (next) this.uiStepOverride.set(next);
   }
   onFinished(): void {
+    const d = this.detail();
     clearAtencionSession();
+    if (d) clearAnalisisDraft(d.id);
     this.store.dispatch(resetAtencionWizard());
     this.router.navigate(['/turnos/recepcion']);
   }
