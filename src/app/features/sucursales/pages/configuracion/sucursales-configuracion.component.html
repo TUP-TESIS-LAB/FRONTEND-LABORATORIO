@@ -1,30 +1,21 @@
-<div class="sucursales-page">
-  <header class="page-header">
-    <div class="header-info">
-      <h1>Sucursales</h1>
-      <p class="muted">Gestioná las sucursales del laboratorio.</p>
-    </div>
+<div class="py-2">
+  <header class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold m-0">Sucursales</h2>
     <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openNew()" />
   </header>
 
-  <p-table
-    [value]="sucursales()"
-    [loading]="loading()"
-    [paginator]="sucursales().length > 10"
-    [rows]="10"
-    responsiveLayout="scroll"
-    styleClass="sucursales-table">
+  <p-table [value]="sucursales()" [loading]="loading()" responsiveLayout="scroll" dataKey="id">
     <ng-template pTemplate="header">
       <tr>
         <th>Nombre</th>
-        <th>Descripcion</th>
-        <th style="width: 8rem">Estado</th>
-        <th>Direccion</th>
-        <th style="width: 8rem" class="text-center">Acciones</th>
+        <th>Descripción</th>
+        <th style="width:8rem">Estado</th>
+        <th>Dirección</th>
+        <th class="text-right" style="width:140px">Acciones</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-s>
-      <tr class="row-selectable" (click)="openDetail(s)">
+      <tr class="cursor-pointer" (click)="openDetail(s)">
         <td><strong>{{ s.code }}</strong></td>
         <td>{{ s.description }}</td>
         <td>
@@ -33,34 +24,19 @@
             [severity]="s.status === 'ACTIVE' ? 'success' : 'secondary'" />
         </td>
         <td>{{ formatAddress(s) }}</td>
-        <td class="actions">
-          <p-button
-            icon="pi pi-pencil"
-            [text]="true"
-            [rounded]="true"
-            severity="secondary"
-            pTooltip="Editar"
-            tooltipPosition="top"
-            (onClick)="openDetail(s); $event.stopPropagation()" />
-          <p-button
-            icon="pi pi-trash"
-            [text]="true"
-            [rounded]="true"
-            severity="danger"
-            pTooltip="Eliminar"
-            tooltipPosition="top"
-            (onClick)="remove(s); $event.stopPropagation()" />
+        <td class="text-right">
+          <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar"
+                    (onClick)="openDetail(s); $event.stopPropagation()" />
+          <p-button [text]="true" icon="pi pi-trash" severity="danger" pTooltip="Eliminar" ariaLabel="Eliminar"
+                    (onClick)="remove(s); $event.stopPropagation()" />
         </td>
       </tr>
     </ng-template>
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td colspan="5" class="empty-row">
-          <div class="empty-state">
-            <i class="pi pi-building"></i>
-            <p>Sin sucursales todavia.</p>
-            <p-button label="Crear la primera" icon="pi pi-plus" [text]="true" (onClick)="openNew()" />
-          </div>
+        <td colspan="5">
+          <ui-empty-state heading="Sin sucursales" icon="pi-building"
+                          description="Agregá la primera sucursal del laboratorio." ctaLabel="Nueva sucursal" />
         </td>
       </tr>
     </ng-template>
