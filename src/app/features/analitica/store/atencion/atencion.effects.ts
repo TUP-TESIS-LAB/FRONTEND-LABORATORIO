@@ -237,7 +237,15 @@ export class AtencionEffects {
       ofType(createPatientInline),
       concatMap(({ payload }) =>
         this.patients.create(payload).pipe(
-          map(patient => patientResolved({ patient })),
+          // Alta manual del laboratorio = constatación: el paciente nace verificado.
+          // Reusamos el endpoint verify; si el back lo rechaza (422: faltan datos o
+          // cobertura activa) caemos al paciente creado sin verificar, en SILENCIO
+          // (no es una acción explícita del usuario, no mostramos toast).
+          concatMap(created =>
+            this.patients.verify(created.id).pipe(
+              map(verified => patientResolved({ patient: verified })),
+              catchError(() => of(patientResolved({ patient: created }))),
+            )),
           catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
         ))));
 
@@ -246,7 +254,15 @@ export class AtencionEffects {
       ofType(updatePatientInline),
       concatMap(({ id, payload }) =>
         this.patients.update(id, payload).pipe(
-          map(patient => patientResolved({ patient })),
+          // Edición manual del laboratorio = constatación: el paciente queda verificado
+          // SIEMPRE (la opción manual "Marcar verificado" se reserva para los pacientes
+          // de portal). Reusamos verify y, ante un 422, caemos al paciente actualizado
+          // sin verificar en silencio.
+          concatMap(updated =>
+            this.patients.verify(id).pipe(
+              map(verified => patientResolved({ patient: verified })),
+              catchError(() => of(patientResolved({ patient: updated }))),
+            )),
           catchError((error: HttpErrorResponse) => of(patientResolutionFailure({ error }))),
         ))));
 
