@@ -5,7 +5,6 @@ import { Store } from '@ngrx/store';
 import { Subject, debounceTime } from 'rxjs';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
@@ -15,6 +14,7 @@ import { AgePipe } from '@shared/pipes/age.pipe';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
+import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { Patient, PatientStatus } from '../../models/patient.model';
 import { PatientStateFilter } from '../../models/patient-page.model';
@@ -33,17 +33,14 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   imports: [
-    RouterLink, ButtonModule, InputTextModule, TagModule,
+    RouterLink, ButtonModule, TagModule,
     ConfirmDialogModule, DatePipe, DniPipe, AgePipe,
-    DataTableComponent, UiCellDirective,
+    DataTableComponent, UiCellDirective, FilterBarComponent,
   ],
   template: `
     <div class="p-6">
       <header class="flex items-center justify-between mb-4">
-        <div>
-          <div class="text-xs text-surface-500">Core clínico</div>
-          <h1 class="text-2xl font-semibold flex items-center gap-2"><i class="pi pi-address-book"></i> Pacientes</h1>
-        </div>
+        <h2 class="page-title"><i class="pi pi-address-book page-title-icon" aria-hidden="true"></i> Pacientes</h2>
         <div class="flex items-center gap-2">
           <p-button label="Exportar" icon="pi pi-file-export" severity="secondary" [outlined]="true" [disabled]="true" pTooltip="Próximamente" />
           @if (canMutate()) {
@@ -54,26 +51,8 @@ import {
         </div>
       </header>
 
-      <div class="flex items-center gap-2 mb-3 flex-wrap">
-        <span class="p-input-icon-left">
-          <i class="pi pi-search"></i>
-          <input pInputText placeholder="Buscar por nombre o DNI…" (input)="onSearch($any($event.target).value)" />
-        </span>
-        @for (opt of stateOptions; track opt.value) {
-          <p-button
-            [label]="opt.label"
-            size="small"
-            [severity]="pageRequest().state === opt.value ? 'primary' : 'secondary'"
-            [outlined]="pageRequest().state !== opt.value"
-            (onClick)="setState(opt.value)" />
-        }
-        <p-button
-          label="Sólo completos"
-          icon="pi pi-filter"
-          size="small"
-          [severity]="pageRequest().status === 'COMPLETE' ? 'primary' : 'secondary'"
-          [outlined]="pageRequest().status !== 'COMPLETE'"
-          (onClick)="toggleCompleteFilter()" />
+      <div class="mb-3">
+        <ui-filter-bar [config]="filterConfig" (valueChange)="onFilterChange($event)" />
       </div>
 
       <ui-table
@@ -165,6 +144,28 @@ export class PatientListPage implements OnInit {
     { value: 'all', label: 'Todos' },
   ];
 
+  // Config del FilterBar estándar. El estado es single-value (active/inactive; sin
+  // selección = todos) y "Sólo completos" es un toggle booleano: ambos se mapean a
+  // arrays de un elemento y se interpretan en onFilterChange.
+  readonly filterConfig: FilterBarConfig = {
+    searchPlaceholder: 'Buscar por nombre o DNI…',
+    selects: [
+      {
+        key: 'state',
+        label: 'Estado',
+        options: [
+          { value: 'active', label: 'Activos' },
+          { value: 'inactive', label: 'Inactivos' },
+        ],
+      },
+      {
+        key: 'completos',
+        label: 'Completitud',
+        options: [{ value: 'COMPLETE', label: 'Sólo completos' }],
+      },
+    ],
+  };
+
   ngOnInit(): void {
     this.search$.pipe(debounceTime(300)).subscribe((q) =>
       this.store.dispatch(setPatientPageRequest({ patch: { q, page: 0 } })),
@@ -184,6 +185,28 @@ export class PatientListPage implements OnInit {
   toggleCompleteFilter(): void {
     const next: PatientStatus | undefined = this.pageRequest().status === 'COMPLETE' ? undefined : 'COMPLETE';
     this.store.dispatch(setPatientPageRequest({ patch: { status: next, page: 0 } }));
+  }
+
+  /**
+   * Cableo del FilterBar estándar a la lógica de filtrado existente. El search pasa por
+   * el mismo debounce (search$); estado y completitud son single-value mapeados desde
+   * los arrays del filter-bar (sin selección = 'all' / sin status) y se despachan ya.
+   * Resetea page a 0.
+   */
+  onFilterChange(value: FilterBarValue): void {
+    this.search$.next((value['search'] as string) ?? '');
+
+    const states = (value['state'] as PatientStateFilter[]) ?? [];
+    const state: PatientStateFilter = states.length ? states[states.length - 1] : 'all';
+
+    const completos = (value['completos'] as string[]) ?? [];
+    const status: PatientStatus | undefined = completos.includes('COMPLETE') ? 'COMPLETE' : undefined;
+
+    // Solo despachamos estado/completitud acá; el texto va por el debounce de search$
+    // para no duplicar requests en cada tecla.
+    if (state !== this.pageRequest().state || status !== this.pageRequest().status) {
+      this.store.dispatch(setPatientPageRequest({ patch: { state, status, page: 0 } }));
+    }
   }
 
   onPage(e: TableLazyLoadEvent): void {

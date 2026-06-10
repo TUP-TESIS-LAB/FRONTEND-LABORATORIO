@@ -65,9 +65,12 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       <div class="flex gap-2 items-end">
         <div class="flex-1">
           <label class="block text-sm font-medium mb-1">DNI del paciente</label>
-          <input pInputText [(ngModel)]="dniInput" class="w-full" placeholder="Sin puntos ni guiones" />
+          <input pInputText [(ngModel)]="dniInput" class="w-full" placeholder="Sin puntos ni guiones"
+                 [readonly]="readOnly()" (keyup.enter)="buscar()" />
         </div>
-        <p-button label="Buscar" icon="pi pi-search" [loading]="resolving()" (onClick)="buscar()" />
+        @if (!readOnly()) {
+          <p-button label="Buscar" icon="pi pi-search" [loading]="resolving()" (onClick)="buscar()" />
+        }
       </div>
 
       @if (resolving()) {
@@ -125,7 +128,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                  modificaron sus datos desde el portal). La edición manual del laboratorio
                  ya deja al paciente verificado automáticamente, así que este botón nunca
                  aparece como consecuencia de una corrección manual. -->
-            @if (esPortal() && estado() !== 'rojo' && !p.verifiedAt) {
+            @if (!readOnly() && esPortal() && estado() !== 'rojo' && !p.verifiedAt) {
               <div class="flex items-center gap-2 pt-1">
                 <p-button
                   data-testid="btn-verificar"
@@ -143,14 +146,16 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
               </div>
             }
 
-            <div class="pt-1">
-              <p-button
-                label="Corregir datos"
-                icon="pi pi-pencil"
-                severity="secondary"
-                [outlined]="true"
-                (onClick)="startEdit()" />
-            </div>
+            @if (!readOnly()) {
+              <div class="pt-1">
+                <p-button
+                  label="Corregir datos"
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  [outlined]="true"
+                  (onClick)="startEdit()" />
+              </div>
+            }
           </div>
         } @else {
           <div class="rounded border p-4 space-y-3">
@@ -289,9 +294,11 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       <div>
         <div class="flex items-center justify-between mb-1">
           <label class="block text-sm font-medium">Médico solicitante</label>
-          <button type="button" class="text-sm text-primary-600 hover:underline" (click)="toggleAddDoctor()">
-            <i class="pi pi-plus mr-1"></i>{{ addingDoctor() ? 'Cancelar' : 'Alta rápida' }}
-          </button>
+          @if (!readOnly()) {
+            <button type="button" class="text-sm text-primary-600 hover:underline" (click)="toggleAddDoctor()">
+              <i class="pi pi-plus mr-1"></i>{{ addingDoctor() ? 'Cancelar' : 'Alta rápida' }}
+            </button>
+          }
         </div>
 
         @if (!addingDoctor()) {
@@ -303,6 +310,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
             optionValue="value"
             [filter]="true"
             [showClear]="true"
+            [disabled]="readOnly()"
             placeholder="— Sin médico / Seleccioná —"
             appendTo="body"
             class="w-full" />
@@ -333,18 +341,21 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       <!-- Indicaciones + confirmar -->
       <div>
         <label class="block text-sm font-medium mb-1">Indicaciones</label>
-        <input pInputText [(ngModel)]="indications" class="w-full" placeholder="Ej: Ayuno 8 hs" />
+        <input pInputText [(ngModel)]="indications" class="w-full" placeholder="Ej: Ayuno 8 hs"
+               [readonly]="readOnly()" />
       </div>
 
-      <div class="flex justify-between items-center mt-4">
-        <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
-                  [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
-        <p-button
-          label="Confirmar y seguir"
-          icon="pi pi-arrow-right"
-          [disabled]="!canConfirm()"
-          (onClick)="onConfirm()" />
-      </div>
+      @if (!readOnly()) {
+        <div class="flex justify-between items-center mt-4">
+          <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                    [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
+          <p-button
+            label="Confirmar y seguir"
+            icon="pi pi-arrow-right"
+            [disabled]="!canConfirm()"
+            (onClick)="onConfirm()" />
+        </div>
+      }
 
     </div>
   `,
@@ -404,6 +415,9 @@ export class DatosGeneralesStepComponent implements OnInit {
   readonly canReturn      = input<boolean>(false);
   readonly returnDisabled = input<boolean>(false);
   readonly returnPhase    = output<void>();
+
+  /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
+  readonly readOnly = input<boolean>(false);
 
   protected readonly resolved        = this.store.selectSignal(selectResolvedPatient);
   protected readonly resolving        = this.store.selectSignal(selectPatientResolving);
@@ -563,6 +577,7 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected readonly canConfirm = computed(() => this.resolved() != null && !this.resolving());
 
   buscar(): void {
+    if (this.readOnly()) return;
     const dni = this.dniInput.trim();
     if (dni) {
       this.store.dispatch(resolvePatientByDni({ dni }));

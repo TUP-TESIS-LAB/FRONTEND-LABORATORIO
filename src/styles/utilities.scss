@@ -133,14 +133,24 @@
 
 /* Ícono del título de una pantalla — el mismo PrimeIcon que la entrada del sidebar,
    puesto al lado del título de la page (ej: Recepción usa pi-bell, igual que su item
-   en el menú). Tamaño estándar 1.6rem y color de marca, alineado con el texto del
-   heading. Reusable en cualquier título de página. */
+   en el menú). Tamaño estándar 1.6rem; hereda el color del texto del heading (NO el
+   color de marca). Reusable en cualquier título de página. */
 .page-title-icon {
   font-size: 1.6rem;
   line-height: 1;
-  color: var(--brand-primary);
   vertical-align: middle;
   margin-right: 0.5rem;
+}
+
+/* Heading estándar de página: mismo tamaño/peso/color en todas las pantallas.
+   Usar junto a `.page-title-icon` (ver patrón en recepcion.page.html). */
+.page-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ds-text, #0f172a);
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Estándar del sistema: feedback de campo requerido.

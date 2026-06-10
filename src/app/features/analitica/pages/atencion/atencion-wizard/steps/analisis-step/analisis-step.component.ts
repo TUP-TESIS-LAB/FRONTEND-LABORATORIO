@@ -31,25 +31,30 @@ import {
     <div class="space-y-4">
       <lab-analysis-picker
         [initialItems]="initialItems()"
+        [readOnly]="readOnly()"
         (analysisAdded)="onAnalysisAdded($event)"
         (analysisRemoved)="onAnalysisRemoved($event)"
         (itemsChanged)="onItemsChanged($event)"
         (detailRequested)="onDetailRequested($event)">
         <!-- Proyectado a la derecha del buscador; la tabla del picker queda a todo el ancho. -->
-        <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
-          <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
-          <span class="text-sm font-semibold">Urgente</span>
-        </label>
+        @if (!readOnly()) {
+          <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
+            <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
+            <span class="text-sm font-semibold">Urgente</span>
+          </label>
+        }
       </lab-analysis-picker>
 
-      <div class="flex justify-between items-center mt-4">
-        <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
-                  [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
-        <p-button [label]="continueLabel()"
-                  [loading]="mutating()"
-                  [disabled]="items().length === 0 || mutating()"
-                  (onClick)="onContinue()" />
-      </div>
+      @if (!readOnly()) {
+        <div class="flex justify-between items-center mt-4">
+          <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                    [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
+          <p-button [label]="continueLabel()"
+                    [loading]="mutating()"
+                    [disabled]="items().length === 0 || mutating()"
+                    (onClick)="onContinue()" />
+        </div>
+      }
 
       <lab-analysis-detail-modal
         [analysisId]="detailId()"
@@ -70,6 +75,9 @@ export class AnalisisStepComponent implements OnInit {
   readonly canReturn      = input<boolean>(false);
   readonly returnDisabled = input<boolean>(false);
   readonly returnPhase    = output<void>();
+
+  /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
+  readonly readOnly = input<boolean>(false);
 
   readonly items      = signal<PickerRow[]>([]);
   readonly detailId   = signal<number | null>(null);

@@ -18,7 +18,11 @@ import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
+import { EMPTY } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
+import { Doctor } from '@features/medicos/models/doctor.model';
+import { DoctorService } from '@features/medicos/services/doctor.service';
 import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencion.model';
 import { FinalizeAttentionModalComponent } from '../../../../../components/finalize-attention-modal/finalize-attention-modal.component';
 import {
@@ -69,6 +73,11 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
       </section>
 
       <section>
+        <div class="text-sm opacity-60">Médico solicitante</div>
+        <div class="text-base">{{ doctorLabel() }}</div>
+      </section>
+
+      <section>
         <div class="text-sm opacity-60">Indicaciones</div>
         <div class="text-base">{{ atencion().indications || '—' }}</div>
       </section>
@@ -95,19 +104,21 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
                   {{ priceItem.precioPaciente | currencyAr }}
                 </span>
               }
-              <p-button
-                icon="pi pi-times"
-                severity="danger"
-                [text]="true"
-                [rounded]="true"
-                size="small"
-                pTooltip="Quitar análisis"
-                tooltipPosition="left"
-                [disabled]="removingAnalysis() || copaymentMutating()"
-                [loading]="removingAnalysis()"
-                (onClick)="onRemoveAnalysis(a.analysisId)"
-                aria-label="Quitar análisis"
-              />
+              @if (!readOnly()) {
+                <p-button
+                  icon="pi pi-times"
+                  severity="danger"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  pTooltip="Quitar análisis"
+                  tooltipPosition="left"
+                  [disabled]="removingAnalysis() || copaymentMutating()"
+                  [loading]="removingAnalysis()"
+                  (onClick)="onRemoveAnalysis(a.analysisId)"
+                  aria-label="Quitar análisis"
+                />
+              }
             </li>
           }
         </ul>
@@ -131,7 +142,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
               [minFractionDigits]="2"
               [maxFractionDigits]="2"
               [min]="0"
-              [disabled]="copaymentMutating()"
+              [disabled]="copaymentMutating() || readOnly()"
               styleClass="w-40"
               inputStyleClass="w-40 text-right"
               placeholder="0,00"
@@ -148,15 +159,17 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         </section>
       }
 
-      <div class="flex justify-between items-center mt-4">
-        <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
-                  [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
-        <p-button label="Finalizar atención"
-                  icon="pi pi-check"
-                  [loading]="mutating()"
-                  [disabled]="mutating()"
-                  (onClick)="openFinalize()" />
-      </div>
+      @if (!readOnly()) {
+        <div class="flex justify-between items-center mt-4">
+          <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                    [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
+          <p-button label="Finalizar atención"
+                    icon="pi pi-check"
+                    [loading]="mutating()"
+                    [disabled]="mutating()"
+                    (onClick)="openFinalize()" />
+        </div>
+      }
 
       <lab-finalize-attention-modal
         [visible]="finalizeModalOpen()"
@@ -169,6 +182,7 @@ export class ResumenStepComponent implements OnInit {
   private readonly store      = inject(Store);
   private readonly actions$   = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly doctorsApi = inject(DoctorService);
 
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
@@ -177,6 +191,19 @@ export class ResumenStepComponent implements OnInit {
   readonly canReturn      = input<boolean>(false);
   readonly returnDisabled = input<boolean>(false);
   readonly returnPhase    = output<void>();
+
+  /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
+  readonly readOnly = input<boolean>(false);
+
+  /** Médico solicitante resuelto por id (NEW-A). Null si no hay médico o aún no cargó. */
+  private readonly doctor = signal<Doctor | null>(null);
+  /** Etiqueta del médico solicitante para el resumen: "Apellido, Nombre — Mat. {tuition}". */
+  readonly doctorLabel = computed<string>(() => {
+    if (this.atencion().doctorId == null) return 'Sin médico solicitante';
+    const d = this.doctor();
+    if (!d) return '—';
+    return `${d.lastName}, ${d.firstName} — Mat. ${d.tuition}`;
+  });
 
   readonly finalizeModalOpen  = signal(false);
   readonly mutating           = this.store.selectSignal(selectMutating);
@@ -262,6 +289,14 @@ export class ResumenStepComponent implements OnInit {
 
     // Load pricing for this attention
     this.store.dispatch(loadPricing({ attentionId: attn.id }));
+
+    // Médico solicitante (NEW-A): resolvemos el nombre+matrícula por id. Errores
+    // silenciados (catchError → EMPTY) para no romper el resumen si el HTTP falla.
+    if (attn.doctorId != null) {
+      this.doctorsApi.getById(attn.doctorId).pipe(
+        catchError(() => EMPTY),
+      ).subscribe((d) => this.doctor.set(d));
+    }
   }
 
   onRemoveAnalysis(analysisId: number): void {

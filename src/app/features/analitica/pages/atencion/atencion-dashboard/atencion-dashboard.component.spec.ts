@@ -60,16 +60,35 @@ describe('AtencionDashboardComponent', () => {
     expect(confirmSpy).not.toHaveBeenCalled();
   });
 
-  it('es solo la lista embebida: sin header propio ("Nueva atención"), sin KPIs ("Resumen del día")', () => {
+  it('es solo la lista embebida: sin header propio ("Nueva atención")', () => {
     // El dashboard ya no tiene pantalla propia — vive embebido en la tab "Atenciones"
     // de Recepción, cuyo header global aporta título + "Nueva atención" + "Turnos del día".
     const fixture = setup();
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).not.toContain('Nueva atención');
-    expect(fixture.nativeElement.textContent).not.toContain('Resumen del día');
-    expect(fixture.nativeElement.querySelector('ui-stat-card')).toBeNull();
     // La búsqueda de la lista sí está presente.
     expect(fixture.nativeElement.querySelector('input[placeholder="Buscar por nombre o DNI"]')).not.toBeNull();
+  });
+
+  it('010: el bloque "Resumen del día" arranca colapsado (sin ui-stat-card)', () => {
+    const fixture = setup();
+    fixture.detectChanges();
+    // El header del bloque siempre está presente; las cards no hasta expandir.
+    expect(fixture.nativeElement.textContent).toContain('Resumen del día');
+    expect(fixture.componentInstance['kpisExpanded']()).toBe(false);
+    expect(fixture.nativeElement.querySelector('ui-stat-card')).toBeNull();
+  });
+
+  it('010: toggleKpis() expande y renderiza 2 ui-stat-card ("Canceladas hoy" / "Finalizadas")', () => {
+    const fixture = setup();
+    fixture.detectChanges();
+    fixture.componentInstance.toggleKpis();
+    fixture.detectChanges();
+    expect(fixture.componentInstance['kpisExpanded']()).toBe(true);
+    const cards = fixture.nativeElement.querySelectorAll('ui-stat-card');
+    expect(cards.length).toBe(2);
+    expect(fixture.nativeElement.textContent).toContain('Canceladas hoy');
+    expect(fixture.nativeElement.textContent).toContain('Finalizadas');
   });
 
   it('009: con FINANCIERO activo el filtro ofrece Cobro y Facturación', () => {
