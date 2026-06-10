@@ -7,8 +7,6 @@ import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { ModuleRegistry } from '@core/tenant/module-registry';
-import { ModuleKey } from '@core/models/module-key.enum';
 import { race, take } from 'rxjs';
 import { Analysis } from '../../../../../models/atencion.model';
 import { AnalysisDetailModalComponent } from '../../../../../components/analysis-detail-modal/analysis-detail-modal.component';
@@ -31,27 +29,18 @@ import {
   imports: [FormsModule, ButtonModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
   template: `
     <div class="space-y-4">
-      <div class="flex flex-wrap items-end gap-4">
-        <div class="flex-1 min-w-[16rem]">
-          <lab-analysis-picker
-            [initialItems]="initialItems()"
-            (analysisAdded)="onAnalysisAdded($event)"
-            (analysisRemoved)="onAnalysisRemoved($event)"
-            (itemsChanged)="onItemsChanged($event)"
-            (detailRequested)="onDetailRequested($event)" />
-        </div>
-
-        <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none">
+      <lab-analysis-picker
+        [initialItems]="initialItems()"
+        (analysisAdded)="onAnalysisAdded($event)"
+        (analysisRemoved)="onAnalysisRemoved($event)"
+        (itemsChanged)="onItemsChanged($event)"
+        (detailRequested)="onDetailRequested($event)">
+        <!-- Proyectado a la derecha del buscador; la tabla del picker queda a todo el ancho. -->
+        <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
           <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
           <span class="text-sm font-semibold">Urgente</span>
         </label>
-      </div>
-
-      @if (!financieroActive()) {
-        <p class="text-xs opacity-70">
-          El módulo Financiero no está activo. Pasarás directo al paso de confirmación.
-        </p>
-      }
+      </lab-analysis-picker>
 
       <div class="flex justify-between items-center mt-4">
         <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
@@ -73,7 +62,6 @@ export class AnalisisStepComponent implements OnInit {
   private readonly store      = inject(Store);
   private readonly actions$   = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly registry   = inject(ModuleRegistry);
 
   readonly atencionId   = input.required<number>();
   readonly stepAdvanced = output<void>();
@@ -88,7 +76,6 @@ export class AnalisisStepComponent implements OnInit {
   readonly detailOpen = signal(false);
   isUrgentValue = false;
 
-  readonly financieroActive = computed(() => this.registry.isActive(ModuleKey.Financiero));
   readonly mutating = this.store.selectSignal(selectMutating);
 
   private readonly detail          = this.store.selectSignal(selectDetail);
