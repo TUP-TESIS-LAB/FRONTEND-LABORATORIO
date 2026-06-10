@@ -1,10 +1,11 @@
 <p-toast />
 <p-confirmDialog />
 
-<div class="config-page">
+<div class="config-page p-6">
   <header class="config-page__header">
     <div>
-      <h1>Configuración de turnos</h1>
+      <div class="text-xs text-surface-500">Core clínico</div>
+      <h1 class="flex items-center gap-2"><i class="pi pi-calendar-plus"></i> Configuración de agendas</h1>
       <p>Definí horarios y capacidad por sucursal.</p>
     </div>
     @if (canWrite()) {
