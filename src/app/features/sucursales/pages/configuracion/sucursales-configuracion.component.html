@@ -4,43 +4,30 @@
     <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openNew()" />
   </header>
 
-  <p-table [value]="sucursales()" [loading]="loading()" responsiveLayout="scroll" dataKey="id">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Nombre</th>
-        <th>Descripción</th>
-        <th style="width:8rem">Estado</th>
-        <th>Dirección</th>
-        <th class="text-right" style="width:140px">Acciones</th>
-      </tr>
+  <ui-table
+    [value]="sucursales()"
+    [loading]="loading()"
+    [columns]="columns"
+    [showEdit]="true"
+    [showDelete]="true"
+    emptyHeading="Sin sucursales"
+    emptyIcon="pi-building"
+    emptyDescription="Agregá la primera sucursal del laboratorio."
+    emptyCtaLabel="Nueva sucursal"
+    (edit)="openDetail($any($event))"
+    (rowDelete)="remove($any($event))"
+    (emptyCtaClick)="openNew()">
+
+    <ng-template uiCell="estado" let-row>
+      <p-tag
+        [value]="$any(row).status === 'ACTIVE' ? 'Activa' : 'Inactiva'"
+        [severity]="$any(row).status === 'ACTIVE' ? 'success' : 'secondary'" />
     </ng-template>
-    <ng-template pTemplate="body" let-s>
-      <tr class="cursor-pointer" (click)="openDetail(s)">
-        <td><strong>{{ s.code }}</strong></td>
-        <td>{{ s.description }}</td>
-        <td>
-          <p-tag
-            [value]="s.status === 'ACTIVE' ? 'Activa' : 'Inactiva'"
-            [severity]="s.status === 'ACTIVE' ? 'success' : 'secondary'" />
-        </td>
-        <td>{{ formatAddress(s) }}</td>
-        <td class="text-right">
-          <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar"
-                    (onClick)="openDetail(s); $event.stopPropagation()" />
-          <p-button [text]="true" icon="pi pi-trash" severity="danger" pTooltip="Eliminar" ariaLabel="Eliminar"
-                    (onClick)="remove(s); $event.stopPropagation()" />
-        </td>
-      </tr>
+
+    <ng-template uiCell="direccion" let-row>
+      {{ formatAddress($any(row)) }}
     </ng-template>
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="5">
-          <ui-empty-state heading="Sin sucursales" icon="pi-building"
-                          description="Agregá la primera sucursal del laboratorio." ctaLabel="Nueva sucursal" />
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+  </ui-table>
 
   <p-confirmDialog />
   <p-toast />
