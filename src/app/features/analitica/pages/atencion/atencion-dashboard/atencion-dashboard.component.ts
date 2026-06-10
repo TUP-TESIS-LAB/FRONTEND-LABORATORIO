@@ -24,9 +24,9 @@ import {
 import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
-  selectFilteredAtenciones,
   selectFilters,
   selectListLoading,
+  selectTodayAtenciones,
 } from '../../../store/atencion/atencion.selectors';
 
 // Estados de la fase financiera: sólo se ofrecen como filtro si el módulo FINANCIERO está activo.
@@ -149,7 +149,7 @@ export class AtencionDashboardComponent implements OnInit {
   private readonly moduleRegistry = inject(ModuleRegistry);
   private readonly confirm        = inject(ConfirmationService);
 
-  protected readonly rows    = this.store.selectSignal(selectFilteredAtenciones);
+  protected readonly rows    = this.store.selectSignal(selectTodayAtenciones);
   protected readonly filters = this.store.selectSignal(selectFilters);
   protected readonly loading = this.store.selectSignal(selectListLoading);
 
