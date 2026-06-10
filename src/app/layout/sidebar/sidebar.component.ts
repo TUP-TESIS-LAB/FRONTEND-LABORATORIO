@@ -113,7 +113,11 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
                         rel="noopener"
                         class="ui-sidebar__subitem"
                         (click)="itemClick.emit()">
-                        <span class="ui-sidebar__dot"></span>
+                        @if (child.icon) {
+                          <span class="ui-sidebar__icon"><i [class]="child.icon"></i></span>
+                        } @else {
+                          <span class="ui-sidebar__dot"></span>
+                        }
                         <span class="ui-sidebar__label">{{ child.label }}</span>
                         <i class="pi pi-external-link ui-sidebar__chevron"></i>
                       </a>
@@ -123,7 +127,11 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
                         routerLinkActive="ui-sidebar__subitem--active"
                         class="ui-sidebar__subitem"
                         (click)="itemClick.emit()">
-                        <span class="ui-sidebar__dot"></span>
+                        @if (child.icon) {
+                          <span class="ui-sidebar__icon"><i [class]="child.icon"></i></span>
+                        } @else {
+                          <span class="ui-sidebar__dot"></span>
+                        }
                         <span class="ui-sidebar__label">{{ child.label }}</span>
                       </a>
                     }

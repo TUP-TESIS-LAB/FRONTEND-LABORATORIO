@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { filter, take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
+import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 
 import {
   loadUsuarios, setUsuariosFilters, loadRoles,
@@ -23,7 +24,6 @@ import {
 import { Sucursal } from '@features/sucursales/models/sucursal.model';
 import { SucursalService } from '@features/sucursales/services/sucursal.service';
 
-import { UsuariosFiltrosComponent } from './components/usuarios-filtros.component';
 import { UsuariosTableComponent } from './components/usuarios-table.component';
 import { UsuarioFormDrawerComponent } from './components/usuario-form-drawer.component';
 import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.component';
@@ -32,24 +32,23 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
   selector: 'emp-usuarios-page',
   standalone: true,
   imports: [
-    ButtonModule,
-    UsuariosFiltrosComponent, UsuariosTableComponent,
+    ButtonModule, FilterBarComponent,
+    UsuariosTableComponent,
     UsuarioFormDrawerComponent, ToggleStatusDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="emp-usuarios__header">
       <div>
-        <h2 class="emp-usuarios__title">Usuarios</h2>
+        <h2 class="page-title"><i class="pi pi-building page-title-icon" aria-hidden="true"></i> Usuarios</h2>
         <small class="ui-text-muted">{{ totalElements() }} usuarios en total</small>
       </div>
       <p-button label="Invitar" icon="pi pi-plus" severity="primary" (onClick)="openCreate()" />
     </div>
 
-    <emp-usuarios-filtros
-      [filters]="filters()"
-      [roles]="roles()"
-      (patch)="onFiltersPatch($event)" />
+    <div class="emp-usuarios__filters">
+      <ui-filter-bar [config]="filterConfig()" (valueChange)="onFilterChange($event)" />
+    </div>
 
     <emp-usuarios-table
       [usuarios]="usuarios()"
@@ -87,7 +86,7 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: var(--space-4);
     }
-    .emp-usuarios__title { margin: 0; }
+    .emp-usuarios__filters { margin-bottom: var(--space-4); }
   `],
 })
 export class UsuariosPage implements OnInit {
@@ -112,6 +111,28 @@ export class UsuariosPage implements OnInit {
   readonly toggleOpen = signal(false);
   readonly togglingUser = signal<Usuario | null>(null);
 
+  // FilterBar estándar: búsqueda libre + rol (multi-select por id) + estado single-value
+  // (activos/inactivos; sin selección = todos). Computed porque las opciones de rol vienen
+  // del store.
+  readonly filterConfig = computed<FilterBarConfig>(() => ({
+    searchPlaceholder: 'Buscar por nombre, email, documento…',
+    selects: [
+      {
+        key: 'roleIds',
+        label: 'Rol',
+        options: this.roles().map((r) => ({ value: r.id, label: r.description })),
+      },
+      {
+        key: 'estado',
+        label: 'Estado',
+        options: [
+          { value: 'active', label: 'Activos' },
+          { value: 'inactive', label: 'Inactivos' },
+        ],
+      },
+    ],
+  }));
+
   ngOnInit(): void {
     this.store.dispatch(loadRoles());
     this.store.dispatch(loadCatalog());
@@ -123,7 +144,21 @@ export class UsuariosPage implements OnInit {
       .subscribe((res) => this.branches.set(res.content.filter((s) => s.active)));
   }
 
-  onFiltersPatch(patch: Partial<BuscarUsuariosParams>): void {
+  /**
+   * Cableo del FilterBar estándar a la búsqueda de usuarios. Rol es multi-select (ids);
+   * estado es single-value (sin selección = todos → isActive undefined). Resetea page a 0.
+   */
+  onFilterChange(value: FilterBarValue): void {
+    const roleIds = (value['roleIds'] as number[]) ?? [];
+    const estados = (value['estado'] as string[]) ?? [];
+    const lastEstado = estados.length ? estados[estados.length - 1] : undefined;
+
+    const patch: Partial<BuscarUsuariosParams> = {
+      search: (value['search'] as string) || undefined,
+      roleIds: roleIds.length ? roleIds : undefined,
+      isActive: lastEstado === undefined ? undefined : lastEstado === 'active',
+      page: 0,
+    };
     this.store.dispatch(setUsuariosFilters({ patch }));
   }
   onPageChange({ page, size }: { page: number; size: number }): void {

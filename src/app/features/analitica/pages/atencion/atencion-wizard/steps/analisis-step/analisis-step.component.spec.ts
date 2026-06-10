@@ -173,6 +173,14 @@ describe('AnalisisStepComponent', () => {
     ]);
   });
 
+  it('NEW-E: en readOnly no se renderiza "Continuar" ni "Volver fase"', () => {
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.detectChanges();
+    const labels = Array.from(fixture.nativeElement.querySelectorAll('button')).map((b: any) => b.textContent ?? '');
+    expect(labels.some((l: string) => l.includes('Continuar'))).toBe(false);
+    expect(labels.some((l: string) => l.includes('Volver fase'))).toBe(false);
+  });
+
   it('onItemsChanged actualiza la lista de items para el dispatch', () => {
     const rows = [makeRow({ id: 3, isAuthorized: true }), makeRow({ id: 4, shortCode: '2001', name: 'Bio', isAuthorized: false })];
     fixture.componentInstance.onItemsChanged(rows);

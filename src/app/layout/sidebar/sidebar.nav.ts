@@ -29,7 +29,7 @@ export type NavItem =
       icon: string;
       // `external: true` → el hijo abre en pestaña nueva (href = path), como los items
       // `kind: 'external'`. Permite agrupar pantallas externas dentro de un desplegable.
-      children: { label: string; path: string; sectionKey?: AccessSection; external?: boolean }[];
+      children: { label: string; path: string; icon?: string; sectionKey?: AccessSection; external?: boolean }[];
     };
 
 export interface NavSection { label: string; items: NavItem[]; }
@@ -68,9 +68,9 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Pantallas en sala',
         icon: 'pi pi-desktop',
         children: [
-          { label: 'TV sala de espera', path: '/display/lab-demo/1001',            external: true },
-          { label: 'TV extracción',     path: '/display/extraccion/lab-demo/1001', external: true },
-          { label: 'Tótem',             path: '/turnos/totem',                      external: true },
+          { label: 'TV sala de espera', path: '/display/lab-demo/1001',            icon: 'pi pi-desktop', external: true },
+          { label: 'TV extracción',     path: '/display/extraccion/lab-demo/1001', icon: 'pi pi-desktop', external: true },
+          { label: 'Tótem',             path: '/turnos/totem',                      icon: 'pi pi-mobile',  external: true },
         ],
       },
       {

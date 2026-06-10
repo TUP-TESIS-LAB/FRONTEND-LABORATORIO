@@ -104,6 +104,40 @@ describe('DatosGeneralesStepComponent', () => {
     );
   });
 
+  it('NEW-B1: Enter en el input de DNI dispara buscar() y despacha resolvePatientByDni', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    (fixture.componentInstance as any).dniInput = '20304050';
+    const spy = vi.spyOn(store, 'dispatch');
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[placeholder="Sin puntos ni guiones"]');
+    expect(input).toBeTruthy();
+    input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter' }));
+    fixture.detectChanges();
+    expect(spy).toHaveBeenCalledWith(resolvePatientByDni({ dni: '20304050' }));
+  });
+
+  it('NEW-E: en readOnly no se renderiza el botón "Buscar" ni "Confirmar y seguir"', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.detectChanges();
+    const labels = Array.from(fixture.nativeElement.querySelectorAll('button')).map((b: any) => b.textContent ?? '');
+    expect(labels.some((l: string) => l.includes('Buscar'))).toBe(false);
+    expect(labels.some((l: string) => l.includes('Confirmar y seguir'))).toBe(false);
+  });
+
+  it('NEW-E: buscar() es no-op en readOnly', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.detectChanges();
+    (fixture.componentInstance as any).dniInput = '123';
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.buscar();
+    expect(spy).not.toHaveBeenCalledWith(resolvePatientByDni({ dni: '123' }));
+  });
+
   it('buscar() despacha resolvePatientByDni con el dni ingresado', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);

@@ -21,6 +21,7 @@ import { Sucursal } from '../../models/sucursal.model';
   providers: [MessageService],
   template: `
     <p-toast />
+    <h2 class="page-title"><i class="pi pi-building page-title-icon" aria-hidden="true"></i> Sucursales</h2>
     <ui-table
       [value]="sucursales()"
       [loading]="pending()"

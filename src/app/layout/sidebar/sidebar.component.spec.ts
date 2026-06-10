@@ -59,6 +59,17 @@ describe('SidebarComponent visibility', () => {
     expect(allLabels).not.toContain('TV sala de espera');
   });
 
+  it('los hijos de "Pantallas en sala" tienen icono (desktop/mobile) en lugar de puntito', () => {
+    const s = setup([], []);
+    const core = s.visibleSections().find((sec) => sec.label === 'Core clínico');
+    const grupo = core?.items.find((i) => i.label === 'Pantallas en sala');
+    if (grupo?.kind === 'expandable') {
+      expect(grupo.children.map((c) => c.icon)).toEqual([
+        'pi pi-desktop', 'pi pi-desktop', 'pi pi-mobile',
+      ]);
+    }
+  });
+
   it('Empresa (admin-only) visible solo para ADMINISTRADOR', () => {
     const admin = setup([], ['ADMINISTRADOR']);
     expect(admin.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(true);

@@ -26,6 +26,47 @@ describe('AnalysisPickerComponent', () => {
     fixture.detectChanges();
   });
 
+  // ── NEW-B2: Enter selecciona el único resultado filtrado ──────────────────
+  it('NEW-B2: Enter con exactamente UN resultado lo agrega y limpia las sugerencias', () => {
+    const c = fixture.componentInstance;
+    c.suggestions.set([a({ id: 5, shortCode: '1001', name: 'Hemograma' })]);
+    c.onKeyup(new KeyboardEvent('keyup', { key: 'Enter' }));
+    expect(c.items().map((x) => x.id)).toEqual([5]);
+    expect(c.suggestions()).toEqual([]);
+  });
+
+  it('NEW-B2: Enter con >1 resultados NO agrega nada (no disruptivo)', () => {
+    const c = fixture.componentInstance;
+    c.suggestions.set([a({ id: 5, shortCode: '1001' }), a({ id: 6, shortCode: '1002', name: 'Glucemia' })]);
+    (c as any).autoModel = 'gluc'; // texto no-numérico → handleEnter no agrega
+    c.onKeyup(new KeyboardEvent('keyup', { key: 'Enter' }));
+    expect(c.items()).toHaveLength(0);
+  });
+
+  it('NEW-B2: Enter con 0 resultados y código numérico exacto sigue usando findByShortCode', () => {
+    api.findByShortCode.mockReturnValue(of(a({ id: 9, shortCode: '777' })));
+    const c = fixture.componentInstance;
+    c.suggestions.set([]);
+    (c as any).autoModel = '777';
+    c.onKeyup(new KeyboardEvent('keyup', { key: 'Enter' }));
+    expect(api.findByShortCode).toHaveBeenCalledWith('777');
+    expect(c.items().map((x) => x.id)).toEqual([9]);
+  });
+
+  it('NEW-E: en readOnly no se renderiza el buscador ni el botón de quitar', () => {
+    const f = TestBed.createComponent(AnalysisPickerComponent);
+    f.componentRef.setInput('readOnly', true);
+    f.componentRef.setInput('initialItems', [
+      { id: 3, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: null, isAuthorized: true },
+    ]);
+    f.detectChanges();
+    const el: HTMLElement = f.nativeElement;
+    expect(el.querySelector('p-autocomplete')).toBeNull();
+    // El botón de quitar (trash) no debe estar; el ojo de detalle sí puede estar.
+    const trash = el.querySelector('.pi-trash');
+    expect(trash).toBeNull();
+  });
+
   it('detects numeric input as shortCode and uses findByShortCode', () => {
     api.findByShortCode.mockReturnValue(of(a({ id: 5, shortCode: '1001' })));
     fixture.componentInstance.handleEnter('1001');

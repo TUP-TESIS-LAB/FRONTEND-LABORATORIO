@@ -96,49 +96,55 @@ const ALL_STEPS: WizardStepDef[] = [
             </div>
           </div>
           <div class="flex items-center gap-2">
+            <p-button label="Volver al listado" icon="pi pi-arrow-left" severity="secondary" [text]="true"
+                      (onClick)="backToList()" />
             @if (canCancel()) {
               <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
             }
           </div>
         </header>
 
-        @if (isTerminal(detail()!.attentionState)) {
-          <ui-empty-state [heading]="terminalHeading()" icon="pi-check-circle" [description]="terminalDescription()" />
-        } @else if (isPostSecretary()) {
-          <ui-empty-state heading="Fase de secretaría completada" icon="pi-clock"
-                          [description]="postSecretaryDescription()" />
+        @if (readOnly()) {
+          <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800 flex items-center gap-2">
+            <i class="pi pi-eye"></i>
+            <span>{{ readOnlyBanner() }}</span>
+          </div>
           @if (detail()!.protocolId != null) {
-            <div class="flex justify-center mt-4">
+            <div class="flex justify-end mb-4">
               <p-button label="Descargar rótulos" icon="pi pi-tag" severity="secondary"
                         (onClick)="downloadLabels()" />
             </div>
           }
-        } @else {
-          <div class="mb-6 rounded-lg border border-surface-200 overflow-hidden">
-            <ui-form-stepper-header
-              [steps]="stepperSteps()"
-              [currentIndex]="activeIndex()"
-              [visited]="completedSteps()"
-              [clickable]="false" />
-          </div>
+        }
 
-          @switch (uiStep()?.key) {
-            @case ('datos') {
-              <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null"
-                                        [initialPatientId]="detail()!.patientId"
-                                        [initialIndications]="detail()!.indications"
-                                        [initialDoctorId]="detail()!.doctorId"
-                                        [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                                        (returnPhase)="onReturnPhase()" />
-            }
-            @case ('analisis') {
-              <lab-analisis-step [atencionId]="detail()!.id" [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                                 (returnPhase)="onReturnPhase()" (stepAdvanced)="onAnalysisAdvanced()" />
-            }
-            @case ('confirmar') {
-              <lab-resumen-step [atencion]="detail()!" [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                                (returnPhase)="onReturnPhase()" (finished)="onFinished()" />
-            }
+        <div class="mb-6 rounded-lg border border-surface-200 overflow-hidden">
+          <ui-form-stepper-header
+            [steps]="stepperSteps()"
+            [currentIndex]="activeIndex()"
+            [visited]="completedSteps()"
+            [clickable]="readOnly()"
+            (stepSelected)="goToStep($event)" />
+        </div>
+
+        @switch (uiStep()?.key) {
+          @case ('datos') {
+            <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null"
+                                      [initialPatientId]="detail()!.patientId"
+                                      [initialIndications]="detail()!.indications"
+                                      [initialDoctorId]="detail()!.doctorId"
+                                      [readOnly]="readOnly()"
+                                      [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                      (returnPhase)="onReturnPhase()" />
+          }
+          @case ('analisis') {
+            <lab-analisis-step [atencionId]="detail()!.id" [readOnly]="readOnly()"
+                               [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                               (returnPhase)="onReturnPhase()" (stepAdvanced)="onAnalysisAdvanced()" />
+          }
+          @case ('confirmar') {
+            <lab-resumen-step [atencion]="detail()!" [readOnly]="readOnly()"
+                              [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                              (returnPhase)="onReturnPhase()" (finished)="onFinished()" />
           }
         }
       }
@@ -185,6 +191,29 @@ export class AtencionWizardComponent {
     return s != null && !isTerminal(s) && !this.isPostSecretary();
   }
 
+  /**
+   * Solo-lectura: estados terminales (FINISHED/CANCELED/FAILED) y post-secretaría
+   * (AWAITING_EXTRACTION/IN_EXTRACTION). El wizard se muestra navegable pero sin
+   * acciones mutadoras ni "Cancelar atención". (NEW-E)
+   */
+  protected readonly readOnly = computed<boolean>(() => {
+    const s = this.detail()?.attentionState;
+    return s != null && (isTerminal(s) || this.isPostSecretary());
+  });
+
+  /** Banner de estado en solo-lectura: "<estado> — solo lectura". (NEW-E) */
+  protected readOnlyBanner(): string {
+    const s = this.detail()?.attentionState;
+    if (s == null) return 'Solo lectura';
+    return `${attentionStateLabel(s)} — solo lectura`;
+  }
+
+  /** Navegación libre del header en solo-lectura: setea el override al paso clickeado. (NEW-E) */
+  protected goToStep(index: number): void {
+    const step = this.visibleSteps()[index];
+    if (step) this.uiStepOverride.set(step.key);
+  }
+
   protected readonly visibleSteps = computed<WizardStepDef[]>(() =>
     ALL_STEPS.filter((s) => !s.requires || this.registry.isActive(s.requires))
   );
@@ -196,7 +225,13 @@ export class AtencionWizardComponent {
   private readonly uiStepOverride = signal<StepKey | null>(null);
   protected readonly uiStep = computed<WizardStepDef | null>(() => {
     const o = this.uiStepOverride();
-    return o ? this.visibleSteps().find((s) => s.key === o) ?? this.stepFromState() : this.stepFromState();
+    if (o) return this.visibleSteps().find((s) => s.key === o) ?? this.stepFromState();
+    const fromState = this.stepFromState();
+    // En solo-lectura (terminal / post-secretaría) el estado del backend no mapea a
+    // ningún paso del wizard, así que `stepFromState` es null. Mostramos el primer paso
+    // por defecto para que el stepper navegable arranque en "Datos generales". (NEW-E)
+    if (fromState == null && this.readOnly()) return this.visibleSteps()[0] ?? null;
+    return fromState;
   });
   protected readonly activeIndex = computed(() => {
     const a = this.uiStep();
@@ -207,11 +242,19 @@ export class AtencionWizardComponent {
   protected readonly stepperSteps = computed<FormStep[]>(() =>
     this.visibleSteps().map((s) => ({ key: s.key, title: s.label }))
   );
-  /** Índices completados = los anteriores al paso real del backend (no al uiStep override). */
+  /**
+   * Índices completados = los anteriores al paso VISIBLE actual (`activeIndex`, derivado
+   * de `uiStep()`), no al paso real del backend. Así, al ver el Paso 3 vía override
+   * (después de cargar análisis), los pasos 1 y 2 quedan en verde aunque el backend
+   * todavía esté en REGISTERING_ANALYSES. Al "Volver fase" el override se limpia y
+   * `activeIndex` cae al paso real, manteniendo la coherencia. (NEW-C)
+   *
+   * En modo solo-lectura marcamos TODOS los pasos anteriores al visible como completados
+   * (mismo cálculo), de modo que la navegación libre del header los muestre verdes.
+   */
   protected readonly completedSteps = computed<ReadonlySet<number>>(() => {
-    const a = this.stepFromState();
-    if (!a) return new Set<number>();
-    const activeIdx = this.visibleSteps().findIndex((s) => s.key === a.key);
+    const activeIdx = this.activeIndex();
+    if (activeIdx < 0) return new Set<number>();
     const set = new Set<number>();
     for (let i = 0; i < activeIdx; i++) set.add(i);
     return set;
@@ -303,6 +346,11 @@ export class AtencionWizardComponent {
     const d = this.detail();
     if (!d || d.protocolId == null) return;
     this.store.dispatch(downloadProtocolLabels({ protocolId: d.protocolId, protocolNumber: `P-${d.protocolId}` }));
+  }
+
+  /** "Volver al listado" — navega a recepción sin mutar la atención. (NEW-D) */
+  backToList(): void {
+    this.router.navigate(['/turnos/recepcion']);
   }
 
   isPostSecretary(): boolean {

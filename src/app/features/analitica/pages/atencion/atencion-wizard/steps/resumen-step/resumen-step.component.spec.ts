@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
-import { ReplaySubject } from 'rxjs';
+import { ReplaySubject, of } from 'rxjs';
+import { DoctorService } from '@features/medicos/services/doctor.service';
 import { ResumenStepComponent } from './resumen-step.component';
 import { ATENCION_FEATURE_KEY, initialAtencionState } from '../../../../../store/atencion/atencion.state';
 import {
@@ -65,12 +66,19 @@ const SEEDED_STATE = {
 
 // ─── suite ──────────────────────────────────────────────────────────────────
 
+const DOCTOR = { id: 7, firstName: 'Gregory', lastName: 'House', tuition: 'MN-12345', registrationType: 'NACIONAL', active: true };
+const doctorServiceStub = {
+  getById: vi.fn().mockReturnValue(of(DOCTOR)),
+  list: vi.fn().mockReturnValue(of([])),
+};
+
 describe('ResumenStepComponent', () => {
   let store: MockStore;
   let actions$: ReplaySubject<Action>;
 
   beforeEach(async () => {
     sessionStorage.clear();
+    doctorServiceStub.getById.mockClear();
     actions$ = new ReplaySubject<Action>(1);
 
     await TestBed.configureTestingModule({
@@ -78,6 +86,7 @@ describe('ResumenStepComponent', () => {
       providers: [
         provideMockStore({ initialState: SEEDED_STATE }),
         provideMockActions(() => actions$),
+        { provide: DoctorService, useValue: doctorServiceStub },
       ],
     }).compileComponents();
 
@@ -101,6 +110,47 @@ describe('ResumenStepComponent', () => {
     f.componentRef.setInput('atencion', attn());
     f.detectChanges();
     expect(spy).toHaveBeenCalledWith(loadAtencion({ id: 42 }));
+  });
+
+  // ── NEW-A: médico solicitante en el resumen ──────────────────────────────
+  it('NEW-A: resuelve el médico por doctorId y muestra "Apellido, Nombre — Mat."', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), doctorId: 7 });
+    f.detectChanges();
+    expect(doctorServiceStub.getById).toHaveBeenCalledWith(7);
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Médico solicitante');
+    expect(text).toContain('House, Gregory — Mat. MN-12345');
+  });
+
+  it('NEW-A: sin doctorId muestra "Sin médico solicitante" y NO llama getById', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), doctorId: null });
+    f.detectChanges();
+    expect(doctorServiceStub.getById).not.toHaveBeenCalled();
+    expect(f.componentInstance.doctorLabel()).toBe('Sin médico solicitante');
+  });
+
+  it('NEW-A: si getById falla, el resumen no rompe y muestra "—"', () => {
+    doctorServiceStub.getById.mockReturnValueOnce(
+      new ReplaySubject<never>(1), // nunca emite → doctor queda null
+    );
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), doctorId: 7 });
+    expect(() => f.detectChanges()).not.toThrow();
+    expect(f.componentInstance.doctorLabel()).toBe('—');
+  });
+
+  // ── NEW-E: solo-lectura oculta acciones mutadoras ────────────────────────
+  it('NEW-E: en readOnly no se renderiza "Finalizar atención" ni "Volver fase"', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', fullAttn());
+    f.componentRef.setInput('readOnly', true);
+    f.detectChanges();
+    const el: HTMLElement = f.nativeElement;
+    const labels = Array.from(el.querySelectorAll('button')).map((b) => b.textContent ?? '');
+    expect(labels.some((l) => l.includes('Finalizar atención'))).toBe(false);
+    expect(labels.some((l) => l.includes('Volver fase'))).toBe(false);
   });
 
   it('muestra apellido, nombre, dni y el nombre del análisis', () => {

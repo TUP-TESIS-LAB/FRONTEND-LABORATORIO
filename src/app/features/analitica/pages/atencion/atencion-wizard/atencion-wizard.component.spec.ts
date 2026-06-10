@@ -3,9 +3,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { ReplaySubject } from 'rxjs';
+import { ReplaySubject, of } from 'rxjs';
 import { AtencionWizardComponent } from './atencion-wizard.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
+import { DoctorService } from '@features/medicos/services/doctor.service';
+import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
+import { NotificationService } from '@core/services/notification.service';
 import { AttentionResponse, AttentionState } from '../../../models/atencion.model';
 import {
   selectDetail, selectDetailLoading, selectMutating,
@@ -59,6 +62,11 @@ describe('AtencionWizardComponent (CORE flow)', () => {
         { provide: Router, useValue: { navigate: vi.fn() } },
         // DatosGeneralesStep ahora lee el dni del queryParam (KAN-73).
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
+        // Steps inyectan estos servicios (HTTP). Stubeamos para no requerir HttpClient.
+        // resumen-step ahora resuelve el médico solicitante por id (NEW-A).
+        { provide: DoctorService, useValue: { list: () => of([]), getById: () => of(null), quickCreate: vi.fn() } },
+        { provide: CoveragePlansService, useValue: { getActivePlans: () => of([]) } },
+        { provide: NotificationService, useValue: { error: vi.fn(), success: vi.fn() } },
       ],
     });
     fixture = TestBed.createComponent(AtencionWizardComponent);
@@ -130,5 +138,74 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.downloadLabels();
     expect(spy).toHaveBeenCalledWith(downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
+  });
+
+  // ── NEW-C: completedSteps marca verdes los pasos anteriores al VISIBLE ─────
+  it('NEW-C: al ver el Paso 3 vía override, completedSteps marca 0 y 1 como completados', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    // Backend en analisis (idx 1); avanzamos por UI al confirmar (idx 2).
+    fixture.componentInstance.onAnalysisAdvanced();
+    fixture.detectChanges();
+    const completed = (fixture.componentInstance as any).completedSteps() as ReadonlySet<number>;
+    expect(completed.has(0)).toBe(true);
+    expect(completed.has(1)).toBe(true);
+    expect(completed.has(2)).toBe(false);
+  });
+
+  it('NEW-C: al volver fase (limpiar override) completedSteps cae al paso real', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    fixture.componentInstance.onAnalysisAdvanced();
+    fixture.detectChanges();
+    fixture.componentInstance.onReturnPhase();
+    fixture.detectChanges();
+    // Paso real = analisis (idx 1) → solo el 0 queda completado.
+    const completed = (fixture.componentInstance as any).completedSteps() as ReadonlySet<number>;
+    expect(completed.has(0)).toBe(true);
+    expect(completed.has(1)).toBe(false);
+  });
+
+  // ── NEW-D: Volver al listado ───────────────────────────────────────────────
+  it('NEW-D: backToList navega a /turnos/recepcion', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const router = TestBed.inject(Router);
+    const navigateSpy = router.navigate as ReturnType<typeof vi.fn>;
+    fixture.componentInstance.backToList();
+    expect(navigateSpy).toHaveBeenCalledWith(['/turnos/recepcion']);
+  });
+
+  it('NEW-D: el botón "Volver al listado" se renderiza en el header', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const el: HTMLElement = fixture.nativeElement;
+    const btn = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Volver al listado'));
+    expect(btn).toBeTruthy();
+  });
+
+  // ── NEW-E: solo-lectura para estados terminales / post-secretaría ──────────
+  it('NEW-E: readOnly es true para estado terminal (FINISHED) y oculta Cancelar', () => {
+    setup(AttentionState.FINISHED);
+    expect((fixture.componentInstance as any).readOnly()).toBe(true);
+    expect((fixture.componentInstance as any).canCancel()).toBe(false);
+    const el: HTMLElement = fixture.nativeElement;
+    const cancel = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Cancelar atención'));
+    expect(cancel).toBeUndefined();
+  });
+
+  it('NEW-E: readOnly es true en post-secretaría (AWAITING_EXTRACTION)', () => {
+    setup(AttentionState.AWAITING_EXTRACTION);
+    expect((fixture.componentInstance as any).readOnly()).toBe(true);
+  });
+
+  it('NEW-E: readOnly es false en un estado activo (REGISTERING_ANALYSES)', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    expect((fixture.componentInstance as any).readOnly()).toBe(false);
+  });
+
+  it('NEW-E: en solo-lectura el stepper muestra el primer paso por defecto y goToStep navega', () => {
+    setup(AttentionState.FINISHED);
+    // stepFromState es null para terminal → uiStep cae al primer paso (datos, idx 0).
+    expect((fixture.componentInstance as any).activeIndex()).toBe(0);
+    (fixture.componentInstance as any).goToStep(2);
+    fixture.detectChanges();
+    expect((fixture.componentInstance as any).uiStep().key).toBe('confirmar');
   });
 });

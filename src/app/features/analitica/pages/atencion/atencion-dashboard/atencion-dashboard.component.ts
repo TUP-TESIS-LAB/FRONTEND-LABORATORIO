@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -13,6 +13,7 @@ import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.direct
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
 import { ScrollToBottomFabComponent } from '@shared/ui/components/scroll-to-bottom-fab/scroll-to-bottom-fab.component';
+import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import {
   ATTENTION_STATE_LABELS,
@@ -22,6 +23,7 @@ import {
 import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
+  selectAtencionKpis,
   selectListLoading,
   selectTodayAtenciones,
 } from '../../../store/atencion/atencion.selectors';
@@ -43,6 +45,7 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
     DataTableComponent, UiCellDirective,
     FilterBarComponent,
     ScrollToBottomFabComponent,
+    StatCardComponent,
   ],
   template: `
     <!-- Listado de atenciones SIN pantalla propia: se renderiza embebido en la tab
@@ -105,6 +108,23 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
         </ui-table>
       </section>
 
+      <!-- Resumen del día: bloque colapsable con las métricas rápidas del listado. -->
+      <section class="bg-white rounded-lg shadow-sm mt-5">
+        <button type="button"
+                class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[var(--ds-text)]"
+                (click)="toggleKpis()"
+                [attr.aria-expanded]="kpisExpanded()">
+          <span>Resumen del día</span>
+          <i class="pi" [class.pi-chevron-down]="!kpisExpanded()" [class.pi-chevron-up]="kpisExpanded()"></i>
+        </button>
+        @if (kpisExpanded()) {
+          <div class="grid grid-cols-2 gap-3 px-4 pb-4">
+            <ui-stat-card label="Canceladas hoy" [value]="kpis().canceladasHoy" accentColor="#ef4444" />
+            <ui-stat-card label="Finalizadas" [value]="kpis().finalizadas" accentColor="#10b981" />
+          </div>
+        }
+      </section>
+
       <ui-scroll-to-bottom-fab />
       <p-confirmDialog />
     </div>
@@ -126,6 +146,10 @@ export class AtencionDashboardComponent implements OnInit {
 
   protected readonly rows    = this.store.selectSignal(selectTodayAtenciones);
   protected readonly loading = this.store.selectSignal(selectListLoading);
+  protected readonly kpis    = this.store.selectSignal(selectAtencionKpis);
+
+  /** Bloque "Resumen del día": arranca colapsado para no robar foco a la lista. */
+  protected readonly kpisExpanded = signal(false);
 
   protected readonly stateLabel    = attentionStateLabel;
   protected readonly stateSeverity = attentionStateSeverity;
@@ -174,6 +198,11 @@ export class AtencionDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(loadAtenciones());
+  }
+
+  /** Expande/colapsa el bloque "Resumen del día". */
+  toggleKpis(): void {
+    this.kpisExpanded.update(v => !v);
   }
 
   /**

@@ -3,6 +3,7 @@ import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { UsuariosPage } from './usuarios.page';
+import { setUsuariosFilters } from '../../store/empresa.actions';
 import { EMPRESA_FEATURE_KEY, initialEmpresaState } from '../../store/empresa.state';
 import { ROLES_PERMISOS_FEATURE_KEY, initialRolesPermisosState } from '@features/roles-permisos/store/roles-permisos.state';
 import { loadCatalog, selectUser } from '@features/roles-permisos/store/roles-permisos.actions';
@@ -53,6 +54,16 @@ describe('UsuariosPage', () => {
     const { fixture } = setup([branch(1, true), branch(2, false), branch(3, true)]);
     fixture.detectChanges();
     expect(fixture.componentInstance.branches().map((b) => b.id)).toEqual([1, 3]);
+  });
+
+  it('onFilterChange mapea rol (multi) + estado single-value y resetea page=0', () => {
+    const { fixture, store } = setup();
+    fixture.detectChanges();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onFilterChange({ search: 'ana', roleIds: [2, 5], estado: ['inactive'] });
+    expect(spy).toHaveBeenCalledWith(
+      setUsuariosFilters({ patch: { search: 'ana', roleIds: [2, 5], isActive: false, page: 0 } }),
+    );
   });
 
   it('openEdit precarga las secciones del usuario', () => {

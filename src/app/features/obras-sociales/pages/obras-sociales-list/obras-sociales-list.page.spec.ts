@@ -43,6 +43,16 @@ describe('ObrasSocialesListPage (smoke)', () => {
     expect(spy).toHaveBeenCalledWith(setObraSocialPageRequest({ patch: { page: 2, size: 20 } }));
   });
 
+  it('onFilterChange mapea estado/tipo single-value y resetea page=0', () => {
+    const fixture = TestBed.createComponent(ObrasSocialesListPage);
+    fixture.detectChanges();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onFilterChange({ search: '', state: ['inactive'], insurerType: [] });
+    expect(spy).toHaveBeenCalledWith(
+      setObraSocialPageRequest({ patch: { state: 'inactive', insurerType: undefined, page: 0 } }),
+    );
+  });
+
   it('renderiza routerLink a /obras-sociales/nueva', () => {
     const fixture = TestBed.createComponent(ObrasSocialesListPage);
     fixture.detectChanges();

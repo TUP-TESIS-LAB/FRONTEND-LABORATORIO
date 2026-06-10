@@ -77,6 +77,16 @@ describe('PatientListPage (smoke)', () => {
     expect(cmp.rowStatusSeverity({ ...base, verifiedAt: null })).toBe('success');
   });
 
+  it('onFilterChange mapea estado/completitud single-value y resetea page=0', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    fixture.detectChanges();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onFilterChange({ search: '', state: ['inactive'], completos: ['COMPLETE'] });
+    expect(spy).toHaveBeenCalledWith(
+      setPatientPageRequest({ patch: { state: 'inactive', status: 'COMPLETE', page: 0 } }),
+    );
+  });
+
   it('renders a routerLink to /pacientes/nuevo on the "Nuevo paciente" button', () => {
     const fixture = TestBed.createComponent(PatientListPage);
     fixture.detectChanges();
