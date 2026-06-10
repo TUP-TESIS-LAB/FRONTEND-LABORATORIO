@@ -23,6 +23,7 @@ import { FinalizeAttentionModalComponent } from '../../../../../components/final
 import {
   atencionMutationFailure,
   atencionMutationSuccess,
+  downloadProtocolLabels,
   endSecretaryPhase,
   loadAtencion,
   loadAttentionAnalyses,
@@ -74,7 +75,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
       <section>
         <div class="text-sm opacity-60">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
         <ul class="list-none text-sm space-y-1">
-          @for (a of atencion().analysisAuthorizations; track a.analysisId) {
+          @for (a of atencion().analysisAuthorizations; track $index) {
             @let info = analysisById().get(a.analysisId);
             @let priceItem = pricingById().get(a.analysisId);
             <li class="flex items-center justify-between gap-2">
@@ -280,14 +281,23 @@ export class ResumenStepComponent implements OnInit {
   onFinalize(): void {
     this.finalizeModalOpen.set(false);
     this.store.dispatch(endSecretaryPhase({ id: this.atencion().id }));
-    this.waitForMutation((ok) => {
-      if (!ok) return; // backend rechazó — el wizard queda como está, no salimos
+    this.waitForMutation((success) => {
+      if (!success) return; // backend rechazó — el wizard queda como está, no salimos
+      // Auto-descarga de rótulos: al finalizar la fase de secretaría el backend
+      // ya generó un rótulo por análisis. Disparamos la descarga del PDF sin que el
+      // operador tenga que ir al listado y clickear "Rótulos" a mano.
+      // El protocolId fresco viene en el item del success (recién se le asigna el
+      // protocolo al cerrar la fase); caemos a la atención actual por si acaso.
+      const protocolId = success.item.protocolId ?? this.atencion().protocolId;
+      if (protocolId != null) {
+        this.store.dispatch(downloadProtocolLabels({ protocolId, protocolNumber: `P-${protocolId}` }));
+      }
       clearAtencionSession();
       this.finished.emit();
     });
   }
 
-  private waitForMutation(cb: (ok: boolean) => void): void {
+  private waitForMutation(cb: (success: ReturnType<typeof atencionMutationSuccess> | null) => void): void {
     race(
       this.actions$.pipe(ofType(atencionMutationSuccess), take(1)),
       this.actions$.pipe(ofType(atencionMutationFailure), take(1)),
@@ -296,6 +306,6 @@ export class ResumenStepComponent implements OnInit {
       // injection context (desde un click handler), donde takeUntilDestroyed()
       // sin argumentos lanza NG0203.
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((action) => cb(action.type === atencionMutationSuccess.type));
+      .subscribe((action) => cb(action.type === atencionMutationSuccess.type ? action : null));
   }
 }

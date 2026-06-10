@@ -8,6 +8,7 @@ import { downloadProtocolLabels } from '../../../store/atencion/atencion.actions
 import { AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
+import { ConfirmationService } from 'primeng/api';
 
 /** Stub de ModuleRegistry para no depender del feature `tenant` en el MockStore. */
 function moduleRegistryStub(financieroActive: boolean) {
@@ -28,12 +29,35 @@ function setup(financieroActive = true) {
 }
 
 describe('AtencionDashboardComponent', () => {
-  it('downloadLabels despacha downloadProtocolLabels', () => {
+  it('downloadLabels pide confirmación de reimpresión y NO despacha hasta aceptar', () => {
     const fixture = setup();
     const store = TestBed.inject(MockStore);
     const spy = vi.spyOn(store, 'dispatch');
+    // ConfirmationService está provisto a nivel componente, así que lo resolvemos
+    // desde el injector del componente (no el root del TestBed).
+    const confirm = fixture.debugElement.injector.get(ConfirmationService);
+    // Capturamos el confirm sin auto-aceptar.
+    let accept: (() => void) | undefined;
+    vi.spyOn(confirm, 'confirm').mockImplementation((opts: any) => {
+      accept = opts.accept;
+      return confirm;
+    });
+
     fixture.componentInstance.downloadLabels({ id: 1, protocolId: 9 } as any);
+    // Antes de confirmar no se descarga nada.
+    expect(spy).not.toHaveBeenCalledWith(downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
+
+    // Al aceptar, recién ahí despacha la descarga.
+    accept!();
     expect(spy).toHaveBeenCalledWith(downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
+  });
+
+  it('downloadLabels sin protocolId no abre el diálogo', () => {
+    const fixture = setup();
+    const confirm = fixture.debugElement.injector.get(ConfirmationService);
+    const confirmSpy = vi.spyOn(confirm, 'confirm');
+    fixture.componentInstance.downloadLabels({ id: 1, protocolId: null } as any);
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it('embedded=true oculta el header (Nueva atención) y el bloque de KPIs', () => {
