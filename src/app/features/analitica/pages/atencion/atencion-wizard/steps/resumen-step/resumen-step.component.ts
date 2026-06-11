@@ -16,11 +16,13 @@ import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
 import { EMPTY } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencion.model';
@@ -52,76 +54,70 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   selector: 'lab-resumen-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, TagModule, FinalizeAttentionModalComponent, InputNumberModule, FormsModule, CurrencyArPipe],
+  imports: [
+    ButtonModule, FinalizeAttentionModalComponent, InputNumberModule, FormsModule,
+    CurrencyArPipe, DataTableComponent, UiCellDirective,
+  ],
   template: `
     <div class="space-y-4">
-      <header class="flex items-center justify-between">
+      <header>
         <h3 class="text-lg font-semibold">Resumen de la atención</h3>
-        @if (atencion().isUrgent) {
-          <p-tag value="URGENTE" severity="danger" />
-        }
       </header>
 
-      <section>
-        <div class="text-sm opacity-60">Paciente</div>
-        @if (patient(); as p) {
-          <div class="text-base font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
-          <div class="text-sm opacity-70">DNI {{ p.dni }}</div>
-        } @else {
-          <div class="text-base">ID {{ atencion().patientId ?? '—' }}</div>
-        }
-      </section>
+      <!-- C4: Paciente y Médico solicitante lado a lado (stack en mobile) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section>
+          <div class="text-sm opacity-60">Paciente</div>
+          @if (patient(); as p) {
+            <div class="text-base font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
+            <div class="text-sm opacity-70">DNI {{ p.dni }}</div>
+          } @else {
+            <div class="text-base">ID {{ atencion().patientId ?? '—' }}</div>
+          }
+        </section>
 
-      <section>
-        <div class="text-sm opacity-60">Médico solicitante</div>
-        <div class="text-base">{{ doctorLabel() }}</div>
-      </section>
+        <section>
+          <div class="text-sm opacity-60">Médico solicitante</div>
+          <div class="text-base">{{ doctorLabel() }}</div>
+        </section>
+      </div>
 
+      <!-- C5: Indicaciones solas, ancho completo -->
       <section>
         <div class="text-sm opacity-60">Indicaciones</div>
         <div class="text-base">{{ atencion().indications || '—' }}</div>
       </section>
 
+      <!-- C1: Análisis solicitados en tabla genérica striped -->
       <section>
-        <div class="text-sm opacity-60">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
-        <ul class="list-none text-sm space-y-1">
-          @for (a of atencion().analysisAuthorizations; track $index) {
-            @let info = analysisById().get(a.analysisId);
-            @let priceItem = pricingById().get(a.analysisId);
-            <li class="flex items-center justify-between gap-2">
-              <span class="flex-1">
-                @if (info) {
-                  {{ info.name }}
-                  @if (info.nbuCode) {
-                    <span class="font-mono text-xs opacity-70">· NBU {{ info.nbuCode }}</span>
-                  }
-                } @else {
-                  #{{ a.analysisId }}
-                }
-              </span>
-              @if (priceItem != null) {
-                <span class="text-sm font-medium">
-                  {{ priceItem.precioPaciente | currencyAr }}
-                </span>
+        <div class="text-sm opacity-60 mb-2">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
+        <ui-table
+          [value]="analysisRows()"
+          [columns]="analysisColumns"
+          [showDelete]="!readOnly()"
+          emptyHeading="Sin análisis solicitados"
+          emptyIcon="pi-flask"
+          (rowDelete)="onRemoveAnalysis($any($event).analysisId)">
+
+          <ng-template uiCell="analisis" let-row>
+            @if ($any(row).name) {
+              {{ $any(row).name }}
+              @if ($any(row).nbuCode) {
+                <span class="font-mono text-xs opacity-70">· NBU {{ $any(row).nbuCode }}</span>
               }
-              @if (!readOnly()) {
-                <p-button
-                  icon="pi pi-times"
-                  severity="danger"
-                  [text]="true"
-                  [rounded]="true"
-                  size="small"
-                  pTooltip="Quitar análisis"
-                  tooltipPosition="left"
-                  [disabled]="removingAnalysis() || copaymentMutating()"
-                  [loading]="removingAnalysis()"
-                  (onClick)="onRemoveAnalysis(a.analysisId)"
-                  aria-label="Quitar análisis"
-                />
-              }
-            </li>
-          }
-        </ul>
+            } @else {
+              #{{ $any(row).analysisId }}
+            }
+          </ng-template>
+
+          <ng-template uiCell="precio" let-row>
+            @if ($any(row).precioPaciente != null) {
+              {{ $any(row).precioPaciente | currencyAr }}
+            } @else {
+              —
+            }
+          </ng-template>
+        </ui-table>
       </section>
 
       <!-- Pricing totals -->
@@ -254,6 +250,30 @@ export class ResumenStepComponent implements OnInit {
     if (!p) return new Map<number, { precioPaciente: number }>();
     return new Map(p.items.map(item => [item.analysisId, item]));
   });
+
+  /** Columnas de la tabla de análisis solicitados (C1). */
+  readonly analysisColumns: readonly TableColumn[] = [
+    { field: 'analisis', header: 'Análisis' },
+    { field: 'precio',   header: 'Precio', align: 'right' },
+  ];
+
+  /**
+   * Filas para la tabla genérica (C1): combina cada autorización con el detalle
+   * del análisis (nombre + NBU) y su precio resuelto. `analysisId` se conserva
+   * como `dataKey`/identificador para la acción de quitar fila.
+   */
+  readonly analysisRows = computed(() =>
+    this.atencion().analysisAuthorizations.map((a) => {
+      const info = this.analysisById().get(a.analysisId);
+      const priceItem = this.pricingById().get(a.analysisId);
+      return {
+        analysisId: a.analysisId,
+        name: info?.name ?? null,
+        nbuCode: info?.nbuCode ?? null,
+        precioPaciente: priceItem?.precioPaciente ?? null,
+      };
+    })
+  );
 
   /**
    * Total EN VIVO: subtotal del pricing + el coseguro tipeado en el input.

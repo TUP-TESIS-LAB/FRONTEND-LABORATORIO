@@ -14,7 +14,7 @@ import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-sta
 import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
 import { FormStep } from '@shared/ui/models/form-step';
 import { AttentionState, isTerminal } from '../../../models/atencion.model';
-import { attentionStateLabel, attentionStateSeverity } from '../../../models/atencion-state-label';
+import { attentionStateLabel } from '../../../models/atencion-state-label';
 import {
   atencionMutationFailure,
   atencionMutationSuccess,
@@ -89,11 +89,12 @@ const ALL_STEPS: WizardStepDef[] = [
       } @else {
         <header class="flex items-center justify-between mb-6">
           <div>
-            <h2 class="text-xl font-semibold">Atención {{ detail()!.attentionNumber }}</h2>
-            <div class="text-sm opacity-70 flex items-center gap-2">
-              <span>Paciente {{ detail()!.patientId ?? '—' }} ·</span>
-              <p-tag [value]="stateLabel(detail()!.attentionState)" [severity]="stateSeverity(detail()!.attentionState)" />
-            </div>
+            <h2 class="text-xl font-semibold">Atención {{ headerTitle() }}</h2>
+            @if (detail()!.isUrgent) {
+              <div class="mt-1">
+                <p-tag value="URGENTE" severity="danger" />
+              </div>
+            }
           </div>
           <div class="flex items-center gap-2">
             <p-button label="Volver al listado" icon="pi pi-arrow-left" severity="secondary" [text]="true"
@@ -181,9 +182,18 @@ export class AtencionWizardComponent {
   protected readonly detail   = this.store.selectSignal(selectDetail);
   protected readonly loading  = this.store.selectSignal(selectDetailLoading);
   protected readonly mutating = this.store.selectSignal(selectMutating);
-  protected readonly stateLabel    = attentionStateLabel;
-  protected readonly stateSeverity = attentionStateSeverity;
   protected readonly isTerminal    = isTerminal;
+
+  /**
+   * Título grande del header (C6): el código público del turno (ST-/CT-…) si existe.
+   * Fallback al número interno de atención cuando publicCode es null/vacío.
+   */
+  protected readonly headerTitle = computed<string>(() => {
+    const d = this.detail();
+    if (!d) return '';
+    const code = d.publicCode?.trim();
+    return code ? code : d.attentionNumber;
+  });
 
   protected readonly cancelModalOpen = signal(false);
   protected canCancel(): boolean {

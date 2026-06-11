@@ -132,7 +132,10 @@ export class ExtractorAttentionService {
     });
   }
 
-  endExtraction(id: number): Observable<void> {
-    return this.http.patch<void>(`${this.base}/attentions/${id}/end-extraction`, {});
+  endExtraction(id: number, observation?: string): Observable<void> {
+    // observation: el BE lo persistira en un PR aparte. Mientras tanto lo mandamos
+    // en el body (campo extra inofuso). Solo lo incluimos si vino con contenido.
+    const body = observation ? { observation } : {};
+    return this.http.patch<void>(`${this.base}/attentions/${id}/end-extraction`, body);
   }
 }

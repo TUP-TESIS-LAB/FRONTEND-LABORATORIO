@@ -25,6 +25,7 @@ import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-sta
 import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicator/refresh-indicator.component';
 import { BoxConfigBarComponent } from '../../components/box-config-bar/box-config-bar.component';
 import { CancelExtractionDialogComponent } from '../../components/cancel-extraction-dialog/cancel-extraction-dialog.component';
+import { FinishExtractionModalComponent } from '../../components/finish-extraction-modal/finish-extraction-modal.component';
 import { InProgressListComponent } from '../../components/in-progress-list/in-progress-list.component';
 import { TakePatientModalComponent } from '../../components/take-patient-modal/take-patient-modal.component';
 import {
@@ -67,6 +68,7 @@ const UNDO_WINDOW_MS = 5000;
     InProgressListComponent,
     TakePatientModalComponent,
     CancelExtractionDialogComponent,
+    FinishExtractionModalComponent,
   ],
   template: `
     <section class="page">
@@ -177,6 +179,14 @@ const UNDO_WINDOW_MS = 5000;
         [patient]="cancelTarget()"
         [saving]="mutating()"
         (cancelConfirmed)="onCancelConfirmed($event)"
+      />
+
+      <app-finish-extraction-modal
+        [(visible)]="finishModalOpen"
+        [patient]="finishTarget()"
+        [saving]="mutating()"
+        (confirmed)="onEndConfirmed($event)"
+        (dismissed)="onFinishDismissed()"
       />
 
       <!-- Toast de undo (5s) — usa MessageService local a la page. -->
@@ -311,9 +321,13 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
 
   readonly takeModalOpen = signal(false);
   readonly cancelDialogOpen = signal(false);
+  readonly finishModalOpen = signal(false);
   readonly cancelTarget = signal<InExtractionItem | null>(null);
+  readonly finishTarget = signal<InExtractionItem | null>(null);
   readonly selectedPatient = signal<AwaitingExtractionItem | null>(null);
-  readonly paused = computed(() => this.takeModalOpen() || this.cancelDialogOpen());
+  readonly paused = computed(
+    () => this.takeModalOpen() || this.cancelDialogOpen() || this.finishModalOpen(),
+  );
 
   private handle: PollingHandle | null = null;
   /**
@@ -469,8 +483,23 @@ export class ExtractionQueuePage implements OnInit, OnDestroy {
     this.cancelTarget.set(null);
   }
 
+  /** Abre el modal de confirmación en vez de finalizar directo (evita misclicks). */
   onEnd(target: InExtractionItem): void {
-    this.store.dispatch(A.endExtraction({ id: target.id }));
+    this.finishTarget.set(target);
+    this.finishModalOpen.set(true);
+  }
+
+  /** El modal confirma con la observación (puede ser ''). Dispara endExtraction y cierra. */
+  onEndConfirmed(observation: string): void {
+    const target = this.finishTarget();
+    this.finishModalOpen.set(false);
+    if (!target) return;
+    this.store.dispatch(A.endExtraction({ id: target.id, observation }));
+    this.finishTarget.set(null);
+  }
+
+  onFinishDismissed(): void {
+    this.finishTarget.set(null);
   }
 
   // --- Undo de 5s ----------------------------------------------------------

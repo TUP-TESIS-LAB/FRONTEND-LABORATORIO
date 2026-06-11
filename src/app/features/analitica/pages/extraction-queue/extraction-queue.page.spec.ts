@@ -191,6 +191,55 @@ describe('ExtractionQueuePage (smoke)', () => {
     );
   });
 
+  it('onEnd opens the finish modal with the selected item instead of dispatching directly', () => {
+    configure({ branches, selectedBranchId: 1 });
+    const fixture = TestBed.createComponent(ExtractionQueuePage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    const target = inExtractionItem({ id: 8 });
+    page.onEnd(target);
+
+    expect(page.finishModalOpen()).toBe(true);
+    expect(page.finishTarget()).toEqual(target);
+    expect(dispatchSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: A.endExtraction.type }),
+    );
+  });
+
+  it('onEndConfirmed dispatches endExtraction with the observation and closes the modal', () => {
+    configure({ branches, selectedBranchId: 1 });
+    const fixture = TestBed.createComponent(ExtractionQueuePage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    page.onEnd(inExtractionItem({ id: 8 }));
+    page.onEndConfirmed('muestra hemolizada');
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      A.endExtraction({ id: 8, observation: 'muestra hemolizada' }),
+    );
+    expect(page.finishModalOpen()).toBe(false);
+    expect(page.finishTarget()).toBeNull();
+  });
+
+  it('onEndConfirmed with empty observation still dispatches endExtraction', () => {
+    configure({ branches, selectedBranchId: 1 });
+    const fixture = TestBed.createComponent(ExtractionQueuePage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    page.onEnd(inExtractionItem({ id: 8 }));
+    page.onEndConfirmed('');
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      A.endExtraction({ id: 8, observation: '' }),
+    );
+  });
+
   it('onBoxAssign merges by boxNumber and dispatches saveBoxAssignments with the full list', () => {
     configure({
       branches,
