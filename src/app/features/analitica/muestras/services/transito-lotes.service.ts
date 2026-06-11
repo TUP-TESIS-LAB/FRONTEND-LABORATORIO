@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { MockSamplesService } from './mock-samples.service';
 import type { RecommendedGroup, ScanResult, SendResult, TemporalLote, TransitoDest } from '../models/transito.model';
 import type { Transition } from '../models/transition.model';
@@ -28,6 +28,37 @@ export class TransitoLotesService {
   private readonly _groupOverrides = signal<ReadonlyMap<string, TransitoDest>>(new Map());
 
   private readonly samplesInTransito = this.samplesService.byState('transito');
+
+  private readonly STORAGE_KEY = 'analitica.traslado.lotes';
+
+  constructor() {
+    this.rehydrate();
+    effect(() => {
+      const snapshot = this._lotes();
+      untracked(() => {
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(snapshot));
+        } catch { /* silenciar */ }
+      });
+    });
+  }
+
+  private rehydrate(): void {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as TemporalLote[];
+      if (!Array.isArray(parsed)) return;
+      const samplesInTransitoIds = new Set(this.samplesInTransito().map(s => s.id));
+      const cleaned = parsed
+        .filter(l => l && typeof l.id === 'string' && Array.isArray(l.sampleIds))
+        .map(l => ({ ...l, sampleIds: l.sampleIds.filter(id => samplesInTransitoIds.has(id)) }))
+        .filter(l => l.sampleIds.length > 0);
+      this._lotes.set(cleaned);
+    } catch {
+      // arranca vacío
+    }
+  }
 
   private readonly lotedIds = computed<ReadonlySet<string>>(() => {
     const ids = new Set<string>();

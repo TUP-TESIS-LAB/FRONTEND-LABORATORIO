@@ -356,3 +356,72 @@ describe('TransitoLotesService — scan', () => {
     expect(result.matchedId).toBe(sample.id);
   });
 });
+
+describe('TransitoLotesService — localStorage', () => {
+  let lsStore: Map<string, string>;
+
+  beforeEach(() => {
+    lsStore = installLocalStorageMock();
+    TestBed.resetTestingModule();
+  });
+
+  it('persiste lotes en cada mutación', () => {
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    const svc = TestBed.inject(TransitoLotesService);
+    const ids = svc.groups()[0].sampleIds.slice(0, 1);
+    svc.createLote(ids);
+    TestBed.flushEffects();
+    const raw = lsStore.get('analitica.traslado.lotes');
+    expect(raw).toBeDefined();
+    const parsed = JSON.parse(raw!);
+    expect(parsed.length).toBe(1);
+    expect(parsed[0].sampleIds).toEqual(ids);
+  });
+
+  it('rehidrata lotes válidos del storage', () => {
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    const samples = TestBed.inject(MockSamplesService);
+    const realId = samples.byState('transito')()[0].id;
+    lsStore.set('analitica.traslado.lotes', JSON.stringify([
+      { id: 'lote-x', sampleIds: [realId], branch: '', area: '', section: '', createdAt: 1 },
+    ]));
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    const svc = TestBed.inject(TransitoLotesService);
+
+    expect(svc.lotes().length).toBe(1);
+    expect(svc.lotes()[0].id).toBe('lote-x');
+  });
+
+  it('descarta sampleIds que ya no están en tránsito al rehidratar', () => {
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    const samples = TestBed.inject(MockSamplesService);
+    const realId = samples.byState('transito')()[0].id;
+    lsStore.set('analitica.traslado.lotes', JSON.stringify([
+      { id: 'lote-x', sampleIds: [realId, 'id-fantasma'], branch: '', area: '', section: '', createdAt: 1 },
+    ]));
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    const svc = TestBed.inject(TransitoLotesService);
+
+    expect(svc.lotes()[0].sampleIds).toEqual([realId]);
+  });
+
+  it('elimina lotes que quedan vacíos tras rehidratar', () => {
+    lsStore.set('analitica.traslado.lotes', JSON.stringify([
+      { id: 'lote-x', sampleIds: ['id-fantasma'], branch: '', area: '', section: '', createdAt: 1 },
+    ]));
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    const svc = TestBed.inject(TransitoLotesService);
+    expect(svc.lotes().length).toBe(0);
+  });
+
+  it('si el JSON del storage está roto, arranca vacío', () => {
+    lsStore.set('analitica.traslado.lotes', '{not-json');
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    const svc = TestBed.inject(TransitoLotesService);
+    expect(svc.lotes().length).toBe(0);
+  });
+});
