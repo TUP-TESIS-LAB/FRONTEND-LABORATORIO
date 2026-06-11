@@ -40,4 +40,8 @@ describe('catalogs — extensión Tránsito', () => {
     expect(STUDIES).toContain('Hemograma completo'); // del worklist
     expect(STUDIES).toContain('TSH');                // del handoff
   });
+
+  it('los valores de STUDY_AREA están en AREAS', () => {
+    for (const a of Object.values(STUDY_AREA)) expect(AREAS).toContain(a);
+  });
 });

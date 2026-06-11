@@ -26,7 +26,7 @@ export const LABS: ReadonlyArray<string> = [
   'Lab. Referencia Norte',
 ];
 
-// STUDIES fusionado: worklist actuales + 16 del handoff (sin duplicar)
+// STUDIES fusionado: worklist actuales + 11 del handoff (sin duplicar)
 export const STUDIES: ReadonlyArray<string> = [
   // del worklist actual
   'Hemograma completo',
