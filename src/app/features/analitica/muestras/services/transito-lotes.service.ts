@@ -159,10 +159,10 @@ export class TransitoLotesService {
         })
         .filter(l => l.id === activeId || l.sampleIds.length > 0),
       );
+      this.clearSel();
       return { matchedId: match.id, outcome: 'added' };
     }
 
-    // no hay lote activo → crear uno y agregar
     this.createLote([match.id]);
     return { matchedId: match.id, outcome: 'added' };
   }
