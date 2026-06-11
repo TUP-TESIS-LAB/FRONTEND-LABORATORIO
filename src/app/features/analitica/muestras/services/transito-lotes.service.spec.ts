@@ -169,3 +169,39 @@ describe('TransitoLotesService — lotes', () => {
     expect(svc.activeLoteId()).toBeNull();
   });
 });
+
+describe('TransitoLotesService — updateDest', () => {
+  let svc: TransitoLotesService;
+  beforeEach(() => {
+    installLocalStorageMock();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    svc = TestBed.inject(TransitoLotesService);
+  });
+
+  it('updateDest sobre un lote setea branch/area/section', () => {
+    const id = svc.createLote(svc.groups()[0].sampleIds.slice(0, 1));
+    svc.updateDest({ kind: 'lote', id }, { branch: 'SUR — Lanús', area: 'Hematología', section: 'Citometría' });
+    const lote = svc.lotes().find(l => l.id === id)!;
+    expect(lote.branch).toBe('SUR — Lanús');
+    expect(lote.area).toBe('Hematología');
+    expect(lote.section).toBe('Citometría');
+  });
+
+  it('updateDest sobre un group pisa la recomendación en el siguiente render', () => {
+    const groupBefore = svc.groups()[0];
+    svc.updateDest(
+      { kind: 'group', id: groupBefore.id },
+      { branch: 'OESTE — Morón', area: groupBefore.area, section: groupBefore.section },
+    );
+    const after = svc.groups().find(g => g.area === groupBefore.area && g.section === groupBefore.section);
+    expect(after?.branch).toBe('OESTE — Morón');
+  });
+
+  it('toggleEditing alterna el set', () => {
+    svc.toggleEditing('group-x');
+    expect(svc.editing().has('group-x')).toBe(true);
+    svc.toggleEditing('group-x');
+    expect(svc.editing().has('group-x')).toBe(false);
+  });
+});

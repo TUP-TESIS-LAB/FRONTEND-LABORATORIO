@@ -133,6 +133,27 @@ export class TransitoLotesService {
     this._activeLoteId.set(loteId);
   }
 
+  updateDest(target: { kind: 'group' | 'lote'; id: string }, patch: Partial<TransitoDest>): void {
+    if (target.kind === 'lote') {
+      this._lotes.update(arr => arr.map(l => l.id === target.id ? { ...l, ...patch } : l));
+      return;
+    }
+    this._groupOverrides.update(map => {
+      const next = new Map(map);
+      const current = next.get(target.id) ?? { branch: '', area: '', section: '' };
+      next.set(target.id, { ...current, ...patch });
+      return next;
+    });
+  }
+
+  toggleEditing(targetId: string): void {
+    this._editing.update(set => {
+      const next = new Set(set);
+      if (next.has(targetId)) next.delete(targetId); else next.add(targetId);
+      return next;
+    });
+  }
+
   private removeIdsFromLotes(arr: TemporalLote[], ids: string[]): TemporalLote[] {
     const remove = new Set(ids);
     return arr
