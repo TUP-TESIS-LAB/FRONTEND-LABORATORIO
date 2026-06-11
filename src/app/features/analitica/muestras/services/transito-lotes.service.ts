@@ -1,6 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { MockSamplesService } from './mock-samples.service';
-import type { Sample } from '../models/sample.model'; // used in Task 4+
 import type { RecommendedGroup, TemporalLote, TransitoDest } from '../models/transito.model';
 import {
   AREA_BRANCH, AREA_SECTION, STUDY_AREA, CURRENT_BRANCH, DEFAULT_AREA,
