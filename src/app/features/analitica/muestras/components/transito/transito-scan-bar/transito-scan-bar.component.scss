@@ -1,0 +1,37 @@
+@use '../../../pages/transito/tokens' as *;
+
+.scanbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--gx-card-bg);
+  border: 1px solid var(--gx-border);
+  border-radius: 11px;
+  padding: 8px 12px;
+  box-shadow: var(--gx-shadow-card);
+
+  .input-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    i.pi-barcode { color: var(--gx-muted); font-size: 20px; }
+    input {
+      flex: 1; height: 48px; border: 0; outline: 0;
+      font-family: 'Roboto Mono', ui-monospace;
+      font-size: 15px;
+      background: transparent;
+    }
+    .hint { font-size: 11.5px; color: var(--gx-muted); }
+  }
+
+  .send-all {
+    background: #eceaff; color: #3a3cc0;
+    border: 0; padding: 0 16px; height: 40px;
+    border-radius: 10px; font-weight: 600; font-size: 13.5px;
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}

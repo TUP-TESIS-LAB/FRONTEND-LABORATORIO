@@ -1,0 +1,55 @@
+@use '../../../pages/transito/tokens' as *;
+
+.bulk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13.5px;
+
+  .badge {
+    min-width: 26px; height: 26px;
+    border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12.5px;
+    &.muted { background: var(--gx-slate-bg); color: var(--gx-slate); }
+    &.brand { background: #fff; color: var(--gx-brand); }
+  }
+
+  &.idle {
+    background: var(--gx-card-bg);
+    border: 1px dashed #dcdef0;
+    color: var(--gx-muted);
+    .create { margin-left: auto; }
+  }
+
+  &.active {
+    background: linear-gradient(90deg, var(--gx-brand), var(--gx-brand-hover));
+    color: #fff;
+    .actions {
+      margin-left: auto;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .chip-add {
+      background: rgba(255,255,255,.18); color: #fff;
+      border: 0; padding: 6px 10px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
+    }
+    .create {
+      background: #fff; color: var(--gx-brand);
+      border: 0; padding: 8px 14px; border-radius: 10px; font-weight: 600; cursor: pointer;
+    }
+    .chip-clear {
+      background: transparent; color: #fff;
+      border: 1px solid rgba(255,255,255,.4);
+      padding: 6px 10px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
+    }
+  }
+
+  .create.outline {
+    background: transparent; color: var(--gx-muted);
+    border: 1px solid var(--gx-border);
+    padding: 8px 14px; border-radius: 10px;
+    &:disabled { cursor: not-allowed; opacity: 0.6; }
+  }
+}
