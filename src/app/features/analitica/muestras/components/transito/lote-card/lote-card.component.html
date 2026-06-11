@@ -1,0 +1,53 @@
+<article class="lote-card" [class.no-dest]="!hasDest">
+  <header>
+    <input type="checkbox" [checked]="allSelected" (change)="onAllToggle($event)" aria-label="Tildar todas las muestras del lote">
+    <i class="pi pi-objects-column"></i>
+    <div class="title">
+      <span class="name">Lote {{ number }}</span>
+      <span class="tag">TEMPORAL</span>
+    </div>
+    <div class="meta">
+      @if (hasDest) {
+        <span class="dest"><i class="pi pi-map-marker"></i> {{ lote.branch }} · {{ lote.area }} · {{ lote.section }}</span>
+        <span class="badge" [class.green]="outcome === 'en-proceso'" [class.blue]="outcome === 'en-transito'">
+          {{ outcome === 'en-proceso' ? 'En proceso' : 'En tránsito' }}
+        </span>
+      } @else {
+        <span class="warn"><i class="pi pi-exclamation-triangle"></i> Sin destino — asignalo para poder enviar</span>
+      }
+      <span class="count">{{ lote.sampleIds.length }} muestras</span>
+    </div>
+    <button type="button" class="scan-here" [class.is-active]="isActive" [attr.aria-pressed]="isActive" (click)="setActive.emit()">
+      {{ isActive ? 'Escaneo → acá' : 'Escanear acá' }}
+    </button>
+    <button type="button" class="dissolve" (click)="dissolve.emit()" aria-label="Descartar lote">✕</button>
+  </header>
+
+  <div class="dest-form">
+    <select [value]="lote.branch" (change)="onDestField('branch', $any($event.target).value)">
+      <option value="">Sucursal…</option>
+      @for (b of branches; track b) { <option [value]="b">{{ b }}</option> }
+    </select>
+    <select [value]="lote.area" (change)="onDestField('area', $any($event.target).value)">
+      <option value="">Área…</option>
+      @for (a of areas; track a) { <option [value]="a">{{ a }}</option> }
+    </select>
+    <select [value]="lote.section" (change)="onDestField('section', $any($event.target).value)">
+      <option value="">Sección…</option>
+      @for (s of sections; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+    <button type="button" class="send" [disabled]="!hasDest" (click)="send.emit()">{{ sendLabel }}</button>
+  </div>
+
+  <div class="rows">
+    @for (s of samples; track s.id) {
+      <app-sample-row
+        [sample]="s"
+        [selected]="isSelected(s.id)"
+        [flashing]="isFlashing(s.id)"
+        [leaving]="isLeaving(s.id)"
+        (toggle)="toggleSample.emit(s.id)"
+      />
+    }
+  </div>
+</article>
