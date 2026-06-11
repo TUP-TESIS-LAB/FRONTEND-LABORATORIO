@@ -93,4 +93,49 @@ export class TransitoLotesService {
   }
 
   clearSel(): void { this._sel.set(new Set()); }
+
+  createLote(ids: string[]): string {
+    const id = crypto.randomUUID();
+    this._lotes.update(arr => {
+      const cleaned = this.removeIdsFromLotes(arr, ids);
+      const lote: TemporalLote = {
+        id, sampleIds: [...ids], branch: '', area: '', section: '', createdAt: Date.now(),
+      };
+      return [...cleaned, lote];
+    });
+    this._activeLoteId.set(id);
+    this.clearSel();
+    return id;
+  }
+
+  addToLote(loteId: string, ids: string[]): void {
+    this._lotes.update(arr => {
+      const cleaned = this.removeIdsFromLotes(arr, ids);
+      return cleaned.map(l => {
+        if (l.id !== loteId) return l;
+        const existing = new Set(l.sampleIds);
+        const merged = [...l.sampleIds];
+        for (const id of ids) if (!existing.has(id)) merged.push(id);
+        return { ...l, sampleIds: merged };
+      });
+    });
+    this.clearSel();
+  }
+
+  dissolveLote(loteId: string): void {
+    this._lotes.update(arr => arr.filter(l => l.id !== loteId));
+    if (this._activeLoteId() === loteId) {
+      const next = this._lotes()[0]?.id ?? null;
+      this._activeLoteId.set(next);
+    }
+  }
+
+  setActiveLote(loteId: string | null): void {
+    this._activeLoteId.set(loteId);
+  }
+
+  private removeIdsFromLotes(arr: TemporalLote[], ids: string[]): TemporalLote[] {
+    const remove = new Set(ids);
+    return arr.map(l => ({ ...l, sampleIds: l.sampleIds.filter(id => !remove.has(id)) }));
+  }
 }
