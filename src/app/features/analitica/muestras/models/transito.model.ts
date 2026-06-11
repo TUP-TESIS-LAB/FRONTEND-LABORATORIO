@@ -1,4 +1,3 @@
-// src/app/features/analitica/muestras/models/transito.model.ts
 export interface TransitoDest {
   branch: string;
   area: string;
@@ -18,7 +17,7 @@ export interface TemporalLote {
   /** crypto.randomUUID(). NO es el "Lote N" visible. */
   id: string;
   sampleIds: string[];
-  /** '' = sin asignar */
+  /** branch/area/section: '' significa sin asignar; el lote no se puede enviar hasta tener los 3 seteados. */
   branch: string;
   area: string;
   section: string;
