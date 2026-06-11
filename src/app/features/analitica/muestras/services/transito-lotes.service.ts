@@ -136,6 +136,8 @@ export class TransitoLotesService {
 
   private removeIdsFromLotes(arr: TemporalLote[], ids: string[]): TemporalLote[] {
     const remove = new Set(ids);
-    return arr.map(l => ({ ...l, sampleIds: l.sampleIds.filter(id => !remove.has(id)) }));
+    return arr
+      .map(l => ({ ...l, sampleIds: l.sampleIds.filter(id => !remove.has(id)) }))
+      .filter(l => l.sampleIds.length > 0);
   }
 }

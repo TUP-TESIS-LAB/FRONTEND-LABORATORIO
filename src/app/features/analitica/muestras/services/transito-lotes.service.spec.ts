@@ -117,10 +117,26 @@ describe('TransitoLotesService — lotes', () => {
     svc.addToLote(a, [ids[2]]); // mover desde b a a
 
     expect(svc.lotes().find(l => l.id === a)!.sampleIds).toContain(ids[2]);
-    expect(svc.lotes().find(l => l.id === b)!.sampleIds).not.toContain(ids[2]);
+    // b queda vacío → debe haberse filtrado
+    expect(svc.lotes().find(l => l.id === b)).toBeUndefined();
+    // ids[2] no aparece en ningún lote != a
+    for (const l of svc.lotes()) {
+      if (l.id !== a) expect(l.sampleIds).not.toContain(ids[2]);
+    }
     // sin duplicado dentro de a
     const arr = svc.lotes().find(l => l.id === a)!.sampleIds;
     expect(new Set(arr).size).toBe(arr.length);
+  });
+
+  it('addToLote elimina el lote origen si quedó vacío', () => {
+    const ids = svc.groups()[0].sampleIds.slice(0, 2);
+    const a = svc.createLote([ids[0]]);
+    const b = svc.createLote([ids[1]]);
+
+    svc.addToLote(a, [ids[1]]); // b se queda sin nada
+
+    expect(svc.lotes().some(l => l.id === b)).toBe(false);
+    expect(svc.lotes().length).toBe(1);
   });
 
   it('dissolveLote vuelve las muestras a su group recomendado (invariante 4)', () => {
