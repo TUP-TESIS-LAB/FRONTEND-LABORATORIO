@@ -9,7 +9,7 @@
 **Tech Stack:** Angular 21 standalone components, signals, PrimeNG (toast + dialog), Vitest + `ng test`, SCSS con tokens privados de la pantalla.
 
 **Spec:** `docs/superpowers/specs/2026-06-10-transito-pantalla-design.md`
-**Jira:** _(pendiente — se agrega tras `jira-workflow`)_
+**Jira:** [KAN-94](https://exequielsantoro.atlassian.net/browse/KAN-94)
 
 ---
 

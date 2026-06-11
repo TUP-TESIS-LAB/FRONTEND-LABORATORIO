@@ -1,10 +1,11 @@
 # Pantalla Tránsito — Lotes recomendados + temporales (mocks)
 
+> **Jira:** [KAN-94](https://exequielsantoro.atlassian.net/browse/KAN-94)
 > **Fecha:** 2026-06-10
 > **Repo:** FRONTEND-LABORATORIO
 > **Módulo:** `features/analitica/muestras`
 > **Ruta afectada:** `/analitica/traslado`
-> **Status:** Design — pendiente plan + ticket Jira
+> **Status:** Plan listo — pendiente ejecución
 
 ## 1. Resumen
 
