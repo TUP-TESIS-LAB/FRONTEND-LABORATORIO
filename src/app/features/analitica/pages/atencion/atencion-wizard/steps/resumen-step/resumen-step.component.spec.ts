@@ -163,6 +163,69 @@ describe('ResumenStepComponent', () => {
     expect(text).toContain('Hemograma');
   });
 
+  // ── C2: el tag URGENTE ya NO vive en el resumen (se movió al header del wizard)
+  it('C2: con isUrgent el resumen NO muestra el tag URGENTE', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), isUrgent: true });
+    f.detectChanges();
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).not.toContain('URGENTE');
+  });
+
+  // ── C4: Paciente y Médico solicitante en la misma fila (grid 2 columnas) ───
+  it('C4: Paciente y Médico solicitante comparten una fila grid de 2 columnas', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), doctorId: 7 });
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const row = el.querySelector('.grid.md\\:grid-cols-2') as HTMLElement | null;
+    expect(row).toBeTruthy();
+    const rowText = row?.textContent ?? '';
+    expect(rowText).toContain('Paciente');
+    expect(rowText).toContain('Gaymer, Tute');
+    expect(rowText).toContain('Médico solicitante');
+    expect(rowText).toContain('House, Gregory — Mat. MN-12345');
+  });
+
+  // ── C1: los análisis se renderizan dentro de la tabla genérica ui-table ────
+  it('C1: los análisis se muestran en una ui-table (header "Análisis"/"Precio")', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('ui-table')).toBeTruthy();
+    const headers = Array.from(el.querySelectorAll('th')).map((th) => th.textContent?.trim() ?? '');
+    expect(headers.some((h) => h.includes('Análisis'))).toBe(true);
+    expect(headers.some((h) => h.includes('Precio'))).toBe(true);
+    // El nombre del análisis se renderiza como celda
+    expect((el.textContent ?? '')).toContain('Hemograma');
+  });
+
+  it('C1: en readOnly la tabla no ofrece la acción de quitar (sin botón eliminar)', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.componentRef.setInput('readOnly', true);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const deleteBtn = el.querySelector('button[aria-label="Eliminar"]');
+    expect(deleteBtn).toBeNull();
+  });
+
+  it('C1: la acción de quitar fila despacha removeAnalysisFromResumen', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn()); // analysisId 3
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    const el = f.nativeElement as HTMLElement;
+    const deleteBtn = el.querySelector('button[aria-label="Eliminar"]') as HTMLButtonElement | null;
+    expect(deleteBtn).toBeTruthy();
+    deleteBtn!.click();
+    const removals = dispatched.filter((a: any) => a.type === removeAnalysisFromResumen.type);
+    expect(removals).toHaveLength(1);
+    expect(removals[0].analysisId).toBe(3);
+  });
+
   // ── tests restaurados: flujo finalizar (contrato pessimistic-UI) ─────────
 
   it('onFinalize dispatches endSecretaryPhase', () => {

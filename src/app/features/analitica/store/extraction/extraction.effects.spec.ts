@@ -270,11 +270,20 @@ describe('ExtractionEffects', () => {
       expect(api.cancelAttention).toHaveBeenCalledWith(9, 'Paciente descompensado');
     });
 
-    it('endExtraction$ success emits endExtractionSuccess', async () => {
+    it('endExtraction$ success emits endExtractionSuccess and passes observation', async () => {
+      (api.endExtraction as ReturnType<typeof vi.fn>).mockReturnValue(of(void 0));
+      const promise = firstValueFrom(effects.endExtraction$.pipe(take(1)));
+      actions$.next(A.endExtraction({ id: 8, observation: 'muestra hemolizada' }));
+      expect(await promise).toEqual(A.endExtractionSuccess({ id: 8 }));
+      expect(api.endExtraction).toHaveBeenCalledWith(8, 'muestra hemolizada');
+    });
+
+    it('endExtraction$ passes undefined observation when omitted', async () => {
       (api.endExtraction as ReturnType<typeof vi.fn>).mockReturnValue(of(void 0));
       const promise = firstValueFrom(effects.endExtraction$.pipe(take(1)));
       actions$.next(A.endExtraction({ id: 8 }));
       expect(await promise).toEqual(A.endExtractionSuccess({ id: 8 }));
+      expect(api.endExtraction).toHaveBeenCalledWith(8, undefined);
     });
 
     it('branchAccessDenied$ on a 403 failure resets the selected branch', async () => {

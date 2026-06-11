@@ -192,6 +192,13 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
     /* Strip PrimeNG outer borders */
     :host ::ng-deep .p-datatable { border: none !important; border-radius: 0 !important; }
 
+    /* ── Tags de estado más compactos dentro de la tabla ── */
+    :host ::ng-deep td .p-tag {
+      font-size: 10.5px;
+      padding: 1px 7px;
+      line-height: 1.45;
+    }
+
     /* ── Alignment helpers ── */
     :host ::ng-deep th.ut-align-right,
     :host ::ng-deep td.ut-align-right { text-align: right !important; }

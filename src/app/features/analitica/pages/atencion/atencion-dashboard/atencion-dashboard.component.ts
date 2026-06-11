@@ -6,6 +6,7 @@ import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { EMPTY, catchError } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
@@ -14,11 +15,13 @@ import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
 import { ScrollToBottomFabComponent } from '@shared/ui/components/scroll-to-bottom-fab/scroll-to-bottom-fab.component';
 import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
+import { DoctorService } from '@features/medicos/services/doctor.service';
+import { Doctor } from '@features/medicos/models/doctor.model';
 import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import {
-  ATTENTION_STATE_LABELS,
-  attentionStateLabel,
-  attentionStateSeverity,
+  attentionGroupLabel,
+  attentionGroupSeverity,
+  buildAttentionStateGroups,
 } from '../../../models/atencion-state-label';
 import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
@@ -27,12 +30,6 @@ import {
   selectListLoading,
   selectTodayAtenciones,
 } from '../../../store/atencion/atencion.selectors';
-
-// Estados de la fase financiera: sólo se ofrecen como filtro si el módulo FINANCIERO está activo.
-const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
-  AttentionState.ON_COLLECTION_PROCESS,
-  AttentionState.ON_BILLING_PROCESS,
-]);
 
 @Component({
   selector: 'lab-atencion-dashboard',
@@ -81,7 +78,7 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
           </ng-template>
 
           <ng-template uiCell="doctorId" let-row>
-            {{ $any(row).doctorId ?? '—' }}
+            {{ doctorName($any(row).doctorId) }}
           </ng-template>
 
           <ng-template uiCell="estado" let-row>
@@ -89,13 +86,13 @@ const FINANCIERO_STATES: ReadonlySet<AttentionState> = new Set([
               <span [pTooltip]="motivo" tooltipPosition="top"
                     tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
                 <p-tag
-                  [value]="stateLabel($any(row).attentionState)"
-                  [severity]="stateSeverity($any(row).attentionState)" />
+                  [value]="groupLabel($any(row).attentionState)"
+                  [severity]="groupSeverity($any(row).attentionState)" />
               </span>
             } @else {
               <p-tag
-                [value]="stateLabel($any(row).attentionState)"
-                [severity]="stateSeverity($any(row).attentionState)" />
+                [value]="groupLabel($any(row).attentionState)"
+                [severity]="groupSeverity($any(row).attentionState)" />
             }
           </ng-template>
 
@@ -143,6 +140,7 @@ export class AtencionDashboardComponent implements OnInit {
   private readonly router         = inject(Router);
   private readonly moduleRegistry = inject(ModuleRegistry);
   private readonly confirm        = inject(ConfirmationService);
+  private readonly doctorService  = inject(DoctorService);
 
   protected readonly rows    = this.store.selectSignal(selectTodayAtenciones);
   protected readonly loading = this.store.selectSignal(selectListLoading);
@@ -151,20 +149,37 @@ export class AtencionDashboardComponent implements OnInit {
   /** Bloque "Resumen del día": arranca colapsado para no robar foco a la lista. */
   protected readonly kpisExpanded = signal(false);
 
-  protected readonly stateLabel    = attentionStateLabel;
-  protected readonly stateSeverity = attentionStateSeverity;
+  protected readonly groupLabel    = attentionGroupLabel;
+  protected readonly groupSeverity = attentionGroupSeverity;
+
+  /** Lista de médicos del tenant, para resolver el nombre en la columna Médico (B3). */
+  private readonly doctors = signal<Doctor[]>([]);
+
+  /** Mapa doctorId → "Apellido, Nombre" para render en la celda Médico. */
+  private readonly doctorNameById = computed<ReadonlyMap<number, string>>(() => {
+    const map = new Map<number, string>();
+    for (const d of this.doctors()) {
+      map.set(d.id, `${d.lastName}, ${d.firstName}`);
+    }
+    return map;
+  });
 
   /**
-   * Opciones del filtro de estado, recortadas a los módulos activos del tenant:
-   * si FINANCIERO está apagado no ofrecemos Cobro/Facturación (estados que ese
-   * tenant nunca alcanza). Es un `computed` para reaccionar a la config del tenant.
+   * Grupos de estado para el filtro, recortados a los módulos activos del tenant:
+   * si FINANCIERO está apagado, los estados de cobro/facturación quedan fuera del
+   * grupo "En espera". `computed` para reaccionar a la config del tenant.
    */
-  protected readonly stateOptions = computed<Array<{ label: string; value: AttentionState }>>(() => {
-    const financieroActive = this.moduleRegistry.isActive(ModuleKey.Financiero);
-    return (Object.keys(ATTENTION_STATE_LABELS) as AttentionState[])
-      .filter(value => financieroActive || !FINANCIERO_STATES.has(value))
-      .map(value => ({ value, label: ATTENTION_STATE_LABELS[value] }));
-  });
+  protected readonly stateGroups = computed(() =>
+    buildAttentionStateGroups(this.moduleRegistry.isActive(ModuleKey.Financiero)),
+  );
+
+  /**
+   * Opciones del filtro de estado: una opción POR GRUPO (no por estado suelto). El
+   * `value` es el label del grupo; en `onFilterChange` se expande al set de estados.
+   */
+  protected readonly stateOptions = computed<Array<{ label: string; value: string }>>(() =>
+    this.stateGroups().map(g => ({ value: g.label, label: g.label })),
+  );
 
   /** Config de la barra de filtros; las opciones de estado vienen de `stateOptions()`. */
   readonly filterConfig = computed<FilterBarConfig>(() => ({
@@ -184,20 +199,47 @@ export class AtencionDashboardComponent implements OnInit {
 
   readonly rowActions: readonly TableAction[] = [
     {
+      // "Rótulos" (reimpresión): sólo cuando espera extracción y hay protocolo.
+      // Finalizada NO reimprime; el resto de estados tampoco lo ofrecen.
       key: 'rotulos',
       icon: 'pi-tag',
       label: 'Rótulos',
-      hidden: (row) => (row as AttentionResponse).protocolId == null,
+      hidden: (row) => {
+        const r = row as AttentionResponse;
+        return r.attentionState !== AttentionState.AWAITING_EXTRACTION || r.protocolId == null;
+      },
     },
     {
+      // "Retomar" cuando la secretaría tiene fase abierta (grupo "En espera");
+      // "Ver" para esperando/en extracción y finalizada. Canceladas/fallidas: SIN ojito.
       key: 'open',
       icon: (row) => isSecretaryResumable((row as AttentionResponse).attentionState) ? 'pi-arrow-right' : 'pi-eye',
       label: (row) => isSecretaryResumable((row as AttentionResponse).attentionState) ? 'Retomar' : 'Ver',
+      hidden: (row) => !this.canOpen((row as AttentionResponse).attentionState),
     },
   ];
 
   ngOnInit(): void {
     this.store.dispatch(loadAtenciones());
+    // Médicos del tenant para resolver el nombre en la columna Médico. Errores en
+    // silencio: si falla, la celda cae al fallback "—" (no rompe el listado).
+    this.doctorService.list()
+      .pipe(catchError(() => EMPTY))
+      .subscribe(list => this.doctors.set(list));
+  }
+
+  /** Nombre completo del médico (B3). Fallback "—" si no hay id o no se encuentra. */
+  doctorName(doctorId: number | null | undefined): string {
+    if (doctorId == null) return '—';
+    return this.doctorNameById().get(doctorId) ?? '—';
+  }
+
+  /**
+   * "Ver"/"Retomar" se ofrece para todo MENOS estados terminales no consultables:
+   * Cancelada y Fallida NO muestran el ojito (decisión de UX). Finalizada sí (Ver).
+   */
+  private canOpen(state: AttentionState): boolean {
+    return state !== AttentionState.CANCELED && state !== AttentionState.FAILED;
   }
 
   /** Expande/colapsa el bloque "Resumen del día". */
@@ -219,9 +261,16 @@ export class AtencionDashboardComponent implements OnInit {
   }
 
   onFilterChange(value: FilterBarValue): void {
+    // El filtro ofrece GRUPOS (value = label del grupo); el store filtra por estados
+    // sueltos. Expandimos cada grupo seleccionado al set de estados que lo componen.
+    const selectedGroups = (value['states'] as string[]) ?? [];
+    const groups = this.stateGroups();
+    const states = selectedGroups.flatMap(
+      label => groups.find(g => g.label === label)?.states ?? [],
+    );
     const patch: Partial<AtencionFilters> = {
       search: value['search'] as string,
-      states: (value['states'] as AttentionState[]) ?? [],
+      states,
     };
     this.store.dispatch(setAtencionFilters({ filters: patch }));
   }

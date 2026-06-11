@@ -260,7 +260,7 @@ export class ExtractionEffects {
   endExtraction$ = createEffect(() =>
     this.actions$.pipe(
       ofType(A.endExtraction),
-      exhaustMap(({ id }) => this.api.endExtraction(id).pipe(
+      exhaustMap(({ id, observation }) => this.api.endExtraction(id, observation).pipe(
         map(() => A.endExtractionSuccess({ id })),
         catchError((error: HttpErrorResponse) => of(A.endExtractionFailure({ error }))),
       )),

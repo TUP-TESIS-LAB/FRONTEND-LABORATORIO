@@ -164,6 +164,58 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     expect(completed.has(1)).toBe(false);
   });
 
+  // ── C6: título grande = publicCode con fallback a attentionNumber ──────────
+  it('C6: el título grande muestra "Atención {publicCode}" cuando hay publicCode', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.REGISTERING_ANALYSES), publicCode: 'ST-001' } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    const h2 = fixture.nativeElement.querySelector('h2') as HTMLElement;
+    expect(h2.textContent).toContain('Atención ST-001');
+    expect((fixture.componentInstance as any).headerTitle()).toBe('ST-001');
+  });
+
+  it('C6: si publicCode es null el título cae al attentionNumber', () => {
+    setup(AttentionState.REGISTERING_ANALYSES); // makeDetail → publicCode: null, attentionNumber: 'A-001'
+    const h2 = fixture.nativeElement.querySelector('h2') as HTMLElement;
+    expect(h2.textContent).toContain('Atención A-001');
+    expect((fixture.componentInstance as any).headerTitle()).toBe('A-001');
+  });
+
+  it('C6: publicCode en blanco (string vacío) también cae al attentionNumber', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.REGISTERING_ANALYSES), publicCode: '   ' } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    expect((fixture.componentInstance as any).headerTitle()).toBe('A-001');
+  });
+
+  // ── C3: el header ya no muestra el subtítulo "Paciente {id} · {estado}" ────
+  it('C3: el header NO muestra el subtítulo "Paciente … · estado"', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const header = fixture.nativeElement.querySelector('header') as HTMLElement;
+    expect(header.textContent).not.toContain('Paciente 100');
+  });
+
+  // ── C2: el tag URGENTE vive en el header del wizard, debajo del número ─────
+  it('C2: con isUrgent el header muestra el tag URGENTE', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.REGISTERING_ANALYSES), isUrgent: true } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    const header = fixture.nativeElement.querySelector('header') as HTMLElement;
+    expect(header.textContent).toContain('URGENTE');
+  });
+
+  it('C2: sin isUrgent el header NO muestra el tag URGENTE', () => {
+    setup(AttentionState.REGISTERING_ANALYSES); // makeDetail → isUrgent: false
+    const header = fixture.nativeElement.querySelector('header') as HTMLElement;
+    expect(header.textContent).not.toContain('URGENTE');
+  });
+
   // ── NEW-D: Volver al listado ───────────────────────────────────────────────
   it('NEW-D: backToList navega a /turnos/recepcion', () => {
     setup(AttentionState.REGISTERING_ANALYSES);

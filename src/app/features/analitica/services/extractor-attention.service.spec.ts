@@ -136,10 +136,25 @@ describe('ExtractorAttentionService', () => {
     req.flush(null);
   });
 
-  it('endExtraction PATCHes the correct endpoint with empty body', () => {
+  it('endExtraction PATCHes the correct endpoint with empty body when no observation', () => {
     service.endExtraction(7).subscribe();
     const req = httpMock.expectOne('/api/v1/attentions/7/end-extraction');
     expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({});
+    req.flush(null);
+  });
+
+  it('endExtraction includes observation in the body when provided', () => {
+    service.endExtraction(7, 'muestra hemolizada').subscribe();
+    const req = httpMock.expectOne('/api/v1/attentions/7/end-extraction');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ observation: 'muestra hemolizada' });
+    req.flush(null);
+  });
+
+  it('endExtraction omits observation when it is an empty string', () => {
+    service.endExtraction(7, '').subscribe();
+    const req = httpMock.expectOne('/api/v1/attentions/7/end-extraction');
     expect(req.request.body).toEqual({});
     req.flush(null);
   });

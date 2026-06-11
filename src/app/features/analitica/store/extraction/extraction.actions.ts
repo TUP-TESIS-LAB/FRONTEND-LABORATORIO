@@ -190,7 +190,7 @@ export const cancelAttentionFailure = createAction(
 
 export const endExtraction = createAction(
   '[Extraction Queue] End Extraction',
-  props<{ id: number }>(),
+  props<{ id: number; observation?: string }>(),
 );
 export const endExtractionSuccess = createAction(
   '[Extraction API] End Extraction Success',

@@ -2,12 +2,16 @@ import { TestBed } from '@angular/core/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
+import { of, throwError } from 'rxjs';
 import { AtencionDashboardComponent } from './atencion-dashboard.component';
 import { ATENCION_FEATURE_KEY, initialAtencionState } from '../../../store/atencion/atencion.state';
-import { downloadProtocolLabels } from '../../../store/atencion/atencion.actions';
-import { AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
+import { downloadProtocolLabels, setAtencionFilters } from '../../../store/atencion/atencion.actions';
+import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
+import { DoctorService } from '@features/medicos/services/doctor.service';
+import { Doctor } from '@features/medicos/models/doctor.model';
+import { TableAction } from '@shared/ui/models/table-column.model';
 import { ConfirmationService } from 'primeng/api';
 
 /** Stub de ModuleRegistry para no depender del feature `tenant` en el MockStore. */
@@ -15,7 +19,16 @@ function moduleRegistryStub(financieroActive: boolean) {
   return { isActive: (key: ModuleKey) => key === ModuleKey.Financiero ? financieroActive : true };
 }
 
-function setup(financieroActive = true) {
+const DOCTORS: Doctor[] = [
+  { id: 7, firstName: 'Ana', lastName: 'García', tuition: 'M-1', registrationType: 'NACIONAL', active: true },
+];
+
+/** Stub de DoctorService.list() — por defecto devuelve un médico. */
+function doctorServiceStub(list: Doctor[] | 'error' = DOCTORS) {
+  return { list: vi.fn(() => list === 'error' ? throwError(() => new Error('boom')) : of(list)) };
+}
+
+function setup(financieroActive = true, doctors: Doctor[] | 'error' = DOCTORS) {
   TestBed.configureTestingModule({
     imports: [AtencionDashboardComponent],
     providers: [
@@ -23,9 +36,19 @@ function setup(financieroActive = true) {
       provideRouter([]),
       provideNoopAnimations(),
       { provide: ModuleRegistry, useValue: moduleRegistryStub(financieroActive) },
+      { provide: DoctorService, useValue: doctorServiceStub(doctors) },
     ],
   });
   return TestBed.createComponent(AtencionDashboardComponent);
+}
+
+/** Fila mínima para probar predicados de acción. */
+function rowOf(partial: Partial<AttentionResponse>): AttentionResponse {
+  return { id: 1, attentionState: AttentionState.IN_EXTRACTION, protocolId: null, doctorId: null, ...partial } as AttentionResponse;
+}
+
+function action(c: AtencionDashboardComponent, key: string): TableAction {
+  return c.rowActions.find(a => a.key === key)!;
 }
 
 describe('AtencionDashboardComponent', () => {
@@ -91,20 +114,103 @@ describe('AtencionDashboardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Finalizadas');
   });
 
-  it('009: con FINANCIERO activo el filtro ofrece Cobro y Facturación', () => {
+  it('B2: el filtro ofrece GRUPOS de estado, no estados sueltos', () => {
     const fixture = setup(true);
     const values = fixture.componentInstance['stateOptions']().map((o: any) => o.value);
-    expect(values).toContain(AttentionState.ON_COLLECTION_PROCESS);
-    expect(values).toContain(AttentionState.ON_BILLING_PROCESS);
+    expect(values).toEqual([
+      'En espera',
+      'Esperando extracción',
+      'En extracción',
+      'Finalizada',
+      'Cancelada',
+      'Fallida',
+    ]);
   });
 
-  it('009: con FINANCIERO inactivo el filtro NO ofrece Cobro ni Facturación', () => {
+  it('B2: seleccionar "En espera" (FINANCIERO on) expande a todos sus estados', () => {
+    const fixture = setup(true);
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onFilterChange({ search: '', states: ['En espera'] } as any);
+    expect(spy).toHaveBeenCalledWith(setAtencionFilters({
+      filters: {
+        search: '',
+        states: [
+          AttentionState.REGISTERING_GENERAL_DATA,
+          AttentionState.REGISTERING_ANALYSES,
+          AttentionState.AWAITING_CONFIRMATION,
+          AttentionState.ON_COLLECTION_PROCESS,
+          AttentionState.ON_BILLING_PROCESS,
+        ],
+      },
+    }));
+  });
+
+  it('B2: con FINANCIERO off, "En espera" no expande a Cobro/Facturación', () => {
     const fixture = setup(false);
-    const values = fixture.componentInstance['stateOptions']().map((o: any) => o.value);
-    expect(values).not.toContain(AttentionState.ON_COLLECTION_PROCESS);
-    expect(values).not.toContain(AttentionState.ON_BILLING_PROCESS);
-    // Estados no financieros siguen presentes.
-    expect(values).toContain(AttentionState.AWAITING_EXTRACTION);
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onFilterChange({ search: '', states: ['En espera'] } as any);
+    expect(spy).toHaveBeenCalledWith(setAtencionFilters({
+      filters: {
+        search: '',
+        states: [
+          AttentionState.REGISTERING_GENERAL_DATA,
+          AttentionState.REGISTERING_ANALYSES,
+          AttentionState.AWAITING_CONFIRMATION,
+        ],
+      },
+    }));
+  });
+
+  it('B2: combina varios grupos seleccionados', () => {
+    const fixture = setup();
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onFilterChange({ search: 'x', states: ['Finalizada', 'Cancelada'] } as any);
+    expect(spy).toHaveBeenCalledWith(setAtencionFilters({
+      filters: { search: 'x', states: [AttentionState.FINISHED, AttentionState.CANCELED] },
+    }));
+  });
+
+  it('B2: columna Estado usa etiqueta+severidad de GRUPO', () => {
+    const c = setup().componentInstance;
+    expect(c['groupLabel'](AttentionState.ON_COLLECTION_PROCESS)).toBe('En espera');
+    expect(c['groupSeverity'](AttentionState.FINISHED)).toBe('success');
+    expect(c['groupSeverity'](AttentionState.CANCELED)).toBe('danger');
+  });
+
+  it('B2: "Rótulos" visible sólo en AWAITING_EXTRACTION con protocolId', () => {
+    const a = action(setup().componentInstance, 'rotulos');
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.AWAITING_EXTRACTION, protocolId: 5 }))).toBe(false);
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.AWAITING_EXTRACTION, protocolId: null }))).toBe(true);
+    // Finalizada NO reimprime; en extracción tampoco ofrece rótulos.
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.FINISHED, protocolId: 5 }))).toBe(true);
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.IN_EXTRACTION, protocolId: 5 }))).toBe(true);
+  });
+
+  it('B2: "Ver/Retomar" oculto en Cancelada y Fallida (sin ojito)', () => {
+    const a = action(setup().componentInstance, 'open');
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.CANCELED }))).toBe(true);
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.FAILED }))).toBe(true);
+    // Visible para el resto, incluida Finalizada (Ver) y esperando/en extracción.
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.FINISHED }))).toBe(false);
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.AWAITING_EXTRACTION }))).toBe(false);
+    expect(a.hidden!(rowOf({ attentionState: AttentionState.IN_EXTRACTION }))).toBe(false);
+  });
+
+  it('B3: la columna Médico resuelve el nombre completo cargado en ngOnInit', () => {
+    const c = setup().componentInstance;
+    c.ngOnInit();
+    expect(c.doctorName(7)).toBe('García, Ana');
+    expect(c.doctorName(null)).toBe('—');
+    expect(c.doctorName(999)).toBe('—');
+  });
+
+  it('B3: error del HTTP de médicos no rompe y cae al fallback "—"', () => {
+    const c = setup(true, 'error').componentInstance;
+    expect(() => c.ngOnInit()).not.toThrow();
+    expect(c.doctorName(7)).toBe('—');
   });
 
   it('011: isSecretaryResumable es false desde AWAITING_EXTRACTION (botón "Ver"), true en fases de secretaría', () => {
