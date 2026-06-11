@@ -1,0 +1,34 @@
+:host, .transito-page {
+  --gx-brand: #4b4ddb;
+  --gx-brand-hover: #3a3cc0;
+  --gx-bg: #f5f6f9;
+  --gx-card-bg: #ffffff;
+  --gx-ink: #22243a;
+  --gx-ink-2: #4a4d63;
+  --gx-muted: #7c8092;
+  --gx-border: #e8e9f0;
+  --gx-border-soft: #eef0f5;
+  --gx-sel-bg: #eef0ff;
+  --gx-sel-border: #c7caf6;
+  --gx-green: #0f8a55;
+  --gx-green-bg: #e3f6ec;
+  --gx-blue: #2563eb;
+  --gx-blue-bg: #e8f0ff;
+  --gx-teal: #0f8a7d;
+  --gx-teal-bg: #e3f6f2;
+  --gx-amber: #b5740c;
+  --gx-amber-bg: #fcf1dd;
+  --gx-red: #d83a3a;
+  --gx-red-bg: #fdebeb;
+  --gx-slate: #5b6170;
+  --gx-slate-bg: #eceef3;
+  --gx-shadow-card: 0 1px 2px rgba(28,30,55,.06), 0 1px 1px rgba(28,30,55,.04);
+  --gx-shadow-modal: 0 24px 60px rgba(28,30,55,.22);
+}
+
+@mixin gx-row-grid {
+  display: grid;
+  grid-template-columns: 46px 1.4fr 1.5fr 1.3fr 1fr 150px;
+  gap: 14px;
+  align-items: center;
+}
