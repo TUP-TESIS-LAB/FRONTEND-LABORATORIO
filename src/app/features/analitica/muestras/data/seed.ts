@@ -40,8 +40,13 @@ export const SEED: Sample[] = [
   // Recolección — 16 en collected
   ...Array.from({ length: 16 }, (_, i) => sample(i, 'collected')),
   // Traslado — 10 en transito, con destino poblado
+  // i=7 usa study Coagulograma (en vez del default Orina completa) para que
+  // groups()[0] = CENTRAL|Coagulación tenga ≥2 muestras (requerido por tests de send)
   ...Array.from({ length: 10 }, (_, i) =>
-    sample(i + 20, 'transito', { destino: 'Recepción central' }),
+    sample(i + 20, 'transito', {
+      destino: 'Recepción central',
+      ...(i === 7 ? { study: 'Coagulograma' } : {}),
+    }),
   ),
   // Procesamiento — 9 en processing, con area poblada
   ...Array.from({ length: 9 }, (_, i) =>

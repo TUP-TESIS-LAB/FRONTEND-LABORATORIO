@@ -205,3 +205,94 @@ describe('TransitoLotesService — updateDest', () => {
     expect(svc.editing().has('group-x')).toBe(false);
   });
 });
+
+describe('TransitoLotesService — send', () => {
+  let svc: TransitoLotesService;
+  let samples: MockSamplesService;
+
+  beforeEach(() => {
+    installLocalStorageMock();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    samples = TestBed.inject(MockSamplesService);
+    svc = TestBed.inject(TransitoLotesService);
+  });
+
+  it('send a lote sin destino → null (invariante 6)', async () => {
+    const id = svc.createLote(svc.groups()[0].sampleIds.slice(0, 1));
+    const result = await svc.send(id, 'lote');
+    expect(result).toBeNull();
+    expect(svc.lotes().find(l => l.id === id)).toBeDefined();
+  });
+
+  it('send con tildes parciales envía solo las tildadas (invariante 5)', async () => {
+    vi.useFakeTimers();
+    const group = svc.groups()[0];
+    const all = group.sampleIds;
+    expect(all.length).toBeGreaterThanOrEqual(2);
+
+    svc.toggleSelMany([all[0]], true);
+
+    const beforeCount = samples.byState('transito')().length;
+    const promise = svc.send(group.id, 'group');
+    await vi.advanceTimersByTimeAsync(360);
+    const result = await promise;
+
+    expect(result).not.toBeNull();
+    const afterCount = samples.byState('transito')().length;
+    expect(beforeCount - afterCount).toBe(1);
+    vi.useRealTimers();
+  });
+
+  it('send sin tildes envía todo el group', async () => {
+    vi.useFakeTimers();
+    const group = svc.groups()[0];
+    const expectedSent = group.sampleIds.length;
+    const beforeCount = samples.byState('transito')().length;
+
+    const promise = svc.send(group.id, 'group');
+    await vi.advanceTimersByTimeAsync(360);
+    await promise;
+
+    expect(beforeCount - samples.byState('transito')().length).toBe(expectedSent);
+    vi.useRealTimers();
+  });
+
+  it('outcome en-proceso si branch === CURRENT_BRANCH', async () => {
+    vi.useFakeTimers();
+    const here = svc.groups().find(g => g.branch === 'CENTRAL — Sede Central');
+    if (!here) return;
+    const promise = svc.send(here.id, 'group');
+    await vi.advanceTimersByTimeAsync(360);
+    const result = await promise;
+    expect(result!.enProceso).toBeGreaterThan(0);
+    expect(result!.enTransito).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it('outcome en-transito si branch !== CURRENT_BRANCH', async () => {
+    vi.useFakeTimers();
+    const other = svc.groups().find(g => g.branch !== 'CENTRAL — Sede Central');
+    if (!other) return;
+    const promise = svc.send(other.id, 'group');
+    await vi.advanceTimersByTimeAsync(360);
+    const result = await promise;
+    expect(result!.enTransito).toBeGreaterThan(0);
+    expect(result!.enProceso).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it('sendAll envía todos los groups, no toca lotes (invariante 8)', async () => {
+    vi.useFakeTimers();
+    const loteId = svc.createLote(svc.groups()[0].sampleIds.slice(0, 1));
+    const totalGroupsBefore = svc.groups().reduce((acc, g) => acc + g.sampleIds.length, 0);
+
+    const promise = svc.sendAll();
+    await vi.advanceTimersByTimeAsync(360 * 20);
+    const result = await promise;
+
+    expect(result.enProceso + result.enTransito).toBe(totalGroupsBefore);
+    expect(svc.lotes().find(l => l.id === loteId)).toBeDefined();
+    vi.useRealTimers();
+  });
+});
