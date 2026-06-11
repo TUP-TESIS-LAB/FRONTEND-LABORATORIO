@@ -299,3 +299,60 @@ describe('TransitoLotesService — send', () => {
     vi.useRealTimers();
   });
 });
+
+describe('TransitoLotesService — scan', () => {
+  let svc: TransitoLotesService;
+  let samples: MockSamplesService;
+
+  beforeEach(() => {
+    installLocalStorageMock();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [MockSamplesService, TransitoLotesService] });
+    samples = TestBed.inject(MockSamplesService);
+    svc = TestBed.inject(TransitoLotesService);
+  });
+
+  it('scan con barcode exacto agrega al lote activo (outcome=added)', () => {
+    const groupSample = svc.groups()[0].sampleIds[0];
+    const sample = samples.samples().find(s => s.id === groupSample)!;
+    svc.createLote([]); // crear lote vacío, queda activo
+    const result = svc.scan(sample.barcode);
+    expect(result.outcome).toBe('added');
+    expect(result.matchedId).toBe(sample.id);
+    expect(svc.lotes()[0].sampleIds).toContain(sample.id);
+  });
+
+  it('scan sin lote activo crea uno nuevo y la agrega', () => {
+    expect(svc.activeLoteId()).toBeNull();
+    const sample = samples.samples().find(s => s.state === 'transito')!;
+    const result = svc.scan(sample.barcode);
+    expect(result.outcome).toBe('added');
+    expect(svc.lotes().length).toBe(1);
+    expect(svc.lotes()[0].sampleIds).toContain(sample.id);
+    expect(svc.activeLoteId()).toBe(svc.lotes()[0].id);
+  });
+
+  it('scan de muestra ya en lote activo → outcome=duplicate sin mutar', () => {
+    const sample = samples.samples().find(s => s.state === 'transito')!;
+    svc.scan(sample.barcode);
+    const result = svc.scan(sample.barcode);
+    expect(result.outcome).toBe('duplicate');
+    expect(result.duplicateLoteNumber).toBe(1);
+    expect(svc.lotes()[0].sampleIds.length).toBe(1);
+  });
+
+  it('scan sin match → outcome=no-match, matchedId=null', () => {
+    const result = svc.scan('CODE-INEXISTENTE-999');
+    expect(result.outcome).toBe('no-match');
+    expect(result.matchedId).toBeNull();
+    expect(svc.lotes().length).toBe(0);
+  });
+
+  it('scan acepta match parcial (includes) cuando no hay exacto', () => {
+    const sample = samples.samples().find(s => s.state === 'transito')!;
+    const partial = sample.barcode.slice(-5);
+    const result = svc.scan(partial);
+    expect(result.outcome).toBe('added');
+    expect(result.matchedId).toBe(sample.id);
+  });
+});

@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { MockSamplesService } from './mock-samples.service';
-import type { RecommendedGroup, SendResult, TemporalLote, TransitoDest } from '../models/transito.model';
+import type { RecommendedGroup, ScanResult, SendResult, TemporalLote, TransitoDest } from '../models/transito.model';
 import type { Transition } from '../models/transition.model';
 import {
   AREA_BRANCH, AREA_SECTION, STUDY_AREA, CURRENT_BRANCH, DEFAULT_AREA,
@@ -132,6 +132,39 @@ export class TransitoLotesService {
 
   setActiveLote(loteId: string | null): void {
     this._activeLoteId.set(loteId);
+  }
+
+  scan(code: string): ScanResult {
+    const norm = code.trim().toLowerCase();
+    if (!norm) return { matchedId: null, outcome: 'no-match' };
+    const transito = this.samplesInTransito();
+    const match = transito.find(s => s.barcode.toLowerCase() === norm)
+      ?? transito.find(s => s.barcode.toLowerCase().includes(norm));
+    if (!match) return { matchedId: null, outcome: 'no-match' };
+
+    const activeId = this._activeLoteId();
+    if (activeId) {
+      const active = this._lotes().find(l => l.id === activeId);
+      if (active?.sampleIds.includes(match.id)) {
+        const idx = this._lotes().findIndex(l => l.id === activeId);
+        return { matchedId: match.id, outcome: 'duplicate', duplicateLoteNumber: idx + 1 };
+      }
+      this._lotes.update(arr => arr
+        .map(l => {
+          if (l.id === activeId) {
+            return { ...l, sampleIds: [...l.sampleIds, match.id] };
+          }
+          const filtered = l.sampleIds.filter(id => id !== match.id);
+          return { ...l, sampleIds: filtered };
+        })
+        .filter(l => l.id === activeId || l.sampleIds.length > 0),
+      );
+      return { matchedId: match.id, outcome: 'added' };
+    }
+
+    // no hay lote activo → crear uno y agregar
+    this.createLote([match.id]);
+    return { matchedId: match.id, outcome: 'added' };
   }
 
   updateDest(target: { kind: 'group' | 'lote'; id: string }, patch: Partial<TransitoDest>): void {
