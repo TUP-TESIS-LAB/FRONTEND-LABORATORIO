@@ -1,4 +1,4 @@
-import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { MockSamplesService } from './mock-samples.service';
 import type { Sample } from '../models/sample.model'; // used in Task 4+
 import type { RecommendedGroup, TemporalLote, TransitoDest } from '../models/transito.model';
@@ -35,7 +35,7 @@ export class TransitoLotesService {
     return ids;
   });
 
-  readonly groups: Signal<RecommendedGroup[]> = computed(() => {
+  readonly groups = computed(() => {
     const samples = this.samplesInTransito();
     const loted = this.lotedIds();
     const overrides = this._groupOverrides();
