@@ -34,20 +34,20 @@ import { CoverageCatalogService } from '../../services/coverage-catalog.service'
       <div class="cv-toolbar">
         <div class="cv-toolbar__field cv-toolbar__field--grow">
           <label class="pat-form__label">Obra social</label>
-          <p-select [options]="osOptions()" [(ngModel)]="selInsurer" (ngModelChange)="onInsurerChange()"
+          <p-select [options]="osOptions()" [ngModel]="selInsurer()" (ngModelChange)="onInsurerChange($event)"
                     optionLabel="name" optionValue="id" placeholder="Elegí una obra social"
                     appendTo="body" [filter]="true" filterBy="name" class="w-full" />
         </div>
         <div class="cv-toolbar__field cv-toolbar__field--grow">
           <label class="pat-form__label">Plan</label>
-          <p-select [options]="planOptions()" [(ngModel)]="selPlan"
+          <p-select [options]="planOptions()" [ngModel]="selPlan()" (ngModelChange)="selPlan.set($event)"
                     optionLabel="name" optionValue="planId" placeholder="Elegí el plan"
                     [disabled]="selInsurer() == null" appendTo="body" class="w-full" />
         </div>
         <div class="cv-toolbar__field">
           <label class="pat-form__label">N° afiliado</label>
-          <input pInputText [(ngModel)]="selMember" [disabled]="selPlan() == null"
-                 class="pat-form__input" placeholder="N° afiliado" />
+          <input pInputText [ngModel]="selMember()" (ngModelChange)="selMember.set($event)"
+                 [disabled]="selPlan() == null" class="pat-form__input" placeholder="N° afiliado" />
         </div>
         <p-button icon="pi pi-plus" label="Agregar" severity="secondary" [outlined]="true"
                   [disabled]="!canAdd()" (onClick)="add()" />
@@ -153,7 +153,9 @@ export class CoverageSectionComponent implements OnInit {
     });
   }
 
-  onInsurerChange(): void {
+  onInsurerChange(insurerId: number | null): void {
+    this.selInsurer.set(insurerId ?? null);
+    // Cambiar de obra social resetea plan y afiliado (cascada).
     this.selPlan.set(null);
     this.selMember.set('');
   }
