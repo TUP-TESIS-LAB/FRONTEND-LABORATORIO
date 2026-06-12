@@ -72,8 +72,8 @@ describe('PatientListPage (smoke)', () => {
     };
     expect(cmp.rowStatusLabel({ ...base, verifiedAt: '2026-06-09T10:00:00Z' })).toBe('Verificado');
     expect(cmp.rowStatusSeverity({ ...base, verifiedAt: '2026-06-09T10:00:00Z' })).toBe('info');
-    // Sin verificar cae al estado de completitud.
-    expect(cmp.rowStatusLabel({ ...base, verifiedAt: null })).toBe('COMPLETE');
+    // Sin verificar cae al estado de completitud (label en español).
+    expect(cmp.rowStatusLabel({ ...base, verifiedAt: null })).toBe('Completo');
     expect(cmp.rowStatusSeverity({ ...base, verifiedAt: null })).toBe('success');
   });
 

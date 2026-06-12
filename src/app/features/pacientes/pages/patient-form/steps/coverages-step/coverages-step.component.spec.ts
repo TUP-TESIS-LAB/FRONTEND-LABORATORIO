@@ -5,10 +5,11 @@ import { describe, it, expect } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { CoveragesStepComponent } from './coverages-step.component';
-import { CoveragePlansService } from '../../../../services/coverage-plans.service';
+import { CoverageCatalogService } from '../../../../services/coverage-catalog.service';
+import { EMPTY_CATALOG } from '../../../../models/coverage-catalog.model';
 
-const mockPlansService = {
-  getActivePlans: () => of([{ planId: 1, label: 'Particular', particular: true }]),
+const mockCatalogService = {
+  getCatalog: () => of(EMPTY_CATALOG),
 };
 
 @Component({
@@ -21,25 +22,26 @@ class HostCmp {
 }
 
 describe('CoveragesStepComponent', () => {
-  it('renders the contextual hint without a redundant title (el título vive en el header del stepper)', () => {
+  it('no muestra título ni aclaraciones en el cuerpo del paso (solo la carga de coberturas)', () => {
     TestBed.configureTestingModule({
       providers: [
         provideNoopAnimations(),
-        { provide: CoveragePlansService, useValue: mockPlansService },
+        { provide: CoverageCatalogService, useValue: mockCatalogService },
       ],
     });
     const fx = TestBed.createComponent(HostCmp);
     fx.detectChanges();
     const html = (fx.nativeElement as HTMLElement).textContent ?? '';
-    expect(html).toContain('particular'); // el hint contextual se mantiene
-    expect(html).not.toContain('Coberturas'); // sin título redundante en el contenido del paso
+    // El hint "Si no agregás ninguna… particular" fue removido.
+    expect(html).not.toContain('Si no agregás');
+    expect(html).not.toContain('Coberturas'); // sin título redundante en el cuerpo del paso
   });
 
   it('renders the underlying CoverageSectionComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         provideNoopAnimations(),
-        { provide: CoveragePlansService, useValue: mockPlansService },
+        { provide: CoverageCatalogService, useValue: mockCatalogService },
       ],
     });
     const fx = TestBed.createComponent(HostCmp);

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Component, signal } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { describe, it, expect } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { FormControl } from '@angular/forms';
@@ -17,7 +17,7 @@ function daysFromToday(days: number): Date {
   standalone: true,
   imports: [GeneralStepComponent],
   template: `
-    <pat-general-step [group]="group" [extraContacts]="extras" [dniDuplicate]="dup()" [editMode]="edit" />
+    <pat-general-step [group]="group" [addressGroup]="address" [dniDuplicate]="dup()" [editMode]="edit" />
   `,
 })
 class HostCmp {
@@ -32,7 +32,9 @@ class HostCmp {
     mobile: [''],
     email: [''],
   });
-  extras: FormArray<FormGroup> = this.fb.array<FormGroup>([]);
+  address = this.fb.group({
+    street: [''], streetNumber: [''], neighborhood: [''], city: [''], province: [''],
+  });
   dup = signal(false);
   edit = false;
 }
@@ -59,11 +61,19 @@ describe('GeneralStepComponent', () => {
     expect(html).toContain('Email');
   });
 
-  it('keeps the "Otros contactos" accordion collapsed by default', () => {
+  it('renders the address fields (5) inside Datos generales, sin contactos adicionales', () => {
     const fx = setup();
     const html = (fx.nativeElement as HTMLElement).textContent ?? '';
-    expect(html).toContain('Otros contactos');
+    expect(html).toContain('Domicilio');
+    expect(html).toContain('Calle');
+    expect(html).toContain('Barrio');
+    expect(html).toContain('Provincia');
+    // Ya no hay UI de contactos adicionales.
+    expect(html).not.toContain('Otros contactos');
     expect((fx.nativeElement as HTMLElement).querySelector('pat-contact-section')).toBeNull();
+    // Y no quedan Código postal / Depto (5 campos exactos).
+    expect(html).not.toContain('Código postal');
+    expect(html).not.toContain('Depto');
   });
 
   it('shows the duplicate-DNI error when dniDuplicate is true', () => {

@@ -4,6 +4,7 @@ import {
   TemplateRef,
   ViewChild,
   computed,
+  contentChild,
   contentChildren,
   input,
   output,
@@ -16,6 +17,7 @@ import { MenuModule, Menu } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 import { UiCellDirective } from './ui-cell.directive';
+import { UiRowExpansionDirective } from './ui-row-expansion.directive';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
 
 @Component({
@@ -53,6 +55,9 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
 
           <ng-template pTemplate="header">
             <tr>
+              @if (expandable()) {
+                <th class="ut-expander-th"></th>
+              }
               @for (col of columns(); track col.field) {
                 <th
                   [class.ut-align-right]="col.align === 'right'"
@@ -70,8 +75,16 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
             </tr>
           </ng-template>
 
-          <ng-template pTemplate="body" let-row>
+          <ng-template pTemplate="body" let-row let-expanded="expanded">
             <tr>
+              @if (expandable()) {
+                <td class="ut-expander-td">
+                  <button class="ut-ibtn" type="button" [pRowToggler]="row"
+                          [attr.aria-label]="expanded ? 'Contraer' : 'Expandir'">
+                    <i class="pi" [class.pi-chevron-right]="!expanded" [class.pi-chevron-down]="expanded"></i>
+                  </button>
+                </td>
+              }
               @for (col of columns(); track col.field) {
                 <td
                   [class.ut-align-right]="col.align === 'right'"
@@ -143,10 +156,22 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
             </tr>
           </ng-template>
 
+          @if (expandable()) {
+            <ng-template pTemplate="expandedrow" let-row>
+              <tr class="ut-expansion-row">
+                <td [attr.colspan]="totalColspan()">
+                  @if (expansionTpl(); as tpl) {
+                    <ng-container [ngTemplateOutlet]="tpl" [ngTemplateOutletContext]="{ $implicit: row }" />
+                  }
+                </td>
+              </tr>
+            </ng-template>
+          }
+
           @if (lazy()) {
             <ng-template pTemplate="emptymessage">
               <tr>
-                <td [attr.colspan]="columns().length + (hasActions() ? 1 : 0)" style="padding:0;border:none">
+                <td [attr.colspan]="totalColspan()" style="padding:0;border:none">
                   <ui-empty-state
                     [icon]="emptyIcon()"
                     [heading]="emptyHeading()"
@@ -251,6 +276,17 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
     :host ::ng-deep th.ut-actions-th { width: 1%; white-space: nowrap; }
     :host ::ng-deep td.ut-actions-td { width: 1%; white-space: nowrap; }
 
+    /* ── Row expansion ── */
+    :host ::ng-deep th.ut-expander-th { width: 1%; white-space: nowrap; }
+    :host ::ng-deep td.ut-expander-td { width: 1%; white-space: nowrap; }
+    /* La fila de expansión NO usa el zebra/hover de las filas normales. */
+    :host ::ng-deep tr.ut-expansion-row > td {
+      background: #f8fafc;
+      padding: 12px 18px !important;
+      box-shadow: inset 0 1px 0 #e8edf3, inset 0 -1px 0 #e8edf3;
+    }
+    :host ::ng-deep tr.ut-expansion-row:hover > td { background: #f8fafc !important; }
+
     .ut-actions-cell {
       display: flex;
       gap: 2px;
@@ -297,6 +333,11 @@ export class DataTableComponent {
   // ── Scroll ──
   readonly scrollHeight = input<string | null>(null);
 
+  // ── Row expansion ──
+  // Cuando es true, se agrega una columna con un toggle (chevron) y cada fila puede
+  // expandirse mostrando el template marcado con [uiRowExpansion]. Requiere dataKey único.
+  readonly expandable = input<boolean>(false);
+
   // ── Built-in actions ──
   readonly showView   = input<boolean>(false);
   readonly showEdit   = input<boolean>(false);
@@ -328,9 +369,18 @@ export class DataTableComponent {
   );
   protected readonly activeMenuItems = signal<MenuItem[]>([]);
 
+  /** Colspan total de la fila de expansión = expander + columnas + acciones. */
+  protected readonly totalColspan = computed(() =>
+    (this.expandable() ? 1 : 0) + this.columns().length + (this.hasActions() ? 1 : 0),
+  );
+
   @ViewChild('actionMenu') private actionMenuRef?: Menu;
 
   private readonly cells = contentChildren(UiCellDirective);
+  private readonly expansionDir = contentChild(UiRowExpansionDirective);
+  protected readonly expansionTpl = computed<TemplateRef<unknown> | null>(
+    () => this.expansionDir()?.tpl ?? null,
+  );
 
   protected tplFor(field: string): TemplateRef<unknown> | null {
     return this.cells().find((c) => c.field() === field)?.tpl ?? null;
