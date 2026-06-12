@@ -19,6 +19,7 @@ import { Usuario } from '../../../models/usuario.model';
       [lazy]="true"
       [paginator]="true"
       [rows]="size"
+      [rowsPerPageOptions]="[10, 20, 50, 100]"
       [totalRecords]="totalElements"
       [first]="page * size"
       [showEdit]="true"

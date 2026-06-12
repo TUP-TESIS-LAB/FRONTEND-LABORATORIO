@@ -31,8 +31,9 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
     ButtonModule, TagModule, TooltipModule,
     DataTableComponent, UiCellDirective, FilterBarComponent,
   ],
+  styles: [`:host { display: block; height: 100%; }`],
   template: `
-    <div class="p-6">
+    <div class="p-6 flex flex-col h-full min-h-0">
       <header class="flex items-center justify-between mb-4">
         <h2 class="page-title"><i class="pi pi-id-card page-title-icon" aria-hidden="true"></i> Obras Sociales</h2>
         <div class="flex items-center gap-2">
@@ -47,6 +48,7 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
         <ui-filter-bar [config]="filterConfig()" (valueChange)="onFilterChange($event)" />
       </div>
 
+      <div class="flex-1 min-h-0 flex flex-col">
       <ui-table
         [value]="items()"
         [loading]="pending()"
@@ -54,6 +56,8 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
         [lazy]="true"
         [paginator]="true"
         [rows]="pageRequest().size"
+        [rowsPerPageOptions]="[10, 20, 50, 100]"
+        [scrollHeight]="'flex'"
         [totalRecords]="total()"
         [first]="pageRequest().page * pageRequest().size"
         [showView]="true"
@@ -72,6 +76,7 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
           }
         </ng-template>
       </ui-table>
+      </div>
     </div>
   `,
 })
