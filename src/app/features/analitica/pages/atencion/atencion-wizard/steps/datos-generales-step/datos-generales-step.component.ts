@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   effect,
@@ -9,9 +10,10 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { EMPTY } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { EMPTY, Subject } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
@@ -63,30 +65,27 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       <!-- T8: contenido scrolleable interno; el footer queda abajo y la página no crece. -->
       <div class="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
 
-      <!-- Búsqueda por DNI -->
-      <div class="flex gap-2 items-end">
-        <div class="flex-1">
-          <label class="block text-sm font-medium mb-1">DNI del paciente</label>
-          <input pInputText [(ngModel)]="dniInput" class="w-full" placeholder="Sin puntos ni guiones"
-                 [readonly]="readOnly()" (keyup.enter)="buscar()" />
+      <!-- DNI del paciente: card siempre visible. La búsqueda es automática (debounce
+           mientras se tipea + al salir del campo); no hay botón "Buscar". Si el DNI
+           existe se muestra el paciente abajo; si no, aparece el alta inline. -->
+      <div class="rounded border p-4">
+        <label class="block text-sm font-medium mb-1">DNI del paciente</label>
+        <div class="flex items-center gap-2">
+          <input pInputText [ngModel]="dniInput" (ngModelChange)="onDniChange($event)"
+                 (blur)="buscar()" (keyup.enter)="buscar()" class="w-full"
+                 placeholder="Sin puntos ni guiones" [readonly]="readOnly()" />
+          @if (resolving()) {
+            <i class="pi pi-spin pi-spinner text-surface-500" aria-label="Verificando paciente"></i>
+          }
         </div>
-        @if (!readOnly()) {
-          <p-button label="Buscar" icon="pi pi-search" [loading]="resolving()" (onClick)="buscar()" />
+        @if (resolutionError()) {
+          <small class="text-red-600 block mt-1" role="alert">
+            <i class="pi pi-exclamation-triangle mr-1"></i>No pudimos verificar el paciente. Reintentá.
+          </small>
+        } @else if (!resolving() && !resolved() && !notFoundDni()) {
+          <small class="text-surface-500 block mt-1">Ingresá el DNI y buscamos el paciente automáticamente.</small>
         }
       </div>
-
-      @if (resolving()) {
-        <div class="text-sm opacity-70">
-          <i class="pi pi-spin pi-spinner mr-1"></i>Verificando paciente…
-        </div>
-      }
-
-      @if (resolutionError()) {
-        <div class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700" role="alert">
-          <i class="pi pi-exclamation-triangle mr-1"></i>
-          No pudimos verificar el paciente. Reintentá.
-        </div>
-      }
 
       <!-- Caso A: paciente encontrado -->
       @if (resolved(); as p) {
@@ -266,10 +265,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
             No encontramos un paciente con DNI <b>{{ notFoundDni() }}</b>. Completá los datos para darlo de alta:
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm mb-1">DNI <span class="text-red-500">*</span></label>
-              <input pInputText [(ngModel)]="form.dni" class="w-full" />
-            </div>
             <div>
               <label class="block text-sm mb-1">Nombre <span class="text-red-500">*</span></label>
               <input pInputText [(ngModel)]="form.firstName" class="w-full" />
@@ -473,6 +468,12 @@ export class DatosGeneralesStepComponent implements OnInit {
   private readonly doctorsApi = inject(DoctorService);
   private readonly notification = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Búsqueda automática del DNI: se dispara con debounce al tipear y al blur. */
+  private readonly dniSearch$ = new Subject<string>();
+  /** Evita re-buscar el mismo DNI en cada blur/keystroke. */
+  private lastSearchedDni = '';
 
   readonly atencionId = input<number | null>(null);
   readonly initialDni = input<string | null>(null);
@@ -636,11 +637,18 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   // When backend confirms DNI not found, pre-fill the alta form's DNI field
   constructor() {
+    // Búsqueda automática del DNI: debounce mientras se tipea (el blur la dispara ya).
+    this.dniSearch$.pipe(
+      debounceTime(450),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => this.buscar());
+
+    // El DNI del alta sale del buscador de arriba (ya no hay campo DNI en el alta):
+    // sincronizamos form.dni con el último DNI no encontrado.
     effect(() => {
       const dni = this.notFoundDni();
-      if (dni && !this.form.dni) {
-        this.form.dni = dni;
-      }
+      if (dni) this.form.dni = dni;
     });
 
     // Default de la cobertura a usar cuando (re)aparece el paciente: el plan ya asociado a la
@@ -737,12 +745,19 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   protected readonly canConfirm = computed(() => this.resolved() != null && !this.resolving());
 
+  /** Tipeo en el DNI: empuja al debounce de búsqueda automática. */
+  onDniChange(value: string): void {
+    this.dniInput = value;
+    this.dniSearch$.next(value.trim());
+  }
+
   buscar(): void {
     if (this.readOnly()) return;
     const dni = this.dniInput.trim();
-    if (dni) {
-      this.store.dispatch(resolvePatientByDni({ dni }));
-    }
+    // Mínimo 7 dígitos y no re-buscar el mismo DNI (evita dispatches en cada blur).
+    if (dni.length < 7 || dni === this.lastSearchedDni) return;
+    this.lastSearchedDni = dni;
+    this.store.dispatch(resolvePatientByDni({ dni }));
   }
 
   /** Cambio de obra social en el form: resetea el plan (auto-selecciona si hay uno solo). */

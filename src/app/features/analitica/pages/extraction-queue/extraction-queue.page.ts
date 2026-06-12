@@ -214,7 +214,7 @@ const UNDO_WINDOW_MS = 5000;
     </section>
   `,
   styles: [`
-    :host { display: block; }
+    :host { display: block; background: #fff; min-height: 100%; }
     .page { display: flex; flex-direction: column; gap: 18px; padding: 16px; }
     .page__header {
       display: flex;
