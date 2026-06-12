@@ -100,7 +100,39 @@ describe('DatosGeneralesStepComponent', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: null }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null }),
+    );
+  });
+
+  it('cobertura: default = principal activa; cambiar el chip cambia el insurancePlanId enviado', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: {
+        id: 5, coverages: [
+          { planId: 20, memberNumber: '6012345', isPrimary: true, active: true },
+          { planId: 21, memberNumber: 'x', isPrimary: false, active: true },
+        ],
+      } as any },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as unknown as {
+      selectedInsurancePlanId: { (): number | null; set(v: number | null): void };
+      coverageChips(): { planId: number | null }[];
+      onConfirm(): void;
+    };
+    // Chips: Particular (null) + las 2 coberturas activas.
+    expect(cmp.coverageChips().map((c) => c.planId)).toEqual([null, 20, 21]);
+    // Default: la principal activa (20).
+    expect(cmp.selectedInsurancePlanId()).toBe(20);
+    // El operador cambia a la otra cobertura → se manda ese plan.
+    cmp.selectedInsurancePlanId.set(21);
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onConfirm();
+    expect(spy).toHaveBeenCalledWith(
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: 21, indications: null, queueEntryId: null }),
     );
   });
 
@@ -650,7 +682,7 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: 99 }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: 99 }),
     );
   });
 });

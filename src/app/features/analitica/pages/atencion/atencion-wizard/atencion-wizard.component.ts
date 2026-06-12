@@ -156,6 +156,7 @@ const ALL_STEPS: WizardStepDef[] = [
                                         [initialPatientId]="detail()!.patientId"
                                         [initialIndications]="detail()!.indications"
                                         [initialDoctorId]="detail()!.doctorId"
+                                        [initialInsurancePlanId]="detail()!.insurancePlanId"
                                         [readOnly]="readOnly()"
                                         [canReturn]="canReturn()" [returnDisabled]="mutating()"
                                         (returnPhase)="onReturnPhase()" />

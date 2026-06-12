@@ -21,6 +21,8 @@ import { NgClass } from '@angular/common';
 import { Gender, SexAtBirth } from '@features/pacientes/models/patient.model';
 import { CoveragePlanOption } from '@features/pacientes/models/coverage-plans.catalog';
 import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
+import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '@features/pacientes/models/coverage-catalog.model';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
@@ -115,6 +117,22 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
             </div>
 
             <div class="text-sm text-surface-600">DNI {{ p.dni }}</div>
+
+            <!-- Cobertura a usar en la atención: chips seleccionables (default = la principal).
+                 Permite cambiar la cobertura sin entrar a "Corregir datos". -->
+            <div class="pt-1">
+              <div class="text-xs font-medium text-surface-500 mb-1">Cobertura a usar</div>
+              <div class="flex flex-wrap gap-2">
+                @for (chip of coverageChips(); track chip.planId) {
+                  <button type="button" class="cov-chip"
+                          [class.cov-chip--on]="selectedInsurancePlanId() === chip.planId"
+                          [disabled]="readOnly()"
+                          (click)="selectedInsurancePlanId.set(chip.planId)">
+                    <span class="cov-chip__dot"></span>{{ chip.label }}
+                  </button>
+                }
+              </div>
+            </div>
 
             <!-- Alerta portal -->
             @if (esPortal()) {
@@ -392,11 +410,28 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       color: #991b1b;
       border: 1px solid #fca5a5;
     }
+    /* Chips de cobertura (selección de la cobertura a usar en la atención). */
+    .cov-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      border: 1px solid #cdd5e0; border-radius: 999px;
+      padding: 5px 12px 5px 10px; font-size: 0.8125rem; cursor: pointer;
+      background: #fff; color: #1a1a2e;
+    }
+    .cov-chip:disabled { cursor: default; }
+    .cov-chip__dot {
+      width: 13px; height: 13px; border-radius: 50%; border: 2px solid #b6c0cf; flex: none;
+    }
+    .cov-chip--on { border-color: #2563eb; background: #eef4ff; color: #1e3a8a; font-weight: 600; }
+    .cov-chip--on .cov-chip__dot {
+      border-color: #2563eb;
+      background: radial-gradient(circle at center, #2563eb 0 4px, #fff 5px);
+    }
   `],
 })
 export class DatosGeneralesStepComponent implements OnInit {
   private readonly store = inject(Store);
   private readonly coveragePlans = inject(CoveragePlansService);
+  private readonly coverageCatalog = inject(CoverageCatalogService);
   private readonly doctorsApi = inject(DoctorService);
   private readonly notification = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
@@ -414,6 +449,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   readonly initialIndications = input<string | null>(null);
   /** Médico solicitante ya asociado (al retomar). (007) */
   readonly initialDoctorId = input<number | null>(null);
+  /** Cobertura (plan) ya asociada a la atención (al retomar) — pre-selecciona el chip. */
+  readonly initialInsurancePlanId = input<number | null>(null);
 
   /**
    * Footer "Volver fase" — el wizard provee el estado y bindea el handler.
@@ -434,6 +471,26 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   protected readonly editing = signal(false);
   protected readonly planOptions = signal<CoveragePlanOption[]>([]);
+
+  // ── Cobertura a usar en la atención (chips) ─────────────────────────────────
+  /** Catálogo de coberturas para resolver el label de cada chip (obra social + plan). */
+  protected readonly catalog = signal<CoverageCatalog>(EMPTY_CATALOG);
+  /** Plan elegido para la atención. null = Particular (sin obra social). */
+  protected readonly selectedInsurancePlanId = signal<number | null>(null);
+  /** Para no pisar la selección manual del operador al re-evaluar el paciente. */
+  private lastDefaultedPatientId: number | null = null;
+
+  /** Chips: Particular + cada cobertura activa del paciente (obra social · plan · N° afiliado). */
+  protected readonly coverageChips = computed<{ planId: number | null; label: string }[]>(() => {
+    const p = this.resolved();
+    const cat = this.catalog();
+    const chips: { planId: number | null; label: string }[] = [{ planId: null, label: 'Particular' }];
+    for (const c of (p?.coverages ?? []).filter((x) => x.active)) {
+      const member = c.memberNumber ? ` · N° ${c.memberNumber}` : '';
+      chips.push({ planId: c.planId, label: `${insurerNameForPlan(cat, c.planId)} ${planName(cat, c.planId)}${member}` });
+    }
+    return chips;
+  });
 
   // ── Médico solicitante (007) ────────────────────────────────────────────────
   protected readonly doctors        = signal<Doctor[]>([]);
@@ -514,9 +571,29 @@ export class DatosGeneralesStepComponent implements OnInit {
         this.form.dni = dni;
       }
     });
+
+    // Default de la cobertura a usar cuando (re)aparece el paciente: el plan ya asociado a la
+    // atención (al retomar) → la cobertura principal activa → Particular (null). Se setea una vez
+    // por paciente para no pisar un cambio manual del operador.
+    effect(() => {
+      const p = this.resolved();
+      if (!p) { this.lastDefaultedPatientId = null; return; }
+      if (this.lastDefaultedPatientId === p.id) return;
+      this.lastDefaultedPatientId = p.id;
+      const initial = this.initialInsurancePlanId();
+      if (initial != null) { this.selectedInsurancePlanId.set(initial); return; }
+      const primary = p.coverages?.find((c) => c.isPrimary && c.active)
+        ?? p.coverages?.find((c) => c.active) ?? null;
+      this.selectedInsurancePlanId.set(primary?.planId ?? null);
+    });
   }
 
   ngOnInit(): void {
+    // Catálogo (obras sociales + planes) para resolver el label de los chips de cobertura.
+    this.coverageCatalog.getCatalog().pipe(
+      catchError(() => EMPTY),
+    ).subscribe(cat => this.catalog.set(cat));
+
     // Load coverage plans for dropdowns (errors are swallowed — dropdown stays empty)
     this.coveragePlans.getActivePlans().pipe(
       catchError(() => EMPTY),
@@ -686,6 +763,7 @@ export class DatosGeneralesStepComponent implements OnInit {
     const p = this.resolved();
     if (!p) return;
     const doctorId = this.selectedDoctorId();
+    const insurancePlanId = this.selectedInsurancePlanId();
     const id = this.atencionId();
     if (id == null) {
       const qid = this.route.snapshot.queryParamMap.get('queueEntryId');
@@ -694,6 +772,7 @@ export class DatosGeneralesStepComponent implements OnInit {
         startAttentionForPatient({
           patientId:   p.id,
           doctorId,
+          insurancePlanId,
           indications: this.indications || null,
           queueEntryId,
         }),
@@ -706,7 +785,7 @@ export class DatosGeneralesStepComponent implements OnInit {
         payload: {
           patientId:       p.id,
           doctorId,
-          insurancePlanId: null,
+          insurancePlanId,
           indications:     this.indications || null,
         },
       }),
