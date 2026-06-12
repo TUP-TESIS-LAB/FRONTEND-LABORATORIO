@@ -23,7 +23,6 @@ import { ContactSectionComponent } from '../../components/contact-section/contac
 import { CoverageSectionComponent } from '../../components/coverage-section/coverage-section.component';
 import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
 import { GeneralStepComponent, notFutureDateValidator } from './steps/general-step/general-step.component';
-import { AddressStepComponent } from './steps/address-step/address-step.component';
 import { CoveragesStepComponent } from './steps/coverages-step/coverages-step.component';
 import { SummaryStepComponent, SummaryView } from './steps/summary-step/summary-step.component';
 import { PATIENT_FORM_STEPS } from './patient-form-steps';
@@ -47,7 +46,7 @@ function isAddressFilled(a: Partial<Address>): boolean {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    FormStepperHeaderComponent, GeneralStepComponent, AddressStepComponent,
+    FormStepperHeaderComponent, GeneralStepComponent,
     CoveragesStepComponent, SummaryStepComponent,
   ],
   providers: [ConfirmationService],
@@ -85,17 +84,14 @@ function isAddressFilled(a: Partial<Address>): boolean {
             @case (0) {
               <pat-general-step
                 [group]="generalGroup"
-                [extraContacts]="contactsArray"
+                [addressGroup]="addressGroup"
                 [dniDuplicate]="dniDuplicate()"
                 [editMode]="isEdit()" />
             }
             @case (1) {
-              <pat-address-step [group]="addressGroup" />
-            }
-            @case (2) {
               <pat-coverages-step [array]="coveragesArray" />
             }
-            @case (3) {
+            @case (2) {
               <pat-summary-step [data]="summaryView()" (editStep)="goToStep($event)" />
             }
           }
@@ -252,9 +248,9 @@ export class PatientFormPage implements OnDestroy {
       sexAtBirth: raw.general.sexAtBirth,
       mobile: raw.general.mobile,
       email: raw.general.email,
-      extraContacts: raw.contacts
-        .filter((c) => !!c.contactValue)
-        .map((c) => ({ contactType: c.contactType, contactValue: c.contactValue })),
+      // Contactos adicionales: ya no se muestran en la UI (solo celular + email).
+      // Si el paciente trae extras del backend se conservan en el payload, pero no se listan acá.
+      extraContacts: [],
       address: raw.address,
       coverages: raw.coverages.filter((c) => c.planId != null),
     };
@@ -292,7 +288,7 @@ export class PatientFormPage implements OnDestroy {
       const p = this.patient();
       if (this.isEdit() && p && String(p.id) === this.id()) {
         this.hydrate(p);
-        this.visited.set(new Set([0, 1, 2, 3]));
+        this.visited.set(new Set([0, 1, 2]));
       }
     });
 
@@ -344,11 +340,11 @@ export class PatientFormPage implements OnDestroy {
   }
 
   private ensureStepDefaults(stepIndex: number): void {
-    // Step 2 = Coberturas (paso opcional). Seed 1 fila vacia primaria SIN
+    // Step 1 = Obras sociales (paso opcional). Seed 1 fila vacia primaria SIN
     // Validators.required: el paso es opcional, no debe forzar form-INVALID.
     // El submit filtra las filas con planId nulo o memberNumber vacio para
     // no postear coberturas a medias.
-    if (stepIndex === 2 && this.coveragesArray.length === 0) {
+    if (stepIndex === 1 && this.coveragesArray.length === 0) {
       this.coveragesArray.push(this.fb.group({
         id: [null],
         planId: [null],

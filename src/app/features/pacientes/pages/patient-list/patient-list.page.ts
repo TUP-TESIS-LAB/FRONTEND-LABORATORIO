@@ -17,6 +17,7 @@ import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { Patient, PatientStatus } from '../../models/patient.model';
+import { genderLabel, statusLabel } from '../../models/patient-labels';
 import { PatientStateFilter } from '../../models/patient-page.model';
 import { getCoveragePlanLabel, CoveragePlanOption } from '../../models/coverage-plans.catalog';
 import { CoveragePlansService } from '../../services/coverage-plans.service';
@@ -78,7 +79,7 @@ import {
 
         <ng-template uiCell="paciente" let-row>
           <div class="font-medium">{{ $any(row).lastName }}, {{ $any(row).firstName }}</div>
-          <div class="text-xs text-surface-500">{{ $any(row).gender }} · {{ $any(row).birthDate | age }} años</div>
+          <div class="text-xs text-surface-500">{{ genderLabel($any(row).gender) }} · {{ $any(row).birthDate | age }} años</div>
         </ng-template>
 
         <ng-template uiCell="dni" let-row>
@@ -225,6 +226,8 @@ export class PatientListPage implements OnInit {
     this.confirm.confirm({
       header: `¿${verb[0].toUpperCase()}${verb.slice(1)} paciente?`,
       message: `${p.lastName}, ${p.firstName}`,
+      acceptLabel: deleted ? 'Desactivar' : 'Reactivar',
+      rejectLabel: 'Cancelar',
       accept: () => this.store.dispatch(togglePatientActive({ id: p.id, deleted })),
     });
   }
@@ -241,8 +244,10 @@ export class PatientListPage implements OnInit {
     return p.verifiedAt ? 'info' : this.statusSeverity(p.status);
   }
 
+  readonly genderLabel = genderLabel;
+
   rowStatusLabel(p: Patient): string {
-    return p.verifiedAt ? 'Verificado' : p.status;
+    return p.verifiedAt ? 'Verificado' : statusLabel(p.status);
   }
 
   primaryCoverageLabel(p: Patient): string {

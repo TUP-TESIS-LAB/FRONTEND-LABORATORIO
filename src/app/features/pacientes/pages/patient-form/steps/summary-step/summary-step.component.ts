@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output } from '@angular/core';
-import { NgClass } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { getCoveragePlanLabel, CoveragePlanOption } from '../../../../models/coverage-plans.catalog';
 import { CoveragePlansService } from '../../../../services/coverage-plans.service';
@@ -39,25 +38,14 @@ const GENDER_LABEL: Record<string, string> = {
 const SEX_LABEL: Record<string, string> = {
   FEMALE: 'Femenino', MALE: 'Masculino', INTERSEX: 'Intersex',
 };
-/**
- * Iconos PrimeIcons (NO emojis Unicode). Mapeo de ContactType al nombre de la
- * clase pi-*. Se usa para renderizar el ícono al lado del valor en el resumen.
- */
-const CONTACT_ICON_CLASS: Record<string, string> = {
-  PHONE: 'pi-phone',
-  EMAIL: 'pi-envelope',
-};
-
 @Component({
   selector: 'pat-summary-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, NgClass],
+  imports: [ButtonModule],
   providers: [AgePipe],
   template: `
     <div class="flex flex-col gap-3 max-w-4xl">
-      <p class="pat-step__hint">Revisá los datos antes de registrar. Tocá "Editar" para volver al paso correspondiente.</p>
-
       <section class="pat-summary__card">
         <div class="pat-summary__head">
           <span class="pat-summary__title">Identidad</span>
@@ -80,19 +68,13 @@ const CONTACT_ICON_CLASS: Record<string, string> = {
           <span class="pat-summary__contact"><i class="pi pi-phone"></i>{{ data().mobile || '—' }}</span>
           <span class="pat-summary__sep">·</span>
           <span class="pat-summary__contact"><i class="pi pi-envelope"></i>{{ data().email || '—' }}</span>
-          @for (c of data().extraContacts; track $index) {
-            <span class="pat-summary__sep">·</span>
-            <span class="pat-summary__contact">
-              <i class="pi" [ngClass]="contactIconClass(c.contactType)"></i>{{ c.contactValue }}
-            </span>
-          }
         </div>
       </section>
 
       <section class="pat-summary__card">
         <div class="pat-summary__head">
           <span class="pat-summary__title">Dirección</span>
-          <p-button label="Editar" [text]="true" size="small" (onClick)="editStep.emit(1)" />
+          <p-button label="Editar" [text]="true" size="small" (onClick)="editStep.emit(0)" />
         </div>
         <div class="pat-summary__body">
           @if (addressLine()) { {{ addressLine() }} } @else { <em class="text-surface-500">Sin dirección cargada</em> }
@@ -101,8 +83,8 @@ const CONTACT_ICON_CLASS: Record<string, string> = {
 
       <section class="pat-summary__card">
         <div class="pat-summary__head">
-          <span class="pat-summary__title">Coberturas</span>
-          <p-button label="Editar" [text]="true" size="small" (onClick)="editStep.emit(2)" />
+          <span class="pat-summary__title">Obras sociales</span>
+          <p-button label="Editar" [text]="true" size="small" (onClick)="editStep.emit(1)" />
         </div>
         <div class="pat-summary__body">
           @if (coverageLines().length === 0) {
@@ -189,8 +171,4 @@ export class SummaryStepComponent implements OnInit {
     });
   });
 
-  /** Devuelve la clase pi-* correspondiente al tipo de contacto. */
-  contactIconClass(type?: 'PHONE' | 'EMAIL'): string {
-    return CONTACT_ICON_CLASS[type ?? 'PHONE'] ?? 'pi-circle';
-  }
 }

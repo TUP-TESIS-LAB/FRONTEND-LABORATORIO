@@ -21,6 +21,8 @@ import {
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { getCoveragePlanLabel, CoveragePlanOption } from '../../models/coverage-plans.catalog';
 import { CoveragePlansService } from '../../services/coverage-plans.service';
+import { genderLabel, sexLabel, statusLabel } from '../../models/patient-labels';
+import { ContactType, Patient } from '../../models/patient.model';
 
 @Component({
   selector: 'pat-patient-detail-page',
@@ -40,7 +42,7 @@ import { CoveragePlansService } from '../../services/coverage-plans.service';
         <header class="flex items-center justify-between mb-3">
           <h1 class="text-2xl font-semibold">
             {{ p.lastName }}, {{ p.firstName }}
-            <p-tag [value]="p.status" severity="info" class="ml-2" />
+            <p-tag [value]="statusLabel(p.status)" severity="info" class="ml-2" />
             @if (!p.active) { <p-tag value="Inactivo" severity="danger" class="ml-1" /> }
           </h1>
           @if (canMutate()) {
@@ -58,55 +60,28 @@ import { CoveragePlansService } from '../../services/coverage-plans.service';
           }
         </header>
 
-        <div class="grid grid-cols-4 gap-3 mb-4">
-          <div><div class="text-xs text-surface-500">DNI</div><div>{{ p.dni | dni }}</div></div>
-          <div><div class="text-xs text-surface-500">Fecha nac.</div><div>{{ p.birthDate | date:'dd/MM/yyyy' }}</div></div>
-          <div><div class="text-xs text-surface-500">Edad</div><div>{{ p.birthDate | age }} años</div></div>
-          <div><div class="text-xs text-surface-500">Género · Sexo</div><div>{{ p.gender }} · {{ p.sexAtBirth }}</div></div>
-        </div>
-
         <p-tabs value="data">
           <p-tablist>
             <p-tab value="data">Datos generales</p-tab>
-            <p-tab value="contacts">Contactos</p-tab>
-            <p-tab value="addresses">Direcciones</p-tab>
-            <p-tab value="coverages">Coberturas</p-tab>
+            <p-tab value="coverages">Obras sociales</p-tab>
             <p-tab value="history">Historial</p-tab>
           </p-tablist>
           <p-tabpanels>
             <p-tabpanel value="data">
-              <p>Datos completos visibles arriba. Para editar usá el botón "Editar".</p>
-            </p-tabpanel>
-            <p-tabpanel value="contacts">
-              @if (p.contacts.length === 0) {
-                <ui-empty-state heading="Sin contactos" icon="pi-phone" />
-              } @else {
-                <ul class="space-y-1">
-                  @for (c of p.contacts; track c.id ?? c.contactValue) {
-                    <li class="flex gap-2 items-center">
-                      <p-tag [value]="c.contactType" />
-                      <span>{{ c.contactValue }}</span>
-                      @if (c.isPrimary) { <p-tag severity="success" value="Primario" /> }
-                      @if (!c.active) { <p-tag severity="danger" value="Inactivo" /> }
-                    </li>
-                  }
-                </ul>
-              }
-            </p-tabpanel>
-            <p-tabpanel value="addresses">
-              @if (p.addresses.length === 0) {
-                <ui-empty-state heading="Sin direcciones" icon="pi-map-marker" />
-              } @else {
-                <ul class="space-y-1">
-                  @for (a of p.addresses; track a.id) {
-                    <li>
-                      {{ a.street }} {{ a.streetNumber }} {{ a.apartment ? '· ' + a.apartment : '' }} — {{ a.city }} / {{ a.province }}
-                      @if (a.isPrimary) { <p-tag severity="success" value="Primario" class="ml-1" /> }
-                      @if (!a.active) { <p-tag severity="danger" value="Inactivo" class="ml-1" /> }
-                    </li>
-                  }
-                </ul>
-              }
+              <!-- Identidad + contacto + domicilio (antes vivían en la row superior y en tabs aparte). -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3">
+                <div><div class="text-xs text-surface-500">DNI</div><div>{{ p.dni | dni }}</div></div>
+                <div><div class="text-xs text-surface-500">Fecha nac.</div><div>{{ p.birthDate ? (p.birthDate | date:'dd/MM/yyyy') : '—' }}</div></div>
+                <div><div class="text-xs text-surface-500">Edad</div><div>{{ p.birthDate ? (p.birthDate | age) + ' años' : '—' }}</div></div>
+                <div><div class="text-xs text-surface-500">Género</div><div>{{ genderLabel(p.gender) }}</div></div>
+                <div><div class="text-xs text-surface-500">Sexo registral</div><div>{{ sexLabel(p.sexAtBirth) }}</div></div>
+                <div><div class="text-xs text-surface-500"><i class="pi pi-phone mr-1"></i>Celular</div><div>{{ primaryContact(p, 'PHONE') || '—' }}</div></div>
+                <div><div class="text-xs text-surface-500"><i class="pi pi-envelope mr-1"></i>Email</div><div>{{ primaryContact(p, 'EMAIL') || '—' }}</div></div>
+              </div>
+              <div class="mt-4 pt-3 border-t">
+                <div class="text-xs text-surface-500 mb-1"><i class="pi pi-map-marker mr-1"></i>Domicilio</div>
+                <div>{{ addressLine(p) || 'Sin domicilio cargado' }}</div>
+              </div>
             </p-tabpanel>
             <p-tabpanel value="coverages">
               @if (p.coverages.length === 0) {
@@ -179,6 +154,27 @@ export class PatientDetailPage implements OnInit, OnDestroy {
 
   planLabel(planId: number): string { return getCoveragePlanLabel(planId, this.plans()); }
 
+  // Labels en español (única fuente: patient-labels) expuestos al template.
+  readonly statusLabel = statusLabel;
+  readonly genderLabel = genderLabel;
+  readonly sexLabel = sexLabel;
+
+  /** Valor del contacto principal de un tipo: activo+primario → activo → primero. */
+  primaryContact(p: Patient, type: ContactType): string {
+    const same = p.contacts.filter((c) => c.contactType === type);
+    const chosen = same.find((c) => c.active && c.isPrimary) ?? same.find((c) => c.active) ?? same[0];
+    return chosen?.contactValue ?? '';
+  }
+
+  /** Domicilio del paciente en una línea (primera dirección). */
+  addressLine(p: Patient): string {
+    const a = p.addresses[0];
+    if (!a) return '';
+    const head = [a.street, a.streetNumber].filter(Boolean).join(' ');
+    const tail = [a.neighborhood, a.city, a.province].filter(Boolean).join(', ');
+    return [head, tail].filter(Boolean).join(' · ');
+  }
+
   confirmToggle(): void {
     const p = this.patient();
     if (!p) return;
@@ -186,6 +182,8 @@ export class PatientDetailPage implements OnInit, OnDestroy {
     this.confirm.confirm({
       header: deleted ? '¿Desactivar paciente?' : '¿Reactivar paciente?',
       message: `${p.lastName}, ${p.firstName}`,
+      acceptLabel: deleted ? 'Desactivar' : 'Reactivar',
+      rejectLabel: 'Cancelar',
       accept: () => this.store.dispatch(togglePatientActive({ id: p.id, deleted })),
     });
   }

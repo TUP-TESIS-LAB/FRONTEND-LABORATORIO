@@ -1,11 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, signal, viewChild } from '@angular/core';
-import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal } from '@angular/core';
+import { AbstractControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { ButtonModule } from 'primeng/button';
-import { Gender, SexAtBirth } from '../../../../models/patient.model';
-import { ContactSectionComponent } from '../../../../components/contact-section/contact-section.component';
+import { GENDER_OPTS, SEX_OPTS } from '../../../../models/patient-labels';
+import { AddressFieldsComponent } from '../../../../components/address-fields/address-fields.component';
 import { DateAutoFormatDirective } from '@shared/directives/date-auto-format.directive';
 
 /** Medianoche de hoy (local). Para comparar contra la fecha elegida sin la parte horaria. */
@@ -30,23 +29,11 @@ export const notFutureDateValidator: ValidatorFn = (control: AbstractControl): V
   return picked.getTime() > startOfToday().getTime() ? { futureDate: true } : null;
 };
 
-const GENDER_OPTS: { value: Gender; label: string }[] = [
-  { value: 'FEMALE', label: 'Femenino' },
-  { value: 'MALE', label: 'Masculino' },
-  { value: 'OTHER', label: 'Otro' },
-  { value: 'NOT_SPECIFIED', label: 'No especificado' },
-];
-const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
-  { value: 'FEMALE', label: 'Femenino' },
-  { value: 'MALE', label: 'Masculino' },
-  { value: 'INTERSEX', label: 'Intersex' },
-];
-
 @Component({
   selector: 'pat-general-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, InputTextModule, SelectModule, DatePickerModule, ButtonModule, ContactSectionComponent, DateAutoFormatDirective],
+  imports: [ReactiveFormsModule, InputTextModule, SelectModule, DatePickerModule, AddressFieldsComponent, DateAutoFormatDirective],
   template: `
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" [formGroup]="group()">
       <div class="pat-form__field">
@@ -94,45 +81,22 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       </div>
     </div>
 
+    <!-- Domicilio: ahora vive dentro de Datos generales (5 campos). -->
     <div class="mt-6 border-t pt-4">
-      <div class="flex items-center justify-between gap-2">
-        <button type="button"
-                class="flex items-center gap-2 text-sm font-medium text-surface-700 hover:text-primary-600"
-                [attr.aria-expanded]="extrasOpen()"
-                aria-controls="pat-extras-panel"
-                (click)="extrasOpen.set(!extrasOpen())">
-          <i class="pi" aria-hidden="true"
-             [class.pi-chevron-right]="!extrasOpen()"
-             [class.pi-chevron-down]="extrasOpen()"></i>
-          Otros contactos
-          <span class="text-xs text-surface-500 font-normal">(teléfonos fijos, contactos adicionales)</span>
-          @if (extraContacts().length > 0) {
-            <span class="ml-1 text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{{ extraContacts().length }}</span>
-          }
-        </button>
-        @if (extrasOpen()) {
-          <p-button icon="pi pi-plus" label="Agregar contacto" severity="secondary" [text]="true" size="small"
-                    (onClick)="contactSection()?.add()" />
-        }
-      </div>
-      @if (extrasOpen()) {
-        <div id="pat-extras-panel" class="mt-3" role="region" aria-label="Otros contactos">
-          <pat-contact-section [array]="extraContacts()" />
-        </div>
-      }
+      <h3 class="text-sm font-semibold text-surface-700 mb-3"><i class="pi pi-map-marker mr-1"></i>Domicilio</h3>
+      <pat-address-fields [group]="addressGroup()" />
     </div>
   `,
 })
 export class GeneralStepComponent {
   readonly group = input.required<FormGroup>();
-  readonly extraContacts = input.required<FormArray<FormGroup>>();
+  /** FormGroup de dirección, ahora renderizado dentro de este paso. */
+  readonly addressGroup = input.required<FormGroup>();
   readonly dniDuplicate = input<boolean>(false);
   readonly editMode = input<boolean>(false);
-  readonly contactSection = viewChild(ContactSectionComponent);
 
   readonly genderOpts = GENDER_OPTS;
   readonly sexOpts = SEX_OPTS;
-  readonly extrasOpen = signal(false);
   /** Tope del datepicker: hoy (no se puede elegir una fecha futura). */
   readonly today = signal(startOfToday());
 
@@ -164,20 +128,6 @@ export class GeneralStepComponent {
       if (!dniCtrl) return;
       if (this.editMode()) dniCtrl.disable({ emitEvent: false });
       else dniCtrl.enable({ emitEvent: false });
-    });
-
-    // El FormArray no cambia de referencia cuando se hace push/clear, asi que
-    // un effect que solo lee .length no se entera. Nos suscribimos a sus
-    // valueChanges para abrir el acordeon cuando aparecen extras (incluido el
-    // caso de edicion: el shell hydrate-empuja extras despues de mount y
-    // sin esto el panel quedaba colapsado).
-    effect((onCleanup) => {
-      const arr = this.extraContacts();
-      if (arr.length > 0) this.extrasOpen.set(true);
-      const sub = arr.valueChanges.subscribe(() => {
-        if (arr.length > 0) this.extrasOpen.set(true);
-      });
-      onCleanup(() => sub.unsubscribe());
     });
   }
 }

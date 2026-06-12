@@ -234,7 +234,7 @@ describe('PatientFormPage', () => {
     store.refreshState();
     fixture.detectChanges();
     const cmp = fixture.componentInstance;
-    expect([...cmp.visited()].sort()).toEqual([0, 1, 2, 3]);
+    expect([...cmp.visited()].sort()).toEqual([0, 1, 2]);
     expect(cmp.showSubmitButton()).toBe(true);
     expect(cmp.showContinueButton()).toBe(false);
   });

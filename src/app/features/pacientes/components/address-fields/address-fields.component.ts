@@ -18,14 +18,6 @@ import { InputTextModule } from 'primeng/inputtext';
         <input pInputText formControlName="streetNumber" class="pat-form__input" />
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label">Depto</label>
-        <input pInputText formControlName="apartment" class="pat-form__input" />
-      </div>
-      <div class="pat-form__field">
-        <label class="pat-form__label">Código postal</label>
-        <input pInputText formControlName="zipCode" class="pat-form__input" />
-      </div>
-      <div class="pat-form__field">
         <label class="pat-form__label">Barrio</label>
         <input pInputText formControlName="neighborhood" class="pat-form__input" />
       </div>

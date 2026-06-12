@@ -21,7 +21,7 @@ class HostCmp {
 }
 
 describe('CoveragesStepComponent', () => {
-  it('renders the contextual hint without a redundant title (el título vive en el header del stepper)', () => {
+  it('no muestra título ni aclaraciones en el cuerpo del paso (solo la carga de coberturas)', () => {
     TestBed.configureTestingModule({
       providers: [
         provideNoopAnimations(),
@@ -31,8 +31,9 @@ describe('CoveragesStepComponent', () => {
     const fx = TestBed.createComponent(HostCmp);
     fx.detectChanges();
     const html = (fx.nativeElement as HTMLElement).textContent ?? '';
-    expect(html).toContain('particular'); // el hint contextual se mantiene
-    expect(html).not.toContain('Coberturas'); // sin título redundante en el contenido del paso
+    // El hint "Si no agregás ninguna… particular" fue removido.
+    expect(html).not.toContain('Si no agregás');
+    expect(html).not.toContain('Coberturas'); // sin título redundante en el cuerpo del paso
   });
 
   it('renders the underlying CoverageSectionComponent', () => {
