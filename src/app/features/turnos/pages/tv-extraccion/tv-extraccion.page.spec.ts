@@ -64,10 +64,9 @@ describe('TvExtraccionPage', () => {
     expect(first.querySelector('.box').textContent).toContain('Box 2');
   });
 
-  it('shows a WAITING entry with publicCode', () => {
-    const items = fixture.nativeElement.querySelectorAll('.en-espera li');
-    expect(items.length).toBeGreaterThan(0);
-    expect(items[0].querySelector('.code').textContent.trim()).toBe('EX-002');
+  it('ya no muestra la sección "En espera" (la TV de extracción se ve como la de turnos)', () => {
+    expect(fixture.nativeElement.querySelector('.en-espera')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('En espera');
   });
 
   it('does not contain a simulate button', () => {
