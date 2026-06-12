@@ -1,7 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
+import { PollingService } from '@core/refresh';
+import { humanizeBackendError } from '@shared/utils/error-messages';
 import { SCREENS } from '../../data/state-machine.config';
 import { MockSamplesService } from '../../services/mock-samples.service';
 import { CURRENT_BRANCH, BRANCHES, AREAS, LABS } from '../../data/catalogs';
@@ -11,6 +15,9 @@ import { ScanBarComponent } from '../../components/scan-bar/scan-bar.component';
 import { BatchMenuComponent } from '../../components/batch-menu/batch-menu.component';
 import { SampleTableComponent } from '../../components/sample-table/sample-table.component';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
+import { initMuestras, loadRecoleccion, transitionLabels } from '../../store/muestras.actions';
+import { selectRecoleccionItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { toSample } from '../../models/label-worklist.model';
 
 @Component({
   selector: 'app-muestras-worklist',
@@ -25,6 +32,9 @@ export class WorklistPage {
   private readonly route = inject(ActivatedRoute);
   private readonly samples = inject(MockSamplesService);
   private readonly messages = inject(MessageService);
+  private readonly store = inject(Store);
+  private readonly polling = inject(PollingService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly currentBranch = CURRENT_BRANCH;
   readonly branches = BRANCHES;
@@ -36,8 +46,21 @@ export class WorklistPage {
     return SCREENS[key];
   });
 
+  /** Recolección está conectada al backend; el resto sigue mock (arcos futuros). */
+  readonly isBackendScreen = computed(() => this.config().key === 'recoleccion');
+
+  private readonly backendItems = this.store.selectSignal(selectRecoleccionItems);
+  private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
+  private readonly backendError = this.store.selectSignal(selectMuestrasError);
+
+  private readonly sourceRows = computed<Sample[]>(() =>
+    this.isBackendScreen()
+      ? this.backendItems().map(i => toSample(i, this.branchName()))
+      : this.samples.byState(this.config().source)(),
+  );
+
   readonly rows = computed(() => {
-    const all = this.samples.byState(this.config().source)();
+    const all = this.sourceRows();
     const q = this.query().trim().toLowerCase();
     if (!q) return all;
     return all.filter(s =>
@@ -47,15 +70,48 @@ export class WorklistPage {
       || s.patient.toLowerCase().includes(q),
     );
   });
-  readonly total = computed(() => this.samples.countByState(this.config().source)());
+  readonly total = computed(() =>
+    this.isBackendScreen() ? this.sourceRows().length : this.samples.countByState(this.config().source)(),
+  );
 
   readonly query = signal('');
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());
   readonly selectedCount = computed(() => this.selectedIds().size);
   readonly selectedSamples = computed<Sample[]>(() => {
     const sel = this.selectedIds();
-    return this.samples.samples().filter(s => sel.has(s.id));
+    return this.sourceRows().filter(s => sel.has(s.id));
   });
+
+  constructor() {
+    if ((this.route.snapshot.data['screenKey'] as ScreenKey) === 'recoleccion') {
+      this.store.dispatch(initMuestras());
+      const handle = this.polling.startPolling({
+        key: 'muestras-recoleccion',
+        intervalMs: 5000,
+        poll: () => {
+          this.store.dispatch(loadRecoleccion());
+          return of(null);
+        },
+      });
+      this.destroyRef.onDestroy(() => handle.stop());
+
+      let lastError: unknown = null;
+      effect(() => {
+        const err = this.backendError();
+        if (err && err !== lastError) {
+          lastError = err;
+          this.messages.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: humanizeBackendError(err, {
+              fallback: 'No pudimos completar la operación. Probá de nuevo.',
+            }),
+            life: 5000,
+          });
+        }
+      });
+    }
+  }
 
   readonly menuOpen = signal(false);
   readonly activeTransition = signal<Transition | null>(null);
@@ -127,7 +183,16 @@ export class WorklistPage {
     if (!t) return;
     const ids = Array.from(this.selectedIds());
     this.activeTransition.set(null);
-    await this.samples.transition(ids, t, payload.dest);
+
+    if (this.isBackendScreen()) {
+      this.store.dispatch(transitionLabels({
+        labelIds: ids.map(Number),
+        transitionKey: t.key,
+        reason: payload.note || undefined,
+      }));
+    } else {
+      await this.samples.transition(ids, t, payload.dest);
+    }
     this.clearSelection();
 
     const detail = this.formatDestDetail(t, payload.dest);

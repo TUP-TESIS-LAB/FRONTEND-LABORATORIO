@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { EMPTY, forkJoin, Observable, of } from 'rxjs';
-import { catchError, map, switchMap, withLatestFrom } from 'rxjs/operators';
+import { catchError, concatMap, map, switchMap, withLatestFrom } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { isNotModified } from '@core/refresh';
 import { MuestrasApiService } from '../services/muestras-api.service';
@@ -62,7 +62,7 @@ export class MuestrasEffects {
   transition$ = createEffect(() =>
     this.actions$.pipe(
       ofType(transitionLabels),
-      switchMap(({ labelIds, transitionKey, reason }) =>
+      concatMap(({ labelIds, transitionKey, reason }) =>
         this.callTransition(labelIds, transitionKey, reason).pipe(
           map(() => transitionLabelsSuccess({ labelIds, transitionKey })),
           catchError((error: HttpErrorResponse) => of(transitionLabelsFailure({ error }))),
@@ -85,7 +85,7 @@ export class MuestrasEffects {
       case 'rejected':
         return this.api.reject(labelIds, reason ?? '');
       case 'lost':
-        return forkJoin(labelIds.map(id => this.api.markLost(id)));
+        return labelIds.length ? forkJoin(labelIds.map(id => this.api.markLost(id))) : of(null);
       case 'rollback':
         return this.api.rollback(labelIds);
       default:

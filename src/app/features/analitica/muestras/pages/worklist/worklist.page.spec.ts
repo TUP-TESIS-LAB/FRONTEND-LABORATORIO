@@ -2,8 +2,12 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute } from '@angular/router';
+import { provideMockStore } from '@ngrx/store/testing';
+import { PollingService } from '@core/refresh';
 import { WorklistPage } from './worklist.page';
 import { MockSamplesService } from '../../services/mock-samples.service';
+import { selectRecoleccionItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import type { LabelWorklistItem } from '../../models/label-worklist.model';
 
 /**
  * Minimal test template: includes only the header (h1 + counters).
@@ -42,7 +46,10 @@ function installLocalStorageMock(): void {
   });
 }
 
-function setup(screenKey: 'recoleccion' | 'traslado' | 'procesamiento' | 'descarte'): ComponentFixture<WorklistPage> {
+function setup(
+  screenKey: 'recoleccion' | 'traslado' | 'procesamiento' | 'descarte',
+  recoleccionItems: LabelWorklistItem[] = [],
+): ComponentFixture<WorklistPage> {
   installLocalStorageMock();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -51,6 +58,17 @@ function setup(screenKey: 'recoleccion' | 'traslado' | 'procesamiento' | 'descar
       provideNoopAnimations(),
       MockSamplesService,
       { provide: ActivatedRoute, useValue: { snapshot: { data: { screenKey } } } },
+      provideMockStore({
+        selectors: [
+          { selector: selectRecoleccionItems, value: recoleccionItems },
+          { selector: selectMuestrasBranchName, value: 'CENTRAL' },
+          { selector: selectMuestrasError, value: null },
+        ],
+      }),
+      {
+        provide: PollingService,
+        useValue: { startPolling: vi.fn(() => ({ stop: vi.fn(), pokeNow: vi.fn(), setActive: vi.fn() })) },
+      },
     ],
   });
   TestBed.overrideTemplate(WorklistPage, SMOKE_TEMPLATE);
@@ -60,11 +78,22 @@ function setup(screenKey: 'recoleccion' | 'traslado' | 'procesamiento' | 'descar
 }
 
 describe('WorklistPage (smoke)', () => {
-  it('renderiza Recolección con título y count > 0', () => {
+  it('renderiza Recolección con título y count store-driven (vacío)', () => {
     const fx = setup('recoleccion');
     const el = fx.nativeElement as HTMLElement;
     expect(el.querySelector('h1')?.textContent).toContain('Recolección');
-    expect(fx.componentInstance.total()).toBe(16);
+    expect(fx.componentInstance.total()).toBe(0);
+  });
+
+  it('Recolección mapea items del store al view-model', () => {
+    const item: LabelWorklistItem = {
+      labelId: 60005, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
+      patientName: 'Ana López', urgent: false, status: 'COLLECTED', updatedAt: '2026-06-11T10:00:00Z',
+    };
+    const fx = setup('recoleccion', [item]);
+    const cmp = fx.componentInstance;
+    expect(cmp.total()).toBe(1);
+    expect(cmp.rows()[0].study).toBe('Hemograma');
   });
 
   it('renderiza Traslado con título correcto', () => {
@@ -89,7 +118,7 @@ describe('WorklistPage (smoke)', () => {
   });
 
   it('toggleRow selecciona y deselecciona', () => {
-    const fx = setup('recoleccion');
+    const fx = setup('procesamiento');
     const cmp = fx.componentInstance;
     const firstId = cmp.rows()[0].id;
     cmp.toggleRow(firstId);
@@ -99,7 +128,7 @@ describe('WorklistPage (smoke)', () => {
   });
 
   it('query filtra rows en vivo', () => {
-    const fx = setup('recoleccion');
+    const fx = setup('procesamiento');
     const cmp = fx.componentInstance;
     const sample = cmp.rows()[0];
     cmp.setQuery(sample.barcode);
