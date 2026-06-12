@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { provideMockStore } from '@ngrx/store/testing';
-import { Observable, of, throwError, firstValueFrom } from 'rxjs';
+import { Observable, of, throwError, firstValueFrom, toArray } from 'rxjs';
 import { Action } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MuestrasEffects } from './muestras.effects';
@@ -11,10 +11,16 @@ import {
   initMuestras, initMuestrasSuccess,
   loadRecoleccion, loadRecoleccionSuccess, loadRecoleccionNotModified,
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
+  loadTransito, loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
+  resolveRouting, resolveRoutingSuccess, resolveRoutingFailure,
+  loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
+  dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
+  deriveTubes, deriveTubesSuccess, deriveTubesFailure,
 } from './muestras.actions';
-import { selectMuestrasBranchId } from './muestras.selectors';
+import { selectMuestrasBranchId, selectTransitoItems } from './muestras.selectors';
 import { NOT_MODIFIED } from '@core/refresh/polling-context';
 import type { LabelWorklistItem } from '../models/label-worklist.model';
+import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.model';
 
 const item: LabelWorklistItem = {
   labelId: 60005, sampleId: null, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
@@ -30,18 +36,33 @@ describe('MuestrasEffects', () => {
     reject: ReturnType<typeof vi.fn>;
     markLost: ReturnType<typeof vi.fn>;
     rollback: ReturnType<typeof vi.fn>;
+    resolveRouting: ReturnType<typeof vi.fn>;
+    dispatch: ReturnType<typeof vi.fn>;
+    sendToBranch: ReturnType<typeof vi.fn>;
+    getBranchWorkspaces: ReturnType<typeof vi.fn>;
+  };
+
+  const transitoItem: LabelWorklistItem = {
+    labelId: 70001, sampleId: 80001, barcode: '70001', protocolId: 50002, analysisName: 'Glucemia',
+    patientName: 'Pedro García', urgent: false, status: 'IN_TRANSIT', updatedAt: '2026-06-12T08:00:00Z',
   };
 
   beforeEach(() => {
     api = {
       getMyBranches: vi.fn(), getWorklist: vi.fn(), updateStatus: vi.fn(),
       reject: vi.fn(), markLost: vi.fn(), rollback: vi.fn(),
+      resolveRouting: vi.fn(), dispatch: vi.fn(), sendToBranch: vi.fn(), getBranchWorkspaces: vi.fn(),
     };
     TestBed.configureTestingModule({
       providers: [
         MuestrasEffects,
         provideMockActions(() => actions$),
-        provideMockStore({ selectors: [{ selector: selectMuestrasBranchId, value: 1001 }] }),
+        provideMockStore({
+          selectors: [
+            { selector: selectMuestrasBranchId, value: 1001 },
+            { selector: selectTransitoItems, value: [transitoItem] },
+          ],
+        }),
         { provide: MuestrasApiService, useValue: api },
       ],
     });
@@ -138,5 +159,129 @@ describe('MuestrasEffects', () => {
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.reloadAfterTransition$);
     expect(action).toEqual(loadRecoleccion());
+  });
+
+  // ── loadTransito ──────────────────────────────────────────────────────────
+
+  it('loadTransito pide IN_TRANSIT de la sucursal y mapea success', async () => {
+    api.getWorklist.mockReturnValue(of([transitoItem]));
+    actions$ = of(loadTransito());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadTransito$);
+    expect(api.getWorklist).toHaveBeenCalledWith('IN_TRANSIT', 1001);
+    expect(action).toEqual(loadTransitoSuccess({ items: [transitoItem] }));
+  });
+
+  it('loadTransito 304 mapea a notModified', async () => {
+    api.getWorklist.mockReturnValue(of(NOT_MODIFIED));
+    actions$ = of(loadTransito());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadTransito$);
+    expect(action).toEqual(loadTransitoNotModified());
+  });
+
+  // ── resolveRouting ────────────────────────────────────────────────────────
+
+  it('resolveRouting deduplica protocolIds y mapea success', async () => {
+    const dupItem: LabelWorklistItem = { ...transitoItem, labelId: 70002, protocolId: 50002 };
+    // Reconfigure the mock store with duplicate protocol items
+    TestBed.overrideProvider(MuestrasApiService, { useValue: api });
+    const routing: RoutingResolveResponse = { groups: [], unresolvable: [] };
+    api.resolveRouting.mockReturnValue(of(routing));
+    actions$ = of(resolveRouting());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.resolveRouting$);
+    // transitoItem has protocolId: 50002 — only one unique id should be sent
+    expect(api.resolveRouting).toHaveBeenCalledWith([50002], 1001);
+    expect(action).toEqual(resolveRoutingSuccess({ routing }));
+  });
+
+  it('resolveRouting failure mapea error', async () => {
+    const error = new HttpErrorResponse({ status: 422 });
+    api.resolveRouting.mockReturnValue(throwError(() => error));
+    actions$ = of(resolveRouting());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.resolveRouting$);
+    expect(action).toEqual(resolveRoutingFailure({ error }));
+  });
+
+  // ── loadWorkspaces ────────────────────────────────────────────────────────
+
+  it('loadWorkspaces pide workspaces de la sucursal y mapea success', async () => {
+    const workspace: BranchWorkspace = { id: 1, branchId: 1001, areaId: 2, sectionId: 3 };
+    api.getBranchWorkspaces.mockReturnValue(of([workspace]));
+    actions$ = of(loadWorkspaces());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadWorkspaces$);
+    expect(api.getBranchWorkspaces).toHaveBeenCalledWith(1001);
+    expect(action).toEqual(loadWorkspacesSuccess({ workspaces: [workspace] }));
+  });
+
+  it('loadWorkspaces failure mapea error', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    api.getBranchWorkspaces.mockReturnValue(throwError(() => error));
+    actions$ = of(loadWorkspaces());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadWorkspaces$);
+    expect(action).toEqual(loadWorkspacesFailure({ error }));
+  });
+
+  // ── dispatchTubes ─────────────────────────────────────────────────────────
+
+  it('dispatchTubes llama api.dispatch y mapea success con count', async () => {
+    const checkIns = [{ sampleId: 80001, sectionId: 3 }, { sampleId: 80002, sectionId: 3 }];
+    api.dispatch.mockReturnValue(of({}));
+    actions$ = of(dispatchTubes({ checkIns }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.dispatchTubes$);
+    expect(api.dispatch).toHaveBeenCalledWith(checkIns);
+    expect(action).toEqual(dispatchTubesSuccess({ count: 2 }));
+  });
+
+  it('dispatchTubes failure mapea error', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    api.dispatch.mockReturnValue(throwError(() => error));
+    actions$ = of(dispatchTubes({ checkIns: [{ sampleId: 80001, sectionId: 3 }] }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.dispatchTubes$);
+    expect(action).toEqual(dispatchTubesFailure({ error }));
+  });
+
+  // ── deriveTubes ───────────────────────────────────────────────────────────
+
+  it('deriveTubes llama api.sendToBranch y mapea success con count', async () => {
+    api.sendToBranch.mockReturnValue(of({}));
+    actions$ = of(deriveTubes({ labelIds: [70001, 70002], destinationBranchId: 1002, observation: 'test' }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.deriveTubes$);
+    expect(api.sendToBranch).toHaveBeenCalledWith([70001, 70002], 1002, 'test');
+    expect(action).toEqual(deriveTubesSuccess({ count: 2 }));
+  });
+
+  it('deriveTubes failure mapea error', async () => {
+    const error = new HttpErrorResponse({ status: 422 });
+    api.sendToBranch.mockReturnValue(throwError(() => error));
+    actions$ = of(deriveTubes({ labelIds: [70001], destinationBranchId: 1002 }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.deriveTubes$);
+    expect(action).toEqual(deriveTubesFailure({ error }));
+  });
+
+  // ── reloadAfterDispatch ───────────────────────────────────────────────────
+
+  it('dispatchTubesSuccess emite loadTransito y resolveRouting', async () => {
+    actions$ = of(dispatchTubesSuccess({ count: 1 }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const actions = await firstValueFrom(effects.reloadAfterDispatch$.pipe(toArray()));
+    expect(actions).toContainEqual(loadTransito());
+    expect(actions).toContainEqual(resolveRouting());
+  });
+
+  it('deriveTubesSuccess emite loadTransito y resolveRouting', async () => {
+    actions$ = of(deriveTubesSuccess({ count: 1 }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const actions = await firstValueFrom(effects.reloadAfterDispatch$.pipe(toArray()));
+    expect(actions).toContainEqual(loadTransito());
+    expect(actions).toContainEqual(resolveRouting());
   });
 });

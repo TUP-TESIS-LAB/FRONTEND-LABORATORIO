@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { LabelWorklistItem } from '../models/label-worklist.model';
+import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.model';
 
 export interface MuestrasState {
   branchId: number | null;
@@ -8,6 +9,10 @@ export interface MuestrasState {
   pending: boolean;
   transitionPending: boolean;
   error: HttpErrorResponse | null;
+  transito: LabelWorklistItem[];
+  routing: RoutingResolveResponse | null;
+  workspaces: BranchWorkspace[];
+  dispatchPending: boolean;
 }
 
 export const initialMuestrasState: MuestrasState = {
@@ -17,6 +22,10 @@ export const initialMuestrasState: MuestrasState = {
   pending: false,
   transitionPending: false,
   error: null,
+  transito: [],
+  routing: null,
+  workspaces: [],
+  dispatchPending: false,
 };
 
 export const MUESTRAS_FEATURE_KEY = 'muestras';

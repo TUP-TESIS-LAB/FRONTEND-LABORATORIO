@@ -9,3 +9,8 @@ export const selectRecoleccionItems = createSelector(selectMuestrasState, s => s
 export const selectMuestrasPending = createSelector(selectMuestrasState, s => s.pending);
 export const selectMuestrasTransitionPending = createSelector(selectMuestrasState, s => s.transitionPending);
 export const selectMuestrasError = createSelector(selectMuestrasState, s => s.error);
+
+export const selectTransitoItems = createSelector(selectMuestrasState, s => s.transito);
+export const selectRouting = createSelector(selectMuestrasState, s => s.routing);
+export const selectWorkspaces = createSelector(selectMuestrasState, s => s.workspaces);
+export const selectDispatchPending = createSelector(selectMuestrasState, s => s.dispatchPending);

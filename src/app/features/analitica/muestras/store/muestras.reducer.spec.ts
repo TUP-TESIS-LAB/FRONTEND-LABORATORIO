@@ -6,8 +6,14 @@ import {
   initMuestrasSuccess,
   loadRecoleccion, loadRecoleccionSuccess, loadRecoleccionNotModified, loadRecoleccionFailure,
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
+  loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
+  resolveRoutingSuccess, resolveRoutingFailure,
+  loadWorkspacesSuccess, loadWorkspacesFailure,
+  dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
+  deriveTubes, deriveTubesSuccess, deriveTubesFailure,
 } from './muestras.actions';
 import type { LabelWorklistItem } from '../models/label-worklist.model';
+import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.model';
 
 const item: LabelWorklistItem = {
   labelId: 60005, sampleId: null, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
@@ -61,6 +67,114 @@ describe('muestrasReducer', () => {
     let s = muestrasReducer(initialMuestrasState, transitionLabels({ labelIds: [60005], transitionKey: 'transito' }));
     s = muestrasReducer(s, transitionLabelsFailure({ error }));
     expect(s.transitionPending).toBe(false);
+    expect(s.error).toBe(error);
+  });
+
+  // ── Tránsito ──────────────────────────────────────────────────────────────
+
+  const transitoItem: LabelWorklistItem = {
+    labelId: 70001, sampleId: 80001, barcode: '70001', protocolId: 50002, analysisName: 'Glucemia',
+    patientName: 'Pedro García', urgent: false, status: 'IN_TRANSIT', updatedAt: '2026-06-12T08:00:00Z',
+  };
+
+  it('loadTransitoSuccess reemplaza transito items', () => {
+    const s = muestrasReducer(initialMuestrasState, loadTransitoSuccess({ items: [transitoItem] }));
+    expect(s.transito).toEqual([transitoItem]);
+  });
+
+  it('loadTransitoNotModified no muta transito items', () => {
+    const before = { ...initialMuestrasState, transito: [transitoItem] };
+    const s = muestrasReducer(before, loadTransitoNotModified());
+    expect(s.transito).toBe(before.transito);
+  });
+
+  it('loadTransitoFailure setea error', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const s = muestrasReducer(initialMuestrasState, loadTransitoFailure({ error }));
+    expect(s.error).toBe(error);
+  });
+
+  // ── Routing ───────────────────────────────────────────────────────────────
+
+  const routing: RoutingResolveResponse = {
+    groups: [],
+    unresolvable: [],
+  };
+
+  it('resolveRoutingSuccess setea routing', () => {
+    const s = muestrasReducer(initialMuestrasState, resolveRoutingSuccess({ routing }));
+    expect(s.routing).toBe(routing);
+  });
+
+  it('resolveRoutingFailure setea error', () => {
+    const error = new HttpErrorResponse({ status: 422 });
+    const s = muestrasReducer(initialMuestrasState, resolveRoutingFailure({ error }));
+    expect(s.error).toBe(error);
+  });
+
+  // ── Workspaces ────────────────────────────────────────────────────────────
+
+  const workspace: BranchWorkspace = { id: 1, branchId: 1001, areaId: 2, sectionId: 3 };
+
+  it('loadWorkspacesSuccess setea workspaces', () => {
+    const s = muestrasReducer(initialMuestrasState, loadWorkspacesSuccess({ workspaces: [workspace] }));
+    expect(s.workspaces).toEqual([workspace]);
+  });
+
+  it('loadWorkspacesFailure setea error', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const s = muestrasReducer(initialMuestrasState, loadWorkspacesFailure({ error }));
+    expect(s.error).toBe(error);
+  });
+
+  // ── dispatchPending lifecycle ─────────────────────────────────────────────
+
+  it('dispatchTubes marca dispatchPending', () => {
+    const s = muestrasReducer(initialMuestrasState, dispatchTubes({ checkIns: [{ sampleId: 80001, sectionId: 3 }] }));
+    expect(s.dispatchPending).toBe(true);
+  });
+
+  it('dispatchTubesSuccess limpia dispatchPending', () => {
+    const s = muestrasReducer(
+      { ...initialMuestrasState, dispatchPending: true },
+      dispatchTubesSuccess({ count: 1 }),
+    );
+    expect(s.dispatchPending).toBe(false);
+  });
+
+  it('dispatchTubesFailure limpia dispatchPending y setea error', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const s = muestrasReducer(
+      { ...initialMuestrasState, dispatchPending: true },
+      dispatchTubesFailure({ error }),
+    );
+    expect(s.dispatchPending).toBe(false);
+    expect(s.error).toBe(error);
+  });
+
+  it('deriveTubes marca dispatchPending', () => {
+    const s = muestrasReducer(
+      initialMuestrasState,
+      deriveTubes({ labelIds: [70001], destinationBranchId: 1002 }),
+    );
+    expect(s.dispatchPending).toBe(true);
+  });
+
+  it('deriveTubesSuccess limpia dispatchPending', () => {
+    const s = muestrasReducer(
+      { ...initialMuestrasState, dispatchPending: true },
+      deriveTubesSuccess({ count: 1 }),
+    );
+    expect(s.dispatchPending).toBe(false);
+  });
+
+  it('deriveTubesFailure limpia dispatchPending y setea error', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const s = muestrasReducer(
+      { ...initialMuestrasState, dispatchPending: true },
+      deriveTubesFailure({ error }),
+    );
+    expect(s.dispatchPending).toBe(false);
     expect(s.error).toBe(error);
   });
 });

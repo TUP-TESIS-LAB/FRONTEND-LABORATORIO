@@ -2,6 +2,7 @@ import { createAction, props } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import type { LabelWorklistItem } from '../models/label-worklist.model';
 import type { TransitionKey } from '../models/transition.model';
+import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.model';
 
 // Init: resolver sucursal del operador (GET /me/branches → primera)
 export const initMuestras = createAction('[Muestras Page] Init');
@@ -37,5 +38,67 @@ export const transitionLabelsSuccess = createAction(
 );
 export const transitionLabelsFailure = createAction(
   '[Muestras API] Transition Labels Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
+// Worklist Tránsito (IN_TRANSIT) — polleada
+export const loadTransito = createAction('[Muestras Page] Load Transito');
+export const loadTransitoSuccess = createAction(
+  '[Muestras API] Load Transito Success',
+  props<{ items: LabelWorklistItem[] }>()
+);
+export const loadTransitoNotModified = createAction('[Muestras API] Load Transito Not Modified');
+export const loadTransitoFailure = createAction(
+  '[Muestras API] Load Transito Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
+// Resolve Routing
+export const resolveRouting = createAction('[Transito Page] Resolve Routing');
+export const resolveRoutingSuccess = createAction(
+  '[Muestras API] Resolve Routing Success',
+  props<{ routing: RoutingResolveResponse }>()
+);
+export const resolveRoutingFailure = createAction(
+  '[Muestras API] Resolve Routing Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
+// Workspaces de sucursal
+export const loadWorkspaces = createAction('[Transito Page] Load Workspaces');
+export const loadWorkspacesSuccess = createAction(
+  '[Muestras API] Load Workspaces Success',
+  props<{ workspaces: BranchWorkspace[] }>()
+);
+export const loadWorkspacesFailure = createAction(
+  '[Muestras API] Load Workspaces Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
+// Despacho (tubo → PROCESSING + check-in)
+export const dispatchTubes = createAction(
+  '[Transito Page] Dispatch Tubes',
+  props<{ checkIns: { sampleId: number; sectionId: number }[] }>()
+);
+export const dispatchTubesSuccess = createAction(
+  '[Muestras API] Dispatch Tubes Success',
+  props<{ count: number }>()
+);
+export const dispatchTubesFailure = createAction(
+  '[Muestras API] Dispatch Tubes Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
+// Derivación (labels → otra sucursal, quedan IN_TRANSIT)
+export const deriveTubes = createAction(
+  '[Transito Page] Derive Tubes',
+  props<{ labelIds: number[]; destinationBranchId: number; observation?: string }>()
+);
+export const deriveTubesSuccess = createAction(
+  '[Muestras API] Derive Tubes Success',
+  props<{ count: number }>()
+);
+export const deriveTubesFailure = createAction(
+  '[Muestras API] Derive Tubes Failure',
   props<{ error: HttpErrorResponse }>()
 );
