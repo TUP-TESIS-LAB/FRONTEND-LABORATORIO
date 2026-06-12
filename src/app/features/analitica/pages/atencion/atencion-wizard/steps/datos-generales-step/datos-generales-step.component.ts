@@ -19,9 +19,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { NgClass } from '@angular/common';
 import { Gender, SexAtBirth } from '@features/pacientes/models/patient.model';
-import { CoveragePlanOption } from '@features/pacientes/models/coverage-plans.catalog';
-import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
-import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '@features/pacientes/models/coverage-catalog.model';
+import { CoverageCatalog, EMPTY_CATALOG, InsurerOption, PlanOption, insurerNameForPlan, planName, plansForInsurer, planById } from '@features/pacientes/models/coverage-catalog.model';
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { DoctorService } from '@features/medicos/services/doctor.service';
@@ -218,16 +216,31 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   appendTo="body"
                   class="w-full" />
               </div>
-              <div class="sm:col-span-2">
-                <label class="block text-sm mb-1">Cobertura</label>
-                <p-select
-                  [(ngModel)]="form.planId"
-                  [options]="planOptions()"
-                  optionLabel="label"
-                  optionValue="planId"
-                  placeholder="— Seleccioná —"
-                  appendTo="body"
-                  class="w-full" />
+              <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm mb-1">Obra social</label>
+                  <p-select
+                    [ngModel]="formInsurerId()"
+                    (ngModelChange)="onFormInsurerChange($event)"
+                    [options]="insurerOptions()"
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="— Seleccioná —"
+                    appendTo="body"
+                    class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-sm mb-1">Plan</label>
+                  <p-select
+                    [(ngModel)]="form.planId"
+                    [options]="formPlanOptions()"
+                    optionLabel="name"
+                    optionValue="planId"
+                    placeholder="— Seleccioná —"
+                    [disabled]="formInsurerId() == null"
+                    appendTo="body"
+                    class="w-full" />
+                </div>
               </div>
               <div>
                 <label class="block text-sm mb-1">Número de afiliado</label>
@@ -287,16 +300,31 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                 appendTo="body"
                 class="w-full" />
             </div>
-            <div class="sm:col-span-2">
-              <label class="block text-sm mb-1">Cobertura</label>
-              <p-select
-                [(ngModel)]="form.planId"
-                [options]="planOptions()"
-                optionLabel="label"
-                optionValue="planId"
-                placeholder="— Seleccioná —"
-                appendTo="body"
-                class="w-full" />
+            <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm mb-1">Obra social</label>
+                <p-select
+                  [ngModel]="formInsurerId()"
+                  (ngModelChange)="onFormInsurerChange($event)"
+                  [options]="insurerOptions()"
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="— Seleccioná —"
+                  appendTo="body"
+                  class="w-full" />
+              </div>
+              <div>
+                <label class="block text-sm mb-1">Plan</label>
+                <p-select
+                  [(ngModel)]="form.planId"
+                  [options]="formPlanOptions()"
+                  optionLabel="name"
+                  optionValue="planId"
+                  placeholder="— Seleccioná —"
+                  [disabled]="formInsurerId() == null"
+                  appendTo="body"
+                  class="w-full" />
+              </div>
             </div>
             <div>
               <label class="block text-sm mb-1">Número de afiliado</label>
@@ -430,7 +458,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
 })
 export class DatosGeneralesStepComponent implements OnInit {
   private readonly store = inject(Store);
-  private readonly coveragePlans = inject(CoveragePlansService);
   private readonly coverageCatalog = inject(CoverageCatalogService);
   private readonly doctorsApi = inject(DoctorService);
   private readonly notification = inject(NotificationService);
@@ -470,7 +497,14 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected readonly resolutionError  = this.store.selectSignal(selectPatientResolutionError);
 
   protected readonly editing = signal(false);
-  protected readonly planOptions = signal<CoveragePlanOption[]>([]);
+
+  // ── Cobertura del alta/edición inline: cascada Obra social → Plan ────────────
+  /** Obra social elegida en el form de alta/edición (UI; el plan es lo que se envía). */
+  protected readonly formInsurerId = signal<number | null>(null);
+  /** Obras sociales seleccionables (incluye Particular para pago directo). */
+  protected readonly insurerOptions = computed<InsurerOption[]>(() => [...this.catalog().insurers]);
+  /** Planes de la obra social elegida en el form. */
+  protected readonly formPlanOptions = computed<PlanOption[]>(() => plansForInsurer(this.catalog(), this.formInsurerId()));
 
   // ── Cobertura a usar en la atención (chips) ─────────────────────────────────
   /** Catálogo de coberturas para resolver el label de cada chip (obra social + plan). */
@@ -589,21 +623,14 @@ export class DatosGeneralesStepComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Catálogo (obras sociales + planes) para resolver el label de los chips de cobertura.
+    // Catálogo (obras sociales + planes): alimenta los chips de cobertura y la
+    // cascada Obra social → Plan del alta/edición inline. Al cargar, default a
+    // Particular en el form si todavía no hay plan elegido.
     this.coverageCatalog.getCatalog().pipe(
       catchError(() => EMPTY),
-    ).subscribe(cat => this.catalog.set(cat));
-
-    // Load coverage plans for dropdowns (errors are swallowed — dropdown stays empty)
-    this.coveragePlans.getActivePlans().pipe(
-      catchError(() => EMPTY),
-    ).subscribe(plans => {
-      this.planOptions.set(plans);
-      // Default-select the Particular plan if present
-      const particular = plans.find(p => p.particular);
-      if (particular && this.form.planId == null) {
-        this.form.planId = particular.planId;
-      }
+    ).subscribe(cat => {
+      this.catalog.set(cat);
+      this.defaultFormCobertura();
     });
 
     // Cargar médicos solicitantes para el selector (errores silenciados → queda vacío). (007)
@@ -681,6 +708,26 @@ export class DatosGeneralesStepComponent implements OnInit {
     }
   }
 
+  /** Cambio de obra social en el form: resetea el plan (auto-selecciona si hay uno solo). */
+  onFormInsurerChange(insurerId: number | null): void {
+    this.formInsurerId.set(insurerId);
+    const plans = plansForInsurer(this.catalog(), insurerId);
+    this.form.planId = plans.length === 1 ? plans[0].planId : null;
+  }
+
+  /** Default del form: si no hay plan elegido, preselecciona Particular (obra social + plan). */
+  private defaultFormCobertura(): void {
+    if (this.form.planId != null) {
+      this.formInsurerId.set(planById(this.catalog(), this.form.planId)?.insurerId ?? null);
+      return;
+    }
+    const particular = this.catalog().plans.find(p => p.particular);
+    if (particular) {
+      this.formInsurerId.set(particular.insurerId);
+      this.form.planId = particular.planId;
+    }
+  }
+
   startEdit(): void {
     const p = this.resolved();
     if (!p) return;
@@ -696,6 +743,8 @@ export class DatosGeneralesStepComponent implements OnInit {
       planId:       primaryCoverage?.planId ?? null,
       memberNumber: primaryCoverage?.memberNumber ?? '',
     };
+    // Sincroniza la obra social de la cascada con el plan del paciente (o Particular).
+    this.formInsurerId.set(planById(this.catalog(), this.form.planId)?.insurerId ?? null);
     this.editing.set(true);
   }
 

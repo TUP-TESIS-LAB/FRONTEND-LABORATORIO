@@ -13,14 +13,23 @@ import {
   updatePatientInline,
   verifyPatient,
 } from '../../../../../store/atencion/atencion.actions';
-import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
 
-const STUB_PLANS = [{ planId: 1, label: 'Particular', particular: true }];
+const STUB_CATALOG = {
+  insurers: [
+    { id: 96001, name: 'Particular', insurerType: 'SELF_PAY' as const },
+    { id: 96002, name: 'OSDE', insurerType: 'PRIVATE' as const },
+  ],
+  plans: [
+    { planId: 96001, insurerId: 96001, name: 'Plan Particular', particular: true },
+    { planId: 96002, insurerId: 96002, name: '210', particular: false },
+  ],
+};
 
-const coveragePlansStub = {
-  getActivePlans: () => of(STUB_PLANS),
+const coverageCatalogStub = {
+  getCatalog: () => of(STUB_CATALOG),
 };
 
 const doctorServiceStub = {
@@ -47,7 +56,7 @@ describe('DatosGeneralesStepComponent', () => {
         provideMockStore({
           initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
         }),
-        { provide: CoveragePlansService, useValue: coveragePlansStub },
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: NotificationService, useValue: notificationStub },
         { provide: ActivatedRoute, useValue: defaultRouteStub },
@@ -525,12 +534,26 @@ describe('DatosGeneralesStepComponent', () => {
 
   // ── New tests: coverage dropdown ─────────────────────────────────────────
 
-  it('planOptions se carga desde CoveragePlansService en ngOnInit', () => {
+  it('cascada cobertura: obras sociales del catálogo + default Particular en ngOnInit', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
     fixture.detectChanges();
-    const options = (fixture.componentInstance as any).planOptions();
-    expect(options).toEqual(STUB_PLANS);
+    const cmp = fixture.componentInstance as any;
+    // El dropdown de obra social ofrece todas las del catálogo (incluye Particular)
+    expect(cmp.insurerOptions().map((i: any) => i.name)).toEqual(['Particular', 'OSDE']);
+    // Default: Particular preseleccionada (obra social + plan)
+    expect(cmp.formInsurerId()).toBe(96001);
+    expect(cmp.form.planId).toBe(96001);
+  });
+
+  it('cascada cobertura: al elegir una obra social filtra sus planes y resetea el plan', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    cmp.onFormInsurerChange(96002); // OSDE → un solo plan (210) → auto-selecciona
+    expect(cmp.formPlanOptions().map((p: any) => p.name)).toEqual(['210']);
+    expect(cmp.form.planId).toBe(96002);
   });
 
   // ── 003: hidratación de indicaciones al retomar ──────────────────────────
@@ -658,7 +681,7 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
         provideMockStore({
           initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
         }),
-        { provide: CoveragePlansService, useValue: coveragePlansStub },
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: NotificationService, useValue: notificationStub },
         {
