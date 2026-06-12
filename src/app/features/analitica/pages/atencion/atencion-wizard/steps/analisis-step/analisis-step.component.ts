@@ -56,12 +56,14 @@ import {
                     (onClick)="onContinue()" />
         </div>
       }
-
-      <lab-analysis-detail-modal
-        [analysisId]="detailId()"
-        [visible]="detailOpen()"
-        (closed)="closeDetail()" />
     </div>
+
+    <!-- El modal va FUERA del contenedor flex con space-y-4: si queda adentro, recibe
+         el margin-top del space-y y deja un hueco de 16px debajo del footer. -->
+    <lab-analysis-detail-modal
+      [analysisId]="detailId()"
+      [visible]="detailOpen()"
+      (closed)="closeDetail()" />
   `,
 })
 export class AnalisisStepComponent implements OnInit {

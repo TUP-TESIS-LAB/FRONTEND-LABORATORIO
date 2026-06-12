@@ -93,6 +93,8 @@ const ALL_STEPS: WizardStepDef[] = [
             <h2 class="text-xl font-semibold">Nueva atención</h2>
             <div class="text-sm opacity-70">Buscá el paciente para empezar</div>
           </div>
+          <p-button label="Volver al listado" icon="pi pi-arrow-left" severity="secondary" [text]="true"
+                    (onClick)="backToList()" />
         </header>
         <div class="aw-step">
           <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
