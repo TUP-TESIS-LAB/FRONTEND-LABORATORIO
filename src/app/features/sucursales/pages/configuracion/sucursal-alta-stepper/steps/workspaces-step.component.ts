@@ -2,102 +2,232 @@ import {
   ChangeDetectionStrategy, Component, DestroyRef, Input, OnInit,
   computed, inject, signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
-import { TableModule } from 'primeng/table';
+import { Actions, ofType } from '@ngrx/effects';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputTextModule } from 'primeng/inputtext';
+import { DialogModule } from 'primeng/dialog';
+
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
+import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 
 import {
   selectAreas, selectSections, selectWorkspaces,
 } from '../../../../store/sucursal.selectors';
 import {
+  addArea, addAreaSuccess, addSection, addSectionSuccess,
   loadAreas, loadSections, loadWorkspaces, syncWorkspaces,
 } from '../../../../store/sucursal.actions';
-import { BranchWorkspace, BranchWorkspaceCreateInput } from '../../../../models/branch-workspace.model';
+import { AreaType } from '../../../../models/sucursal.model';
+import { BranchWorkspaceCreateInput } from '../../../../models/branch-workspace.model';
 
+interface AreaGroup {
+  areaId: number;
+  areaName: string;
+  sectionCount: number;
+  sections: { workspaceId: number; sectionId: number; sectionName: string }[];
+}
+
+const AREA_TYPE_OPTIONS: { label: string; value: AreaType }[] = [
+  { label: 'Química clínica', value: 'QUIMICA_CLINICA' },
+  { label: 'Hematología / Hemostasia', value: 'HEMATOLOGIA_HEMOSTASIA' },
+  { label: 'Nefrología', value: 'NEFROLOGIA' },
+  { label: 'Medio interno', value: 'MEDIO_INTERNO' },
+  { label: 'Endocrinología / Virología', value: 'ENDOCRINOLOGIA_VIROLOGIA' },
+  { label: 'Microbiología', value: 'MICROBIOLOGIA' },
+  { label: 'Inmunología / Serología', value: 'INMUNOLOGIA_SEROLOGIA' },
+  { label: 'Externo', value: 'EXTERNO' },
+  { label: 'Otro', value: 'OTRO' },
+];
+
+/**
+ * Paso "Áreas y secciones" — Mockup A: panel de asociación inline.
+ * Elegís un área (o la creás en un modal), tildás sus secciones de la checklist (o creás una
+ * nueva en otro modal) y "Agregar al listado" las suma. Abajo, una tabla genérica plegable
+ * agrupa por área y al expandir muestra las secciones asociadas.
+ */
 @Component({
   selector: 'app-workspaces-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, TableModule, ButtonModule, SelectModule],
+  imports: [
+    FormsModule, ButtonModule, SelectModule, CheckboxModule, InputTextModule, DialogModule,
+    DataTableComponent, UiCellDirective, UiRowExpansionDirective,
+  ],
   templateUrl: './workspaces-step.component.html',
   styleUrl: './workspaces-step.component.scss',
 })
 export class WorkspacesStepComponent implements OnInit {
   @Input({ required: true }) branchId!: number;
 
-  private store = inject(Store);
-  private fb = inject(FormBuilder);
-  private destroyRef = inject(DestroyRef);
+  private readonly store = inject(Store);
+  private readonly actions$ = inject(Actions);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly areas = this.store.selectSignal(selectAreas);
   protected readonly allSections = this.store.selectSignal(selectSections);
   protected readonly workspaces = this.store.selectSignal(selectWorkspaces);
 
-  protected readonly form = this.fb.nonNullable.group({
-    areaId: [null as number | null, Validators.required],
-    sectionId: [null as number | null, Validators.required],
-  });
-
-  // Espejo signal del FormControl.value -- `computed()` no detecta cambios
-  // en form.controls.areaId.value directamente porque no es un signal.
-  private readonly selectedAreaId = signal<number | null>(null);
-
-  constructor() {
-    this.form.controls.areaId.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(v => this.selectedAreaId.set(v));
-  }
-
-  protected readonly sectionsForArea = computed(() => {
-    const areaId = this.selectedAreaId();
-    return areaId == null ? [] : this.allSections().filter(s => s.areaId === areaId);
-  });
+  // Estado del panel de asociación.
+  protected readonly selectedAreaId = signal<number | null>(null);
+  protected readonly selectedSectionIds = signal<ReadonlySet<number>>(new Set());
 
   protected readonly areaOptions = computed(() =>
-    this.areas().map(a => ({ label: a.name, value: a.id }))
+    this.areas().map((a) => ({ label: a.name, value: a.id })),
+  );
+  /** Secciones del área elegida (la checklist). */
+  protected readonly sectionsForArea = computed(() => {
+    const areaId = this.selectedAreaId();
+    return areaId == null ? [] : this.allSections().filter((s) => s.areaId === areaId);
+  });
+  protected readonly canAdd = computed(() =>
+    this.selectedAreaId() != null && this.selectedSectionIds().size > 0,
   );
 
-  protected readonly sectionOptions = computed(() =>
-    this.sectionsForArea().map(s => ({ label: s.name, value: s.id }))
-  );
+  /** Workspaces agrupados por área para la tabla plegable. */
+  protected readonly areaGroups = computed<AreaGroup[]>(() => {
+    const byArea = new Map<number, AreaGroup>();
+    for (const w of this.workspaces()) {
+      let g = byArea.get(w.areaId);
+      if (!g) {
+        g = { areaId: w.areaId, areaName: this.areaName(w.areaId), sectionCount: 0, sections: [] };
+        byArea.set(w.areaId, g);
+      }
+      g.sections.push({ workspaceId: w.id, sectionId: w.sectionId, sectionName: this.sectionName(w.sectionId) });
+    }
+    return [...byArea.values()].map((g) => ({ ...g, sectionCount: g.sections.length }));
+  });
 
-  ngOnInit() {
+  readonly groupColumns: readonly TableColumn[] = [
+    { field: 'areaName',     header: 'Área' },
+    { field: 'sectionCount', header: 'Secciones', align: 'center' },
+  ];
+  readonly groupActions: readonly TableAction[] = [
+    { key: 'removeArea', icon: 'pi-trash', label: 'Quitar área', severity: 'danger' },
+  ];
+
+  // ── Modales de alta ──
+  protected readonly areaModalOpen = signal(false);
+  protected newAreaName = '';
+  protected newAreaType: AreaType = 'QUIMICA_CLINICA';
+  protected newAreaExternalLab = '';
+  protected readonly areaTypeOptions = AREA_TYPE_OPTIONS;
+
+  protected readonly sectionModalOpen = signal(false);
+  protected newSectionName = '';
+
+  constructor() {
+    // Al crear un área nueva la dejamos seleccionada (y limpiamos la checklist).
+    this.actions$.pipe(ofType(addAreaSuccess), takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ area }) => {
+        this.selectedAreaId.set(area.id);
+        this.selectedSectionIds.set(new Set());
+        this.areaModalOpen.set(false);
+        this.newAreaName = ''; this.newAreaExternalLab = '';
+      });
+    // Al crear una sección nueva la dejamos tildada.
+    this.actions$.pipe(ofType(addSectionSuccess), takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ section }) => {
+        this.selectedSectionIds.update((s) => new Set(s).add(section.id));
+        this.sectionModalOpen.set(false);
+        this.newSectionName = '';
+      });
+  }
+
+  ngOnInit(): void {
     this.store.dispatch(loadAreas());
     this.store.dispatch(loadSections({}));
     this.store.dispatch(loadWorkspaces({ branchId: this.branchId }));
   }
 
-  add() {
-    if (this.form.invalid) return;
-    const v = this.form.getRawValue();
-    if (v.areaId == null || v.sectionId == null) return;
-    // Evitar duplicados (mismo area+section)
-    const exists = this.workspaces().some(w => w.areaId === v.areaId && w.sectionId === v.sectionId);
-    if (exists) return;
-    const next: BranchWorkspaceCreateInput[] = [
-      ...this.workspaces().map(w => ({ areaId: w.areaId, sectionId: w.sectionId })),
-      { areaId: v.areaId, sectionId: v.sectionId },
-    ];
-    this.store.dispatch(syncWorkspaces({ branchId: this.branchId, workspaces: next }));
-    this.form.reset({ areaId: v.areaId, sectionId: null });  // Mantengo area seleccionada para agregar más secciones rápido
+  onAreaChange(): void {
+    // Cambiar de área reinicia la selección de secciones (cascada).
+    this.selectedSectionIds.set(new Set());
   }
 
-  remove(w: BranchWorkspace) {
-    const next: BranchWorkspaceCreateInput[] = this.workspaces()
-      .filter(x => x.id !== w.id)
-      .map(x => ({ areaId: x.areaId, sectionId: x.sectionId }));
+  toggleSection(sectionId: number, checked: boolean): void {
+    this.selectedSectionIds.update((s) => {
+      const next = new Set(s);
+      if (checked) next.add(sectionId); else next.delete(sectionId);
+      return next;
+    });
+  }
+
+  isTicked(sectionId: number): boolean {
+    return this.selectedSectionIds().has(sectionId);
+  }
+
+  /** Agrega al listado las secciones tildadas del área elegida (las que falten). */
+  add(): void {
+    const areaId = this.selectedAreaId();
+    const ticks = [...this.selectedSectionIds()];
+    if (areaId == null || ticks.length === 0) return;
+    const existing: BranchWorkspaceCreateInput[] =
+      this.workspaces().map((w) => ({ areaId: w.areaId, sectionId: w.sectionId }));
+    const toAdd = ticks
+      .filter((sid) => !existing.some((e) => e.areaId === areaId && e.sectionId === sid))
+      .map((sid) => ({ areaId, sectionId: sid }));
+    if (toAdd.length === 0) return;
+    this.store.dispatch(syncWorkspaces({ branchId: this.branchId, workspaces: [...existing, ...toAdd] }));
+    this.selectedSectionIds.set(new Set()); // mantiene el área para seguir cargando
+  }
+
+  /** Quita todas las secciones asociadas de un área. */
+  removeArea(areaId: number): void {
+    const next = this.workspaces()
+      .filter((w) => w.areaId !== areaId)
+      .map((w) => ({ areaId: w.areaId, sectionId: w.sectionId }));
     this.store.dispatch(syncWorkspaces({ branchId: this.branchId, workspaces: next }));
+  }
+
+  /** Quita una sección puntual del listado. */
+  removeSection(workspaceId: number): void {
+    const next = this.workspaces()
+      .filter((w) => w.id !== workspaceId)
+      .map((w) => ({ areaId: w.areaId, sectionId: w.sectionId }));
+    this.store.dispatch(syncWorkspaces({ branchId: this.branchId, workspaces: next }));
+  }
+
+  onGroupAction(ev: { key: string; row: unknown }): void {
+    if (ev.key === 'removeArea') this.removeArea((ev.row as AreaGroup).areaId);
+  }
+
+  // ── Modales ──
+  openAreaModal(): void {
+    this.newAreaName = ''; this.newAreaType = 'QUIMICA_CLINICA'; this.newAreaExternalLab = '';
+    this.areaModalOpen.set(true);
+  }
+  saveArea(): void {
+    const name = this.newAreaName.trim();
+    if (!name) return;
+    this.store.dispatch(addArea({ input: {
+      name,
+      areaType: this.newAreaType,
+      externalLabName: this.newAreaType === 'EXTERNO' ? (this.newAreaExternalLab.trim() || null) : null,
+    } }));
+  }
+
+  openSectionModal(): void {
+    this.newSectionName = '';
+    this.sectionModalOpen.set(true);
+  }
+  saveSection(): void {
+    const name = this.newSectionName.trim();
+    const areaId = this.selectedAreaId();
+    if (!name || areaId == null) return;
+    this.store.dispatch(addSection({ input: { name, areaId } }));
   }
 
   areaName(areaId: number): string {
-    return this.areas().find(a => a.id === areaId)?.name ?? `Área #${areaId}`;
+    return this.areas().find((a) => a.id === areaId)?.name ?? `Área #${areaId}`;
   }
-
   sectionName(sectionId: number): string {
-    return this.allSections().find(s => s.id === sectionId)?.name ?? `Sección #${sectionId}`;
+    return this.allSections().find((s) => s.id === sectionId)?.name ?? `Sección #${sectionId}`;
   }
 }
