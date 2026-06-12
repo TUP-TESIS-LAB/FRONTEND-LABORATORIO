@@ -20,7 +20,7 @@ const TIME_UNIT_ES: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DialogModule, ButtonModule],
   template: `
-    <p-dialog [visible]="visible()" (onHide)="closed.emit()" [modal]="true" [style]="{ width: '480px' }"
+    <p-dialog [visible]="visible()" (onHide)="closed.emit()" [modal]="true" [draggable]="false" [style]="{ width: '480px' }"
               header="Detalle del análisis">
       @if (loading()) {
         <div class="py-4 text-center text-sm opacity-70">Cargando...</div>

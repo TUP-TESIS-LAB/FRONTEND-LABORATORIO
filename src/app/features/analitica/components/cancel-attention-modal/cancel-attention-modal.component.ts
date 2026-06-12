@@ -11,7 +11,7 @@ const MOTIVOS = ['Paciente no se presentó', 'Error de carga', 'Atención duplic
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, DialogModule, ButtonModule],
   template: `
-    <p-dialog [visible]="visible()" (onHide)="onHide()" [modal]="true" [style]="{ width: '460px' }"
+    <p-dialog [visible]="visible()" (onHide)="onHide()" [modal]="true" [draggable]="false" [style]="{ width: '460px' }"
               header="Cancelar atención">
       <p class="text-sm opacity-70 mb-2">Esta acción cancela la atención. Indicá el motivo.</p>
       <div class="flex flex-wrap gap-2 mb-3">
