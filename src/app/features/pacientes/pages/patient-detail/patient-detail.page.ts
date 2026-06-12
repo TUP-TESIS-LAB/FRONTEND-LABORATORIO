@@ -9,9 +9,17 @@ import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { DatePipe } from '@angular/common';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { DniPipe } from '@shared/pipes/dni.pipe';
 import { AgePipe } from '@shared/pipes/age.pipe';
+import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
+import { AnalysisService } from '@features/analitica/services/analysis.service';
 import {
   loadPatient, loadPatientFailure, clearSelectedPatient, togglePatientActive,
 } from '../../store/patient.actions';
@@ -21,6 +29,8 @@ import {
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '../../models/coverage-catalog.model';
 import { CoverageCatalogService } from '../../services/coverage-catalog.service';
+import { PatientHistoryService } from '../../services/patient-history.service';
+import { PatientHistoryItem, deliveryStatusLabel, deliveryStatusSeverity } from '../../models/patient-history.model';
 import { genderLabel, sexLabel, statusLabel } from '../../models/patient-labels';
 import { ContactType, Patient } from '../../models/patient.model';
 
@@ -31,7 +41,8 @@ import { ContactType, Patient } from '../../models/patient.model';
   providers: [ConfirmationService],
   imports: [
     RouterLink, ButtonModule, TabsModule, TagModule, ConfirmDialogModule,
-    DatePipe, DniPipe, AgePipe, EmptyStateComponent,
+    DatePipe, DniPipe, AgePipe, CurrencyArPipe, EmptyStateComponent,
+    DataTableComponent, UiCellDirective, UiRowExpansionDirective,
   ],
   template: `
     @if (patient(); as p) {
@@ -113,10 +124,50 @@ import { ContactType, Patient } from '../../models/patient.model';
               </div>
             </p-tabpanel>
             <p-tabpanel value="history">
-              <ui-empty-state
-                heading="Historial no disponible"
-                icon="pi-history"
-                hint="Se habilitará cuando se activen los módulos de turnos y estudios." />
+              @if (history().length === 0) {
+                <ui-empty-state
+                  heading="Sin atenciones"
+                  icon="pi-history"
+                  hint="Cuando el paciente tenga atenciones registradas, aparecerán acá." />
+              } @else {
+                <ui-table
+                  [value]="history()"
+                  [columns]="historyColumns"
+                  [expandable]="true"
+                  dataKey="attentionId">
+
+                  <ng-template uiCell="fecha" let-row>
+                    {{ row.createdAt ? (row.createdAt | date:'dd/MM/yy HH:mm') : '—' }}
+                  </ng-template>
+                  <ng-template uiCell="analisis" let-row>{{ row.analysisCount }}</ng-template>
+                  <ng-template uiCell="importe" let-row>
+                    {{ row.total != null ? (row.total | currencyAr) : '—' }}
+                  </ng-template>
+                  <ng-template uiCell="cobertura" let-row>{{ coverageLabel(row.insurancePlanId) }}</ng-template>
+
+                  <ng-template uiRowExpansion let-row>
+                    <div class="text-xs text-surface-500 mb-2 font-medium">
+                      Protocolo {{ row.protocolId ? ('P-' + row.protocolId) : '—' }}
+                    </div>
+                    <table class="hist-detail">
+                      <thead>
+                        <tr><th>Análisis</th><th class="cv-center">Valor</th><th>Estado</th></tr>
+                      </thead>
+                      <tbody>
+                        @for (a of row.analyses; track a.analysisId) {
+                          <tr>
+                            <td>{{ analysisName(a.analysisId) }}</td>
+                            <td class="cv-center">{{ a.chargedPrice != null ? (a.chargedPrice | currencyAr) : '—' }}</td>
+                            <td>
+                              <p-tag [severity]="deliverySeverity(a.deliveryStatus)" [value]="deliveryLabel(a.deliveryStatus)" />
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </ng-template>
+                </ui-table>
+              }
             </p-tabpanel>
           </p-tabpanels>
         </p-tabs>
@@ -139,6 +190,15 @@ import { ContactType, Patient } from '../../models/patient.model';
     .cv-table tbody tr:nth-child(even) { background: #fafbfd; }
     .cv-center { text-align: center; }
     .cv-muted { color: #94a3b8; }
+
+    /* Tabla de detalle (análisis) dentro de la fila expandida del historial. */
+    .hist-detail { width: 100%; border-collapse: collapse; }
+    .hist-detail thead th {
+      font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em;
+      color: #64748b; font-weight: 700; text-align: left; padding: 4px 10px;
+    }
+    .hist-detail tbody td { font-size: 13px; padding: 5px 10px; }
+    .hist-detail .cv-center { text-align: center; }
   `],
 })
 export class PatientDetailPage implements OnInit, OnDestroy {
@@ -157,6 +217,8 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   private readonly actions$ = inject(Actions);
   private readonly perms = inject(PatientPermissionsService);
   private readonly catalogService = inject(CoverageCatalogService);
+  private readonly historyService = inject(PatientHistoryService);
+  private readonly analysisService = inject(AnalysisService);
   readonly canMutate = this.perms.canMutate;
 
   readonly patient = this.store.selectSignal(selectSelectedPatient);
@@ -166,6 +228,19 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   // Helpers de catálogo expuestos al template (read-only de coberturas).
   readonly insurerNameForPlan = insurerNameForPlan;
   readonly planName = planName;
+
+  // ── Historial de atenciones ──
+  readonly history = signal<PatientHistoryItem[]>([]);
+  private readonly analysisNameById = signal<ReadonlyMap<number, string>>(new Map());
+  readonly historyColumns: readonly TableColumn[] = [
+    { field: 'attentionNumber', header: 'N° atención' },
+    { field: 'fecha',           header: 'Fecha' },
+    { field: 'analisis',        header: 'Análisis', align: 'center' },
+    { field: 'importe',         header: 'Importe', align: 'right' },
+    { field: 'cobertura',       header: 'Cobertura' },
+  ];
+  readonly deliveryLabel = deliveryStatusLabel;
+  readonly deliverySeverity = deliveryStatusSeverity;
 
   ngOnInit(): void {
     const numericId = Number(this.id());
@@ -178,6 +253,37 @@ export class PatientDetailPage implements OnInit, OnDestroy {
       next: (cat) => this.catalog.set(cat),
       error: () => { /* catálogo vacío; no se expone el error al usuario */ },
     });
+    this.loadHistory(numericId);
+  }
+
+  /** Carga el historial y resuelve los nombres de los análisis (el BE devuelve sólo el id). */
+  private loadHistory(patientId: number): void {
+    this.historyService.getHistory(patientId).subscribe({
+      next: (items) => {
+        this.history.set(items);
+        const ids = [...new Set(items.flatMap((i) => i.analyses.map((a) => a.analysisId)))];
+        if (ids.length === 0) return;
+        forkJoin(
+          ids.map((id) => this.analysisService.getById(id).pipe(catchError(() => of(null)))),
+        ).subscribe((details) => {
+          const map = new Map<number, string>();
+          details.forEach((d, idx) => { if (d) map.set(ids[idx], d.name); });
+          this.analysisNameById.set(map);
+        });
+      },
+      error: () => { /* historial vacío; no se expone el error al usuario */ },
+    });
+  }
+
+  /** Nombre del análisis resuelto por id (fallback "#id" mientras carga). */
+  analysisName(id: number): string {
+    return this.analysisNameById().get(id) ?? `#${id}`;
+  }
+
+  /** Etiqueta de cobertura para una atención: Particular si no hay plan, si no la obra social. */
+  coverageLabel(insurancePlanId: number | null): string {
+    if (insurancePlanId == null) return 'Particular';
+    return insurerNameForPlan(this.catalog(), insurancePlanId);
   }
 
   ngOnDestroy(): void { this.store.dispatch(clearSelectedPatient()); }
