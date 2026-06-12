@@ -241,25 +241,41 @@ describe('AtencionDashboardComponent', () => {
     )).toBeNull();
   });
 
-  it('T9: muestra el ícono pi-info-circle sólo en filas CANCELED con motivo', () => {
+  it('T9: el ícono info vive en el header "Estado" (uno solo), no en las filas', () => {
     const fixture = setup();
     const store = TestBed.inject(MockStore);
     store.overrideSelector(selectTodayAtenciones, [
-      // CANCELED con motivo → debe llevar el ícono de info.
       { id: 1, attentionState: AttentionState.CANCELED, cancellationReason: 'Paciente desistió',
         extractionCancellationReason: null, protocolId: null, doctorId: null, createdAt: null } as any,
-      // CANCELED sin motivo → tag sin ícono.
       { id: 2, attentionState: AttentionState.CANCELED, cancellationReason: null,
         extractionCancellationReason: null, protocolId: null, doctorId: null, createdAt: null } as any,
-      // No terminal → tag sin ícono.
       { id: 3, attentionState: AttentionState.IN_EXTRACTION, cancellationReason: null,
         extractionCancellationReason: null, protocolId: null, doctorId: null, createdAt: null } as any,
     ]);
     store.refreshState();
     fixture.detectChanges();
 
-    const icons = fixture.nativeElement.querySelectorAll('i.pi-info-circle');
-    // Sólo la primera fila (CANCELED + motivo) lo renderiza.
-    expect(icons.length).toBe(1);
+    // Un único ícono info, y está en el header (no se multiplica por fila).
+    const headerIcons = fixture.nativeElement.querySelectorAll('thead i.pi-info-circle');
+    expect(headerIcons.length).toBe(1);
+    const rowIcons = fixture.nativeElement.querySelectorAll('tbody i.pi-info-circle');
+    expect(rowIcons.length).toBe(0);
+  });
+
+  it('T9: la fila CANCELED con motivo envuelve el tag en un span con tooltip (sin ícono)', () => {
+    const fixture = setup();
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectTodayAtenciones, [
+      { id: 1, attentionState: AttentionState.CANCELED, cancellationReason: 'Paciente desistió',
+        extractionCancellationReason: null, protocolId: null, doctorId: null, createdAt: null } as any,
+      { id: 2, attentionState: AttentionState.CANCELED, cancellationReason: null,
+        extractionCancellationReason: null, protocolId: null, doctorId: null, createdAt: null } as any,
+    ]);
+    store.refreshState();
+    fixture.detectChanges();
+
+    // Sólo la fila con motivo lleva el span focusable contenedor del tooltip.
+    const spans = fixture.nativeElement.querySelectorAll('tbody span[tabindex="0"]');
+    expect(spans.length).toBe(1);
   });
 });

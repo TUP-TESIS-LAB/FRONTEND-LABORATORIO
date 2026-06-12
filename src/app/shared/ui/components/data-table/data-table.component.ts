@@ -22,6 +22,9 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
   selector: 'ui-table',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // En modo flex-scroll (scrollHeight="flex") el componente llena el alto de su contenedor
+  // flex y la tabla scrollea internamente; así el footer/pricing de alrededor queda fijo.
+  host: { '[class.ut-flex-scroll]': "scrollHeight() === 'flex'" },
   imports: [TableModule, NgTemplateOutlet, TooltipModule, MenuModule, EmptyStateComponent],
   template: `
     @if (!lazy() && value().length === 0 && !loading()) {
@@ -55,6 +58,10 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
                   [class.ut-align-right]="col.align === 'right'"
                   [class.ut-align-center]="col.align === 'center'">
                   {{ col.header }}
+                  @if (col.headerInfo) {
+                    <i class="pi pi-info-circle ut-header-info"
+                       [pTooltip]="col.headerInfo" tooltipPosition="top"></i>
+                  }
                 </th>
               }
               @if (hasActions()) {
@@ -165,6 +172,41 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
       border: 1px solid #e8edf3;
       border-radius: 10px;
       overflow: hidden;
+    }
+
+    /* ── Flex-scroll mode (scrollHeight="flex") ──
+       El host llena el contenedor flex padre y la tabla scrollea por dentro, con el
+       header sticky. La cadena necesita min-height:0 para que el scroll no empuje. */
+    :host(.ut-flex-scroll) {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    :host(.ut-flex-scroll) .ut-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    :host(.ut-flex-scroll) ::ng-deep .p-datatable {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    :host(.ut-flex-scroll) ::ng-deep .p-datatable-table-container {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    /* Ícono info en el header de una columna (señala info en el hover de las celdas). */
+    .ut-header-info {
+      font-size: 11px;
+      margin-left: 5px;
+      color: #94a3b8;
+      cursor: help;
+      vertical-align: middle;
     }
 
     /* ── Zebra B — header ── */

@@ -61,10 +61,6 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
-      <header>
-        <h3 class="text-lg font-semibold">Resumen de la atención</h3>
-      </header>
-
       <!-- C4: Paciente y Médico solicitante lado a lado (stack en mobile) -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <section>
@@ -98,7 +94,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
           [value]="analysisRows()"
           [columns]="analysisColumns"
           [showDelete]="!readOnly()"
-          [scrollHeight]="'42vh'"
+          [scrollHeight]="'flex'"
           emptyHeading="Sin análisis solicitados"
           emptyIcon="pi-flask"
           (rowDelete)="onRemoveAnalysis($any($event).analysisId)">
@@ -170,12 +166,13 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
                     (onClick)="openFinalize()" />
         </div>
       }
-
-      <lab-finalize-attention-modal
-        [visible]="finalizeModalOpen()"
-        (confirmed)="onFinalize()"
-        (dismissed)="closeFinalize()" />
     </div>
+
+    <!-- Fuera del contenedor flex con space-y-4 para no dejar un hueco bajo el footer. -->
+    <lab-finalize-attention-modal
+      [visible]="finalizeModalOpen()"
+      (confirmed)="onFinalize()"
+      (dismissed)="closeFinalize()" />
   `,
 })
 export class ResumenStepComponent implements OnInit {
