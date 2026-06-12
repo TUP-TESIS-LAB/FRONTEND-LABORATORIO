@@ -59,7 +59,9 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule],
   template: `
-    <div class="space-y-4">
+    <div class="flex flex-col h-full min-h-0">
+      <!-- T8: contenido scrolleable interno; el footer queda abajo y la página no crece. -->
+      <div class="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
 
       <!-- Búsqueda por DNI -->
       <div class="flex gap-2 items-end">
@@ -171,7 +173,10 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
               </div>
               <div>
                 <label class="block text-sm mb-1">Fecha de nacimiento</label>
-                <input pInputText type="date" [(ngModel)]="form.birthDate" class="w-full" />
+                <input pInputText type="date" [(ngModel)]="form.birthDate" [max]="todayStr" class="w-full" />
+                @if (birthDateFuture()) {
+                  <span class="text-xs text-red-600 mt-1 block">La fecha de nacimiento no puede ser futura.</span>
+                }
               </div>
               <div>
                 <label class="block text-sm mb-1">Género</label>
@@ -212,7 +217,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
               </div>
             </div>
             <div class="flex justify-end">
-              <p-button label="Guardar cambios" icon="pi pi-check" (onClick)="saveEdit()" />
+              <p-button label="Guardar cambios" icon="pi pi-check" [disabled]="birthDateFuture()" (onClick)="saveEdit()" />
             </div>
           </div>
         }
@@ -345,8 +350,10 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                [readonly]="readOnly()" />
       </div>
 
+      </div><!-- /contenido scrolleable -->
+
       @if (!readOnly()) {
-        <div class="flex justify-between items-center mt-4">
+        <div class="flex justify-between items-center mt-auto pt-3">
           <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
                     [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
           <p-button
@@ -360,6 +367,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
     </div>
   `,
   styles: [`
+    :host { display: block; height: 100%; }
     .ui-estado-badge {
       display: inline-flex;
       align-items: center;
@@ -454,6 +462,18 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   protected readonly genderOpts = GENDER_OPTS;
   protected readonly sexOpts    = SEX_OPTS;
+
+  /** Hoy en YYYY-MM-DD para el `[max]` de los inputs de fecha (no permitir futuro). (T2) */
+  protected readonly todayStr = (() => {
+    const d = new Date();
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  })();
+
+  /** True si la fecha de nacimiento del form es futura (string YYYY-MM-DD). (T2) */
+  protected birthDateFuture(): boolean {
+    return !!this.form.birthDate && this.form.birthDate > this.todayStr;
+  }
 
   // ── 3-state badge ──────────────────────────────────────────────────────────
   protected readonly estado = computed<'rojo' | 'naranja' | 'verde'>(() => {
@@ -605,6 +625,7 @@ export class DatosGeneralesStepComponent implements OnInit {
   saveEdit(): void {
     const p = this.resolved();
     if (!p) return;
+    if (this.birthDateFuture()) return; // T2: fecha de nacimiento no futura
     // Build the coverage: use newly selected plan; otherwise keep existing coverages
     const coverages = this.form.planId != null
       ? [{ planId: this.form.planId, memberNumber: this.form.memberNumber || '', isPrimary: true, active: true }]
@@ -629,7 +650,7 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   altaValida(): boolean {
     const f = this.form;
-    return !!(f.dni && f.firstName && f.lastName);
+    return !!(f.dni && f.firstName && f.lastName) && !this.birthDateFuture();
   }
 
   crearPaciente(): void {

@@ -27,8 +27,9 @@ import {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, ButtonModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
+  styles: [`:host { display: block; height: 100%; }`],
   template: `
-    <div class="space-y-4">
+    <div class="flex flex-col h-full min-h-0 space-y-4">
       <lab-analysis-picker
         [initialItems]="initialItems()"
         [readOnly]="readOnly()"
@@ -46,7 +47,7 @@ import {
       </lab-analysis-picker>
 
       @if (!readOnly()) {
-        <div class="flex justify-between items-center mt-4">
+        <div class="flex justify-between items-center mt-auto pt-3">
           <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
                     [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
           <p-button [label]="continueLabel()"

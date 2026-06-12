@@ -55,7 +55,8 @@ export interface PickerRow extends Analysis {
         <div class="text-sm text-[var(--color-danger,#ef4444)]">{{ errorText() }}</div>
       }
 
-      <p-table [value]="items()" [rows]="20" styleClass="text-sm">
+      <p-table [value]="items()" [rows]="20" styleClass="text-sm"
+               [scrollable]="true" scrollHeight="42vh">
         <ng-template pTemplate="header">
           <tr>
             <th>Código</th>

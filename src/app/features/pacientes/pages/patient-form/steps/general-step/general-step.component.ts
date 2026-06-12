@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, effect, input, signal, viewChild } from '@angular/core';
-import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal, viewChild } from '@angular/core';
+import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -7,6 +7,28 @@ import { ButtonModule } from 'primeng/button';
 import { Gender, SexAtBirth } from '../../../../models/patient.model';
 import { ContactSectionComponent } from '../../../../components/contact-section/contact-section.component';
 import { DateAutoFormatDirective } from '@shared/directives/date-auto-format.directive';
+
+/** Medianoche de hoy (local). Para comparar contra la fecha elegida sin la parte horaria. */
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Valida que la fecha de nacimiento no sea futura. Acepta `Date` (p-datepicker)
+ * o string ISO (hydrate). Vacio se considera valido (lo cubre Validators.required).
+ * Marca el error `futureDate` que el general-step muestra inline en español.
+ */
+export const notFutureDateValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const raw = control.value;
+  if (raw == null || raw === '') return null;
+  const value = raw instanceof Date ? raw : new Date(raw);
+  if (Number.isNaN(value.getTime())) return null;
+  const picked = new Date(value);
+  picked.setHours(0, 0, 0, 0);
+  return picked.getTime() > startOfToday().getTime() ? { futureDate: true } : null;
+};
 
 const GENDER_OPTS: { value: Gender; label: string }[] = [
   { value: 'FEMALE', label: 'Femenino' },
@@ -48,7 +70,11 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                       dateFormat="dd/mm/yy"
                       appendTo="body"
                       [showIcon]="true"
+                      [maxDate]="today()"
                       appDateAutoFormat />
+        @if (birthDateFuture()) {
+          <p class="pat-form__error" role="alert">La fecha de nacimiento no puede ser futura.</p>
+        }
       </div>
       <div class="pat-form__field">
         <label class="pat-form__label">Género</label>
@@ -107,8 +133,32 @@ export class GeneralStepComponent {
   readonly genderOpts = GENDER_OPTS;
   readonly sexOpts = SEX_OPTS;
   readonly extrasOpen = signal(false);
+  /** Tope del datepicker: hoy (no se puede elegir una fecha futura). */
+  readonly today = signal(startOfToday());
+
+  // Re-evalua el error inline cuando cambia el form (el control no es signal).
+  private readonly groupStatus = signal(0);
+  readonly birthDateFuture = computed(() => {
+    this.groupStatus();
+    const ctrl = this.group().get('birthDate');
+    return !!ctrl && ctrl.hasError('futureDate');
+  });
 
   constructor() {
+    // Asegura que el control de fecha de nacimiento valide "no futura" aunque el
+    // form padre no lo haya cableado, y refresca el flag de error inline.
+    effect((onCleanup) => {
+      const ctrl = this.group().get('birthDate');
+      if (!ctrl) return;
+      if (!ctrl.hasValidator(notFutureDateValidator)) {
+        ctrl.addValidators(notFutureDateValidator);
+        ctrl.updateValueAndValidity({ emitEvent: false });
+      }
+      this.groupStatus.update((n) => n + 1);
+      const sub = ctrl.statusChanges.subscribe(() => this.groupStatus.update((n) => n + 1));
+      onCleanup(() => sub.unsubscribe());
+    });
+
     effect(() => {
       const dniCtrl = this.group().get('dni');
       if (!dniCtrl) return;

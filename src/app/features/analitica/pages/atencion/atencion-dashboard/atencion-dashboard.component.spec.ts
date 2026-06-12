@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { AtencionDashboardComponent } from './atencion-dashboard.component';
 import { ATENCION_FEATURE_KEY, initialAtencionState } from '../../../store/atencion/atencion.state';
+import { selectTodayAtenciones } from '../../../store/atencion/atencion.selectors';
 import { downloadProtocolLabels, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import { ModuleRegistry } from '@core/tenant/module-registry';
@@ -114,7 +115,7 @@ describe('AtencionDashboardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Finalizadas');
   });
 
-  it('B2: el filtro ofrece GRUPOS de estado, no estados sueltos', () => {
+  it('B2/T6: el filtro ofrece GRUPOS de estado (5, sin "Fallida")', () => {
     const fixture = setup(true);
     const values = fixture.componentInstance['stateOptions']().map((o: any) => o.value);
     expect(values).toEqual([
@@ -123,8 +124,8 @@ describe('AtencionDashboardComponent', () => {
       'En extracción',
       'Finalizada',
       'Cancelada',
-      'Fallida',
     ]);
+    expect(values).not.toContain('Fallida');
   });
 
   it('B2: seleccionar "En espera" (FINANCIERO on) expande a todos sus estados', () => {
@@ -238,5 +239,27 @@ describe('AtencionDashboardComponent', () => {
     expect(c.cancellationTooltip(
       { attentionState: AttentionState.CANCELED, cancellationReason: null, extractionCancellationReason: null } as any,
     )).toBeNull();
+  });
+
+  it('T9: muestra el ícono pi-info-circle sólo en filas CANCELED con motivo', () => {
+    const fixture = setup();
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectTodayAtenciones, [
+      // CANCELED con motivo → debe llevar el ícono de info.
+      { id: 1, attentionState: AttentionState.CANCELED, cancellationReason: 'Paciente desistió',
+        extractionCancellationReason: null, protocolId: null, doctorId: null, createdAt: null } as any,
+      // CANCELED sin motivo → tag sin ícono.
+      { id: 2, attentionState: AttentionState.CANCELED, cancellationReason: null,
+        extractionCancellationReason: null, protocolId: null, doctorId: null, createdAt: null } as any,
+      // No terminal → tag sin ícono.
+      { id: 3, attentionState: AttentionState.IN_EXTRACTION, cancellationReason: null,
+        extractionCancellationReason: null, protocolId: null, doctorId: null, createdAt: null } as any,
+    ]);
+    store.refreshState();
+    fixture.detectChanges();
+
+    const icons = fixture.nativeElement.querySelectorAll('i.pi-info-circle');
+    // Sólo la primera fila (CANCELED + motivo) lo renderiza.
+    expect(icons.length).toBe(1);
   });
 });

@@ -22,7 +22,7 @@ import {
 import { ContactSectionComponent } from '../../components/contact-section/contact-section.component';
 import { CoverageSectionComponent } from '../../components/coverage-section/coverage-section.component';
 import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
-import { GeneralStepComponent } from './steps/general-step/general-step.component';
+import { GeneralStepComponent, notFutureDateValidator } from './steps/general-step/general-step.component';
 import { AddressStepComponent } from './steps/address-step/address-step.component';
 import { CoveragesStepComponent } from './steps/coverages-step/coverages-step.component';
 import { SummaryStepComponent, SummaryView } from './steps/summary-step/summary-step.component';
@@ -165,7 +165,7 @@ export class PatientFormPage implements OnDestroy {
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       dni: ['', [Validators.required, Validators.pattern(/^\d{7,}$/)]],
-      birthDate: [null, Validators.required],
+      birthDate: [null, [Validators.required, notFutureDateValidator]],
       gender: [null],
       sexAtBirth: [null],
       mobile: [''],

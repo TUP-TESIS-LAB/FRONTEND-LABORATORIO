@@ -120,7 +120,9 @@ export function buildAttentionStateGroups(financieroActive: boolean): AttentionS
     { label: 'En extracción',        severity: 'info',    states: [AttentionState.IN_EXTRACTION] },
     { label: 'Finalizada',           severity: 'success', states: [AttentionState.FINISHED] },
     { label: 'Cancelada',            severity: 'danger',  states: [AttentionState.CANCELED] },
-    { label: 'Fallida',              severity: 'danger',  states: [AttentionState.FAILED] },
+    // "Fallida" (FAILED) NO se ofrece como grupo/opción de filtro: ese estado no se
+    // alcanza por ningún flujo natural de la app. Las funciones attentionGroupLabel/
+    // attentionGroupSeverity SÍ siguen mapeando FAILED (por si llega un dato viejo).
   ];
 }
 

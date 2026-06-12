@@ -3,7 +3,15 @@ import { Component, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { describe, it, expect } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { GeneralStepComponent } from './general-step.component';
+import { FormControl } from '@angular/forms';
+import { GeneralStepComponent, notFutureDateValidator } from './general-step.component';
+
+function daysFromToday(days: number): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return d;
+}
 
 @Component({
   standalone: true,
@@ -18,7 +26,7 @@ class HostCmp {
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],
     dni: ['', [Validators.required]],
-    birthDate: [null],
+    birthDate: [null as Date | null],
     gender: [null],
     sexAtBirth: [null],
     mobile: [''],
@@ -76,5 +84,56 @@ describe('GeneralStepComponent', () => {
     const fx = setup(true);
     const dniInput = (fx.nativeElement as HTMLElement).querySelector('input[formcontrolname="dni"]') as HTMLInputElement;
     expect(dniInput.disabled).toBe(true);
+  });
+
+  it('shows the future-birthDate error and invalidates the control when a future date is picked', () => {
+    const fx = setup();
+    fx.componentInstance.group.get('birthDate')!.setValue(daysFromToday(1));
+    fx.detectChanges();
+    const html = (fx.nativeElement as HTMLElement).textContent ?? '';
+    expect(html).toContain('La fecha de nacimiento no puede ser futura.');
+    expect(fx.componentInstance.group.get('birthDate')!.hasError('futureDate')).toBe(true);
+  });
+
+  it('does not show the future-birthDate error for today or a past date', () => {
+    const fx = setup();
+    fx.componentInstance.group.get('birthDate')!.setValue(daysFromToday(0));
+    fx.detectChanges();
+    let html = (fx.nativeElement as HTMLElement).textContent ?? '';
+    expect(html).not.toContain('La fecha de nacimiento no puede ser futura.');
+
+    fx.componentInstance.group.get('birthDate')!.setValue(daysFromToday(-3650));
+    fx.detectChanges();
+    html = (fx.nativeElement as HTMLElement).textContent ?? '';
+    expect(html).not.toContain('La fecha de nacimiento no puede ser futura.');
+  });
+});
+
+describe('notFutureDateValidator', () => {
+  it('rejects a future date with the futureDate error', () => {
+    expect(notFutureDateValidator(new FormControl(daysFromToday(1)))).toEqual({ futureDate: true });
+  });
+
+  it('accepts today', () => {
+    expect(notFutureDateValidator(new FormControl(daysFromToday(0)))).toBeNull();
+  });
+
+  it('accepts a past date', () => {
+    expect(notFutureDateValidator(new FormControl(daysFromToday(-1)))).toBeNull();
+  });
+
+  it('accepts an ISO string in the past (hydrate path)', () => {
+    expect(notFutureDateValidator(new FormControl('1990-05-20'))).toBeNull();
+  });
+
+  it('rejects a future ISO string', () => {
+    const future = daysFromToday(5).toISOString().slice(0, 10);
+    expect(notFutureDateValidator(new FormControl(future))).toEqual({ futureDate: true });
+  });
+
+  it('treats empty/invalid values as valid (required covers emptiness)', () => {
+    expect(notFutureDateValidator(new FormControl(null))).toBeNull();
+    expect(notFutureDateValidator(new FormControl(''))).toBeNull();
+    expect(notFutureDateValidator(new FormControl('not-a-date'))).toBeNull();
   });
 });

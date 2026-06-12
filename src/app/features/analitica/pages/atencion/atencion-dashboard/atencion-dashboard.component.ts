@@ -83,11 +83,15 @@ import {
 
           <ng-template uiCell="estado" let-row>
             @if (cancellationTooltip($any(row)); as motivo) {
-              <span [pTooltip]="motivo" tooltipPosition="top"
+              <span class="inline-flex items-center gap-1.5"
+                    [pTooltip]="motivo" tooltipPosition="top"
                     tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
                 <p-tag
                   [value]="groupLabel($any(row).attentionState)"
                   [severity]="groupSeverity($any(row).attentionState)" />
+                <!-- Pista visual de que hay info en el hover (el tooltip del motivo
+                     ya lo aporta el <span> contenedor; el ícono comparte ese hover). -->
+                <i class="pi pi-info-circle atencion-cancel-info"></i>
               </span>
             } @else {
               <p-tag
@@ -132,6 +136,13 @@ import {
       max-width: 320px;
       white-space: normal;
       line-height: 1.35;
+    }
+    /* Ícono de info junto al tag "Cancelada": chiquito, tenue y con cursor de ayuda
+       para señalar que hay un motivo en el hover (comparte el tooltip del contenedor). */
+    .atencion-cancel-info {
+      font-size: 0.8rem;
+      color: var(--p-surface-400, #9ca3af);
+      cursor: help;
     }
   `],
 })

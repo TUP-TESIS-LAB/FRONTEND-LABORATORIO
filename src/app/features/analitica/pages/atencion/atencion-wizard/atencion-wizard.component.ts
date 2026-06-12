@@ -22,11 +22,12 @@ import {
   createPreFilledAtencion,
   downloadProtocolLabels,
   loadAtencion,
+  loadAttentionPatient,
   resetAtencionWizard,
   returnPhase,
 } from '../../../store/atencion/atencion.actions';
 import {
-  selectDetail, selectDetailLoading, selectMutating,
+  selectDetail, selectDetailLoading, selectMutating, selectResolvedPatient,
 } from '../../../store/atencion/atencion.selectors';
 import {
   clearAtencionSession, readAtencionSession, writeAtencionSession,
@@ -62,8 +63,23 @@ const ALL_STEPS: WizardStepDef[] = [
     DatosGeneralesStepComponent, AnalisisStepComponent, ResumenStepComponent,
     CancelAttentionModalComponent,
   ],
+  // T8: el wizard ocupa el alto del viewport (menos el topbar) y es una columna flex,
+  // así el contenido del paso flexiona y el footer (Volver/Confirmar) queda abajo, sin
+  // que la página tenga scroll vertical propio.
+  styles: [`
+    :host { display: block; }
+    .aw-shell {
+      /* topbar (64) + padding vertical del content-area del shell (3rem) → la pantalla
+         entra completa sin scroll vertical de página. (T8) */
+      height: calc(100dvh - var(--ds-topbar-h, 64px) - 3rem);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .aw-step { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  `],
   template: `
-    <div class="p-6 max-w-4xl mx-auto">
+    <div class="aw-shell p-6 max-w-4xl mx-auto w-full">
       @if (loading() && !detail()) {
         <!-- Solo en la carga INICIAL (sin detail). Durante un refresh con detail ya
              cargado NO se gatea: si no, loadAtencion() del resumen-step (ngOnInit)
@@ -78,7 +94,9 @@ const ALL_STEPS: WizardStepDef[] = [
             <div class="text-sm opacity-70">Buscá el paciente para empezar</div>
           </div>
         </header>
-        <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
+        <div class="aw-step">
+          <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
+        </div>
       } @else if (mutating() && !detail()) {
         <!-- Caso: createPreFilledAtencion en vuelo (?appointmentId=X). Mientras la
              creación va, detail() es null pero mutating() es true. Mostramos un
@@ -110,7 +128,9 @@ const ALL_STEPS: WizardStepDef[] = [
             <i class="pi pi-eye"></i>
             <span>{{ readOnlyBanner() }}</span>
           </div>
-          @if (detail()!.protocolId != null) {
+          <!-- T7: la reimpresión de rótulos SOLO en "esperando extracción".
+               Una atención finalizada/en-extracción NO reimprime. -->
+          @if (detail()!.attentionState === AttentionState.AWAITING_EXTRACTION && detail()!.protocolId != null) {
             <div class="flex justify-end mb-4">
               <p-button label="Descargar rótulos" icon="pi pi-tag" severity="secondary"
                         (onClick)="downloadLabels()" />
@@ -127,27 +147,29 @@ const ALL_STEPS: WizardStepDef[] = [
             (stepSelected)="goToStep($event)" />
         </div>
 
-        @switch (uiStep()?.key) {
-          @case ('datos') {
-            <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null"
-                                      [initialPatientId]="detail()!.patientId"
-                                      [initialIndications]="detail()!.indications"
-                                      [initialDoctorId]="detail()!.doctorId"
-                                      [readOnly]="readOnly()"
-                                      [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                                      (returnPhase)="onReturnPhase()" />
+        <div class="aw-step">
+          @switch (uiStep()?.key) {
+            @case ('datos') {
+              <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null"
+                                        [initialPatientId]="detail()!.patientId"
+                                        [initialIndications]="detail()!.indications"
+                                        [initialDoctorId]="detail()!.doctorId"
+                                        [readOnly]="readOnly()"
+                                        [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                        (returnPhase)="onReturnPhase()" />
+            }
+            @case ('analisis') {
+              <lab-analisis-step [atencionId]="detail()!.id" [readOnly]="readOnly()"
+                                 [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                 (returnPhase)="onReturnPhase()" (stepAdvanced)="onAnalysisAdvanced()" />
+            }
+            @case ('confirmar') {
+              <lab-resumen-step [atencion]="detail()!" [readOnly]="readOnly()"
+                                [canReturn]="canReturn()" [returnDisabled]="mutating()"
+                                (returnPhase)="onReturnPhase()" (finished)="onFinished()" />
+            }
           }
-          @case ('analisis') {
-            <lab-analisis-step [atencionId]="detail()!.id" [readOnly]="readOnly()"
-                               [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                               (returnPhase)="onReturnPhase()" (stepAdvanced)="onAnalysisAdvanced()" />
-          }
-          @case ('confirmar') {
-            <lab-resumen-step [atencion]="detail()!" [readOnly]="readOnly()"
-                              [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                              (returnPhase)="onReturnPhase()" (finished)="onFinished()" />
-          }
-        }
+        </div>
       }
     </div>
 
@@ -183,16 +205,27 @@ export class AtencionWizardComponent {
   protected readonly loading  = this.store.selectSignal(selectDetailLoading);
   protected readonly mutating = this.store.selectSignal(selectMutating);
   protected readonly isTerminal    = isTerminal;
+  protected readonly AttentionState = AttentionState;
 
   /**
    * Título grande del header (C6): el código público del turno (ST-/CT-…) si existe.
    * Fallback al número interno de atención cuando publicCode es null/vacío.
    */
+  /**
+   * Título del header. Prioridad:
+   * 1) publicCode del turno (ST-001 / CT-002) si la atención vino de un tótem.
+   * 2) Si NO hay publicCode (tenant sin tótem / walk-in) → N° de documento del paciente.
+   * 3) Fallback final → attentionNumber. (T4)
+   */
+  protected readonly resolvedPatient = this.store.selectSignal(selectResolvedPatient);
   protected readonly headerTitle = computed<string>(() => {
     const d = this.detail();
     if (!d) return '';
     const code = d.publicCode?.trim();
-    return code ? code : d.attentionNumber;
+    if (code) return code;
+    // El detalle no siempre trae patientDni; usamos el DNI del paciente resuelto.
+    const dni = (d.patientDni ?? this.resolvedPatient()?.dni)?.trim();
+    return dni ? dni : d.attentionNumber;
   });
 
   protected readonly cancelModalOpen = signal(false);
@@ -289,13 +322,27 @@ export class AtencionWizardComponent {
           payload: { appointmentId: Number(apptId), attentionNumber: `A-${Date.now().toString().slice(-6)}`, queueEntryId },
         }));
       } else if (this.creating()) {
-        // Modo crear nueva: el step de datos arranca en blanco sin loadAtencion.
-        // El DNI inicial llega vía query param `?dni=` (input `dni`), manejado por el template.
+        // Modo crear nueva: el step de datos arranca EN BLANCO. (T1)
+        // Reseteamos el wizard para limpiar el paciente resuelto / detail que pudo
+        // quedar de una atención anterior — si no, "Nueva atención" mostraba precargado
+        // el último paciente. El DNI inicial (si hay) llega por `?dni=` y el datos-step
+        // lo re-resuelve en su ngOnInit.
+        this.store.dispatch(resetAtencionWizard());
       } else {
         const restored = readAtencionSession();
         if (restored && restored.atencionId > 0) {
           this.store.dispatch(loadAtencion({ id: restored.atencionId }));
         }
+      }
+    });
+
+    // T4: aseguramos que el paciente resuelto coincida con el detail, así el título
+    // (que cae al DNI cuando no hay publicCode) muestra el documento en TODOS los pasos
+    // (no solo en los que resuelven el paciente). Evita re-pegar si ya está resuelto.
+    effect(() => {
+      const pid = this.detail()?.patientId;
+      if (pid != null && this.resolvedPatient()?.id !== pid) {
+        this.store.dispatch(loadAttentionPatient({ patientId: pid }));
       }
     });
   }
