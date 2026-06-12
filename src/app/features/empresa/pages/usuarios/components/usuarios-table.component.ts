@@ -20,6 +20,7 @@ import { Usuario } from '../../../models/usuario.model';
       [paginator]="true"
       [rows]="size"
       [rowsPerPageOptions]="[10, 20, 50, 100]"
+      [entityLabel]="'usuarios'"
       [totalRecords]="totalElements"
       [first]="page * size"
       [showEdit]="true"

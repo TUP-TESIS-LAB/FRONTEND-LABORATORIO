@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
-import { getCoveragePlanLabel, CoveragePlanOption } from '../../../../models/coverage-plans.catalog';
-import { CoveragePlansService } from '../../../../services/coverage-plans.service';
+import { catchError } from 'rxjs/operators';
+import { EMPTY } from 'rxjs';
+import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '../../../../models/coverage-catalog.model';
+import { CoverageCatalogService } from '../../../../services/coverage-catalog.service';
 import { AgePipe } from '@shared/pipes/age.pipe';
 import { signal } from '@angular/core';
 
@@ -117,15 +119,14 @@ export class SummaryStepComponent implements OnInit {
   readonly editStep = output<number>();
 
   private readonly agePipe = inject(AgePipe);
-  private readonly plansService = inject(CoveragePlansService);
+  private readonly coverageCatalog = inject(CoverageCatalogService);
 
-  private readonly plans = signal<readonly CoveragePlanOption[]>([]);
+  private readonly catalog = signal<CoverageCatalog>(EMPTY_CATALOG);
 
   ngOnInit(): void {
-    this.plansService.getActivePlans().subscribe({
-      next: (plans) => this.plans.set(plans),
-      error: () => { /* lista queda vacía; no se expone el error al usuario */ },
-    });
+    this.coverageCatalog.getCatalog().pipe(
+      catchError(() => EMPTY),
+    ).subscribe((cat) => this.catalog.set(cat));
   }
 
   readonly fullName = computed(() => {
@@ -163,11 +164,13 @@ export class SummaryStepComponent implements OnInit {
   });
 
   readonly coverageLines = computed(() => {
-    const plans = this.plans();
+    const cat = this.catalog();
     return this.data().coverages.map((c) => {
-      const planLabel = getCoveragePlanLabel(c.planId, plans);
+      // Obra social · plan · N° afiliado  (ej. "PAMI · Afiliado · N° 123123")
+      const insurer = insurerNameForPlan(cat, c.planId);
+      const plan = planName(cat, c.planId);
       const member = c.memberNumber ? ` · N° ${c.memberNumber}` : '';
-      return { text: `${planLabel}${member}`, primary: !!c.isPrimary };
+      return { text: `${insurer} · ${plan}${member}`, primary: !!c.isPrimary };
     });
   });
 

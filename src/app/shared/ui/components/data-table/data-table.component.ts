@@ -182,6 +182,12 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
               </tr>
             </ng-template>
           }
+
+          <ng-template pTemplate="paginatorright">
+            @if (paginatorSummary(); as summary) {
+              <span class="ut-paginator-summary">{{ summary }}</span>
+            }
+          </ng-template>
         </p-table>
       </div>
       @if (hasMenuActions()) {
@@ -197,6 +203,19 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
       border: 1px solid #e8edf3;
       border-radius: 10px;
       overflow: hidden;
+    }
+
+    /* ── Paginador: controles a la izquierda, resumen a la derecha ── */
+    :host ::ng-deep .p-paginator {
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    :host ::ng-deep .p-paginator .ut-paginator-summary {
+      margin-left: auto;
+      color: var(--ds-text-muted, #6b7280);
+      font-size: 13px;
+      white-space: nowrap;
     }
 
     /* ── Flex-scroll mode (scrollHeight="flex") ──
@@ -329,6 +348,21 @@ export class DataTableComponent {
   readonly rowsPerPageOptions = input<readonly number[]>([]);
   readonly totalRecords       = input<number>(0);
   readonly first              = input<number>(0);
+  /** Etiqueta de la entidad para el resumen del paginador (ej. "pacientes"). */
+  readonly entityLabel        = input<string>('registros');
+
+  /**
+   * Resumen del paginador (lado derecho): "Mostrando {filas mostradas} de {total} {entidad}".
+   * En lazy usa first/rows/totalRecords (exactos); en modo cliente cae al total
+   * del array y la página 1 (first no se propaga desde p-table en ese modo).
+   */
+  readonly paginatorSummary = computed<string | null>(() => {
+    if (!this.paginator()) return null;
+    const total = this.lazy() ? this.totalRecords() : this.value().length;
+    if (total <= 0) return null;
+    const shown = Math.max(0, Math.min(this.rows(), total - this.first()));
+    return `Mostrando ${shown} de ${total} ${this.entityLabel()}`;
+  });
 
   // ── Scroll ──
   readonly scrollHeight = input<string | null>(null);

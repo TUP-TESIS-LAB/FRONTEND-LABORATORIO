@@ -57,6 +57,7 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
         [paginator]="true"
         [rows]="pageRequest().size"
         [rowsPerPageOptions]="[10, 20, 50, 100]"
+        [entityLabel]="'obras sociales'"
         [scrollHeight]="'flex'"
         [totalRecords]="total()"
         [first]="pageRequest().page * pageRequest().size"
