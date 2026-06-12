@@ -275,11 +275,14 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
               <input pInputText [(ngModel)]="form.lastName" class="w-full" />
             </div>
             <div>
-              <label class="block text-sm mb-1">Fecha de nacimiento</label>
-              <input pInputText type="date" [(ngModel)]="form.birthDate" class="w-full" />
+              <label class="block text-sm mb-1">Fecha de nacimiento <span class="text-red-500">*</span></label>
+              <input pInputText type="date" [(ngModel)]="form.birthDate" [max]="todayStr" class="w-full" />
+              @if (birthDateInvalid()) {
+                <small class="text-red-500">Ingresá una fecha válida (año de 4 dígitos, no futura).</small>
+              }
             </div>
             <div>
-              <label class="block text-sm mb-1">Género</label>
+              <label class="block text-sm mb-1">Género <span class="text-red-500">*</span></label>
               <p-select
                 [(ngModel)]="form.gender"
                 [options]="genderOpts"
@@ -290,7 +293,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                 class="w-full" />
             </div>
             <div>
-              <label class="block text-sm mb-1">Sexo al nacer</label>
+              <label class="block text-sm mb-1">Sexo al nacer <span class="text-red-500">*</span></label>
               <p-select
                 [(ngModel)]="form.sexAtBirth"
                 [options]="sexOpts"
@@ -302,7 +305,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
             </div>
             <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-sm mb-1">Obra social</label>
+                <label class="block text-sm mb-1">Obra social <span class="text-red-500">*</span></label>
                 <p-select
                   [ngModel]="formInsurerId()"
                   (ngModelChange)="onFormInsurerChange($event)"
@@ -314,7 +317,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   class="w-full" />
               </div>
               <div>
-                <label class="block text-sm mb-1">Plan</label>
+                <label class="block text-sm mb-1">Plan @if (!isParticularSelected()) { <span class="text-red-500">*</span> }</label>
                 <p-select
                   [(ngModel)]="form.planId"
                   [options]="formPlanOptions()"
@@ -327,8 +330,11 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
               </div>
             </div>
             <div>
-              <label class="block text-sm mb-1">Número de afiliado</label>
-              <input pInputText [(ngModel)]="form.memberNumber" class="w-full" placeholder="Opcional" />
+              <label class="block text-sm mb-1">
+                Número de afiliado @if (!isParticularSelected()) { <span class="text-red-500">*</span> }
+              </label>
+              <input pInputText [(ngModel)]="form.memberNumber" class="w-full"
+                     [placeholder]="isParticularSelected() ? 'Opcional' : 'N° de afiliado'" />
             </div>
           </div>
           <div class="flex justify-end">
@@ -563,7 +569,26 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   /** True si la fecha de nacimiento del form es futura (string YYYY-MM-DD). (T2) */
   protected birthDateFuture(): boolean {
-    return !!this.form.birthDate && this.form.birthDate > this.todayStr;
+    return this.birthDateInvalid();
+  }
+
+  /**
+   * Fecha de nacimiento inválida: vacía no cuenta acá (lo cubre "obligatorio"),
+   * pero un año que no tenga 4 dígitos (p. ej. el input deja tipear 5+) o una
+   * fecha futura sí. La comparación de strings sola no alcanza: '12345-01-01'
+   * es lexicográficamente menor que el año actual, así que validamos el formato.
+   */
+  protected birthDateInvalid(): boolean {
+    const b = this.form.birthDate;
+    if (!b) return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(b)) return true; // año != 4 dígitos / formato raro
+    return b > this.todayStr;                         // futura
+  }
+
+  /** Obra social Particular (SELF_PAY) elegida → plan y N° de afiliado no son obligatorios. */
+  protected isParticularSelected(): boolean {
+    const id = this.formInsurerId();
+    return this.catalog().insurers.find(i => i.id === id)?.insurerType === 'SELF_PAY';
   }
 
   // ── 3-state badge ──────────────────────────────────────────────────────────
@@ -776,7 +801,13 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   altaValida(): boolean {
     const f = this.form;
-    return !!(f.dni && f.firstName && f.lastName) && !this.birthDateFuture();
+    // Identidad + nacimiento + género/sexo + cobertura son obligatorios.
+    if (!f.dni || !f.firstName || !f.lastName || !f.birthDate) return false;
+    if (f.gender == null || f.sexAtBirth == null) return false;
+    if (this.formInsurerId() == null || f.planId == null) return false;
+    // N° de afiliado obligatorio salvo Particular (pago directo, sin obra social).
+    if (!this.isParticularSelected() && !f.memberNumber.trim()) return false;
+    return !this.birthDateInvalid();
   }
 
   crearPaciente(): void {

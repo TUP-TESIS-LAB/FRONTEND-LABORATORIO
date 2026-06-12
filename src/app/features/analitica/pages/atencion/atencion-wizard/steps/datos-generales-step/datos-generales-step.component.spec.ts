@@ -216,23 +216,25 @@ describe('DatosGeneralesStepComponent', () => {
     );
   });
 
-  it('crearPaciente() con form válido (solo 3 campos) despacha createPatientInline', () => {
+  it('crearPaciente() con todos los campos despacha createPatientInline (cobertura Particular)', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
-    fixture.detectChanges();
+    fixture.detectChanges(); // default: Particular (96001)
     store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState } });
     store.refreshState();
     fixture.detectChanges();
-    (fixture.componentInstance as any).form = {
+    const cmp = fixture.componentInstance as any;
+    cmp.form = {
       dni: '12345678',
       firstName: 'Juan',
       lastName: 'Perez',
-      birthDate: '',
-      gender: null,
-      sexAtBirth: null,
-      planId: null,
+      birthDate: '1990-01-01',
+      gender: 'MALE',
+      sexAtBirth: 'MALE',
+      planId: 96001,
       memberNumber: '',
     };
+    cmp.formInsurerId.set(96001);
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.crearPaciente();
     expect(spy).toHaveBeenCalledWith(
@@ -241,12 +243,12 @@ describe('DatosGeneralesStepComponent', () => {
           dni: '12345678',
           firstName: 'Juan',
           lastName: 'Perez',
-          birthDate: null,
-          gender: null,
-          sexAtBirth: null,
+          birthDate: '1990-01-01',
+          gender: 'MALE',
+          sexAtBirth: 'MALE',
           contacts: [],
           addresses: [],
-          coverages: [],
+          coverages: [{ planId: 96001, memberNumber: '', isPrimary: true, active: true }],
         },
       }),
     );
@@ -508,28 +510,65 @@ describe('DatosGeneralesStepComponent', () => {
     expect((fixture.componentInstance as any).puedeVerificar()).toBe(false);
   });
 
-  // ── New tests: altaValida con 3 campos ────────────────────────────────────
+  // ── altaValida: todos los campos obligatorios (plan/N° afiliado salvo Particular) ──
 
-  it('altaValida() retorna true con solo dni + firstName + lastName', () => {
+  function fullAltaForm(over: Record<string, unknown> = {}) {
+    return {
+      dni: '99887766', firstName: 'Ana', lastName: 'Gomez',
+      birthDate: '1990-05-01', gender: 'FEMALE', sexAtBirth: 'FEMALE',
+      planId: 96001, memberNumber: '', ...over,
+    };
+  }
+
+  it('altaValida() true con todos los campos; Particular no exige N° de afiliado', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
-    fixture.detectChanges();
-    (fixture.componentInstance as any).form = {
-      dni: '99887766', firstName: 'Ana', lastName: 'Gomez',
-      birthDate: '', gender: null, sexAtBirth: null, planId: null, memberNumber: '',
-    };
-    expect(fixture.componentInstance.altaValida()).toBe(true);
+    fixture.detectChanges(); // default: Particular (96001) + Plan Particular
+    const cmp = fixture.componentInstance as any;
+    cmp.form = fullAltaForm();
+    cmp.formInsurerId.set(96001); // Particular
+    expect(cmp.altaValida()).toBe(true);
   });
 
-  it('altaValida() retorna false cuando falta lastName', () => {
+  it('altaValida() false si falta fecha, género, sexo u obra social', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
     fixture.detectChanges();
-    (fixture.componentInstance as any).form = {
-      dni: '99887766', firstName: 'Ana', lastName: '',
-      birthDate: '', gender: null, sexAtBirth: null, planId: null, memberNumber: '',
-    };
-    expect(fixture.componentInstance.altaValida()).toBe(false);
+    const cmp = fixture.componentInstance as any;
+    cmp.formInsurerId.set(96001);
+    cmp.form = fullAltaForm({ birthDate: '' });
+    expect(cmp.altaValida()).toBe(false);
+    cmp.form = fullAltaForm({ gender: null });
+    expect(cmp.altaValida()).toBe(false);
+    cmp.form = fullAltaForm({ sexAtBirth: null });
+    expect(cmp.altaValida()).toBe(false);
+    cmp.form = fullAltaForm();
+    cmp.formInsurerId.set(null); // sin obra social
+    expect(cmp.altaValida()).toBe(false);
+  });
+
+  it('altaValida() con obra social NO Particular exige N° de afiliado', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    cmp.onFormInsurerChange(96002); // OSDE → plan 96002 auto-seleccionado
+    cmp.form = fullAltaForm({ planId: 96002, memberNumber: '' });
+    expect(cmp.altaValida()).toBe(false);        // falta N° afiliado
+    cmp.form = fullAltaForm({ planId: 96002, memberNumber: 'AF-1' });
+    expect(cmp.altaValida()).toBe(true);
+  });
+
+  it('altaValida() false con fecha futura o año de más de 4 dígitos', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    cmp.formInsurerId.set(96001);
+    cmp.form = fullAltaForm({ birthDate: '2999-01-01' }); // futura
+    expect(cmp.altaValida()).toBe(false);
+    cmp.form = fullAltaForm({ birthDate: '12345-01-01' }); // año 5 dígitos
+    expect(cmp.altaValida()).toBe(false);
   });
 
   // ── New tests: coverage dropdown ─────────────────────────────────────────
@@ -654,17 +693,19 @@ describe('DatosGeneralesStepComponent', () => {
     store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState } });
     store.refreshState();
     fixture.detectChanges();
-    (fixture.componentInstance as any).form = {
+    const cmp = fixture.componentInstance as any;
+    cmp.form = {
       dni: '55554444', firstName: 'Luis', lastName: 'Rios',
-      birthDate: null, gender: null, sexAtBirth: null,
-      planId: 1, memberNumber: 'AF-001',
+      birthDate: '1985-03-10', gender: 'MALE', sexAtBirth: 'MALE',
+      planId: 96002, memberNumber: 'AF-001',
     };
+    cmp.formInsurerId.set(96002); // OSDE (no Particular) → N° afiliado requerido y usado
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.crearPaciente();
     expect(spy).toHaveBeenCalledWith(
       createPatientInline({
         payload: expect.objectContaining({
-          coverages: [{ planId: 1, memberNumber: 'AF-001', isPrimary: true, active: true }],
+          coverages: [{ planId: 96002, memberNumber: 'AF-001', isPrimary: true, active: true }],
         }),
       }),
     );
