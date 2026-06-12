@@ -4,6 +4,11 @@ export interface TableColumn {
   field: string;
   header: string;
   align?: 'left' | 'right' | 'center';
+  /**
+   * Si está presente, se renderiza un ícono info junto al header con este texto como
+   * tooltip. Útil para señalar que las celdas de esa columna tienen info en el hover.
+   */
+  headerInfo?: string;
 }
 
 export interface TableAction {
