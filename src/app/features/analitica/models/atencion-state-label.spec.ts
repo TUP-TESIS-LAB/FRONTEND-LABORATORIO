@@ -70,7 +70,7 @@ describe('atencion-state-label — grupos', () => {
       expect(espera!.states).toContain(AttentionState.REGISTERING_GENERAL_DATA);
     });
 
-    it('ofrece un grupo único por etiqueta visible (6 grupos)', () => {
+    it('ofrece un grupo único por etiqueta visible (5 grupos, sin "Fallida")', () => {
       const groups = buildAttentionStateGroups(true);
       expect(groups.map(g => g.label)).toEqual([
         'En espera',
@@ -78,8 +78,13 @@ describe('atencion-state-label — grupos', () => {
         'En extracción',
         'Finalizada',
         'Cancelada',
-        'Fallida',
       ]);
+    });
+
+    it('NO ofrece el grupo "Fallida" (FAILED no se alcanza por flujo natural)', () => {
+      const groups = buildAttentionStateGroups(true);
+      expect(groups.map(g => g.label)).not.toContain('Fallida');
+      expect(groups.some(g => g.states.includes(AttentionState.FAILED))).toBe(false);
     });
   });
 

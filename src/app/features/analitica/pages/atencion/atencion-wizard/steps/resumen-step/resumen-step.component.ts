@@ -58,8 +58,9 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
     ButtonModule, FinalizeAttentionModalComponent, InputNumberModule, FormsModule,
     CurrencyArPipe, DataTableComponent, UiCellDirective,
   ],
+  styles: [`:host { display: block; height: 100%; }`],
   template: `
-    <div class="space-y-4">
+    <div class="flex flex-col h-full min-h-0 space-y-4">
       <header>
         <h3 class="text-lg font-semibold">Resumen de la atención</h3>
       </header>
@@ -88,13 +89,16 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         <div class="text-base">{{ atencion().indications || '—' }}</div>
       </section>
 
-      <!-- C1: Análisis solicitados en tabla genérica striped -->
-      <section>
+      <!-- C1: Análisis solicitados en tabla genérica striped. T5: scroll interno
+           (alto relativo al viewport → más filas a mayor resolución) para que la
+           página no crezca en vertical. -->
+      <section class="flex-1 min-h-0 flex flex-col">
         <div class="text-sm opacity-60 mb-2">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
         <ui-table
           [value]="analysisRows()"
           [columns]="analysisColumns"
           [showDelete]="!readOnly()"
+          [scrollHeight]="'42vh'"
           emptyHeading="Sin análisis solicitados"
           emptyIcon="pi-flask"
           (rowDelete)="onRemoveAnalysis($any($event).analysisId)">
@@ -156,7 +160,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
       }
 
       @if (!readOnly()) {
-        <div class="flex justify-between items-center mt-4">
+        <div class="flex justify-between items-center mt-auto pt-3">
           <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
                     [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
           <p-button label="Finalizar atención"

@@ -430,7 +430,12 @@ export class AtencionEffects {
         this.api.addAnalysis(attentionId, payload).pipe(
           mergeMap(item => [
             removeAnalysisFromResumenSuccess({ item }),
-            loadAttentionAnalyses({ analysisIds: item.analysisAuthorizations.map(a => a.analysisId) }),
+            // T3: la respuesta del PATCH addAnalysis vuelve con `analysisAuthorizations`
+            // STALE/vacío (la DB sí quedó con las correctas — el pricing lo refleja). Si
+            // confiáramos en `item`, el resumen mostraría 0 análisis tras quitar uno.
+            // Recargamos el detalle por GET (trae las autorizaciones reales) y dejamos que
+            // el `analysesLoader` del resumen reactive recargue el catálogo (nombre/NBU).
+            loadAtencion({ id: attentionId }),
             loadPricing({ attentionId }),
           ]),
           catchError((error: HttpErrorResponse) => {

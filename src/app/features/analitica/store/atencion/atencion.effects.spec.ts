@@ -381,7 +381,7 @@ describe('AtencionEffects', () => {
 
   // ── B3c: removeAnalysisFromResumen$ ──────────────────────────────────────
 
-  it('removeAnalysisFromResumen$ → success → [removeAnalysisFromResumenSuccess, loadAttentionAnalyses, loadPricing]', async () => {
+  it('removeAnalysisFromResumen$ → success → [removeAnalysisFromResumenSuccess, loadAtencion, loadPricing]', async () => {
     const item = sample({
       id: 42,
       analysisAuthorizations: [{ id: 2, analysisId: 7, isAuthorized: false, active: true }],
@@ -400,13 +400,13 @@ describe('AtencionEffects', () => {
     });
     // First action: success with updated item
     expect(outs[0]).toEqual(A.removeAnalysisFromResumenSuccess({ item }));
-    // Second action: reload analyses with the IDs from the response
-    expect(outs[1]).toEqual(A.loadAttentionAnalyses({ analysisIds: [7] }));
+    // Second action: reload el detalle por GET (la respuesta del PATCH viene stale) — T3
+    expect(outs[1]).toEqual(A.loadAtencion({ id: 42 }));
     // Third action: reload pricing
     expect(outs[2]).toEqual(A.loadPricing({ attentionId: 42 }));
   });
 
-  it('removeAnalysisFromResumen$ → success con lista vacía → loadAttentionAnalyses con []', async () => {
+  it('removeAnalysisFromResumen$ → success con lista vacía → loadAtencion + loadPricing', async () => {
     const item = sample({ id: 42, analysisAuthorizations: [] });
     (api.addAnalysis as ReturnType<typeof vi.fn>).mockReturnValue(of(item));
 
@@ -417,7 +417,7 @@ describe('AtencionEffects', () => {
     }));
 
     const outs = await firstValueFrom(effects.removeAnalysisFromResumen$.pipe(take(3), toArray()));
-    expect(outs[1]).toEqual(A.loadAttentionAnalyses({ analysisIds: [] }));
+    expect(outs[1]).toEqual(A.loadAtencion({ id: 42 }));
     expect(outs[2]).toEqual(A.loadPricing({ attentionId: 42 }));
   });
 
