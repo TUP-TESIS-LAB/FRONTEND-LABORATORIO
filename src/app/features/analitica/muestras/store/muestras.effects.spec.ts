@@ -58,6 +58,14 @@ describe('MuestrasEffects', () => {
     expect(action).toEqual(initMuestrasSuccess({ branchId: 1001, branchName: 'Sede Central' }));
   });
 
+  it('init sin sucursales mapea failure', async () => {
+    api.getMyBranches.mockReturnValue(of([]));
+    actions$ = of(initMuestras());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.init$);
+    expect(action.type).toBe('[Muestras API] Init Failure');
+  });
+
   it('initSuccess dispara loadRecoleccion', async () => {
     actions$ = of(initMuestrasSuccess({ branchId: 1001, branchName: 'Sede Central' }));
     const effects = TestBed.inject(MuestrasEffects);

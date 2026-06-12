@@ -25,10 +25,15 @@ export class MuestrasEffects {
       ofType(initMuestras),
       switchMap(() =>
         this.api.getMyBranches().pipe(
-          map(branches => initMuestrasSuccess({
-            branchId: branches[0].id,
-            branchName: branches[0].name,
-          })),
+          map(branches => {
+            if (!branches.length) {
+              throw new HttpErrorResponse({ status: 404, error: 'Sin sucursales asignadas' });
+            }
+            return initMuestrasSuccess({
+              branchId: branches[0].id,
+              branchName: branches[0].name,
+            });
+          }),
           catchError((error: HttpErrorResponse) => of(initMuestrasFailure({ error }))),
         ),
       ),
