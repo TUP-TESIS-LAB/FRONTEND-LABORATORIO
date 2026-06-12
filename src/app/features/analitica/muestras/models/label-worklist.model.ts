@@ -8,6 +8,7 @@ export type BackendLabelStatus =
 /** Item del GET /labels/worklist (LabelWorklistItemResponse del back). */
 export interface LabelWorklistItem {
   labelId: number;
+  sampleId: number | null;
   barcode: string;
   protocolId: number;
   analysisName: string;
@@ -15,6 +16,7 @@ export interface LabelWorklistItem {
   urgent: boolean;
   status: BackendLabelStatus;
   updatedAt: string;
+  rejectionReason?: string | null;
 }
 
 /** PENDING y CANCELED no tienen pantalla en las worklists. */

@@ -87,7 +87,7 @@ describe('WorklistPage (smoke)', () => {
 
   it('Recolección mapea items del store al view-model', () => {
     const item: LabelWorklistItem = {
-      labelId: 60005, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
+      labelId: 60005, sampleId: null, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
       patientName: 'Ana López', urgent: false, status: 'COLLECTED', updatedAt: '2026-06-11T10:00:00Z',
     };
     const fx = setup('recoleccion', [item]);

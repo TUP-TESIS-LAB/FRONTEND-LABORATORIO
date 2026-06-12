@@ -3,6 +3,7 @@ import { toSample, BACKEND_TO_SAMPLE_STATE, type LabelWorklistItem } from './lab
 
 const item: LabelWorklistItem = {
   labelId: 60005,
+  sampleId: null,
   barcode: '60005',
   protocolId: 50001,
   analysisName: 'Hemograma',
