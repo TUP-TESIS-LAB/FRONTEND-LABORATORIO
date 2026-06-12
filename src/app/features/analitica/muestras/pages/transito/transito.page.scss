@@ -1,0 +1,63 @@
+@use './tokens' as *;
+
+.transito-page {
+  font-family: 'Poppins', system-ui, sans-serif;
+  background: var(--ds-bg);
+  min-height: 100%;
+  padding: 0 30px 24px;
+  color: var(--gx-ink);
+
+  .page-header {
+    padding: 24px 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+
+    h1 { font-size: 24px; font-weight: 700; margin: 0; }
+    .subtitle { color: var(--gx-muted); font-size: 13.5px; margin: 4px 0 0; max-width: 720px; }
+    .stat-chips { display: flex; gap: 8px; align-items: center; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      background: var(--gx-card-bg);
+      border: 1px solid var(--gx-border);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gx-ink-2);
+      &.highlight { background: var(--gx-sel-bg); border-color: var(--gx-sel-border); color: var(--gx-brand-hover); font-weight: 600; }
+    }
+  }
+
+  .sticky {
+    position: sticky;
+    top: calc(var(--space-6) * -1);
+    z-index: 50;
+    margin-inline: -30px;
+    padding: 12px 30px 14px;
+    background: var(--ds-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .columns-header {
+    @include gx-row-grid;
+    padding: 12px 16px 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--gx-muted);
+    font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 64px 16px;
+    color: var(--gx-muted);
+    font-size: 14px;
+  }
+}

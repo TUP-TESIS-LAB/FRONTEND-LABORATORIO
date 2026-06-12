@@ -43,9 +43,9 @@ export const ANALITICA_ROUTES: Routes = [
       {
         path: 'traslado',
         canMatch: [sectionGuard('PREANALITICA')],
-        loadComponent: () => import('./muestras/pages/worklist/worklist.page').then(m => m.WorklistPage),
-        data: { screenKey: 'traslado' },
-        title: 'Traslado',
+        loadComponent: () => import('./muestras/pages/transito/transito.page').then(m => m.TransitoPage),
+        data: { breadcrumb: 'Tránsito' },
+        title: 'Tránsito',
       },
       {
         path: 'procesamiento',

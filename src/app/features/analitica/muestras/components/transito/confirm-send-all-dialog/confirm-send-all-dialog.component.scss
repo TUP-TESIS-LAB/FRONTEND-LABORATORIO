@@ -1,0 +1,46 @@
+@use '../../../pages/transito/tokens' as *;
+
+.confirm-body {
+  padding: 8px;
+  text-align: left;
+  font-family: 'Poppins', system-ui;
+  color: var(--gx-ink);
+
+  .icon {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: var(--gx-green-bg); color: var(--gx-green);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+  h2 { font-size: 17px; margin: 0 0 8px; font-weight: 700; }
+  p { font-size: 13.5px; color: var(--gx-ink-2); line-height: 1.4; }
+
+  .breakdown {
+    margin: 12px 0;
+    display: flex; flex-direction: column; gap: 6px;
+    .row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 10px;
+      font-size: 13.5px;
+      .dot { width: 8px; height: 8px; border-radius: 999px; }
+      strong { margin-left: auto; font-size: 15px; }
+      &.green { background: var(--gx-green-bg); color: var(--gx-green); .dot { background: var(--gx-green); } }
+      &.blue  { background: var(--gx-blue-bg);  color: var(--gx-blue);  .dot { background: var(--gx-blue); } }
+    }
+  }
+  .warn { color: var(--gx-amber); font-size: 12.5px; }
+
+  footer {
+    display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px;
+    .cancel {
+      background: transparent; border: 1px solid var(--gx-border);
+      padding: 9px 16px; border-radius: 10px; font-weight: 600; cursor: pointer;
+    }
+    .confirm {
+      background: var(--gx-green); color: #fff; border: 0;
+      padding: 9px 18px; border-radius: 10px; font-weight: 600; cursor: pointer;
+    }
+  }
+}

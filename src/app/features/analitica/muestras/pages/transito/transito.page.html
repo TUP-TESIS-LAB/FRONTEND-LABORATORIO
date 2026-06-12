@@ -1,0 +1,85 @@
+<section class="transito-page">
+  <header class="page-header">
+    <div>
+      <h1>Muestras en tránsito</h1>
+      <p class="subtitle">
+        Las listas son recomendaciones de la mochila, no definitivas.
+        Tildá o escaneá muestras para armar lotes temporales y enviarlos cuando quieras.
+      </p>
+    </div>
+    <div class="stat-chips">
+      <span class="chip">{{ service.stats().total }} en tránsito</span>
+      <span class="chip">{{ service.stats().groups }} listas recomendadas</span>
+      <span class="chip" [class.highlight]="service.stats().lotes > 0">{{ service.stats().lotes }} lotes temporales</span>
+    </div>
+  </header>
+
+  <div class="sticky">
+    <app-transito-scan-bar
+      [activeLoteNumber]="activeLoteNumber()"
+      [groupsCount]="service.stats().groups"
+      (enter)="onScanEnter($event)"
+      (sendAllClick)="onSendAllClick()"
+    />
+    <app-bulk-actions-bar
+      [selectedCount]="service.sel().size"
+      [lotes]="service.lotes()"
+      (createLote)="onCreateLote()"
+      (addToLote)="onAddToLote($event)"
+      (clear)="onClearSelection()"
+    />
+  </div>
+
+  <div class="columns-header">
+    <span></span><span>Muestra</span><span>Estudio</span><span>Origen</span><span>Toma</span><span>Estado</span>
+  </div>
+
+  @for (lote of service.lotes(); track lote.id; let i = $index) {
+    <app-lote-card
+      [lote]="lote"
+      [number]="i + 1"
+      [samples]="samplesOf(lote.sampleIds)"
+      [selectedIds]="service.sel()"
+      [isActive]="isLoteActive(lote.id)"
+      [leavingIds]="service.leaving()"
+      [flashId]="flashId()"
+      (toggleSample)="onToggleSample($event)"
+      (toggleAll)="onToggleAllLote(lote.id, $event)"
+      (destChange)="onUpdateDestLote(lote.id, $event)"
+      (setActive)="onSetActiveLote(lote.id)"
+      (dissolve)="onDissolveLote(lote.id)"
+      (send)="onSendLote(lote.id)"
+    />
+  }
+
+  @for (group of service.groups(); track group.id) {
+    <app-recommended-group-card
+      [group]="group"
+      [samples]="samplesOf(group.sampleIds)"
+      [selectedIds]="service.sel()"
+      [isEditing]="isGroupEditing(group.id)"
+      [leavingIds]="service.leaving()"
+      [flashId]="flashId()"
+      (toggleSample)="onToggleSample($event)"
+      (toggleAll)="onToggleAllGroup(group.id, $event)"
+      (toggleEditing)="onToggleEditing(group.id)"
+      (destChange)="onUpdateDestGroup(group.id, $event)"
+      (send)="onSendGroup(group.id)"
+    />
+  }
+
+  @if (service.lotes().length === 0 && service.groups().length === 0) {
+    <div class="empty-state">
+      <p><b>Todo enviado</b></p>
+      <p>No quedan muestras en tránsito.</p>
+    </div>
+  }
+</section>
+
+<p-toast position="bottom-right" />
+<app-confirm-send-all-dialog
+  [open]="confirmOpen()"
+  [breakdown]="sendAllBreakdown()"
+  (cancel)="confirmOpen.set(false)"
+  (confirm)="onConfirmSendAll()"
+/>
