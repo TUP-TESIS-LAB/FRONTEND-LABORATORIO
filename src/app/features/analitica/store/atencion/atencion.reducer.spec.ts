@@ -73,6 +73,31 @@ describe('atencionReducer', () => {
     expect(next.listLoading).toBe(false);
   });
 
+  it('setCopaymentSuccess preserva analysisAuthorizations cuando la respuesta del copago viene vacía', () => {
+    const auths = [{ id: 1, analysisId: 3, isAuthorized: true, active: true }] as any;
+    const detail = sample({ id: 42, analysisAuthorizations: auths });
+    // El endpoint de copago devuelve la atención sin autorizaciones.
+    const copaymentResponse = sample({ id: 42, copaymentAmount: 500, analysisAuthorizations: [] });
+    const next = atencionReducer(
+      { ...initialAtencionState, detail },
+      A.setCopaymentSuccess({ item: copaymentResponse }),
+    );
+    expect(next.detail?.copaymentAmount).toBe(500);
+    expect(next.detail?.analysisAuthorizations).toEqual(auths); // no se vacía
+    expect(next.copaymentMutating).toBe(false);
+  });
+
+  it('setCopaymentSuccess usa las autorizaciones de la respuesta si el backend las incluye', () => {
+    const detail = sample({ id: 42, analysisAuthorizations: [{ id: 1, analysisId: 3, isAuthorized: true, active: true }] as any });
+    const newAuths = [{ id: 9, analysisId: 7, isAuthorized: false, active: true }] as any;
+    const copaymentResponse = sample({ id: 42, copaymentAmount: 500, analysisAuthorizations: newAuths });
+    const next = atencionReducer(
+      { ...initialAtencionState, detail },
+      A.setCopaymentSuccess({ item: copaymentResponse }),
+    );
+    expect(next.detail?.analysisAuthorizations).toEqual(newAuths);
+  });
+
   it('loadAtencionesFailure stores the error', () => {
     const error = new HttpErrorResponse({ status: 500 });
     const next = atencionReducer(

@@ -235,7 +235,7 @@ describe('AtencionEffects', () => {
     const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
     (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: null }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null }));
     const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(api.createBlank).toHaveBeenCalled();
     expect(api.assignGeneralData).toHaveBeenCalledWith(10, { patientId: 5, doctorId: null, insurancePlanId: null, indications: null });
@@ -248,26 +248,26 @@ describe('AtencionEffects', () => {
     const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
     (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: 42 }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: 42 }));
     const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(api.createBlank).toHaveBeenCalledWith(expect.objectContaining({ queueEntryId: 42 }));
     expect(out).toEqual(A.atencionMutationSuccess({ item: assigned }));
   });
 
-  it('startAttentionForPatient$ → propaga el doctorId al assignGeneralData', async () => {
+  it('startAttentionForPatient$ → propaga doctorId e insurancePlanId al assignGeneralData', async () => {
     const created = { id: 10 } as any;
     const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
     (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: 77, indications: 'Ayuno', queueEntryId: null }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: 77, insurancePlanId: 99, indications: 'Ayuno', queueEntryId: null }));
     await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
-    expect(api.assignGeneralData).toHaveBeenCalledWith(10, { patientId: 5, doctorId: 77, insurancePlanId: null, indications: 'Ayuno' });
+    expect(api.assignGeneralData).toHaveBeenCalledWith(10, { patientId: 5, doctorId: 77, insurancePlanId: 99, indications: 'Ayuno' });
   });
 
   it('startAttentionForPatient$ → createBlank falla → mutationFailure, sin navegar', async () => {
     const error = new HttpErrorResponse({ status: 500 });
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: null }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null }));
     const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(out).toEqual(A.atencionMutationFailure({ error }));
   });

@@ -22,7 +22,7 @@ import { ButtonModule } from 'primeng/button';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DialogModule, ButtonModule],
   template: `
-    <p-dialog [visible]="visible()" (onHide)="onHide()" [modal]="true" [style]="{ width: '420px' }"
+    <p-dialog [visible]="visible()" (onHide)="onHide()" [modal]="true" [draggable]="false" [style]="{ width: '420px' }"
               header="Finalizar atención">
       <p class="text-sm">¿Confirmás que querés finalizar la atención? No vas a poder modificar los análisis después.</p>
       <ng-template pTemplate="footer">

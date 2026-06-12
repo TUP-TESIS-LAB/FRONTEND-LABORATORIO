@@ -19,8 +19,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { NgClass } from '@angular/common';
 import { Gender, SexAtBirth } from '@features/pacientes/models/patient.model';
-import { CoveragePlanOption } from '@features/pacientes/models/coverage-plans.catalog';
-import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
+import { CoverageCatalog, EMPTY_CATALOG, InsurerOption, PlanOption, insurerNameForPlan, planName, plansForInsurer, planById } from '@features/pacientes/models/coverage-catalog.model';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
@@ -116,6 +116,22 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
 
             <div class="text-sm text-surface-600">DNI {{ p.dni }}</div>
 
+            <!-- Cobertura a usar en la atención: chips seleccionables (default = la principal).
+                 Permite cambiar la cobertura sin entrar a "Corregir datos". -->
+            <div class="pt-1">
+              <div class="text-xs font-medium text-surface-500 mb-1">Cobertura a usar</div>
+              <div class="flex flex-wrap gap-2">
+                @for (chip of coverageChips(); track chip.planId) {
+                  <button type="button" class="cov-chip"
+                          [class.cov-chip--on]="selectedInsurancePlanId() === chip.planId"
+                          [disabled]="readOnly()"
+                          (click)="selectedInsurancePlanId.set(chip.planId)">
+                    <span class="cov-chip__dot"></span>{{ chip.label }}
+                  </button>
+                }
+              </div>
+            </div>
+
             <!-- Alerta portal -->
             @if (esPortal()) {
               <div
@@ -200,16 +216,31 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   appendTo="body"
                   class="w-full" />
               </div>
-              <div class="sm:col-span-2">
-                <label class="block text-sm mb-1">Cobertura</label>
-                <p-select
-                  [(ngModel)]="form.planId"
-                  [options]="planOptions()"
-                  optionLabel="label"
-                  optionValue="planId"
-                  placeholder="— Seleccioná —"
-                  appendTo="body"
-                  class="w-full" />
+              <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm mb-1">Obra social</label>
+                  <p-select
+                    [ngModel]="formInsurerId()"
+                    (ngModelChange)="onFormInsurerChange($event)"
+                    [options]="insurerOptions()"
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="— Seleccioná —"
+                    appendTo="body"
+                    class="w-full" />
+                </div>
+                <div>
+                  <label class="block text-sm mb-1">Plan</label>
+                  <p-select
+                    [(ngModel)]="form.planId"
+                    [options]="formPlanOptions()"
+                    optionLabel="name"
+                    optionValue="planId"
+                    placeholder="— Seleccioná —"
+                    [disabled]="formInsurerId() == null"
+                    appendTo="body"
+                    class="w-full" />
+                </div>
               </div>
               <div>
                 <label class="block text-sm mb-1">Número de afiliado</label>
@@ -244,11 +275,14 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
               <input pInputText [(ngModel)]="form.lastName" class="w-full" />
             </div>
             <div>
-              <label class="block text-sm mb-1">Fecha de nacimiento</label>
-              <input pInputText type="date" [(ngModel)]="form.birthDate" class="w-full" />
+              <label class="block text-sm mb-1">Fecha de nacimiento <span class="text-red-500">*</span></label>
+              <input pInputText type="date" [(ngModel)]="form.birthDate" [max]="todayStr" class="w-full" />
+              @if (birthDateInvalid()) {
+                <small class="text-red-500">Ingresá una fecha válida (año de 4 dígitos, no futura).</small>
+              }
             </div>
             <div>
-              <label class="block text-sm mb-1">Género</label>
+              <label class="block text-sm mb-1">Género <span class="text-red-500">*</span></label>
               <p-select
                 [(ngModel)]="form.gender"
                 [options]="genderOpts"
@@ -259,7 +293,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                 class="w-full" />
             </div>
             <div>
-              <label class="block text-sm mb-1">Sexo al nacer</label>
+              <label class="block text-sm mb-1">Sexo al nacer <span class="text-red-500">*</span></label>
               <p-select
                 [(ngModel)]="form.sexAtBirth"
                 [options]="sexOpts"
@@ -269,20 +303,38 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                 appendTo="body"
                 class="w-full" />
             </div>
-            <div class="sm:col-span-2">
-              <label class="block text-sm mb-1">Cobertura</label>
-              <p-select
-                [(ngModel)]="form.planId"
-                [options]="planOptions()"
-                optionLabel="label"
-                optionValue="planId"
-                placeholder="— Seleccioná —"
-                appendTo="body"
-                class="w-full" />
+            <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm mb-1">Obra social <span class="text-red-500">*</span></label>
+                <p-select
+                  [ngModel]="formInsurerId()"
+                  (ngModelChange)="onFormInsurerChange($event)"
+                  [options]="insurerOptions()"
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="— Seleccioná —"
+                  appendTo="body"
+                  class="w-full" />
+              </div>
+              <div>
+                <label class="block text-sm mb-1">Plan @if (!isParticularSelected()) { <span class="text-red-500">*</span> }</label>
+                <p-select
+                  [(ngModel)]="form.planId"
+                  [options]="formPlanOptions()"
+                  optionLabel="name"
+                  optionValue="planId"
+                  placeholder="— Seleccioná —"
+                  [disabled]="formInsurerId() == null"
+                  appendTo="body"
+                  class="w-full" />
+              </div>
             </div>
             <div>
-              <label class="block text-sm mb-1">Número de afiliado</label>
-              <input pInputText [(ngModel)]="form.memberNumber" class="w-full" placeholder="Opcional" />
+              <label class="block text-sm mb-1">
+                Número de afiliado @if (!isParticularSelected()) { <span class="text-red-500">*</span> }
+              </label>
+              <input pInputText [(ngModel)]="form.memberNumber" class="w-full"
+                     [placeholder]="isParticularSelected() ? 'Opcional' : 'N° de afiliado'" />
             </div>
           </div>
           <div class="flex justify-end">
@@ -392,11 +444,27 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       color: #991b1b;
       border: 1px solid #fca5a5;
     }
+    /* Chips de cobertura (selección de la cobertura a usar en la atención). */
+    .cov-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      border: 1px solid #cdd5e0; border-radius: 999px;
+      padding: 5px 12px 5px 10px; font-size: 0.8125rem; cursor: pointer;
+      background: #fff; color: #1a1a2e;
+    }
+    .cov-chip:disabled { cursor: default; }
+    .cov-chip__dot {
+      width: 13px; height: 13px; border-radius: 50%; border: 2px solid #b6c0cf; flex: none;
+    }
+    .cov-chip--on { border-color: #2563eb; background: #eef4ff; color: #1e3a8a; font-weight: 600; }
+    .cov-chip--on .cov-chip__dot {
+      border-color: #2563eb;
+      background: radial-gradient(circle at center, #2563eb 0 4px, #fff 5px);
+    }
   `],
 })
 export class DatosGeneralesStepComponent implements OnInit {
   private readonly store = inject(Store);
-  private readonly coveragePlans = inject(CoveragePlansService);
+  private readonly coverageCatalog = inject(CoverageCatalogService);
   private readonly doctorsApi = inject(DoctorService);
   private readonly notification = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
@@ -414,6 +482,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   readonly initialIndications = input<string | null>(null);
   /** Médico solicitante ya asociado (al retomar). (007) */
   readonly initialDoctorId = input<number | null>(null);
+  /** Cobertura (plan) ya asociada a la atención (al retomar) — pre-selecciona el chip. */
+  readonly initialInsurancePlanId = input<number | null>(null);
 
   /**
    * Footer "Volver fase" — el wizard provee el estado y bindea el handler.
@@ -433,7 +503,34 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected readonly resolutionError  = this.store.selectSignal(selectPatientResolutionError);
 
   protected readonly editing = signal(false);
-  protected readonly planOptions = signal<CoveragePlanOption[]>([]);
+
+  // ── Cobertura del alta/edición inline: cascada Obra social → Plan ────────────
+  /** Obra social elegida en el form de alta/edición (UI; el plan es lo que se envía). */
+  protected readonly formInsurerId = signal<number | null>(null);
+  /** Obras sociales seleccionables (incluye Particular para pago directo). */
+  protected readonly insurerOptions = computed<InsurerOption[]>(() => [...this.catalog().insurers]);
+  /** Planes de la obra social elegida en el form. */
+  protected readonly formPlanOptions = computed<PlanOption[]>(() => plansForInsurer(this.catalog(), this.formInsurerId()));
+
+  // ── Cobertura a usar en la atención (chips) ─────────────────────────────────
+  /** Catálogo de coberturas para resolver el label de cada chip (obra social + plan). */
+  protected readonly catalog = signal<CoverageCatalog>(EMPTY_CATALOG);
+  /** Plan elegido para la atención. null = Particular (sin obra social). */
+  protected readonly selectedInsurancePlanId = signal<number | null>(null);
+  /** Para no pisar la selección manual del operador al re-evaluar el paciente. */
+  private lastDefaultedPatientId: number | null = null;
+
+  /** Chips: Particular + cada cobertura activa del paciente (obra social · plan · N° afiliado). */
+  protected readonly coverageChips = computed<{ planId: number | null; label: string }[]>(() => {
+    const p = this.resolved();
+    const cat = this.catalog();
+    const chips: { planId: number | null; label: string }[] = [{ planId: null, label: 'Particular' }];
+    for (const c of (p?.coverages ?? []).filter((x) => x.active)) {
+      const member = c.memberNumber ? ` · N° ${c.memberNumber}` : '';
+      chips.push({ planId: c.planId, label: `${insurerNameForPlan(cat, c.planId)} ${planName(cat, c.planId)}${member}` });
+    }
+    return chips;
+  });
 
   // ── Médico solicitante (007) ────────────────────────────────────────────────
   protected readonly doctors        = signal<Doctor[]>([]);
@@ -472,7 +569,26 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   /** True si la fecha de nacimiento del form es futura (string YYYY-MM-DD). (T2) */
   protected birthDateFuture(): boolean {
-    return !!this.form.birthDate && this.form.birthDate > this.todayStr;
+    return this.birthDateInvalid();
+  }
+
+  /**
+   * Fecha de nacimiento inválida: vacía no cuenta acá (lo cubre "obligatorio"),
+   * pero un año que no tenga 4 dígitos (p. ej. el input deja tipear 5+) o una
+   * fecha futura sí. La comparación de strings sola no alcanza: '12345-01-01'
+   * es lexicográficamente menor que el año actual, así que validamos el formato.
+   */
+  protected birthDateInvalid(): boolean {
+    const b = this.form.birthDate;
+    if (!b) return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(b)) return true; // año != 4 dígitos / formato raro
+    return b > this.todayStr;                         // futura
+  }
+
+  /** Obra social Particular (SELF_PAY) elegida → plan y N° de afiliado no son obligatorios. */
+  protected isParticularSelected(): boolean {
+    const id = this.formInsurerId();
+    return this.catalog().insurers.find(i => i.id === id)?.insurerType === 'SELF_PAY';
   }
 
   // ── 3-state badge ──────────────────────────────────────────────────────────
@@ -514,19 +630,32 @@ export class DatosGeneralesStepComponent implements OnInit {
         this.form.dni = dni;
       }
     });
+
+    // Default de la cobertura a usar cuando (re)aparece el paciente: el plan ya asociado a la
+    // atención (al retomar) → la cobertura principal activa → Particular (null). Se setea una vez
+    // por paciente para no pisar un cambio manual del operador.
+    effect(() => {
+      const p = this.resolved();
+      if (!p) { this.lastDefaultedPatientId = null; return; }
+      if (this.lastDefaultedPatientId === p.id) return;
+      this.lastDefaultedPatientId = p.id;
+      const initial = this.initialInsurancePlanId();
+      if (initial != null) { this.selectedInsurancePlanId.set(initial); return; }
+      const primary = p.coverages?.find((c) => c.isPrimary && c.active)
+        ?? p.coverages?.find((c) => c.active) ?? null;
+      this.selectedInsurancePlanId.set(primary?.planId ?? null);
+    });
   }
 
   ngOnInit(): void {
-    // Load coverage plans for dropdowns (errors are swallowed — dropdown stays empty)
-    this.coveragePlans.getActivePlans().pipe(
+    // Catálogo (obras sociales + planes): alimenta los chips de cobertura y la
+    // cascada Obra social → Plan del alta/edición inline. Al cargar, default a
+    // Particular en el form si todavía no hay plan elegido.
+    this.coverageCatalog.getCatalog().pipe(
       catchError(() => EMPTY),
-    ).subscribe(plans => {
-      this.planOptions.set(plans);
-      // Default-select the Particular plan if present
-      const particular = plans.find(p => p.particular);
-      if (particular && this.form.planId == null) {
-        this.form.planId = particular.planId;
-      }
+    ).subscribe(cat => {
+      this.catalog.set(cat);
+      this.defaultFormCobertura();
     });
 
     // Cargar médicos solicitantes para el selector (errores silenciados → queda vacío). (007)
@@ -604,6 +733,26 @@ export class DatosGeneralesStepComponent implements OnInit {
     }
   }
 
+  /** Cambio de obra social en el form: resetea el plan (auto-selecciona si hay uno solo). */
+  onFormInsurerChange(insurerId: number | null): void {
+    this.formInsurerId.set(insurerId);
+    const plans = plansForInsurer(this.catalog(), insurerId);
+    this.form.planId = plans.length === 1 ? plans[0].planId : null;
+  }
+
+  /** Default del form: si no hay plan elegido, preselecciona Particular (obra social + plan). */
+  private defaultFormCobertura(): void {
+    if (this.form.planId != null) {
+      this.formInsurerId.set(planById(this.catalog(), this.form.planId)?.insurerId ?? null);
+      return;
+    }
+    const particular = this.catalog().plans.find(p => p.particular);
+    if (particular) {
+      this.formInsurerId.set(particular.insurerId);
+      this.form.planId = particular.planId;
+    }
+  }
+
   startEdit(): void {
     const p = this.resolved();
     if (!p) return;
@@ -619,6 +768,8 @@ export class DatosGeneralesStepComponent implements OnInit {
       planId:       primaryCoverage?.planId ?? null,
       memberNumber: primaryCoverage?.memberNumber ?? '',
     };
+    // Sincroniza la obra social de la cascada con el plan del paciente (o Particular).
+    this.formInsurerId.set(planById(this.catalog(), this.form.planId)?.insurerId ?? null);
     this.editing.set(true);
   }
 
@@ -650,7 +801,13 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   altaValida(): boolean {
     const f = this.form;
-    return !!(f.dni && f.firstName && f.lastName) && !this.birthDateFuture();
+    // Identidad + nacimiento + género/sexo + cobertura son obligatorios.
+    if (!f.dni || !f.firstName || !f.lastName || !f.birthDate) return false;
+    if (f.gender == null || f.sexAtBirth == null) return false;
+    if (this.formInsurerId() == null || f.planId == null) return false;
+    // N° de afiliado obligatorio salvo Particular (pago directo, sin obra social).
+    if (!this.isParticularSelected() && !f.memberNumber.trim()) return false;
+    return !this.birthDateInvalid();
   }
 
   crearPaciente(): void {
@@ -686,6 +843,7 @@ export class DatosGeneralesStepComponent implements OnInit {
     const p = this.resolved();
     if (!p) return;
     const doctorId = this.selectedDoctorId();
+    const insurancePlanId = this.selectedInsurancePlanId();
     const id = this.atencionId();
     if (id == null) {
       const qid = this.route.snapshot.queryParamMap.get('queueEntryId');
@@ -694,6 +852,7 @@ export class DatosGeneralesStepComponent implements OnInit {
         startAttentionForPatient({
           patientId:   p.id,
           doctorId,
+          insurancePlanId,
           indications: this.indications || null,
           queueEntryId,
         }),
@@ -706,7 +865,7 @@ export class DatosGeneralesStepComponent implements OnInit {
         payload: {
           patientId:       p.id,
           doctorId,
-          insurancePlanId: null,
+          insurancePlanId,
           indications:     this.indications || null,
         },
       }),

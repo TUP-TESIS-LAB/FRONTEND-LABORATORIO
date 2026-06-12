@@ -16,6 +16,7 @@ import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
 import { EMPTY } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -23,6 +24,8 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { TableColumn } from '@shared/ui/models/table-column.model';
+import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '@features/pacientes/models/coverage-catalog.model';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencion.model';
@@ -56,13 +59,13 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ButtonModule, FinalizeAttentionModalComponent, InputNumberModule, FormsModule,
-    CurrencyArPipe, DataTableComponent, UiCellDirective,
+    CurrencyArPipe, DataTableComponent, UiCellDirective, TagModule,
   ],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
-      <!-- C4: Paciente y Médico solicitante lado a lado (stack en mobile) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Datos en 2 columnas: Paciente/Cobertura a la izquierda, Médico/Indicaciones a la derecha. -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
         <section>
           <div class="text-sm opacity-60">Paciente</div>
           @if (patient(); as p) {
@@ -77,13 +80,17 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
           <div class="text-sm opacity-60">Médico solicitante</div>
           <div class="text-base">{{ doctorLabel() }}</div>
         </section>
-      </div>
 
-      <!-- C5: Indicaciones solas, ancho completo -->
-      <section>
-        <div class="text-sm opacity-60">Indicaciones</div>
-        <div class="text-base">{{ atencion().indications || '—' }}</div>
-      </section>
+        <section>
+          <div class="text-sm opacity-60">Cobertura</div>
+          <div class="text-base">{{ coverageLabel() }}</div>
+        </section>
+
+        <section>
+          <div class="text-sm opacity-60">Indicaciones</div>
+          <div class="text-base">{{ atencion().indications || '—' }}</div>
+        </section>
+      </div>
 
       <!-- C1: Análisis solicitados en tabla genérica striped. T5: scroll interno
            (alto relativo al viewport → más filas a mayor resolución) para que la
@@ -107,6 +114,14 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
               }
             } @else {
               #{{ $any(row).analysisId }}
+            }
+          </ng-template>
+
+          <ng-template uiCell="autorizado" let-row>
+            @if ($any(row).isAuthorized) {
+              <p-tag value="Autorizado" severity="success" />
+            } @else {
+              <p-tag value="Particular" severity="warn" />
             }
           </ng-template>
 
@@ -180,6 +195,7 @@ export class ResumenStepComponent implements OnInit {
   private readonly actions$   = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
   private readonly doctorsApi = inject(DoctorService);
+  private readonly coverageCatalogApi = inject(CoverageCatalogService);
 
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
@@ -200,6 +216,18 @@ export class ResumenStepComponent implements OnInit {
     const d = this.doctor();
     if (!d) return '—';
     return `${d.lastName}, ${d.firstName} — Mat. ${d.tuition}`;
+  });
+
+  /** Catálogo de coberturas para resolver el label de la cobertura de la atención. */
+  private readonly catalog = signal<CoverageCatalog>(EMPTY_CATALOG);
+  /** Cobertura usada por la atención: "Particular" o "Obra social · Plan · N° afiliado". */
+  readonly coverageLabel = computed<string>(() => {
+    const planId = this.atencion().insurancePlanId;
+    if (planId == null) return 'Particular';
+    const cat = this.catalog();
+    const cov = this.patient()?.coverages?.find((c) => c.planId === planId);
+    const member = cov?.memberNumber ? ` · N° ${cov.memberNumber}` : '';
+    return `${insurerNameForPlan(cat, planId)} ${planName(cat, planId)}${member}`;
   });
 
   readonly finalizeModalOpen  = signal(false);
@@ -254,8 +282,9 @@ export class ResumenStepComponent implements OnInit {
 
   /** Columnas de la tabla de análisis solicitados (C1). */
   readonly analysisColumns: readonly TableColumn[] = [
-    { field: 'analisis', header: 'Análisis' },
-    { field: 'precio',   header: 'Precio', align: 'right' },
+    { field: 'analisis',   header: 'Análisis' },
+    { field: 'autorizado', header: 'Autorizado', align: 'center' },
+    { field: 'precio',     header: 'Precio', align: 'right' },
   ];
 
   /**
@@ -271,6 +300,7 @@ export class ResumenStepComponent implements OnInit {
         analysisId: a.analysisId,
         name: info?.name ?? null,
         nbuCode: info?.nbuCode ?? null,
+        isAuthorized: a.isAuthorized,
         precioPaciente: priceItem?.precioPaciente ?? null,
       };
     })
@@ -310,6 +340,13 @@ export class ResumenStepComponent implements OnInit {
 
     // Load pricing for this attention
     this.store.dispatch(loadPricing({ attentionId: attn.id }));
+
+    // Catálogo de coberturas para resolver el nombre de la obra social + plan de
+    // la cobertura usada por la atención (fila "Cobertura" del resumen). Errores
+    // silenciados (catchError → EMPTY) para no romper el resumen si el HTTP falla.
+    this.coverageCatalogApi.getCatalog().pipe(
+      catchError(() => EMPTY),
+    ).subscribe((cat) => this.catalog.set(cat));
 
     // Médico solicitante (NEW-A): resolvemos el nombre+matrícula por id. Errores
     // silenciados (catchError → EMPTY) para no romper el resumen si el HTTP falla.

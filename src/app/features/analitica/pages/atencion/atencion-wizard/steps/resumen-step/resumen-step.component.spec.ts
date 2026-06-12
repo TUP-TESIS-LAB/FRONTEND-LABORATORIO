@@ -4,6 +4,8 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { ReplaySubject, of } from 'rxjs';
 import { DoctorService } from '@features/medicos/services/doctor.service';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
+import { EMPTY_CATALOG } from '@features/pacientes/models/coverage-catalog.model';
 import { ResumenStepComponent } from './resumen-step.component';
 import { ATENCION_FEATURE_KEY, initialAtencionState } from '../../../../../store/atencion/atencion.state';
 import {
@@ -72,6 +74,10 @@ const doctorServiceStub = {
   list: vi.fn().mockReturnValue(of([])),
 };
 
+const coverageCatalogStub = {
+  getCatalog: vi.fn().mockReturnValue(of(EMPTY_CATALOG)),
+};
+
 describe('ResumenStepComponent', () => {
   let store: MockStore;
   let actions$: ReplaySubject<Action>;
@@ -87,6 +93,7 @@ describe('ResumenStepComponent', () => {
         provideMockStore({ initialState: SEEDED_STATE }),
         provideMockActions(() => actions$),
         { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
       ],
     }).compileComponents();
 
@@ -185,6 +192,27 @@ describe('ResumenStepComponent', () => {
     expect(rowText).toContain('Gaymer, Tute');
     expect(rowText).toContain('Médico solicitante');
     expect(rowText).toContain('House, Gregory — Mat. MN-12345');
+  });
+
+  // ── Corrección 1: fila "Cobertura" debajo del paciente ────────────────────
+  it('muestra la fila "Cobertura" con "Particular" cuando la atención no tiene plan', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: null });
+    f.detectChanges();
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Cobertura');
+    expect(f.componentInstance.coverageLabel()).toBe('Particular');
+  });
+
+  // ── Corrección 2: la tabla marca autorizado/particular por análisis ───────
+  it('la tabla incluye la columna "Autorizado" y un tag "Autorizado" para el análisis cubierto', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn()); // analysisId 3, isAuthorized: true
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const headers = Array.from(el.querySelectorAll('th')).map((th) => th.textContent?.trim() ?? '');
+    expect(headers.some((h) => h.includes('Autorizado'))).toBe(true);
+    expect((el.textContent ?? '')).toContain('Autorizado');
   });
 
   // ── C1: los análisis se renderizan dentro de la tabla genérica ui-table ────

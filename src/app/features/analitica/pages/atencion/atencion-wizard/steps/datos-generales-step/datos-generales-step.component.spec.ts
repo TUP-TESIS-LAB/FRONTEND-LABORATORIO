@@ -13,14 +13,23 @@ import {
   updatePatientInline,
   verifyPatient,
 } from '../../../../../store/atencion/atencion.actions';
-import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
 
-const STUB_PLANS = [{ planId: 1, label: 'Particular', particular: true }];
+const STUB_CATALOG = {
+  insurers: [
+    { id: 96001, name: 'Particular', insurerType: 'SELF_PAY' as const },
+    { id: 96002, name: 'OSDE', insurerType: 'PRIVATE' as const },
+  ],
+  plans: [
+    { planId: 96001, insurerId: 96001, name: 'Plan Particular', particular: true },
+    { planId: 96002, insurerId: 96002, name: '210', particular: false },
+  ],
+};
 
-const coveragePlansStub = {
-  getActivePlans: () => of(STUB_PLANS),
+const coverageCatalogStub = {
+  getCatalog: () => of(STUB_CATALOG),
 };
 
 const doctorServiceStub = {
@@ -47,7 +56,7 @@ describe('DatosGeneralesStepComponent', () => {
         provideMockStore({
           initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
         }),
-        { provide: CoveragePlansService, useValue: coveragePlansStub },
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: NotificationService, useValue: notificationStub },
         { provide: ActivatedRoute, useValue: defaultRouteStub },
@@ -100,7 +109,39 @@ describe('DatosGeneralesStepComponent', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: null }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null }),
+    );
+  });
+
+  it('cobertura: default = principal activa; cambiar el chip cambia el insurancePlanId enviado', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: {
+        id: 5, coverages: [
+          { planId: 20, memberNumber: '6012345', isPrimary: true, active: true },
+          { planId: 21, memberNumber: 'x', isPrimary: false, active: true },
+        ],
+      } as any },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as unknown as {
+      selectedInsurancePlanId: { (): number | null; set(v: number | null): void };
+      coverageChips(): { planId: number | null }[];
+      onConfirm(): void;
+    };
+    // Chips: Particular (null) + las 2 coberturas activas.
+    expect(cmp.coverageChips().map((c) => c.planId)).toEqual([null, 20, 21]);
+    // Default: la principal activa (20).
+    expect(cmp.selectedInsurancePlanId()).toBe(20);
+    // El operador cambia a la otra cobertura → se manda ese plan.
+    cmp.selectedInsurancePlanId.set(21);
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onConfirm();
+    expect(spy).toHaveBeenCalledWith(
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: 21, indications: null, queueEntryId: null }),
     );
   });
 
@@ -175,23 +216,25 @@ describe('DatosGeneralesStepComponent', () => {
     );
   });
 
-  it('crearPaciente() con form válido (solo 3 campos) despacha createPatientInline', () => {
+  it('crearPaciente() con todos los campos despacha createPatientInline (cobertura Particular)', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
-    fixture.detectChanges();
+    fixture.detectChanges(); // default: Particular (96001)
     store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState } });
     store.refreshState();
     fixture.detectChanges();
-    (fixture.componentInstance as any).form = {
+    const cmp = fixture.componentInstance as any;
+    cmp.form = {
       dni: '12345678',
       firstName: 'Juan',
       lastName: 'Perez',
-      birthDate: '',
-      gender: null,
-      sexAtBirth: null,
-      planId: null,
+      birthDate: '1990-01-01',
+      gender: 'MALE',
+      sexAtBirth: 'MALE',
+      planId: 96001,
       memberNumber: '',
     };
+    cmp.formInsurerId.set(96001);
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.crearPaciente();
     expect(spy).toHaveBeenCalledWith(
@@ -200,12 +243,12 @@ describe('DatosGeneralesStepComponent', () => {
           dni: '12345678',
           firstName: 'Juan',
           lastName: 'Perez',
-          birthDate: null,
-          gender: null,
-          sexAtBirth: null,
+          birthDate: '1990-01-01',
+          gender: 'MALE',
+          sexAtBirth: 'MALE',
           contacts: [],
           addresses: [],
-          coverages: [],
+          coverages: [{ planId: 96001, memberNumber: '', isPrimary: true, active: true }],
         },
       }),
     );
@@ -467,38 +510,89 @@ describe('DatosGeneralesStepComponent', () => {
     expect((fixture.componentInstance as any).puedeVerificar()).toBe(false);
   });
 
-  // ── New tests: altaValida con 3 campos ────────────────────────────────────
+  // ── altaValida: todos los campos obligatorios (plan/N° afiliado salvo Particular) ──
 
-  it('altaValida() retorna true con solo dni + firstName + lastName', () => {
+  function fullAltaForm(over: Record<string, unknown> = {}) {
+    return {
+      dni: '99887766', firstName: 'Ana', lastName: 'Gomez',
+      birthDate: '1990-05-01', gender: 'FEMALE', sexAtBirth: 'FEMALE',
+      planId: 96001, memberNumber: '', ...over,
+    };
+  }
+
+  it('altaValida() true con todos los campos; Particular no exige N° de afiliado', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
-    fixture.detectChanges();
-    (fixture.componentInstance as any).form = {
-      dni: '99887766', firstName: 'Ana', lastName: 'Gomez',
-      birthDate: '', gender: null, sexAtBirth: null, planId: null, memberNumber: '',
-    };
-    expect(fixture.componentInstance.altaValida()).toBe(true);
+    fixture.detectChanges(); // default: Particular (96001) + Plan Particular
+    const cmp = fixture.componentInstance as any;
+    cmp.form = fullAltaForm();
+    cmp.formInsurerId.set(96001); // Particular
+    expect(cmp.altaValida()).toBe(true);
   });
 
-  it('altaValida() retorna false cuando falta lastName', () => {
+  it('altaValida() false si falta fecha, género, sexo u obra social', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
     fixture.detectChanges();
-    (fixture.componentInstance as any).form = {
-      dni: '99887766', firstName: 'Ana', lastName: '',
-      birthDate: '', gender: null, sexAtBirth: null, planId: null, memberNumber: '',
-    };
-    expect(fixture.componentInstance.altaValida()).toBe(false);
+    const cmp = fixture.componentInstance as any;
+    cmp.formInsurerId.set(96001);
+    cmp.form = fullAltaForm({ birthDate: '' });
+    expect(cmp.altaValida()).toBe(false);
+    cmp.form = fullAltaForm({ gender: null });
+    expect(cmp.altaValida()).toBe(false);
+    cmp.form = fullAltaForm({ sexAtBirth: null });
+    expect(cmp.altaValida()).toBe(false);
+    cmp.form = fullAltaForm();
+    cmp.formInsurerId.set(null); // sin obra social
+    expect(cmp.altaValida()).toBe(false);
+  });
+
+  it('altaValida() con obra social NO Particular exige N° de afiliado', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    cmp.onFormInsurerChange(96002); // OSDE → plan 96002 auto-seleccionado
+    cmp.form = fullAltaForm({ planId: 96002, memberNumber: '' });
+    expect(cmp.altaValida()).toBe(false);        // falta N° afiliado
+    cmp.form = fullAltaForm({ planId: 96002, memberNumber: 'AF-1' });
+    expect(cmp.altaValida()).toBe(true);
+  });
+
+  it('altaValida() false con fecha futura o año de más de 4 dígitos', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    cmp.formInsurerId.set(96001);
+    cmp.form = fullAltaForm({ birthDate: '2999-01-01' }); // futura
+    expect(cmp.altaValida()).toBe(false);
+    cmp.form = fullAltaForm({ birthDate: '12345-01-01' }); // año 5 dígitos
+    expect(cmp.altaValida()).toBe(false);
   });
 
   // ── New tests: coverage dropdown ─────────────────────────────────────────
 
-  it('planOptions se carga desde CoveragePlansService en ngOnInit', () => {
+  it('cascada cobertura: obras sociales del catálogo + default Particular en ngOnInit', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
     fixture.detectChanges();
-    const options = (fixture.componentInstance as any).planOptions();
-    expect(options).toEqual(STUB_PLANS);
+    const cmp = fixture.componentInstance as any;
+    // El dropdown de obra social ofrece todas las del catálogo (incluye Particular)
+    expect(cmp.insurerOptions().map((i: any) => i.name)).toEqual(['Particular', 'OSDE']);
+    // Default: Particular preseleccionada (obra social + plan)
+    expect(cmp.formInsurerId()).toBe(96001);
+    expect(cmp.form.planId).toBe(96001);
+  });
+
+  it('cascada cobertura: al elegir una obra social filtra sus planes y resetea el plan', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    cmp.onFormInsurerChange(96002); // OSDE → un solo plan (210) → auto-selecciona
+    expect(cmp.formPlanOptions().map((p: any) => p.name)).toEqual(['210']);
+    expect(cmp.form.planId).toBe(96002);
   });
 
   // ── 003: hidratación de indicaciones al retomar ──────────────────────────
@@ -599,17 +693,19 @@ describe('DatosGeneralesStepComponent', () => {
     store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState } });
     store.refreshState();
     fixture.detectChanges();
-    (fixture.componentInstance as any).form = {
+    const cmp = fixture.componentInstance as any;
+    cmp.form = {
       dni: '55554444', firstName: 'Luis', lastName: 'Rios',
-      birthDate: null, gender: null, sexAtBirth: null,
-      planId: 1, memberNumber: 'AF-001',
+      birthDate: '1985-03-10', gender: 'MALE', sexAtBirth: 'MALE',
+      planId: 96002, memberNumber: 'AF-001',
     };
+    cmp.formInsurerId.set(96002); // OSDE (no Particular) → N° afiliado requerido y usado
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.crearPaciente();
     expect(spy).toHaveBeenCalledWith(
       createPatientInline({
         payload: expect.objectContaining({
-          coverages: [{ planId: 1, memberNumber: 'AF-001', isPrimary: true, active: true }],
+          coverages: [{ planId: 96002, memberNumber: 'AF-001', isPrimary: true, active: true }],
         }),
       }),
     );
@@ -626,7 +722,7 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
         provideMockStore({
           initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState },
         }),
-        { provide: CoveragePlansService, useValue: coveragePlansStub },
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: NotificationService, useValue: notificationStub },
         {
@@ -650,7 +746,7 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, doctorId: null, indications: null, queueEntryId: 99 }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: 99 }),
     );
   });
 });
