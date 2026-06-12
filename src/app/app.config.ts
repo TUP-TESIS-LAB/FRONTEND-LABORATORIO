@@ -74,6 +74,10 @@ import { ROLES_PERMISOS_FEATURE_KEY } from '@features/roles-permisos/store/roles
 import { rolesPermisosReducer } from '@features/roles-permisos/store/roles-permisos.reducer';
 import { RolesPermisosEffects } from '@features/roles-permisos/store/roles-permisos.effects';
 
+import { MUESTRAS_FEATURE_KEY } from '@features/analitica/muestras/store/muestras.state';
+import { muestrasReducer } from '@features/analitica/muestras/store/muestras.reducer';
+import { MuestrasEffects } from '@features/analitica/muestras/store/muestras.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -121,6 +125,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(AccessEffects),
     provideState(ROLES_PERMISOS_FEATURE_KEY, rolesPermisosReducer),
     provideEffects(RolesPermisosEffects),
+    provideState(MUESTRAS_FEATURE_KEY, muestrasReducer),
+    provideEffects(MuestrasEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),
