@@ -1,71 +1,108 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { ObraSocialService } from './obra-social.service';
-import { WizardCreate } from '../models/wizard.model';
 
-describe('ObraSocialService (mock)', () => {
+describe('ObraSocialService (backend)', () => {
   let service: ObraSocialService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [ObraSocialService] });
+    TestBed.configureTestingModule({
+      providers: [ObraSocialService, provideHttpClient(), provideHttpClientTesting()],
+    });
     service = TestBed.inject(ObraSocialService);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
-  it('search devuelve solo activas por defecto y pagina', async () => {
-    const res = await firstValueFrom(service.search({ state: 'active', page: 0, size: 20 }));
-    expect(res.content.length).toBeGreaterThan(0);
-    expect(res.content.every((o) => o.active)).toBe(true);
-    expect(res.totalElements).toBe(res.content.length);
-  });
+  afterEach(() => httpMock.verify());
 
-  it('search state=inactive devuelve solo inactivas', async () => {
-    const res = await firstValueFrom(service.search({ state: 'inactive', page: 0, size: 20 }));
-    expect(res.content.every((o) => !o.active)).toBe(true);
-  });
-
-  it('search filtra por insurerType', async () => {
-    const res = await firstValueFrom(service.search({ state: 'all', insurerType: 'SOCIAL', page: 0, size: 20 }));
-    expect(res.content.every((o) => o.insurerType === 'SOCIAL')).toBe(true);
-  });
-
-  it('search filtra por q (nombre/sigla/código, case-insensitive)', async () => {
-    const res = await firstValueFrom(service.search({ state: 'all', q: 'osde', page: 0, size: 20 }));
-    expect(res.content.some((o) => o.name.toLowerCase().includes('osde'))).toBe(true);
-  });
-
-  it('getCompleteById devuelve la obra social con planes y contactos', async () => {
-    const os = await firstValueFrom(service.getCompleteById(1));
-    expect(os.id).toBe(1);
-    expect(os.plans.length).toBeGreaterThan(0);
-  });
-
-  it('getCompleteById de id inexistente emite error', async () => {
-    await expect(firstValueFrom(service.getCompleteById(99999))).rejects.toBeTruthy();
-  });
-
-  it('createFromWizard agrega y queda recuperable por getCompleteById', async () => {
-    const payload: WizardCreate = {
-      insurer: {
-        code: 'NEW', name: 'Nueva OS', acronym: 'NOS', insurerType: 'SOCIAL',
-        description: 'desc', authorizationUrl: '', specificData: { socialHealth: { cuit: '30-11111111-1' } },
-      },
-      plans: [{
-        plan: { code: 'P1', acronym: 'P1', name: 'Plan 1', iva: 21 },
-        agreement: { versionNbu: 3, ubValue: 1000, validFromDate: '2026-01-01' },
+  it('search GET /insurers con state/page/size y mapea a summary', async () => {
+    const p = firstValueFrom(service.search({ state: 'active', page: 0, size: 20 }));
+    const req = httpMock.expectOne((r) => r.url === '/api/v1/coverages/insurers');
+    expect(req.request.params.get('state')).toBe('active');
+    expect(req.request.params.get('page')).toBe('0');
+    expect(req.request.params.get('size')).toBe('20');
+    req.flush({
+      content: [{
+        id: 96002, code: 'OSDE', name: 'OSDE', acronym: 'OSDE',
+        insurerType: 'PRIVATE', insurerTypeName: 'Prepaga',
+        description: null, authorizationUrl: null, cuit: '30-1-9', copayPolicy: null,
+        acceptedPaymentMethods: null, active: true,
       }],
-      contacts: [{ contactType: 'PHONE', contact: '123' }],
-    };
-    const created = await firstValueFrom(service.createFromWizard(payload));
-    expect(created.id).toBeGreaterThan(0);
-    expect(created.insurerTypeName).toBe('Obra Social');
-    const fetched = await firstValueFrom(service.getCompleteById(created.id));
-    expect(fetched.name).toBe('Nueva OS');
-    expect(fetched.plans[0].actualAgreements[0].ubValue).toBe(1000);
+      totalElements: 1, totalPages: 1, page: 0, size: 20,
+    });
+    const res = await p;
+    expect(res.totalElements).toBe(1);
+    expect(res.content[0]).toEqual({
+      id: 96002, code: 'OSDE', acronym: 'OSDE', name: 'OSDE',
+      insurerType: 'PRIVATE', insurerTypeName: 'Prepaga', active: true,
+    });
   });
 
-  it('getInsurerTypes / getNbuVersions / getContactTypes devuelven catálogos', async () => {
-    expect((await firstValueFrom(service.getInsurerTypes())).length).toBe(3);
+  it('search agrega q e insurerType cuando vienen', async () => {
+    const p = firstValueFrom(service.search({ state: 'all', q: 'osde', insurerType: 'PRIVATE', page: 0, size: 50 }));
+    const req = httpMock.expectOne((r) => r.url === '/api/v1/coverages/insurers');
+    expect(req.request.params.get('q')).toBe('osde');
+    expect(req.request.params.get('insurerType')).toBe('PRIVATE');
+    req.flush({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 50 });
+    await p;
+  });
+
+  it('getCompleteById GET /insurers/{id}/complete y mapea specificData/planes/contactos', async () => {
+    const p = firstValueFrom(service.getCompleteById(96002));
+    const req = httpMock.expectOne('/api/v1/coverages/insurers/96002/complete');
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      id: 96002, code: 'OSDE', name: 'OSDE', acronym: 'OSDE',
+      insurerType: 'PRIVATE', insurerTypeName: 'Prepaga',
+      description: null, authorizationUrl: 'https://osde', cuit: '30-1-9',
+      copayPolicy: 'Copago según plan', acceptedPaymentMethods: null, active: true,
+      contacts: [{ id: 1, contactType: 'PHONE', contact: '0810', active: true }],
+      plans: [{
+        id: 96002, insurerId: 96002, code: 'OSDE-210', acronym: '210', name: '210',
+        description: null, iva: 21, particular: false, active: true,
+        currentAgreement: { id: 5, insurerPlanId: 96002, versionNbu: null, ubValue: 1500, validFromDate: '2025-01-01', validToDate: null, active: true },
+      }],
+    });
+    const os = await p;
+    expect(os.specificData?.privateHealth?.cuit).toBe('30-1-9');
+    expect(os.specificData?.privateHealth?.copayPolicy).toBe('Copago según plan');
+    expect(os.plans).toHaveLength(1);
+    expect(os.plans[0].insurerName).toBe('OSDE');
+    expect(os.plans[0].actualAgreements[0].ubValue).toBe(1500);
+    expect(os.contacts).toHaveLength(1);
+    expect(os.contacts[0].contactType).toBe('PHONE');
+  });
+
+  it('getCompleteById SOCIAL mapea cuit a socialHealth y plan sin convenio queda sin agreements', async () => {
+    const p = firstValueFrom(service.getCompleteById(96003));
+    httpMock.expectOne('/api/v1/coverages/insurers/96003/complete').flush({
+      id: 96003, code: 'IOMA', name: 'IOMA', acronym: 'IOMA',
+      insurerType: 'SOCIAL', insurerTypeName: 'Obra Social',
+      description: null, authorizationUrl: null, cuit: '30-9-1', copayPolicy: null,
+      acceptedPaymentMethods: null, active: true,
+      contacts: [],
+      plans: [{
+        id: 96003, insurerId: 96003, code: 'IOMA-PMO', acronym: 'PMO', name: 'Plan PMO',
+        description: null, iva: 21, particular: false, active: true, currentAgreement: null,
+      }],
+    });
+    const os = await p;
+    expect(os.specificData?.socialHealth?.cuit).toBe('30-9-1');
+    expect(os.plans[0].actualAgreements).toEqual([]);
+  });
+
+  it('getInsurerTypes / getContactTypes pegan a sus endpoints; getNbuVersions es catálogo fijo', async () => {
+    const types = firstValueFrom(service.getInsurerTypes());
+    httpMock.expectOne('/api/v1/coverages/insurer-types').flush([{ name: 'SOCIAL', description: 'Obra Social' }]);
+    expect((await types).length).toBe(1);
+
+    const contacts = firstValueFrom(service.getContactTypes());
+    httpMock.expectOne('/api/v1/coverages/contact-types').flush([{ name: 'PHONE', description: 'Teléfono' }]);
+    expect((await contacts).length).toBe(1);
+
     expect((await firstValueFrom(service.getNbuVersions())).length).toBeGreaterThan(0);
-    expect((await firstValueFrom(service.getContactTypes())).length).toBe(4);
   });
 });

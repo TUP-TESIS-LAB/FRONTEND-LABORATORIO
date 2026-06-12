@@ -43,12 +43,11 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
         <p-tabs value="info">
           <p-tablist>
             <p-tab value="info">Información</p-tab>
-            @if (o.insurerType !== 'SELF_PAY') { <p-tab value="contacts">Contactos</p-tab> }
             <p-tab value="plans">Planes y convenios</p-tab>
             <p-tab value="history">Convenios</p-tab>
           </p-tablist>
           <p-tabpanels>
-            <!-- INFORMACIÓN -->
+            <!-- INFORMACIÓN (incluye Contactos) -->
             <p-tabpanel value="info">
               <div class="grid grid-cols-3 gap-3">
                 <div><div class="text-xs text-surface-500">Código</div><div>{{ o.code }}</div></div>
@@ -70,26 +69,27 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
                   <div class="col-span-3"><div class="text-xs text-surface-500">Descripción</div><div>{{ o.description }}</div></div>
                 }
               </div>
-            </p-tabpanel>
 
-            <!-- CONTACTOS -->
-            @if (o.insurerType !== 'SELF_PAY') {
-              <p-tabpanel value="contacts">
-                @if (o.contacts.length === 0) {
-                  <ui-empty-state heading="Sin contactos" icon="pi-phone" />
-                } @else {
-                  <ul class="space-y-1">
-                    @for (c of o.contacts; track c.id) {
-                      <li class="flex gap-2 items-center">
-                        <p-tag [value]="contactLabel(c.contactType)" />
-                        <span>{{ c.contact }}</span>
-                        @if (!c.isActive) { <p-tag severity="danger" value="Inactivo" /> }
-                      </li>
-                    }
-                  </ul>
-                }
-              </p-tabpanel>
-            }
+              <!-- Contactos (movido desde su antigua pestaña) -->
+              @if (o.insurerType !== 'SELF_PAY') {
+                <div class="mt-5">
+                  <div class="text-xs text-surface-500 mb-2">Contactos</div>
+                  @if (o.contacts.length === 0) {
+                    <ui-empty-state heading="Sin contactos" icon="pi-phone" />
+                  } @else {
+                    <ul class="space-y-1">
+                      @for (c of o.contacts; track c.id) {
+                        <li class="flex gap-2 items-center">
+                          <p-tag [value]="contactLabel(c.contactType)" />
+                          <span>{{ c.contact }}</span>
+                          @if (!c.isActive) { <p-tag severity="danger" value="Inactivo" /> }
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+            </p-tabpanel>
 
             <!-- PLANES Y CONVENIOS -->
             <p-tabpanel value="plans">
