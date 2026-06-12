@@ -63,6 +63,7 @@ import {
           [paginator]="true"
           [rows]="20"
           [rowsPerPageOptions]="[10, 20, 50, 100]"
+          [entityLabel]="'atenciones'"
           [actions]="rowActions"
           emptyHeading="Sin atenciones para los filtros aplicados"
           emptyIcon="pi-inbox"

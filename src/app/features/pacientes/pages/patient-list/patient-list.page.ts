@@ -66,6 +66,7 @@ import {
         [paginator]="true"
         [rows]="pageRequest().size"
         [rowsPerPageOptions]="[10, 20, 50, 100]"
+        [entityLabel]="'pacientes'"
         [scrollHeight]="'flex'"
         [totalRecords]="total()"
         [first]="pageRequest().page * pageRequest().size"

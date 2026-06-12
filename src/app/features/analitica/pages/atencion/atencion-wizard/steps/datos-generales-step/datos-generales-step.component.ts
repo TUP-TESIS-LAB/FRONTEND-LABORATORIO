@@ -229,23 +229,27 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                     appendTo="body"
                     class="w-full" />
                 </div>
+                @if (!isParticularSelected()) {
+                  <div>
+                    <label class="block text-sm mb-1">Plan</label>
+                    <p-select
+                      [(ngModel)]="form.planId"
+                      [options]="formPlanOptions()"
+                      optionLabel="name"
+                      optionValue="planId"
+                      placeholder="— Seleccioná —"
+                      [disabled]="formInsurerId() == null"
+                      appendTo="body"
+                      class="w-full" />
+                  </div>
+                }
+              </div>
+              @if (!isParticularSelected()) {
                 <div>
-                  <label class="block text-sm mb-1">Plan</label>
-                  <p-select
-                    [(ngModel)]="form.planId"
-                    [options]="formPlanOptions()"
-                    optionLabel="name"
-                    optionValue="planId"
-                    placeholder="— Seleccioná —"
-                    [disabled]="formInsurerId() == null"
-                    appendTo="body"
-                    class="w-full" />
+                  <label class="block text-sm mb-1">Número de afiliado</label>
+                  <input pInputText [(ngModel)]="form.memberNumber" class="w-full" placeholder="N° de afiliado" />
                 </div>
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Número de afiliado</label>
-                <input pInputText [(ngModel)]="form.memberNumber" class="w-full" placeholder="Opcional" />
-              </div>
+              }
             </div>
             <div class="flex justify-end">
               <p-button label="Guardar cambios" icon="pi pi-check" [disabled]="birthDateFuture()" (onClick)="saveEdit()" />
@@ -316,26 +320,27 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   appendTo="body"
                   class="w-full" />
               </div>
+              @if (!isParticularSelected()) {
+                <div>
+                  <label class="block text-sm mb-1">Plan <span class="text-red-500">*</span></label>
+                  <p-select
+                    [(ngModel)]="form.planId"
+                    [options]="formPlanOptions()"
+                    optionLabel="name"
+                    optionValue="planId"
+                    placeholder="— Seleccioná —"
+                    [disabled]="formInsurerId() == null"
+                    appendTo="body"
+                    class="w-full" />
+                </div>
+              }
+            </div>
+            @if (!isParticularSelected()) {
               <div>
-                <label class="block text-sm mb-1">Plan @if (!isParticularSelected()) { <span class="text-red-500">*</span> }</label>
-                <p-select
-                  [(ngModel)]="form.planId"
-                  [options]="formPlanOptions()"
-                  optionLabel="name"
-                  optionValue="planId"
-                  placeholder="— Seleccioná —"
-                  [disabled]="formInsurerId() == null"
-                  appendTo="body"
-                  class="w-full" />
+                <label class="block text-sm mb-1">Número de afiliado <span class="text-red-500">*</span></label>
+                <input pInputText [(ngModel)]="form.memberNumber" class="w-full" placeholder="N° de afiliado" />
               </div>
-            </div>
-            <div>
-              <label class="block text-sm mb-1">
-                Número de afiliado @if (!isParticularSelected()) { <span class="text-red-500">*</span> }
-              </label>
-              <input pInputText [(ngModel)]="form.memberNumber" class="w-full"
-                     [placeholder]="isParticularSelected() ? 'Opcional' : 'N° de afiliado'" />
-            </div>
+            }
           </div>
           <div class="flex justify-end">
             <p-button
@@ -508,7 +513,14 @@ export class DatosGeneralesStepComponent implements OnInit {
   /** Obra social elegida en el form de alta/edición (UI; el plan es lo que se envía). */
   protected readonly formInsurerId = signal<number | null>(null);
   /** Obras sociales seleccionables (incluye Particular para pago directo). */
-  protected readonly insurerOptions = computed<InsurerOption[]>(() => [...this.catalog().insurers]);
+  protected readonly insurerOptions = computed<InsurerOption[]>(() => {
+    // Particular (SELF_PAY) siempre fija como primera opción; el resto alfabético.
+    return [...this.catalog().insurers].sort((a, b) => {
+      if (a.insurerType === 'SELF_PAY') return -1;
+      if (b.insurerType === 'SELF_PAY') return 1;
+      return a.name.localeCompare(b.name);
+    });
+  });
   /** Planes de la obra social elegida en el form. */
   protected readonly formPlanOptions = computed<PlanOption[]>(() => plansForInsurer(this.catalog(), this.formInsurerId()));
 

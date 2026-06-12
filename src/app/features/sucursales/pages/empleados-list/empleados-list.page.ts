@@ -35,6 +35,7 @@ import { selectAllEmployees, selectEmployeePending } from '../../store/employee.
         [paginator]="true"
         [rows]="20"
         [rowsPerPageOptions]="[10, 20, 50, 100]"
+        [entityLabel]="'empleados'"
         [showEdit]="true"
         [actions]="extraActions"
         emptyHeading="Sin empleados"

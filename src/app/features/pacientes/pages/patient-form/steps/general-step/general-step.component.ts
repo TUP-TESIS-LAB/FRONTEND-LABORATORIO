@@ -64,11 +64,11 @@ export const notFutureDateValidator: ValidatorFn = (control: AbstractControl): V
         }
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label">Género</label>
+        <label class="pat-form__label">Género<span class="pat-form__req">*</span></label>
         <p-select formControlName="gender" [options]="genderOpts" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label">Sexo registral</label>
+        <label class="pat-form__label">Sexo registral<span class="pat-form__req">*</span></label>
         <p-select formControlName="sexAtBirth" [options]="sexOpts" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
       </div>
       <div class="pat-form__field">
@@ -83,7 +83,7 @@ export const notFutureDateValidator: ValidatorFn = (control: AbstractControl): V
 
     <!-- Domicilio: ahora vive dentro de Datos generales (5 campos). -->
     <div class="mt-6 border-t pt-4">
-      <h3 class="text-sm font-semibold text-surface-700 mb-3"><i class="pi pi-map-marker mr-1"></i>Domicilio</h3>
+      <h3 class="text-sm font-semibold text-surface-700 mb-3"><i class="pi pi-map-marker mr-1"></i>Domicilio <span class="text-xs font-normal text-surface-400">(opcional)</span></h3>
       <pat-address-fields [group]="addressGroup()" />
     </div>
   `,
