@@ -19,8 +19,9 @@ import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.select
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   imports: [RouterLink, ButtonModule, TagModule, ConfirmDialogModule, DataTableComponent, UiCellDirective],
+  styles: [`:host { display: block; height: 100%; }`],
   template: `
-    <div class="p-6">
+    <div class="p-6 flex flex-col h-full min-h-0">
       <header class="flex items-center justify-between mb-4">
         <div>
           <div class="text-xs text-surface-500">Servicios clínicos</div>
@@ -31,10 +32,15 @@ import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.select
         </a>
       </header>
 
+      <div class="flex-1 min-h-0 flex flex-col">
       <ui-table
         [value]="items()"
         [loading]="pending()"
         [columns]="columns"
+        [paginator]="true"
+        [rows]="20"
+        [rowsPerPageOptions]="[10, 20, 50, 100]"
+        [scrollHeight]="'flex'"
         [showEdit]="true"
         [showDelete]="true"
         [actions]="extraActions"
@@ -60,6 +66,7 @@ import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.select
                  [value]="$any(row).active ? 'Activo' : 'Inactivo'" />
         </ng-template>
       </ui-table>
+      </div>
 
       <p-confirmDialog />
     </div>

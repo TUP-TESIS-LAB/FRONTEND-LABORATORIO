@@ -26,6 +26,9 @@ import { Sucursal } from '../../models/sucursal.model';
       [value]="sucursales()"
       [loading]="pending()"
       [columns]="columns"
+      [paginator]="true"
+      [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50, 100]"
       emptyHeading="Sin sucursales"
       emptyIcon="pi-map-marker"
       emptyDescription="Agregá la primera sucursal para empezar.">
