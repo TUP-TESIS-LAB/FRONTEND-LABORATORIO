@@ -45,7 +45,7 @@ import { DialogModule } from 'primeng/dialog';
   </div>
 </p-dialog>
   `,
-  styles: [''],
+  styleUrl: './confirm-send-all-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmSendAllDialogComponent {

@@ -18,7 +18,7 @@
   }
 
   &.idle {
-    background: var(--gx-card-bg);
+    background: var(--ds-bg);
     border: 1px dashed #dcdef0;
     color: var(--gx-muted);
     .create { margin-left: auto; }

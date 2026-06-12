@@ -32,7 +32,7 @@ import { ChangeDetectionStrategy, Component, Input, output, signal } from '@angu
   </button>
 </div>
   `,
-  styles: [''],
+  styleUrl: './transito-scan-bar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransitoScanBarComponent {

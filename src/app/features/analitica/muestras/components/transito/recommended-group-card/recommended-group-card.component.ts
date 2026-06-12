@@ -58,7 +58,7 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
   </div>
 </article>
   `,
-  styles: [''],
+  styleUrl: './recommended-group-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecommendedGroupCardComponent {

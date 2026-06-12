@@ -32,7 +32,7 @@ import type { TemporalLote } from '../../../models/transito.model';
   </div>
 }
   `,
-  styles: [''],
+  styleUrl: './bulk-actions-bar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BulkActionsBarComponent {

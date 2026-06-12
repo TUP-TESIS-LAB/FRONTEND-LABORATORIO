@@ -69,7 +69,7 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
   </div>
 </article>
   `,
-  styles: [''],
+  styleUrl: './lote-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoteCardComponent {

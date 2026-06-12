@@ -34,7 +34,7 @@ import type { Sample } from '../../../models/sample.model';
   <div class="col-state"><span class="badge teal">En tránsito</span></div>
 </div>
   `,
-  styles: [''],
+  styleUrl: './sample-row.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SampleRowComponent {

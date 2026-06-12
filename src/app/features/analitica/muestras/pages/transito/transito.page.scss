@@ -2,7 +2,7 @@
 
 .transito-page {
   font-family: 'Poppins', system-ui, sans-serif;
-  background: var(--gx-bg);
+  background: var(--ds-bg);
   min-height: 100%;
   padding: 0 30px 24px;
   color: var(--gx-ink);
@@ -10,19 +10,23 @@
   .page-header {
     padding: 24px 0 16px;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 24px;
 
     h1 { font-size: 24px; font-weight: 700; margin: 0; }
     .subtitle { color: var(--gx-muted); font-size: 13.5px; margin: 4px 0 0; max-width: 720px; }
-    .stat-chips { display: flex; gap: 8px; }
+    .stat-chips { display: flex; gap: 8px; align-items: center; }
     .chip {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
       background: var(--gx-card-bg);
       border: 1px solid var(--gx-border);
-      padding: 6px 12px;
+      padding: 8px 14px;
       border-radius: 999px;
-      font-size: 12.5px;
+      font-size: 13px;
+      font-weight: 500;
       color: var(--gx-ink-2);
       &.highlight { background: var(--gx-sel-bg); border-color: var(--gx-sel-border); color: var(--gx-brand-hover); font-weight: 600; }
     }
@@ -30,13 +34,11 @@
 
   .sticky {
     position: sticky;
-    top: 0;
+    top: calc(var(--space-6) * -1);
     z-index: 50;
     margin-inline: -30px;
     padding: 12px 30px 14px;
-    background: var(--gx-bg);
-    box-shadow: 0 10px 16px -12px rgba(28,30,55,.22);
-    border-bottom: 1px solid var(--gx-border);
+    background: var(--ds-bg);
     display: flex;
     flex-direction: column;
     gap: 12px;
