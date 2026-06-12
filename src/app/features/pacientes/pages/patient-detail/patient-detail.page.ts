@@ -19,8 +19,8 @@ import {
   selectSelectedPatient, selectPatientPending,
 } from '../../store/patient.selectors';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
-import { getCoveragePlanLabel, CoveragePlanOption } from '../../models/coverage-plans.catalog';
-import { CoveragePlansService } from '../../services/coverage-plans.service';
+import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '../../models/coverage-catalog.model';
+import { CoverageCatalogService } from '../../services/coverage-catalog.service';
 import { genderLabel, sexLabel, statusLabel } from '../../models/patient-labels';
 import { ContactType, Patient } from '../../models/patient.model';
 
@@ -84,19 +84,33 @@ import { ContactType, Patient } from '../../models/patient.model';
               </div>
             </p-tabpanel>
             <p-tabpanel value="coverages">
-              @if (p.coverages.length === 0) {
-                <ui-empty-state heading="Sin coberturas" icon="pi-id-card" />
-              } @else {
-                <ul class="space-y-1">
-                  @for (c of p.coverages; track c.id) {
-                    <li>
-                      {{ planLabel(c.planId) }} — N° {{ c.memberNumber }}
-                      @if (c.isPrimary) { <p-tag severity="success" value="Primario" class="ml-1" /> }
-                      @if (!c.active) { <p-tag severity="danger" value="Inactivo" class="ml-1" /> }
-                    </li>
-                  }
-                </ul>
-              }
+              <!-- Read-only: mismo estilo que el Paso 2 del stepper. Para editar, usar "Editar". -->
+              <div class="cv-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Obra social</th><th>Plan</th><th>N° afiliado</th>
+                      <th class="cv-center">Principal</th><th class="cv-center">Activa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Particular</td><td class="cv-muted">—</td><td class="cv-muted">—</td>
+                      <td class="cv-center">@if (!hasPrimaryCoverage(p)) { <i class="pi pi-check text-green-600"></i> }</td>
+                      <td class="cv-center cv-muted">—</td>
+                    </tr>
+                    @for (c of p.coverages; track c.id) {
+                      <tr>
+                        <td>{{ insurerNameForPlan(catalog(), c.planId) }}</td>
+                        <td>{{ planName(catalog(), c.planId) }}</td>
+                        <td>{{ c.memberNumber || '—' }}</td>
+                        <td class="cv-center">@if (c.isPrimary) { <i class="pi pi-check text-green-600"></i> }</td>
+                        <td class="cv-center">@if (c.active) { <i class="pi pi-check text-green-600"></i> } @else { <span class="cv-muted">—</span> }</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             </p-tabpanel>
             <p-tabpanel value="history">
               <ui-empty-state
@@ -113,6 +127,19 @@ import { ContactType, Patient } from '../../models/patient.model';
       <div class="p-6">{{ pending() ? 'Cargando…' : 'Paciente no encontrado.' }}</div>
     }
   `,
+  styles: [`
+    .cv-table { border: 1px solid #e8edf3; border-radius: 10px; overflow: hidden; }
+    .cv-table table { width: 100%; border-collapse: collapse; }
+    .cv-table thead th {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 9px 14px; color: #475569; font-weight: 700; background: #f4f7fb;
+      text-align: left; white-space: nowrap;
+    }
+    .cv-table tbody td { font-size: 13px; padding: 7px 14px; border: none; }
+    .cv-table tbody tr:nth-child(even) { background: #fafbfd; }
+    .cv-center { text-align: center; }
+    .cv-muted { color: #94a3b8; }
+  `],
 })
 export class PatientDetailPage implements OnInit, OnDestroy {
   /** Comes from the routed param via withComponentInputBinding(). */
@@ -129,13 +156,16 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   private readonly confirm = inject(ConfirmationService);
   private readonly actions$ = inject(Actions);
   private readonly perms = inject(PatientPermissionsService);
-  private readonly plansService = inject(CoveragePlansService);
+  private readonly catalogService = inject(CoverageCatalogService);
   readonly canMutate = this.perms.canMutate;
 
   readonly patient = this.store.selectSignal(selectSelectedPatient);
   readonly pending = this.store.selectSignal(selectPatientPending);
 
-  private readonly plans = signal<readonly CoveragePlanOption[]>([]);
+  readonly catalog = signal<CoverageCatalog>(EMPTY_CATALOG);
+  // Helpers de catálogo expuestos al template (read-only de coberturas).
+  readonly insurerNameForPlan = insurerNameForPlan;
+  readonly planName = planName;
 
   ngOnInit(): void {
     const numericId = Number(this.id());
@@ -144,15 +174,18 @@ export class PatientDetailPage implements OnInit, OnDestroy {
       return;
     }
     this.store.dispatch(loadPatient({ id: numericId }));
-    this.plansService.getActivePlans().subscribe({
-      next: (plans) => this.plans.set(plans),
-      error: () => { /* lista queda vacía; no se expone el error al usuario */ },
+    this.catalogService.getCatalog().subscribe({
+      next: (cat) => this.catalog.set(cat),
+      error: () => { /* catálogo vacío; no se expone el error al usuario */ },
     });
   }
 
   ngOnDestroy(): void { this.store.dispatch(clearSelectedPatient()); }
 
-  planLabel(planId: number): string { return getCoveragePlanLabel(planId, this.plans()); }
+  /** True si alguna cobertura real es principal (si no, Particular es la principal). */
+  hasPrimaryCoverage(p: Patient): boolean {
+    return p.coverages.some((c) => c.isPrimary && c.active);
+  }
 
   // Labels en español (única fuente: patient-labels) expuestos al template.
   readonly statusLabel = statusLabel;

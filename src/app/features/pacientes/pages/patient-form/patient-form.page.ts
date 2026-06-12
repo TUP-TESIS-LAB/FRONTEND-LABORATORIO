@@ -339,20 +339,10 @@ export class PatientFormPage implements OnDestroy {
     this.ensureStepDefaults(i);
   }
 
-  private ensureStepDefaults(stepIndex: number): void {
-    // Step 1 = Obras sociales (paso opcional). Seed 1 fila vacia primaria SIN
-    // Validators.required: el paso es opcional, no debe forzar form-INVALID.
-    // El submit filtra las filas con planId nulo o memberNumber vacio para
-    // no postear coberturas a medias.
-    if (stepIndex === 1 && this.coveragesArray.length === 0) {
-      this.coveragesArray.push(this.fb.group({
-        id: [null],
-        planId: [null],
-        memberNumber: [''],
-        isPrimary: [true],
-        active: [true],
-      }));
-    }
+  private ensureStepDefaults(_stepIndex: number): void {
+    // Obras sociales (Diseño B): "Particular" es una fila fija visual del coverage-section,
+    // no se siembra en el FormArray. Las coberturas se agregan vía la cascada OS→Plan→afiliado.
+    // No hay defaults que sembrar por paso.
   }
 
   private resetForCreate(): void {

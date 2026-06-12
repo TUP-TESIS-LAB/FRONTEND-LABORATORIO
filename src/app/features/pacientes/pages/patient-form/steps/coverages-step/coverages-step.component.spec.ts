@@ -5,10 +5,11 @@ import { describe, it, expect } from 'vitest';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { CoveragesStepComponent } from './coverages-step.component';
-import { CoveragePlansService } from '../../../../services/coverage-plans.service';
+import { CoverageCatalogService } from '../../../../services/coverage-catalog.service';
+import { EMPTY_CATALOG } from '../../../../models/coverage-catalog.model';
 
-const mockPlansService = {
-  getActivePlans: () => of([{ planId: 1, label: 'Particular', particular: true }]),
+const mockCatalogService = {
+  getCatalog: () => of(EMPTY_CATALOG),
 };
 
 @Component({
@@ -25,7 +26,7 @@ describe('CoveragesStepComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         provideNoopAnimations(),
-        { provide: CoveragePlansService, useValue: mockPlansService },
+        { provide: CoverageCatalogService, useValue: mockCatalogService },
       ],
     });
     const fx = TestBed.createComponent(HostCmp);
@@ -40,7 +41,7 @@ describe('CoveragesStepComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         provideNoopAnimations(),
-        { provide: CoveragePlansService, useValue: mockPlansService },
+        { provide: CoverageCatalogService, useValue: mockCatalogService },
       ],
     });
     const fx = TestBed.createComponent(HostCmp);
