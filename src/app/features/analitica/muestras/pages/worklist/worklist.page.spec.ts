@@ -10,7 +10,7 @@ import { MessageService } from 'primeng/api';
 import { PollingService } from '@core/refresh';
 import { WorklistPage } from './worklist.page';
 import { MockSamplesService } from '../../services/mock-samples.service';
-import { selectRecoleccionItems, selectDescarteItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { selectRecoleccionItems, selectDescarteItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import type { LabelWorklistItem } from '../../models/label-worklist.model';
 import { transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
 
@@ -57,6 +57,7 @@ function setup(
   screenKey: 'recoleccion' | 'traslado' | 'procesamiento' | 'descarte',
   recoleccionItems: LabelWorklistItem[] = [],
   descarteItems: LabelWorklistItem[] = [],
+  procesamientoItems: LabelWorklistItem[] = [],
 ): ComponentFixture<WorklistPage> {
   installLocalStorageMock();
   actions$ = new Subject<Action>();
@@ -72,6 +73,7 @@ function setup(
         selectors: [
           { selector: selectRecoleccionItems, value: recoleccionItems },
           { selector: selectDescarteItems, value: descarteItems },
+          { selector: selectProcesamientoItems, value: procesamientoItems },
           { selector: selectMuestrasBranchName, value: 'CENTRAL' },
           { selector: selectMuestrasError, value: null },
         ],
@@ -118,11 +120,37 @@ describe('WorklistPage (smoke)', () => {
     expect(fx.componentInstance.total()).toBe(10);
   });
 
-  it('renderiza Procesamiento con título correcto', () => {
+  it('renderiza Procesamiento con título correcto (backend, vacío)', () => {
     const fx = setup('procesamiento');
     const el = fx.nativeElement as HTMLElement;
     expect(el.querySelector('h1')?.textContent).toContain('Procesamiento');
-    expect(fx.componentInstance.total()).toBe(9);
+    expect(fx.componentInstance.total()).toBe(0);
+  });
+
+  it('Procesamiento mapea items PROCESSING del store al view-model agrupado', () => {
+    const item: LabelWorklistItem = {
+      labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 50005, analysisName: 'Hemograma',
+      patientName: 'Marta Gómez', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
+    };
+    const fx = setup('procesamiento', [], [], [item]);
+    const cmp = fx.componentInstance;
+    expect(cmp.total()).toBe(1);
+    expect(cmp.rows()[0].study).toBe('Hemograma');
+  });
+
+  it('Procesamiento es read-only: canTransition = false', () => {
+    const fx = setup('procesamiento');
+    expect(fx.componentInstance.canTransition()).toBe(false);
+  });
+
+  it('Procesamiento muestra acciones de planilla (showWorksheetActions = true)', () => {
+    const fx = setup('procesamiento');
+    expect(fx.componentInstance.showWorksheetActions()).toBe(true);
+  });
+
+  it('Recolección NO muestra acciones de planilla', () => {
+    const fx = setup('recoleccion');
+    expect(fx.componentInstance.showWorksheetActions()).toBe(false);
   });
 
   it('renderiza Descarte con título correcto (mock vacío)', () => {
@@ -161,7 +189,11 @@ describe('WorklistPage (smoke)', () => {
   });
 
   it('toggleRow selecciona y deselecciona', () => {
-    const fx = setup('procesamiento');
+    const item: LabelWorklistItem = {
+      labelId: 70010, sampleId: 50060, barcode: '70010', protocolId: 50005, analysisName: 'Glucosa',
+      patientName: 'Luis Soto', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:05:00Z',
+    };
+    const fx = setup('procesamiento', [], [], [item]);
     const cmp = fx.componentInstance;
     const firstId = cmp.rows()[0].id;
     cmp.toggleRow(firstId);
@@ -171,12 +203,15 @@ describe('WorklistPage (smoke)', () => {
   });
 
   it('query filtra rows en vivo', () => {
-    const fx = setup('procesamiento');
+    const item: LabelWorklistItem = {
+      labelId: 70011, sampleId: 50061, barcode: '70011', protocolId: 50005, analysisName: 'Urea',
+      patientName: 'Rosa Vera', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:06:00Z',
+    };
+    const fx = setup('procesamiento', [], [], [item]);
     const cmp = fx.componentInstance;
-    const sample = cmp.rows()[0];
-    cmp.setQuery(sample.barcode);
+    cmp.setQuery('70011');
     expect(cmp.rows().length).toBe(1);
-    expect(cmp.rows()[0].barcode).toBe(sample.barcode);
+    expect(cmp.rows()[0].barcode).toBe('70011');
   });
 
   it('Recolección agrupa dos labels del mismo sampleId en UN tubo', () => {
