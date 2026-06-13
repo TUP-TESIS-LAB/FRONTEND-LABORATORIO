@@ -186,9 +186,8 @@ export class WorklistPage {
 
     if (this.isBackendScreen()) {
       const tubes = this.selectedSamples() as Tube[];
-      const labelIds = tubes.flatMap(tube =>
-        tube.labelIds?.length ? tube.labelIds : [Number(tube.id)],
-      );
+      const labelIds = tubes.flatMap(tube => tube.labelIds ?? []);
+      if (labelIds.length === 0) return;
       this.store.dispatch(transitionLabels({
         labelIds,
         transitionKey: t.key,
