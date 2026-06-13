@@ -20,11 +20,15 @@ import { TransitionDialogComponent } from '../../components/transition-dialog/tr
 import { initMuestras, loadRecoleccion, loadDescarte, loadProcesamiento, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
 import { selectRecoleccionItems, selectDescarteItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { groupTubes, type Tube } from '../../models/tube.model';
+import { loadTemplates } from '../../store/worksheet-templates/worksheet-templates.actions';
+import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
+import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
+import { WorksheetConfigModalComponent } from '../../components/planillas/worksheet-config-modal.component';
 
 @Component({
   selector: 'app-muestras-worklist',
   standalone: true,
-  imports: [ScanBarComponent, BatchMenuComponent, SampleTableComponent, TransitionDialogComponent, ToastModule],
+  imports: [ScanBarComponent, BatchMenuComponent, SampleTableComponent, TransitionDialogComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent],
   providers: [MessageService],
   templateUrl: './worklist.page.html',
   styleUrl: './worklist.page.scss',
@@ -69,6 +73,7 @@ export class WorklistPage {
   private readonly procesamientoItems = this.store.selectSignal(selectProcesamientoItems);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
+  private readonly templatesError = this.store.selectSignal(selectTemplatesError);
 
   private readonly sourceRows = computed<Sample[]>(() => {
     const key = this.config().key;
@@ -208,11 +213,37 @@ export class WorklistPage {
           });
         }
       });
+
+      let lastTplSig: string | null = null;
+      effect(() => {
+        const err = this.templatesError();
+        const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+        if (sig && sig !== lastTplSig) {
+          lastTplSig = sig;
+          this.messages.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: humanizeBackendError(err, { fallback: 'No pudimos completar la operación con las planillas. Probá de nuevo.' }),
+            life: 5000,
+          });
+        }
+      });
     }
   }
 
   /** Almacena los datos del toast de éxito (recolección) hasta que el backend confirma. */
   private pendingToast: { count: number; toLabel: string; detail: string } | null = null;
+
+  readonly planillasOpen = signal(false);
+  readonly configOpen = signal(false);
+  readonly editingTemplateId = signal<number | null>(null);
+
+  openPlanillas(): void { this.store.dispatch(loadTemplates()); this.planillasOpen.set(true); }
+  closePlanillas(): void { this.planillasOpen.set(false); }
+  onNewSheet(): void { this.editingTemplateId.set(null); this.planillasOpen.set(false); this.configOpen.set(true); }
+  onEditSheet(id: number): void { this.editingTemplateId.set(id); this.planillasOpen.set(false); this.configOpen.set(true); }
+  closeConfig(): void { this.configOpen.set(false); }
+  onConfigSaved(): void { this.configOpen.set(false); this.planillasOpen.set(true); }
 
   readonly menuOpen = signal(false);
   readonly activeTransition = signal<Transition | null>(null);
