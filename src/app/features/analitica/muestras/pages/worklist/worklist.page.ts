@@ -56,7 +56,7 @@ export class WorklistPage {
     || this.config().key === 'procesamiento',
   );
 
-  /** Para descarte, el menú de transición es de solo lectura (sin acciones backend). */
+  /** Descarte y procesamiento son de solo lectura: sin menú de transición ni acciones backend. */
   readonly canTransition = computed(() =>
     !this.isBackendScreen() || this.config().key === 'recoleccion',
   );
