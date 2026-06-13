@@ -12,6 +12,7 @@ import {
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
   loadTransito, loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
   loadDescarte, loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
+  loadProcesamiento, loadProcesamientoSuccess, loadProcesamientoNotModified, loadProcesamientoFailure,
   resolveRouting, resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
   dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
@@ -113,6 +114,20 @@ export class MuestrasEffects {
         return this.api.getWorklist('REJECTED,LOST,DISCARDED', branchId).pipe(
           map(res => isNotModified(res) ? loadDescarteNotModified() : loadDescarteSuccess({ items: res })),
           catchError((error: HttpErrorResponse) => of(loadDescarteFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  loadProcesamiento$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadProcesamiento),
+      withLatestFrom(this.store.select(selectMuestrasBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getWorklist('PROCESSING', branchId).pipe(
+          map(res => isNotModified(res) ? loadProcesamientoNotModified() : loadProcesamientoSuccess({ items: res })),
+          catchError((error: HttpErrorResponse) => of(loadProcesamientoFailure({ error }))),
         );
       }),
     ),
