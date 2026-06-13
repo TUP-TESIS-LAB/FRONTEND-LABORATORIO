@@ -11,6 +11,7 @@ import { PollingService } from '@core/refresh';
 import { WorklistPage } from './worklist.page';
 import { MockSamplesService } from '../../services/mock-samples.service';
 import { selectRecoleccionItems, selectDescarteItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import type { LabelWorklistItem } from '../../models/label-worklist.model';
 import { transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
 
@@ -76,6 +77,7 @@ function setup(
           { selector: selectProcesamientoItems, value: procesamientoItems },
           { selector: selectMuestrasBranchName, value: 'CENTRAL' },
           { selector: selectMuestrasError, value: null },
+          { selector: selectTemplatesError, value: null },
         ],
       }),
       {
@@ -318,5 +320,33 @@ describe('WorklistPage (smoke)', () => {
     // Backend confirma → el toast debe aparecer
     actions$.next(transitionLabelsSuccess({ labelIds: [60040], transitionKey: transition.key }));
     expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success' }));
+  });
+
+  it('Procesamiento: openPlanillas/closePlanillas alterna el flag', () => {
+    const fx = setup('procesamiento');
+    const cmp = fx.componentInstance;
+    expect(cmp.planillasOpen()).toBe(false);
+    cmp.openPlanillas();
+    expect(cmp.planillasOpen()).toBe(true);
+    cmp.closePlanillas();
+    expect(cmp.planillasOpen()).toBe(false);
+  });
+
+  it('Procesamiento: newSheet abre config en modo creación y cierra planillas', () => {
+    const fx = setup('procesamiento');
+    const cmp = fx.componentInstance;
+    cmp.openPlanillas();
+    cmp.onNewSheet();
+    expect(cmp.editingTemplateId()).toBeNull();
+    expect(cmp.configOpen()).toBe(true);
+    expect(cmp.planillasOpen()).toBe(false);
+  });
+
+  it('Procesamiento: editSheet abre config con el id', () => {
+    const fx = setup('procesamiento');
+    const cmp = fx.componentInstance;
+    cmp.onEditSheet(5);
+    expect(cmp.editingTemplateId()).toBe(5);
+    expect(cmp.configOpen()).toBe(true);
   });
 });
