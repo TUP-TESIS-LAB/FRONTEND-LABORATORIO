@@ -65,190 +65,19 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       <!-- T8: contenido scrolleable interno; el footer queda abajo y la página no crece. -->
       <div class="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
 
-      <!-- Caso A: paciente encontrado -->
-      @if (resolved(); as p) {
-        @if (!editing()) {
-          <div class="rounded border p-4 space-y-2 bg-surface-50">
-            <div class="flex items-center gap-3">
-              <div class="font-semibold text-base flex-1">{{ p.firstName }} {{ p.lastName }}</div>
-              <!-- Badge tres estados -->
-              <span
-                data-testid="estado-badge"
-                [attr.data-estado]="estado()"
-                class="ui-estado-badge"
-                [ngClass]="{
-                  'ui-estado-rojo':    estado() === 'rojo',
-                  'ui-estado-naranja': estado() === 'naranja',
-                  'ui-estado-verde':   estado() === 'verde'
-                }">
-                @if (estado() === 'verde') {
-                  <i class="pi pi-check-circle mr-1"></i>Verificado
-                } @else if (estado() === 'naranja') {
-                  <i class="pi pi-clock mr-1"></i>Sin verificar
-                } @else {
-                  <i class="pi pi-times-circle mr-1"></i>No existe
-                }
-              </span>
-            </div>
-
-            <div class="text-sm text-surface-600">DNI {{ p.dni }}</div>
-
-            <!-- Cobertura a usar en la atención: chips seleccionables (default = la principal).
-                 Permite cambiar la cobertura sin entrar a "Corregir datos". -->
-            <div class="pt-1">
-              <div class="text-xs font-medium text-surface-500 mb-1">Cobertura a usar</div>
-              <div class="flex flex-wrap gap-2">
-                @for (chip of coverageChips(); track chip.planId) {
-                  <button type="button" class="cov-chip"
-                          [class.cov-chip--on]="selectedInsurancePlanId() === chip.planId"
-                          [disabled]="readOnly()"
-                          (click)="selectedInsurancePlanId.set(chip.planId)">
-                    <span class="cov-chip__dot"></span>{{ chip.label }}
-                  </button>
-                }
-              </div>
-            </div>
-
-            <!-- Alerta portal -->
-            @if (esPortal()) {
-              <div
-                data-testid="tilde-portal"
-                class="flex items-start gap-2 rounded border border-orange-300 bg-orange-50 p-2 text-sm text-orange-800">
-                <i class="pi pi-exclamation-triangle mt-0.5 flex-shrink-0"></i>
-                <span>Paciente autorregistrado — constatá los datos contra el documento.</span>
-              </div>
-            }
-
-            <!-- Botón verificar: SOLO para pacientes de portal (autorregistrados o que
-                 modificaron sus datos desde el portal). La edición manual del laboratorio
-                 ya deja al paciente verificado automáticamente, así que este botón nunca
-                 aparece como consecuencia de una corrección manual. -->
-            @if (!readOnly() && esPortal() && estado() !== 'rojo' && !p.verifiedAt) {
-              <div class="flex items-center gap-2 pt-1">
-                <p-button
-                  data-testid="btn-verificar"
-                  label="Marcar verificado"
-                  icon="pi pi-shield"
-                  severity="secondary"
-                  [outlined]="true"
-                  [disabled]="!puedeVerificar()"
-                  (onClick)="marcarVerificado()" />
-                @if (faltaParaVerificar()) {
-                  <span class="text-xs text-surface-500">
-                    <i class="pi pi-info-circle mr-1"></i>{{ faltaParaVerificar() }}
-                  </span>
-                }
-              </div>
-            }
-
-            @if (!readOnly()) {
-              <div class="pt-1">
-                <p-button
-                  label="Corregir datos"
-                  icon="pi pi-pencil"
-                  severity="secondary"
-                  [outlined]="true"
-                  (onClick)="startEdit()" />
-              </div>
-            }
-          </div>
-        } @else {
-          <div class="rounded border p-4 space-y-3">
-            <div class="font-medium text-sm text-surface-600 mb-1">Editar datos del paciente</div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block text-sm mb-1">Nombre</label>
-                <input pInputText [(ngModel)]="form.firstName" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Apellido</label>
-                <input pInputText [(ngModel)]="form.lastName" class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Fecha de nacimiento</label>
-                <input pInputText type="date" [(ngModel)]="form.birthDate" [max]="todayStr" class="w-full" />
-                @if (birthDateFuture()) {
-                  <span class="text-xs text-red-600 mt-1 block">La fecha de nacimiento no puede ser futura.</span>
-                }
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Género</label>
-                <p-select
-                  [(ngModel)]="form.gender"
-                  [options]="genderOpts"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="— Seleccioná —"
-                  appendTo="body"
-                  class="w-full" />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Sexo al nacer</label>
-                <p-select
-                  [(ngModel)]="form.sexAtBirth"
-                  [options]="sexOpts"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="— Seleccioná —"
-                  appendTo="body"
-                  class="w-full" />
-              </div>
-              <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-sm mb-1">Obra social</label>
-                  <p-select
-                    [ngModel]="formInsurerId()"
-                    (ngModelChange)="onFormInsurerChange($event)"
-                    [options]="insurerOptions()"
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder="— Seleccioná —"
-                    appendTo="body"
-                    class="w-full" />
-                </div>
-                @if (!isParticularSelected()) {
-                  <div>
-                    <label class="block text-sm mb-1">Plan</label>
-                    <p-select
-                      [(ngModel)]="form.planId"
-                      [options]="formPlanOptions()"
-                      optionLabel="name"
-                      optionValue="planId"
-                      placeholder="— Seleccioná —"
-                      [disabled]="formInsurerId() == null"
-                      appendTo="body"
-                      class="w-full" />
-                  </div>
-                }
-              </div>
-              @if (!isParticularSelected()) {
-                <div>
-                  <label class="block text-sm mb-1">Número de afiliado</label>
-                  <input pInputText [(ngModel)]="form.memberNumber" class="w-full" placeholder="N° de afiliado" />
-                </div>
-              }
-            </div>
-            <div class="flex justify-end">
-              <p-button label="Guardar cambios" icon="pi pi-check" [disabled]="birthDateFuture()" (onClick)="saveEdit()" />
-            </div>
-          </div>
-        }
-      }
-
-      <!-- Card del paciente: visible mientras no haya un paciente resuelto. El DNI es
-           el primer input y busca solo (debounce mientras se tipea + al salir del campo,
-           sin botón "Buscar"). Si el DNI existe se muestra el paciente (Caso A); si no,
-           el resto de los campos para darlo de alta. -->
-      @if (!resolved()) {
-        <div class="rounded border p-4 space-y-3">
-          @if (notFoundDni()) {
+      <!-- Card única del paciente: el DNI es el primer input y queda SIEMPRE visible
+           (también con paciente encontrado, para corregir un typo y re-buscar). Busca
+           solo (debounce mientras se tipea + al salir del campo, sin botón "Buscar").
+           Si el DNI existe se muestran los datos del paciente; si no, el resto del alta. -->
+      <div class="rounded border p-4 space-y-3">
+          @if (notFoundDni() && !resolved()) {
             <div class="text-sm text-surface-600">
               <i class="pi pi-info-circle mr-1"></i>
               No encontramos un paciente con DNI <b>{{ notFoundDni() }}</b>. Completá los datos para darlo de alta:
             </div>
           }
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <!-- DNI: primer input; dispara la búsqueda automática -->
+            <!-- DNI: primer input, SIEMPRE visible; dispara la búsqueda automática -->
             <div>
               <label class="block text-sm mb-1">DNI <span class="text-red-500">*</span></label>
               <input pInputText [ngModel]="dniInput" (ngModelChange)="onDniChange($event)"
@@ -260,6 +89,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                 <small class="text-red-600 block mt-1"><i class="pi pi-exclamation-triangle mr-1"></i>No pudimos verificar el paciente. Reintentá.</small>
               }
             </div>
+            @if (!resolved()) {
             <div>
               <label class="block text-sm mb-1">Nombre <span class="text-red-500">*</span></label>
               <input pInputText [(ngModel)]="form.firstName" class="w-full" />
@@ -331,16 +161,185 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                 <input pInputText [(ngModel)]="form.memberNumber" class="w-full" placeholder="N° de afiliado" />
               </div>
             }
+          }
           </div>
-          <div class="flex justify-end">
-            <p-button
-              label="Crear paciente"
-              icon="pi pi-user-plus"
-              [disabled]="!altaValida()"
-              (onClick)="crearPaciente()" />
-          </div>
+
+          @if (notFoundDni() && !resolved()) {
+            <div class="flex justify-end">
+              <p-button
+                label="Crear paciente"
+                icon="pi pi-user-plus"
+                [disabled]="!altaValida()"
+                (onClick)="crearPaciente()" />
+            </div>
+          }
+
+          <!-- Paciente encontrado: datos + acciones dentro de la MISMA card. El DNI no
+               se repite acá porque ya vive arriba como primer input (siempre visible). -->
+          @if (resolved(); as p) {
+            @if (!editing()) {
+              <div class="space-y-2 pt-3 border-t">
+                <div class="flex items-center gap-3">
+                  <div class="font-semibold text-base flex-1">{{ p.firstName }} {{ p.lastName }}</div>
+                  <span
+                    data-testid="estado-badge"
+                    [attr.data-estado]="estado()"
+                    class="ui-estado-badge"
+                    [ngClass]="{
+                      'ui-estado-rojo':    estado() === 'rojo',
+                      'ui-estado-naranja': estado() === 'naranja',
+                      'ui-estado-verde':   estado() === 'verde'
+                    }">
+                    @if (estado() === 'verde') {
+                      <i class="pi pi-check-circle mr-1"></i>Verificado
+                    } @else if (estado() === 'naranja') {
+                      <i class="pi pi-clock mr-1"></i>Sin verificar
+                    } @else {
+                      <i class="pi pi-times-circle mr-1"></i>No existe
+                    }
+                  </span>
+                </div>
+
+                <!-- Cobertura a usar en la atención: chips seleccionables (default = la
+                     principal). Permite cambiar la cobertura sin entrar a "Corregir datos". -->
+                <div class="pt-1">
+                  <div class="text-xs font-medium text-surface-500 mb-1">Cobertura a usar</div>
+                  <div class="flex flex-wrap gap-2">
+                    @for (chip of coverageChips(); track chip.planId) {
+                      <button type="button" class="cov-chip"
+                              [class.cov-chip--on]="selectedInsurancePlanId() === chip.planId"
+                              [disabled]="readOnly()"
+                              (click)="selectedInsurancePlanId.set(chip.planId)">
+                        <span class="cov-chip__dot"></span>{{ chip.label }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- Alerta portal -->
+                @if (esPortal()) {
+                  <div
+                    data-testid="tilde-portal"
+                    class="flex items-start gap-2 rounded border border-orange-300 bg-orange-50 p-2 text-sm text-orange-800">
+                    <i class="pi pi-exclamation-triangle mt-0.5 flex-shrink-0"></i>
+                    <span>Paciente autorregistrado — constatá los datos contra el documento.</span>
+                  </div>
+                }
+
+                <!-- Botón verificar: SOLO para pacientes de portal. La edición manual del
+                     laboratorio ya deja al paciente verificado automáticamente. -->
+                @if (!readOnly() && esPortal() && estado() !== 'rojo' && !p.verifiedAt) {
+                  <div class="flex items-center gap-2 pt-1">
+                    <p-button
+                      data-testid="btn-verificar"
+                      label="Marcar verificado"
+                      icon="pi pi-shield"
+                      severity="secondary"
+                      [outlined]="true"
+                      [disabled]="!puedeVerificar()"
+                      (onClick)="marcarVerificado()" />
+                    @if (faltaParaVerificar()) {
+                      <span class="text-xs text-surface-500">
+                        <i class="pi pi-info-circle mr-1"></i>{{ faltaParaVerificar() }}
+                      </span>
+                    }
+                  </div>
+                }
+
+                @if (!readOnly()) {
+                  <div class="pt-1">
+                    <p-button
+                      label="Corregir datos"
+                      icon="pi pi-pencil"
+                      severity="secondary"
+                      [outlined]="true"
+                      (onClick)="startEdit()" />
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="space-y-3 pt-3 border-t">
+                <div class="font-medium text-sm text-surface-600 mb-1">Editar datos del paciente</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm mb-1">Nombre</label>
+                    <input pInputText [(ngModel)]="form.firstName" class="w-full" />
+                  </div>
+                  <div>
+                    <label class="block text-sm mb-1">Apellido</label>
+                    <input pInputText [(ngModel)]="form.lastName" class="w-full" />
+                  </div>
+                  <div>
+                    <label class="block text-sm mb-1">Fecha de nacimiento</label>
+                    <input pInputText type="date" [(ngModel)]="form.birthDate" [max]="todayStr" class="w-full" />
+                    @if (birthDateFuture()) {
+                      <span class="text-xs text-red-600 mt-1 block">La fecha de nacimiento no puede ser futura.</span>
+                    }
+                  </div>
+                  <div>
+                    <label class="block text-sm mb-1">Género</label>
+                    <p-select
+                      [(ngModel)]="form.gender"
+                      [options]="genderOpts"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="— Seleccioná —"
+                      appendTo="body"
+                      class="w-full" />
+                  </div>
+                  <div>
+                    <label class="block text-sm mb-1">Sexo al nacer</label>
+                    <p-select
+                      [(ngModel)]="form.sexAtBirth"
+                      [options]="sexOpts"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="— Seleccioná —"
+                      appendTo="body"
+                      class="w-full" />
+                  </div>
+                  <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-sm mb-1">Obra social</label>
+                      <p-select
+                        [ngModel]="formInsurerId()"
+                        (ngModelChange)="onFormInsurerChange($event)"
+                        [options]="insurerOptions()"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="— Seleccioná —"
+                        appendTo="body"
+                        class="w-full" />
+                    </div>
+                    @if (!isParticularSelected()) {
+                      <div>
+                        <label class="block text-sm mb-1">Plan</label>
+                        <p-select
+                          [(ngModel)]="form.planId"
+                          [options]="formPlanOptions()"
+                          optionLabel="name"
+                          optionValue="planId"
+                          placeholder="— Seleccioná —"
+                          [disabled]="formInsurerId() == null"
+                          appendTo="body"
+                          class="w-full" />
+                      </div>
+                    }
+                  </div>
+                  @if (!isParticularSelected()) {
+                    <div>
+                      <label class="block text-sm mb-1">Número de afiliado</label>
+                      <input pInputText [(ngModel)]="form.memberNumber" class="w-full" placeholder="N° de afiliado" />
+                    </div>
+                  }
+                </div>
+                <div class="flex justify-end">
+                  <p-button label="Guardar cambios" icon="pi pi-check" [disabled]="birthDateFuture()" (onClick)="saveEdit()" />
+                </div>
+              </div>
+            }
+          }
         </div>
-      }
 
       <!-- Médico solicitante (007) -->
       <div>
