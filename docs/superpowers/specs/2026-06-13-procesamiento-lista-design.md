@@ -1,6 +1,6 @@
 # Procesamiento — Arco 1: Lista real de muestras en procesamiento
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-98](https://exequielsantoro.atlassian.net/browse/KAN-98)
 > **Fecha:** 2026-06-13
 > **Rama:** `feat/procesamiento-lista` (worktree `FRONTEND-LABORATORIO-procesamiento`, base `development`)
 
