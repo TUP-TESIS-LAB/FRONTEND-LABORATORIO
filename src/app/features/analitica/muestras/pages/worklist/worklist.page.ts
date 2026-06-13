@@ -17,7 +17,7 @@ import { SampleTableComponent } from '../../components/sample-table/sample-table
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
 import { initMuestras, loadRecoleccion, transitionLabels } from '../../store/muestras.actions';
 import { selectRecoleccionItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
-import { toSample } from '../../models/label-worklist.model';
+import { groupTubes, type Tube } from '../../models/tube.model';
 
 @Component({
   selector: 'app-muestras-worklist',
@@ -55,7 +55,7 @@ export class WorklistPage {
 
   private readonly sourceRows = computed<Sample[]>(() =>
     this.isBackendScreen()
-      ? this.backendItems().map(i => toSample(i, this.branchName()))
+      ? groupTubes(this.backendItems(), this.branchName())
       : this.samples.byState(this.config().source)(),
   );
 
@@ -185,23 +185,34 @@ export class WorklistPage {
     this.activeTransition.set(null);
 
     if (this.isBackendScreen()) {
+      const tubes = this.selectedSamples() as Tube[];
+      const labelIds = tubes.flatMap(tube =>
+        tube.labelIds?.length ? tube.labelIds : [Number(tube.id)],
+      );
       this.store.dispatch(transitionLabels({
-        labelIds: ids.map(Number),
+        labelIds,
         transitionKey: t.key,
         reason: payload.note || undefined,
       }));
+      this.clearSelection();
+      const detail = this.formatDestDetail(t, payload.dest);
+      this.messages.add({
+        severity: 'success',
+        summary: `${tubes.length} tubo(s) → ${t.toLabel}`,
+        detail,
+        life: 3800,
+      });
     } else {
       await this.samples.transition(ids, t, payload.dest);
+      this.clearSelection();
+      const detail = this.formatDestDetail(t, payload.dest);
+      this.messages.add({
+        severity: 'success',
+        summary: `${ids.length} muestra(s) → ${t.toLabel}`,
+        detail,
+        life: 3800,
+      });
     }
-    this.clearSelection();
-
-    const detail = this.formatDestDetail(t, payload.dest);
-    this.messages.add({
-      severity: 'success',
-      summary: `${ids.length} muestra(s) → ${t.toLabel}`,
-      detail,
-      life: 3800,
-    });
   }
 
   private formatDestDetail(t: Transition, dest: TransitionDest): string {

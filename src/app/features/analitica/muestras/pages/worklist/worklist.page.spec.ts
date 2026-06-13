@@ -2,12 +2,13 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute } from '@angular/router';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { PollingService } from '@core/refresh';
 import { WorklistPage } from './worklist.page';
 import { MockSamplesService } from '../../services/mock-samples.service';
 import { selectRecoleccionItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import type { LabelWorklistItem } from '../../models/label-worklist.model';
+import { transitionLabels } from '../../store/muestras.actions';
 
 /**
  * Minimal test template: includes only the header (h1 + counters).
@@ -77,6 +78,10 @@ function setup(
   return fixture;
 }
 
+function getStore(fixture: ComponentFixture<WorklistPage>): MockStore {
+  return TestBed.inject(MockStore);
+}
+
 describe('WorklistPage (smoke)', () => {
   it('renderiza Recolección con título y count store-driven (vacío)', () => {
     const fx = setup('recoleccion');
@@ -134,5 +139,63 @@ describe('WorklistPage (smoke)', () => {
     cmp.setQuery(sample.barcode);
     expect(cmp.rows().length).toBe(1);
     expect(cmp.rows()[0].barcode).toBe(sample.barcode);
+  });
+
+  it('Recolección agrupa dos labels del mismo sampleId en UN tubo', () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60010, sampleId: 50010, barcode: '60010', protocolId: 50001,
+        analysisName: 'Hemograma', patientName: 'Juan Pérez', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+      {
+        labelId: 60011, sampleId: 50010, barcode: '60011', protocolId: 50001,
+        analysisName: 'Glucosa', patientName: 'Juan Pérez', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:01:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    expect(cmp.total()).toBe(1);
+    expect(cmp.rows()[0].study).toBe('2 análisis');
+  });
+
+  it('confirmDialog (backend) despacha transitionLabels con AMBOS labelIds del tubo', async () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60020, sampleId: 50020, barcode: '60020', protocolId: 50001,
+        analysisName: 'Hemograma', patientName: 'Ana García', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+      {
+        labelId: 60021, sampleId: 50020, barcode: '60021', protocolId: 50001,
+        analysisName: 'Colesterol', patientName: 'Ana García', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:01:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    const store = getStore(fx);
+
+    const dispatched: unknown[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (store as any).dispatch = (action: unknown) => { dispatched.push(action); };
+
+    // Seleccionar el tubo
+    const tubeId = cmp.rows()[0].id;
+    cmp.toggleRow(tubeId);
+    expect(cmp.selectedCount()).toBe(1);
+
+    // Simular apertura de transición y confirmación
+    const transition = cmp.config().targets[0];
+    cmp.selectTransition(transition);
+    await cmp.confirmDialog({ dest: {}, note: '' });
+
+    expect(dispatched).toHaveLength(1);
+    const action = dispatched[0] as ReturnType<typeof transitionLabels>;
+    expect(action.type).toBe('[Muestras Page] Transition Labels');
+    expect(action.labelIds).toContain(60020);
+    expect(action.labelIds).toContain(60021);
+    expect(action.labelIds).toHaveLength(2);
   });
 });

@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { Sample } from '../../models/sample.model';
 import type { ScreenKey } from '../../models/transition.model';
+import type { Tube } from '../../models/tube.model';
 
 const STATE_LABELS: Record<Sample['state'], string> = {
   collected: 'Recolectada',
@@ -41,6 +42,9 @@ export class SampleTableComponent {
   readonly toggleRow = output<string>();
   readonly toggleAll = output<void>();
 
+  /** Ids de filas con el panel de análisis abierto. */
+  readonly expandedIds = signal<ReadonlySet<string>>(new Set());
+
   readonly ordered = computed(() => {
     const sel = this.selectedIds();
     const all = this.rows();
@@ -66,4 +70,24 @@ export class SampleTableComponent {
   isSelected(id: string): boolean { return this.selectedIds().has(id); }
   isLeaving(id: string): boolean { return this.leavingIds().has(id); }
   isFlashing(id: string): boolean { return this.flashId() === id; }
+  isExpanded(id: string): boolean { return this.expandedIds().has(id); }
+
+  /** Devuelve los análisis si la fila es un Tube con más de uno, null en caso contrario. */
+  tubeAnalyses(row: Sample): Tube['analyses'] | null {
+    const t = row as Tube;
+    return t.analyses?.length > 1 ? t.analyses : null;
+  }
+
+  toggleExpansion(id: string, event: Event): void {
+    event.stopPropagation();
+    this.expandedIds.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 }
