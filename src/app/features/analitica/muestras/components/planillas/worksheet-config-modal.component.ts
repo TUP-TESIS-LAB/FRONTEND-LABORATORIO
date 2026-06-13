@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
-import { Subject, debounceTime, distinctUntilChanged, switchMap, of, forkJoin } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, of, forkJoin, catchError } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
@@ -94,7 +94,7 @@ export class WorksheetConfigModalComponent {
       this.name.set(tpl.name);
       const sorted = [...tpl.analyses].sort((a, b) => a.displayOrder - b.displayOrder);
       forkJoin(sorted.map(a => this.analysis.getById(a.analysisTypeId)))
-        .pipe(takeUntilDestroyed(this.destroyRef))
+        .pipe(takeUntilDestroyed(this.destroyRef), catchError(() => of([])))
         .subscribe(details => this.ordered.set(details.map(d => ({ analysisTypeId: d.id, name: d.name }))));
     });
   }

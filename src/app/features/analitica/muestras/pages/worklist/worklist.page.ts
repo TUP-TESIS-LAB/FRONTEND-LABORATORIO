@@ -223,7 +223,7 @@ export class WorklistPage {
           this.messages.add({
             severity: 'error',
             summary: 'Error',
-            detail: humanizeBackendError(err, { fallback: 'No pudimos guardar la planilla. Probá de nuevo.' }),
+            detail: humanizeBackendError(err, { fallback: 'No pudimos completar la operación con las planillas. Probá de nuevo.' }),
             life: 5000,
           });
         }
