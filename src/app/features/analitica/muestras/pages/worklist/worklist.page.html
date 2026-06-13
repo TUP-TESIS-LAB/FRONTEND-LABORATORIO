@@ -16,6 +16,7 @@
     <app-muestras-scan-bar
       [query]="query()"
       [selectionCount]="selectedCount()"
+      [showBatchAction]="canTransition()"
       (queryChange)="setQuery($event)"
       (enterPressed)="onEnterScan($event)"
       (simulate)="simulateScan()"

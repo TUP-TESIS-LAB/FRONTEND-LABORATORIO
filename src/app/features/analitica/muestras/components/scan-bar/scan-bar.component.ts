@@ -12,6 +12,8 @@ import { FormsModule } from '@angular/forms';
 export class ScanBarComponent {
   readonly query = input<string>('');
   readonly selectionCount = input<number>(0);
+  /** Pantallas read-only (Descarte) ocultan la acción de lote. */
+  readonly showBatchAction = input<boolean>(true);
 
   readonly queryChange = output<string>();
   readonly enterPressed = output<string>();
