@@ -1,6 +1,6 @@
 # Procesamiento — Arco 2: Gestión de plantillas (Planillas)
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-99](https://exequielsantoro.atlassian.net/browse/KAN-99)
 > **Fecha:** 2026-06-13
 > **Rama:** `feat/procesamiento-planillas` (worktree `FRONTEND-LABORATORIO-planillas`, base `development`)
 > **Arco previo:** Arco 1 (KAN-98, PR #72 merged) — lista real de procesamiento.
