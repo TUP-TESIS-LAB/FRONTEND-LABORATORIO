@@ -1,4 +1,4 @@
-import type { Sample, SampleState } from './sample.model';
+import type { SampleState } from './sample.model';
 
 /** Estados de la FSM real del backend (LabelStatus). */
 export type BackendLabelStatus =
@@ -8,6 +8,7 @@ export type BackendLabelStatus =
 /** Item del GET /labels/worklist (LabelWorklistItemResponse del back). */
 export interface LabelWorklistItem {
   labelId: number;
+  sampleId: number | null;
   barcode: string;
   protocolId: number;
   analysisName: string;
@@ -15,6 +16,7 @@ export interface LabelWorklistItem {
   urgent: boolean;
   status: BackendLabelStatus;
   updatedAt: string;
+  rejectionReason?: string | null;
 }
 
 /** PENDING y CANCELED no tienen pantalla en las worklists. */
@@ -29,20 +31,3 @@ export const BACKEND_TO_SAMPLE_STATE: Partial<Record<BackendLabelStatus, SampleS
   DISCARDED: 'discarded',
 };
 
-const two = (n: number): string => String(n).padStart(2, '0');
-
-/** Adapta el item del backend al view-model Sample que consumen los componentes. */
-export function toSample(item: LabelWorklistItem, branchName: string): Sample {
-  const d = new Date(item.updatedAt);
-  return {
-    id: String(item.labelId),
-    barcode: item.barcode,
-    study: item.analysisName,
-    patient: item.patientName,
-    branch: branchName,
-    date: `${two(d.getDate())}/${two(d.getMonth() + 1)}`,
-    time: `${two(d.getHours())}:${two(d.getMinutes())}`,
-    urgent: item.urgent,
-    state: BACKEND_TO_SAMPLE_STATE[item.status] ?? 'collected',
-  };
-}

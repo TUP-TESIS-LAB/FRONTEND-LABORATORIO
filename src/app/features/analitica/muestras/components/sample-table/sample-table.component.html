@@ -10,6 +10,7 @@
             aria-label="Seleccionar todo"
           />
         </th>
+        <th class="caret-col"></th>
         <th>Muestra</th>
         <th>Estudio</th>
         <th>{{ sucursalHeader() }}</th>
@@ -33,6 +34,22 @@
               (change)="toggleRow.emit(row.id)"
               [attr.aria-label]="'Seleccionar ' + row.barcode"
             />
+          </td>
+          <td class="caret-col">
+            @if (tubeAnalyses(row)) {
+              <button
+                class="caret-btn"
+                type="button"
+                (click)="toggleExpansion(row.id, $event)"
+                [attr.aria-label]="isExpanded(row.id) ? 'Colapsar análisis' : 'Expandir análisis'"
+              >
+                <i
+                  class="pi"
+                  [class.pi-chevron-right]="!isExpanded(row.id)"
+                  [class.pi-chevron-down]="isExpanded(row.id)"
+                ></i>
+              </button>
+            }
           </td>
           <td>
             <div class="barcode">
@@ -61,9 +78,33 @@
             }
           </td>
         </tr>
+        @if (tubeAnalyses(row); as analyses) {
+          @if (isExpanded(row.id)) {
+            <tr class="expansion-row">
+              <td colspan="7">
+                @if (rejectionReason(row); as motivo) {
+                  <p class="rejection-reason">
+                    <span class="rejection-label">Motivo:</span> {{ motivo }}
+                  </p>
+                }
+                @if (analyses.length > 1) {
+                  <ul class="analyses-list">
+                    @for (a of analyses; track a.labelId) {
+                      <li class="analysis-item">
+                        <span class="analysis-name">{{ a.name }}</span>
+                        <span class="analysis-sep">·</span>
+                        <span class="analysis-barcode">{{ a.barcode }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </td>
+            </tr>
+          }
+        }
       } @empty {
         <tr class="empty">
-          <td colspan="6">No hay muestras en este estado.</td>
+          <td colspan="7">No hay muestras en este estado.</td>
         </tr>
       }
     </tbody>

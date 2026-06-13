@@ -6,8 +6,7 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { Sample } from '../../../models/sample.model';
-import type { TemporalLote, TransitoDest } from '../../../models/transito.model';
-import { BRANCHES, AREAS, SECTIONS, CURRENT_BRANCH } from '../../../data/catalogs';
+import type { LoteDestPatch, SectionOption, TemporalLote } from '../../../models/transito.model';
 import { SampleRowComponent } from '../sample-row/sample-row.component';
 
 @Component({
@@ -25,7 +24,7 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
     </div>
     <div class="meta">
       @if (hasDest) {
-        <span class="dest"><i class="pi pi-map-marker"></i> {{ lote.branch }} · {{ lote.area }} · {{ lote.section }}</span>
+        <span class="dest"><i class="pi pi-map-marker"></i> {{ destLabel }}</span>
         <span class="badge" [class.green]="outcome === 'en-proceso'" [class.blue]="outcome === 'en-transito'">
           {{ outcome === 'en-proceso' ? 'En proceso' : 'En tránsito' }}
         </span>
@@ -37,22 +36,24 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
     <button type="button" class="scan-here" [class.is-active]="isActive" [attr.aria-pressed]="isActive" (click)="setActive.emit()">
       {{ isActive ? 'Escaneo → acá' : 'Escanear acá' }}
     </button>
-    <button type="button" class="dissolve" (click)="dissolve.emit()" aria-label="Descartar lote">✕</button>
+    <button type="button" class="dissolve" (click)="dissolve.emit()" aria-label="Descartar lote"><i class="pi pi-times"></i></button>
   </header>
 
   <div class="dest-form">
-    <select [value]="lote.branch" (change)="onDestField('branch', $any($event.target).value)">
+    <select [value]="lote.branch" (change)="onBranchChange($any($event.target).value)" aria-label="Sucursal de destino">
       <option value="">Sucursal…</option>
-      @for (b of branches; track b) { <option [value]="b">{{ b }}</option> }
+      @for (b of branchOptions; track b.id) { <option [value]="b.name">{{ b.name }}</option> }
     </select>
-    <select [value]="lote.area" (change)="onDestField('area', $any($event.target).value)">
-      <option value="">Área…</option>
-      @for (a of areas; track a) { <option [value]="a">{{ a }}</option> }
-    </select>
-    <select [value]="lote.section" (change)="onDestField('section', $any($event.target).value)">
-      <option value="">Sección…</option>
-      @for (s of sections; track s) { <option [value]="s">{{ s }}</option> }
-    </select>
+    @if (isHere) {
+      <select [value]="lote.sectionId ?? ''" (change)="onSectionChange($any($event.target).value)" aria-label="Sección de destino">
+        <option value="">Sección…</option>
+        @for (o of sectionOptions; track o.sectionId) { <option [value]="o.sectionId">{{ o.label }}</option> }
+      </select>
+    } @else {
+      <input type="text" class="obs" placeholder="Observaciones (opcional)" [disabled]="!lote.branch"
+             [value]="lote.observation ?? ''" (change)="onObservationChange($any($event.target).value)"
+             aria-label="Observaciones (opcional)">
+    }
     <button type="button" class="send" [disabled]="!hasDest" (click)="send.emit()">{{ sendLabel }}</button>
   </div>
 
@@ -80,24 +81,38 @@ export class LoteCardComponent {
   @Input({ required: true }) isActive!: boolean;
   @Input({ required: true }) leavingIds!: ReadonlySet<string>;
   @Input({ required: true }) flashId!: string | null;
+  /** Sucursales reales del operador (destinos posibles). */
+  @Input() branchOptions: { id: number; name: string }[] = [];
+  /** Workspaces reales de la sucursal actual (para despacho local). */
+  @Input() sectionOptions: SectionOption[] = [];
+  /** Nombre de la sucursal actual (decide despacho vs derivación). */
+  @Input() currentBranchName = '';
 
   readonly toggleSample = output<string>();
   readonly toggleAll = output<boolean>();
-  readonly destChange = output<Partial<TransitoDest>>();
+  readonly destChange = output<LoteDestPatch>();
   readonly setActive = output<void>();
   readonly dissolve = output<void>();
   readonly send = output<void>();
 
-  protected readonly branches = BRANCHES;
-  protected readonly areas = AREAS;
-  protected readonly sections = SECTIONS;
+  /** Destino en la sucursal actual → despacho a sección; otra sucursal → derivación. */
+  get isHere(): boolean {
+    return this.lote.branch === '' || this.lote.branch === this.currentBranchName;
+  }
 
   get hasDest(): boolean {
-    return !!(this.lote.branch && this.lote.area && this.lote.section);
+    if (!this.lote.branch) return false;
+    return this.lote.branch === this.currentBranchName
+      ? this.lote.sectionId != null
+      : this.lote.destinationBranchId != null;
   }
 
   get outcome(): 'en-proceso' | 'en-transito' {
-    return this.lote.branch === CURRENT_BRANCH ? 'en-proceso' : 'en-transito';
+    return this.lote.branch === this.currentBranchName ? 'en-proceso' : 'en-transito';
+  }
+
+  get destLabel(): string {
+    return [this.lote.branch, this.lote.area, this.lote.section].filter(Boolean).join(' · ');
   }
 
   get selectedInLote(): number {
@@ -122,7 +137,32 @@ export class LoteCardComponent {
     this.toggleAll.emit((ev.target as HTMLInputElement).checked);
   }
 
-  onDestField(field: 'branch' | 'area' | 'section', value: string): void {
-    this.destChange.emit({ [field]: value });
+  onBranchChange(name: string): void {
+    const branch = this.branchOptions.find(b => b.name === name) ?? null;
+    this.destChange.emit({
+      branch: name,
+      destinationBranchId: branch?.id ?? null,
+      sectionId: null,
+      area: '',
+      section: '',
+    });
+  }
+
+  onSectionChange(value: string): void {
+    if (value === '') {
+      this.destChange.emit({ sectionId: null, area: '', section: '' });
+      return;
+    }
+    const sectionId = Number(value);
+    const opt = this.sectionOptions.find(o => o.sectionId === sectionId) ?? null;
+    this.destChange.emit({
+      sectionId,
+      area: opt?.areaName ?? '',
+      section: opt?.sectionName ?? `Sección ${sectionId}`,
+    });
+  }
+
+  onObservationChange(value: string): void {
+    this.destChange.emit({ observation: value });
   }
 }

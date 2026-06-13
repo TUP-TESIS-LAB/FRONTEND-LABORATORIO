@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { By } from '@angular/platform-browser';
 import { ConfirmSendAllDialogComponent } from './confirm-send-all-dialog.component';
 
 describe('ConfirmSendAllDialogComponent', () => {
@@ -34,5 +33,13 @@ describe('ConfirmSendAllDialogComponent', () => {
     const btn = document.body.querySelector('button.confirm') as HTMLButtonElement;
     btn.click();
     expect(confirmed).toBe(1);
+  });
+
+  it('no muestra textarea de observaciones (enTransito siempre 0 en sendAll)', () => {
+    fixture.componentRef.setInput('open', true);
+    fixture.componentRef.setInput('breakdown', { enProceso: 3, enTransito: 0, groupsCount: 2 });
+    fixture.detectChanges();
+    expect(document.body.querySelector('.obs-field')).toBeNull();
+    expect(document.body.querySelector('textarea')).toBeNull();
   });
 });

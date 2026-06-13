@@ -2,12 +2,17 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute } from '@angular/router';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { provideMockActions } from '@ngrx/effects/testing';
+import { Subject } from 'rxjs';
+import type { Action } from '@ngrx/store';
+import { MessageService } from 'primeng/api';
 import { PollingService } from '@core/refresh';
 import { WorklistPage } from './worklist.page';
 import { MockSamplesService } from '../../services/mock-samples.service';
-import { selectRecoleccionItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { selectRecoleccionItems, selectDescarteItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import type { LabelWorklistItem } from '../../models/label-worklist.model';
+import { transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
 
 /**
  * Minimal test template: includes only the header (h1 + counters).
@@ -46,21 +51,27 @@ function installLocalStorageMock(): void {
   });
 }
 
+let actions$: Subject<Action>;
+
 function setup(
   screenKey: 'recoleccion' | 'traslado' | 'procesamiento' | 'descarte',
   recoleccionItems: LabelWorklistItem[] = [],
+  descarteItems: LabelWorklistItem[] = [],
 ): ComponentFixture<WorklistPage> {
   installLocalStorageMock();
+  actions$ = new Subject<Action>();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [WorklistPage],
     providers: [
       provideNoopAnimations(),
+      provideMockActions(() => actions$),
       MockSamplesService,
       { provide: ActivatedRoute, useValue: { snapshot: { data: { screenKey } } } },
       provideMockStore({
         selectors: [
           { selector: selectRecoleccionItems, value: recoleccionItems },
+          { selector: selectDescarteItems, value: descarteItems },
           { selector: selectMuestrasBranchName, value: 'CENTRAL' },
           { selector: selectMuestrasError, value: null },
         ],
@@ -77,6 +88,10 @@ function setup(
   return fixture;
 }
 
+function getStore(fixture: ComponentFixture<WorklistPage>): MockStore {
+  return TestBed.inject(MockStore);
+}
+
 describe('WorklistPage (smoke)', () => {
   it('renderiza Recolección con título y count store-driven (vacío)', () => {
     const fx = setup('recoleccion');
@@ -87,7 +102,7 @@ describe('WorklistPage (smoke)', () => {
 
   it('Recolección mapea items del store al view-model', () => {
     const item: LabelWorklistItem = {
-      labelId: 60005, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
+      labelId: 60005, sampleId: null, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
       patientName: 'Ana López', urgent: false, status: 'COLLECTED', updatedAt: '2026-06-11T10:00:00Z',
     };
     const fx = setup('recoleccion', [item]);
@@ -110,11 +125,39 @@ describe('WorklistPage (smoke)', () => {
     expect(fx.componentInstance.total()).toBe(9);
   });
 
-  it('renderiza Descarte con título correcto', () => {
+  it('renderiza Descarte con título correcto (mock vacío)', () => {
     const fx = setup('descarte');
     const el = fx.nativeElement as HTMLElement;
     expect(el.querySelector('h1')?.textContent).toContain('Descarte');
-    expect(fx.componentInstance.total()).toBe(7);
+    expect(fx.componentInstance.total()).toBe(0);
+  });
+
+  it('Descarte mapea items del store al view-model agrupado', () => {
+    const item: LabelWorklistItem = {
+      labelId: 90001, sampleId: null, barcode: '90001', protocolId: 50003,
+      analysisName: 'Cultivo', patientName: 'Carlos Ruiz', urgent: false,
+      status: 'REJECTED', updatedAt: '2026-06-12T09:00:00Z',
+      rejectionReason: 'Hemólisis severa',
+    };
+    const fx = setup('descarte', [], [item]);
+    const cmp = fx.componentInstance;
+    expect(cmp.total()).toBe(1);
+    expect(cmp.rows()[0].study).toBe('Cultivo');
+  });
+
+  it('Descarte es read-only: canTransition = false', () => {
+    const fx = setup('descarte');
+    expect(fx.componentInstance.canTransition()).toBe(false);
+  });
+
+  it('Recolección tiene canTransition = true', () => {
+    const fx = setup('recoleccion');
+    expect(fx.componentInstance.canTransition()).toBe(true);
+  });
+
+  it('Traslado (mock) tiene canTransition = true', () => {
+    const fx = setup('traslado');
+    expect(fx.componentInstance.canTransition()).toBe(true);
   });
 
   it('toggleRow selecciona y deselecciona', () => {
@@ -134,5 +177,111 @@ describe('WorklistPage (smoke)', () => {
     cmp.setQuery(sample.barcode);
     expect(cmp.rows().length).toBe(1);
     expect(cmp.rows()[0].barcode).toBe(sample.barcode);
+  });
+
+  it('Recolección agrupa dos labels del mismo sampleId en UN tubo', () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60010, sampleId: 50010, barcode: '60010', protocolId: 50001,
+        analysisName: 'Hemograma', patientName: 'Juan Pérez', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+      {
+        labelId: 60011, sampleId: 50010, barcode: '60011', protocolId: 50001,
+        analysisName: 'Glucosa', patientName: 'Juan Pérez', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:01:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    expect(cmp.total()).toBe(1);
+    expect(cmp.rows()[0].study).toBe('2 análisis');
+  });
+
+  it('confirmDialog (backend) despacha transitionLabels con AMBOS labelIds del tubo', async () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60020, sampleId: 50020, barcode: '60020', protocolId: 50001,
+        analysisName: 'Hemograma', patientName: 'Ana García', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+      {
+        labelId: 60021, sampleId: 50020, barcode: '60021', protocolId: 50001,
+        analysisName: 'Colesterol', patientName: 'Ana García', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:01:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    const store = getStore(fx);
+
+    const dispatched: unknown[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (store as any).dispatch = (action: unknown) => { dispatched.push(action); };
+
+    // Seleccionar el tubo
+    const tubeId = cmp.rows()[0].id;
+    cmp.toggleRow(tubeId);
+    expect(cmp.selectedCount()).toBe(1);
+
+    // Simular apertura de transición y confirmación
+    const transition = cmp.config().targets[0];
+    cmp.selectTransition(transition);
+    await cmp.confirmDialog({ dest: {}, note: '' });
+
+    expect(dispatched).toHaveLength(1);
+    const action = dispatched[0] as ReturnType<typeof transitionLabels>;
+    expect(action.type).toBe('[Muestras Page] Transition Labels');
+    expect(action.labelIds).toContain(60020);
+    expect(action.labelIds).toContain(60021);
+    expect(action.labelIds).toHaveLength(2);
+  });
+
+  it('confirmDialog (backend) NO muestra toast optimista — espera transitionLabelsSuccess', async () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60030, sampleId: 50030, barcode: '60030', protocolId: 50001,
+        analysisName: 'Hemograma', patientName: 'Pedro Ruiz', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    const messages = fx.debugElement.injector.get(MessageService);
+    const add = vi.spyOn(messages, 'add');
+
+    cmp.toggleRow(cmp.rows()[0].id);
+    const transition = cmp.config().targets[0];
+    cmp.selectTransition(transition);
+    await cmp.confirmDialog({ dest: {}, note: '' });
+
+    // No debe haber toast de éxito inmediatamente después del dispatch
+    expect(add).not.toHaveBeenCalledWith(expect.objectContaining({ severity: 'success' }));
+  });
+
+  it('muestra toast de éxito en Recolección cuando llega transitionLabelsSuccess', async () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60040, sampleId: 50040, barcode: '60040', protocolId: 50001,
+        analysisName: 'Glucemia', patientName: 'Laura Díaz', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    const messages = fx.debugElement.injector.get(MessageService);
+    const add = vi.spyOn(messages, 'add');
+
+    cmp.toggleRow(cmp.rows()[0].id);
+    const transition = cmp.config().targets[0];
+    cmp.selectTransition(transition);
+    await cmp.confirmDialog({ dest: {}, note: '' });
+
+    // Aún no hay toast
+    expect(add).not.toHaveBeenCalledWith(expect.objectContaining({ severity: 'success' }));
+
+    // Backend confirma → el toast debe aparecer
+    actions$.next(transitionLabelsSuccess({ labelIds: [60040], transitionKey: transition.key }));
+    expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success' }));
   });
 });

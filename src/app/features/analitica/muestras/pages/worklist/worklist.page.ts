@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -15,9 +17,9 @@ import { ScanBarComponent } from '../../components/scan-bar/scan-bar.component';
 import { BatchMenuComponent } from '../../components/batch-menu/batch-menu.component';
 import { SampleTableComponent } from '../../components/sample-table/sample-table.component';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
-import { initMuestras, loadRecoleccion, transitionLabels } from '../../store/muestras.actions';
-import { selectRecoleccionItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
-import { toSample } from '../../models/label-worklist.model';
+import { initMuestras, loadRecoleccion, loadDescarte, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
+import { selectRecoleccionItems, selectDescarteItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { groupTubes, type Tube } from '../../models/tube.model';
 
 @Component({
   selector: 'app-muestras-worklist',
@@ -33,6 +35,7 @@ export class WorklistPage {
   private readonly samples = inject(MockSamplesService);
   private readonly messages = inject(MessageService);
   private readonly store = inject(Store);
+  private readonly actions = inject(Actions);
   private readonly polling = inject(PollingService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -46,18 +49,27 @@ export class WorklistPage {
     return SCREENS[key];
   });
 
-  /** Recolección está conectada al backend; el resto sigue mock (arcos futuros). */
-  readonly isBackendScreen = computed(() => this.config().key === 'recoleccion');
+  /** Pantallas conectadas al backend; el resto sigue mock (arcos futuros). */
+  readonly isBackendScreen = computed(() =>
+    this.config().key === 'recoleccion' || this.config().key === 'descarte',
+  );
 
-  private readonly backendItems = this.store.selectSignal(selectRecoleccionItems);
+  /** Para descarte, el menú de transición es de solo lectura (sin acciones backend). */
+  readonly canTransition = computed(() =>
+    !this.isBackendScreen() || this.config().key === 'recoleccion',
+  );
+
+  private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
+  private readonly descarteItems = this.store.selectSignal(selectDescarteItems);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
 
-  private readonly sourceRows = computed<Sample[]>(() =>
-    this.isBackendScreen()
-      ? this.backendItems().map(i => toSample(i, this.branchName()))
-      : this.samples.byState(this.config().source)(),
-  );
+  private readonly sourceRows = computed<Sample[]>(() => {
+    const key = this.config().key;
+    if (key === 'recoleccion') return groupTubes(this.recoleccionItems(), this.branchName());
+    if (key === 'descarte') return groupTubes(this.descarteItems(), this.branchName());
+    return this.samples.byState(this.config().source)();
+  });
 
   readonly rows = computed(() => {
     const all = this.sourceRows();
@@ -83,7 +95,9 @@ export class WorklistPage {
   });
 
   constructor() {
-    if ((this.route.snapshot.data['screenKey'] as ScreenKey) === 'recoleccion') {
+    const screenKey = this.route.snapshot.data['screenKey'] as ScreenKey;
+
+    if (screenKey === 'recoleccion') {
       this.store.dispatch(initMuestras());
       const handle = this.polling.startPolling({
         key: 'muestras-recoleccion',
@@ -95,11 +109,58 @@ export class WorklistPage {
       });
       this.destroyRef.onDestroy(() => handle.stop());
 
-      let lastError: unknown = null;
+      // Deduplicamos por firma status:message para evitar toasts repetidos cuando el polling
+      // sigue fallando (cada HttpErrorResponse fallida crea un objeto nuevo aunque sea el mismo error).
+      let lastSig: string | null = null;
       effect(() => {
         const err = this.backendError();
-        if (err && err !== lastError) {
-          lastError = err;
+        const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+        if (sig && sig !== lastSig) {
+          lastSig = sig;
+          this.messages.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: humanizeBackendError(err, {
+              fallback: 'No pudimos completar la operación. Probá de nuevo.',
+            }),
+            life: 5000,
+          });
+        }
+      });
+
+      // Toast de éxito NO optimista: se muestra solo cuando el backend confirma.
+      this.actions.pipe(ofType(transitionLabelsSuccess), takeUntilDestroyed()).subscribe(() => {
+        if (this.pendingToast) {
+          const { count, toLabel, detail } = this.pendingToast;
+          this.pendingToast = null;
+          this.messages.add({
+            severity: 'success',
+            summary: `${count} tubo(s) → ${toLabel}`,
+            detail,
+            life: 3800,
+          });
+        }
+      });
+    }
+
+    if (screenKey === 'descarte') {
+      this.store.dispatch(initMuestras());
+      const handle = this.polling.startPolling({
+        key: 'muestras-descarte',
+        intervalMs: 5000,
+        poll: () => {
+          this.store.dispatch(loadDescarte());
+          return of(null);
+        },
+      });
+      this.destroyRef.onDestroy(() => handle.stop());
+
+      let lastSig: string | null = null;
+      effect(() => {
+        const err = this.backendError();
+        const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+        if (sig && sig !== lastSig) {
+          lastSig = sig;
           this.messages.add({
             severity: 'error',
             summary: 'Error',
@@ -112,6 +173,9 @@ export class WorklistPage {
       });
     }
   }
+
+  /** Almacena los datos del toast de éxito (recolección) hasta que el backend confirma. */
+  private pendingToast: { count: number; toLabel: string; detail: string } | null = null;
 
   readonly menuOpen = signal(false);
   readonly activeTransition = signal<Transition | null>(null);
@@ -185,23 +249,28 @@ export class WorklistPage {
     this.activeTransition.set(null);
 
     if (this.isBackendScreen()) {
+      const tubes = this.selectedSamples() as Tube[];
+      const labelIds = tubes.flatMap(tube => tube.labelIds ?? []);
+      if (labelIds.length === 0) return;
+      const detail = this.formatDestDetail(t, payload.dest);
+      this.pendingToast = { count: tubes.length, toLabel: t.toLabel, detail };
       this.store.dispatch(transitionLabels({
-        labelIds: ids.map(Number),
+        labelIds,
         transitionKey: t.key,
         reason: payload.note || undefined,
       }));
+      this.clearSelection();
     } else {
       await this.samples.transition(ids, t, payload.dest);
+      this.clearSelection();
+      const detail = this.formatDestDetail(t, payload.dest);
+      this.messages.add({
+        severity: 'success',
+        summary: `${ids.length} muestra(s) → ${t.toLabel}`,
+        detail,
+        life: 3800,
+      });
     }
-    this.clearSelection();
-
-    const detail = this.formatDestDetail(t, payload.dest);
-    this.messages.add({
-      severity: 'success',
-      summary: `${ids.length} muestra(s) → ${t.toLabel}`,
-      detail,
-      life: 3800,
-    });
   }
 
   private formatDestDetail(t: Transition, dest: TransitionDest): string {

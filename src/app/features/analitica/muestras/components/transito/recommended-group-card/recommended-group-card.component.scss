@@ -27,6 +27,7 @@
       font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
       &.green { background: var(--gx-green-bg); color: var(--gx-green); }
       &.blue  { background: var(--gx-blue-bg);  color: var(--gx-blue);  }
+      &.amber { background: var(--gx-amber-bg); color: var(--gx-amber); }
     }
     .count { color: var(--gx-muted); font-size: 12.5px; margin-right: auto; }
     .edit, .send {
@@ -39,13 +40,21 @@
     }
   }
 
-  &.outcome-here  header > i.pi { background: var(--gx-green-bg); color: var(--gx-green); }
-  &.outcome-other header > i.pi { background: var(--gx-blue-bg);  color: var(--gx-blue);  }
+  &.outcome-here    header > i.pi { background: var(--gx-green-bg); color: var(--gx-green); }
+  &.outcome-other   header > i.pi { background: var(--gx-blue-bg);  color: var(--gx-blue);  }
+  &.outcome-pending { border-color: var(--gx-amber); }
+  &.outcome-pending header > i.pi { background: var(--gx-amber-bg); color: var(--gx-amber); }
 
   .dest-form {
-    display: grid; grid-template-columns: repeat(3, minmax(0,1fr));
+    display: grid; grid-template-columns: minmax(0, 1fr);
     gap: 10px; padding: 12px 16px;
     border-bottom: 1px solid var(--gx-border-soft);
     select { height: 40px; border: 1px solid var(--gx-border); border-radius: 8px; padding: 0 8px; font-size: 13.5px; }
+  }
+
+  .row-reason {
+    padding: 2px 16px 8px 60px;
+    font-size: 12px; color: var(--gx-amber);
+    i { margin-right: 4px; }
   }
 }

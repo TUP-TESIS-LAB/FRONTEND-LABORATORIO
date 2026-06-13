@@ -26,13 +26,15 @@
     </button>
   }
 
-  <button
-    type="button"
-    class="btn btn-primary"
-    [disabled]="!hasSelection()"
-    (click)="openMenu.emit()"
-  >
-    Cambiar estado del lote · {{ selectionCount() }}
-    <i class="pi pi-chevron-down"></i>
-  </button>
+  @if (showBatchAction()) {
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="!hasSelection()"
+      (click)="openMenu.emit()"
+    >
+      Cambiar estado del lote · {{ selectionCount() }}
+      <i class="pi pi-chevron-down"></i>
+    </button>
+  }
 </div>
