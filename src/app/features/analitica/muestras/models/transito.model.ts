@@ -49,8 +49,6 @@ export interface TemporalLote {
   observation?: string;
 }
 
-export type SendOutcome = 'en-proceso' | 'en-transito';
-
 export interface SendResult {
   /** Tubos despachados a una sección de esta sucursal. */
   enProceso: number;

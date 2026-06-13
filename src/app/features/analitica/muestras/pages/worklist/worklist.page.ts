@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -15,7 +17,7 @@ import { ScanBarComponent } from '../../components/scan-bar/scan-bar.component';
 import { BatchMenuComponent } from '../../components/batch-menu/batch-menu.component';
 import { SampleTableComponent } from '../../components/sample-table/sample-table.component';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
-import { initMuestras, loadRecoleccion, loadDescarte, transitionLabels } from '../../store/muestras.actions';
+import { initMuestras, loadRecoleccion, loadDescarte, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
 import { selectRecoleccionItems, selectDescarteItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { groupTubes, type Tube } from '../../models/tube.model';
 
@@ -33,6 +35,7 @@ export class WorklistPage {
   private readonly samples = inject(MockSamplesService);
   private readonly messages = inject(MessageService);
   private readonly store = inject(Store);
+  private readonly actions = inject(Actions);
   private readonly polling = inject(PollingService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -124,6 +127,20 @@ export class WorklistPage {
           });
         }
       });
+
+      // Toast de éxito NO optimista: se muestra solo cuando el backend confirma.
+      this.actions.pipe(ofType(transitionLabelsSuccess), takeUntilDestroyed()).subscribe(() => {
+        if (this.pendingToast) {
+          const { count, toLabel, detail } = this.pendingToast;
+          this.pendingToast = null;
+          this.messages.add({
+            severity: 'success',
+            summary: `${count} tubo(s) → ${toLabel}`,
+            detail,
+            life: 3800,
+          });
+        }
+      });
     }
 
     if (screenKey === 'descarte') {
@@ -156,6 +173,9 @@ export class WorklistPage {
       });
     }
   }
+
+  /** Almacena los datos del toast de éxito (recolección) hasta que el backend confirma. */
+  private pendingToast: { count: number; toLabel: string; detail: string } | null = null;
 
   readonly menuOpen = signal(false);
   readonly activeTransition = signal<Transition | null>(null);
@@ -232,19 +252,14 @@ export class WorklistPage {
       const tubes = this.selectedSamples() as Tube[];
       const labelIds = tubes.flatMap(tube => tube.labelIds ?? []);
       if (labelIds.length === 0) return;
+      const detail = this.formatDestDetail(t, payload.dest);
+      this.pendingToast = { count: tubes.length, toLabel: t.toLabel, detail };
       this.store.dispatch(transitionLabels({
         labelIds,
         transitionKey: t.key,
         reason: payload.note || undefined,
       }));
       this.clearSelection();
-      const detail = this.formatDestDetail(t, payload.dest);
-      this.messages.add({
-        severity: 'success',
-        summary: `${tubes.length} tubo(s) → ${t.toLabel}`,
-        detail,
-        life: 3800,
-      });
     } else {
       await this.samples.transition(ids, t, payload.dest);
       this.clearSelection();

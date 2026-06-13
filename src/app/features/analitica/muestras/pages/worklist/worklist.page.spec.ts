@@ -3,12 +3,16 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { provideMockActions } from '@ngrx/effects/testing';
+import { Subject } from 'rxjs';
+import type { Action } from '@ngrx/store';
+import { MessageService } from 'primeng/api';
 import { PollingService } from '@core/refresh';
 import { WorklistPage } from './worklist.page';
 import { MockSamplesService } from '../../services/mock-samples.service';
 import { selectRecoleccionItems, selectDescarteItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import type { LabelWorklistItem } from '../../models/label-worklist.model';
-import { transitionLabels } from '../../store/muestras.actions';
+import { transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
 
 /**
  * Minimal test template: includes only the header (h1 + counters).
@@ -47,17 +51,21 @@ function installLocalStorageMock(): void {
   });
 }
 
+let actions$: Subject<Action>;
+
 function setup(
   screenKey: 'recoleccion' | 'traslado' | 'procesamiento' | 'descarte',
   recoleccionItems: LabelWorklistItem[] = [],
   descarteItems: LabelWorklistItem[] = [],
 ): ComponentFixture<WorklistPage> {
   installLocalStorageMock();
+  actions$ = new Subject<Action>();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [WorklistPage],
     providers: [
       provideNoopAnimations(),
+      provideMockActions(() => actions$),
       MockSamplesService,
       { provide: ActivatedRoute, useValue: { snapshot: { data: { screenKey } } } },
       provideMockStore({
@@ -227,5 +235,53 @@ describe('WorklistPage (smoke)', () => {
     expect(action.labelIds).toContain(60020);
     expect(action.labelIds).toContain(60021);
     expect(action.labelIds).toHaveLength(2);
+  });
+
+  it('confirmDialog (backend) NO muestra toast optimista — espera transitionLabelsSuccess', async () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60030, sampleId: 50030, barcode: '60030', protocolId: 50001,
+        analysisName: 'Hemograma', patientName: 'Pedro Ruiz', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    const messages = fx.debugElement.injector.get(MessageService);
+    const add = vi.spyOn(messages, 'add');
+
+    cmp.toggleRow(cmp.rows()[0].id);
+    const transition = cmp.config().targets[0];
+    cmp.selectTransition(transition);
+    await cmp.confirmDialog({ dest: {}, note: '' });
+
+    // No debe haber toast de éxito inmediatamente después del dispatch
+    expect(add).not.toHaveBeenCalledWith(expect.objectContaining({ severity: 'success' }));
+  });
+
+  it('muestra toast de éxito en Recolección cuando llega transitionLabelsSuccess', async () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60040, sampleId: 50040, barcode: '60040', protocolId: 50001,
+        analysisName: 'Glucemia', patientName: 'Laura Díaz', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    const messages = fx.debugElement.injector.get(MessageService);
+    const add = vi.spyOn(messages, 'add');
+
+    cmp.toggleRow(cmp.rows()[0].id);
+    const transition = cmp.config().targets[0];
+    cmp.selectTransition(transition);
+    await cmp.confirmDialog({ dest: {}, note: '' });
+
+    // Aún no hay toast
+    expect(add).not.toHaveBeenCalledWith(expect.objectContaining({ severity: 'success' }));
+
+    // Backend confirma → el toast debe aparecer
+    actions$.next(transitionLabelsSuccess({ labelIds: [60040], transitionKey: transition.key }));
+    expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success' }));
   });
 });
