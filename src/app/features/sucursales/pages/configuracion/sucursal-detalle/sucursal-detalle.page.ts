@@ -11,14 +11,14 @@ import { loadDetail } from '../../../store/sucursal.actions';
 import { DatosTabComponent } from './tabs/datos-tab.component';
 import { HorariosTabComponent } from './tabs/horarios-tab.component';
 import { ContactosTabComponent } from './tabs/contactos-tab.component';
-import { WorkspacesTabComponent } from './tabs/workspaces-tab.component';
+import { WorkspacesStepComponent } from '../sucursal-alta-stepper/steps/workspaces-step.component';
 import { TotemTabComponent } from './tabs/totem-tab.component';
 
 @Component({
   selector: 'app-sucursal-detalle',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TabsModule, ButtonModule, ToastModule, DatosTabComponent, HorariosTabComponent, ContactosTabComponent, WorkspacesTabComponent, TotemTabComponent],
+  imports: [TabsModule, ButtonModule, ToastModule, DatosTabComponent, HorariosTabComponent, ContactosTabComponent, WorkspacesStepComponent, TotemTabComponent],
   templateUrl: './sucursal-detalle.page.html',
   styleUrl: './sucursal-detalle.page.scss',
   providers: [MessageService],

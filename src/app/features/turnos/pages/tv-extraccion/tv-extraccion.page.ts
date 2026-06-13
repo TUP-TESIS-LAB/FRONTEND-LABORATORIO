@@ -41,10 +41,6 @@ export class TvExtraccionPage implements OnInit, OnDestroy {
     () => this.snapshot()?.entries.filter(e => e.displayStatus === 'CALLED') ?? []
   );
 
-  protected readonly waitingEntries = computed(
-    () => this.snapshot()?.entries.filter(e => e.displayStatus === 'WAITING') ?? []
-  );
-
   protected readonly audioUnlocked = signal<boolean>(
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tv-audio-unlocked') === '1',
   );

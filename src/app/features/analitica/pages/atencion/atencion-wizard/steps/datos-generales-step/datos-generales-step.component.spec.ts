@@ -186,10 +186,20 @@ describe('DatosGeneralesStepComponent', () => {
     store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState } });
     store.refreshState();
     fixture.detectChanges();
+    (fixture.componentInstance as any).dniInput = '23232323';
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.buscar();
+    expect(spy).toHaveBeenCalledWith(resolvePatientByDni({ dni: '23232323' }));
+  });
+
+  it('buscar() ignora DNIs de menos de 7 dígitos (no despacha)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
     (fixture.componentInstance as any).dniInput = '123';
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.buscar();
-    expect(spy).toHaveBeenCalledWith(resolvePatientByDni({ dni: '123' }));
+    expect(spy).not.toHaveBeenCalledWith(resolvePatientByDni({ dni: '123' }));
   });
 
   it('onConfirm() con atencionId despacha assignGeneralData', () => {
