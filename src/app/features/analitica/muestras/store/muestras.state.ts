@@ -17,6 +17,7 @@ export interface MuestrasState {
   workspaces: BranchWorkspace[];
   dispatchPending: boolean;
   descarte: LabelWorklistItem[];
+  procesamiento: LabelWorklistItem[];
 }
 
 export const initialMuestrasState: MuestrasState = {
@@ -32,6 +33,7 @@ export const initialMuestrasState: MuestrasState = {
   workspaces: [],
   dispatchPending: false,
   descarte: [],
+  procesamiento: [],
 };
 
 export const MUESTRAS_FEATURE_KEY = 'muestras';

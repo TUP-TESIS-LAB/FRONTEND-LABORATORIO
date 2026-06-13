@@ -12,7 +12,9 @@ import {
   loadWorkspacesSuccess, loadWorkspacesFailure,
   dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
   deriveTubes, deriveTubesSuccess, deriveTubesFailure,
+  loadProcesamientoSuccess, loadProcesamientoNotModified, loadProcesamientoFailure,
 } from './muestras.actions';
+import { selectProcesamientoItems } from './muestras.selectors';
 import type { LabelWorklistItem } from '../models/label-worklist.model';
 import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.model';
 
@@ -214,5 +216,34 @@ describe('muestrasReducer', () => {
     );
     expect(s.dispatchPending).toBe(false);
     expect(s.error).toBe(error);
+  });
+
+  // ── Procesamiento ───────────────────────────────────────────────────────────
+  const procItem: LabelWorklistItem = {
+    labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 50005, analysisName: 'Hemograma',
+    patientName: 'Marta Gómez', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
+  };
+
+  it('loadProcesamientoSuccess reemplaza procesamiento items', () => {
+    const s = muestrasReducer(initialMuestrasState, loadProcesamientoSuccess({ items: [procItem] }));
+    expect(s.procesamiento).toEqual([procItem]);
+    expect(s.error).toBeNull();
+  });
+
+  it('loadProcesamientoNotModified no muta procesamiento items', () => {
+    const before = { ...initialMuestrasState, procesamiento: [procItem] };
+    const s = muestrasReducer(before, loadProcesamientoNotModified());
+    expect(s.procesamiento).toBe(before.procesamiento);
+  });
+
+  it('loadProcesamientoFailure setea error', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const s = muestrasReducer(initialMuestrasState, loadProcesamientoFailure({ error }));
+    expect(s.error).toBe(error);
+  });
+
+  it('selectProcesamientoItems proyecta el slice procesamiento', () => {
+    const state = { ...initialMuestrasState, procesamiento: [procItem] };
+    expect(selectProcesamientoItems.projector(state)).toEqual([procItem]);
   });
 });
