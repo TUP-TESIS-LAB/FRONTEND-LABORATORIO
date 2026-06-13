@@ -15,8 +15,8 @@ import { ScanBarComponent } from '../../components/scan-bar/scan-bar.component';
 import { BatchMenuComponent } from '../../components/batch-menu/batch-menu.component';
 import { SampleTableComponent } from '../../components/sample-table/sample-table.component';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
-import { initMuestras, loadRecoleccion, transitionLabels } from '../../store/muestras.actions';
-import { selectRecoleccionItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { initMuestras, loadRecoleccion, loadDescarte, transitionLabels } from '../../store/muestras.actions';
+import { selectRecoleccionItems, selectDescarteItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { groupTubes, type Tube } from '../../models/tube.model';
 
 @Component({
@@ -46,18 +46,27 @@ export class WorklistPage {
     return SCREENS[key];
   });
 
-  /** Recolección está conectada al backend; el resto sigue mock (arcos futuros). */
-  readonly isBackendScreen = computed(() => this.config().key === 'recoleccion');
+  /** Pantallas conectadas al backend; el resto sigue mock (arcos futuros). */
+  readonly isBackendScreen = computed(() =>
+    this.config().key === 'recoleccion' || this.config().key === 'descarte',
+  );
 
-  private readonly backendItems = this.store.selectSignal(selectRecoleccionItems);
+  /** Para descarte, el menú de transición es de solo lectura (sin acciones backend). */
+  readonly canTransition = computed(() =>
+    !this.isBackendScreen() || this.config().key === 'recoleccion',
+  );
+
+  private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
+  private readonly descarteItems = this.store.selectSignal(selectDescarteItems);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
 
-  private readonly sourceRows = computed<Sample[]>(() =>
-    this.isBackendScreen()
-      ? groupTubes(this.backendItems(), this.branchName())
-      : this.samples.byState(this.config().source)(),
-  );
+  private readonly sourceRows = computed<Sample[]>(() => {
+    const key = this.config().key;
+    if (key === 'recoleccion') return groupTubes(this.recoleccionItems(), this.branchName());
+    if (key === 'descarte') return groupTubes(this.descarteItems(), this.branchName());
+    return this.samples.byState(this.config().source)();
+  });
 
   readonly rows = computed(() => {
     const all = this.sourceRows();
@@ -83,7 +92,9 @@ export class WorklistPage {
   });
 
   constructor() {
-    if ((this.route.snapshot.data['screenKey'] as ScreenKey) === 'recoleccion') {
+    const screenKey = this.route.snapshot.data['screenKey'] as ScreenKey;
+
+    if (screenKey === 'recoleccion') {
       this.store.dispatch(initMuestras());
       const handle = this.polling.startPolling({
         key: 'muestras-recoleccion',
@@ -97,6 +108,36 @@ export class WorklistPage {
 
       // Deduplicamos por firma status:message para evitar toasts repetidos cuando el polling
       // sigue fallando (cada HttpErrorResponse fallida crea un objeto nuevo aunque sea el mismo error).
+      let lastSig: string | null = null;
+      effect(() => {
+        const err = this.backendError();
+        const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+        if (sig && sig !== lastSig) {
+          lastSig = sig;
+          this.messages.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: humanizeBackendError(err, {
+              fallback: 'No pudimos completar la operación. Probá de nuevo.',
+            }),
+            life: 5000,
+          });
+        }
+      });
+    }
+
+    if (screenKey === 'descarte') {
+      this.store.dispatch(initMuestras());
+      const handle = this.polling.startPolling({
+        key: 'muestras-descarte',
+        intervalMs: 5000,
+        poll: () => {
+          this.store.dispatch(loadDescarte());
+          return of(null);
+        },
+      });
+      this.destroyRef.onDestroy(() => handle.stop());
+
       let lastSig: string | null = null;
       effect(() => {
         const err = this.backendError();

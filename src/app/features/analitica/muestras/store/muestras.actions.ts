@@ -55,6 +55,18 @@ export const loadTransitoFailure = createAction(
   props<{ error: HttpErrorResponse }>()
 );
 
+// Worklist Descarte (REJECTED,LOST,DISCARDED) — polleada, solo lectura
+export const loadDescarte = createAction('[Muestras Page] Load Descarte');
+export const loadDescarteSuccess = createAction(
+  '[Muestras API] Load Descarte Success',
+  props<{ items: LabelWorklistItem[] }>()
+);
+export const loadDescarteNotModified = createAction('[Muestras API] Load Descarte Not Modified');
+export const loadDescarteFailure = createAction(
+  '[Muestras API] Load Descarte Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
 // Resolve Routing
 export const resolveRouting = createAction('[Transito Page] Resolve Routing');
 export const resolveRoutingSuccess = createAction(

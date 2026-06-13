@@ -12,6 +12,7 @@ import {
   loadRecoleccion, loadRecoleccionSuccess, loadRecoleccionNotModified,
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
   loadTransito, loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
+  loadDescarte, loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
   resolveRouting, resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
   dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
@@ -179,6 +180,40 @@ describe('MuestrasEffects', () => {
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadTransito$);
     expect(action).toEqual(loadTransitoNotModified());
+  });
+
+  // ── loadDescarte ──────────────────────────────────────────────────────────
+
+  const descarteItem: LabelWorklistItem = {
+    labelId: 90001, sampleId: 80002, barcode: '90001', protocolId: 50003, analysisName: 'Cultivo',
+    patientName: 'Carlos Ruiz', urgent: false, status: 'REJECTED', updatedAt: '2026-06-12T09:00:00Z',
+    rejectionReason: 'Hemólisis severa',
+  };
+
+  it('loadDescarte pide REJECTED,LOST,DISCARDED de la sucursal y mapea success', async () => {
+    api.getWorklist.mockReturnValue(of([descarteItem]));
+    actions$ = of(loadDescarte());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadDescarte$);
+    expect(api.getWorklist).toHaveBeenCalledWith('REJECTED,LOST,DISCARDED', 1001);
+    expect(action).toEqual(loadDescarteSuccess({ items: [descarteItem] }));
+  });
+
+  it('loadDescarte 304 mapea a notModified', async () => {
+    api.getWorklist.mockReturnValue(of(NOT_MODIFIED));
+    actions$ = of(loadDescarte());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadDescarte$);
+    expect(action).toEqual(loadDescarteNotModified());
+  });
+
+  it('loadDescarte failure mapea error', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    api.getWorklist.mockReturnValue(throwError(() => error));
+    actions$ = of(loadDescarte());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadDescarte$);
+    expect(action).toEqual(loadDescarteFailure({ error }));
   });
 
   // ── resolveRouting ────────────────────────────────────────────────────────

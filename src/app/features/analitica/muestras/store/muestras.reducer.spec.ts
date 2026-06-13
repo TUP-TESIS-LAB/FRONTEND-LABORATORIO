@@ -7,6 +7,7 @@ import {
   loadRecoleccion, loadRecoleccionSuccess, loadRecoleccionNotModified, loadRecoleccionFailure,
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
   loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
+  loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
   resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspacesSuccess, loadWorkspacesFailure,
   dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
@@ -96,6 +97,31 @@ describe('muestrasReducer', () => {
   it('loadTransitoFailure setea error', () => {
     const error = new HttpErrorResponse({ status: 500 });
     const s = muestrasReducer(initialMuestrasState, loadTransitoFailure({ error }));
+    expect(s.error).toBe(error);
+  });
+
+  // ── Descarte ──────────────────────────────────────────────────────────────
+
+  const descarteItem: LabelWorklistItem = {
+    labelId: 90001, sampleId: 80002, barcode: '90001', protocolId: 50003, analysisName: 'Cultivo',
+    patientName: 'Carlos Ruiz', urgent: false, status: 'REJECTED', updatedAt: '2026-06-12T09:00:00Z',
+    rejectionReason: 'Hemólisis severa',
+  };
+
+  it('loadDescarteSuccess reemplaza descarte items', () => {
+    const s = muestrasReducer(initialMuestrasState, loadDescarteSuccess({ items: [descarteItem] }));
+    expect(s.descarte).toEqual([descarteItem]);
+  });
+
+  it('loadDescarteNotModified no muta descarte items', () => {
+    const before = { ...initialMuestrasState, descarte: [descarteItem] };
+    const s = muestrasReducer(before, loadDescarteNotModified());
+    expect(s.descarte).toBe(before.descarte);
+  });
+
+  it('loadDescarteFailure setea error', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const s = muestrasReducer(initialMuestrasState, loadDescarteFailure({ error }));
     expect(s.error).toBe(error);
   });
 

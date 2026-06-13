@@ -14,7 +14,11 @@ function makeSample(over: Partial<Sample> = {}): Sample {
   };
 }
 
-function makeTube(sampleId: number, labels: { labelId: number; barcode: string; name: string }[]): Tube {
+function makeTube(
+  sampleId: number,
+  labels: { labelId: number; barcode: string; name: string }[],
+  extra: Partial<Tube> = {},
+): Tube {
   return {
     id: `t${sampleId}`,
     sampleId,
@@ -28,6 +32,7 @@ function makeTube(sampleId: number, labels: { labelId: number; barcode: string; 
     time: '10:00',
     urgent: false,
     state: 'collected',
+    ...extra,
   };
 }
 
@@ -145,6 +150,43 @@ describe('SampleTableComponent', () => {
     fixture.detectChanges();
 
     expect(toggleEmitted).toHaveLength(0);
+  });
+
+  it('tubo con rejectionReason muestra caret aunque tenga solo un análisis', () => {
+    const tube = makeTube(
+      600,
+      [{ labelId: 6001, barcode: 'G001', name: 'Hemograma' }],
+      { rejectionReason: 'Hemólisis severa', state: 'rejected' },
+    );
+    setInputs([tube]);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.caret-btn')).not.toBeNull();
+  });
+
+  it('al expandir un tubo con rejectionReason muestra el motivo', async () => {
+    const tube = makeTube(
+      700,
+      [{ labelId: 7001, barcode: 'H001', name: 'Cultivo' }],
+      { rejectionReason: 'Hemólisis severa', state: 'rejected' },
+    );
+    setInputs([tube]);
+    const el = fixture.nativeElement as HTMLElement;
+
+    const caretBtn = el.querySelector('.caret-btn') as HTMLButtonElement;
+    caretBtn.click();
+    fixture.detectChanges();
+
+    const reasonEl = el.querySelector('.rejection-reason');
+    expect(reasonEl).not.toBeNull();
+    expect(reasonEl!.textContent).toContain('Hemólisis severa');
+    expect(reasonEl!.textContent).toContain('Motivo');
+  });
+
+  it('tubo sin rejectionReason y un solo análisis no muestra caret', () => {
+    const tube = makeTube(800, [{ labelId: 8001, barcode: 'I001', name: 'Hemograma' }]);
+    setInputs([tube]);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.caret-btn')).toBeNull();
   });
 
   it('muestra mensaje vacío con colspan 7 cuando no hay filas', () => {

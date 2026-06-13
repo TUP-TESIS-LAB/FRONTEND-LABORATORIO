@@ -16,6 +16,7 @@ export interface MuestrasState {
   routing: RoutingResolveResponse | null;
   workspaces: BranchWorkspace[];
   dispatchPending: boolean;
+  descarte: LabelWorklistItem[];
 }
 
 export const initialMuestrasState: MuestrasState = {
@@ -30,6 +31,7 @@ export const initialMuestrasState: MuestrasState = {
   routing: null,
   workspaces: [],
   dispatchPending: false,
+  descarte: [],
 };
 
 export const MUESTRAS_FEATURE_KEY = 'muestras';

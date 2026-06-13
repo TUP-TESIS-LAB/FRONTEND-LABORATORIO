@@ -82,15 +82,22 @@
           @if (isExpanded(row.id)) {
             <tr class="expansion-row">
               <td colspan="7">
-                <ul class="analyses-list">
-                  @for (a of analyses; track a.labelId) {
-                    <li class="analysis-item">
-                      <span class="analysis-name">{{ a.name }}</span>
-                      <span class="analysis-sep">·</span>
-                      <span class="analysis-barcode">{{ a.barcode }}</span>
-                    </li>
-                  }
-                </ul>
+                @if (rejectionReason(row); as motivo) {
+                  <p class="rejection-reason">
+                    <span class="rejection-label">Motivo:</span> {{ motivo }}
+                  </p>
+                }
+                @if (analyses.length > 1) {
+                  <ul class="analyses-list">
+                    @for (a of analyses; track a.labelId) {
+                      <li class="analysis-item">
+                        <span class="analysis-name">{{ a.name }}</span>
+                        <span class="analysis-sep">·</span>
+                        <span class="analysis-barcode">{{ a.barcode }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
               </td>
             </tr>
           }

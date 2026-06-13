@@ -72,10 +72,20 @@ export class SampleTableComponent {
   isFlashing(id: string): boolean { return this.flashId() === id; }
   isExpanded(id: string): boolean { return this.expandedIds().has(id); }
 
-  /** Devuelve los análisis si la fila es un Tube con más de uno, null en caso contrario. */
+  /**
+   * Devuelve los análisis si la fila es un Tube expandible:
+   * - más de un análisis, O
+   * - tiene rejectionReason (para mostrar el motivo de rechazo).
+   */
   tubeAnalyses(row: Sample): Tube['analyses'] | null {
     const t = row as Tube;
-    return t.analyses?.length > 1 ? t.analyses : null;
+    if (!t.analyses?.length) return null;
+    return (t.analyses.length > 1 || !!t.rejectionReason) ? t.analyses : null;
+  }
+
+  /** Devuelve el motivo de rechazo/descarte si existe. */
+  rejectionReason(row: Sample): string | null {
+    return (row as Tube).rejectionReason ?? null;
   }
 
   toggleExpansion(id: string, event: Event): void {

@@ -22,13 +22,15 @@
       (clear)="clearSelection()"
       (openMenu)="openMenu()"
     />
-    <app-muestras-batch-menu
-      [transitions]="config().targets"
-      [selectionCount]="selectedCount()"
-      [open]="menuOpen()"
-      (select)="selectTransition($event)"
-      (closeMenu)="closeMenu()"
-    />
+    @if (canTransition()) {
+      <app-muestras-batch-menu
+        [transitions]="config().targets"
+        [selectionCount]="selectedCount()"
+        [open]="menuOpen()"
+        (select)="selectTransition($event)"
+        (closeMenu)="closeMenu()"
+      />
+    }
   </div>
 
   <app-muestras-sample-table

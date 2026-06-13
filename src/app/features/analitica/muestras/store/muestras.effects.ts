@@ -11,6 +11,7 @@ import {
   loadRecoleccion, loadRecoleccionSuccess, loadRecoleccionNotModified, loadRecoleccionFailure,
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
   loadTransito, loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
+  loadDescarte, loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
   resolveRouting, resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
   dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
@@ -98,6 +99,20 @@ export class MuestrasEffects {
         return this.api.getWorklist('IN_TRANSIT', branchId).pipe(
           map(res => isNotModified(res) ? loadTransitoNotModified() : loadTransitoSuccess({ items: res })),
           catchError((error: HttpErrorResponse) => of(loadTransitoFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  loadDescarte$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadDescarte),
+      withLatestFrom(this.store.select(selectMuestrasBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getWorklist('REJECTED,LOST,DISCARDED', branchId).pipe(
+          map(res => isNotModified(res) ? loadDescarteNotModified() : loadDescarteSuccess({ items: res })),
+          catchError((error: HttpErrorResponse) => of(loadDescarteFailure({ error }))),
         );
       }),
     ),
