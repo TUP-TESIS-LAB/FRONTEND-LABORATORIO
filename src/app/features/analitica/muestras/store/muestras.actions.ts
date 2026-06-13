@@ -67,6 +67,18 @@ export const loadDescarteFailure = createAction(
   props<{ error: HttpErrorResponse }>()
 );
 
+// Worklist Procesamiento (PROCESSING) — polleada, solo lectura (Arco 1)
+export const loadProcesamiento = createAction('[Muestras Page] Load Procesamiento');
+export const loadProcesamientoSuccess = createAction(
+  '[Muestras API] Load Procesamiento Success',
+  props<{ items: LabelWorklistItem[] }>()
+);
+export const loadProcesamientoNotModified = createAction('[Muestras API] Load Procesamiento Not Modified');
+export const loadProcesamientoFailure = createAction(
+  '[Muestras API] Load Procesamiento Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
 // Resolve Routing
 export const resolveRouting = createAction('[Transito Page] Resolve Routing');
 export const resolveRoutingSuccess = createAction(

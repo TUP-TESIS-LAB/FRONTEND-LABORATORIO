@@ -17,8 +17,8 @@ import { ScanBarComponent } from '../../components/scan-bar/scan-bar.component';
 import { BatchMenuComponent } from '../../components/batch-menu/batch-menu.component';
 import { SampleTableComponent } from '../../components/sample-table/sample-table.component';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
-import { initMuestras, loadRecoleccion, loadDescarte, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
-import { selectRecoleccionItems, selectDescarteItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { initMuestras, loadRecoleccion, loadDescarte, loadProcesamiento, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
+import { selectRecoleccionItems, selectDescarteItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { groupTubes, type Tube } from '../../models/tube.model';
 
 @Component({
@@ -51,16 +51,22 @@ export class WorklistPage {
 
   /** Pantallas conectadas al backend; el resto sigue mock (arcos futuros). */
   readonly isBackendScreen = computed(() =>
-    this.config().key === 'recoleccion' || this.config().key === 'descarte',
+    this.config().key === 'recoleccion'
+    || this.config().key === 'descarte'
+    || this.config().key === 'procesamiento',
   );
 
-  /** Para descarte, el menú de transición es de solo lectura (sin acciones backend). */
+  /** Descarte y procesamiento son de solo lectura: sin menú de transición ni acciones backend. */
   readonly canTransition = computed(() =>
     !this.isBackendScreen() || this.config().key === 'recoleccion',
   );
 
+  /** Botones Planillas/Marcar completadas (deshabilitados en Arco 1, solo en procesamiento). */
+  readonly showWorksheetActions = computed(() => this.config().key === 'procesamiento');
+
   private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
   private readonly descarteItems = this.store.selectSignal(selectDescarteItems);
+  private readonly procesamientoItems = this.store.selectSignal(selectProcesamientoItems);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
 
@@ -68,6 +74,7 @@ export class WorklistPage {
     const key = this.config().key;
     if (key === 'recoleccion') return groupTubes(this.recoleccionItems(), this.branchName());
     if (key === 'descarte') return groupTubes(this.descarteItems(), this.branchName());
+    if (key === 'procesamiento') return groupTubes(this.procesamientoItems(), this.branchName());
     return this.samples.byState(this.config().source)();
   });
 
@@ -150,6 +157,36 @@ export class WorklistPage {
         intervalMs: 5000,
         poll: () => {
           this.store.dispatch(loadDescarte());
+          return of(null);
+        },
+      });
+      this.destroyRef.onDestroy(() => handle.stop());
+
+      let lastSig: string | null = null;
+      effect(() => {
+        const err = this.backendError();
+        const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+        if (sig && sig !== lastSig) {
+          lastSig = sig;
+          this.messages.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: humanizeBackendError(err, {
+              fallback: 'No pudimos completar la operación. Probá de nuevo.',
+            }),
+            life: 5000,
+          });
+        }
+      });
+    }
+
+    if (screenKey === 'procesamiento') {
+      this.store.dispatch(initMuestras());
+      const handle = this.polling.startPolling({
+        key: 'muestras-procesamiento',
+        intervalMs: 5000,
+        poll: () => {
+          this.store.dispatch(loadProcesamiento());
           return of(null);
         },
       });

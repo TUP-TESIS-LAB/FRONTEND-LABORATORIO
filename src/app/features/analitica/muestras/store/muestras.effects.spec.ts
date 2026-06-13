@@ -13,6 +13,7 @@ import {
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
   loadTransito, loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
   loadDescarte, loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
+  loadProcesamiento, loadProcesamientoSuccess, loadProcesamientoNotModified, loadProcesamientoFailure,
   resolveRouting, resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
   dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
@@ -214,6 +215,38 @@ describe('MuestrasEffects', () => {
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadDescarte$);
     expect(action).toEqual(loadDescarteFailure({ error }));
+  });
+
+  // ── loadProcesamiento ───────────────────────────────────────────────────────
+  const procItem: LabelWorklistItem = {
+    labelId: 70002, sampleId: 50050, barcode: '70002', protocolId: 50005, analysisName: 'Hemograma',
+    patientName: 'Marta Gómez', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
+  };
+
+  it('loadProcesamiento pide PROCESSING de la sucursal y mapea success', async () => {
+    api.getWorklist.mockReturnValue(of([procItem]));
+    actions$ = of(loadProcesamiento());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadProcesamiento$);
+    expect(api.getWorklist).toHaveBeenCalledWith('PROCESSING', 1001);
+    expect(action).toEqual(loadProcesamientoSuccess({ items: [procItem] }));
+  });
+
+  it('loadProcesamiento 304 mapea a notModified', async () => {
+    api.getWorklist.mockReturnValue(of(NOT_MODIFIED));
+    actions$ = of(loadProcesamiento());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadProcesamiento$);
+    expect(action).toEqual(loadProcesamientoNotModified());
+  });
+
+  it('loadProcesamiento failure mapea error', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    api.getWorklist.mockReturnValue(throwError(() => error));
+    actions$ = of(loadProcesamiento());
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadProcesamiento$);
+    expect(action).toEqual(loadProcesamientoFailure({ error }));
   });
 
   // ── resolveRouting ────────────────────────────────────────────────────────
