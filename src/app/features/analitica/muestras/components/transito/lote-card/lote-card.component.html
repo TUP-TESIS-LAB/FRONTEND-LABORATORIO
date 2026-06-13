@@ -1,3 +1,4 @@
+<!-- Referencia: el template real está inlineado en lote-card.component.ts (workaround vitest). -->
 <article class="lote-card" [class.no-dest]="!hasDest">
   <header>
     <input type="checkbox" [checked]="allSelected" (change)="onAllToggle($event)" aria-label="Tildar todas las muestras del lote">
@@ -8,7 +9,7 @@
     </div>
     <div class="meta">
       @if (hasDest) {
-        <span class="dest"><i class="pi pi-map-marker"></i> {{ lote.branch }} · {{ lote.area }} · {{ lote.section }}</span>
+        <span class="dest"><i class="pi pi-map-marker"></i> {{ destLabel }}</span>
         <span class="badge" [class.green]="outcome === 'en-proceso'" [class.blue]="outcome === 'en-transito'">
           {{ outcome === 'en-proceso' ? 'En proceso' : 'En tránsito' }}
         </span>
@@ -20,22 +21,24 @@
     <button type="button" class="scan-here" [class.is-active]="isActive" [attr.aria-pressed]="isActive" (click)="setActive.emit()">
       {{ isActive ? 'Escaneo → acá' : 'Escanear acá' }}
     </button>
-    <button type="button" class="dissolve" (click)="dissolve.emit()" aria-label="Descartar lote">✕</button>
+    <button type="button" class="dissolve" (click)="dissolve.emit()" aria-label="Descartar lote"><i class="pi pi-times"></i></button>
   </header>
 
   <div class="dest-form">
-    <select [value]="lote.branch" (change)="onDestField('branch', $any($event.target).value)">
+    <select [value]="lote.branch" (change)="onBranchChange($any($event.target).value)" aria-label="Sucursal de destino">
       <option value="">Sucursal…</option>
-      @for (b of branches; track b) { <option [value]="b">{{ b }}</option> }
+      @for (b of branchOptions; track b.id) { <option [value]="b.name">{{ b.name }}</option> }
     </select>
-    <select [value]="lote.area" (change)="onDestField('area', $any($event.target).value)">
-      <option value="">Área…</option>
-      @for (a of areas; track a) { <option [value]="a">{{ a }}</option> }
-    </select>
-    <select [value]="lote.section" (change)="onDestField('section', $any($event.target).value)">
-      <option value="">Sección…</option>
-      @for (s of sections; track s) { <option [value]="s">{{ s }}</option> }
-    </select>
+    @if (isHere) {
+      <select [value]="lote.sectionId ?? ''" (change)="onSectionChange($any($event.target).value)" aria-label="Sección de destino">
+        <option value="">Sección…</option>
+        @for (o of sectionOptions; track o.sectionId) { <option [value]="o.sectionId">{{ o.label }}</option> }
+      </select>
+    } @else {
+      <input type="text" class="obs" placeholder="Observaciones (opcional)" [disabled]="!lote.branch"
+             [value]="lote.observation ?? ''" (change)="onObservationChange($any($event.target).value)"
+             aria-label="Observaciones (opcional)">
+    }
     <button type="button" class="send" [disabled]="!hasDest" (click)="send.emit()">{{ sendLabel }}</button>
   </div>
 

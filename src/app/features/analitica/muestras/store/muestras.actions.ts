@@ -1,14 +1,16 @@
 import { createAction, props } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
+import type { BranchOption } from '@features/analitica/models/extraction.model';
 import type { LabelWorklistItem } from '../models/label-worklist.model';
 import type { TransitionKey } from '../models/transition.model';
 import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.model';
 
-// Init: resolver sucursal del operador (GET /me/branches → primera)
+// Init: resolver sucursal del operador (GET /me/branches → primera). `branches` = lista completa
+// (destinos posibles de derivación en Tránsito).
 export const initMuestras = createAction('[Muestras Page] Init');
 export const initMuestrasSuccess = createAction(
   '[Muestras API] Init Success',
-  props<{ branchId: number; branchName: string }>()
+  props<{ branchId: number; branchName: string; branches: BranchOption[] }>()
 );
 export const initMuestrasFailure = createAction(
   '[Muestras API] Init Failure',

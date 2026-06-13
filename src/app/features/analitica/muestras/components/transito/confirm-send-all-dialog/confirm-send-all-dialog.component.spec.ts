@@ -35,4 +35,29 @@ describe('ConfirmSendAllDialogComponent', () => {
     btn.click();
     expect(confirmed).toBe(1);
   });
+
+  it('con derivaciones muestra Observaciones (opcional) y emite la observación trimmeada', () => {
+    fixture.componentRef.setInput('open', true);
+    fixture.componentRef.setInput('breakdown', { enProceso: 1, enTransito: 2, groupsCount: 1 });
+    fixture.detectChanges();
+
+    const textarea = document.body.querySelector('.obs-field textarea') as HTMLTextAreaElement;
+    expect(textarea).not.toBeNull();
+    expect(document.body.textContent).toContain('Observaciones (opcional)');
+
+    const emitted: string[] = [];
+    fixture.componentInstance.confirm.subscribe(v => emitted.push(v));
+    textarea.value = '  cadena de frío  ';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    (document.body.querySelector('button.confirm') as HTMLButtonElement).click();
+    expect(emitted).toEqual(['cadena de frío']);
+  });
+
+  it('sin derivaciones no muestra el campo de observaciones', () => {
+    fixture.componentRef.setInput('open', true);
+    fixture.componentRef.setInput('breakdown', { enProceso: 3, enTransito: 0, groupsCount: 2 });
+    fixture.detectChanges();
+    expect(document.body.querySelector('.obs-field textarea')).toBeNull();
+  });
 });

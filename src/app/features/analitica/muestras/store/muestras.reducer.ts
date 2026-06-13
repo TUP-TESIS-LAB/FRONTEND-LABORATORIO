@@ -14,8 +14,8 @@ import {
 export const muestrasReducer = createReducer(
   initialMuestrasState,
 
-  on(initMuestrasSuccess, (state, { branchId, branchName }): MuestrasState => ({
-    ...state, branchId, branchName, error: null,
+  on(initMuestrasSuccess, (state, { branchId, branchName, branches }): MuestrasState => ({
+    ...state, branchId, branchName, branches, error: null,
   })),
   on(initMuestrasFailure, (state, { error }): MuestrasState => ({ ...state, error })),
 

@@ -21,10 +21,15 @@ const item: LabelWorklistItem = {
 };
 
 describe('muestrasReducer', () => {
-  it('initMuestrasSuccess setea sucursal', () => {
-    const s = muestrasReducer(initialMuestrasState, initMuestrasSuccess({ branchId: 1001, branchName: 'CENTRAL' }));
+  it('initMuestrasSuccess setea sucursal y lista de sucursales', () => {
+    const branches = [
+      { id: 1001, code: 'CENTRAL', name: 'CENTRAL' },
+      { id: 1002, code: 'NORTE', name: 'NORTE' },
+    ];
+    const s = muestrasReducer(initialMuestrasState, initMuestrasSuccess({ branchId: 1001, branchName: 'CENTRAL', branches }));
     expect(s.branchId).toBe(1001);
     expect(s.branchName).toBe('CENTRAL');
+    expect(s.branches).toEqual(branches);
   });
 
   it('loadRecoleccion marca pending', () => {

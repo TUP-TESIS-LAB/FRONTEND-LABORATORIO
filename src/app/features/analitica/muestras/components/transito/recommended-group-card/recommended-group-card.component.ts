@@ -6,8 +6,8 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { Sample } from '../../../models/sample.model';
-import type { RecommendedGroup, TransitoDest } from '../../../models/transito.model';
-import { BRANCHES, AREAS, SECTIONS, CURRENT_BRANCH } from '../../../data/catalogs';
+import type { RecommendedGroup, SectionOption } from '../../../models/transito.model';
+import { SIN_DESTINO_GROUP_ID } from '../../../models/transito.model';
 import { SampleRowComponent } from '../sample-row/sample-row.component';
 
 @Component({
@@ -15,32 +15,29 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
   standalone: true,
   imports: [FormsModule, SampleRowComponent],
   template: `
-<article class="group-card" [class.outcome-here]="outcome === 'en-proceso'" [class.outcome-other]="outcome === 'en-transito'">
+<article class="group-card" [class.outcome-here]="!isPendingDest" [class.outcome-pending]="isPendingDest">
   <header>
     <input type="checkbox" [checked]="allSelected" (change)="onAllToggle($event)" aria-label="Tildar todas las muestras del group">
-    <i class="pi" [class.pi-inbox]="outcome === 'en-proceso'" [class.pi-truck]="outcome === 'en-transito'"></i>
+    <i class="pi" [class.pi-inbox]="!isPendingDest" [class.pi-question-circle]="isPendingDest"></i>
     <div class="title">
-      <span class="area">{{ group.area }}</span>
-      <span class="sub"><i class="pi pi-map-marker"></i> {{ group.branch }} · {{ group.section }}</span>
+      <span class="area">{{ title }}</span>
+      <span class="sub"><i class="pi pi-map-marker"></i> {{ subtitle }}</span>
     </div>
-    <span class="badge" [class.green]="outcome === 'en-proceso'" [class.blue]="outcome === 'en-transito'">
-      {{ outcome === 'en-proceso' ? 'En proceso' : 'En tránsito' }}
+    <span class="badge" [class.green]="!isPendingDest" [class.amber]="isPendingDest">
+      {{ isPendingDest ? 'Sin destino' : 'En proceso' }}
     </span>
     <span class="count">{{ group.sampleIds.length }} muestra{{ group.sampleIds.length === 1 ? '' : 's' }}</span>
-    <button type="button" class="edit" (click)="toggleEditing.emit()">Editar destino</button>
-    <button type="button" class="send" [class.primary]="sendHighlighted" (click)="send.emit()">{{ sendLabel }}</button>
+    @if (!isSinDestino) {
+      <button type="button" class="edit" (click)="toggleEditing.emit()">Editar destino</button>
+    }
+    <button type="button" class="send" [class.primary]="sendHighlighted" [disabled]="isPendingDest" (click)="send.emit()">{{ sendLabel }}</button>
   </header>
 
-  @if (isEditing) {
+  @if (isEditing || isSinDestino) {
     <div class="dest-form">
-      <select [value]="group.branch" (change)="onDestField('branch', $any($event.target).value)">
-        @for (b of branches; track b) { <option [value]="b">{{ b }}</option> }
-      </select>
-      <select [value]="group.area" (change)="onDestField('area', $any($event.target).value)">
-        @for (a of areas; track a) { <option [value]="a">{{ a }}</option> }
-      </select>
-      <select [value]="group.section" (change)="onDestField('section', $any($event.target).value)">
-        @for (s of sections; track s) { <option [value]="s">{{ s }}</option> }
+      <select [value]="assignedSectionId ?? ''" (change)="onSectionChange($any($event.target).value)" aria-label="Sección de destino">
+        <option value="" disabled>Sección…</option>
+        @for (o of sectionOptions; track o.sectionId) { <option [value]="o.sectionId">{{ o.label }}</option> }
       </select>
     </div>
   }
@@ -54,6 +51,9 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
         [leaving]="isLeaving(s.id)"
         (toggle)="toggleSample.emit(s.id)"
       />
+      @if (isSinDestino && reasonOf(s.id)) {
+        <div class="row-reason"><i class="pi pi-info-circle"></i> {{ reasonOf(s.id) }}</div>
+      }
     }
   </div>
 </article>
@@ -68,19 +68,36 @@ export class RecommendedGroupCardComponent {
   @Input({ required: true }) isEditing!: boolean;
   @Input({ required: true }) leavingIds!: ReadonlySet<string>;
   @Input({ required: true }) flashId!: string | null;
+  /** Opciones de sección (workspaces reales de la sucursal) para asignación manual. */
+  @Input() sectionOptions: SectionOption[] = [];
+  /** Motivo por tubo (solo se renderiza en la variante "Sin destino"). */
+  @Input() reasons: ReadonlyMap<string, string> = new Map();
+  /** Sección efectiva del grupo (asignación manual o la implícita del routing). */
+  @Input() assignedSectionId: number | null = null;
 
   readonly toggleSample = output<string>();
   readonly toggleAll = output<boolean>();
   readonly toggleEditing = output<void>();
-  readonly destChange = output<Partial<TransitoDest>>();
+  readonly assignSection = output<number>();
   readonly send = output<void>();
 
-  protected readonly branches = BRANCHES;
-  protected readonly areas = AREAS;
-  protected readonly sections = SECTIONS;
+  get isSinDestino(): boolean {
+    return this.group.id === SIN_DESTINO_GROUP_ID;
+  }
 
-  get outcome(): 'en-proceso' | 'en-transito' {
-    return this.group.branch === CURRENT_BRANCH ? 'en-proceso' : 'en-transito';
+  /** Sin destino y todavía sin sección asignada manualmente. */
+  get isPendingDest(): boolean {
+    return this.isSinDestino && !this.group.section;
+  }
+
+  get title(): string {
+    if (this.isPendingDest) return 'Sin destino';
+    return this.group.area || this.group.section;
+  }
+
+  get subtitle(): string {
+    if (this.isPendingDest) return 'Asignale una sección para poder despachar';
+    return [this.group.branch, this.group.section].filter(Boolean).join(' · ');
   }
 
   get selectedInGroup(): number {
@@ -104,12 +121,14 @@ export class RecommendedGroupCardComponent {
   isSelected(id: string): boolean { return this.selectedIds.has(id); }
   isFlashing(id: string): boolean { return this.flashId === id; }
   isLeaving(id: string): boolean { return this.leavingIds.has(id); }
+  reasonOf(id: string): string | undefined { return this.reasons.get(id); }
 
   onAllToggle(ev: Event): void {
     this.toggleAll.emit((ev.target as HTMLInputElement).checked);
   }
 
-  onDestField(field: 'branch' | 'area' | 'section', value: string): void {
-    this.destChange.emit({ [field]: value });
+  onSectionChange(value: string): void {
+    const n = Number(value);
+    if (value !== '' && Number.isFinite(n)) this.assignSection.emit(n);
   }
 }

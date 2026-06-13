@@ -1,29 +1,27 @@
-<article class="group-card" [class.outcome-here]="outcome === 'en-proceso'" [class.outcome-other]="outcome === 'en-transito'">
+<!-- Referencia: el template real está inlineado en recommended-group-card.component.ts (workaround vitest). -->
+<article class="group-card" [class.outcome-here]="!isPendingDest" [class.outcome-pending]="isPendingDest">
   <header>
     <input type="checkbox" [checked]="allSelected" (change)="onAllToggle($event)" aria-label="Tildar todas las muestras del group">
-    <i class="pi" [class.pi-inbox]="outcome === 'en-proceso'" [class.pi-truck]="outcome === 'en-transito'"></i>
+    <i class="pi" [class.pi-inbox]="!isPendingDest" [class.pi-question-circle]="isPendingDest"></i>
     <div class="title">
-      <span class="area">{{ group.area }}</span>
-      <span class="sub"><i class="pi pi-map-marker"></i> {{ group.branch }} · {{ group.section }}</span>
+      <span class="area">{{ title }}</span>
+      <span class="sub"><i class="pi pi-map-marker"></i> {{ subtitle }}</span>
     </div>
-    <span class="badge" [class.green]="outcome === 'en-proceso'" [class.blue]="outcome === 'en-transito'">
-      {{ outcome === 'en-proceso' ? 'En proceso' : 'En tránsito' }}
+    <span class="badge" [class.green]="!isPendingDest" [class.amber]="isPendingDest">
+      {{ isPendingDest ? 'Sin destino' : 'En proceso' }}
     </span>
     <span class="count">{{ group.sampleIds.length }} muestra{{ group.sampleIds.length === 1 ? '' : 's' }}</span>
-    <button type="button" class="edit" (click)="toggleEditing.emit()">Editar destino</button>
-    <button type="button" class="send" [class.primary]="sendHighlighted" (click)="send.emit()">{{ sendLabel }}</button>
+    @if (!isSinDestino) {
+      <button type="button" class="edit" (click)="toggleEditing.emit()">Editar destino</button>
+    }
+    <button type="button" class="send" [class.primary]="sendHighlighted" [disabled]="isPendingDest" (click)="send.emit()">{{ sendLabel }}</button>
   </header>
 
-  @if (isEditing) {
+  @if (isEditing || isSinDestino) {
     <div class="dest-form">
-      <select [value]="group.branch" (change)="onDestField('branch', $any($event.target).value)">
-        @for (b of branches; track b) { <option [value]="b">{{ b }}</option> }
-      </select>
-      <select [value]="group.area" (change)="onDestField('area', $any($event.target).value)">
-        @for (a of areas; track a) { <option [value]="a">{{ a }}</option> }
-      </select>
-      <select [value]="group.section" (change)="onDestField('section', $any($event.target).value)">
-        @for (s of sections; track s) { <option [value]="s">{{ s }}</option> }
+      <select [value]="assignedSectionId ?? ''" (change)="onSectionChange($any($event.target).value)" aria-label="Sección de destino">
+        <option value="" disabled>Sección…</option>
+        @for (o of sectionOptions; track o.sectionId) { <option [value]="o.sectionId">{{ o.label }}</option> }
       </select>
     </div>
   }
@@ -37,6 +35,9 @@
         [leaving]="isLeaving(s.id)"
         (toggle)="toggleSample.emit(s.id)"
       />
+      @if (isSinDestino && reasonOf(s.id)) {
+        <div class="row-reason"><i class="pi pi-info-circle"></i> {{ reasonOf(s.id) }}</div>
+      }
     }
   </div>
 </article>

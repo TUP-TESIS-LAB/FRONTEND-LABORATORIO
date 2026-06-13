@@ -68,15 +68,16 @@ describe('MuestrasEffects', () => {
     });
   });
 
-  it('init resuelve la primera sucursal', async () => {
-    api.getMyBranches.mockReturnValue(of([
+  it('init resuelve la primera sucursal y guarda todas las sucursales', async () => {
+    const branches = [
       { id: 1001, code: 'CENTRAL', name: 'Sede Central' },
       { id: 1002, code: 'NORTE', name: 'Belgrano' },
-    ]));
+    ];
+    api.getMyBranches.mockReturnValue(of(branches));
     actions$ = of(initMuestras());
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.init$);
-    expect(action).toEqual(initMuestrasSuccess({ branchId: 1001, branchName: 'Sede Central' }));
+    expect(action).toEqual(initMuestrasSuccess({ branchId: 1001, branchName: 'Sede Central', branches }));
   });
 
   it('init sin sucursales mapea failure', async () => {
@@ -88,7 +89,7 @@ describe('MuestrasEffects', () => {
   });
 
   it('initSuccess dispara loadRecoleccion', async () => {
-    actions$ = of(initMuestrasSuccess({ branchId: 1001, branchName: 'Sede Central' }));
+    actions$ = of(initMuestrasSuccess({ branchId: 1001, branchName: 'Sede Central', branches: [] }));
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadAfterInit$);
     expect(action).toEqual(loadRecoleccion());

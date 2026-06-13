@@ -37,10 +37,16 @@ import { DialogModule } from 'primeng/dialog';
         <strong>{{ breakdown.enTransito }}</strong>
       </div>
     </div>
+    @if (breakdown.enTransito > 0) {
+      <label class="obs-field">
+        <span>Observaciones (opcional)</span>
+        <textarea rows="2" [value]="observation" (input)="onObservationInput($any($event.target).value)"></textarea>
+      </label>
+    }
     <p class="warn"><i class="pi pi-exclamation-triangle"></i> Esta acción no se puede deshacer.</p>
     <footer>
       <button type="button" class="cancel" (click)="cancel.emit()">Cancelar</button>
-      <button type="button" class="confirm" (click)="confirm.emit()">Enviar {{ total }}</button>
+      <button type="button" class="confirm" (click)="onConfirm()">Enviar {{ total }}</button>
     </footer>
   </div>
 </p-dialog>
@@ -53,9 +59,21 @@ export class ConfirmSendAllDialogComponent {
   @Input({ required: true }) breakdown!: { enProceso: number; enTransito: number; groupsCount: number };
 
   readonly cancel = output<void>();
-  readonly confirm = output<void>();
+  /** Emite la observación (vacía si no aplica derivación). */
+  readonly confirm = output<string>();
+
+  protected observation = '';
 
   get total(): number {
     return this.breakdown.enProceso + this.breakdown.enTransito;
+  }
+
+  protected onObservationInput(value: string): void {
+    this.observation = value;
+  }
+
+  protected onConfirm(): void {
+    this.confirm.emit(this.observation.trim());
+    this.observation = '';
   }
 }

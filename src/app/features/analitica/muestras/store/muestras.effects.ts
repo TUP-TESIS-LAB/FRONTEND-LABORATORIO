@@ -37,6 +37,7 @@ export class MuestrasEffects {
             return initMuestrasSuccess({
               branchId: branches[0].id,
               branchName: branches[0].name,
+              branches,
             });
           }),
           catchError((error: HttpErrorResponse) => of(initMuestrasFailure({ error }))),
