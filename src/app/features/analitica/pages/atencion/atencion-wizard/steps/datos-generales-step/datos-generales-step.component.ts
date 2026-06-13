@@ -65,28 +65,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       <!-- T8: contenido scrolleable interno; el footer queda abajo y la página no crece. -->
       <div class="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
 
-      <!-- DNI del paciente: card siempre visible. La búsqueda es automática (debounce
-           mientras se tipea + al salir del campo); no hay botón "Buscar". Si el DNI
-           existe se muestra el paciente abajo; si no, aparece el alta inline. -->
-      <div class="rounded border p-4">
-        <label class="block text-sm font-medium mb-1">DNI del paciente</label>
-        <div class="flex items-center gap-2">
-          <input pInputText [ngModel]="dniInput" (ngModelChange)="onDniChange($event)"
-                 (blur)="buscar()" (keyup.enter)="buscar()" class="w-full"
-                 placeholder="Sin puntos ni guiones" [readonly]="readOnly()" />
-          @if (resolving()) {
-            <i class="pi pi-spin pi-spinner text-surface-500" aria-label="Verificando paciente"></i>
-          }
-        </div>
-        @if (resolutionError()) {
-          <small class="text-red-600 block mt-1" role="alert">
-            <i class="pi pi-exclamation-triangle mr-1"></i>No pudimos verificar el paciente. Reintentá.
-          </small>
-        } @else if (!resolving() && !resolved() && !notFoundDni()) {
-          <small class="text-surface-500 block mt-1">Ingresá el DNI y buscamos el paciente automáticamente.</small>
-        }
-      </div>
-
       <!-- Caso A: paciente encontrado -->
       @if (resolved(); as p) {
         @if (!editing()) {
@@ -257,14 +235,31 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
         }
       }
 
-      <!-- Caso B: DNI no existe → alta mínima inline -->
-      @if (notFoundDni() && !resolved()) {
+      <!-- Card del paciente: visible mientras no haya un paciente resuelto. El DNI es
+           el primer input y busca solo (debounce mientras se tipea + al salir del campo,
+           sin botón "Buscar"). Si el DNI existe se muestra el paciente (Caso A); si no,
+           el resto de los campos para darlo de alta. -->
+      @if (!resolved()) {
         <div class="rounded border p-4 space-y-3">
-          <div class="text-sm text-surface-600">
-            <i class="pi pi-info-circle mr-1"></i>
-            No encontramos un paciente con DNI <b>{{ notFoundDni() }}</b>. Completá los datos para darlo de alta:
-          </div>
+          @if (notFoundDni()) {
+            <div class="text-sm text-surface-600">
+              <i class="pi pi-info-circle mr-1"></i>
+              No encontramos un paciente con DNI <b>{{ notFoundDni() }}</b>. Completá los datos para darlo de alta:
+            </div>
+          }
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- DNI: primer input; dispara la búsqueda automática -->
+            <div>
+              <label class="block text-sm mb-1">DNI <span class="text-red-500">*</span></label>
+              <input pInputText [ngModel]="dniInput" (ngModelChange)="onDniChange($event)"
+                     (blur)="buscar()" (keyup.enter)="buscar()" class="w-full"
+                     placeholder="Sin puntos ni guiones" [readonly]="readOnly()" />
+              @if (resolving()) {
+                <small class="text-surface-500 block mt-1"><i class="pi pi-spin pi-spinner mr-1"></i>Verificando paciente…</small>
+              } @else if (resolutionError()) {
+                <small class="text-red-600 block mt-1"><i class="pi pi-exclamation-triangle mr-1"></i>No pudimos verificar el paciente. Reintentá.</small>
+              }
+            </div>
             <div>
               <label class="block text-sm mb-1">Nombre <span class="text-red-500">*</span></label>
               <input pInputText [(ngModel)]="form.firstName" class="w-full" />
