@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, of, forkJoin } from 'rxjs';
@@ -32,7 +32,7 @@ interface OrderedAnalysis { analysisTypeId: number; name: string; }
           <div class="border rounded divide-y">
             @for (a of results(); track a.id) {
               <button type="button" class="w-full text-left p-2 text-sm hover:bg-gray-50 flex justify-between"
-                      (click)="add(a)"><span>{{ a.name }}</span><i class="pi pi-plus"></i></button>
+                      [attr.aria-label]="'Agregar ' + a.name" (click)="add(a)"><span>{{ a.name }}</span><i class="pi pi-plus"></i></button>
             }
           </div>
         }
@@ -43,9 +43,9 @@ interface OrderedAnalysis { analysisTypeId: number; name: string; }
             <div class="flex items-center gap-2 border rounded p-2 text-sm">
               <span class="opacity-50 w-6">{{ i + 1 }}</span>
               <span class="flex-1">{{ a.name }}</span>
-              <button type="button" class="pi pi-chevron-up" [disabled]="i === 0" (click)="moveItem(i, -1)"></button>
-              <button type="button" class="pi pi-chevron-down" [disabled]="i === ordered().length - 1" (click)="moveItem(i, 1)"></button>
-              <button type="button" class="pi pi-times" (click)="removeAt(a.analysisTypeId)"></button>
+              <button type="button" class="pi pi-chevron-up" aria-label="Subir" title="Subir" [disabled]="i === 0" (click)="moveItem(i, -1)"></button>
+              <button type="button" class="pi pi-chevron-down" aria-label="Bajar" title="Bajar" [disabled]="i === ordered().length - 1" (click)="moveItem(i, 1)"></button>
+              <button type="button" class="pi pi-times" aria-label="Quitar" title="Quitar" (click)="removeAt(a.analysisTypeId)"></button>
             </div>
           }
           @if (!ordered().length) {
@@ -63,6 +63,7 @@ interface OrderedAnalysis { analysisTypeId: number; name: string; }
 export class WorksheetConfigModalComponent {
   private readonly store = inject(Store);
   private readonly analysis = inject(AnalysisService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly visible = input<boolean>(false);
   readonly templateId = input<number | null>(null);
@@ -93,6 +94,7 @@ export class WorksheetConfigModalComponent {
       this.name.set(tpl.name);
       const sorted = [...tpl.analyses].sort((a, b) => a.displayOrder - b.displayOrder);
       forkJoin(sorted.map(a => this.analysis.getById(a.analysisTypeId)))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(details => this.ordered.set(details.map(d => ({ analysisTypeId: d.id, name: d.name }))));
     });
   }
