@@ -6,14 +6,13 @@ import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } fr
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
-import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { InsurerTypeCode, SpecificData, humanizeInsurerType } from '../../models/insurer.model';
 import { WizardCreate, WizardContact, PlanWithAgreement } from '../../models/wizard.model';
 import { createObraSocial, createObraSocialSuccess, loadObraSocialCatalogs } from '../../store/obra-social.actions';
 import { selectObraSocialCreating, selectNbuOptions } from '../../store/obra-social.selectors';
-import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { OBRA_SOCIAL_FORM_STEPS } from './obra-social-form-steps';
 import { AseguradoraStepComponent } from './steps/aseguradora-step.component';
 import { PlanesStepComponent } from './steps/planes-step.component';
@@ -32,45 +31,32 @@ function isoFromDate(d: unknown): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   imports: [
-    ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    FormStepperHeaderComponent, AseguradoraStepComponent, PlanesStepComponent, ResumenStepComponent,
+    ReactiveFormsModule, ConfirmDialogModule,
+    WizardShellComponent, AseguradoraStepComponent, PlanesStepComponent, ResumenStepComponent,
   ],
   template: `
     <form [formGroup]="form" class="flex flex-col h-full">
-      <header class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-b sticky top-0 z-10">
-        <p-button [text]="true" icon="pi pi-arrow-left" label="Volver" type="button" (onClick)="onBack()" />
-        <h1 class="text-base font-semibold m-0">Nueva obra social</h1>
-        <nav class="ml-auto text-xs text-surface-500">Obras Sociales › Nueva</nav>
-      </header>
-
-      <ui-form-stepper-header
+      <ui-wizard-shell
+        heading="Nueva obra social"
+        breadcrumb="Obras Sociales › Nueva"
         [steps]="steps"
         [currentIndex]="currentStep()"
         [visited]="visited()"
-        (stepSelected)="goToStep($event)" />
-
-      <div class="flex-1 overflow-y-auto px-8 py-6">
+        finishLabel="Guardar"
+        [finishDisabled]="!canSubmit()"
+        [finishLoading]="creating()"
+        [continueDisabled]="!canContinue()"
+        (stepSelected)="goToStep($event)"
+        (next)="goNext()"
+        (back)="goBack()"
+        (cancel)="onBack()"
+        (finish)="confirmSave()">
         @switch (currentStep()) {
           @case (0) { <os-aseguradora-step [group]="aseguradoraGroup" /> }
           @case (1) { <os-planes-step [array]="planesArray" [nbuOptions]="nbuOptions()" /> }
           @case (2) { <os-resumen-step [data]="resumenView()" /> }
         }
-      </div>
-
-      <footer class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-t sticky bottom-0">
-        <span class="text-xs text-surface-400">Paso {{ currentStep() + 1 }} de {{ steps.length }}</span>
-        <div class="ml-auto flex flex-row-reverse gap-2">
-          @if (isLastStep()) {
-            <p-button label="Guardar" type="button" severity="success" [loading]="creating()" [disabled]="!canSubmit()" (onClick)="confirmSave()" />
-          } @else {
-            <p-button label="Continuar" icon="pi pi-arrow-right" iconPos="right" type="button" [disabled]="!canContinue()" (onClick)="goNext()" />
-          }
-          @if (!isFirstStep()) {
-            <p-button label="Atrás" icon="pi pi-arrow-left" [text]="true" type="button" (onClick)="goBack()" />
-          }
-          <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
-        </div>
-      </footer>
+      </ui-wizard-shell>
       <p-confirmDialog />
     </form>
   `,

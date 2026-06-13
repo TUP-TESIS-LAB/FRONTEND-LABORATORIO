@@ -5,9 +5,8 @@ import {
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
-import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { DatosStepComponent } from './steps/datos-step.component';
 import { HorariosStepComponent } from './steps/horarios-step.component';
 import { ContactosStepComponent } from './steps/contactos-step.component';
@@ -21,9 +20,8 @@ import { SUCURSAL_FORM_STEPS } from './sucursal-alta-stepper.steps';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ButtonModule,
     ToastModule,
-    FormStepperHeaderComponent,
+    WizardShellComponent,
     DatosStepComponent,
     HorariosStepComponent,
     ContactosStepComponent,
@@ -60,6 +58,14 @@ export class SucursalAltaStepperPage {
 
   protected readonly isFirstStep = computed(() => this.currentStep() === 0);
   protected readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
+
+  /**
+   * Estado del botón "Continuar" del footer (lo consume `ui-wizard-shell`).
+   * Solo el paso 0 (datos) tiene gating: requiere form válido y muestra
+   * loading mientras crea la sucursal. El resto de los pasos avanzan libre.
+   */
+  protected readonly continueDisabled = computed(() => this.isFirstStep() && !this.step0Valid());
+  protected readonly continueLoading = computed(() => this.isFirstStep() && this.creatingBranch());
 
   /**
    * Loading flag mientras DatosStepComponent dispatch addSucursal y espera
@@ -123,6 +129,15 @@ export class SucursalAltaStepperPage {
     if (step < 0 || step >= this.steps.length) return;
     if (!this.visited().has(step)) return;
     this.currentStep.set(step);
+  }
+
+  /**
+   * Footer "Continuar" (output `next` del shell). En el paso 0 dispara el alta
+   * de la sucursal; en el resto, avanza al siguiente paso.
+   */
+  onNext() {
+    if (this.isFirstStep()) this.onContinueFromDatos();
+    else this.goNext();
   }
 
   /** Avanza al siguiente paso (usado por el footer en steps >= 1). */
