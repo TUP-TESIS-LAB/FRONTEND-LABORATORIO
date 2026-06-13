@@ -129,9 +129,14 @@ describe('muestrasReducer', () => {
 
   // ── dispatchPending lifecycle ─────────────────────────────────────────────
 
-  it('dispatchTubes marca dispatchPending', () => {
-    const s = muestrasReducer(initialMuestrasState, dispatchTubes({ checkIns: [{ sampleId: 80001, sectionId: 3 }] }));
+  it('dispatchTubes marca dispatchPending y limpia error', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const s = muestrasReducer(
+      { ...initialMuestrasState, error },
+      dispatchTubes({ checkIns: [{ sampleId: 80001, sectionId: 3 }] }),
+    );
     expect(s.dispatchPending).toBe(true);
+    expect(s.error).toBeNull();
   });
 
   it('dispatchTubesSuccess limpia dispatchPending', () => {
@@ -152,12 +157,14 @@ describe('muestrasReducer', () => {
     expect(s.error).toBe(error);
   });
 
-  it('deriveTubes marca dispatchPending', () => {
+  it('deriveTubes marca dispatchPending y limpia error', () => {
+    const error = new HttpErrorResponse({ status: 500 });
     const s = muestrasReducer(
-      initialMuestrasState,
+      { ...initialMuestrasState, error },
       deriveTubes({ labelIds: [70001], destinationBranchId: 1002 }),
     );
     expect(s.dispatchPending).toBe(true);
+    expect(s.error).toBeNull();
   });
 
   it('deriveTubesSuccess limpia dispatchPending', () => {

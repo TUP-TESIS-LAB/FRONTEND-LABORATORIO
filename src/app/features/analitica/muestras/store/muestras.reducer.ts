@@ -40,11 +40,11 @@ export const muestrasReducer = createReducer(
   on(loadWorkspacesSuccess, (state, { workspaces }): MuestrasState => ({ ...state, workspaces, error: null })),
   on(loadWorkspacesFailure, (state, { error }): MuestrasState => ({ ...state, error })),
 
-  on(dispatchTubes, (state): MuestrasState => ({ ...state, dispatchPending: true })),
+  on(dispatchTubes, (state): MuestrasState => ({ ...state, dispatchPending: true, error: null })),
   on(dispatchTubesSuccess, (state): MuestrasState => ({ ...state, dispatchPending: false })),
   on(dispatchTubesFailure, (state, { error }): MuestrasState => ({ ...state, dispatchPending: false, error })),
 
-  on(deriveTubes, (state): MuestrasState => ({ ...state, dispatchPending: true })),
+  on(deriveTubes, (state): MuestrasState => ({ ...state, dispatchPending: true, error: null })),
   on(deriveTubesSuccess, (state): MuestrasState => ({ ...state, dispatchPending: false })),
   on(deriveTubesFailure, (state, { error }): MuestrasState => ({ ...state, dispatchPending: false, error })),
 );

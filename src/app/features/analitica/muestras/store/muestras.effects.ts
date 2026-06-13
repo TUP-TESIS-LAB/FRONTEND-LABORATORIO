@@ -117,6 +117,14 @@ export class MuestrasEffects {
     ),
   );
 
+  // El resolve necesita los items cargados: re-disparar tras cada Success (los 304 no pasan por acá).
+  resolveAfterTransitoLoad$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadTransitoSuccess),
+      map(() => resolveRouting()),
+    ),
+  );
+
   loadWorkspaces$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadWorkspaces),
@@ -151,11 +159,11 @@ export class MuestrasEffects {
     ),
   );
 
-  /** Tras cualquier despacho/derivación: recargar tránsito y re-resolver routing. */
+  /** Tras cualquier despacho/derivación: recargar tránsito (resolveAfterTransitoLoad$ encadena el routing). */
   reloadAfterDispatch$ = createEffect(() =>
     this.actions$.pipe(
       ofType(dispatchTubesSuccess, deriveTubesSuccess),
-      switchMap(() => of(loadTransito(), resolveRouting())),
+      map(() => loadTransito()),
     ),
   );
 

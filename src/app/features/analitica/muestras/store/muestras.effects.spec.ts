@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { provideMockStore } from '@ngrx/store/testing';
-import { Observable, of, throwError, firstValueFrom, toArray } from 'rxjs';
+import { Observable, of, throwError, firstValueFrom } from 'rxjs';
 import { Action } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MuestrasEffects } from './muestras.effects';
@@ -184,16 +184,37 @@ describe('MuestrasEffects', () => {
 
   it('resolveRouting deduplica protocolIds y mapea success', async () => {
     const dupItem: LabelWorklistItem = { ...transitoItem, labelId: 70002, protocolId: 50002 };
-    // Reconfigure the mock store with duplicate protocol items
-    TestBed.overrideProvider(MuestrasApiService, { useValue: api });
+    // Reinicializar con dos items que tienen el mismo protocolId para probar la deduplicación real
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        MuestrasEffects,
+        provideMockActions(() => actions$),
+        provideMockStore({
+          selectors: [
+            { selector: selectMuestrasBranchId, value: 1001 },
+            { selector: selectTransitoItems, value: [transitoItem, dupItem] },
+          ],
+        }),
+        { provide: MuestrasApiService, useValue: api },
+      ],
+    });
     const routing: RoutingResolveResponse = { groups: [], unresolvable: [] };
     api.resolveRouting.mockReturnValue(of(routing));
     actions$ = of(resolveRouting());
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.resolveRouting$);
-    // transitoItem has protocolId: 50002 — only one unique id should be sent
+    // Dos items con protocolId 50002 → solo un id único enviado
     expect(api.resolveRouting).toHaveBeenCalledWith([50002], 1001);
     expect(action).toEqual(resolveRoutingSuccess({ routing }));
+  });
+
+  it('loadTransitoSuccess dispara resolveRouting', async () => {
+    const transitoItems: LabelWorklistItem[] = [transitoItem];
+    actions$ = of(loadTransitoSuccess({ items: transitoItems }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.resolveAfterTransitoLoad$);
+    expect(action).toEqual(resolveRouting());
   });
 
   it('resolveRouting failure mapea error', async () => {
@@ -269,19 +290,17 @@ describe('MuestrasEffects', () => {
 
   // ── reloadAfterDispatch ───────────────────────────────────────────────────
 
-  it('dispatchTubesSuccess emite loadTransito y resolveRouting', async () => {
+  it('dispatchTubesSuccess emite loadTransito (routing se encadena via resolveAfterTransitoLoad$)', async () => {
     actions$ = of(dispatchTubesSuccess({ count: 1 }));
     const effects = TestBed.inject(MuestrasEffects);
-    const actions = await firstValueFrom(effects.reloadAfterDispatch$.pipe(toArray()));
-    expect(actions).toContainEqual(loadTransito());
-    expect(actions).toContainEqual(resolveRouting());
+    const action = await firstValueFrom(effects.reloadAfterDispatch$);
+    expect(action).toEqual(loadTransito());
   });
 
-  it('deriveTubesSuccess emite loadTransito y resolveRouting', async () => {
+  it('deriveTubesSuccess emite loadTransito (routing se encadena via resolveAfterTransitoLoad$)', async () => {
     actions$ = of(deriveTubesSuccess({ count: 1 }));
     const effects = TestBed.inject(MuestrasEffects);
-    const actions = await firstValueFrom(effects.reloadAfterDispatch$.pipe(toArray()));
-    expect(actions).toContainEqual(loadTransito());
-    expect(actions).toContainEqual(resolveRouting());
+    const action = await firstValueFrom(effects.reloadAfterDispatch$);
+    expect(action).toEqual(loadTransito());
   });
 });
