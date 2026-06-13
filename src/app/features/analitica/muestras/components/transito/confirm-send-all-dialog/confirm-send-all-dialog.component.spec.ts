@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { By } from '@angular/platform-browser';
 import { ConfirmSendAllDialogComponent } from './confirm-send-all-dialog.component';
 
 describe('ConfirmSendAllDialogComponent', () => {
@@ -36,28 +35,11 @@ describe('ConfirmSendAllDialogComponent', () => {
     expect(confirmed).toBe(1);
   });
 
-  it('con derivaciones muestra Observaciones (opcional) y emite la observación trimmeada', () => {
-    fixture.componentRef.setInput('open', true);
-    fixture.componentRef.setInput('breakdown', { enProceso: 1, enTransito: 2, groupsCount: 1 });
-    fixture.detectChanges();
-
-    const textarea = document.body.querySelector('.obs-field textarea') as HTMLTextAreaElement;
-    expect(textarea).not.toBeNull();
-    expect(document.body.textContent).toContain('Observaciones (opcional)');
-
-    const emitted: string[] = [];
-    fixture.componentInstance.confirm.subscribe(v => emitted.push(v));
-    textarea.value = '  cadena de frío  ';
-    textarea.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-    (document.body.querySelector('button.confirm') as HTMLButtonElement).click();
-    expect(emitted).toEqual(['cadena de frío']);
-  });
-
-  it('sin derivaciones no muestra el campo de observaciones', () => {
+  it('no muestra textarea de observaciones (enTransito siempre 0 en sendAll)', () => {
     fixture.componentRef.setInput('open', true);
     fixture.componentRef.setInput('breakdown', { enProceso: 3, enTransito: 0, groupsCount: 2 });
     fixture.detectChanges();
-    expect(document.body.querySelector('.obs-field textarea')).toBeNull();
+    expect(document.body.querySelector('.obs-field')).toBeNull();
+    expect(document.body.querySelector('textarea')).toBeNull();
   });
 });

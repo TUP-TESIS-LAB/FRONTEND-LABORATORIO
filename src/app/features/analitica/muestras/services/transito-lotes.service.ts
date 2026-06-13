@@ -459,6 +459,7 @@ export class TransitoLotesService {
     this.store.dispatch(deriveTubes({
       labelIds,
       destinationBranchId,
+      tubeCount: tubes.length,
       observation: lote.observation?.trim() || undefined,
     }));
     this.markLeaving(tubes.map(t => t.id));

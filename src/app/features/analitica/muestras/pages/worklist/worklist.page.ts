@@ -95,11 +95,14 @@ export class WorklistPage {
       });
       this.destroyRef.onDestroy(() => handle.stop());
 
-      let lastError: unknown = null;
+      // Deduplicamos por firma status:message para evitar toasts repetidos cuando el polling
+      // sigue fallando (cada HttpErrorResponse fallida crea un objeto nuevo aunque sea el mismo error).
+      let lastSig: string | null = null;
       effect(() => {
         const err = this.backendError();
-        if (err && err !== lastError) {
-          lastError = err;
+        const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+        if (sig && sig !== lastSig) {
+          lastSig = sig;
           this.messages.add({
             severity: 'error',
             summary: 'Error',

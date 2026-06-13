@@ -305,7 +305,7 @@ describe('TransitoLotesService — send (backend real)', () => {
     });
     const result = svc.send(id, 'lote')!;
     expect(dispatched).toEqual([deriveTubes({
-      labelIds: [1, 2], destinationBranchId: 1002, observation: 'cadena de frío',
+      labelIds: [1, 2], destinationBranchId: 1002, tubeCount: 2, observation: 'cadena de frío',
     })]);
     expect(result.enTransito).toBe(2);
     expect(result.enProceso).toBe(0);

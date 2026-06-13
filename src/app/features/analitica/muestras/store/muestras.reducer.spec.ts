@@ -166,7 +166,7 @@ describe('muestrasReducer', () => {
     const error = new HttpErrorResponse({ status: 500 });
     const s = muestrasReducer(
       { ...initialMuestrasState, error },
-      deriveTubes({ labelIds: [70001], destinationBranchId: 1002 }),
+      deriveTubes({ labelIds: [70001], destinationBranchId: 1002, tubeCount: 1 }),
     );
     expect(s.dispatchPending).toBe(true);
     expect(s.error).toBeNull();

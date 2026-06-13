@@ -152,9 +152,9 @@ export class MuestrasEffects {
   deriveTubes$ = createEffect(() =>
     this.actions$.pipe(
       ofType(deriveTubes),
-      concatMap(({ labelIds, destinationBranchId, observation }) =>
+      concatMap(({ labelIds, destinationBranchId, tubeCount, observation }) =>
         this.api.sendToBranch(labelIds, destinationBranchId, observation).pipe(
-          map(() => deriveTubesSuccess({ count: labelIds.length })),
+          map(() => deriveTubesSuccess({ count: tubeCount })),
           catchError((error: HttpErrorResponse) => of(deriveTubesFailure({ error }))),
         )),
     ),

@@ -271,19 +271,20 @@ describe('MuestrasEffects', () => {
 
   // ── deriveTubes ───────────────────────────────────────────────────────────
 
-  it('deriveTubes llama api.sendToBranch y mapea success con count', async () => {
+  it('deriveTubes llama api.sendToBranch y mapea success con tubeCount (no labelIds.length)', async () => {
     api.sendToBranch.mockReturnValue(of({}));
-    actions$ = of(deriveTubes({ labelIds: [70001, 70002], destinationBranchId: 1002, observation: 'test' }));
+    // 2 labels pero solo 1 tubo → el count debe ser 1 (tubeCount), no 2 (labelIds.length)
+    actions$ = of(deriveTubes({ labelIds: [70001, 70002], destinationBranchId: 1002, tubeCount: 1, observation: 'test' }));
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.deriveTubes$);
     expect(api.sendToBranch).toHaveBeenCalledWith([70001, 70002], 1002, 'test');
-    expect(action).toEqual(deriveTubesSuccess({ count: 2 }));
+    expect(action).toEqual(deriveTubesSuccess({ count: 1 }));
   });
 
   it('deriveTubes failure mapea error', async () => {
     const error = new HttpErrorResponse({ status: 422 });
     api.sendToBranch.mockReturnValue(throwError(() => error));
-    actions$ = of(deriveTubes({ labelIds: [70001], destinationBranchId: 1002 }));
+    actions$ = of(deriveTubes({ labelIds: [70001], destinationBranchId: 1002, tubeCount: 1 }));
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.deriveTubes$);
     expect(action).toEqual(deriveTubesFailure({ error }));

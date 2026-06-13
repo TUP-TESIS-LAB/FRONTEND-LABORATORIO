@@ -124,12 +124,13 @@ export class TransitoPage {
     });
     this.destroyRef.onDestroy(() => handle.stop());
 
-    // Workspaces: requieren branchId resuelto (initMuestrasSuccess), un solo disparo.
+    // Workspaces + carga inicial de tránsito: requieren branchId resuelto (initMuestrasSuccess), un solo disparo.
     let workspacesRequested = false;
     effect(() => {
       if (this.branchId() != null && !workspacesRequested) {
         workspacesRequested = true;
         this.store.dispatch(loadWorkspaces());
+        this.store.dispatch(loadTransito());
       }
     });
 
@@ -141,11 +142,14 @@ export class TransitoPage {
     effect(() => this.service.setSectionOptions(this.sectionOptions()));
 
     // Errores del backend → toast humanizado (y limpiar el estado visual "leaving").
-    let lastError: unknown = null;
+    // Deduplicamos por firma status:message para evitar toasts repetidos cuando el polling
+    // sigue fallando (cada HttpErrorResponse fallida crea un objeto nuevo aunque sea el mismo error).
+    let lastSig: string | null = null;
     effect(() => {
       const err = this.backendError();
-      if (err && err !== lastError) {
-        lastError = err;
+      const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+      if (sig && sig !== lastSig) {
+        lastSig = sig;
         this.service.clearLeaving();
         this.messages.add({
           severity: 'error',
@@ -204,7 +208,7 @@ export class TransitoPage {
     this.confirmOpen.set(true);
   }
 
-  onConfirmSendAll(_observation: string): void {
+  onConfirmSendAll(): void {
     this.confirmOpen.set(false);
     const result = this.service.sendAll();
     if (result.skipped > 0) this.warnSinVinculo(result.skipped);

@@ -94,7 +94,7 @@ export const dispatchTubesFailure = createAction(
 // Derivación (labels → otra sucursal, quedan IN_TRANSIT)
 export const deriveTubes = createAction(
   '[Transito Page] Derive Tubes',
-  props<{ labelIds: number[]; destinationBranchId: number; observation?: string }>()
+  props<{ labelIds: number[]; destinationBranchId: number; tubeCount: number; observation?: string }>()
 );
 export const deriveTubesSuccess = createAction(
   '[Muestras API] Derive Tubes Success',

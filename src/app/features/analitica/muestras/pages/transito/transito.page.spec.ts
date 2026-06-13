@@ -100,15 +100,17 @@ describe('TransitoPage (store-driven)', () => {
     expect(dispatched).toContainEqual(loadTransito());
   });
 
-  it('despacha loadWorkspaces cuando la sucursal está resuelta (un solo disparo)', () => {
+  it('despacha loadWorkspaces y loadTransito cuando la sucursal está resuelta (un solo disparo cada uno)', () => {
     const { dispatched } = setup();
     fixture.detectChanges();
     TestBed.flushEffects();
     expect(dispatched.filter(a => (a as Action).type === loadWorkspaces().type)).toHaveLength(1);
+    expect(dispatched.filter(a => (a as Action).type === loadTransito().type)).toHaveLength(1);
     // otro ciclo de effects no re-dispara
     fixture.detectChanges();
     TestBed.flushEffects();
     expect(dispatched.filter(a => (a as Action).type === loadWorkspaces().type)).toHaveLength(1);
+    expect(dispatched.filter(a => (a as Action).type === loadTransito().type)).toHaveLength(1);
   });
 
   it('renderiza el header con stats desde el store', () => {
@@ -169,6 +171,34 @@ describe('TransitoPage (store-driven)', () => {
     expect(msg.detail!.length).toBeGreaterThan(0);
     // sin leak de internals
     expect(msg.detail).not.toMatch(/HttpErrorResponse|Exception|http/i);
+  });
+
+  it('no repite el toast si el polling devuelve el mismo error (misma firma status:message)', () => {
+    const { store } = setup();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    const add = vi.spyOn(messagesOf(fixture), 'add');
+
+    // Primer error
+    store.overrideSelector(selectMuestrasError, new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' }));
+    store.refreshState();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    expect(add).toHaveBeenCalledTimes(1);
+
+    // Nuevo objeto HttpErrorResponse con misma firma → NO debe rotoastificar
+    store.overrideSelector(selectMuestrasError, new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' }));
+    store.refreshState();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    expect(add).toHaveBeenCalledTimes(1);
+
+    // Error diferente → sí debe toastificar
+    store.overrideSelector(selectMuestrasError, new HttpErrorResponse({ status: 404 }));
+    store.refreshState();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    expect(add).toHaveBeenCalledTimes(2);
   });
 
   it('detiene el polling al destruirse', () => {
