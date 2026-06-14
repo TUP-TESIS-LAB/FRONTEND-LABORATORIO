@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
@@ -36,6 +36,7 @@ import { WorksheetConfigModalComponent } from '../../components/planillas/worksh
 })
 export class WorklistPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly samples = inject(MockSamplesService);
   private readonly messages = inject(MessageService);
   private readonly store = inject(Store);
@@ -67,6 +68,18 @@ export class WorklistPage {
 
   /** Botones Planillas/Marcar completadas (deshabilitados en Arco 1, solo en procesamiento). */
   readonly showWorksheetActions = computed(() => this.config().key === 'procesamiento');
+
+  /** protocolId del único tubo seleccionado (procesamiento), o null si 0 ó >1. */
+  readonly selectedTubeProtocolId = computed<number | null>(() => {
+    const sel = this.selectedSamples();
+    if (sel.length !== 1) return null;
+    return (sel[0] as Tube).protocolId ?? null;
+  });
+
+  cargarResultados(): void {
+    const pid = this.selectedTubeProtocolId();
+    if (pid != null) this.router.navigate(['/analitica/procesamiento/cargar', pid]);
+  }
 
   private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
   private readonly descarteItems = this.store.selectSignal(selectDescarteItems);

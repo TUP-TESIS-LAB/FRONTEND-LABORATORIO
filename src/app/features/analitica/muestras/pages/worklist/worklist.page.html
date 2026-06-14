@@ -37,8 +37,9 @@
         <button type="button" class="ws-btn ws-btn--ghost" (click)="openPlanillas()">
           <i class="pi pi-table"></i> Planillas
         </button>
-        <button type="button" class="ws-btn ws-btn--primary" disabled title="Próximamente">
-          <i class="pi pi-check"></i> Marcar completadas
+        <button type="button" class="ws-btn ws-btn--primary" [disabled]="selectedTubeProtocolId() == null"
+                title="Seleccioná un tubo para cargar sus resultados" (click)="cargarResultados()">
+          <i class="pi pi-pencil"></i> Cargar resultados
         </button>
       </div>
     }
