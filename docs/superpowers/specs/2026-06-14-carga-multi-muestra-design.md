@@ -1,6 +1,6 @@
 # Procesamiento — Carga multi-muestra (Cargar resultados)
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-105](https://exequielsantoro.atlassian.net/browse/KAN-105)
 > **Fecha:** 2026-06-14
 > **Rama:** `feat/carga-multi-muestra` (worktree `FRONTEND-LABORATORIO-multimuestra`, base `development`)
 > **Modifica:** la feature de Arco 3b (KAN-102, ya en development).
