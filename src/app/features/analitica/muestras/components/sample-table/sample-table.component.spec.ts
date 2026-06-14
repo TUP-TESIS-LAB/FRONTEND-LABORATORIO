@@ -22,6 +22,7 @@ function makeTube(
   return {
     id: `t${sampleId}`,
     sampleId,
+    protocolId: 0,
     labelIds: labels.map(l => l.labelId),
     analyses: labels,
     barcode: labels.map(l => l.barcode).join(' '),

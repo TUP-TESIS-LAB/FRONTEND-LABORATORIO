@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Subject } from 'rxjs';
@@ -67,6 +67,7 @@ function setup(
     imports: [WorklistPage],
     providers: [
       provideNoopAnimations(),
+      provideRouter([]),
       provideMockActions(() => actions$),
       MockSamplesService,
       { provide: ActivatedRoute, useValue: { snapshot: { data: { screenKey } } } },
@@ -348,5 +349,28 @@ describe('WorklistPage (smoke)', () => {
     cmp.onEditSheet(5);
     expect(cmp.editingTemplateId()).toBe(5);
     expect(cmp.configOpen()).toBe(true);
+  });
+
+  it('Procesamiento: selectedTubeProtocolId es el protocolId del único tubo seleccionado', () => {
+    const item: LabelWorklistItem = {
+      labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'Hemograma',
+      patientName: 'Marta', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
+    };
+    const fx = setup('procesamiento', [], [], [item]);
+    const cmp = fx.componentInstance;
+    cmp.toggleRow(cmp.rows()[0].id);
+    expect(cmp.selectedTubeProtocolId()).toBe(88);
+  });
+
+  it('Procesamiento: selectedTubeProtocolId null si 0 ó >1 seleccionados', () => {
+    const items: LabelWorklistItem[] = [
+      { labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'A', patientName: 'M', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z' },
+      { labelId: 70002, sampleId: 50051, barcode: '70002', protocolId: 88, analysisName: 'B', patientName: 'N', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:01:00Z' },
+    ];
+    const fx = setup('procesamiento', [], [], items);
+    const cmp = fx.componentInstance;
+    expect(cmp.selectedTubeProtocolId()).toBeNull();
+    cmp.toggleRow(cmp.rows()[0].id); cmp.toggleRow(cmp.rows()[1].id);
+    expect(cmp.selectedTubeProtocolId()).toBeNull();
   });
 });

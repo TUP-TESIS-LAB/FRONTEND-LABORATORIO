@@ -33,8 +33,9 @@
         <button type="button" class="ws-btn ws-btn--ghost" (click)="openPlanillas()">
           Planillas
         </button>
-        <button type="button" class="ws-btn ws-btn--primary" disabled title="Próximamente">
-          Marcar completadas
+        <button type="button" class="ws-btn ws-btn--primary" [disabled]="selectedTubeProtocolId() == null"
+                title="Seleccioná un tubo para cargar sus resultados" (click)="cargarResultados()">
+          Cargar resultados
         </button>
       </div>
     }
