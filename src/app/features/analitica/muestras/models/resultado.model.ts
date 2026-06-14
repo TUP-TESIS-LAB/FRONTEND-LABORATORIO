@@ -12,7 +12,7 @@ export interface DeterminationCatalogEntry {
 export interface GridCell { determinationId: number; value: string; }
 export interface GridRow { catalogId: number; name: string; unit: string | null; cells: Record<number, GridCell | null>; }
 export interface GridSection { analysisCatalogId: number; analysisName: string; resultIds: number[]; rows: GridRow[]; }
-export interface ResultGrid { protocolIds: number[]; sections: GridSection[]; resultLabels: Record<number, string>; }
+export interface ResultGrid { protocolIds: number[]; sections: GridSection[]; resultLabels: Partial<Record<number, string>>; }
 
 export interface BuildGridInput {
   protocolIds: number[];
