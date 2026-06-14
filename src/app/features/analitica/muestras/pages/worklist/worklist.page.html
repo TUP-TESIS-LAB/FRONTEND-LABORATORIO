@@ -30,7 +30,7 @@
     }
     @if (showWorksheetActions()) {
       <div class="worksheet-actions">
-        <button type="button" class="ws-btn ws-btn--ghost" disabled title="Próximamente">
+        <button type="button" class="ws-btn ws-btn--ghost" (click)="openPlanillas()">
           Planillas
         </button>
         <button type="button" class="ws-btn ws-btn--primary" disabled title="Próximamente">
@@ -61,6 +61,15 @@
       (confirm)="confirmDialog($event)"
       (cancel)="cancelDialog()"
     />
+  }
+
+  @if (planillasOpen()) {
+    <app-planillas-modal [visible]="planillasOpen()"
+      (closed)="closePlanillas()" (newSheet)="onNewSheet()" (editSheet)="onEditSheet($event)" />
+  }
+  @if (configOpen()) {
+    <app-worksheet-config-modal [visible]="configOpen()" [templateId]="editingTemplateId()"
+      (closed)="closeConfig()" (saved)="onConfigSaved()" />
   }
 
   <p-toast position="bottom-right" />
