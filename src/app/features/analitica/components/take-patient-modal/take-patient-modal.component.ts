@@ -62,10 +62,10 @@ interface BoxRow {
               <span class="patient-name">{{ p.patientFullName }}</span>
               <div class="patient-meta">
                 <span class="meta-item">
-                  <i class="pi pi-id-card"></i> {{ p.patientDni }}
+                  {{ p.patientDni }}
                 </span>
                 <span class="meta-item">
-                  <i class="pi pi-ticket"></i> {{ p.publicCode ?? p.attentionNumber }}
+                  {{ p.publicCode ?? p.attentionNumber }}
                 </span>
                 @if (p.isUrgent) {
                   <span class="urgent-badge">
@@ -85,12 +85,11 @@ interface BoxRow {
         @if (patient()?.samples?.length) {
           <section class="section">
             <h4 class="section-title">
-              <i class="pi pi-flask"></i> Muestras a extraer
+              Muestras a extraer
             </h4>
             <div class="chips-row">
               @for (s of patient()!.samples; track s.sampleType) {
                 <span class="sample-chip">
-                  <i class="pi pi-circle-fill"></i>
                   {{ s.sampleType | sampleTypeLabel }}
                   <span class="chip-count">× {{ s.count }}</span>
                 </span>
@@ -102,7 +101,7 @@ interface BoxRow {
         <!-- Sección boxes -->
         <section class="section">
           <h4 class="section-title">
-            <i class="pi pi-box"></i> Seleccioná un box
+            Seleccioná un box
           </h4>
           @if (boxRows().length) {
             <div class="boxes-list">

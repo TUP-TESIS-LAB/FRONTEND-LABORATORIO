@@ -18,10 +18,9 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
 <article class="group-card" [class.outcome-here]="!isPendingDest" [class.outcome-pending]="isPendingDest">
   <header>
     <input type="checkbox" [checked]="allSelected" (change)="onAllToggle($event)" aria-label="Tildar todas las muestras del group">
-    <i class="pi" [class.pi-inbox]="!isPendingDest" [class.pi-question-circle]="isPendingDest"></i>
     <div class="title">
       <span class="area">{{ title }}</span>
-      <span class="sub"><i class="pi pi-map-marker"></i> {{ subtitle }}</span>
+      <span class="sub">{{ subtitle }}</span>
     </div>
     <span class="badge" [class.green]="!isPendingDest" [class.amber]="isPendingDest">
       {{ isPendingDest ? 'Sin destino' : 'En proceso' }}

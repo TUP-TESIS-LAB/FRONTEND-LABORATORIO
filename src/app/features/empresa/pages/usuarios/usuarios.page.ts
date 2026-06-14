@@ -4,6 +4,7 @@ import { Store } from '@ngrx/store';
 import { filter, take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 
 import {
   loadUsuarios, setUsuariosFilters, loadRoles,
@@ -32,19 +33,15 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
   selector: 'emp-usuarios-page',
   standalone: true,
   imports: [
-    ButtonModule, FilterBarComponent,
+    ButtonModule, FilterBarComponent, PageHeaderComponent,
     UsuariosTableComponent,
     UsuarioFormDrawerComponent, ToggleStatusDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="emp-usuarios__header">
-      <div>
-        <h2 class="page-title"><i class="pi pi-building page-title-icon" aria-hidden="true"></i> Usuarios</h2>
-        <small class="ui-text-muted">{{ totalElements() }} usuarios en total</small>
-      </div>
-      <p-button label="Invitar" icon="pi pi-plus" severity="primary" (onClick)="openCreate()" />
-    </div>
+    <ui-page-header heading="Usuarios" [subtitle]="totalElements() + ' usuarios en total'">
+      <p-button label="Invitar" severity="primary" (onClick)="openCreate()" />
+    </ui-page-header>
 
     <div class="emp-usuarios__filters">
       <ui-filter-bar [config]="filterConfig()" (valueChange)="onFilterChange($event)" />
@@ -82,10 +79,6 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
       (cancel)="closeToggle()" />
   `,
   styles: [`
-    .emp-usuarios__header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: var(--space-4);
-    }
     .emp-usuarios__filters { margin-bottom: var(--space-4); }
   `],
 })

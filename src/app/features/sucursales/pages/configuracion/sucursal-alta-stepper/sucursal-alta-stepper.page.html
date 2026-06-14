@@ -1,76 +1,31 @@
-<div class="flex flex-col h-full">
-  <header class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-b sticky top-0 z-10">
-    <p-button [text]="true" icon="pi pi-arrow-left" label="Volver" type="button" (onClick)="cancel()" />
-    <h1 class="text-base font-semibold m-0">Nueva sucursal</h1>
-    <nav class="ml-auto text-xs text-surface-500">Sucursales › Nueva</nav>
-  </header>
+<ui-wizard-shell
+  heading="Nueva sucursal"
+  breadcrumb="Sucursales › Nueva"
+  [steps]="steps"
+  [currentIndex]="currentStep()"
+  [visited]="visited()"
+  [completed]="completed()"
+  [continueDisabled]="continueDisabled()"
+  [continueLoading]="continueLoading()"
+  [finishLoading]="finishing()"
+  (stepSelected)="goToStep($event)"
+  (next)="onNext()"
+  (back)="goBack()"
+  (cancel)="cancel()"
+  (finish)="finish()">
+  @switch (currentStep()) {
+    @case (0) {
+      <app-datos-step #step0
+        (completed)="onDatosCompleted($event)"
+        (failed)="onDatosFailed()"
+        (validChange)="step0Valid.set($event)" />
+    }
+    @case (1) { <app-horarios-step [branchId]="branchId()!" /> }
+    @case (2) { <app-contactos-step [branchId]="branchId()!" /> }
+    @case (3) { <app-workspaces-step [branchId]="branchId()!" /> }
+    @case (4) { <app-totem-step [branchId]="branchId()!" /> }
+    @case (5) { <app-confirmar-step /> }
+  }
+</ui-wizard-shell>
 
-  <ui-form-stepper-header
-    [steps]="steps"
-    [currentIndex]="currentStep()"
-    [visited]="visited()"
-    (stepSelected)="goToStep($event)" />
-
-  <div class="flex-1 overflow-y-auto px-8 py-6">
-    <div class="w-full">
-      @switch (currentStep()) {
-        @case (0) {
-          <app-datos-step #step0
-            (completed)="onDatosCompleted($event)"
-            (failed)="onDatosFailed()"
-            (validChange)="step0Valid.set($event)" />
-        }
-        @case (1) {
-          <app-horarios-step [branchId]="branchId()!" />
-        }
-        @case (2) {
-          <app-contactos-step [branchId]="branchId()!" />
-        }
-        @case (3) {
-          <app-workspaces-step [branchId]="branchId()!" />
-        }
-        @case (4) {
-          <app-totem-step [branchId]="branchId()!" />
-        }
-        @case (5) {
-          <app-confirmar-step />
-        }
-      }
-    </div>
-  </div>
-
-  <footer class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-t sticky bottom-0">
-    <span class="text-xs text-surface-500">Paso {{ currentStep() + 1 }} de {{ steps.length }}</span>
-    <!--
-      flex-row-reverse: el CTA primario queda primero en DOM order (mejor tab
-      navigation desde el ultimo campo del step), pero visualmente termina a
-      la derecha con Cancelar | Atras | Continuar/Finalizar como pide la
-      convencion de patient-form.
-    -->
-    <div class="ml-auto flex flex-row-reverse gap-2">
-      @if (isLastStep()) {
-        <p-button
-          label="Finalizar"
-          type="button"
-          severity="success"
-          [loading]="finishing()"
-          (onClick)="finish()" />
-      } @else if (isFirstStep()) {
-        <p-button
-          label="Continuar →"
-          type="button"
-          [disabled]="!step0Valid()"
-          [loading]="creatingBranch()"
-          (onClick)="onContinueFromDatos()" />
-      } @else {
-        <p-button label="Continuar →" type="button" (onClick)="goNext()" />
-      }
-      @if (!isFirstStep()) {
-        <p-button label="← Atrás" [text]="true" type="button" (onClick)="goBack()" />
-      }
-      <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="cancel()" />
-    </div>
-  </footer>
-
-  <p-toast />
-</div>
+<p-toast />

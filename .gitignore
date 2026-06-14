@@ -57,3 +57,11 @@ test_output.txt
 
 # Worktrees
 .worktrees/
+
+# Playwright / e2e
+/e2e/.auth/
+/e2e/*.png
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

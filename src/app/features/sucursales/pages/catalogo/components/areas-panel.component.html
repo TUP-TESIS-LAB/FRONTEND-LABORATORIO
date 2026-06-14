@@ -1,7 +1,7 @@
 <div class="panel">
   <div class="panel-header">
     <h2>Áreas</h2>
-    <p-button label="Nueva área" icon="pi pi-plus" (click)="openNew()" />
+    <p-button label="Nueva área" (click)="openNew()" />
   </div>
 
   <p-table [value]="areas()" dataKey="id" [scrollable]="true" scrollHeight="500px">

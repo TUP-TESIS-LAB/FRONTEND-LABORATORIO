@@ -38,7 +38,7 @@ import { NbuOption } from '../../../models/catalogs.model';
           <input type="number" pInputText formControlName="iva" min="0" max="100" class="w-full" />
         </label>
         <div class="flex items-end">
-          <p-button label="Agregar plan" icon="pi pi-plus" size="small" (onClick)="addPlan()" [disabled]="draft.invalid" />
+          <p-button label="Agregar plan" size="small" (onClick)="addPlan()" [disabled]="draft.invalid" />
         </div>
       </div>
       @if (dupError()) { <small class="text-red-600 block mb-2">Ya hay un plan con ese código.</small> }

@@ -30,7 +30,7 @@ import { EmployeeContactType } from '../../../../models/employee.model';
         </div>
       }
       <div>
-        <p-button type="button" label="Agregar contacto" icon="pi pi-plus" [text]="true" (onClick)="add()" />
+        <p-button type="button" label="Agregar contacto" [text]="true" (onClick)="add()" />
       </div>
     </div>
   `,

@@ -21,7 +21,7 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
   template: `
     <header class="detail-header">
       <a routerLink="/saas/tenants" class="back">
-        <p-button [text]="true" icon="pi pi-arrow-left" label="Volver" />
+        <p-button [text]="true" label="Volver" />
       </a>
       @if (tenant(); as t) {
         <div class="detail-header__title">
@@ -36,7 +36,7 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
         <span class="muted">Tenant no encontrado.</span>
       }
       <a [routerLink]="['/saas/tenants', numericId(), 'editar']" style="margin-left: auto;">
-        <p-button label="Editar" icon="pi pi-pencil" [outlined]="true" />
+        <p-button label="Editar" [outlined]="true" />
       </a>
     </header>
 

@@ -5,9 +5,8 @@ import {
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
-import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { DatosStepComponent } from './steps/datos-step.component';
 import { HorariosStepComponent } from './steps/horarios-step.component';
 import { ContactosStepComponent } from './steps/contactos-step.component';
@@ -21,9 +20,8 @@ import { SUCURSAL_FORM_STEPS } from './sucursal-alta-stepper.steps';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ButtonModule,
     ToastModule,
-    FormStepperHeaderComponent,
+    WizardShellComponent,
     DatosStepComponent,
     HorariosStepComponent,
     ContactosStepComponent,
@@ -58,8 +56,25 @@ export class SucursalAltaStepperPage {
    */
   protected readonly visited = signal<ReadonlySet<number>>(new Set([0]));
 
+  /**
+   * Set de pasos efectivamente COMPLETADOS (los que muestran el tilde verde).
+   * Es distinto de `visited`: tras crear la sucursal se desbloquean todos los
+   * pasos para navegación libre, pero solo se marca como hecho el que el usuario
+   * realmente dejó atrás. Sin esto, al dar "Continuar" en datos se tildaban los
+   * 5 pasos siguientes de golpe.
+   */
+  protected readonly completed = signal<ReadonlySet<number>>(new Set());
+
   protected readonly isFirstStep = computed(() => this.currentStep() === 0);
   protected readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
+
+  /**
+   * Estado del botón "Continuar" del footer (lo consume `ui-wizard-shell`).
+   * Solo el paso 0 (datos) tiene gating: requiere form válido y muestra
+   * loading mientras crea la sucursal. El resto de los pasos avanzan libre.
+   */
+  protected readonly continueDisabled = computed(() => this.isFirstStep() && !this.step0Valid());
+  protected readonly continueLoading = computed(() => this.isFirstStep() && this.creatingBranch());
 
   /**
    * Loading flag mientras DatosStepComponent dispatch addSucursal y espera
@@ -101,6 +116,10 @@ export class SucursalAltaStepperPage {
   onDatosCompleted(branchId: number) {
     this.creatingBranch.set(false);
     this.branchId.set(branchId);
+    // Datos quedó completado; se desbloquean todos los pasos para navegación
+    // libre (visited), pero solo datos está "hecho" (completed) — los demás
+    // se irán tildando a medida que el usuario los deje atrás con "Continuar".
+    this.completed.set(new Set([0]));
     this.visited.set(new Set([0, 1, 2, 3, 4, 5]));
     this.currentStep.set(1);
   }
@@ -125,8 +144,19 @@ export class SucursalAltaStepperPage {
     this.currentStep.set(step);
   }
 
+  /**
+   * Footer "Continuar" (output `next` del shell). En el paso 0 dispara el alta
+   * de la sucursal; en el resto, avanza al siguiente paso.
+   */
+  onNext() {
+    if (this.isFirstStep()) this.onContinueFromDatos();
+    else this.goNext();
+  }
+
   /** Avanza al siguiente paso (usado por el footer en steps >= 1). */
   goNext() {
+    // El paso que se deja atrás queda marcado como completado (tilde verde).
+    this.completed.update((s) => new Set(s).add(this.currentStep()));
     const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
     this.visited.update((s) => new Set([...s, next]));
     this.currentStep.set(next);

@@ -12,6 +12,7 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { TableColumn } from '@shared/ui/models/table-column.model';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { InsurerStateFilter } from '../../models/obra-social-page.model';
 import { InsurerTypeCode } from '../../models/insurer.model';
 import { setObraSocialPageRequest, loadObraSocialCatalogs } from '../../store/obra-social.actions';
@@ -29,20 +30,17 @@ interface TypeOption { label: string; value: InsurerTypeCode | null; }
   imports: [
     RouterLink,
     ButtonModule, TagModule, TooltipModule,
-    DataTableComponent, UiCellDirective, FilterBarComponent,
+    DataTableComponent, UiCellDirective, FilterBarComponent, PageHeaderComponent,
   ],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
-    <div class="p-6 flex flex-col h-full min-h-0">
-      <header class="flex items-center justify-between mb-4">
-        <h2 class="page-title"><i class="pi pi-id-card page-title-icon" aria-hidden="true"></i> Obras Sociales</h2>
-        <div class="flex items-center gap-2">
-          <p-button label="Exportar" icon="pi pi-file-export" severity="secondary" [outlined]="true" [disabled]="true" pTooltip="Próximamente" />
-          <a [routerLink]="['/obras-sociales', 'nueva']">
-            <p-button label="Nueva obra social" icon="pi pi-plus" />
-          </a>
-        </div>
-      </header>
+    <div class="flex flex-col h-full min-h-0">
+      <ui-page-header heading="Obras Sociales">
+        <p-button label="Exportar" severity="secondary" [outlined]="true" [disabled]="true" pTooltip="Próximamente" />
+        <a [routerLink]="['/obras-sociales', 'nueva']">
+          <p-button label="Nueva obra social" />
+        </a>
+      </ui-page-header>
 
       <div class="mb-3">
         <ui-filter-bar [config]="filterConfig()" (valueChange)="onFilterChange($event)" />

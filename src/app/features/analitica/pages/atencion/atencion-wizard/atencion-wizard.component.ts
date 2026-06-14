@@ -93,7 +93,7 @@ const ALL_STEPS: WizardStepDef[] = [
             <h2 class="text-xl font-semibold">Nueva atención</h2>
             <div class="text-sm opacity-70">Buscá el paciente para empezar</div>
           </div>
-          <p-button label="Volver al listado" icon="pi pi-arrow-left" severity="secondary" [text]="true"
+          <p-button label="Volver al listado" severity="secondary" [text]="true"
                     (onClick)="backToList()" />
         </header>
         <div class="aw-step">
@@ -117,7 +117,7 @@ const ALL_STEPS: WizardStepDef[] = [
             }
           </div>
           <div class="flex items-center gap-2">
-            <p-button label="Volver al listado" icon="pi pi-arrow-left" severity="secondary" [text]="true"
+            <p-button label="Volver al listado" severity="secondary" [text]="true"
                       (onClick)="backToList()" />
             @if (canCancel()) {
               <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
@@ -134,7 +134,7 @@ const ALL_STEPS: WizardStepDef[] = [
                Una atención finalizada/en-extracción NO reimprime. -->
           @if (detail()!.attentionState === AttentionState.AWAITING_EXTRACTION && detail()!.protocolId != null) {
             <div class="flex justify-end mb-4">
-              <p-button label="Descargar rótulos" icon="pi pi-tag" severity="secondary"
+              <p-button label="Descargar rótulos" severity="secondary"
                         (onClick)="downloadLabels()" />
             </div>
           }

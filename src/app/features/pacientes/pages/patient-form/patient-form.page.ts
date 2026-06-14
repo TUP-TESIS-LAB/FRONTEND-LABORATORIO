@@ -21,7 +21,7 @@ import {
 } from '../../store/patient.selectors';
 import { ContactSectionComponent } from '../../components/contact-section/contact-section.component';
 import { CoverageSectionComponent } from '../../components/coverage-section/coverage-section.component';
-import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { GeneralStepComponent, notFutureDateValidator } from './steps/general-step/general-step.component';
 import { CoveragesStepComponent } from './steps/coverages-step/coverages-step.component';
 import { SummaryStepComponent, SummaryView } from './steps/summary-step/summary-step.component';
@@ -46,92 +46,71 @@ function isAddressFilled(a: Partial<Address>): boolean {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    FormStepperHeaderComponent, GeneralStepComponent,
+    WizardShellComponent, GeneralStepComponent,
     CoveragesStepComponent, SummaryStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
-      <header class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-b sticky top-0 z-10">
-        <p-button [text]="true" icon="pi pi-arrow-left" label="Volver" type="button" (onClick)="onBack()" />
-        <h1 class="text-base font-semibold m-0">
-          {{ isEdit() ? 'Editar paciente' : 'Nuevo paciente' }}
-          @if (isEdit() && patient(); as p) {
-            <span class="text-surface-500 font-normal ml-2">· {{ p.lastName }}, {{ p.firstName }}</span>
-          }
-        </h1>
-        <nav class="ml-auto text-xs text-surface-500">
-          Pacientes › {{ isEdit() ? 'Editar' : 'Nuevo' }}
-        </nav>
-      </header>
-
-      <ui-form-stepper-header
+      <ui-wizard-shell
+        [customFooter]="true"
+        [heading]="pageHeading()"
+        [breadcrumb]="'Pacientes › ' + (isEdit() ? 'Editar' : 'Nuevo')"
         [steps]="steps"
         [currentIndex]="currentStep()"
         [visited]="visited()"
-        (stepSelected)="goToStep($event)" />
+        (stepSelected)="goToStep($event)">
+        @if (saveError(); as err) {
+          <div class="pat-form__card"
+               style="background:#fef2f2;border-color:var(--ds-danger);color:var(--ds-danger);margin-bottom:12px;">
+            {{ saveErrorMessage(err) }}
+          </div>
+        }
 
-      <div class="flex-1 overflow-y-auto px-8 py-6">
-        <div class="w-full">
-          @if (saveError(); as err) {
-            <div class="pat-form__card"
-                 style="background:#fef2f2;border-color:var(--ds-danger);color:var(--ds-danger);margin-bottom:12px;">
-              {{ saveErrorMessage(err) }}
-            </div>
+        @switch (currentStep()) {
+          @case (0) {
+            <pat-general-step
+              [group]="generalGroup"
+              [addressGroup]="addressGroup"
+              [dniDuplicate]="dniDuplicate()"
+              [editMode]="isEdit()" />
           }
+          @case (1) {
+            <pat-coverages-step [array]="coveragesArray" />
+          }
+          @case (2) {
+            <pat-summary-step [data]="summaryView()" (editStep)="goToStep($event)" />
+          }
+        }
 
-          @switch (currentStep()) {
-            @case (0) {
-              <pat-general-step
-                [group]="generalGroup"
-                [addressGroup]="addressGroup"
-                [dniDuplicate]="dniDuplicate()"
-                [editMode]="isEdit()" />
+        <ng-container wizardFooter>
+          <span class="text-xs text-surface-400 hidden sm:inline">
+            {{ formStatusLabel() }} ·
+            <kbd>Ctrl</kbd>+<kbd>S</kbd> guardar · <kbd>Esc</kbd> volver
+          </span>
+          <div class="flex flex-row-reverse gap-2">
+            @if (showSubmitButton()) {
+              <p-button
+                [label]="isEdit() ? 'Guardar cambios' : 'Registrar paciente'"
+                type="submit"
+                severity="success"
+                [loading]="pending()"
+                [disabled]="!canSubmit()" />
             }
-            @case (1) {
-              <pat-coverages-step [array]="coveragesArray" />
+            @if (showContinueButton()) {
+              <p-button
+                label="Continuar"
+                type="button"
+                [disabled]="!canContinue()"
+                (onClick)="goNext()" />
             }
-            @case (2) {
-              <pat-summary-step [data]="summaryView()" (editStep)="goToStep($event)" />
+            @if (!isFirstStep()) {
+              <p-button label="Atrás" [text]="true" type="button" (onClick)="goBack()" />
             }
-          }
-        </div>
-      </div>
-
-      <footer class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-t sticky bottom-0">
-        <span class="text-xs text-surface-500">{{ formStatusLabel() }}</span>
-        <span class="text-xs text-surface-400 ml-2">
-          Paso {{ currentStep() + 1 }} de {{ steps.length }} ·
-          <kbd>Ctrl</kbd>+<kbd>S</kbd> para guardar · <kbd>Esc</kbd> para volver
-        </span>
-        <!--
-          flex-row-reverse: DOM order Registrar → Atrás → Cancelar (acción primaria
-          primero en tab order), pero visualmente queda Cancelar | Atrás | Registrar
-          como pidió la convención. Así Tab desde el último campo del form aterriza
-          directo en el CTA principal y no en Cancelar.
-        -->
-        <div class="ml-auto flex flex-row-reverse gap-2">
-          @if (showSubmitButton()) {
-            <p-button
-              [label]="isEdit() ? 'Guardar cambios' : 'Registrar paciente'"
-              type="submit"
-              severity="success"
-              [loading]="pending()"
-              [disabled]="!canSubmit()" />
-          }
-          @if (showContinueButton()) {
-            <p-button
-              label="Continuar →"
-              type="button"
-              [disabled]="!canContinue()"
-              (onClick)="goNext()" />
-          }
-          @if (!isFirstStep()) {
-            <p-button label="← Atrás" [text]="true" type="button" (onClick)="goBack()" />
-          }
-          <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
-        </div>
-      </footer>
+            <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
+          </div>
+        </ng-container>
+      </ui-wizard-shell>
       <p-confirmDialog />
     </form>
   `,
@@ -183,6 +162,13 @@ export class PatientFormPage implements OnDestroy {
     return v != null && v !== '';
   });
   readonly invalid = computed(() => this.status() === 'INVALID');
+
+  /** Título de la página (lo consume `ui-wizard-shell`); en edición sufija el nombre. */
+  readonly pageHeading = computed(() => {
+    if (!this.isEdit()) return 'Nuevo paciente';
+    const p = this.patient();
+    return p ? `Editar paciente · ${p.lastName}, ${p.firstName}` : 'Editar paciente';
+  });
 
   readonly dniDuplicate = computed(() => {
     if (this.isEdit()) return false;

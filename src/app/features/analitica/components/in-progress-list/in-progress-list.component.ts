@@ -10,6 +10,7 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { InExtractionItem } from '../../models/extraction.model';
 
 /**
@@ -24,14 +25,13 @@ import { InExtractionItem } from '../../models/extraction.model';
   selector: 'app-in-progress-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TableModule, ButtonModule, TagModule, TooltipModule],
+  imports: [CommonModule, TableModule, ButtonModule, TagModule, TooltipModule, EmptyStateComponent],
   template: `
     @if (items().length === 0) {
-      <div class="empty-state" aria-label="No hay extracciones en curso">
-        <i class="pi pi-inbox"></i>
-        <div class="empty-state__heading">No hay extracciones en curso</div>
-        <div class="empty-state__desc">Cuando un extractor tome un paciente de la cola va a aparecer acá.</div>
-      </div>
+      <ui-empty-state
+        icon="pi-inbox"
+        heading="No hay extracciones en curso"
+        description="Cuando un extractor tome un paciente de la cola va a aparecer acá." />
     } @else {
       <p-table [value]="items()" styleClass="p-datatable-sm">
         <ng-template pTemplate="header">
@@ -46,7 +46,7 @@ import { InExtractionItem } from '../../models/extraction.model';
           <tr [class.is-urgent]="row.isUrgent">
             <td>
               <span class="box-pill">
-                <i class="pi pi-box"></i> Box {{ row.attentionBox }}
+                Box {{ row.attentionBox }}
               </span>
             </td>
             <td>{{ row.extractorFullName }}</td>
@@ -87,7 +87,6 @@ import { InExtractionItem } from '../../models/extraction.model';
                 />
                 <p-button
                   label="Finalizar"
-                  icon="pi pi-check"
                   severity="success"
                   size="small"
                   [disabled]="mutating()"
@@ -101,30 +100,9 @@ import { InExtractionItem } from '../../models/extraction.model';
     }
   `,
   styles: [`
-    :host { display: block; }
-
-    .empty-state {
-      background: #fff;
-      border: 1px dashed #e2e8f0;
-      border-radius: 12px;
-      padding: 40px 24px;
-      text-align: center;
-      color: #64748b;
-    }
-    .empty-state i {
-      font-size: 32px;
-      color: #0891b2;
-      opacity: .55;
-      display: block;
-      margin-bottom: 8px;
-    }
-    .empty-state__heading {
-      font-size: 14px;
-      font-weight: 600;
-      color: #0f172a;
-      margin-bottom: 4px;
-    }
-    .empty-state__desc { font-size: 12px; }
+    /* Llena la card y centra verticalmente el empty-state (cuando no hay tabla). */
+    :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+    :host > ui-empty-state { margin: auto 0; }
 
     .box-pill {
       display: inline-flex;

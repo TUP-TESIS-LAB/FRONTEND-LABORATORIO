@@ -77,7 +77,6 @@ interface ActiveChip {
           [class.fb-filter-btn--active]="hasFilters()"
           type="button"
           (click)="togglePanel($event)">
-          <i class="pi pi-sliders-h"></i>
           Filtros
           @if (selectCount() > 0) {
             <span class="fb-filter-btn__badge">{{ selectCount() }}</span>

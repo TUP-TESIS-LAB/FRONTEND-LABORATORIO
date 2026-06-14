@@ -35,24 +35,6 @@
               </ul>
             }
           </div>
-
-          <div class="en-espera">
-            <h2>En espera:</h2>
-            @if (waitingEntries().length === 0) {
-              <div class="empty-state">
-                <i class="pi pi-check-circle"></i>
-                <span>Sin pacientes en espera</span>
-              </div>
-            } @else {
-              <ul>
-                @for (e of waitingEntries(); track e.publicCode) {
-                  <li>
-                    <span class="code">{{ e.publicCode }}</span>
-                  </li>
-                }
-              </ul>
-            }
-          </div>
         </div>
       }
     </main>

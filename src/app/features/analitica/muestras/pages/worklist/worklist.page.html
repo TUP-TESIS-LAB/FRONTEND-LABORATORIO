@@ -1,16 +1,12 @@
 <section class="worklist-page">
-  <header class="worklist-header">
-    <div>
-      <h1>{{ config().title }}</h1>
-      <p class="subtitle">{{ config().sub }}</p>
-    </div>
+  <ui-page-header [heading]="config().title" [subtitle]="config().sub">
     <div class="stats">
       <span class="chip">{{ total() }} · {{ config().countLabel }}</span>
       <span class="chip" [class.chip-selected]="selectedCount() > 0">
         {{ selectedCount() }} · seleccionada(s) de {{ total() }}
       </span>
     </div>
-  </header>
+  </ui-page-header>
 
   <div class="toolbar-wrap">
     <app-muestras-scan-bar
@@ -35,11 +31,11 @@
     @if (showWorksheetActions()) {
       <div class="worksheet-actions">
         <button type="button" class="ws-btn ws-btn--ghost" (click)="openPlanillas()">
-          <i class="pi pi-table"></i> Planillas
+          Planillas
         </button>
         <button type="button" class="ws-btn ws-btn--primary" [disabled]="selectedTubeProtocolId() == null"
                 title="Seleccioná un tubo para cargar sus resultados" (click)="cargarResultados()">
-          <i class="pi pi-pencil"></i> Cargar resultados
+          Cargar resultados
         </button>
       </div>
     }

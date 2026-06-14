@@ -51,7 +51,7 @@ import { AuthApiService } from '../../services/auth-api.service';
             @if (loading()) {
               <i class="pi pi-spin pi-spinner"></i> Guardando…
             } @else {
-              <i class="pi pi-save"></i> Guardar contraseña
+              Guardar contraseña
             }
           </button>
         </form>

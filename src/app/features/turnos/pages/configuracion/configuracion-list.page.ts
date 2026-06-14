@@ -20,6 +20,7 @@ import { ToastModule } from 'primeng/toast';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { FormsModule } from '@angular/forms';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { SucursalesService } from '../../../sucursales/services/sucursales.service';
 import { loadAgendas, deleteAgenda } from '../../store/agendas/agendas.actions';
@@ -44,6 +45,7 @@ import { AgendaBranchSectionComponent } from '../../components/agenda-branch-sec
     ToastModule,
     SkeletonModule,
     AgendaBranchSectionComponent,
+    PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './configuracion-list.page.html',

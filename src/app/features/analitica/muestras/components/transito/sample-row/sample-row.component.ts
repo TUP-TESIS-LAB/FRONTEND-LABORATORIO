@@ -29,7 +29,7 @@ import type { Sample } from '../../../models/sample.model';
     <div class="patient">{{ sample.patient }}</div>
   </div>
   <div class="col-study">{{ sample.study }}</div>
-  <div class="col-origin"><i class="pi pi-map-marker"></i> {{ branchShort() }}</div>
+  <div class="col-origin">{{ branchShort() }}</div>
   <div class="col-time">{{ sample.date }} · {{ sample.time }}</div>
   <div class="col-state"><span class="badge teal">En tránsito</span></div>
 </div>

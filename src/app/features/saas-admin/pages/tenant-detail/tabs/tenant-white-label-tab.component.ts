@@ -67,7 +67,7 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
       </aside>
 
       <div class="wl-form__footer">
-        <p-button label="Guardar" icon="pi pi-save" type="submit"
+        <p-button label="Guardar" type="submit"
                   [loading]="pending()" [disabled]="form.invalid || form.pristine || pending()" />
       </div>
     </form>

@@ -23,7 +23,7 @@ import type { TemporalLote } from '../../../models/transito.model';
     <div class="actions">
       @for (lote of lotes; track lote.id; let i = $index) {
         <button type="button" class="chip-add" (click)="addToLote.emit(lote.id)">
-          → Lote {{ i + 1 }} · {{ lote.sampleIds.length }}
+          Lote {{ i + 1 }} · {{ lote.sampleIds.length }}
         </button>
       }
       <button type="button" class="create" (click)="createLote.emit()">+ Crear lote temporal</button>

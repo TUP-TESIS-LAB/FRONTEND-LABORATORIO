@@ -11,40 +11,29 @@
 } @else {
   <!-- Header GLOBAL de Recepción: vive por fuera de los tabs, así Box / Turnos del día /
        Nueva atención no se pierden al cambiar entre "Cola de espera" y "Atenciones". -->
-  <header class="recepcion-page-header">
-    <div>
-      <div class="text-xs text-surface-500">Core clínico</div>
-      <h2 class="recepcion-page-title">
-        <i class="pi pi-bell page-title-icon" aria-hidden="true"></i>
-        Recepción
-      </h2>
-    </div>
+  <ui-page-header heading="Recepción">
     @if (enabled() === true) {
-      <div class="recepcion-page-header__actions">
-        @if (branchContext.branchId() != null && currentUserId() > 0) {
-          <app-box-occupation-widget
-            [branchId]="branchContext.branchId()!"
-            [currentUserId]="currentUserId()"
-            [totalBoxes]="totalBoxes()" />
-        }
-        <p-button
-          icon="pi pi-calendar"
-          label="Turnos del día"
-          severity="secondary"
-          [outlined]="true"
-          size="small"
-          [disabled]="branchContext.branchId() == null"
-          (onClick)="toggleDrawer()" />
-        <p-button
-          icon="pi pi-plus"
-          label="Nueva atención"
-          severity="primary"
-          size="small"
-          [disabled]="branchContext.branchId() == null"
-          (onClick)="onNuevaAtencionBlanco()" />
-      </div>
+      @if (branchContext.branchId() != null && currentUserId() > 0) {
+        <app-box-occupation-widget
+          [branchId]="branchContext.branchId()!"
+          [currentUserId]="currentUserId()"
+          [totalBoxes]="totalBoxes()" />
+      }
+      <p-button
+        label="Turnos del día"
+        severity="secondary"
+        [outlined]="true"
+        size="small"
+        [disabled]="branchContext.branchId() == null"
+        (onClick)="toggleDrawer()" />
+      <p-button
+        label="Nueva atención"
+        severity="primary"
+        size="small"
+        [disabled]="branchContext.branchId() == null"
+        (onClick)="onNuevaAtencionBlanco()" />
     }
-  </header>
+  </ui-page-header>
 
   <p-tabs value="cola">
     <p-tablist>

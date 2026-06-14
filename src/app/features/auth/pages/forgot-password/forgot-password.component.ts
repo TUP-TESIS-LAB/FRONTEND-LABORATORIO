@@ -48,7 +48,7 @@ import { AuthApiService } from '../../services/auth-api.service';
             @if (loading()) {
               <i class="pi pi-spin pi-spinner"></i> Enviando…
             } @else {
-              <i class="pi pi-send"></i> Enviar link
+              Enviar link
             }
           </button>
 

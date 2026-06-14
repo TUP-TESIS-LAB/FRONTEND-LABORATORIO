@@ -1,22 +1,16 @@
 <p-toast />
 <p-confirmDialog />
 
-<div class="config-page p-6">
-  <header class="config-page__header">
-    <div>
-      <div class="text-xs text-surface-500">Core clínico</div>
-      <h1 class="flex items-center gap-2"><i class="pi pi-calendar-plus"></i> Configuración de agendas</h1>
-      <p>Definí horarios y capacidad por sucursal.</p>
-    </div>
+<div class="config-page">
+  <ui-page-header heading="Configuración de agendas" subtitle="Definí horarios y capacidad por sucursal.">
     @if (canWrite()) {
       <p-button
         label="Nueva agenda"
-        icon="pi pi-plus"
         severity="primary"
         (onClick)="router.navigate(['/turnos/configuracion/nueva'])"
       />
     }
-  </header>
+  </ui-page-header>
 
   <section class="config-page__toolbar">
     <p-select
