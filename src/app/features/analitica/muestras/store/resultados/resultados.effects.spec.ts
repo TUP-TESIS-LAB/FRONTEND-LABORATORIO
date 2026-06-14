@@ -65,6 +65,37 @@ describe('ResultadosEffects', () => {
     expect((action as any).grid.sections).toEqual([]);
   });
 
+  it('loadGrid$ con protocolIds vacío → success con grid vacío sin pegar al API', async () => {
+    actions$ = of(loadGrid({ protocolIds: [] }));
+    const effects = TestBed.inject(ResultadosEffects);
+    const action = await firstValueFrom(effects.loadGrid$);
+    expect(action.type).toBe('[Resultados API] Load Grid Success');
+    expect((action as any).grid.sections).toEqual([]);
+    expect((action as any).grid.protocolIds).toEqual([]);
+    expect(api.getResultsByProtocol).not.toHaveBeenCalled();
+  });
+
+  it('loadGrid$ fan-out multi-protocolo: mergea results de 2 protocolos', async () => {
+    api.getResultsByProtocol.mockImplementation((pid: number) =>
+      pid === 9
+        ? of([{ id: 1, protocolId: 9, analysisOrderId: 100, sectionId: 80012, patientId: 20002 }])
+        : of([{ id: 2, protocolId: 10, analysisOrderId: 200, sectionId: 80012, patientId: 20003 }]));
+    api.getDeterminations.mockImplementation((rid: number) =>
+      of([{ id: rid * 10, analyticalResultId: rid, determinationCatalogId: 500, resultValue: 'x', observations: null }]));
+    api.getDeterminationCatalog.mockReturnValue(of({ id: 500, name: 'Colesterol Total', unit: 'mg/dL', referenceValues: '< 200', analysisCatalogId: 6 }));
+    analysis.getById.mockReturnValue(of({ id: 6, shortCode: '6', name: 'Colesterol Total', familyName: null, ubCount: null }));
+    pacientes.getByIds.mockReturnValue(of([{ id: 20002, firstName: 'Ana', lastName: 'López' }, { id: 20003, firstName: 'Beto', lastName: 'Paz' }]));
+    actions$ = of(loadGrid({ protocolIds: [9, 10] }));
+    const effects = TestBed.inject(ResultadosEffects);
+    const action = await firstValueFrom(effects.loadGrid$);
+    expect((action as any).grid.protocolIds).toEqual([9, 10]);
+    // Mismo análisis (6) desde 2 protocolos → una sección con 2 columnas (results 1 y 2)
+    expect((action as any).grid.sections).toHaveLength(1);
+    expect((action as any).grid.sections[0].resultIds).toEqual([1, 2]);
+    expect((action as any).grid.resultLabels[1]).toBe('Ana López');
+    expect((action as any).grid.resultLabels[2]).toBe('Beto Paz');
+  });
+
   it('loadGrid$ failure mapea error', async () => {
     const error = new HttpErrorResponse({ status: 500 });
     api.getResultsByProtocol.mockReturnValue(throwError(() => error));

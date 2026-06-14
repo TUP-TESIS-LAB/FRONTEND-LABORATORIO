@@ -32,7 +32,7 @@ export interface SaveResultPayload { resultId: number; items: BatchDetermination
                         @if (row.cells[rid]; as cell) {
                           <input class="w-full border rounded p-1 text-center" [ngModel]="valueOf(rid, row.catalogId)"
                                  (ngModelChange)="setValue(rid, row.catalogId, $event)" placeholder="—"
-                                 [attr.aria-label]="row.name + ' #' + rid" />
+                                 [attr.aria-label]="row.name + ' · ' + (grid().resultLabels[rid] ?? ('#' + rid))" />
                         } @else { <span class="opacity-30">—</span> }
                       </td>
                     }
@@ -44,7 +44,7 @@ export interface SaveResultPayload { resultId: number; items: BatchDetermination
         </section>
       }
       @if (!grid().sections.length) {
-        <p class="text-sm opacity-60">No hay resultados cargables para este protocolo.</p>
+        <p class="text-sm opacity-60">No hay resultados cargables para los protocolos seleccionados.</p>
       }
       <div class="flex justify-end">
         <button type="button" class="px-4 py-2 rounded bg-blue-600 text-white text-sm font-semibold"
