@@ -1,74 +1,71 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
+import { calcularEdad } from '@shared/utils/calcular-edad';
 import {
-  PROTOCOLOS, SECCIONES, FILTROS,
-  detsDe, firmadosDe, estadoProt, badgeProt,
-  type Protocolo, type SeccionKey, type EstadoProtocolo,
-} from '../../data/validacion-protocolos.mock';
+  estadoFirmaDe, badgeFirma,
+  type ValidationListRow, type EstadoFirma,
+} from '../../models/postanalitica.model';
+import { loadValidacionProtocolos } from '../../store/validacion-protocolos/validacion-protocolos.actions';
+import {
+  selectValidacionRows, selectValidacionPending,
+} from '../../store/validacion-protocolos/validacion-protocolos.selectors';
 
-/**
- * Pantalla "Validación" (subtab de Muestras). Listado de protocolos con resultados
- * cargados, pendientes de firma bioquímica. Cada fila expande para ver sus análisis;
- * "Validar"/"Ver" navega al detalle full-page (validar-protocolo).
- *
- * UI con datos mock en memoria — sin backend ni store (ver validacion-protocolos.mock.ts).
- */
+const FILTROS: ReadonlyArray<{ id: 'todos' | EstadoFirma; label: string }> = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'sin', label: 'Sin firma' },
+  { id: 'parcial', label: 'Firma parcial' },
+  { id: 'total', label: 'Firma total' },
+];
+
 @Component({
   selector: 'app-validacion-protocolos',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeaderComponent],
+  imports: [PageHeaderComponent, DatePipe],
   templateUrl: './validacion-protocolos.page.html',
   styleUrl: './validacion-protocolos.page.scss',
 })
-export class ValidacionProtocolosPage {
+export class ValidacionProtocolosPage implements OnInit {
   private readonly router = inject(Router);
+  private readonly store = inject(Store);
 
   readonly FILTROS = FILTROS;
-  readonly detsDe = detsDe;
-  readonly firmadosDe = firmadosDe;
-  readonly estadoProt = estadoProt;
-  readonly badgeProt = badgeProt;
+  readonly estadoFirmaDe = estadoFirmaDe;
+  readonly badgeFirma = badgeFirma;
 
-  readonly protos = signal<Protocolo[]>(PROTOCOLOS);
-  readonly expanded = signal<ReadonlySet<string>>(new Set());
+  readonly rows = this.store.selectSignal(selectValidacionRows);
+  readonly pending = this.store.selectSignal(selectValidacionPending);
+
   readonly q = signal('');
-  readonly filtro = signal<'todos' | EstadoProtocolo>('todos');
+  readonly filtro = signal<'todos' | EstadoFirma>('todos');
 
-  // --- contadores por estado de firma ---
-  readonly cSin = computed(() => this.protos().filter(p => estadoProt(p) === 'sin').length);
-  readonly cParcial = computed(() => this.protos().filter(p => estadoProt(p) === 'parcial').length);
-  readonly cTotal = computed(() => this.protos().filter(p => estadoProt(p) === 'total').length);
+  readonly cSin = computed(() => this.rows().filter(r => estadoFirmaDe(r.currentStatus) === 'sin').length);
+  readonly cParcial = computed(() => this.rows().filter(r => estadoFirmaDe(r.currentStatus) === 'parcial').length);
+  readonly cTotal = computed(() => this.rows().filter(r => estadoFirmaDe(r.currentStatus) === 'total').length);
 
-  readonly visibles = computed<Protocolo[]>(() => {
+  readonly visibles = computed<ValidationListRow[]>(() => {
     const q = this.q().trim().toLowerCase();
     const f = this.filtro();
-    return this.protos().filter(p => {
-      if (f !== 'todos' && estadoProt(p) !== f) return false;
+    return this.rows().filter(r => {
+      if (f !== 'todos' && estadoFirmaDe(r.currentStatus) !== f) return false;
       if (!q) return true;
-      return (p.paciente + ' ' + p.id).toLowerCase().includes(q);
+      return (r.patientName + ' ' + r.protocolCode).toLowerCase().includes(q);
     });
   });
 
-  isOpen(id: string): boolean { return this.expanded().has(id); }
-
-  toggle(id: string): void {
-    this.expanded.update(set => {
-      const next = new Set(set);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  ngOnInit(): void {
+    this.store.dispatch(loadValidacionProtocolos());
   }
 
   setQ(v: string): void { this.q.set(v); }
-  setFiltro(v: 'todos' | EstadoProtocolo): void { this.filtro.set(v); }
+  setFiltro(v: 'todos' | EstadoFirma): void { this.filtro.set(v); }
+  edad(r: ValidationListRow): number | null { return calcularEdad(r.patientBirthDate); }
 
-  secLabel(k: SeccionKey): string { return SECCIONES[k].label; }
-  secHue(k: SeccionKey): number { return SECCIONES[k].hue; }
-
-  validar(p: Protocolo, ev: Event): void {
+  validar(r: ValidationListRow, ev: Event): void {
     ev.stopPropagation();
-    this.router.navigate(['/analitica/validacion', p.id]);
+    this.router.navigate(['/analitica/validacion', r.protocolId]);
   }
 }
