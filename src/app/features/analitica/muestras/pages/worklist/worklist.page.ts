@@ -70,16 +70,19 @@ export class WorklistPage {
   /** Botones Planillas/Marcar completadas (deshabilitados en Arco 1, solo en procesamiento). */
   readonly showWorksheetActions = computed(() => this.config().key === 'procesamiento');
 
-  /** protocolId del único tubo seleccionado (procesamiento), o null si 0 ó >1. */
-  readonly selectedTubeProtocolId = computed<number | null>(() => {
-    const sel = this.selectedSamples();
-    if (sel.length !== 1) return null;
-    return (sel[0] as Tube).protocolId ?? null;
-  });
+  /** protocolIds distintos de los tubos seleccionados (procesamiento). */
+  readonly selectedProtocolIds = computed<number[]>(() =>
+    [...new Set(
+      this.selectedSamples()
+        .map(s => (s as Tube).protocolId)
+        .filter((p): p is number => p != null),
+    )],
+  );
 
   cargarResultados(): void {
-    const pid = this.selectedTubeProtocolId();
-    if (pid != null) this.router.navigate(['/analitica/procesamiento/cargar', pid]);
+    const ids = this.selectedProtocolIds();
+    if (ids.length === 0) return;
+    this.router.navigate(['/analitica/procesamiento/cargar'], { queryParams: { protocols: ids.join(',') } });
   }
 
   private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
