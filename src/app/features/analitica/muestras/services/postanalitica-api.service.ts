@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import type { Study, ResultWithValidation, DetValidation, PostResult, ValidationOutcome } from '../models/postanalitica.model';
+import type { Study, ResultWithValidation, DetValidation, PostResult, ValidationOutcome, Page, StudyListItemResponse, StudyStatus } from '../models/postanalitica.model';
 
 @Injectable({ providedIn: 'root' })
 export class PostanaliticaApiService {
@@ -19,5 +19,11 @@ export class PostanaliticaApiService {
   }
   validateAll(resultId: number, outcome: ValidationOutcome): Observable<PostResult> {
     return this.http.post<PostResult>(`${this.base}/results/${resultId}/validate-all`, { outcome });
+  }
+
+  listStudies(status?: StudyStatus): Observable<Page<StudyListItemResponse>> {
+    let params = new HttpParams().set('size', '200');
+    if (status) params = params.set('status', status);
+    return this.http.get<Page<StudyListItemResponse>>(`${this.base}/studies`, { params });
   }
 }

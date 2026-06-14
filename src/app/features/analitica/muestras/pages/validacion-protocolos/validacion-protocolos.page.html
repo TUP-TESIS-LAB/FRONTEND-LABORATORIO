@@ -30,91 +30,47 @@
   </div>
 
   <div class="thead-card prot-grid">
-    <span></span>
     <span>PROTOCOLO</span><span>ANÁLISIS</span><span>FECHA</span><span>ESTADO</span><span></span>
   </div>
 
   <section class="grp-card">
     <div class="grp-rows">
-      @for (p of visibles(); track p.id) {
-        <div class="prot-block" [class.is-open]="isOpen(p.id)">
-          <div class="row prot-grid prot-row" (click)="toggle(p.id)">
-            <button
-              type="button"
-              class="prot-chev"
-              [class.is-open]="isOpen(p.id)"
-              (click)="toggle(p.id); $event.stopPropagation()"
-              aria-label="Ver análisis"
-            >
-              <i class="pi pi-chevron-down"></i>
-            </button>
+      @for (r of visibles(); track r.studyId) {
+        <div class="prot-block">
+          <div class="row prot-grid prot-row">
             <div class="cell-mx">
-              <div class="mx-top">
-                <span class="mx-code">{{ p.id }}</span>
-                @if (p.urgente) { <span class="badge-urg">URGENTE</span> }
+              <div class="mx-top"><span class="mx-code">{{ r.protocolCode }}</span></div>
+              <div class="mx-pac">
+                {{ r.patientName }}@if (r.patientSex || edad(r) !== null) { · @if (r.patientSex) {{{ r.patientSex }} }@if (edad(r) !== null) {{{ edad(r) }}a}}
               </div>
-              <div class="mx-pac">{{ p.paciente }} · {{ p.sexo }} {{ p.edad }}a</div>
             </div>
             <div class="cell-an">
-              <span class="an-count">{{ p.analisis.length }} análisis</span>
-              <span class="an-sub">{{ detsDe(p) }} determinaciones</span>
-              <span class="an-sub">{{ firmadosDe(p) }} de {{ p.analisis.length }} firmados</span>
+              <span class="an-count">{{ r.analysisCount }} análisis</span>
+              <span class="an-sub">{{ r.determinationCount }} determinaciones</span>
+              <span class="an-sub">{{ r.signedAnalysisCount }} de {{ r.analysisCount }} firmados</span>
             </div>
             <div class="cell-toma">
-              <span class="toma-d">{{ p.fecha }}</span>
-              <span class="toma-h">{{ p.hora }} hs</span>
+              <span class="toma-d">{{ r.date | date: 'dd/MM/yyyy' }}</span>
+              <span class="toma-h">{{ r.date | date: 'HH:mm' }} hs</span>
             </div>
             <div class="cell-edo">
-              <span [class]="'badge-st ' + badgeProt(p)[0]"><span class="dot"></span>{{ badgeProt(p)[1] }}</span>
+              <span [class]="'badge-st ' + badgeFirma(r.currentStatus)[0]"><span class="dot"></span>{{ badgeFirma(r.currentStatus)[1] }}</span>
             </div>
             <div class="cell-act">
-              @if (estadoProt(p) === 'total') {
-                <button type="button" class="prot-validar is-done" (click)="validar(p, $event)">
+              @if (estadoFirmaDe(r.currentStatus) === 'total') {
+                <button type="button" class="prot-validar is-done" (click)="validar(r, $event)">
                   <i class="pi pi-eye"></i> Ver
                 </button>
               } @else {
-                <button type="button" class="prot-validar" (click)="validar(p, $event)">
+                <button type="button" class="prot-validar" (click)="validar(r, $event)">
                   Validar <i class="pi pi-check"></i>
                 </button>
               }
             </div>
           </div>
-
-          @if (isOpen(p.id)) {
-            <div class="prot-detail">
-              @if (estadoProt(p) === 'total' && p.firmadoPor) {
-                <div class="val-note">
-                  <i class="pi pi-check-circle"></i> Firmado por <b>{{ p.firmadoPor }}</b> · {{ p.firmadoEl }}
-                </div>
-              }
-              <div class="an-list">
-                <div class="an-lhead an-grid">
-                  <span>ANÁLISIS</span><span>FAMILIA DE ESTUDIO</span><span>ESTADO</span>
-                </div>
-                @for (a of p.analisis; track a.id) {
-                  <div class="an-row an-grid">
-                    <div class="an-cell-name">
-                      <span class="an-dot" [style.--ws-hue]="secHue(a.sec)"></span>
-                      <span class="an-nm">{{ a.nombre }}</span>
-                    </div>
-                    <div class="an-cell-fam">
-                      <span class="fam-pill" [style.--ws-hue]="secHue(a.sec)">{{ secLabel(a.sec) }}</span>
-                    </div>
-                    <div class="an-cell-st">
-                      @if (a.firmado) {
-                        <span class="fst fst-ok"><i class="pi pi-check-circle"></i> Firmada</span>
-                      } @else {
-                        <span class="fst fst-no"><i class="pi pi-minus-circle"></i> Sin firmar</span>
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-          }
         </div>
       }
-      @if (visibles().length === 0) {
+      @if (!pending() && visibles().length === 0) {
         <div class="empty">
           <i class="pi pi-check-circle"></i>
           <p>No hay protocolos para este filtro.</p>

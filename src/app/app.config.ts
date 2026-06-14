@@ -90,6 +90,10 @@ import { POSTANALITICA_FEATURE_KEY } from '@features/analitica/muestras/store/po
 import { postanaliticaReducer } from '@features/analitica/muestras/store/postanalitica/postanalitica.reducer';
 import { PostanaliticaEffects } from '@features/analitica/muestras/store/postanalitica/postanalitica.effects';
 
+import { VALIDACION_PROTOCOLOS_FEATURE_KEY } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.state';
+import { validacionProtocolosReducer } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.reducer';
+import { ValidacionProtocolosEffects } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -145,6 +149,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(ResultadosEffects),
     provideState(POSTANALITICA_FEATURE_KEY, postanaliticaReducer),
     provideEffects(PostanaliticaEffects),
+    provideState(VALIDACION_PROTOCOLOS_FEATURE_KEY, validacionProtocolosReducer),
+    provideEffects(ValidacionProtocolosEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),
