@@ -5,7 +5,8 @@ import { ResultGridComponent } from './result-grid.component';
 import type { ResultGrid } from '../../models/resultado.model';
 
 const grid: ResultGrid = {
-  protocolId: 9,
+  protocolIds: [9],
+  resultLabels: { 1: 'Ana López' },
   sections: [{
     analysisCatalogId: 6, analysisName: 'Colesterol Total', resultIds: [1],
     rows: [{ catalogId: 500, name: 'Colesterol Total', unit: 'mg/dL', cells: { 1: { determinationId: 11, value: '' } } }],

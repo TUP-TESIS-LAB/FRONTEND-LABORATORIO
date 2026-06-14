@@ -42,7 +42,8 @@ export class CargarResultadosPage {
   private readonly location = inject(Location);
 
   readonly bannerText = 'Datos de demo: la creación automática de resultados al pasar a PROCESSING está pendiente.';
-  readonly protocolId = Number(this.route.snapshot.paramMap.get('protocolId'));
+  readonly protocolIds = (this.route.snapshot.queryParamMap.get('protocols') ?? '')
+    .split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n) && n > 0);
 
   readonly grid = this.store.selectSignal(selectGrid);
   readonly loading = this.store.selectSignal(selectResultadosLoading);
@@ -64,14 +65,14 @@ export class CargarResultadosPage {
           if (cell.value.trim() !== '') filled++;
         }
         const status = total === 0 || filled === 0 ? 'sin' : filled === total ? 'completa' : 'parcial';
-        items.push({ resultId: rid, label: `${sec.analysisName} · #${rid}`, filled, total, status });
+        items.push({ resultId: rid, label: `${sec.analysisName} · ${g.resultLabels[rid] ?? ('#' + rid)}`, filled, total, status });
       }
     }
     return items;
   });
 
   constructor() {
-    this.store.dispatch(loadGrid({ protocolId: this.protocolId }));
+    this.store.dispatch(loadGrid({ protocolIds: this.protocolIds }));
     let lastSig: string | null = null;
     effect(() => {
       const err = this.error();

@@ -55,7 +55,7 @@ export const ANALITICA_ROUTES: Routes = [
         title: 'Procesamiento',
       },
       {
-        path: 'procesamiento/cargar/:protocolId',
+        path: 'procesamiento/cargar',
         canMatch: [sectionGuard('ANALITICA')],
         loadComponent: () => import('./muestras/pages/cargar-resultados/cargar-resultados.page').then(m => m.CargarResultadosPage),
         title: 'Cargar resultados',

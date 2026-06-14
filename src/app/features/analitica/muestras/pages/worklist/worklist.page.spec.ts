@@ -351,26 +351,41 @@ describe('WorklistPage (smoke)', () => {
     expect(cmp.configOpen()).toBe(true);
   });
 
-  it('Procesamiento: selectedTubeProtocolId es el protocolId del único tubo seleccionado', () => {
+  it('Procesamiento: selectedProtocolIds vacío sin selección, [protocolId] con un tubo', () => {
     const item: LabelWorklistItem = {
       labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'Hemograma',
       patientName: 'Marta', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
     };
     const fx = setup('procesamiento', [], [], [item]);
     const cmp = fx.componentInstance;
+    expect(cmp.selectedProtocolIds()).toEqual([]);
     cmp.toggleRow(cmp.rows()[0].id);
-    expect(cmp.selectedTubeProtocolId()).toBe(88);
+    expect(cmp.selectedProtocolIds()).toEqual([88]);
   });
 
-  it('Procesamiento: selectedTubeProtocolId null si 0 ó >1 seleccionados', () => {
+  it('Procesamiento: selectedProtocolIds junta protocolIds distintos de varios tubos', () => {
     const items: LabelWorklistItem[] = [
       { labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'A', patientName: 'M', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z' },
-      { labelId: 70002, sampleId: 50051, barcode: '70002', protocolId: 88, analysisName: 'B', patientName: 'N', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:01:00Z' },
+      { labelId: 70002, sampleId: 50051, barcode: '70002', protocolId: 99, analysisName: 'B', patientName: 'N', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:01:00Z' },
+      { labelId: 70003, sampleId: 50052, barcode: '70003', protocolId: 88, analysisName: 'C', patientName: 'O', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:02:00Z' },
     ];
     const fx = setup('procesamiento', [], [], items);
     const cmp = fx.componentInstance;
-    expect(cmp.selectedTubeProtocolId()).toBeNull();
+    cmp.toggleRow(cmp.rows()[0].id); cmp.toggleRow(cmp.rows()[1].id); cmp.toggleRow(cmp.rows()[2].id);
+    expect(cmp.selectedProtocolIds().sort((a, b) => a - b)).toEqual([88, 99]);
+  });
+
+  it('Procesamiento: cargarResultados navega con query param protocols (CSV distinto)', () => {
+    const items: LabelWorklistItem[] = [
+      { labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'A', patientName: 'M', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z' },
+      { labelId: 70002, sampleId: 50051, barcode: '70002', protocolId: 99, analysisName: 'B', patientName: 'N', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:01:00Z' },
+    ];
+    const fx = setup('procesamiento', [], [], items);
+    const cmp = fx.componentInstance;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const navigate = vi.spyOn((cmp as any).router, 'navigate').mockResolvedValue(true);
     cmp.toggleRow(cmp.rows()[0].id); cmp.toggleRow(cmp.rows()[1].id);
-    expect(cmp.selectedTubeProtocolId()).toBeNull();
+    cmp.cargarResultados();
+    expect(navigate).toHaveBeenCalledWith(['/analitica/procesamiento/cargar'], { queryParams: { protocols: '88,99' } });
   });
 });

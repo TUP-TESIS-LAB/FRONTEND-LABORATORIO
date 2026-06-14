@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import type { ResultGrid } from '../../models/resultado.model';
 import type { BatchDeterminationItem } from '../../services/resultados-api.service';
 
-export const loadGrid = createAction('[Cargar Resultados] Load Grid', props<{ protocolId: number }>());
+export const loadGrid = createAction('[Cargar Resultados] Load Grid', props<{ protocolIds: number[] }>());
 export const loadGridSuccess = createAction('[Resultados API] Load Grid Success', props<{ grid: ResultGrid }>());
 export const loadGridFailure = createAction('[Resultados API] Load Grid Failure', props<{ error: HttpErrorResponse }>());
 
