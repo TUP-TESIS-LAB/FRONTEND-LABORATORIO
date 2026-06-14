@@ -9,17 +9,13 @@ import { UserSessionService } from '@features/profile/services/user-session.serv
 import { TokenService } from '@core/auth/token.service';
 import { SucursalService } from '@features/sucursales/services/sucursal.service';
 import { loadBranchTotemConfig } from '../../store/branch-totem-config/branch-totem-config.actions';
-import {
-  selectBranchTotemEnabled,
-  selectBranchTotemLoading,
-} from '../../store/branch-totem-config/branch-totem-config.selectors';
+import { selectBranchTotemLoading } from '../../store/branch-totem-config/branch-totem-config.selectors';
 import { loadBoxOccupations } from '../../box-occupation/store/box-occupation.actions';
 import { selectAllOccupations } from '../../box-occupation/store/box-occupation.selectors';
 import { BoxOccupationWidgetComponent } from '../../box-occupation/components/box-occupation-widget.component';
 import { BoxSelectorModalComponent } from '../../box-occupation/components/box-selector-modal.component';
 import { RecepcionConTotemComponent } from './recepcion-con-totem.component';
 import { ScheduledAppointmentsDrawerComponent } from '../../components/scheduled-appointments-drawer.component';
-import { RecepcionSinTotemComponent } from './recepcion-sin-totem.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import { AtencionDashboardComponent } from '@features/analitica/pages/atencion/atencion-dashboard/atencion-dashboard.component';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
@@ -32,7 +28,6 @@ import { PageHeaderComponent } from '@shared/ui/components/page-header/page-head
     ToastModule,
     TabsModule,
     RecepcionConTotemComponent,
-    RecepcionSinTotemComponent,
     BoxOccupationWidgetComponent,
     BoxSelectorModalComponent,
     AtencionDashboardComponent,
@@ -55,7 +50,6 @@ export class RecepcionPage implements OnInit {
   /** Drawer de "Turnos del día" — controlado por el botón global del header. */
   protected readonly drawerOpen = signal(false);
 
-  protected enabled = this.store.selectSignal(selectBranchTotemEnabled);
   protected loading = this.store.selectSignal(selectBranchTotemLoading);
 
   protected branchId = this.resolveBranchId();
