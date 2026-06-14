@@ -1,0 +1,121 @@
+<section class="validar-page">
+  <nav class="crumbs">
+    Gestión de analítica <span>›</span> Post-analítica <span>›</span> Validación <span>›</span> <b>Validar y firmar</b>
+  </nav>
+
+  <div class="val-top">
+    <a class="val-back" routerLink="/analitica/validacion">
+      <i class="pi pi-chevron-down"></i> Anterior
+    </a>
+    <button type="button" class="btn-validar-todo" [disabled]="allVal()" (click)="validarTodo()">
+      <i class="pi pi-check-circle"></i> Validar todo
+    </button>
+  </div>
+
+  <section class="psum">
+    <div class="psum-pac">
+      <div class="psum-avatar">{{ initials }}</div>
+      <div class="psum-pac-id">
+        <b>{{ p.paciente }}</b>
+        <span>
+          {{ p.sexo }} · {{ p.edad }} años
+          @if (p.urgente) { <i class="badge-urg">URGENTE</i> }
+        </span>
+      </div>
+    </div>
+    <div class="psum-field"><span class="psum-lbl">FECHA</span><b>{{ p.fecha }} · {{ p.hora }} hs</b></div>
+    <div class="psum-field"><span class="psum-lbl">PROTOCOLO</span><b class="mono">{{ p.id }}</b></div>
+    <div class="psum-field">
+      <span class="psum-lbl">ESTADO DE FIRMA</span>
+      <span [class]="'badge-st ' + firmaBadge()[0]"><span class="dot"></span>{{ firmaBadge()[1] }}</span>
+    </div>
+    <div class="psum-firma">
+      <span class="psum-lbl">FIRMA ELECTRÓNICA</span>
+      <div class="firma-btns">
+        <button
+          type="button" class="btn-firmar btn-parcial"
+          [disabled]="!someVal() || firma() === 'total'" (click)="firmarParcial()"
+        >
+          <i class="pi pi-check"></i> Firmar parcial
+        </button>
+        <button
+          type="button" class="btn-firmar btn-total"
+          [disabled]="!allVal() || firma() === 'total'" (click)="firmarTotal()"
+        >
+          <i class="pi pi-check-circle"></i> Firmar total
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="anx-list">
+    @for (a of p.analisis; track a.id) {
+      <section class="anx" [class.is-open]="isOpen(a.id)" [class.is-val]="isVal(a.id)">
+        <div class="anx-head" (click)="toggle(a.id)">
+          <button
+            type="button" class="anx-chev" [class.is-open]="isOpen(a.id)"
+            (click)="toggle(a.id); $event.stopPropagation()" aria-label="Ver determinaciones"
+          >
+            <i class="pi pi-chevron-down"></i>
+          </button>
+          <span class="anx-dot" [style.--ws-hue]="secHue(a.sec)"></span>
+          <b class="anx-name">{{ a.nombre }}</b>
+          <span class="fam-pill" [style.--ws-hue]="secHue(a.sec)">{{ secLabel(a.sec) }}</span>
+          <div class="anx-actions" (click)="$event.stopPropagation()">
+            <button type="button" class="anx-btn anx-edit" (click)="editar(a, $event)">
+              <i class="pi pi-pencil"></i> Editar
+            </button>
+            @if (isVal(a.id)) {
+              <button type="button" class="anx-btn anx-done" disabled>
+                <i class="pi pi-check"></i> Validado
+              </button>
+            } @else {
+              <button type="button" class="anx-btn anx-val" (click)="validar(a, $event)">
+                <i class="pi pi-check"></i> Validar
+              </button>
+            }
+          </div>
+          <span class="anx-meta">
+            <span class="anx-det">{{ a.dets.length }} det</span>
+            <span [class]="'badge-st ' + estadoAn(a)[0]"><span class="dot"></span>{{ estadoAn(a)[1] }}</span>
+          </span>
+        </div>
+
+        @if (isOpen(a.id)) {
+          <div class="anx-body">
+            <div class="vt-head vt-grid">
+              <span>DETERMINACIÓN</span><span>VALOR</span><span>UNIDAD</span><span>REFERENCIA</span>
+              <span>VALIDACIÓN MANUAL</span><span>VALIDACIÓN AUTOMÁTICA</span>
+            </div>
+            @for (x of a.dets; track x.n) {
+              <div class="vt-row vt-grid" [class.is-flag]="x.flag">
+                <span class="vt-n">{{ x.n }}</span>
+                <span [class]="valorClass(x)">{{ x.v }}</span>
+                <span class="vt-u">{{ x.u }}</span>
+                <span class="vt-ref">{{ p.sexo === 'F' ? 'Mujeres' : 'Hombres' }}: {{ x.ref }} {{ x.u }}</span>
+                <span class="vt-cell">
+                  @if (isVal(a.id)) {
+                    <span class="vb vb-ok"><i class="pi pi-check"></i> Validado</span>
+                  } @else {
+                    <span class="vb vb-no">No validado</span>
+                  }
+                </span>
+                <span class="vt-cell">
+                  @if (autoOf(x)) {
+                    <span class="vb vb-ok"><i class="pi pi-check"></i> Validado</span>
+                  } @else {
+                    <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> No validado</span>
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
+
+  <div class="toast" [class.is-on]="!!toast()">
+    @if (toast()) { <i class="pi pi-check"></i><span>{{ toast() }}</span> }
+  </div>
+</section>

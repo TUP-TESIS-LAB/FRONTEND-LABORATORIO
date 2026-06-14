@@ -79,6 +79,12 @@ export class WorklistPage {
     )],
   );
 
+  /** Único protocolId seleccionado (validación). null si hay 0 o más de uno. */
+  readonly selectedTubeProtocolId = computed<number | null>(() => {
+    const ids = this.selectedProtocolIds();
+    return ids.length === 1 ? ids[0] : null;
+  });
+
   cargarResultados(): void {
     const ids = this.selectedProtocolIds();
     if (ids.length === 0) return;

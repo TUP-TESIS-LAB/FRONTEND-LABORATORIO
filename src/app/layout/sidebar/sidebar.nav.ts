@@ -48,6 +48,7 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: 'Recolección',   path: '/analitica/recoleccion',   sectionKey: 'PREANALITICA' },
           { label: 'Traslado',      path: '/analitica/traslado',      sectionKey: 'PREANALITICA' },
           { label: 'Procesamiento', path: '/analitica/procesamiento', sectionKey: 'ANALITICA' },
+          { label: 'Validación',    path: '/analitica/validacion',    sectionKey: 'ANALITICA' },
           { label: 'Descarte',      path: '/analitica/descarte',      sectionKey: 'POSTANALITICA' },
         ],
       },
