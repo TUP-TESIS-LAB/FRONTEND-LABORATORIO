@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Spec:** [docs/superpowers/specs/2026-06-13-playwright-e2e-wizards-design.md](../specs/2026-06-13-playwright-e2e-wizards-design.md)
-> **Jira:** _(pendiente — lo agrega jira-workflow)_
+> **Jira:** [KAN-100](https://exequielsantoro.atlassian.net/browse/KAN-100)
 
 **Goal:** Montar Playwright en el repo del front y escribir un primer slice de tests E2E que valide la UX y las validaciones de los 6 wizards, incluyendo la regresión del fix del stepper (completado ≠ visitado).
 

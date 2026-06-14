@@ -1,7 +1,7 @@
 # Spec — Suite E2E Playwright (slice 1: wizards + validaciones)
 
 > **Estado:** diseño aprobado 2026-06-13. Pendiente: plan + ticket Jira antes de implementar.
-> **Jira:** _(pendiente — lo agrega jira-workflow)_
+> **Jira:** [KAN-100](https://exequielsantoro.atlassian.net/browse/KAN-100)
 
 ## Objetivo
 
