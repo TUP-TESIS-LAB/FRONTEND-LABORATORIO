@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import type { Study, ResultWithValidation, DetValidation, PostResult, ValidationOutcome, Page, StudyListItemResponse, StudyStatus } from '../models/postanalitica.model';
+import type { Study, ResultWithValidation, DetValidation, PostResult, ValidationOutcome, Page, StudyListItemResponse, StudyStatus, DetalleEstudioResponse } from '../models/postanalitica.model';
 
 @Injectable({ providedIn: 'root' })
 export class PostanaliticaApiService {
@@ -25,5 +25,15 @@ export class PostanaliticaApiService {
     let params = new HttpParams().set('size', '200');
     if (status) params = params.set('status', status);
     return this.http.get<Page<StudyListItemResponse>>(`${this.base}/studies`, { params });
+  }
+
+  getDetalle(protocolId: number): Observable<DetalleEstudioResponse> {
+    return this.http.get<DetalleEstudioResponse>(`${this.base}/studies/${protocolId}/results/detail`);
+  }
+  signResult(resultId: number): Observable<unknown> {
+    return this.http.post(`${this.base}/results/${resultId}/sign`, { token: 'ui-confirm' });
+  }
+  signStudy(protocolId: number): Observable<unknown> {
+    return this.http.post(`${this.base}/studies/${protocolId}/sign`, { token: 'ui-confirm' });
   }
 }
