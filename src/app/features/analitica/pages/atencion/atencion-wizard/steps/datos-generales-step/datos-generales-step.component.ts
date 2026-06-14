@@ -168,7 +168,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
             <div class="flex justify-end">
               <p-button
                 label="Crear paciente"
-                icon="pi pi-user-plus"
                 [disabled]="!altaValida()"
                 (onClick)="crearPaciente()" />
             </div>
@@ -233,7 +232,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                     <p-button
                       data-testid="btn-verificar"
                       label="Marcar verificado"
-                      icon="pi pi-shield"
                       severity="secondary"
                       [outlined]="true"
                       [disabled]="!puedeVerificar()"
@@ -250,7 +248,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   <div class="pt-1">
                     <p-button
                       label="Corregir datos"
-                      icon="pi pi-pencil"
                       severity="secondary"
                       [outlined]="true"
                       (onClick)="startEdit()" />
@@ -334,7 +331,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   }
                 </div>
                 <div class="flex justify-end">
-                  <p-button label="Guardar cambios" icon="pi pi-check" [disabled]="birthDateFuture()" (onClick)="saveEdit()" />
+                  <p-button label="Guardar cambios" [disabled]="birthDateFuture()" (onClick)="saveEdit()" />
                 </div>
               </div>
             }
@@ -347,7 +344,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
           <label class="block text-sm font-medium">Médico solicitante</label>
           @if (!readOnly()) {
             <button type="button" class="text-sm text-primary-600 hover:underline" (click)="toggleAddDoctor()">
-              <i class="pi pi-plus mr-1"></i>{{ addingDoctor() ? 'Cancelar' : 'Alta rápida' }}
+              {{ addingDoctor() ? 'Cancelar' : 'Alta rápida' }}
             </button>
           }
         </div>
@@ -380,7 +377,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
             <div class="flex justify-end">
               <p-button
                 label="Crear médico"
-                icon="pi pi-user-plus"
                 [loading]="doctorSaving()"
                 [disabled]="!altaMedicoValida() || doctorSaving()"
                 (onClick)="crearMedico()" />
@@ -400,11 +396,10 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
 
       @if (!readOnly()) {
         <div class="flex justify-between items-center mt-auto pt-3">
-          <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+          <p-button label="Volver fase" severity="secondary" [outlined]="true"
                     [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
           <p-button
             label="Confirmar y seguir"
-            icon="pi pi-arrow-right"
             [disabled]="!canConfirm()"
             (onClick)="onConfirm()" />
         </div>

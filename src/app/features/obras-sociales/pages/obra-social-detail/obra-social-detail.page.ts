@@ -12,6 +12,7 @@ import { TagModule } from 'primeng/tag';
 import { SelectModule } from 'primeng/select';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { CONTACT_TYPE_LABELS } from '../../models/contact-info.model';
 import { PlanComplete } from '../../models/plan.model';
 import { Agreement } from '../../models/agreement.model';
@@ -24,21 +25,18 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink, FormsModule, DatePipe, ButtonModule, TabsModule, TableModule, TagModule, SelectModule,
-    CurrencyArPipe, EmptyStateComponent,
+    CurrencyArPipe, EmptyStateComponent, PageHeaderComponent,
   ],
   template: `
     @if (insurer(); as o) {
-      <div class="p-6">
+      <div>
         <a routerLink="/obras-sociales" class="inline-block mb-3">
-          <p-button [text]="true" icon="pi pi-arrow-left" label="Volver a Obras Sociales" />
+          <p-button [text]="true" label="Volver a Obras Sociales" />
         </a>
-        <header class="flex items-center justify-between mb-3">
-          <h1 class="text-2xl font-semibold">
-            {{ o.name }}
-            @if (o.active) { <p-tag value="Activa" severity="success" class="ml-2" /> }
-            @else { <p-tag value="Inactiva" severity="danger" class="ml-2" /> }
-          </h1>
-        </header>
+        <ui-page-header [heading]="o.name">
+          @if (o.active) { <p-tag value="Activa" severity="success" /> }
+          @else { <p-tag value="Inactiva" severity="danger" /> }
+        </ui-page-header>
 
         <p-tabs value="info">
           <p-tablist>

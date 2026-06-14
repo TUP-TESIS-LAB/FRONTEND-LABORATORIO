@@ -48,7 +48,7 @@ import {
 
       @if (!readOnly()) {
         <div class="flex justify-between items-center mt-auto pt-3">
-          <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+          <p-button label="Volver fase" severity="secondary" [outlined]="true"
                     [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
           <p-button [label]="continueLabel()"
                     [loading]="mutating()"
@@ -164,7 +164,7 @@ export class AnalisisStepComponent implements OnInit {
   }
 
   continueLabel(): string {
-    return 'Continuar →';
+    return 'Continuar';
   }
 
   onAnalysisAdded(row: PickerRow): void { this.items.update((arr) => [...arr, row]); }

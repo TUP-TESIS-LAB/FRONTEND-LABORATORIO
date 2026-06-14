@@ -7,6 +7,7 @@ import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { PollingService } from '@core/refresh';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import { SCREENS } from '../../data/state-machine.config';
 import { MockSamplesService } from '../../services/mock-samples.service';
@@ -24,7 +25,7 @@ import { groupTubes, type Tube } from '../../models/tube.model';
 @Component({
   selector: 'app-muestras-worklist',
   standalone: true,
-  imports: [ScanBarComponent, BatchMenuComponent, SampleTableComponent, TransitionDialogComponent, ToastModule],
+  imports: [PageHeaderComponent, ScanBarComponent, BatchMenuComponent, SampleTableComponent, TransitionDialogComponent, ToastModule],
   providers: [MessageService],
   templateUrl: './worklist.page.html',
   styleUrl: './worklist.page.scss',

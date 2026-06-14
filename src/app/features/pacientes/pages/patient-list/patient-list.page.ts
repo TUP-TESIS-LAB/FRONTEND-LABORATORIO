@@ -15,6 +15,7 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { Patient, PatientStatus } from '../../models/patient.model';
 import { genderLabel, statusLabel } from '../../models/patient-labels';
@@ -36,22 +37,19 @@ import {
   imports: [
     RouterLink, ButtonModule, TagModule,
     ConfirmDialogModule, DatePipe, DniPipe, AgePipe,
-    DataTableComponent, UiCellDirective, FilterBarComponent,
+    DataTableComponent, UiCellDirective, FilterBarComponent, PageHeaderComponent,
   ],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
-    <div class="p-6 flex flex-col h-full min-h-0">
-      <header class="flex items-center justify-between mb-4">
-        <h2 class="page-title"><i class="pi pi-address-book page-title-icon" aria-hidden="true"></i> Pacientes</h2>
-        <div class="flex items-center gap-2">
-          <p-button label="Exportar" icon="pi pi-file-export" severity="secondary" [outlined]="true" [disabled]="true" pTooltip="Próximamente" />
-          @if (canMutate()) {
-            <a [routerLink]="['/pacientes', 'nuevo']">
-              <p-button label="Nuevo paciente" icon="pi pi-plus" />
-            </a>
-          }
-        </div>
-      </header>
+    <div class="flex flex-col h-full min-h-0">
+      <ui-page-header heading="Pacientes">
+        <p-button label="Exportar" severity="secondary" [outlined]="true" [disabled]="true" pTooltip="Próximamente" />
+        @if (canMutate()) {
+          <a [routerLink]="['/pacientes', 'nuevo']">
+            <p-button label="Nuevo paciente" />
+          </a>
+        }
+      </ui-page-header>
 
       <div class="mb-3">
         <ui-filter-bar [config]="filterConfig" (valueChange)="onFilterChange($event)" />

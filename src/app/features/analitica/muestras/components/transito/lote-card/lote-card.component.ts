@@ -17,14 +17,13 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
 <article class="lote-card" [class.no-dest]="!hasDest">
   <header>
     <input type="checkbox" [checked]="allSelected" (change)="onAllToggle($event)" aria-label="Tildar todas las muestras del lote">
-    <i class="pi pi-objects-column"></i>
     <div class="title">
       <span class="name">Lote {{ number }}</span>
       <span class="tag">TEMPORAL</span>
     </div>
     <div class="meta">
       @if (hasDest) {
-        <span class="dest"><i class="pi pi-map-marker"></i> {{ destLabel }}</span>
+        <span class="dest">{{ destLabel }}</span>
         <span class="badge" [class.green]="outcome === 'en-proceso'" [class.blue]="outcome === 'en-transito'">
           {{ outcome === 'en-proceso' ? 'En proceso' : 'En tránsito' }}
         </span>
@@ -34,7 +33,7 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
       <span class="count">{{ lote.sampleIds.length }} muestras</span>
     </div>
     <button type="button" class="scan-here" [class.is-active]="isActive" [attr.aria-pressed]="isActive" (click)="setActive.emit()">
-      {{ isActive ? 'Escaneo → acá' : 'Escanear acá' }}
+      {{ isActive ? 'Escaneo acá' : 'Escanear acá' }}
     </button>
     <button type="button" class="dissolve" (click)="dissolve.emit()" aria-label="Descartar lote"><i class="pi pi-times"></i></button>
   </header>

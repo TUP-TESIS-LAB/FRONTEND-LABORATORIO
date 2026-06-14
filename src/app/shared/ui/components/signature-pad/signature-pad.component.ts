@@ -29,7 +29,7 @@ import { ButtonModule } from 'primeng/button';
                 (pointerleave)="onPointerUp()"></canvas>
       </div>
       <div class="flex items-center gap-2">
-        <p-button label="Limpiar" icon="pi pi-eraser" severity="secondary" [text]="true" type="button"
+        <p-button label="Limpiar" severity="secondary" [text]="true" type="button"
                   [disabled]="disabled() || empty()" (onClick)="clear()" />
         @if (empty()) {
           <span class="text-xs text-surface-400">Dibujá la firma con el mouse o el dedo.</span>

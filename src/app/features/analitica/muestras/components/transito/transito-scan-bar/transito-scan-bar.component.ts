@@ -28,7 +28,7 @@ import { ChangeDetectionStrategy, Component, Input, output, signal } from '@angu
     [disabled]="groupsCount === 0"
     (click)="sendAllClick.emit()"
   >
-    <i class="pi pi-truck"></i> Enviar todo
+    Enviar todo
   </button>
 </div>
   `,

@@ -22,6 +22,7 @@ import { ScheduledAppointmentsDrawerComponent } from '../../components/scheduled
 import { RecepcionSinTotemComponent } from './recepcion-sin-totem.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import { AtencionDashboardComponent } from '@features/analitica/pages/atencion/atencion-dashboard/atencion-dashboard.component';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-recepcion-page',
@@ -37,6 +38,7 @@ import { AtencionDashboardComponent } from '@features/analitica/pages/atencion/a
     AtencionDashboardComponent,
     ButtonModule,
     ScheduledAppointmentsDrawerComponent,
+    PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion.page.html',

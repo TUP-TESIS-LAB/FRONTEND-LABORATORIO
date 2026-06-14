@@ -9,6 +9,7 @@ import { ConfirmationService } from 'primeng/api';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { Doctor } from '../../models/doctor.model';
 import { loadDoctors, toggleDoctorStatus, deleteDoctor } from '../../store/doctor.actions';
 import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.selectors';
@@ -18,19 +19,15 @@ import { selectAllDoctors, selectDoctorPending } from '../../store/doctor.select
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
-  imports: [RouterLink, ButtonModule, TagModule, ConfirmDialogModule, DataTableComponent, UiCellDirective],
+  imports: [RouterLink, ButtonModule, TagModule, ConfirmDialogModule, DataTableComponent, UiCellDirective, PageHeaderComponent],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
-    <div class="p-6 flex flex-col h-full min-h-0">
-      <header class="flex items-center justify-between mb-4">
-        <div>
-          <div class="text-xs text-surface-500">Servicios clínicos</div>
-          <h1 class="text-2xl font-semibold flex items-center gap-2"><i class="pi pi-heart"></i> Médicos derivantes</h1>
-        </div>
+    <div class="flex flex-col h-full min-h-0">
+      <ui-page-header heading="Médicos derivantes">
         <a [routerLink]="['/medicos', 'nuevo']">
-          <p-button label="Nuevo médico" icon="pi pi-plus" />
+          <p-button label="Nuevo médico" />
         </a>
-      </header>
+      </ui-page-header>
 
       <div class="flex-1 min-h-0 flex flex-col">
       <ui-table

@@ -24,7 +24,7 @@ export interface EmployeeSummaryView {
       <section>
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-base font-semibold m-0">Datos del empleado</h3>
-          <p-button label="Editar" icon="pi pi-pencil" [text]="true" (onClick)="editStep.emit(0)" />
+          <p-button label="Editar" [text]="true" (onClick)="editStep.emit(0)" />
         </div>
         <dl class="grid grid-cols-2 gap-y-2 text-sm">
           <dt class="text-surface-500">Nombre</dt><dd>{{ data().firstName }} {{ data().lastName }}</dd>
@@ -36,7 +36,7 @@ export interface EmployeeSummaryView {
       <section>
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-base font-semibold m-0">Contactos</h3>
-          <p-button label="Editar" icon="pi pi-pencil" [text]="true" (onClick)="editStep.emit(1)" />
+          <p-button label="Editar" [text]="true" (onClick)="editStep.emit(1)" />
         </div>
         @if (data().contacts.length === 0) {
           <p class="text-surface-500 text-sm">Sin contactos.</p>
@@ -51,14 +51,14 @@ export interface EmployeeSummaryView {
       <section>
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-base font-semibold m-0">Dirección</h3>
-          <p-button label="Editar" icon="pi pi-pencil" [text]="true" (onClick)="editStep.emit(2)" />
+          <p-button label="Editar" [text]="true" (onClick)="editStep.emit(2)" />
         </div>
         <p class="text-sm">{{ addressLabel() }}</p>
       </section>
       <section>
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-base font-semibold m-0">Usuario</h3>
-          <p-button label="Editar" icon="pi pi-pencil" [text]="true" (onClick)="editStep.emit(3)" />
+          <p-button label="Editar" [text]="true" (onClick)="editStep.emit(3)" />
         </div>
         <p class="text-sm">{{ data().userLabel || 'Sin usuario' }}</p>
       </section>

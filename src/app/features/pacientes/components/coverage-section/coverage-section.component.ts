@@ -49,7 +49,7 @@ import { CoverageCatalogService } from '../../services/coverage-catalog.service'
           <input pInputText [ngModel]="selMember()" (ngModelChange)="selMember.set($event)"
                  [disabled]="selPlan() == null" class="pat-form__input" placeholder="N° afiliado" />
         </div>
-        <p-button icon="pi pi-plus" label="Agregar" severity="secondary" [outlined]="true"
+        <p-button label="Agregar" severity="secondary" [outlined]="true"
                   [disabled]="!canAdd()" (onClick)="add()" />
       </div>
 

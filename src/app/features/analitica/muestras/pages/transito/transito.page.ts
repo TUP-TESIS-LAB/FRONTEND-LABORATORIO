@@ -7,6 +7,7 @@ import { catchError, map } from 'rxjs/operators';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { PollingService } from '@core/refresh';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import { SectionService } from '@features/sucursales/services/section.service';
 import type { Section } from '@features/sucursales/models/section.model';
@@ -31,7 +32,7 @@ import { groupTubes } from '../../models/tube.model';
   selector: 'app-transito-page',
   standalone: true,
   imports: [
-    ToastModule, TransitoScanBarComponent, BulkActionsBarComponent,
+    ToastModule, PageHeaderComponent, TransitoScanBarComponent, BulkActionsBarComponent,
     LoteCardComponent, RecommendedGroupCardComponent, ConfirmSendAllDialogComponent,
   ],
   providers: [MessageService],

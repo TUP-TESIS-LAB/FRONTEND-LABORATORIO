@@ -97,7 +97,6 @@ const MAX_REASON_LENGTH = 500;
         />
         <p-button
           label="Cancelar extracción"
-          icon="pi pi-times"
           severity="danger"
           [disabled]="!canConfirm() || saving()"
           [loading]="saving()"

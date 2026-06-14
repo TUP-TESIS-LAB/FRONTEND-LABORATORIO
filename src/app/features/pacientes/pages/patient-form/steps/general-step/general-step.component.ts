@@ -72,18 +72,18 @@ export const notFutureDateValidator: ValidatorFn = (control: AbstractControl): V
         <p-select formControlName="sexAtBirth" [options]="sexOpts" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label"><i class="pi pi-phone mr-1"></i>Celular</label>
+        <label class="pat-form__label">Celular</label>
         <input pInputText formControlName="mobile" class="pat-form__input" />
       </div>
       <div class="pat-form__field">
-        <label class="pat-form__label"><i class="pi pi-envelope mr-1"></i>Email</label>
+        <label class="pat-form__label">Email</label>
         <input pInputText formControlName="email" type="email" class="pat-form__input" />
       </div>
     </div>
 
     <!-- Domicilio: ahora vive dentro de Datos generales (5 campos). -->
     <div class="mt-6 border-t pt-4">
-      <h3 class="text-sm font-semibold text-surface-700 mb-3"><i class="pi pi-map-marker mr-1"></i>Domicilio <span class="text-xs font-normal text-surface-400">(opcional)</span></h3>
+      <h3 class="text-sm font-semibold text-surface-700 mb-3">Domicilio <span class="text-xs font-normal text-surface-400">(opcional)</span></h3>
       <pat-address-fields [group]="addressGroup()" />
     </div>
   `,

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { CardModule } from 'primeng/card';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { loadAreas } from '../../store/sucursal.actions';
 import { AreasPanelComponent } from './components/areas-panel.component';
 import { SectionsPanelComponent } from './components/sections-panel.component';
@@ -13,6 +14,7 @@ import { SectionsPanelComponent } from './components/sections-panel.component';
     CardModule,
     AreasPanelComponent,
     SectionsPanelComponent,
+    PageHeaderComponent,
   ],
   templateUrl: './sucursales-catalogo.page.html',
   styleUrl: './sucursales-catalogo.page.scss',

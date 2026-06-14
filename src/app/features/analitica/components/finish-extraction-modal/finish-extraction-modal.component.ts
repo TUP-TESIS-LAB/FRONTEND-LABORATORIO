@@ -99,7 +99,6 @@ const MAX_OBSERVATION_LENGTH = 500;
         />
         <p-button
           label="Finalizar extracción"
-          icon="pi pi-check"
           severity="success"
           [disabled]="saving()"
           [loading]="saving()"

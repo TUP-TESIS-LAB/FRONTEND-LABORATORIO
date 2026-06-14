@@ -36,18 +36,18 @@ import {
         </div>
 
         <div class="info-form__actions">
-          <p-button label="Guardar nombre" icon="pi pi-save"
+          <p-button label="Guardar nombre"
                     [disabled]="!form.dirty || form.invalid" (onClick)="saveName(t)" />
           @if (!t.deletedAt) {
             @if (t.status === 'ACTIVE') {
               <p-button label="Desactivar" severity="warn" [outlined]="true"
-                        icon="pi pi-pause" (onClick)="confirmDeactivate(t)" />
+                        (onClick)="confirmDeactivate(t)" />
             } @else {
               <p-button label="Activar" severity="success" [outlined]="true"
-                        icon="pi pi-play" (onClick)="confirmActivate(t)" />
+                        (onClick)="confirmActivate(t)" />
             }
             <p-button label="Eliminar" severity="danger" [outlined]="true"
-                      icon="pi pi-trash" (onClick)="confirmSoftDelete(t)" />
+                      (onClick)="confirmSoftDelete(t)" />
           }
         </div>
       </form>
