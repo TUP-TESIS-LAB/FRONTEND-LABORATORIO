@@ -32,7 +32,6 @@ import { BoxAssignment, BranchExtractor } from '../../models/extraction.model';
         @for (item of assignments(); track item.boxNumber; let i = $index) {
           <div class="box-config-bar__item">
             <div class="box-config-bar__box-badge">
-              <i class="pi pi-box"></i>
               <span>Box {{ item.boxNumber }}</span>
             </div>
 
@@ -43,11 +42,6 @@ import { BoxAssignment, BranchExtractor } from '../../models/extraction.model';
               [attr.aria-label]="'Cambiar extractor del box ' + item.boxNumber"
               (click)="onSelectorClick($event, i)"
             >
-              <i
-                class="pi"
-                [class.pi-user]="item.extractorId !== null"
-                [class.pi-user-plus]="item.extractorId === null"
-              ></i>
               <span class="box-config-bar__selector-label">
                 {{ item.extractorId !== null ? item.extractorFullName : 'Sin asignar' }}
               </span>
@@ -83,7 +77,9 @@ import { BoxAssignment, BranchExtractor } from '../../models/extraction.model';
       flex-wrap: wrap;
       padding: var(--space-3, 12px) var(--space-4, 16px);
       background: #fff;
-      border-bottom: 1px solid #e2e8f0;
+      border: 1px solid var(--ds-border, #e6e8ef);
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(28,30,55,.06);
     }
 
     .box-config-bar__list {

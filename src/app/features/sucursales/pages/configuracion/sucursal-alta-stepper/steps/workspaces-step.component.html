@@ -9,7 +9,7 @@
                   optionLabel="label" optionValue="value" placeholder="Elegí un área"
                   appendTo="body" [filter]="true" filterBy="label" class="w-full" />
       </div>
-      <p-button icon="pi pi-plus" label="Nueva área" severity="secondary" [outlined]="true"
+      <p-button label="Nueva área" severity="secondary" [outlined]="true"
                 (onClick)="openAreaModal()" />
     </div>
 
@@ -17,7 +17,7 @@
       <div class="sections-block">
         <div class="sections-head">
           <span class="sections-title">Secciones de esta área</span>
-          <p-button icon="pi pi-plus" label="Nueva sección" severity="secondary" [text]="true" size="small"
+          <p-button label="Nueva sección" severity="secondary" [text]="true" size="small"
                     (onClick)="openSectionModal()" />
         </div>
         @if (sectionsForArea().length === 0) {
@@ -34,7 +34,7 @@
           </div>
         }
         <div class="assoc-actions">
-          <p-button icon="pi pi-arrow-down" label="Agregar al listado" [disabled]="!canAdd()" (onClick)="add()" />
+          <p-button label="Agregar al listado" [disabled]="!canAdd()" (onClick)="add()" />
         </div>
       </div>
     }

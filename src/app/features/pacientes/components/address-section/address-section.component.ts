@@ -61,7 +61,7 @@ import { Address } from '../../models/patient.model';
           </div>
         </div>
       }
-      <p-button icon="pi pi-plus" label="Agregar dirección" severity="secondary" [outlined]="true" (onClick)="add()" />
+      <p-button label="Agregar dirección" severity="secondary" [outlined]="true" (onClick)="add()" />
     </div>
   `,
 })

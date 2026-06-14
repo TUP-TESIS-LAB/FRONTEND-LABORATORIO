@@ -172,10 +172,9 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
 
       @if (!readOnly()) {
         <div class="flex justify-between items-center mt-auto pt-3">
-          <p-button label="Volver fase" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+          <p-button label="Volver fase" severity="secondary" [outlined]="true"
                     [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
           <p-button label="Finalizar atención"
-                    icon="pi pi-check"
                     [loading]="mutating()"
                     [disabled]="mutating()"
                     (onClick)="openFinalize()" />

@@ -13,7 +13,6 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
-import { ScrollToBottomFabComponent } from '@shared/ui/components/scroll-to-bottom-fab/scroll-to-bottom-fab.component';
 import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
@@ -41,7 +40,6 @@ import {
     TagModule, TooltipModule, ConfirmDialogModule,
     DataTableComponent, UiCellDirective,
     FilterBarComponent,
-    ScrollToBottomFabComponent,
     StatCardComponent,
   ],
   template: `
@@ -126,7 +124,6 @@ import {
         }
       </section>
 
-      <ui-scroll-to-bottom-fab />
       <p-confirmDialog />
     </div>
   `,

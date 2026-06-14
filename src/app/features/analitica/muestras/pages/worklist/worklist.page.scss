@@ -15,53 +15,31 @@
   --shadow-md: 0 8px 24px rgba(28,30,55,.10), 0 2px 6px rgba(28,30,55,.06);
 
   display: block;
-  padding: 24px 30px 40px;
   font-family: 'Poppins', system-ui, sans-serif;
   color: var(--ink);
   background: var(--bg);
   min-height: 100%;
 }
 
-.worklist-header {
+.stats {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 18px;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
-  h1 {
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0 0 4px;
-  }
+.chip {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+  box-shadow: var(--shadow-sm);
 
-  .subtitle {
-    color: var(--muted);
-    margin: 0;
-    font-size: 14px;
-  }
-
-  .stats {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  .chip {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 13px;
-    color: var(--ink-2);
-    box-shadow: var(--shadow-sm);
-
-    &.chip-selected {
-      background: var(--sel);
-      color: var(--brand-700);
-      border-color: var(--sel-line);
-    }
+  &.chip-selected {
+    background: var(--sel);
+    color: var(--brand-700);
+    border-color: var(--sel-line);
   }
 }
 

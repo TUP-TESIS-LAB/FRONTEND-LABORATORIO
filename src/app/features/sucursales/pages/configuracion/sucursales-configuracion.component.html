@@ -1,8 +1,7 @@
-<div class="py-2">
-  <header class="flex items-center justify-between mb-4">
-    <h2 class="text-lg font-semibold m-0">Sucursales</h2>
-    <p-button label="Nueva sucursal" icon="pi pi-plus" (onClick)="openNew()" />
-  </header>
+<div>
+  <ui-page-header heading="Sucursales">
+    <p-button label="Nueva sucursal" (onClick)="openNew()" />
+  </ui-page-header>
 
   <ui-table
     [value]="sucursales()"

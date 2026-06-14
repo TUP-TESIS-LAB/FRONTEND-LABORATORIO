@@ -1,7 +1,7 @@
 <div class="panel">
   <div class="panel-header">
     <h2>Secciones {{ selectedAreaName() ? '— ' + selectedAreaName() : '' }}</h2>
-    <p-button label="Nueva sección" icon="pi pi-plus"
+    <p-button label="Nueva sección"
               (click)="openNew()" [disabled]="!selectedAreaId()" />
   </div>
 

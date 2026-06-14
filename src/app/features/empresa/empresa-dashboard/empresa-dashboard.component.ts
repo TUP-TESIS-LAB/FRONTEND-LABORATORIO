@@ -1,16 +1,14 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 
 @Component({
   selector: 'emp-empresa-dashboard',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <header class="emp-dashboard__header">
-      <small class="ui-text-muted">Gestión</small>
-      <h1><i class="pi pi-building"></i> Empresa</h1>
-    </header>
+    <ui-page-header heading="Empresa" />
 
     <nav class="emp-dashboard__tabs" role="tablist">
       <a routerLink="usuarios" routerLinkActive="is-active" role="tab">Usuarios</a>
@@ -25,12 +23,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     </section>
   `,
   styles: [`
-    .emp-dashboard__header { padding: var(--space-6) var(--space-6) 0; }
-    .emp-dashboard__header h1 { margin: var(--space-1) 0 var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
+    /* El padding exterior lo aporta el .ui-admin-shell__content (var(--space-6)).
+       El shell NO agrega el suyo para alinear el título con el resto de pantallas. */
+    :host { display: block; }
     .emp-dashboard__tabs {
-      display: flex; gap: var(--space-2); padding: 0 var(--space-6);
+      display: flex; gap: var(--space-2);
       border-bottom: 1px solid var(--ds-surface);
-      overflow-x: auto;
+      overflow-x: auto; margin-bottom: var(--space-5);
     }
     .emp-dashboard__tabs a {
       padding: var(--space-3) var(--space-4); color: var(--ds-text-muted);
@@ -40,7 +39,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     .emp-dashboard__tabs a.is-active {
       color: var(--brand-primary); border-bottom-color: var(--brand-primary); font-weight: 600;
     }
-    .emp-dashboard__body { padding: var(--space-6); }
+    .emp-dashboard__body { display: block; }
   `],
 })
 export class EmpresaDashboardComponent {}

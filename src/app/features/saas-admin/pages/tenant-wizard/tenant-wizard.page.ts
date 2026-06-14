@@ -41,7 +41,7 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
   template: `
     <header class="wizard-header" [class.wizard-header--edit]="mode() === 'edit'">
       <a routerLink="/saas/tenants" class="wizard-header__back">
-        <p-button [text]="true" icon="pi pi-arrow-left" label="Volver" />
+        <p-button [text]="true" label="Volver" />
       </a>
       <div class="wizard-header__title">
         <span class="wizard-header__chip">{{ mode() === 'edit' ? 'Editar tenant' : 'Nuevo tenant' }}</span>
@@ -90,19 +90,19 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
               <span class="token-modal__label">Link de primer acceso del administrador</span>
               <code class="token-modal__value">{{ firstLoginLink() }}</code>
               <div data-testid="copy-link-btn">
-                <p-button label="Copiar link" icon="pi pi-copy" [outlined]="true" severity="info"
+                <p-button label="Copiar link" [outlined]="true" severity="info"
                           (onClick)="copyToClipboard(firstLoginLink())" />
               </div>
             </div>
             <div class="token-modal__section">
               <span class="token-modal__label">Token (alternativa)</span>
               <code class="token-modal__value token-modal__value--muted">{{ firstLoginToken() }}</code>
-              <p-button label="Copiar token" icon="pi pi-copy" severity="secondary" [outlined]="true" size="small"
+              <p-button label="Copiar token" severity="secondary" [outlined]="true" size="small"
                         (onClick)="copyToClipboard(firstLoginToken()!)" />
             </div>
             <p class="wizard-muted">Compartí el link con el administrador del laboratorio.</p>
             <div data-testid="continue-btn">
-              <p-button label="Continuar a módulos" icon="pi pi-arrow-right" iconPos="right"
+              <p-button label="Continuar a módulos"
                         (onClick)="closeTokenModal()" />
             </div>
           </div>
@@ -184,7 +184,7 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
               <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" [disabled]="pending()" />
             </a>
             <p-button [label]="mode() === 'edit' ? 'Guardar y siguiente' : 'Crear y continuar'"
-                      icon="pi pi-arrow-right" iconPos="right" type="submit"
+                      type="submit"
                       [loading]="pending()"
                       [disabled]="infoForm.invalid || (mode() === 'create' && ownerForm.invalid) || pending()" />
           </div>
@@ -219,9 +219,9 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
         </section>
 
         <div class="wizard-actions">
-          <p-button label="Atrás" icon="pi pi-arrow-left" severity="secondary" [outlined]="true" type="button"
+          <p-button label="Atrás" severity="secondary" [outlined]="true" type="button"
                     [disabled]="pending()" (onClick)="step.set(1)" />
-          <p-button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" type="button"
+          <p-button label="Siguiente" type="button"
                     [disabled]="pending()" (onClick)="step.set(3)" />
         </div>
       }
@@ -260,14 +260,14 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
           </label>
 
           <div class="wizard-actions">
-            <p-button label="Atrás" icon="pi pi-arrow-left" severity="secondary" [outlined]="true" type="button"
+            <p-button label="Atrás" severity="secondary" [outlined]="true" type="button"
                       [disabled]="pending()" (onClick)="step.set(2)" />
             <a routerLink="/saas/tenants">
               <p-button label="Saltar y finalizar" severity="secondary" [outlined]="true" type="button"
                         [disabled]="pending()" />
             </a>
             <p-button [label]="mode() === 'edit' ? 'Finalizar cambios' : 'Finalizar'"
-                      icon="pi pi-check" iconPos="right" type="submit"
+                      type="submit"
                       [loading]="pending()" [disabled]="wlForm.invalid || pending()" />
           </div>
         </form>

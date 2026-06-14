@@ -22,6 +22,7 @@ import { ExtractorBoxService } from '@core/services/extractor-box.service';
 import { NotificationService } from '@core/services/notification.service';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicator/refresh-indicator.component';
 import { BoxConfigBarComponent } from '../../components/box-config-bar/box-config-bar.component';
 import { CancelExtractionDialogComponent } from '../../components/cancel-extraction-dialog/cancel-extraction-dialog.component';
@@ -63,6 +64,7 @@ const UNDO_WINDOW_MS = 5000;
     ToastModule,
     TooltipModule,
     EmptyStateComponent,
+    PageHeaderComponent,
     RefreshIndicatorComponent,
     BoxConfigBarComponent,
     InProgressListComponent,
@@ -72,19 +74,17 @@ const UNDO_WINDOW_MS = 5000;
   ],
   template: `
     <section class="page">
-      <header class="page__header">
-        <div class="page__title">
-          <div class="text-xs text-surface-500">Core clínico</div>
-          <h1 class="flex items-center gap-2"><i class="pi pi-bolt"></i> Cola de extracción</h1>
-          <p class="muted">Operá la cola y las extracciones en curso de la sucursal.</p>
-        </div>
+      <ui-page-header
+        heading="Cola de extracción"
+        subtitle="Operá la cola y las extracciones en curso de la sucursal."
+      >
         <div class="head-right">
           <ui-refresh-indicator
             [lastRefreshAt]="lastRefreshAt()"
             [paused]="paused()"
           />
         </div>
-      </header>
+      </ui-page-header>
 
       @if (branches().length === 0) {
         <div class="empty-state-big">
@@ -103,7 +103,7 @@ const UNDO_WINDOW_MS = 5000;
           <!-- Columna izquierda: la cola -->
           <section class="block">
             <div class="block__header">
-              <h2><i class="pi pi-list"></i> Cola de extracción</h2>
+              <h2>Cola de extracción</h2>
             </div>
 
             @if (awaiting().length === 0) {
@@ -137,7 +137,6 @@ const UNDO_WINDOW_MS = 5000;
                       <div class="actions-cell">
                         <p-button
                           label="Tomar"
-                          icon="pi pi-arrow-right"
                           size="small"
                           [disabled]="mutating()"
                           (onClick)="onTake(row)"
@@ -153,7 +152,7 @@ const UNDO_WINDOW_MS = 5000;
           <!-- Columna derecha: en curso -->
           <section class="block">
             <div class="block__header">
-              <h2><i class="pi pi-spinner"></i> En curso</h2>
+              <h2>En curso</h2>
             </div>
             <app-in-progress-list
               [items]="inProgress()"
@@ -202,7 +201,6 @@ const UNDO_WINDOW_MS = 5000;
             </div>
             <p-button
               label="Deshacer"
-              icon="pi pi-undo"
               severity="secondary"
               size="small"
               [text]="true"
@@ -214,16 +212,8 @@ const UNDO_WINDOW_MS = 5000;
     </section>
   `,
   styles: [`
-    :host { display: block; }
-    .page { display: flex; flex-direction: column; gap: 18px; padding: 16px; }
-    .page__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .page__title h1 { margin: 0; font-size: 22px; }
+    :host { display: block; min-height: 100%; }
+    .page { display: flex; flex-direction: column; gap: 18px; }
     .head-right {
       display: flex;
       align-items: center;
@@ -231,7 +221,6 @@ const UNDO_WINDOW_MS = 5000;
       flex-wrap: wrap;
     }
     h2 { margin: 0; font-size: 16px; display: inline-flex; align-items: center; gap: 8px; }
-    .muted { color: var(--ds-text-muted, #64748b); margin: 4px 0 0; font-size: 13px; }
 
     .columns {
       display: grid;
@@ -243,7 +232,10 @@ const UNDO_WINDOW_MS = 5000;
       .columns { grid-template-columns: 1fr; }
     }
 
-    .block { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); height: 100%; box-sizing: border-box; }
+    .block { background: #fff; border: 1px solid var(--ds-border); border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px rgba(28,30,55,.06); height: 100%; min-height: 360px; box-sizing: border-box; display: flex; flex-direction: column; }
+    /* Centrar verticalmente el empty-state de cada columna (Cola: directo; En curso: dentro de app-in-progress-list). */
+    .block > ui-empty-state { margin: auto 0; }
+    .block > app-in-progress-list { flex: 1; min-height: 0; }
     .block__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
     .actions-col { width: 1%; white-space: nowrap; text-align: right; }
     .actions-cell { display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center; }

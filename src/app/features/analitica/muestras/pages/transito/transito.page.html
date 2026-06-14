@@ -1,18 +1,14 @@
 <section class="transito-page">
-  <header class="page-header">
-    <div>
-      <h1>Muestras en tránsito</h1>
-      <p class="subtitle">
-        Las listas son recomendaciones de la mochila, no definitivas.
-        Tildá o escaneá muestras para armar lotes temporales y enviarlos cuando quieras.
-      </p>
-    </div>
+  <ui-page-header
+    heading="Muestras en tránsito"
+    subtitle="Las listas son recomendaciones de la mochila, no definitivas. Tildá o escaneá muestras para armar lotes temporales y enviarlos cuando quieras."
+  >
     <div class="stat-chips">
       <span class="chip">{{ service.stats().total }} en tránsito</span>
       <span class="chip">{{ service.stats().groups }} listas recomendadas</span>
       <span class="chip" [class.highlight]="service.stats().lotes > 0">{{ service.stats().lotes }} lotes temporales</span>
     </div>
-  </header>
+  </ui-page-header>
 
   <div class="sticky">
     <app-transito-scan-bar

@@ -27,7 +27,7 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
       <form [formGroup]="form" class="pat-form" (ngSubmit)="save()" style="padding:0">
         <section class="pat-form__card">
           <div class="pat-form__card-header">
-            <span><i class="pi pi-cog" style="margin-right:6px"></i>Identidad del sistema</span>
+            <span>Identidad del sistema</span>
           </div>
           <div class="pat-form__grid pat-form__grid--full">
             <div class="pat-form__field">
@@ -39,7 +39,7 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
 
         <section class="pat-form__card">
           <div class="pat-form__card-header">
-            <span><i class="pi pi-palette" style="margin-right:6px"></i>Paleta de marca</span>
+            <span>Paleta de marca</span>
           </div>
           <div class="pat-form__grid">
             <div class="pat-form__field">
@@ -61,7 +61,7 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
 
         <section class="pat-form__card">
           <div class="pat-form__card-header">
-            <span><i class="pi pi-image" style="margin-right:6px"></i>Logos</span>
+            <span>Logos</span>
           </div>
           <div class="pat-form__grid">
             <div class="pat-form__field">

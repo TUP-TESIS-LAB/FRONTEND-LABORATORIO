@@ -1,6 +1,7 @@
-// Variables locales — verde semántico de extracción.
+// Variables locales — verde semántico de extracción (solo acentos de texto).
 $extraccion-green: #059669;
-$extraccion-bg: #ecfdf5;
+// Fondo 100% blanco (igual que la TV de turnos, sin tinte verde).
+$extraccion-bg: #ffffff;
 
 :host {
   display: block;

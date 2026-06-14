@@ -6,6 +6,7 @@ import { ToggleSwitch } from 'primeng/toggleswitch';
 import { ToastModule } from 'primeng/toast';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { TableColumn } from '@shared/ui/models/table-column.model';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadSucursales } from '../../store/sucursales.actions';
@@ -17,11 +18,11 @@ import { Sucursal } from '../../models/sucursal.model';
   selector: 'app-sucursales',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ToggleSwitch, ToastModule, DataTableComponent, UiCellDirective],
+  imports: [FormsModule, ToggleSwitch, ToastModule, DataTableComponent, UiCellDirective, PageHeaderComponent],
   providers: [MessageService],
   template: `
     <p-toast />
-    <h2 class="page-title"><i class="pi pi-building page-title-icon" aria-hidden="true"></i> Sucursales</h2>
+    <ui-page-header heading="Sucursales" />
     <ui-table
       [value]="sucursales()"
       [loading]="pending()"

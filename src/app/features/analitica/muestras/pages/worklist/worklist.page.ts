@@ -7,6 +7,7 @@ import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { PollingService } from '@core/refresh';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import { SCREENS } from '../../data/state-machine.config';
 import { MockSamplesService } from '../../services/mock-samples.service';
@@ -28,7 +29,7 @@ import { WorksheetConfigModalComponent } from '../../components/planillas/worksh
 @Component({
   selector: 'app-muestras-worklist',
   standalone: true,
-  imports: [ScanBarComponent, BatchMenuComponent, SampleTableComponent, TransitionDialogComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent],
+  imports: [PageHeaderComponent, ScanBarComponent, BatchMenuComponent, SampleTableComponent, TransitionDialogComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent],
   providers: [MessageService],
   templateUrl: './worklist.page.html',
   styleUrl: './worklist.page.scss',

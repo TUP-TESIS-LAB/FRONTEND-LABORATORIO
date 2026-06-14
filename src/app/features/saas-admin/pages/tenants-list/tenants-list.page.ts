@@ -15,6 +15,7 @@ import {
   loadTenants, activateTenant, deactivateTenant, softDeleteTenant,
 } from '../../store/saas-admin.actions';
 import { selectTenantsList } from '../../store/saas-admin.selectors';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 
 type Filter = 'all' | 'active' | 'inactive' | 'deleted';
 
@@ -25,15 +26,14 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
   providers: [ConfirmationService],
   imports: [
     RouterLink, TableModule, ButtonModule, TagModule, InputTextModule,
-    TooltipModule, ConfirmDialogModule, TenantStatusPipe,
+    TooltipModule, ConfirmDialogModule, TenantStatusPipe, PageHeaderComponent,
   ],
   template: `
-    <header class="page-header">
-      <h1>Tenants</h1>
+    <ui-page-header heading="Tenants">
       <a routerLink="/saas/tenants/nuevo">
-        <p-button label="Nuevo tenant" icon="pi pi-plus" />
+        <p-button label="Nuevo tenant" />
       </a>
-    </header>
+    </ui-page-header>
 
     <div class="toolbar">
       <span class="p-input-icon-left toolbar__search">
@@ -93,9 +93,6 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
   `,
   styles: [`
     :host { display: block; color: #e2e8f0; }
-    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .page-header h1 { color: #fde68a; margin: 0; font-size: 22px; }
-    .page-header a { text-decoration: none; }
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .toolbar__search input { min-width: 280px; }
     .row-deleted td { text-decoration: line-through; color: #94a3b8; }

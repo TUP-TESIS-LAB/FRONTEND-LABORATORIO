@@ -67,9 +67,9 @@ const SEX_LABEL: Record<string, string> = {
           }
         </div>
         <div class="pat-summary__body pat-summary__body--muted">
-          <span class="pat-summary__contact"><i class="pi pi-phone"></i>{{ data().mobile || '—' }}</span>
+          <span class="pat-summary__contact">{{ data().mobile || '—' }}</span>
           <span class="pat-summary__sep">·</span>
-          <span class="pat-summary__contact"><i class="pi pi-envelope"></i>{{ data().email || '—' }}</span>
+          <span class="pat-summary__contact">{{ data().email || '—' }}</span>
         </div>
       </section>
 

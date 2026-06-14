@@ -6,17 +6,15 @@ import { TagModule } from 'primeng/tag';
 import { loadTenants } from '../../store/saas-admin.actions';
 import { selectDashboardCounts, selectTenantsList } from '../../store/saas-admin.selectors';
 import { TenantStatusPipe } from '../../models/tenant-status.pipe';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 
 @Component({
   selector: 'saas-dashboard-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonModule, TagModule, TenantStatusPipe],
+  imports: [RouterLink, ButtonModule, TagModule, TenantStatusPipe, PageHeaderComponent],
   template: `
-    <header class="page-header">
-      <h1>Dashboard</h1>
-      <p>Resumen de la plataforma.</p>
-    </header>
+    <ui-page-header heading="Dashboard" subtitle="Resumen de la plataforma." />
 
     <section class="stats">
       <div class="stat"><div class="stat__label">Total tenants</div><div class="stat__num">{{ counts().total }}</div></div>
@@ -28,7 +26,7 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
     <section class="quick">
       <h2>Acciones rápidas</h2>
       <div class="quick__actions">
-        <a routerLink="/saas/tenants"><p-button label="Ver todos los tenants" icon="pi pi-building" [outlined]="true" /></a>
+        <a routerLink="/saas/tenants"><p-button label="Ver todos los tenants" [outlined]="true" /></a>
       </div>
     </section>
 
@@ -58,8 +56,6 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
   `,
   styles: [`
     :host { display: block; color: #e2e8f0; }
-    .page-header h1 { color: #fde68a; margin: 0 0 4px; font-size: 22px; }
-    .page-header p  { color: #94a3b8; margin: 0 0 16px; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
     .stat { background: rgba(255,255,255,.04); border-radius: 10px; padding: 16px; }
     .stat__num   { font-size: 28px; font-weight: 700; color: #fde68a; line-height: 1; }

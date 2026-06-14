@@ -27,7 +27,7 @@ import {
       <form [formGroup]="form" class="pat-form" (ngSubmit)="save()" style="padding:0">
         <section class="pat-form__card">
           <div class="pat-form__card-header">
-            <span><i class="pi pi-envelope" style="margin-right:6px"></i>Credenciales Gmail</span>
+            <span>Credenciales Gmail</span>
           </div>
 
           <p class="ui-text-sm ui-text-muted" *ngIf="config()?.configured; else notConfiguredLabel">
@@ -83,7 +83,7 @@ import {
       <!-- Card 2: Test email -->
       <section class="pat-form__card">
         <div class="pat-form__card-header">
-          <span><i class="pi pi-send" style="margin-right:6px"></i>Enviar email de prueba</span>
+          <span>Enviar email de prueba</span>
         </div>
 
         <div class="pat-form__grid pat-form__grid--full">

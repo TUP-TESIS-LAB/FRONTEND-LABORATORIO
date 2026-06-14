@@ -36,7 +36,7 @@ import { presetForRole } from '../../../models/role-section-presets';
         <div class="pat-form" style="flex:1; overflow-y:auto;">
           <section class="pat-form__card">
             <div class="pat-form__card-header">
-              <span><i class="pi pi-user" style="margin-right:6px"></i>Datos del usuario</span>
+              <span>Datos del usuario</span>
             </div>
             <div class="pat-form__grid">
               <div class="pat-form__field">
@@ -64,7 +64,7 @@ import { presetForRole } from '../../../models/role-section-presets';
 
           <section class="pat-form__card">
             <div class="pat-form__card-header">
-              <span><i class="pi pi-building" style="margin-right:6px"></i>Sucursal</span>
+              <span>Sucursal</span>
             </div>
             <div class="pat-form__grid pat-form__grid--full">
               <div class="pat-form__field">
@@ -84,7 +84,7 @@ import { presetForRole } from '../../../models/role-section-presets';
 
           <section class="pat-form__card">
             <div class="pat-form__card-header">
-              <span><i class="pi pi-id-card" style="margin-right:6px"></i>Rol</span>
+              <span>Rol</span>
             </div>
             <div class="pat-form__grid pat-form__grid--full">
               <div class="pat-form__field">
@@ -103,7 +103,7 @@ import { presetForRole } from '../../../models/role-section-presets';
 
           <section class="pat-form__card">
             <div class="pat-form__card-header">
-              <span><i class="pi pi-th-large" style="margin-right:6px"></i>Accesos (secciones)</span>
+              <span>Accesos (secciones)</span>
             </div>
             <rp-secciones-checklist
               [catalog]="catalog"

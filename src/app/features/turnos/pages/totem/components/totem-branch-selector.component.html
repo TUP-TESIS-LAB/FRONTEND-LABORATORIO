@@ -26,8 +26,6 @@
 
     <p-button
       label="Continuar"
-      icon="pi pi-arrow-right"
-      iconPos="right"
       [loading]="loading()"
       [disabled]="!slugInput.trim() || loading()"
       (onClick)="loadBranches()"
@@ -50,14 +48,12 @@
     <div class="actions">
       <p-button
         label="Volver"
-        icon="pi pi-arrow-left"
         severity="secondary"
         [text]="true"
         (onClick)="backToSlug()"
       />
       <p-button
         label="Confirmar"
-        icon="pi pi-check"
         [disabled]="selectedId === null"
         (onClick)="confirm()"
       />

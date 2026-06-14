@@ -35,7 +35,6 @@ import { BranchOption } from '../../models/extraction.model';
       [attr.aria-haspopup]="hasOptions() ? 'menu' : null"
       (click)="onTriggerClick($event)"
     >
-      <i class="pi pi-map-marker pin"></i>
       <span class="label">{{ label() }}</span>
       @if (hasOptions()) {
         <i class="pi pi-chevron-down caret"></i>

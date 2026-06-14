@@ -14,11 +14,10 @@ import { Actions, ofType } from '@ngrx/effects';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { race, Subject } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
-import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
-import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { AGENDA_WIZARD_STEPS } from './agenda-wizard.steps';
 
 import { StepSucursalComponent } from './steps/step-sucursal.component';
@@ -54,9 +53,8 @@ const ISO_TO_WEEKDAY: Record<number, typeof WEEK_DAYS[number]> = {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ButtonModule,
     ToastModule,
-    FormStepperHeaderComponent,
+    WizardShellComponent,
     StepSucursalComponent,
     StepHorarioComponent,
     StepPeriodoComponent,

@@ -19,6 +19,7 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
 import { TableColumn } from '@shared/ui/models/table-column.model';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { AnalysisService } from '@features/analitica/services/analysis.service';
 import {
   loadPatient, loadPatientFailure, clearSelectedPatient, togglePatientActive,
@@ -42,34 +43,28 @@ import { ContactType, Patient } from '../../models/patient.model';
   imports: [
     RouterLink, ButtonModule, TabsModule, TagModule, ConfirmDialogModule,
     DatePipe, DniPipe, AgePipe, CurrencyArPipe, EmptyStateComponent,
-    DataTableComponent, UiCellDirective, UiRowExpansionDirective,
+    DataTableComponent, UiCellDirective, UiRowExpansionDirective, PageHeaderComponent,
   ],
   template: `
     @if (patient(); as p) {
-      <div class="p-6">
+      <div>
         <a routerLink="/pacientes" class="inline-block mb-3">
-          <p-button [text]="true" icon="pi pi-arrow-left" label="Volver a Pacientes" />
+          <p-button [text]="true" label="Volver a Pacientes" />
         </a>
-        <header class="flex items-center justify-between mb-3">
-          <h1 class="text-2xl font-semibold">
-            {{ p.lastName }}, {{ p.firstName }}
-            <p-tag [value]="statusLabel(p.status)" severity="info" class="ml-2" />
-            @if (!p.active) { <p-tag value="Inactivo" severity="danger" class="ml-1" /> }
-          </h1>
+        <ui-page-header [heading]="p.lastName + ', ' + p.firstName">
+          <p-tag [value]="statusLabel(p.status)" severity="info" />
+          @if (!p.active) { <p-tag value="Inactivo" severity="danger" /> }
           @if (canMutate()) {
-            <div class="flex gap-2">
-              <a [routerLink]="['/pacientes', p.id, 'editar']">
-                <p-button severity="secondary" [outlined]="true" icon="pi pi-pencil" label="Editar" />
-              </a>
-              <p-button
-                severity="danger"
-                [outlined]="true"
-                [icon]="p.active ? 'pi pi-times-circle' : 'pi pi-refresh'"
-                [label]="p.active ? 'Desactivar' : 'Reactivar'"
-                (onClick)="confirmToggle()" />
-            </div>
+            <a [routerLink]="['/pacientes', p.id, 'editar']">
+              <p-button severity="secondary" [outlined]="true" label="Editar" />
+            </a>
+            <p-button
+              severity="danger"
+              [outlined]="true"
+              [label]="p.active ? 'Desactivar' : 'Reactivar'"
+              (onClick)="confirmToggle()" />
           }
-        </header>
+        </ui-page-header>
 
         <p-tabs value="data">
           <p-tablist>
@@ -86,11 +81,11 @@ import { ContactType, Patient } from '../../models/patient.model';
                 <div><div class="text-xs text-surface-500">Edad</div><div>{{ p.birthDate ? (p.birthDate | age) + ' años' : '—' }}</div></div>
                 <div><div class="text-xs text-surface-500">Género</div><div>{{ genderLabel(p.gender) }}</div></div>
                 <div><div class="text-xs text-surface-500">Sexo registral</div><div>{{ sexLabel(p.sexAtBirth) }}</div></div>
-                <div><div class="text-xs text-surface-500"><i class="pi pi-phone mr-1"></i>Celular</div><div>{{ primaryContact(p, 'PHONE') || '—' }}</div></div>
-                <div><div class="text-xs text-surface-500"><i class="pi pi-envelope mr-1"></i>Email</div><div>{{ primaryContact(p, 'EMAIL') || '—' }}</div></div>
+                <div><div class="text-xs text-surface-500">Celular</div><div>{{ primaryContact(p, 'PHONE') || '—' }}</div></div>
+                <div><div class="text-xs text-surface-500">Email</div><div>{{ primaryContact(p, 'EMAIL') || '—' }}</div></div>
               </div>
               <div class="mt-4 pt-3 border-t">
-                <div class="text-xs text-surface-500 mb-1"><i class="pi pi-map-marker mr-1"></i>Domicilio</div>
+                <div class="text-xs text-surface-500 mb-1">Domicilio</div>
                 <div>{{ addressLine(p) || 'Sin domicilio cargado' }}</div>
               </div>
             </p-tabpanel>

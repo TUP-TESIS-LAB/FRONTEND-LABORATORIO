@@ -43,23 +43,32 @@ import { StepAutofocusDirective } from '@shared/ui/directives/step-autofocus.dir
     </ol>
   `,
   styles: [`
-    :host { --pat-step-line: #e2e8f0; --pat-step-muted: #64748b; --pat-step-mute2: #94a3b8; --pat-step-hover: #f1f5f9; --pat-step-text: var(--ds-text, #1a1a2e); --pat-step-primary: var(--brand-primary, #2563eb); --pat-step-success: var(--ds-success, #22c55e); }
-    .pat-stepper { display:flex; align-items:center; gap:10px; list-style:none; margin:0; padding:16px 28px; border-bottom:1px solid var(--pat-step-line); background:#fff; }
-    .pat-stepper__item { display:flex; align-items:center; gap:10px; color:var(--pat-step-muted); cursor:default; padding:6px 10px; border-radius:8px; transition:background 120ms ease; }
+    :host {
+      --pat-step-line: var(--ds-border, #e8e9f0);
+      --pat-step-soft: #eef0f5;
+      --pat-step-muted: var(--ds-text-muted, #7c8092);
+      --pat-step-mute2: #aeb2c0;
+      --pat-step-hover: #f5f6f9;
+      --pat-step-text: var(--ds-text, #22243a);
+      --pat-step-primary: var(--brand-primary, #2563eb);
+      --pat-step-success: var(--ds-success, #22c55e);
+    }
+    .pat-stepper { display:flex; align-items:center; gap:8px; list-style:none; margin:0; padding:18px 28px; border-bottom:1px solid var(--pat-step-soft); background:#fff; }
+    .pat-stepper__item { display:flex; align-items:center; gap:11px; color:var(--pat-step-muted); cursor:default; padding:8px 14px; border-radius:12px; transition:background 140ms ease, color 140ms ease; }
     .pat-stepper__item.is-clickable { cursor:pointer; }
     .pat-stepper__item.is-clickable:hover { background:var(--pat-step-hover); }
-    .pat-stepper__num { width:28px; height:28px; flex:0 0 28px; border-radius:50%; border:1.5px solid var(--pat-step-line); display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:#fff; color:var(--pat-step-muted); }
+    .pat-stepper__num { width:32px; height:32px; flex:0 0 32px; border-radius:50%; border:1.5px solid var(--pat-step-line); display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; background:#fff; color:var(--pat-step-mute2); transition:background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
     .pat-stepper__item.is-done .pat-stepper__num { background:var(--pat-step-success); border-color:var(--pat-step-success); color:#fff; }
     .pat-stepper__item.is-done { color:var(--pat-step-text); }
-    .pat-stepper__item.is-current .pat-stepper__num { background:var(--pat-step-primary); border-color:var(--pat-step-primary); color:#fff; box-shadow:0 0 0 4px color-mix(in srgb, var(--pat-step-primary) 18%, transparent); }
-    .pat-stepper__item.is-current { color:var(--pat-step-primary); font-weight:600; }
+    .pat-stepper__item.is-current { color:var(--pat-step-primary); font-weight:700; background:color-mix(in srgb, var(--pat-step-primary) 8%, #fff); }
+    .pat-stepper__item.is-current .pat-stepper__num { background:var(--pat-step-primary); border-color:var(--pat-step-primary); color:#fff; box-shadow:0 0 0 4px color-mix(in srgb, var(--pat-step-primary) 16%, transparent); }
     .pat-stepper__item.is-locked { color:var(--pat-step-mute2); }
     .pat-stepper__item.is-locked .pat-stepper__num { color:var(--pat-step-mute2); }
-    .pat-stepper__lbl { display:inline-flex; flex-direction:column; line-height:1.2; }
-    .pat-stepper__title { font-size:13px; font-weight:600; }
+    .pat-stepper__lbl { display:inline-flex; flex-direction:column; line-height:1.25; }
+    .pat-stepper__title { font-size:13.5px; font-weight:600; }
     .pat-stepper__sub { font-size:11px; font-weight:400; color:var(--pat-step-muted); }
     .pat-stepper__item.is-locked .pat-stepper__sub { color:var(--pat-step-mute2); }
-    .pat-stepper__connector { flex:1; height:2px; background:var(--pat-step-line); margin:0 2px; border-radius:2px; transition:background 200ms ease; }
+    .pat-stepper__connector { flex:1; height:2px; background:var(--pat-step-line); margin:0 2px; border-radius:999px; transition:background 200ms ease; }
     .pat-stepper__connector.is-done { background:var(--pat-step-success); }
   `],
 })
@@ -74,6 +83,14 @@ export class FormStepperHeaderComponent {
    * dirigidos por una máquina de estados, donde el avance no es libre.
    */
   readonly clickable = input<boolean>(true);
+  /**
+   * Set opcional de pasos COMPLETADOS (los que muestran el tilde de "done").
+   * Permite desacoplar "completado" de "visitado/navegable": un wizard puede
+   * desbloquear todos los pasos para navegación libre (vía `visited`) sin que
+   * por eso aparezcan tildados como hechos. Si es `null`, se usa el comportamiento
+   * legacy (visitado y no-actual = completado), que conservan los demás wizards.
+   */
+  readonly completed = input<ReadonlySet<number> | null>(null);
   /**
    * Guard opcional de validación: se consulta ANTES de dejar el paso actual al
    * navegar desde el header. Si devuelve `false`, no se emite `stepSelected` (no
@@ -95,7 +112,14 @@ export class FormStepperHeaderComponent {
     });
   }
 
-  readonly isDone = (i: number) => this.visited().has(i) && i !== this.currentIndex();
+  readonly isDone = (i: number) => {
+    if (i === this.currentIndex()) return false;
+    const done = this.completed();
+    // Con set explícito de completados, el tilde sale SOLO de ahí (no de visited).
+    if (done) return done.has(i);
+    // Fallback legacy: visitado y no-actual = completado.
+    return this.visited().has(i);
+  };
   readonly isLocked = (i: number) => !this.visited().has(i) && i !== this.currentIndex();
   readonly isClickable = (i: number) => this.clickable() && i !== this.currentIndex() && this.visited().has(i);
 

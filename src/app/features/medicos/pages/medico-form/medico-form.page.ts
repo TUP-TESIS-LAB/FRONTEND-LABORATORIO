@@ -9,7 +9,7 @@ import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import {
   addDoctor, addDoctorSuccess, updateDoctor, updateDoctorSuccess,
@@ -34,27 +34,19 @@ function emptyToNull(v: string | null | undefined): string | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    FormStepperHeaderComponent, DatosStepComponent, ContactoStepComponent, FirmaStepComponent, ResumenStepComponent,
+    WizardShellComponent, DatosStepComponent, ContactoStepComponent, FirmaStepComponent, ResumenStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
-      <header class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-b sticky top-0 z-10">
-        <p-button [text]="true" icon="pi pi-arrow-left" label="Volver" type="button" (onClick)="onBack()" />
-        <h1 class="text-base font-semibold m-0">
-          {{ isEdit() ? 'Editar médico' : 'Nuevo médico derivante' }}
-          @if (isEdit() && doctor(); as d) {
-            <span class="text-surface-500 font-normal ml-2">· {{ d.lastName }}, {{ d.firstName }}</span>
-          }
-        </h1>
-        <nav class="ml-auto text-xs text-surface-500">Médicos › {{ isEdit() ? 'Editar' : 'Nuevo' }}</nav>
-      </header>
-
-      <ui-form-stepper-header
-        [steps]="steps" [currentIndex]="currentStep()" [visited]="visited()"
-        (stepSelected)="goToStep($event)" />
-
-      <div class="flex-1 overflow-y-auto px-8 py-6">
+      <ui-wizard-shell
+        [customFooter]="true"
+        [heading]="pageHeading()"
+        [breadcrumb]="'Médicos › ' + (isEdit() ? 'Editar' : 'Nuevo')"
+        [steps]="steps"
+        [currentIndex]="currentStep()"
+        [visited]="visited()"
+        (stepSelected)="goToStep($event)">
         @if (saveError(); as err) {
           <div class="mb-3 p-3 rounded" style="background:#fef2f2;border:1px solid var(--ds-danger);color:var(--ds-danger);">
             {{ saveErrorMessage(err) }}
@@ -66,25 +58,24 @@ function emptyToNull(v: string | null | undefined): string | null {
           @case (2) { <med-firma-step [group]="firmaGroup" /> }
           @case (3) { <med-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
         }
-      </div>
 
-      <footer class="flex items-center gap-3 px-6 py-3 bg-surface-0 border-t sticky bottom-0">
-        <span class="text-xs text-surface-500">{{ formStatusLabel() }}</span>
-        <span class="text-xs text-surface-400 ml-2">Paso {{ currentStep() + 1 }} de {{ steps.length }}</span>
-        <div class="ml-auto flex flex-row-reverse gap-2">
-          @if (showSubmitButton()) {
-            <p-button [label]="isEdit() ? 'Guardar cambios' : 'Registrar médico'" type="submit"
-                      severity="success" [loading]="pending()" [disabled]="!canSubmit()" />
-          }
-          @if (showContinueButton()) {
-            <p-button label="Continuar →" type="button" [disabled]="!canContinue()" (onClick)="goNext()" />
-          }
-          @if (!isFirstStep()) {
-            <p-button label="← Atrás" [text]="true" type="button" (onClick)="goBack()" />
-          }
-          <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
-        </div>
-      </footer>
+        <ng-container wizardFooter>
+          <span class="text-xs text-surface-400 hidden sm:inline">{{ formStatusLabel() }}</span>
+          <div class="flex flex-row-reverse gap-2">
+            @if (showSubmitButton()) {
+              <p-button [label]="isEdit() ? 'Guardar cambios' : 'Registrar médico'" type="submit"
+                        severity="success" [loading]="pending()" [disabled]="!canSubmit()" />
+            }
+            @if (showContinueButton()) {
+              <p-button label="Continuar" type="button" [disabled]="!canContinue()" (onClick)="goNext()" />
+            }
+            @if (!isFirstStep()) {
+              <p-button label="Atrás" [text]="true" type="button" (onClick)="goBack()" />
+            }
+            <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
+          </div>
+        </ng-container>
+      </ui-wizard-shell>
       <p-confirmDialog />
     </form>
   `,
@@ -128,6 +119,13 @@ export class MedicoFormPage implements OnDestroy {
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
 
   readonly isEdit = computed(() => { const v = this.id(); return v != null && v !== ''; });
+
+  /** Título de la página (lo consume `ui-wizard-shell`); en edición sufija el nombre. */
+  readonly pageHeading = computed(() => {
+    if (!this.isEdit()) return 'Nuevo médico derivante';
+    const d = this.doctor();
+    return d ? `Editar médico · ${d.lastName}, ${d.firstName}` : 'Editar médico';
+  });
 
   readonly datosValid = computed(() => { void this.value(); void this.status(); return this.datosGroup.valid; });
   readonly contactoValid = computed(() => { void this.value(); void this.status(); return this.contactoGroup.valid; });
