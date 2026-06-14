@@ -114,3 +114,23 @@ export function toValidationListRow(r: StudyListItemResponse): ValidationListRow
     signedAnalysisCount: r.signedAnalysisCount,
   };
 }
+
+export interface DetalleDeterminacion {
+  determinationId: number; name: string; value: string;
+  unit: string; referenceRange: string;
+  aggregateOutcome: ValidationOutcome | null;
+  manualOutcome: ValidationOutcome | null;
+  outOfRange: boolean;
+}
+export interface DetalleResultado {
+  resultId: number; status: ResultStatus; sectionId: number | null;
+  determinations: DetalleDeterminacion[];
+}
+export interface DetalleEstudioHeader {
+  protocolId: number; currentStatus: StudyStatus;
+  expectedResultsCount: number; signedResultsCount: number; patientId: number;
+}
+export interface DetalleEstudioResponse { study: DetalleEstudioHeader; results: DetalleResultado[]; }
+export interface DetalleEstudio extends DetalleEstudioResponse {
+  patientName?: string; patientSex?: string | null; patientBirthDate?: string | null;
+}
