@@ -12,19 +12,20 @@ export interface DeterminationCatalogEntry {
 export interface GridCell { determinationId: number; value: string; }
 export interface GridRow { catalogId: number; name: string; unit: string | null; cells: Record<number, GridCell | null>; }
 export interface GridSection { analysisCatalogId: number; analysisName: string; resultIds: number[]; rows: GridRow[]; }
-export interface ResultGrid { protocolId: number; sections: GridSection[]; }
+export interface ResultGrid { protocolIds: number[]; sections: GridSection[]; resultLabels: Record<number, string>; }
 
 export interface BuildGridInput {
-  protocolId: number;
+  protocolIds: number[];
   results: AnalyticalResult[];
   determinationsByResult: Record<number, Determination[]>;
   catalogById: Record<number, DeterminationCatalogEntry>;
   analysisNameById: Record<number, string>;
+  patientNameById: Record<number, string>;
 }
 
 /** Ensambla el modelo de grilla: secciones por análisis, filas = determination-catalog, columnas = results. */
 export function buildResultGrid(input: BuildGridInput): ResultGrid {
-  const { protocolId, results, determinationsByResult, catalogById, analysisNameById } = input;
+  const { protocolIds, results, determinationsByResult, catalogById, analysisNameById, patientNameById } = input;
 
   const analysisOfResult = new Map<number, number>();
   for (const r of results) {
@@ -62,5 +63,8 @@ export function buildResultGrid(input: BuildGridInput): ResultGrid {
       return { analysisCatalogId, analysisName: analysisNameById[analysisCatalogId] ?? `#${analysisCatalogId}`, resultIds, rows };
     });
 
-  return { protocolId, sections };
+  const resultLabels: Record<number, string> = {};
+  for (const r of results) resultLabels[r.id] = patientNameById[r.patientId] ?? `#${r.id}`;
+
+  return { protocolIds, sections, resultLabels };
 }

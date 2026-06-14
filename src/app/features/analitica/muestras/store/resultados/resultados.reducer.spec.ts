@@ -10,11 +10,11 @@ import {
 import { selectGrid, selectResultadosLoading, selectResultadosSaving, selectResultadosError } from './resultados.selectors';
 import type { ResultGrid } from '../../models/resultado.model';
 
-const grid: ResultGrid = { protocolId: 9, sections: [] };
+const grid: ResultGrid = { protocolIds: [9], sections: [], resultLabels: {} };
 
 describe('resultadosReducer', () => {
   it('loadGrid → loading=true', () => {
-    expect(resultadosReducer(initialResultadosState, loadGrid({ protocolId: 9 })).loading).toBe(true);
+    expect(resultadosReducer(initialResultadosState, loadGrid({ protocolIds: [9] })).loading).toBe(true);
   });
   it('loadGridSuccess → grid + loading false', () => {
     const s = resultadosReducer(initialResultadosState, loadGridSuccess({ grid }));

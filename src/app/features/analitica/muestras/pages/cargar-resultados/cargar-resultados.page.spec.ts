@@ -9,7 +9,7 @@ import { selectGrid, selectResultadosLoading, selectResultadosError } from '../.
 import type { ResultGrid } from '../../models/resultado.model';
 
 const SMOKE_TEMPLATE = `<section><h1>Cargar resultados</h1><p>{{ bannerText }}</p></section>`;
-const grid: ResultGrid = { protocolId: 9, sections: [] };
+const grid: ResultGrid = { protocolIds: [9], sections: [], resultLabels: {} };
 
 function setup(): { fx: ComponentFixture<CargarResultadosPage>; store: MockStore } {
   TestBed.resetTestingModule();
@@ -18,7 +18,7 @@ function setup(): { fx: ComponentFixture<CargarResultadosPage>; store: MockStore
     providers: [
       provideNoopAnimations(),
       MessageService,
-      { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: (k: string) => (k === 'protocolId' ? '9' : null) } } } },
+      { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: (k: string) => (k === 'protocols' ? '50002,50003' : null) } } } },
       provideMockStore({ selectors: [
         { selector: selectGrid, value: grid },
         { selector: selectResultadosLoading, value: false },
@@ -34,9 +34,8 @@ function setup(): { fx: ComponentFixture<CargarResultadosPage>; store: MockStore
 }
 
 describe('CargarResultadosPage (smoke)', () => {
-  it('expone protocolId leído de la ruta', () => {
-    const { fx } = setup();
-    expect(fx.componentInstance.protocolId).toBe(9);
+  it('lee protocolIds del query param', () => {
+    expect(setup().fx.componentInstance.protocolIds).toEqual([50002, 50003]);
   });
   it('tiene el texto del banner UX (pendiente)', () => {
     const { fx } = setup();

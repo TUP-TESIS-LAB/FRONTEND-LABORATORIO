@@ -20,7 +20,7 @@ export interface SaveResultPayload { resultId: number; items: BatchDetermination
               <thead>
                 <tr>
                   <th class="text-left p-2">Determinación</th>
-                  @for (rid of sec.resultIds; track rid) { <th class="p-2">#{{ rid }}</th> }
+                  @for (rid of sec.resultIds; track rid) { <th class="p-2">{{ grid().resultLabels[rid] ?? ('#' + rid) }}</th> }
                 </tr>
               </thead>
               <tbody>
