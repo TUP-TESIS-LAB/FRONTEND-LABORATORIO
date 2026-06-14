@@ -12,7 +12,7 @@ import { selectValidationView } from './postanalitica.selectors';
 import {
   loadValidation, loadValidationFailure,
   validateDet, validateDetSuccess, validateDetFailure,
-  validateAll, validateAllSuccess,
+  validateAll, validateAllSuccess, validateAllFailure,
 } from './postanalitica.actions';
 
 describe('PostanaliticaEffects', () => {
@@ -110,8 +110,24 @@ describe('PostanaliticaEffects', () => {
     expect(action).toEqual(validateAllSuccess());
   });
 
+  it('validateAll$ failure mapea error', async () => {
+    const error = new HttpErrorResponse({ status: 422 });
+    api.validateAll.mockReturnValue(throwError(() => error));
+    actions$ = of(validateAll({ resultId: 1, outcome: 'FAIL' }));
+    const effects = TestBed.inject(PostanaliticaEffects);
+    const action = await firstValueFrom(effects.validateAll$);
+    expect(action).toEqual(validateAllFailure({ error }));
+  });
+
   it('reloadAfterMutation$ re-dispara loadValidation con el protocolId de la vista', async () => {
     actions$ = of(validateDetSuccess());
+    const effects = TestBed.inject(PostanaliticaEffects);
+    const action = await firstValueFrom(effects.reloadAfterMutation$);
+    expect(action).toEqual(loadValidation({ protocolId: 9 }));
+  });
+
+  it('reloadAfterMutation$ también se dispara por validateAllSuccess', async () => {
+    actions$ = of(validateAllSuccess());
     const effects = TestBed.inject(PostanaliticaEffects);
     const action = await firstValueFrom(effects.reloadAfterMutation$);
     expect(action).toEqual(loadValidation({ protocolId: 9 }));

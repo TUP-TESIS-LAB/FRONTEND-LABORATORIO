@@ -29,7 +29,7 @@ export function buildValidationView(input: BuildValidationViewInput): Validation
   const results: ValidationResultVM[] = resultsWithValidation.map(rwv => ({
     resultId: rwv.result.id,
     status: rwv.result.status,
-    rows: rwv.validations.map(v => ({
+    rows: (rwv.validations ?? []).map(v => ({
       determinationId: v.validation.determinationId,
       name: nameByDeterminationId[v.validation.determinationId] ?? `#${v.validation.determinationId}`,
       aggregateOutcome: v.validation.aggregateOutcome,
