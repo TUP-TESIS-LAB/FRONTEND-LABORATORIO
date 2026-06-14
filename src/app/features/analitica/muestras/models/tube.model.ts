@@ -7,6 +7,7 @@ export interface TubeAnalysis { labelId: number; barcode: string; name: string; 
 /** Fila por tubo: extiende el view-model Sample con el detalle de etiquetas. */
 export interface Tube extends Sample {
   sampleId: number | null;
+  protocolId: number;
   labelIds: number[];
   analyses: TubeAnalysis[];
   rejectionReason?: string | null;
@@ -29,6 +30,7 @@ export function groupTubes(items: LabelWorklistItem[], branchName: string): Tube
     return {
       id: first.sampleId != null ? `t${first.sampleId}` : `l${first.labelId}`,
       sampleId: first.sampleId,
+      protocolId: first.protocolId,
       labelIds: labels.map(l => l.labelId),
       analyses: labels.map(l => ({ labelId: l.labelId, barcode: l.barcode, name: l.analysisName })),
       barcode: labels.map(l => l.barcode).join(' '),  // scan matchea cualquiera

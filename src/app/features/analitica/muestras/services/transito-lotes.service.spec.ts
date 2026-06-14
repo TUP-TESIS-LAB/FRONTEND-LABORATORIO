@@ -25,6 +25,7 @@ function tube(sampleId: number | null, labelIds: number[]): Tube {
   return {
     id: sampleId != null ? `t${sampleId}` : `l${labelIds[0]}`,
     sampleId,
+    protocolId: 0,
     labelIds,
     analyses: labelIds.map(l => ({ labelId: l, barcode: `BC-${l}`, name: 'Hemograma' })),
     barcode: labelIds.map(l => `BC-${l}`).join(' '),

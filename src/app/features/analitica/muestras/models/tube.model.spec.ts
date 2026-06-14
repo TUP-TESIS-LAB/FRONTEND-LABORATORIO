@@ -24,4 +24,12 @@ describe('groupTubes', () => {
     const tubes = groupTubes([item(60006, 50003, 'A'), item(60028, 50003, 'B', true)], 'Sede Central');
     expect(tubes[0].urgent).toBe(true);
   });
+
+  it('groupTubes propaga protocolId del primer label', () => {
+    const items = [
+      { labelId: 1, sampleId: 50, barcode: 'b1', protocolId: 77, analysisName: 'A', patientName: 'P', urgent: false, status: 'PROCESSING' as const, updatedAt: '2026-06-13T08:00:00Z' },
+    ];
+    const tubes = groupTubes(items, 'CENTRAL');
+    expect(tubes[0].protocolId).toBe(77);
+  });
 });
