@@ -1,6 +1,6 @@
 # Procesamiento — Arco 4: Validación postanalítica (sin firma)
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-104](https://exequielsantoro.atlassian.net/browse/KAN-104)
 > **Fecha:** 2026-06-14
 > **Rama:** `feat/procesamiento-validacion` (worktree `FRONTEND-LABORATORIO-validacion`, base `development`)
 > **Backend:** módulo `postanalitica` ya en development (endpoints validate/validate-all/sign).
