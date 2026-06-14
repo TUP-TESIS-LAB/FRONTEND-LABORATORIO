@@ -1,6 +1,6 @@
 # Procesamiento — Arco 3b: Grilla de carga de resultados
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-102](https://exequielsantoro.atlassian.net/browse/KAN-102)
 > **Fecha:** 2026-06-13
 > **Rama:** `feat/procesamiento-cargar-resultados` (worktree `FRONTEND-LABORATORIO-cargar`, base `development`)
 > **Backend:** Arco 3a (KAN-101, PR #71 merged) — endpoint `GET /resultados/{id}/determinations` + seed.

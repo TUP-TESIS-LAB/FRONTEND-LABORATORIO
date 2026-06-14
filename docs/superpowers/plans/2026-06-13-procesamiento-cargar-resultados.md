@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-102](https://exequielsantoro.atlassian.net/browse/KAN-102)
 > **Spec:** `docs/superpowers/specs/2026-06-13-procesamiento-cargar-resultados-design.md`
 > **Rama:** `feat/procesamiento-cargar-resultados` (worktree `FRONTEND-LABORATORIO-cargar`, base `development`)
 
