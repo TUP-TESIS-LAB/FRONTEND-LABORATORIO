@@ -67,6 +67,18 @@ export const ANALITICA_ROUTES: Routes = [
         title: 'Validación',
       },
       {
+        path: 'validacion',
+        canMatch: [sectionGuard('ANALITICA')],
+        loadComponent: () => import('./muestras/pages/validacion-protocolos/validacion-protocolos.page').then(m => m.ValidacionProtocolosPage),
+        title: 'Validación',
+      },
+      {
+        path: 'validacion/:protocolId',
+        canMatch: [sectionGuard('ANALITICA')],
+        loadComponent: () => import('./muestras/pages/validacion-protocolos/validar-protocolo/validar-protocolo.page').then(m => m.ValidarProtocoloPage),
+        title: 'Validar protocolo',
+      },
+      {
         path: 'descarte',
         canMatch: [sectionGuard('POSTANALITICA')],
         loadComponent: () => import('./muestras/pages/worklist/worklist.page').then(m => m.WorklistPage),
