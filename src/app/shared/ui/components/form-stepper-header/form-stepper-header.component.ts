@@ -84,6 +84,14 @@ export class FormStepperHeaderComponent {
    */
   readonly clickable = input<boolean>(true);
   /**
+   * Set opcional de pasos COMPLETADOS (los que muestran el tilde de "done").
+   * Permite desacoplar "completado" de "visitado/navegable": un wizard puede
+   * desbloquear todos los pasos para navegación libre (vía `visited`) sin que
+   * por eso aparezcan tildados como hechos. Si es `null`, se usa el comportamiento
+   * legacy (visitado y no-actual = completado), que conservan los demás wizards.
+   */
+  readonly completed = input<ReadonlySet<number> | null>(null);
+  /**
    * Guard opcional de validación: se consulta ANTES de dejar el paso actual al
    * navegar desde el header. Si devuelve `false`, no se emite `stepSelected` (no
    * se avanza). Por defecto permite navegar — los steppers existentes ya validan
@@ -104,7 +112,14 @@ export class FormStepperHeaderComponent {
     });
   }
 
-  readonly isDone = (i: number) => this.visited().has(i) && i !== this.currentIndex();
+  readonly isDone = (i: number) => {
+    if (i === this.currentIndex()) return false;
+    const done = this.completed();
+    // Con set explícito de completados, el tilde sale SOLO de ahí (no de visited).
+    if (done) return done.has(i);
+    // Fallback legacy: visitado y no-actual = completado.
+    return this.visited().has(i);
+  };
   readonly isLocked = (i: number) => !this.visited().has(i) && i !== this.currentIndex();
   readonly isClickable = (i: number) => this.clickable() && i !== this.currentIndex() && this.visited().has(i);
 

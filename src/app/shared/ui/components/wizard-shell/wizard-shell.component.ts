@@ -33,6 +33,7 @@ import { FormStep } from '@shared/ui/models/form-step';
         [steps]="steps()"
         [currentIndex]="currentIndex()"
         [visited]="visited()"
+        [completed]="completed()"
         [clickable]="clickable()"
         (stepSelected)="stepSelected.emit($event)" />
 
@@ -107,6 +108,12 @@ export class WizardShellComponent {
   readonly steps = input.required<readonly FormStep[]>();
   readonly currentIndex = input.required<number>();
   readonly visited = input.required<ReadonlySet<number>>();
+  /**
+   * Set opcional de pasos completados (tilde de "done"). Desacopla "completado"
+   * de "visitado/navegable" — útil para wizards que desbloquean todos los pasos
+   * para navegación libre sin marcarlos como hechos. Ver `FormStepperHeaderComponent`.
+   */
+  readonly completed = input<ReadonlySet<number> | null>(null);
   readonly clickable = input<boolean>(true);
 
   /** Ancho máximo del contenido centrado. Default 720px (estándar del DS). */

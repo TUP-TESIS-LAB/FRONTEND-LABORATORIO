@@ -56,6 +56,15 @@ export class SucursalAltaStepperPage {
    */
   protected readonly visited = signal<ReadonlySet<number>>(new Set([0]));
 
+  /**
+   * Set de pasos efectivamente COMPLETADOS (los que muestran el tilde verde).
+   * Es distinto de `visited`: tras crear la sucursal se desbloquean todos los
+   * pasos para navegación libre, pero solo se marca como hecho el que el usuario
+   * realmente dejó atrás. Sin esto, al dar "Continuar" en datos se tildaban los
+   * 5 pasos siguientes de golpe.
+   */
+  protected readonly completed = signal<ReadonlySet<number>>(new Set());
+
   protected readonly isFirstStep = computed(() => this.currentStep() === 0);
   protected readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
 
@@ -107,6 +116,10 @@ export class SucursalAltaStepperPage {
   onDatosCompleted(branchId: number) {
     this.creatingBranch.set(false);
     this.branchId.set(branchId);
+    // Datos quedó completado; se desbloquean todos los pasos para navegación
+    // libre (visited), pero solo datos está "hecho" (completed) — los demás
+    // se irán tildando a medida que el usuario los deje atrás con "Continuar".
+    this.completed.set(new Set([0]));
     this.visited.set(new Set([0, 1, 2, 3, 4, 5]));
     this.currentStep.set(1);
   }
@@ -142,6 +155,8 @@ export class SucursalAltaStepperPage {
 
   /** Avanza al siguiente paso (usado por el footer en steps >= 1). */
   goNext() {
+    // El paso que se deja atrás queda marcado como completado (tilde verde).
+    this.completed.update((s) => new Set(s).add(this.currentStep()));
     const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
     this.visited.update((s) => new Set([...s, next]));
     this.currentStep.set(next);
