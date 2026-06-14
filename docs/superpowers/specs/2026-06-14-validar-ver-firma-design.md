@@ -1,6 +1,6 @@
 # Pantalla "Validar / Ver + Firmar" de postanalítica — diseño
 
-> **Jira:** pendiente (crear al pasar a plan, salvo decisión explícita en contra).
+> **Jira:** [KAN-107](https://exequielsantoro.atlassian.net/browse/KAN-107)
 > **Fecha:** 2026-06-14
 > **Rama:** `feat/validacion-detalle-firma` (front) · `feat/validacion-detalle-firma-be` (back, a crear)
 > **Pantalla:** detalle de un protocolo en el subtab Validación, ruta `/analitica/validacion/:protocolId`.

@@ -2,6 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Jira:** [KAN-107](https://exequielsantoro.atlassian.net/browse/KAN-107)
 **Spec:** `docs/superpowers/specs/2026-06-14-validar-ver-firma-design.md`
 
 **Goal:** Reconstruir el detalle de un protocolo (`/analitica/validacion/:protocolId`) como pantalla real cableada al backend: cargar el detalle en una sola llamada (sin fan-out), validar determinaciones, y firmar resultado/estudio contra los endpoints de firma ya existentes; dejar el seed local en estado firmable.
