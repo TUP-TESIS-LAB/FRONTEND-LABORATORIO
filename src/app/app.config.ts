@@ -82,6 +82,10 @@ import { WORKSHEET_TEMPLATES_FEATURE_KEY } from '@features/analitica/muestras/st
 import { worksheetTemplatesReducer } from '@features/analitica/muestras/store/worksheet-templates/worksheet-templates.reducer';
 import { WorksheetTemplatesEffects } from '@features/analitica/muestras/store/worksheet-templates/worksheet-templates.effects';
 
+import { RESULTADOS_FEATURE_KEY } from '@features/analitica/muestras/store/resultados/resultados.state';
+import { resultadosReducer } from '@features/analitica/muestras/store/resultados/resultados.reducer';
+import { ResultadosEffects } from '@features/analitica/muestras/store/resultados/resultados.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -133,6 +137,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(MuestrasEffects),
     provideState(WORKSHEET_TEMPLATES_FEATURE_KEY, worksheetTemplatesReducer),
     provideEffects(WorksheetTemplatesEffects),
+    provideState(RESULTADOS_FEATURE_KEY, resultadosReducer),
+    provideEffects(ResultadosEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),
