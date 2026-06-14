@@ -13,7 +13,8 @@ const STATUS_LABEL: Record<ResultadoStatus, string> = { completa: 'Completa', pa
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DialogModule, ButtonModule],
   template: `
-    <p-dialog [visible]="visible()" (onHide)="onClose()" [modal]="true" [draggable]="false" [style]="{ width: '620px' }"
+    <p-dialog [visible]="visible()" (onHide)="onClose()" [modal]="true" [draggable]="false"
+              [style]="{ width: '620px' }" [breakpoints]="{ '768px': '100vw' }" styleClass="ui-dialog-fullscreen-mobile"
               header="¿Dar por completados los análisis?">
       <p class="text-sm opacity-70 mb-3">Solo los resultados con todas las determinaciones cargadas pueden marcarse como completados.</p>
       <div class="divide-y">
