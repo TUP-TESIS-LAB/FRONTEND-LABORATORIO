@@ -12,27 +12,25 @@
   <!-- Header GLOBAL de Recepción: vive por fuera de los tabs, así Box / Turnos del día /
        Nueva atención no se pierden al cambiar entre "Cola de espera" y "Atenciones". -->
   <ui-page-header heading="Recepción">
-    @if (enabled() === true) {
-      @if (branchContext.branchId() != null && currentUserId() > 0) {
-        <app-box-occupation-widget
-          [branchId]="branchContext.branchId()!"
-          [currentUserId]="currentUserId()"
-          [totalBoxes]="totalBoxes()" />
-      }
-      <p-button
-        label="Turnos del día"
-        severity="secondary"
-        [outlined]="true"
-        size="small"
-        [disabled]="branchContext.branchId() == null"
-        (onClick)="toggleDrawer()" />
-      <p-button
-        label="Nueva atención"
-        severity="primary"
-        size="small"
-        [disabled]="branchContext.branchId() == null"
-        (onClick)="onNuevaAtencionBlanco()" />
+    @if (branchContext.branchId() != null && currentUserId() > 0) {
+      <app-box-occupation-widget
+        [branchId]="branchContext.branchId()!"
+        [currentUserId]="currentUserId()"
+        [totalBoxes]="totalBoxes()" />
     }
+    <p-button
+      label="Turnos del día"
+      severity="secondary"
+      [outlined]="true"
+      size="small"
+      [disabled]="branchContext.branchId() == null"
+      (onClick)="toggleDrawer()" />
+    <p-button
+      label="Nueva atención"
+      severity="primary"
+      size="small"
+      [disabled]="branchContext.branchId() == null"
+      (onClick)="onNuevaAtencionBlanco()" />
   </ui-page-header>
 
   <p-tabs value="cola">
@@ -42,15 +40,7 @@
     </p-tablist>
     <p-tabpanels>
       <p-tabpanel value="cola">
-        @if (enabled() === true) {
-          <app-recepcion-con-totem />
-        } @else {
-          <app-recepcion-sin-totem
-            [branchId]="branchId"
-            [boxBranchId]="branchContext.branchId()"
-            [boxCurrentUserId]="currentUserId()"
-            [boxTotalBoxes]="totalBoxes()" />
-        }
+        <app-recepcion-con-totem />
       </p-tabpanel>
       <p-tabpanel value="atenciones">
         <lab-atencion-dashboard />
