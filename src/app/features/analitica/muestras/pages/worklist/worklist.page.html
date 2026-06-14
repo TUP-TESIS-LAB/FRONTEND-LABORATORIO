@@ -37,6 +37,10 @@
                 title="Seleccioná uno o más tubos para cargar sus resultados" (click)="cargarResultados()">
           Cargar resultados
         </button>
+        <button type="button" class="ws-btn ws-btn--ghost" [disabled]="selectedTubeProtocolId() == null"
+                title="Seleccioná un tubo para validar sus resultados" (click)="validarResultados()">
+          Validación
+        </button>
       </div>
     }
   </div>

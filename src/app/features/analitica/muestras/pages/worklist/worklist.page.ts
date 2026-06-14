@@ -85,6 +85,11 @@ export class WorklistPage {
     this.router.navigate(['/analitica/procesamiento/cargar'], { queryParams: { protocols: ids.join(',') } });
   }
 
+  validarResultados(): void {
+    const pid = this.selectedTubeProtocolId();
+    if (pid != null) this.router.navigate(['/analitica/procesamiento/validacion', pid]);
+  }
+
   private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
   private readonly descarteItems = this.store.selectSignal(selectDescarteItems);
   private readonly procesamientoItems = this.store.selectSignal(selectProcesamientoItems);

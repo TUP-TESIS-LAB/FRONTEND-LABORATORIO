@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Subject } from 'rxjs';
@@ -387,5 +387,19 @@ describe('WorklistPage (smoke)', () => {
     cmp.toggleRow(cmp.rows()[0].id); cmp.toggleRow(cmp.rows()[1].id);
     cmp.cargarResultados();
     expect(navigate).toHaveBeenCalledWith(['/analitica/procesamiento/cargar'], { queryParams: { protocols: '88,99' } });
+  });
+
+  it('Procesamiento: validarResultados navega a la ruta de validación del protocolo', () => {
+    const item: LabelWorklistItem = {
+      labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'Hemograma',
+      patientName: 'Marta', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
+    };
+    const fx = setup('procesamiento', [], [], [item]);
+    const cmp = fx.componentInstance;
+    const router = TestBed.inject(Router);
+    const nav = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    cmp.toggleRow(cmp.rows()[0].id);
+    cmp.validarResultados();
+    expect(nav).toHaveBeenCalledWith(['/analitica/procesamiento/validacion', 88]);
   });
 });
