@@ -334,7 +334,11 @@ export class AtencionWizardComponent {
     // En solo-lectura (terminal / post-secretaría) el estado del backend no mapea a
     // ningún paso del wizard, así que `stepFromState` es null. Mostramos el primer paso
     // por defecto para que el stepper navegable arranque en "Datos generales". (NEW-E)
-    if (fromState == null && this.readOnly()) return this.visibleSteps()[0] ?? null;
+    //
+    // En modo "creating" (/atencion/nueva) todavía NO hay detail → stepFromState es null;
+    // sin este fallback uiStep() quedaba null y `advanceCurrent()` no matcheaba 'datos',
+    // así que "Confirmar y seguir" no disparaba onConfirm() (no creaba la atención).
+    if (fromState == null && (this.readOnly() || this.creating())) return this.visibleSteps()[0] ?? null;
     return fromState;
   });
   protected readonly activeIndex = computed(() => {
