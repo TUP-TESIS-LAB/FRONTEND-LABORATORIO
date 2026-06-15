@@ -3,6 +3,7 @@ import { authGuard } from '@core/guards/auth.guard';
 import { rootGuard } from '@core/guards/root.guard';
 import { moduleActiveGuard } from '@core/guards/module-active.guard';
 import { sectionGuard } from '@core/guards/section.guard';
+import { landingRedirectGuard } from '@core/access/landing-redirect.guard';
 import { guestGuard } from '@core/guards/guest.guard';
 import { tenantResolver } from '@core/tenant/tenant.resolver';
 import { ModuleKey } from '@core/models/module-key.enum';
@@ -77,7 +78,11 @@ export const routes: Routes = [
 
       // NUEVAS RUTAS
       {
+        // Ya no hay "Inicio" en el sidebar. Al caer en home (post-login o fallback),
+        // el guard redirige a la primera sección accesible del usuario; si no tiene
+        // ninguna, deja ver el home como fallback (sin loop).
         path: 'home',
+        canActivate: [landingRedirectGuard],
         loadChildren: () =>
           import('./features/home/home.routes').then((m) => m.HOME_ROUTES),
       },

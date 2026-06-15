@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, of, retry } from 'rxjs';
+import { NotificationService } from '@core/services/notification.service';
 import { AbstractControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
@@ -118,6 +120,7 @@ export class UsuarioStepComponent {
   private readonly sectionsApi = inject(RolesPermisosApiService);
   private readonly usersApi = inject(UsuariosApiService);
   private readonly sucursalService = inject(SucursalService);
+  private readonly notification = inject(NotificationService);
 
   readonly roles = signal<Rol[]>([]);
   readonly catalog = signal<SectionResponse[]>([]);
@@ -125,8 +128,18 @@ export class UsuarioStepComponent {
   readonly branches = signal<Sucursal[]>([]);
 
   constructor() {
-    this.rolesApi.list().pipe(takeUntilDestroyed()).subscribe((r) => this.roles.set(r));
-    this.sectionsApi.getGrantable().pipe(takeUntilDestroyed()).subscribe((c) => this.catalog.set(c));
+    // Carga robusta: 1 reintento y, si falla, aviso al usuario (antes quedaba el
+    // dropdown de Rol silenciosamente vacío sin ninguna pista del error).
+    this.rolesApi.list().pipe(
+      retry(1),
+      catchError(() => { this.notification.error('No se pudieron cargar los roles. Reintentá en unos segundos.'); return of([] as Rol[]); }),
+      takeUntilDestroyed(),
+    ).subscribe((r) => this.roles.set(r));
+    this.sectionsApi.getGrantable().pipe(
+      retry(1),
+      catchError(() => { this.notification.error('No se pudieron cargar las secciones de permisos.'); return of([] as SectionResponse[]); }),
+      takeUntilDestroyed(),
+    ).subscribe((c) => this.catalog.set(c));
     this.usersApi.search({ size: 100 }).pipe(takeUntilDestroyed()).subscribe((page) =>
       this.users.set(page.content.map((u) => ({ id: u.id, label: `${u.lastName}, ${u.firstName} (${u.username})` }))));
     this.sucursalService.list().pipe(takeUntilDestroyed()).subscribe((res) =>

@@ -20,27 +20,31 @@ interface RenderGroup { label: string; rows: RenderRow[]; }
         <p>Este tenant no tiene módulos activos para conceder.</p>
       </div>
     } @else {
-      @for (g of groups(); track g.label) {
-        <section class="rp-group">
-          <h4 class="rp-group__title">{{ g.label }}</h4>
-          <div class="rp-group__items">
-            @for (row of g.rows; track row.code) {
-              <label class="rp-check">
-                <p-checkbox
-                  [binary]="true"
-                  [disabled]="disabled"
-                  [ngModel]="isChecked(row.code)"
-                  (ngModelChange)="toggle.emit(row.code)" />
-                <span>{{ row.label }}</span>
-              </label>
-            }
-          </div>
-        </section>
-      }
+      <div class="rp-groups">
+        @for (g of groups(); track g.label) {
+          <section class="rp-group">
+            <h4 class="rp-group__title">{{ g.label }}</h4>
+            <div class="rp-group__items">
+              @for (row of g.rows; track row.code) {
+                <label class="rp-check">
+                  <p-checkbox
+                    [binary]="true"
+                    [disabled]="disabled"
+                    [ngModel]="isChecked(row.code)"
+                    (ngModelChange)="toggle.emit(row.code)" />
+                  <span>{{ row.label }}</span>
+                </label>
+              }
+            </div>
+          </section>
+        }
+      </div>
     }
   `,
   styles: [`
-    .rp-group { margin-bottom: var(--space-4); }
+    /* Grilla: los grupos (folders del sidebar) en columnas para ocupar menos alto. */
+    .rp-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4) var(--space-6); align-items: start; }
+    .rp-group { margin-bottom: 0; }
     .rp-group__title { margin: 0 0 var(--space-2); font-size: 13px; color: var(--ds-text-muted); }
     .rp-group__items { display: flex; flex-direction: column; gap: var(--space-2); }
     .rp-check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
