@@ -171,15 +171,16 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.REGISTERING_ANALYSES), publicCode: 'ST-001' } as any);
     store.refreshState();
     fixture.detectChanges();
-    const h2 = fixture.nativeElement.querySelector('h2') as HTMLElement;
-    expect(h2.textContent).toContain('Atención ST-001');
+    // El heading vive ahora en el <h1> del ui-wizard-shell.
+    const h1 = fixture.nativeElement.querySelector('h1') as HTMLElement;
+    expect(h1.textContent).toContain('Atención ST-001');
     expect((fixture.componentInstance as any).headerTitle()).toBe('ST-001');
   });
 
   it('C6: si publicCode es null el título cae al attentionNumber', () => {
     setup(AttentionState.REGISTERING_ANALYSES); // makeDetail → publicCode: null, attentionNumber: 'A-001'
-    const h2 = fixture.nativeElement.querySelector('h2') as HTMLElement;
-    expect(h2.textContent).toContain('Atención A-001');
+    const h1 = fixture.nativeElement.querySelector('h1') as HTMLElement;
+    expect(h1.textContent).toContain('Atención A-001');
     expect((fixture.componentInstance as any).headerTitle()).toBe('A-001');
   });
 
