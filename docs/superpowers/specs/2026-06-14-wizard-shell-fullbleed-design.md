@@ -3,6 +3,7 @@
 > **Estado:** Diseño aprobado (2026-06-14).
 > **Rama:** `feat/wizard-shell-fullbleed` (worktree `.worktrees/wizard-fullbleed`, off `development`).
 > **Alcance:** Frontend puro (CSS). Sin backend, sin lógica.
+> **PRs (regla del usuario): 1 solo PR de FE** (este tópico no toca backend).
 > **Jira:** _(pendiente — `jira-workflow`)_
 
 ## Problema

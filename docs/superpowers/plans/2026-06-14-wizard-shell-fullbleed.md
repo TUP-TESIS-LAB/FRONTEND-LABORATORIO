@@ -131,7 +131,7 @@ Levantar el worktree (`start-worktree.ps1`, schema dedicado). Abrir y confirmar 
 
 Reducir el viewport a ≤767px y confirmar que el full-bleed usa `--space-4` y no rompe el layout en las mismas páginas.
 
-- [ ] **Step 4: PR contra `development`** linkeando el Jira.
+- [ ] **Step 4: PR — 1 solo PR de FE** contra `development` (este tópico no toca backend), linkeando el Jira.
 
 ---
 
