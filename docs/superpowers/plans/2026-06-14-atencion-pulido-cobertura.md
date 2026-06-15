@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **Jira:** _(pendiente — completar al pasar por `jira-workflow`, regla #1 de ambos repos)_
+> **Jira:** [KAN-109](https://exequielsantoro.atlassian.net/browse/KAN-109)
 >
 > **Spec:** `docs/superpowers/specs/2026-06-14-atencion-pulido-cobertura-design.md`
 
