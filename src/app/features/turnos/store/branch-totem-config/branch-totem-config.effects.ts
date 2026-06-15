@@ -13,10 +13,17 @@ export class BranchTotemConfigEffects {
   load$ = createEffect(() => this.actions$.pipe(
     ofType(A.loadBranchTotemConfig),
     switchMap(({ branchId }) => this.service.get(branchId).pipe(
-      map(config => A.loadBranchTotemConfigSuccess({ branchId, enabled: config.enabled })),
+      map(config => A.loadBranchTotemConfigSuccess({
+        branchId,
+        enabled: config.enabled,
+        atencionDisplayEnabled: config.atencionDisplayEnabled,
+        extraccionDisplayEnabled: config.extraccionDisplayEnabled,
+      })),
       catchError((err: HttpErrorResponse) => {
         if (err.status === 404) {
-          return of(A.loadBranchTotemConfigSuccess({ branchId, enabled: false }));
+          return of(A.loadBranchTotemConfigSuccess({
+            branchId, enabled: false, atencionDisplayEnabled: false, extraccionDisplayEnabled: false,
+          }));
         }
         return of(A.loadBranchTotemConfigFailure({ error: err }));
       }),

@@ -13,6 +13,16 @@ export const selectBranchTotemEnabled = createSelector(
   (s) => s?.enabled ?? null,
 );
 
+export const selectAtencionDisplayEnabled = createSelector(
+  selectBranchTotemConfigState,
+  (s) => s?.atencionDisplayEnabled ?? false,
+);
+
+export const selectExtraccionDisplayEnabled = createSelector(
+  selectBranchTotemConfigState,
+  (s) => s?.extraccionDisplayEnabled ?? false,
+);
+
 export const selectBranchTotemLoading = createSelector(
   selectBranchTotemConfigState,
   (s) => s?.loading ?? false,
