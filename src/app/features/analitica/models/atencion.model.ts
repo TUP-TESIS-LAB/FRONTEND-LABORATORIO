@@ -64,7 +64,7 @@ export interface AttentionResponse {
   deskAttentionBox: number | null;
   prescriptionFileUrl: string | null;
   isUrgent: boolean;
-  authorizationNumber: number | null;
+  authorizationNumber: string | null;
   observations: string | null;
   cancellationReason: string | null;
   cancelledAtState: AttentionState | null;
@@ -116,7 +116,7 @@ export interface AddAnalysisItemRequest {
 export interface AddAnalysisListRequest {
   items: AddAnalysisItemRequest[];
   isUrgent: boolean;
-  authorizationNumber: number | null;
+  authorizationNumber: string | null;
 }
 
 export interface AddPaymentRequest {
@@ -133,6 +133,10 @@ export interface AddObservationsRequest {
 
 export interface SetCopaymentRequest {
   copaymentAmount: number | null;
+}
+
+export interface SetAuthorizationNumberRequest {
+  authorizationNumber: string | null;
 }
 
 // Catalog model (CORE) — used by the analysis picker in the atención wizard

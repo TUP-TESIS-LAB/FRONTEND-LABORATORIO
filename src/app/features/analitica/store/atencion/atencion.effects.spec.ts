@@ -67,6 +67,7 @@ describe('AtencionEffects', () => {
       addObservations: vi.fn(),
       getPricing: vi.fn(),
       setCopayment: vi.fn(),
+      setAuthorizationNumber: vi.fn(),
     };
     patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn(), getById: vi.fn(), verify: vi.fn() };
     router = { navigate: vi.fn() };
@@ -377,6 +378,26 @@ describe('AtencionEffects', () => {
       'No se pudo guardar el copago. Revisá la conexión y volvé a intentarlo.'
     );
     expect(out).toEqual(A.setCopaymentFailure({ error }));
+  });
+
+  it('setAuthorizationNumber$ → success → setAuthorizationNumberSuccess', async () => {
+    const item = sample({ id: 42, authorizationNumber: 'AUTH-1' });
+    (api.setAuthorizationNumber as ReturnType<typeof vi.fn>).mockReturnValue(of(item));
+    actions$.next(A.setAuthorizationNumber({ attentionId: 42, authorizationNumber: 'AUTH-1' }));
+    const out = await firstValueFrom(effects.setAuthorizationNumber$.pipe(take(1)));
+    expect(api.setAuthorizationNumber).toHaveBeenCalledWith(42, { authorizationNumber: 'AUTH-1' });
+    expect(out).toEqual(A.setAuthorizationNumberSuccess({ item }));
+  });
+
+  it('setAuthorizationNumber$ → failure → toast + setAuthorizationNumberFailure', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    (api.setAuthorizationNumber as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.setAuthorizationNumber({ attentionId: 42, authorizationNumber: null }));
+    const out = await firstValueFrom(effects.setAuthorizationNumber$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo guardar el número de autorización. Revisá la conexión y volvé a intentarlo.'
+    );
+    expect(out).toEqual(A.setAuthorizationNumberFailure({ error }));
   });
 
   // ── B3c: removeAnalysisFromResumen$ ──────────────────────────────────────

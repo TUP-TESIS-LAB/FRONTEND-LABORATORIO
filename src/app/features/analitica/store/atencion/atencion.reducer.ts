@@ -33,6 +33,9 @@ import {
   resolvePatientByDni,
   returnPhase,
   setAtencionFilters,
+  setAuthorizationNumber,
+  setAuthorizationNumberFailure,
+  setAuthorizationNumberSuccess,
   setCopayment,
   setCopaymentFailure,
   setCopaymentSuccess,
@@ -110,6 +113,23 @@ export const atencionReducer = createReducer(
     };
   }),
   on(setCopaymentFailure, (s): AtencionFeatureState => ({ ...s, copaymentMutating: false })),
+
+  on(setAuthorizationNumber, (s): AtencionFeatureState => ({ ...s, authorizationMutating: true })),
+  on(setAuthorizationNumberSuccess, (s, { item }): AtencionFeatureState => {
+    // Igual que el copago: el endpoint dedicado devuelve la atención SIN
+    // `analysisAuthorizations`. Preservamos las del detail actual cuando la
+    // respuesta no las trae para no vaciar el listado del resumen.
+    const merged = s.detail && !item.analysisAuthorizations?.length
+      ? { ...item, analysisAuthorizations: s.detail.analysisAuthorizations }
+      : item;
+    return {
+      ...s,
+      authorizationMutating: false,
+      detail: merged,
+      list: replaceInList(s.list, merged),
+    };
+  }),
+  on(setAuthorizationNumberFailure, (s): AtencionFeatureState => ({ ...s, authorizationMutating: false })),
 
   on(removeAnalysisFromResumen, (s): AtencionFeatureState => ({ ...s, removingAnalysis: true })),
   on(removeAnalysisFromResumenSuccess, (s, { item }): AtencionFeatureState => ({

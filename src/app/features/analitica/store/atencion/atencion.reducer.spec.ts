@@ -98,6 +98,20 @@ describe('atencionReducer', () => {
     expect(next.detail?.analysisAuthorizations).toEqual(newAuths);
   });
 
+  it('setAuthorizationNumberSuccess setea el valor y preserva analysisAuthorizations cuando la respuesta viene vacía', () => {
+    const auths = [{ id: 1, analysisId: 3, isAuthorized: true, active: true }] as any;
+    const detail = sample({ id: 42, analysisAuthorizations: auths });
+    // El endpoint dedicado devuelve la atención sin autorizaciones.
+    const response = sample({ id: 42, authorizationNumber: 'AUTH-1', analysisAuthorizations: [] });
+    const next = atencionReducer(
+      { ...initialAtencionState, detail, authorizationMutating: true },
+      A.setAuthorizationNumberSuccess({ item: response }),
+    );
+    expect(next.detail?.authorizationNumber).toBe('AUTH-1');
+    expect(next.detail?.analysisAuthorizations).toEqual(auths); // no se vacía
+    expect(next.authorizationMutating).toBe(false);
+  });
+
   it('loadAtencionesFailure stores the error', () => {
     const error = new HttpErrorResponse({ status: 500 });
     const next = atencionReducer(

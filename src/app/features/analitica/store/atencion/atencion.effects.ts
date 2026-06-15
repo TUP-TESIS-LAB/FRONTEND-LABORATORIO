@@ -44,6 +44,9 @@ import {
   patientResolved,
   resolvePatientByDni,
   returnPhase,
+  setAuthorizationNumber,
+  setAuthorizationNumberFailure,
+  setAuthorizationNumberSuccess,
   setCopayment,
   setCopaymentFailure,
   setCopaymentSuccess,
@@ -373,6 +376,21 @@ export class AtencionEffects {
           catchError((error: HttpErrorResponse) => {
             this.notification.error('No se pudo guardar el copago. Revisá la conexión y volvé a intentarlo.');
             return of(setCopaymentFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
+
+  setAuthorizationNumber$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(setAuthorizationNumber),
+      concatMap(({ attentionId, authorizationNumber }) =>
+        this.api.setAuthorizationNumber(attentionId, { authorizationNumber }).pipe(
+          map(item => setAuthorizationNumberSuccess({ item })),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo guardar el número de autorización. Revisá la conexión y volvé a intentarlo.');
+            return of(setAuthorizationNumberFailure({ error }));
           }),
         )
       )
