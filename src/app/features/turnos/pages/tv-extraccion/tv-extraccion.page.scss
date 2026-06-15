@@ -236,7 +236,8 @@ $extraccion-bg: #ffffff;
 
   .code {
     font-size: clamp(3.5rem, 7vw, 6rem);
-    color: $extraccion-green;
+    // Color primary del tenant (mismo patrón que sala-espera); fallback al verde de extracción.
+    color: var(--brand-primary, #059669);
     letter-spacing: 0.02em;
     line-height: 1;
   }
@@ -244,7 +245,7 @@ $extraccion-bg: #ffffff;
   .box {
     font-size: clamp(2.25rem, 4vw, 3.5rem);
     font-weight: 700;
-    color: $extraccion-green;
+    color: var(--brand-primary, #059669);
     opacity: 0.9;
     white-space: nowrap;
   }
