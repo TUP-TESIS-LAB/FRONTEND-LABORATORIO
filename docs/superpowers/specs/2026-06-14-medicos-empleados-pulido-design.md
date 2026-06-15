@@ -5,13 +5,14 @@
 > **Alcance:** Cross-stack. Incluye 2 bugs confirmados + refactor de empleados + drawer de médicos.
 > **Jira:** _(pendiente)_
 
-## Recomendación de PRs (4)
+## Estructura de PRs — 1 de BE + 1 de FE (regla del usuario)
 
-Este sub-proyecto agrupa cosas independientes. Sugiero **4 PRs** para no bloquear:
-1. **PR-A (urgente, chico):** Fix del 500 en alta/edición de usuario interno (backend). Bloqueante hoy.
-2. **PR-B (chico, FE):** Error de guardar empleado → toast en vez de banner inline.
-3. **PR-C (mediano, cross-stack):** Refactor del stepper de empleados (colapsar pasos, email+celular fijos, dirección completa) + precarga de usuario.
-4. **PR-D (mediano, FE):** Médicos derivantes → drawer quick-add repetible.
+Por tópico se abre **exactamente 1 PR de Backend y 1 PR de Frontend** (no más). Los bloques A–D de abajo son unidades de trabajo, NO PRs separados; se consolidan así:
+
+- **PR de BACKEND (1 solo):** Bloque A (fix 500 `existsActiveBranchForTenant`) **+** la parte BE del Bloque C (Address texto-libre + migración).
+- **PR de FRONTEND (1 solo):** Bloque B (error → toast) **+** la parte FE del Bloque C (stepper 3 pasos + precarga usuario) **+** Bloque D (drawer médicos).
+
+El fix del 500 es bloqueante: implementarlo primero dentro del PR de BE. Los títulos "PR-A/B/C/D" abajo son etiquetas de bloque, no de pull request.
 
 ---
 

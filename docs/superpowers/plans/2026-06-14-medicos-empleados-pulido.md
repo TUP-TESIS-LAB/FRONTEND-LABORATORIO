@@ -8,17 +8,16 @@
 
 **Goal:** Arreglar el 500 de alta/invitación/edición de usuario interno, rutear errores de empleado a toast, refactorizar el stepper de empleados (email+celular fijos, dirección igual a paciente, precarga de usuario) y convertir médicos derivantes a un drawer quick-add repetible.
 
-**PRs reales (uno por repo).** Cross-stack = PR de BE + PR de FE:
+**Regla de PRs (pedido del usuario): por tópico, EXACTAMENTE 1 PR de BE + 1 PR de FE.** Las fases de abajo son bloques de trabajo (con sus commits), NO PRs separados. Se consolidan en 2 PRs:
 
-| Fase | Repo | PR |
-|------|------|-----|
-| A | Backend | fix 500 `existsActiveBranchForTenant` |
-| B | Frontend | error empleado → toast |
-| C-BE | Backend | Address texto-libre (barrio/ciudad/provincia) + migración |
-| C-FE | Frontend | stepper empleado 3 pasos + precarga usuario |
-| D | Frontend | drawer médicos quick-add repetible |
+| PR | Repo | Rama | Consolida |
+|----|------|------|-----------|
+| **PR-BE** (1 solo) | Backend | `feat/medicos-empleados-pulido` (BE) | Fase A (fix 500) + Fase C-BE (Address texto-libre + migración) |
+| **PR-FE** (1 solo) | Frontend | `feat/medicos-empleados-pulido` (FE) | Fase B (toast) + Fase C-FE (stepper 3 pasos + precarga) + Fase D (drawer médicos) |
 
-**Orden:** A primero (bloqueante). C-BE antes de C-FE (el FE consume los campos nuevos). B y D independientes.
+Todo el trabajo de BE va en un único PR de backend; todo el de FE en un único PR de frontend. Los commits dentro de cada PR pueden seguir agrupados por fase.
+
+**Orden de implementación (dentro de cada PR):** Fase A primero (bloqueante). C-BE antes de C-FE (el FE consume los campos nuevos). B y D independientes.
 
 **Repos:** Backend `c:\Users\tobia\Desktop\TUP\TESIS\Backend` (worktree off `development`, JDK 21). Frontend este worktree `feat/medicos-empleados-pulido` (`npm ci` antes de testear).
 
@@ -344,7 +343,7 @@ La edición de médico: reusar el mismo drawer precargado (sin "agregar otro") o
   - Forzar un error de guardar empleado → sale por **toast** (top-right), no banner.
   - Empleado: 3 pasos; email+celular; dirección con Barrio/Ciudad/Provincia que persiste; al crear usuario, precarga nombre/apellido/documento (email no).
   - Médicos: cargar 3 derivantes seguidos con "Guardar y agregar otro".
-- [ ] **Step 4: PRs** — abrir los 5 PRs (2 BE, 3 FE) contra `development`, cada uno linkeando el Jira.
+- [ ] **Step 4: PRs** — abrir **exactamente 2 PRs** contra `development`: **1 PR de BE** (Fases A + C-BE) y **1 PR de FE** (Fases B + C-FE + D), cada uno linkeando el Jira. NO abrir un PR por fase.
 
 ---
 
