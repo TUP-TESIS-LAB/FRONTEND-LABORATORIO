@@ -17,8 +17,13 @@ Este sub-proyecto agrupa cosas independientes. Sugiero **4 PRs** para no bloquea
 
 ## PR-A — Fix del 500: `existsActiveBranchForTenant` (BUG CONFIRMADO)
 
+### Endpoints afectados (todos el mismo root cause)
+Un único bug rompe los **tres** flujos de usuario interno, porque todos pasan por `branchBelongsToTenant`:
+- `POST /api/v1/user/internal` — **crear / invitar** usuario nuevo (`RegisterInternalUserUseCase`). Lo usa tanto el flujo "crear empleado con usuario nuevo" como el alta/invitación standalone de la sección **Usuarios** (`usuario-form-drawer`).
+- `PUT /api/v1/user/{id}` — **editar** usuario (`UpdateUserUseCase:45`, chequeo de branch incondicional). Confirmado por el usuario con `PUT /api/v1/user/11000` → 500.
+
 ### Causa raíz (confirmada con evidencia)
-`POST /api/v1/user/internal` (alta de usuario interno, usado por el flujo "crear empleado con usuario nuevo") devuelve **500 genérico**. La edición de usuario tiene el mismo bug.
+Los flujos de crear/invitar/editar usuario interno devuelven **500 genérico**.
 
 El método [`UserBranchJpaRepository.existsActiveBranchForTenant`](Backend/src/main/java/lab/laboratorio/modules/empresa/infrastructure/persistence/repository/UserBranchJpaRepository.java#L41) define un native query con retorno **`boolean`**:
 ```sql
@@ -44,7 +49,7 @@ long countActiveBranchForTenant(@Param("branchId") Long branchId, @Param("tenant
 Renombrar el método y actualizar los 2 call sites (`UserBranchAssignmentAdapter:64`, `UserBranchAccessAdapter:56`) a `... > 0`.
 
 ### Test (clave: el bug existe porque no había test de integración)
-Agregar un test de **repositorio contra DB real** (Testcontainers MySQL, no H2 — H2 podría mapear el boolean y ocultar el bug) que ejecute `countActiveBranchForTenant` y verifique que devuelve el conteo correcto sin lanzar. Como mínimo, un `@DataJpaTest` que ejercite el query. Verificación manual: re-correr el curl de alta de usuario → ya no 500.
+Agregar un test de **repositorio contra DB real** (Testcontainers MySQL, no H2 — H2 podría mapear el boolean y ocultar el bug) que ejecute `countActiveBranchForTenant` y verifique que devuelve el conteo correcto sin lanzar. Como mínimo, un `@DataJpaTest` que ejercite el query. Verificación manual: re-correr **los tres** curls → ya no 500: alta (`POST /user/internal`), invitación standalone (Usuarios) y edición (`PUT /user/{id}`, ej. el `11000` reportado).
 
 ---
 
