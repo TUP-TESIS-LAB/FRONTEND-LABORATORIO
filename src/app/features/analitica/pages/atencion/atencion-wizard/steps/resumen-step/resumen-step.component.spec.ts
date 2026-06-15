@@ -17,6 +17,7 @@ import {
   atencionMutationSuccess,
   atencionMutationFailure,
   setCopayment,
+  setAuthorizationNumber,
   removeAnalysisFromResumen,
   downloadProtocolLabels,
 } from '../../../../../store/atencion/atencion.actions';
@@ -204,15 +205,23 @@ describe('ResumenStepComponent', () => {
     expect(f.componentInstance.coverageLabel()).toBe('Particular');
   });
 
-  // ── Corrección 2: la tabla marca autorizado/particular por análisis ───────
-  it('la tabla incluye la columna "Autorizado" y un tag "Autorizado" para el análisis cubierto', () => {
+  // ── Item 2: la columna "Autorizado" se gatea por cobertura ─────────────────
+  it('con obra social la tabla incluye la columna "Autorizado" y el tag del análisis cubierto', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', attn()); // analysisId 3, isAuthorized: true
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7 }); // OS
     f.detectChanges();
     const el = f.nativeElement as HTMLElement;
     const headers = Array.from(el.querySelectorAll('th')).map((th) => th.textContent?.trim() ?? '');
     expect(headers.some((h) => h.includes('Autorizado'))).toBe(true);
     expect((el.textContent ?? '')).toContain('Autorizado');
+  });
+
+  it('item 2: con cobertura Particular la tabla NO incluye la columna "Autorizado"', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: null }); // Particular
+    f.detectChanges();
+    const headers = Array.from((f.nativeElement as HTMLElement).querySelectorAll('th')).map((th) => th.textContent?.trim() ?? '');
+    expect(headers.some((h) => h.includes('Autorizado'))).toBe(false);
   });
 
   // ── C1: los análisis se renderizan dentro de la tabla genérica ui-table ────
@@ -408,6 +417,48 @@ describe('ResumenStepComponent', () => {
     f.componentInstance.copaymentValue.set(500);
     f.componentInstance.onCopaymentBlur();
     expect(dispatched.filter((a: any) => a.type === setCopayment.type)).toHaveLength(0);
+  });
+
+  // ── Item 4: Nro de autorización (solo OS) ─────────────────────────────────
+
+  it('item 4: con obra social renderiza el input "Nro de autorización"', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7 });
+    f.detectChanges();
+    const input = (f.nativeElement as HTMLElement).querySelector('#auth-input');
+    expect(input).toBeTruthy();
+  });
+
+  it('item 4: con cobertura Particular NO renderiza el input "Nro de autorización"', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: null });
+    f.detectChanges();
+    const input = (f.nativeElement as HTMLElement).querySelector('#auth-input');
+    expect(input).toBeNull();
+  });
+
+  it('item 4: onAuthorizationBlur despacha setAuthorizationNumber cuando el valor cambia', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7, authorizationNumber: null });
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    f.componentInstance.authorizationValue.set('AUTH-1');
+    f.componentInstance.onAuthorizationBlur();
+    expect(dispatched[0].type).toBe(setAuthorizationNumber.type);
+    expect(dispatched[0].attentionId).toBe(42);
+    expect(dispatched[0].authorizationNumber).toBe('AUTH-1');
+  });
+
+  it('item 4: onAuthorizationBlur NO despacha si el valor no cambió (normaliza vacío a null)', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7, authorizationNumber: null });
+    f.detectChanges();
+    const dispatched: any[] = [];
+    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
+    f.componentInstance.authorizationValue.set('   '); // se normaliza a null === actual
+    f.componentInstance.onAuthorizationBlur();
+    expect(dispatched.filter((a: any) => a.type === setAuthorizationNumber.type)).toHaveLength(0);
   });
 
   // ── tests B3c: remover análisis desde el resumen ─────────────────────────

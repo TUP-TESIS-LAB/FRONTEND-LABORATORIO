@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
 import { EMPTY } from 'rxjs';
@@ -39,9 +40,11 @@ import {
   loadAttentionPatient,
   loadPricing,
   removeAnalysisFromResumen,
+  setAuthorizationNumber,
   setCopayment,
 } from '../../../../../store/atencion/atencion.actions';
 import {
+  selectAuthorizationMutating,
   selectCopaymentMutating,
   selectMutating,
   selectPricing,
@@ -57,7 +60,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FinalizeAttentionModalComponent, InputNumberModule, FormsModule,
+    FinalizeAttentionModalComponent, InputNumberModule, InputTextModule, FormsModule,
     CurrencyArPipe, DataTableComponent, UiCellDirective, TagModule,
   ],
   styles: [`:host { display: block; height: 100%; }`],
@@ -83,6 +86,15 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         <section>
           <div class="text-sm opacity-60">Cobertura</div>
           <div class="text-base">{{ coverageLabel() }}</div>
+          <!-- Item 4: Nro de autorización (uno por atención) — solo con obra social. -->
+          @if (atencion().insurancePlanId != null) {
+            <div class="flex items-center gap-2 mt-2">
+              <label class="opacity-60 text-sm" for="auth-input">Nro de autorización</label>
+              <input pInputText id="auth-input" type="text" [ngModel]="authorizationValue()"
+                     (ngModelChange)="authorizationValue.set($event)" (blur)="onAuthorizationBlur()"
+                     [disabled]="authorizationMutating() || readOnly()" class="w-48" placeholder="Ej. AUTH-1" />
+            </div>
+          }
         </section>
 
         <section>
@@ -98,7 +110,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         <div class="text-sm opacity-60 mb-2">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
         <ui-table
           [value]="analysisRows()"
-          [columns]="analysisColumns"
+          [columns]="analysisColumns()"
           [showDelete]="!readOnly()"
           [scrollHeight]="'flex'"
           emptyHeading="Sin análisis solicitados"
@@ -134,15 +146,12 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         </ui-table>
       </section>
 
-      <!-- Pricing totals -->
+      <!-- Pricing totals — item 7: Subtotal · Copago · Total en una sola fila compacta. -->
       @if (pricing(); as p) {
-        <section class="border-t pt-3 space-y-1">
-          <div class="flex justify-between text-sm">
-            <span class="opacity-60">Subtotal</span>
-            <span>{{ p.subtotal | currencyAr }}</span>
-          </div>
-          <div class="flex justify-between text-sm items-center gap-4">
-            <label class="opacity-60 whitespace-nowrap" for="copago-input">Copago (orden médica)</label>
+        <section class="border-t pt-3 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-sm">
+          <span><span class="opacity-60">Subtotal</span> {{ p.subtotal | currencyAr }}</span>
+          <span class="flex items-center gap-2">
+            <label class="opacity-60" for="copago-input">Copago</label>
             <p-inputNumber
               inputId="copago-input"
               [ngModel]="copaymentValue()"
@@ -153,15 +162,11 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
               [maxFractionDigits]="2"
               [min]="0"
               [disabled]="copaymentMutating() || readOnly()"
-              styleClass="w-40"
-              inputStyleClass="w-40 text-right"
+              inputStyleClass="w-32 text-right"
               placeholder="0,00"
             />
-          </div>
-          <div class="flex justify-between text-base font-semibold border-t pt-1">
-            <span>Total</span>
-            <span>{{ liveTotal() | currencyAr }}</span>
-          </div>
+          </span>
+          <span class="font-semibold text-base"><span class="opacity-60 font-normal">Total</span> {{ liveTotal() | currencyAr }}</span>
         </section>
       } @else if (pricingLoading()) {
         <section class="border-t pt-3">
@@ -222,10 +227,14 @@ export class ResumenStepComponent implements OnInit {
   readonly pricing            = this.store.selectSignal(selectPricing);
   readonly pricingLoading     = this.store.selectSignal(selectPricingLoading);
   readonly copaymentMutating  = this.store.selectSignal(selectCopaymentMutating);
+  readonly authorizationMutating = this.store.selectSignal(selectAuthorizationMutating);
   readonly removingAnalysis   = this.store.selectSignal(selectRemovingAnalysis);
 
   /** Valor local del input de copago — se inicializa desde la atención y se actualiza al cambiar */
   readonly copaymentValue = signal<number | null>(null);
+
+  /** Valor local del input "Nro de autorización" (item 4) — se inicializa desde la atención. */
+  readonly authorizationValue = signal<string | null>(null);
 
   readonly analysisById = computed(
     // `summaryAnalyses` se carga con AnalysisService.getById → AnalysisDetail (trae nbuCode/name),
@@ -265,12 +274,19 @@ export class ResumenStepComponent implements OnInit {
     return new Map(p.items.map(item => [item.analysisId, item]));
   });
 
-  /** Columnas de la tabla de análisis solicitados (C1). */
-  readonly analysisColumns: readonly TableColumn[] = [
-    { field: 'analisis',   header: 'Análisis' },
-    { field: 'autorizado', header: 'Autorizado', align: 'center' },
-    { field: 'precio',     header: 'Precio', align: 'right' },
-  ];
+  /**
+   * Item 2: la cobertura Particular (sin obra social) oculta la columna "Autorizado".
+   * Fuente de verdad: `atencion().insurancePlanId` (null ⇒ Particular).
+   */
+  readonly isParticular = computed(() => this.atencion().insurancePlanId == null);
+
+  /** Columnas de la tabla de análisis solicitados (C1); "Autorizado" solo con obra social. */
+  readonly analysisColumns = computed<readonly TableColumn[]>(() => {
+    const cols: TableColumn[] = [{ field: 'analisis', header: 'Análisis' }];
+    if (!this.isParticular()) cols.push({ field: 'autorizado', header: 'Autorizado', align: 'center' });
+    cols.push({ field: 'precio', header: 'Precio', align: 'right' });
+    return cols;
+  });
 
   /**
    * Filas para la tabla genérica (C1): combina cada autorización con el detalle
@@ -312,6 +328,9 @@ export class ResumenStepComponent implements OnInit {
 
     // Initialize copago from attention
     this.copaymentValue.set(attn.copaymentAmount ?? null);
+
+    // Initialize nro de autorización from attention (item 4).
+    this.authorizationValue.set(attn.authorizationNumber ?? null);
 
     // Only load patient if not already resolved for this atención
     if (
@@ -365,6 +384,19 @@ export class ResumenStepComponent implements OnInit {
     const current = attn.copaymentAmount ?? null;
     if (amount === current) return;
     this.store.dispatch(setCopayment({ attentionId: attn.id, copaymentAmount: amount }));
+  }
+
+  /**
+   * Item 4: persiste el nro de autorización vía el endpoint dedicado (espeja el copago).
+   * Dedup contra el valor actual; normaliza string vacío/espacios a null.
+   */
+  onAuthorizationBlur(): void {
+    const attn = this.atencion();
+    const value = this.authorizationValue();
+    const current = attn.authorizationNumber ?? null;
+    const normalized = value && value.trim() !== '' ? value.trim() : null;
+    if (normalized === current) return;
+    this.store.dispatch(setAuthorizationNumber({ attentionId: attn.id, authorizationNumber: normalized }));
   }
 
   openFinalize(): void  { this.finalizeModalOpen.set(true); }
