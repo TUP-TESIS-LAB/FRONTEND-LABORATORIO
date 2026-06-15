@@ -41,6 +41,8 @@ export class TotemTabComponent implements OnInit {
 
   protected readonly totemConfig = this.store.selectSignal(selectTotemConfig);
   protected readonly enabled = computed(() => this.totemConfig()?.enabled ?? false);
+  protected readonly atencionDisplay = computed(() => this.totemConfig()?.atencionDisplayEnabled ?? false);
+  protected readonly extraccionDisplay = computed(() => this.totemConfig()?.extraccionDisplayEnabled ?? false);
   protected readonly current = this.store.selectSignal(selectCurrentSucursal);
   protected readonly savingBoxes = signal(false);
 
@@ -68,7 +70,17 @@ export class TotemTabComponent implements OnInit {
   }
 
   onToggle(value: boolean) {
-    this.store.dispatch(upsertTotemConfig({ branchId: this.branchId, enabled: value }));
+    this.upsert({ enabled: value });
+  }
+
+  /** Upsert del config preservando los flags que no se tocaron. */
+  upsert(partial: Partial<{ enabled: boolean; atencionDisplayEnabled: boolean; extraccionDisplayEnabled: boolean }>) {
+    this.store.dispatch(upsertTotemConfig({
+      branchId: this.branchId,
+      enabled: partial.enabled ?? this.enabled(),
+      atencionDisplayEnabled: partial.atencionDisplayEnabled ?? this.atencionDisplay(),
+      extraccionDisplayEnabled: partial.extraccionDisplayEnabled ?? this.extraccionDisplay(),
+    }));
   }
 
   submitBoxes() {

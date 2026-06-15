@@ -10,6 +10,18 @@
     <span class="switch-label">{{ enabled() ? 'Tótem habilitado' : 'Tótem deshabilitado' }}</span>
   </div>
 
+  <div class="pantallas-section">
+    <h3>Pantallas</h3>
+    <label class="display-toggle">
+      <p-toggleswitch [ngModel]="atencionDisplay()" (ngModelChange)="upsert({ atencionDisplayEnabled: $event })" />
+      <span class="switch-label">Pantalla de sala de espera (atención)</span>
+    </label>
+    <label class="display-toggle">
+      <p-toggleswitch [ngModel]="extraccionDisplay()" (ngModelChange)="upsert({ extraccionDisplayEnabled: $event })" />
+      <span class="switch-label">Pantalla de extracción</span>
+    </label>
+  </div>
+
   <div class="boxes-section">
     <h3>Boxes</h3>
     <p class="muted">Cantidad de boxes físicos disponibles en esta sucursal. Se usan para los llamados de los pacientes en la TV de sala de espera.</p>

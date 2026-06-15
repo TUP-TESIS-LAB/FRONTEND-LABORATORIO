@@ -63,6 +63,9 @@ const mockWorkspace: BranchWorkspace = {
 const mockTotemConfig: BranchTotemConfig = {
   branchId: 1,
   enabled: true,
+  active: true,
+  atencionDisplayEnabled: true,
+  extraccionDisplayEnabled: false,
 };
 
 const mockArea: Area = {
@@ -244,7 +247,10 @@ describe('sucursalReducer — totemConfig', () => {
   });
 
   it('upsertTotemConfigSuccess updates totemConfig', () => {
-    const updated: BranchTotemConfig = { branchId: 1, enabled: false };
+    const updated: BranchTotemConfig = {
+      branchId: 1, enabled: false, active: true,
+      atencionDisplayEnabled: false, extraccionDisplayEnabled: false,
+    };
     const state = reduce(
       { ...initialSucursalState, totemConfig: mockTotemConfig },
       A.upsertTotemConfigSuccess({ totemConfig: updated }),
