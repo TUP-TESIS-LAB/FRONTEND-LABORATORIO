@@ -6,7 +6,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { EMPTY } from 'rxjs';
 import { WorkspacesStepComponent } from './workspaces-step.component';
 import { selectAreas, selectSections, selectWorkspaces } from '../../../../store/sucursal.selectors';
-import { syncWorkspaces } from '../../../../store/sucursal.actions';
+import { addArea, syncWorkspaces } from '../../../../store/sucursal.actions';
 
 function setup() {
   TestBed.configureTestingModule({
@@ -73,6 +73,16 @@ describe('WorkspacesStepComponent (Mockup A)', () => {
         { areaId: 1, sectionId: 10 }, { areaId: 1, sectionId: 11 }, { areaId: 2, sectionId: 20 },
         { areaId: 2, sectionId: 99 },
       ],
+    }));
+  });
+
+  it('saveArea() crea el área con tipo OTRO y sin laboratorio externo (tipo no se pide en el stepper)', () => {
+    const { cmp, store } = setup();
+    const spy = vi.spyOn(store, 'dispatch');
+    (cmp as any).newAreaName = '  Inmunología  ';
+    (cmp as any).saveArea();
+    expect(spy).toHaveBeenCalledWith(addArea({
+      input: { name: 'Inmunología', areaType: 'OTRO', externalLabName: null },
     }));
   });
 

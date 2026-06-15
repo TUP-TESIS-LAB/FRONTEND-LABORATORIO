@@ -24,7 +24,6 @@ import {
   addArea, addAreaSuccess, addSection, addSectionSuccess,
   loadAreas, loadSections, loadWorkspaces, syncWorkspaces,
 } from '../../../../store/sucursal.actions';
-import { AreaType } from '../../../../models/sucursal.model';
 import { BranchWorkspaceCreateInput } from '../../../../models/branch-workspace.model';
 
 interface AreaGroup {
@@ -33,18 +32,6 @@ interface AreaGroup {
   sectionCount: number;
   sections: { workspaceId: number; sectionId: number; sectionName: string }[];
 }
-
-const AREA_TYPE_OPTIONS: { label: string; value: AreaType }[] = [
-  { label: 'Química clínica', value: 'QUIMICA_CLINICA' },
-  { label: 'Hematología / Hemostasia', value: 'HEMATOLOGIA_HEMOSTASIA' },
-  { label: 'Nefrología', value: 'NEFROLOGIA' },
-  { label: 'Medio interno', value: 'MEDIO_INTERNO' },
-  { label: 'Endocrinología / Virología', value: 'ENDOCRINOLOGIA_VIROLOGIA' },
-  { label: 'Microbiología', value: 'MICROBIOLOGIA' },
-  { label: 'Inmunología / Serología', value: 'INMUNOLOGIA_SEROLOGIA' },
-  { label: 'Externo', value: 'EXTERNO' },
-  { label: 'Otro', value: 'OTRO' },
-];
 
 /**
  * Paso "Áreas y secciones" — Mockup A: panel de asociación inline.
@@ -115,9 +102,6 @@ export class WorkspacesStepComponent implements OnInit {
   // ── Modales de alta ──
   protected readonly areaModalOpen = signal(false);
   protected newAreaName = '';
-  protected newAreaType: AreaType = 'QUIMICA_CLINICA';
-  protected newAreaExternalLab = '';
-  protected readonly areaTypeOptions = AREA_TYPE_OPTIONS;
 
   protected readonly sectionModalOpen = signal(false);
   protected newSectionName = '';
@@ -129,7 +113,7 @@ export class WorkspacesStepComponent implements OnInit {
         this.selectedAreaId.set(area.id);
         this.selectedSectionIds.set(new Set());
         this.areaModalOpen.set(false);
-        this.newAreaName = ''; this.newAreaExternalLab = '';
+        this.newAreaName = '';
       });
     // Al crear una sección nueva la dejamos tildada.
     this.actions$.pipe(ofType(addSectionSuccess), takeUntilDestroyed(this.destroyRef))
@@ -200,16 +184,18 @@ export class WorkspacesStepComponent implements OnInit {
 
   // ── Modales ──
   openAreaModal(): void {
-    this.newAreaName = ''; this.newAreaType = 'QUIMICA_CLINICA'; this.newAreaExternalLab = '';
+    this.newAreaName = '';
     this.areaModalOpen.set(true);
   }
   saveArea(): void {
     const name = this.newAreaName.trim();
     if (!name) return;
+    // El tipo de área no se pide en el stepper: se crea como OTRO (etiqueta neutra, sin
+    // conducta en runtime). El catálogo de áreas sigue ofreciendo el resto de los tipos.
     this.store.dispatch(addArea({ input: {
       name,
-      areaType: this.newAreaType,
-      externalLabName: this.newAreaType === 'EXTERNO' ? (this.newAreaExternalLab.trim() || null) : null,
+      areaType: 'OTRO',
+      externalLabName: null,
     } }));
   }
 
