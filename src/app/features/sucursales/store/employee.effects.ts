@@ -1,10 +1,11 @@
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { HttpErrorResponse } from '@angular/common/http';
-import { catchError, concat, concatMap, exhaustMap, last, map, Observable, of, switchMap } from 'rxjs';
+import { catchError, concat, concatMap, exhaustMap, last, map, Observable, of, switchMap, tap } from 'rxjs';
 import { EmployeeService } from '../services/employee.service';
 import { UsuariosApiService } from '@features/empresa/services/usuarios-api.service';
 import { NotificationService } from '@core/services/notification.service';
+import { employeeSaveErrorMessage } from './employee-error.util';
 import {
   loadEmployees, loadEmployeesSuccess, loadEmployeesFailure,
   loadEmployee, loadEmployeeSuccess, loadEmployeeFailure,
@@ -127,6 +128,18 @@ export class EmployeeEffects {
         ),
       ),
     ),
+  );
+
+  // El error de guardar (alta/edición, incluido el alta con usuario nuevo que falla
+  // en addEmployeeFailure) sale por el MISMO toast top-right que los de éxito, en vez
+  // del banner inline. No despacha — solo notifica.
+  notifyEmployeeSaveError$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(addEmployeeFailure, updateEmployeeFailure),
+        tap(({ error }) => this.notifications.error(employeeSaveErrorMessage(error))),
+      ),
+    { dispatch: false },
   );
 
   toggleEmployeeStatus$ = createEffect(() =>

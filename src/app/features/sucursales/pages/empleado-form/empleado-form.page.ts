@@ -10,13 +10,12 @@ import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
-import { humanizeBackendError } from '@shared/utils/error-messages';
 import {
   addEmployee, addEmployeeSuccess, updateEmployee, updateEmployeeSuccess, createEmployeeWithUser,
   loadEmployee, loadEmployeeContacts, clearSelectedEmployee,
 } from '../../store/employee.actions';
 import {
-  selectEmployeePending, selectEmployeeError, selectSelectedEmployee, selectSelectedEmployeeContacts,
+  selectEmployeePending, selectSelectedEmployee, selectSelectedEmployeeContacts,
 } from '../../store/employee.selectors';
 import {
   CreateEmployeeRequest, Employee, EmployeeContact, EmployeeContactInput, EmployeeContactType, UpdateEmployeeRequest,
@@ -52,11 +51,6 @@ interface ContactRow { id: number | null; contactType: EmployeeContactType; valu
         [currentIndex]="currentStep()"
         [visited]="visited()"
         (stepSelected)="goToStep($event)">
-        @if (saveError(); as err) {
-          <div class="mb-3 p-3 rounded" style="background:#fef2f2;border:1px solid var(--ds-danger);color:var(--ds-danger);">
-            {{ saveErrorMessage(err) }}
-          </div>
-        }
         @switch (currentStep()) {
           @case (0) { <emp-datos-step [group]="datosGroup" /> }
           @case (1) { <emp-contactos-step [array]="contactosArray" /> }
@@ -101,7 +95,6 @@ export class EmpleadoFormPage implements OnDestroy {
   readonly steps = EMPLOYEE_FORM_STEPS;
 
   readonly pending = this.store.selectSignal(selectEmployeePending);
-  readonly saveError = this.store.selectSignal(selectEmployeeError);
   readonly employee = this.store.selectSignal(selectSelectedEmployee);
   private readonly contacts = this.store.selectSignal(selectSelectedEmployeeContacts);
 
@@ -302,18 +295,6 @@ export class EmpleadoFormPage implements OnDestroy {
       this.contactosArray.push(this.contactGroup({ id: c.id, contactType: c.contactType, value: c.value }));
     }
     this.form.markAsPristine();
-  }
-
-  saveErrorMessage(err: { status?: number; error?: { message?: string } }): string {
-    return humanizeBackendError(err, {
-      fallback: 'No se pudo guardar el empleado.',
-      byStatus: {
-        409: 'Ya existe un empleado con ese documento.',
-        400: 'Algunos datos del empleado no son válidos. Revisalos e intentá de nuevo.',
-        422: 'Algunos datos del empleado no son válidos. Revisalos e intentá de nuevo.',
-        500: 'No se pudo guardar el empleado. Intentá de nuevo en unos minutos.',
-      },
-    });
   }
 
   @HostListener('document:keydown', ['$event'])

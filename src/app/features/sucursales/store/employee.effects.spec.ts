@@ -8,8 +8,8 @@ import { EmployeeService } from '../services/employee.service';
 import { NotificationService } from '@core/services/notification.service';
 import {
   loadEmployees, loadEmployeesSuccess,
-  addEmployee, addEmployeeSuccess,
-  updateEmployee, updateEmployeeSuccess,
+  addEmployee, addEmployeeSuccess, addEmployeeFailure,
+  updateEmployee, updateEmployeeSuccess, updateEmployeeFailure,
   toggleEmployeeStatus, toggleEmployeeStatusSuccess,
 } from './employee.actions';
 import { Employee } from '../models/employee.model';
@@ -90,6 +90,28 @@ describe('EmployeeEffects', () => {
         expect(svc['removeContact']).toHaveBeenCalledWith(1, 9);
         expect(svc['updateContact']).toHaveBeenCalledWith(1, 2, { contactType: 'PHONE', value: '11' });
         expect(svc['addContact']).toHaveBeenCalledWith(1, { contactType: 'EMAIL', value: 'n@x.com' });
+        resolve();
+      });
+    }));
+
+  it('notifyEmployeeSaveError$ shows a toast on addEmployeeFailure (status 500)', () =>
+    new Promise<void>((resolve) => {
+      notify.error.mockClear();
+      const error = new HttpErrorResponse({ status: 500 });
+      actions$ = of(addEmployeeFailure({ error }));
+      TestBed.inject(EmployeeEffects).notifyEmployeeSaveError$.subscribe(() => {
+        expect(notify.error).toHaveBeenCalledWith('No se pudo guardar el empleado. Intentá de nuevo en unos minutos.');
+        resolve();
+      });
+    }));
+
+  it('notifyEmployeeSaveError$ shows a toast on updateEmployeeFailure (status 409)', () =>
+    new Promise<void>((resolve) => {
+      notify.error.mockClear();
+      const error = new HttpErrorResponse({ status: 409 });
+      actions$ = of(updateEmployeeFailure({ error }));
+      TestBed.inject(EmployeeEffects).notifyEmployeeSaveError$.subscribe(() => {
+        expect(notify.error).toHaveBeenCalledWith('Ya existe un empleado con ese documento.');
         resolve();
       });
     }));
