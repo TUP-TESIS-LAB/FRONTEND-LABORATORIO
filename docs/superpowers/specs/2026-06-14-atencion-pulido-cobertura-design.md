@@ -3,6 +3,7 @@
 > **Estado:** Diseño aprobado (decisiones cerradas con el usuario el 2026-06-14).
 > **Rama:** `feat/atencion-pulido-cobertura` (worktree `.worktrees/atencion-pulido`, off `development`).
 > **Alcance:** Cross-stack (Frontend Angular + Backend Spring + migración Flyway).
+> **PRs (regla del usuario): exactamente 1 PR de BE + 1 PR de FE.** Backend (tipo String + migración + endpoint) en un único PR de BE; todo el resto en un único PR de FE.
 > **Jira:** _(pendiente — completar al pasar por `jira-workflow`)_
 
 ## Contexto

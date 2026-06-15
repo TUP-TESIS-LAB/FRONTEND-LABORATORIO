@@ -726,9 +726,9 @@ Levantar el worktree (launcher `start-worktree.ps1`, schema dedicado por rama). 
 - Precios: subtotal/copago/total en una sola fila.
 - Regresión: pacientes/empleados/sucursal siguen viéndose igual (slots del shell no los afectan).
 
-- [ ] **Step 5: Abrir PRs (BE y FE) contra `development`**
+- [ ] **Step 5: Abrir PRs — exactamente 1 de BE + 1 de FE — contra `development`**
 
-Un PR de backend y uno de frontend, cada uno linkeando el Jira en el body (regla #1/#3 de ambos repos).
+**Un único PR de backend** (Fase A: tipo String + migración V959 + endpoint authorization-number) y **un único PR de frontend** (Fases B–F: store, shell, wizard, pasos), cada uno linkeando el Jira en el body (regla #1/#3 de ambos repos). NO abrir un PR por fase.
 
 ---
 
