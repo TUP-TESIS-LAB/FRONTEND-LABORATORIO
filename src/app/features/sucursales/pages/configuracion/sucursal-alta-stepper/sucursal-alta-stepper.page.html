@@ -1,7 +1,7 @@
 <ui-wizard-shell
-  heading="Nueva sucursal"
-  breadcrumb="Sucursales › Nueva"
-  [steps]="steps"
+  [heading]="heading()"
+  [breadcrumb]="breadcrumb()"
+  [steps]="steps()"
   [currentIndex]="currentStep()"
   [visited]="visited()"
   [completed]="completed()"
@@ -15,15 +15,19 @@
   (finish)="finish()">
   @switch (currentStep()) {
     @case (0) {
-      <app-datos-step #step0
-        (completed)="onDatosCompleted($event)"
-        (failed)="onDatosFailed()"
-        (validChange)="step0Valid.set($event)" />
+      @if (editMode()) {
+        <app-datos-tab [branchId]="branchId()!" />
+      } @else {
+        <app-datos-step #step0
+          (completed)="onDatosCompleted($event)"
+          (failed)="onDatosFailed()"
+          (validChange)="step0Valid.set($event)" />
+      }
     }
     @case (1) { <app-horarios-step [branchId]="branchId()!" /> }
     @case (2) { <app-contactos-step [branchId]="branchId()!" /> }
     @case (3) { <app-workspaces-step [branchId]="branchId()!" /> }
-    @case (4) { <app-totem-step [branchId]="branchId()!" /> }
+    @case (4) { <app-totem-step #totemStep [branchId]="branchId()!" /> }
     @case (5) { <app-confirmar-step /> }
   }
 </ui-wizard-shell>

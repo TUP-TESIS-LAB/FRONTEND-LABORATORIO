@@ -9,24 +9,25 @@ describe('SeccionesChecklistComponent', () => {
 
   it('agrupa el catalogo y marca lo del workingSet', () => {
     const fixture = TestBed.createComponent(SeccionesChecklistComponent);
+    // RECEPCION cae en el grupo "Recepción" y ANALITICA en "Clínico" → 2 grupos.
     fixture.componentInstance.catalog = [
-      { code: 'ATENCION', label: 'Atención' },
-      { code: 'TURNOS', label: 'Turnos' },
+      { code: 'RECEPCION', label: 'Recepción' },
+      { code: 'ANALITICA', label: 'Analítica' },
     ];
-    fixture.componentInstance.workingSet = ['TURNOS'];
+    fixture.componentInstance.workingSet = ['ANALITICA'];
     fixture.detectChanges();
     expect(fixture.componentInstance.groups().length).toBe(2);
-    expect(fixture.componentInstance.isChecked('TURNOS')).toBe(true);
-    expect(fixture.componentInstance.isChecked('ATENCION')).toBe(false);
+    expect(fixture.componentInstance.isChecked('ANALITICA')).toBe(true);
+    expect(fixture.componentInstance.isChecked('RECEPCION')).toBe(false);
   });
 
   it('emite toggle con el code', () => {
     const fixture = TestBed.createComponent(SeccionesChecklistComponent);
-    fixture.componentInstance.catalog = [{ code: 'TURNOS', label: 'Turnos' }];
+    fixture.componentInstance.catalog = [{ code: 'AGENDAS', label: 'Turnos' }];
     fixture.componentInstance.workingSet = [];
     let emitted: string | undefined;
     fixture.componentInstance.toggle.subscribe((c) => (emitted = c));
-    fixture.componentInstance.toggle.emit('TURNOS');
-    expect(emitted).toBe('TURNOS');
+    fixture.componentInstance.toggle.emit('AGENDAS');
+    expect(emitted).toBe('AGENDAS');
   });
 });

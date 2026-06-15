@@ -117,7 +117,7 @@ describe('EmpleadoFormPage (smoke)', () => {
     cmp.usuarioGroup.patchValue({
       mode: 'new',
       newUser: { firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222', roleId: 3, branchId: 8 },
-      sections: ['ATENCION'],
+      sections: ['RECEPCION'],
     });
     cmp.currentStep.set(RESUMEN_STEP);
     const spy = vi.spyOn(store, 'dispatch');
@@ -125,7 +125,7 @@ describe('EmpleadoFormPage (smoke)', () => {
     expect(spy).toHaveBeenCalledWith(createEmployeeWithUser({
       userPayload: {
         firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222',
-        roleIds: [3], sections: ['ATENCION'], branchId: 8,
+        roleIds: [3], sections: ['RECEPCION'], branchId: 8,
       },
       req: {
         firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: true, registration: null, address: null,
@@ -150,7 +150,7 @@ describe('EmpleadoFormPage (smoke)', () => {
     cmp.usuarioGroup.patchValue({
       mode: 'new',
       newUser: { firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222', roleId: 3, branchId: null },
-      sections: ['ATENCION'],
+      sections: ['RECEPCION'],
     });
     cmp.currentStep.set(RESUMEN_STEP);
     const spy = vi.spyOn(store, 'dispatch');

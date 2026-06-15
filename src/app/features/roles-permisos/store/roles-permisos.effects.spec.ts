@@ -32,27 +32,27 @@ describe('RolesPermisosEffects', () => {
 
   it('loadCatalog success', async () => {
     configure();
-    api.getGrantable.mockReturnValue(of([{ code: 'TURNOS', label: 'Turnos' }]));
+    api.getGrantable.mockReturnValue(of([{ code: 'AGENDAS', label: 'Turnos' }]));
     actions$ = of(loadCatalog());
     const effects = TestBed.inject(RolesPermisosEffects);
-    expect(await firstValueFrom(effects.loadCatalog$)).toEqual(loadCatalogSuccess({ catalog: [{ code: 'TURNOS', label: 'Turnos' }] }));
+    expect(await firstValueFrom(effects.loadCatalog$)).toEqual(loadCatalogSuccess({ catalog: [{ code: 'AGENDAS', label: 'Turnos' }] }));
   });
 
   it('loadUserSections mapea a codes', async () => {
     configure();
-    api.getUserSections.mockReturnValue(of([{ code: 'ATENCION', label: 'Atención' }]));
+    api.getUserSections.mockReturnValue(of([{ code: 'RECEPCION', label: 'Atención' }]));
     actions$ = of(loadUserSections({ userId: 7 }));
     const effects = TestBed.inject(RolesPermisosEffects);
-    expect(await firstValueFrom(effects.loadUserSections$)).toEqual(loadUserSectionsSuccess({ sections: ['ATENCION'] }));
+    expect(await firstValueFrom(effects.loadUserSections$)).toEqual(loadUserSectionsSuccess({ sections: ['RECEPCION'] }));
   });
 
   it('saveUserSections usa selectedUserId+workingSet del store', async () => {
-    configure({ ...initialRolesPermisosState, selectedUserId: 7, workingSet: ['ATENCION', 'TURNOS'] });
+    configure({ ...initialRolesPermisosState, selectedUserId: 7, workingSet: ['RECEPCION', 'AGENDAS'] });
     api.setUserSections.mockReturnValue(of(undefined));
     actions$ = of(saveUserSections());
     const effects = TestBed.inject(RolesPermisosEffects);
     const action = await firstValueFrom(effects.saveUserSections$);
-    expect(api.setUserSections).toHaveBeenCalledWith(7, ['ATENCION', 'TURNOS']);
-    expect(action).toEqual(saveUserSectionsSuccess({ sections: ['ATENCION', 'TURNOS'] }));
+    expect(api.setUserSections).toHaveBeenCalledWith(7, ['RECEPCION', 'AGENDAS']);
+    expect(action).toEqual(saveUserSectionsSuccess({ sections: ['RECEPCION', 'AGENDAS'] }));
   });
 });

@@ -9,6 +9,7 @@ import {
   toggleUsuarioStatus, toggleUsuarioStatusSuccess, toggleUsuarioStatusFailure,
   resendUsuarioInvite, resendUsuarioInviteSuccess, resendUsuarioInviteFailure,
   regenerateFirstLoginToken, regenerateFirstLoginTokenSuccess, regenerateFirstLoginTokenFailure,
+  clearFirstLoginToken,
   loadRoles, loadRolesSuccess, loadRolesFailure,
   loadWhiteLabel, loadWhiteLabelSuccess, loadWhiteLabelFailure,
   saveWhiteLabel, saveWhiteLabelSuccess, saveWhiteLabelFailure,
@@ -75,8 +76,9 @@ export const empresaReducer = createReducer(
   })),
   // No tocamos la lista — un effect dispara loadUsuarios con los filtros
   // actuales para refrescar la página activa.
-  on(addUsuarioSuccess, (state): EmpresaState => ({
+  on(addUsuarioSuccess, (state, { result }): EmpresaState => ({
     ...state,
+    lastFirstLoginToken: result.firstLoginToken ?? null,
     pending: false,
     error: null,
   })),
@@ -97,9 +99,10 @@ export const empresaReducer = createReducer(
   on(resendUsuarioInviteSuccess, (state): EmpresaState => ({
     ...state, pending: false, error: null,
   })),
-  on(regenerateFirstLoginTokenSuccess, (state): EmpresaState => ({
-    ...state, pending: false, error: null,
+  on(regenerateFirstLoginTokenSuccess, (state, { token }): EmpresaState => ({
+    ...state, lastFirstLoginToken: token, pending: false, error: null,
   })),
+  on(clearFirstLoginToken, (state): EmpresaState => ({ ...state, lastFirstLoginToken: null })),
 
   // ---- roles success ----
   on(loadRolesSuccess, (state, { roles }): EmpresaState => ({

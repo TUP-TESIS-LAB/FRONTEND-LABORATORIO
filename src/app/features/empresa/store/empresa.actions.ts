@@ -130,6 +130,8 @@ export const regenerateFirstLoginTokenFailure = createAction(
   '[Empresa API] Regenerate First Login Token Failure',
   props<{ error: HttpErrorResponse }>(),
 );
+/** Cierra el dialog del link de primer login (resetea el token mostrado). */
+export const clearFirstLoginToken = createAction('[Empresa Usuarios Page] Clear First Login Token');
 
 // =========================
 // Roles — load

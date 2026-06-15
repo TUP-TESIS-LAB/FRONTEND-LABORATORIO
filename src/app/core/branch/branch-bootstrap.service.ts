@@ -27,26 +27,24 @@ export class BranchBootstrapService {
 
   init(): Observable<void> {
     const currentId = this.ctx.branchId();
-    const currentName = this.ctx.branchName();
 
-    if (currentId != null && currentName != null) {
-      return of(void 0);
-    }
-
+    // SIEMPRE validamos el id persistido contra las sucursales del tenant ACTUAL.
+    // Antes cortábamos si había id+name, pero eso arrastraba la sucursal del tenant
+    // anterior (localStorage no scopeado por tenant) y rompía el alta de atención.
     return this.sucursales.listBranchesForSelector().pipe(
       tap(branches => {
         if (branches.length === 0) return;
 
-        // Caso 2: hay id pero falta name -> matchear contra la lista
+        // Caso 1/2: el id persistido pertenece al tenant -> mantener (refrescar name).
         if (currentId != null) {
           const match = branches.find(b => b.id === currentId);
           if (match) {
-            this.ctx.setBranch(match.id, match.name);
+            if (this.ctx.branchName() !== match.name) this.ctx.setBranch(match.id, match.name);
             return;
           }
-          // Si el id persistido NO existe en el tenant (stale: ej. localStorage
-          // viejo o sucursal eliminada), NO lo dejamos inválido — seguimos al
-          // fallback para auto-curar el contexto.
+          // El id persistido NO pertenece a este tenant (stale: otro tenant /
+          // sucursal eliminada). Lo limpiamos y re-resolvemos abajo (auto-cura).
+          this.ctx.clear();
         }
 
         // Caso 3: hay branch en user -> usar y resolver name

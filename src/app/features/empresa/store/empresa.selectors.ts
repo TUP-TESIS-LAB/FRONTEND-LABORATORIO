@@ -77,3 +77,6 @@ export const selectSmtpTestResult = createSelector(
 export const selectSmtpTestError = createSelector(
   selectEmpresaState, s => s.smtpTestError,
 );
+export const selectLastFirstLoginToken = createSelector(
+  selectEmpresaState, (s) => s.lastFirstLoginToken,
+);

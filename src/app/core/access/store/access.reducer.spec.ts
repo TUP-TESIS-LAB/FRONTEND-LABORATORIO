@@ -15,9 +15,9 @@ describe('accessReducer', () => {
   it('loadMySectionsSuccess setea sections y loaded', () => {
     const s = accessReducer(
       { ...initialAccessState, pending: true },
-      loadMySectionsSuccess({ sections: ['ATENCION', 'TURNOS'] }),
+      loadMySectionsSuccess({ sections: ['RECEPCION', 'AGENDAS'] }),
     );
-    expect(s.sections).toEqual(['ATENCION', 'TURNOS']);
+    expect(s.sections).toEqual(['RECEPCION', 'AGENDAS']);
     expect(s.loaded).toBe(true);
     expect(s.pending).toBe(false);
   });
@@ -31,7 +31,7 @@ describe('accessReducer', () => {
 
   it('clearMySections resetea al estado inicial', () => {
     const s = accessReducer(
-      { sections: ['TURNOS'], loaded: true, pending: false, error: null },
+      { sections: ['AGENDAS'], loaded: true, pending: false, error: null },
       clearMySections(),
     );
     expect(s).toEqual(initialAccessState);

@@ -10,12 +10,13 @@ import {
   loadUsuarios, setUsuariosFilters, loadRoles,
   addUsuario, updateUsuario,
   toggleUsuarioStatus,
-  resendUsuarioInvite, regenerateFirstLoginToken,
+  resendUsuarioInvite, regenerateFirstLoginToken, clearFirstLoginToken,
 } from '../../store/empresa.actions';
 import {
   selectAllUsuarios, selectAllRoles,
   selectEmpresaPending, selectUsuariosFilters,
   selectUsuariosPage, selectUsuariosSize, selectUsuariosTotalElements,
+  selectLastFirstLoginToken,
 } from '../../store/empresa.selectors';
 import { loadCatalog, selectUser } from '@features/roles-permisos/store/roles-permisos.actions';
 import { selectCatalog, selectRpPending, selectWorkingSet } from '@features/roles-permisos/store/roles-permisos.selectors';
@@ -28,6 +29,7 @@ import { SucursalService } from '@features/sucursales/services/sucursal.service'
 import { UsuariosTableComponent } from './components/usuarios-table.component';
 import { UsuarioFormDrawerComponent } from './components/usuario-form-drawer.component';
 import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.component';
+import { FirstLoginLinkDialogComponent } from './components/first-login-link-dialog.component';
 
 @Component({
   selector: 'emp-usuarios-page',
@@ -35,7 +37,7 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
   imports: [
     ButtonModule, FilterBarComponent, PageHeaderComponent,
     UsuariosTableComponent,
-    UsuarioFormDrawerComponent, ToggleStatusDialogComponent,
+    UsuarioFormDrawerComponent, ToggleStatusDialogComponent, FirstLoginLinkDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -77,6 +79,10 @@ import { ToggleStatusDialogComponent } from './components/toggle-status-dialog.c
       [saving]="pending()"
       (confirm)="onConfirmToggle($event)"
       (cancel)="closeToggle()" />
+
+    <emp-first-login-link-dialog
+      [token]="firstLoginToken()"
+      (close)="onCloseFirstLoginLink()" />
   `,
   styles: [`
     .emp-usuarios__filters { margin-bottom: var(--space-4); }
@@ -97,6 +103,7 @@ export class UsuariosPage implements OnInit {
   readonly totalElements = this.store.selectSignal(selectUsuariosTotalElements);
   readonly catalog = this.store.selectSignal(selectCatalog);
   readonly editingSections = this.store.selectSignal(selectWorkingSet);
+  readonly firstLoginToken = this.store.selectSignal(selectLastFirstLoginToken);
 
   readonly formOpen = signal(false);
   readonly editingUser = signal<Usuario | null>(null);
@@ -194,4 +201,5 @@ export class UsuariosPage implements OnInit {
 
   onResend(u: Usuario): void { this.store.dispatch(resendUsuarioInvite({ userId: u.id })); }
   onRegenerate(u: Usuario): void { this.store.dispatch(regenerateFirstLoginToken({ userId: u.id })); }
+  onCloseFirstLoginLink(): void { this.store.dispatch(clearFirstLoginToken()); }
 }

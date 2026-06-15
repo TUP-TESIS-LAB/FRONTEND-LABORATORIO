@@ -8,7 +8,7 @@ import {
 
 describe('rolesPermisosReducer', () => {
   it('loadCatalogSuccess setea el catalogo', () => {
-    const s = rolesPermisosReducer(initialRolesPermisosState, loadCatalogSuccess({ catalog: [{ code: 'TURNOS', label: 'Turnos' }] }));
+    const s = rolesPermisosReducer(initialRolesPermisosState, loadCatalogSuccess({ catalog: [{ code: 'AGENDAS', label: 'Turnos' }] }));
     expect(s.catalog).toHaveLength(1);
     expect(s.pending).toBe(false);
   });
@@ -18,24 +18,24 @@ describe('rolesPermisosReducer', () => {
     expect(s.pending).toBe(true);
   });
   it('loadUserSectionsSuccess setea granted=working', () => {
-    const s = rolesPermisosReducer(initialRolesPermisosState, loadUserSectionsSuccess({ sections: ['ATENCION'] }));
-    expect(s.grantedSet).toEqual(['ATENCION']);
-    expect(s.workingSet).toEqual(['ATENCION']);
+    const s = rolesPermisosReducer(initialRolesPermisosState, loadUserSectionsSuccess({ sections: ['RECEPCION'] }));
+    expect(s.grantedSet).toEqual(['RECEPCION']);
+    expect(s.workingSet).toEqual(['RECEPCION']);
   });
   it('toggleSection agrega y saca del workingSet', () => {
-    let s = rolesPermisosReducer({ ...initialRolesPermisosState, workingSet: [] }, toggleSection({ code: 'TURNOS' }));
-    expect(s.workingSet).toEqual(['TURNOS']);
-    s = rolesPermisosReducer(s, toggleSection({ code: 'TURNOS' }));
+    let s = rolesPermisosReducer({ ...initialRolesPermisosState, workingSet: [] }, toggleSection({ code: 'AGENDAS' }));
+    expect(s.workingSet).toEqual(['AGENDAS']);
+    s = rolesPermisosReducer(s, toggleSection({ code: 'AGENDAS' }));
     expect(s.workingSet).toEqual([]);
   });
   it('saveUserSections marca saving; success setea granted=working', () => {
     const saving = rolesPermisosReducer(initialRolesPermisosState, saveUserSections());
     expect(saving.saving).toBe(true);
     const done = rolesPermisosReducer(
-      { ...initialRolesPermisosState, workingSet: ['ATENCION'], saving: true },
-      saveUserSectionsSuccess({ sections: ['ATENCION'] }),
+      { ...initialRolesPermisosState, workingSet: ['RECEPCION'], saving: true },
+      saveUserSectionsSuccess({ sections: ['RECEPCION'] }),
     );
-    expect(done.grantedSet).toEqual(['ATENCION']);
+    expect(done.grantedSet).toEqual(['RECEPCION']);
     expect(done.saving).toBe(false);
   });
 });

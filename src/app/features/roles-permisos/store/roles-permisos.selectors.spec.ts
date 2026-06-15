@@ -5,11 +5,11 @@ function wrap(state: RolesPermisosState) { return { [ROLES_PERMISOS_FEATURE_KEY]
 
 describe('roles-permisos selectors', () => {
   it('selectIsDirty false cuando working == granted', () => {
-    const st = wrap({ ...initialRolesPermisosState, grantedSet: ['ATENCION', 'TURNOS'], workingSet: ['TURNOS', 'ATENCION'] });
+    const st = wrap({ ...initialRolesPermisosState, grantedSet: ['RECEPCION', 'AGENDAS'], workingSet: ['AGENDAS', 'RECEPCION'] });
     expect(selectIsDirty(st)).toBe(false);
   });
   it('selectIsDirty true cuando difieren', () => {
-    const st = wrap({ ...initialRolesPermisosState, grantedSet: ['ATENCION'], workingSet: ['ATENCION', 'TURNOS'] });
+    const st = wrap({ ...initialRolesPermisosState, grantedSet: ['RECEPCION'], workingSet: ['RECEPCION', 'AGENDAS'] });
     expect(selectIsDirty(st)).toBe(true);
   });
   it('selectWorkingSet devuelve el working', () => {

@@ -35,20 +35,20 @@ describe('SidebarComponent visibility', () => {
   }
 
   it('NO existe un item "Turnos" en el sidebar (se quitó; queda Configuración de agendas)', () => {
-    const s = setup(['TURNOS'], ['ADMINISTRADOR']);
+    const s = setup(['AGENDAS'], ['ADMINISTRADOR']);
     const allLabels = s.visibleSections().flatMap((sec) => sec.items.map((i) => i.label));
     expect(allLabels).not.toContain('Turnos');
     expect(allLabels).toContain('Configuración de agendas');
   });
 
-  it('muestra Recepción solo si la seccion TURNOS esta concedida', () => {
-    const withTurnos = setup(['TURNOS'], []);
-    const core = withTurnos.visibleSections().find((s) => s.label === 'Core clínico');
-    expect(core?.items.some((i) => i.label === 'Recepción')).toBe(true);
+  it('muestra Recepción solo si la seccion RECEPCION esta concedida', () => {
+    const withRec = setup(['RECEPCION'], []);
+    const rec = withRec.visibleSections().find((s) => s.label === 'Recepción');
+    expect(rec?.items.some((i) => i.label === 'Recepción')).toBe(true);
 
-    const withoutTurnos = setup([], []);
-    const core2 = withoutTurnos.visibleSections().find((s) => s.label === 'Core clínico');
-    expect(core2?.items.some((i) => i.label === 'Recepción') ?? false).toBe(false);
+    const withoutRec = setup([], []);
+    const rec2 = withoutRec.visibleSections().find((s) => s.label === 'Recepción');
+    expect(rec2?.items.some((i) => i.label === 'Recepción') ?? false).toBe(false);
   });
 
   it('ya NO existe el desplegable hardcodeado "Pantallas en sala" en el nav', () => {
@@ -57,11 +57,11 @@ describe('SidebarComponent visibility', () => {
     expect(allLabels).not.toContain('Pantallas en sala');
   });
 
-  it('Empresa (admin-only) visible solo para ADMINISTRADOR', () => {
-    const admin = setup([], ['ADMINISTRADOR']);
-    expect(admin.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(true);
-    const noAdmin = setup([], []);
-    expect(noAdmin.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(false);
+  it('Empresa visible solo si la seccion EMPRESA esta concedida', () => {
+    const withEmpresa = setup(['EMPRESA'], ['ADMINISTRADOR']);
+    expect(withEmpresa.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(true);
+    const without = setup([], ['ADMINISTRADOR']);
+    expect(without.visibleSections().some((s) => s.items.some((i) => i.label === 'Empresa'))).toBe(false);
   });
 
   it('muestra el branding (logo + nombre) con fallback cuando no hay tenant config', () => {
@@ -77,7 +77,7 @@ describe('SidebarComponent visibility', () => {
   });
 
   it('en modo colapsado oculta los labels y aplica la clase collapsed al nav', () => {
-    setup(['TURNOS'], ['ADMINISTRADOR']);
+    setup(['AGENDAS'], ['ADMINISTRADOR']);
     const fixture = TestBed.createComponent(SidebarComponent);
     fixture.componentRef.setInput('collapsed', true);
     fixture.detectChanges();
@@ -92,7 +92,7 @@ describe('SidebarComponent visibility', () => {
 
   it('Muestras filtra sus hijos por seccion', () => {
     const onlyPre = setup(['PREANALITICA'], []);
-    const core = onlyPre.visibleSections().find((s) => s.label === 'Core clínico');
+    const core = onlyPre.visibleSections().find((s) => s.label === 'Clínico');
     const muestras = core?.items.find((i) => i.label === 'Muestras');
     expect(muestras?.kind).toBe('expandable');
     if (muestras?.kind === 'expandable') {
@@ -103,7 +103,7 @@ describe('SidebarComponent visibility', () => {
 
   it('Muestras muestra Descarte solo con POSTANALITICA', () => {
     const onlyPost = setup(['POSTANALITICA'], []);
-    const core = onlyPost.visibleSections().find((s) => s.label === 'Core clínico');
+    const core = onlyPost.visibleSections().find((s) => s.label === 'Clínico');
     const muestras = core?.items.find((i) => i.label === 'Muestras');
     if (muestras?.kind === 'expandable') {
       expect(muestras.children.map((c) => c.label)).toEqual(['Descarte']);
