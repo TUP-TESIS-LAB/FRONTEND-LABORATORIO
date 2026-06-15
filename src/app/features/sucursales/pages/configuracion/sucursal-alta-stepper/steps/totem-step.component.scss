@@ -34,6 +34,23 @@
   font-weight: 500;
 }
 
+// 3 toggles (Tótem / Pantalla sala de espera / Pantalla de extracción): apilados
+// con separación clara entre sí y entre el switch y su label (antes iban inline y
+// pegados, sin estilos definidos).
+.toggles-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+.display-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+
+  .switch-label { font-size: 0.9375rem; }
+}
+
 .helper-text {
   font-size: 0.8125rem;
   color: var(--p-text-muted-color);
