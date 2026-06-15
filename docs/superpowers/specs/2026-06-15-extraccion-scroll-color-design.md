@@ -4,7 +4,7 @@
 > **Rama:** `feat/extraccion-scroll-color` (worktree `.worktrees/extraccion-pulido`, off `development`).
 > **Alcance:** Frontend puro (CSS + atributos de PrimeNG). Sin backend.
 > **PRs (regla del usuario): 1 solo PR de FE** (este tópico no toca backend).
-> **Jira:** _(pendiente)_
+> **Jira:** [KAN-112](https://exequielsantoro.atlassian.net/browse/KAN-112)
 
 ## Item 1 — Scroll interno en las tablas de extracción
 

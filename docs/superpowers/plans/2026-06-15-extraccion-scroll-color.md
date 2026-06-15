@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development o superpowers:executing-plans. Steps con checkbox (`- [ ]`).
 >
-> **Jira:** _(pendiente — `jira-workflow`)_
+> **Jira:** [KAN-112](https://exequielsantoro.atlassian.net/browse/KAN-112)
 >
 > **Spec:** `docs/superpowers/specs/2026-06-15-extraccion-scroll-color-design.md`
 
