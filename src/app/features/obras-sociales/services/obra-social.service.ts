@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { InsurerComplete, InsurerSummary, InsurerTypeCode, SpecificData, humanizeInsurerType } from '../models/insurer.model';
 import { PlanComplete } from '../models/plan.model';
 import { Agreement } from '../models/agreement.model';
@@ -59,11 +59,6 @@ export class ObraSocialService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/coverages';
 
-  /** Stub en memoria para el alta por wizard (sin endpoint real todavía). */
-  private readonly db: InsurerComplete[] = [];
-  private seq = 10_000;
-  private nextId(): number { return ++this.seq; }
-
   // ── lectura (backend real) ────────────────────────────────────────────────
 
   search(req: ObraSocialPageRequest): Observable<ObraSocialPageResult> {
@@ -105,36 +100,44 @@ export class ObraSocialService {
   /** Sin endpoint de versiones NBU todavía: catálogo fijo. */
   getNbuVersions(): Observable<NbuVersion[]> { return of(NBU_VERSIONS.map((x) => ({ ...x }))); }
 
-  // ── alta (stub en memoria hasta que exista el endpoint del wizard) ─────────
+  // ── alta por wizard (backend real: POST /coverages/wizard) ─────────────────
 
+  /**
+   * Alta atómica de obra social + planes (con convenio) + contactos contra el
+   * endpoint real del wizard. Antes era un stub en memoria (no persistía ni se
+   * veía en la tabla/atención). Devuelve el detalle completo recién creado.
+   */
   createFromWizard(payload: WizardCreate): Observable<InsurerComplete> {
-    const insurerId = this.nextId();
-    const plans: PlanComplete[] = payload.plans.map((pw) => {
-      const planId = this.nextId();
-      const agreement: Agreement = {
-        id: this.nextId(), insurerPlanId: planId, insurerPlanName: pw.plan.name,
-        versionNbu: pw.agreement.versionNbu, ubValue: pw.agreement.ubValue,
-        validFromDate: pw.agreement.validFromDate, validToDate: null,
-      };
-      return {
-        id: planId, insurerId, insurerName: payload.insurer.name,
-        code: pw.plan.code, acronym: pw.plan.acronym, name: pw.plan.name,
-        description: pw.plan.description, isActive: true, iva: pw.plan.iva,
-        actualAgreements: [agreement],
-      };
-    });
-    const contacts: InsurerContactInfo[] = payload.contacts.map((c) => ({
-      id: this.nextId(), insurerId, contactType: c.contactType, contact: c.contact, isActive: true,
-    }));
-    const created: InsurerComplete = {
-      id: insurerId, code: payload.insurer.code, name: payload.insurer.name,
-      acronym: payload.insurer.acronym, insurerType: payload.insurer.insurerType,
-      insurerTypeName: humanizeInsurerType(payload.insurer.insurerType),
-      description: payload.insurer.description, authorizationUrl: payload.insurer.authorizationUrl,
-      active: true, specificData: payload.insurer.specificData, plans, contacts,
+    const sd = payload.insurer.specificData;
+    const isSelfPay = payload.insurer.insurerType === 'SELF_PAY';
+    const body = {
+      insurer: {
+        code: payload.insurer.code,
+        name: payload.insurer.name,
+        acronym: payload.insurer.acronym,
+        insurerType: payload.insurer.insurerType,
+        description: payload.insurer.description ?? null,
+        authorizationUrl: payload.insurer.authorizationUrl ?? null,
+        cuit: sd?.socialHealth?.cuit ?? sd?.privateHealth?.cuit ?? null,
+        copayPolicy: sd?.privateHealth?.copayPolicy ?? null,
+        acceptedPaymentMethods: sd?.selfPay?.acceptedPaymentMethods ?? null,
+      },
+      contacts: payload.contacts.map((c) => ({ contact: c.contact, contactType: c.contactType })),
+      plans: payload.plans.map((pw) => ({
+        code: pw.plan.code,
+        acronym: pw.plan.acronym,
+        name: pw.plan.name,
+        description: pw.plan.description ?? null,
+        iva: pw.plan.iva,
+        particular: isSelfPay,
+        versionNbu: pw.agreement.versionNbu,
+        ubValue: pw.agreement.ubValue,
+        validFromDate: pw.agreement.validFromDate,
+      })),
     };
-    this.db.push(created);
-    return of(structuredClone(created));
+    return this.http.post<{ insurerId: number }>(`${this.base}/wizard`, body).pipe(
+      switchMap((res) => this.getCompleteById(res.insurerId)),
+    );
   }
 
   // ── mapeo backend → modelo de UI ──────────────────────────────────────────
