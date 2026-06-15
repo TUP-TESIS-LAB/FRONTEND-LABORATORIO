@@ -113,7 +113,7 @@ const UNDO_WINDOW_MS = 5000;
                 description="Cuando ingresen pacientes esperando extracción aparecerán acá."
               />
             } @else {
-              <p-table [value]="awaiting()" styleClass="p-datatable-sm">
+              <p-table [value]="awaiting()" styleClass="p-datatable-sm" scrollable scrollHeight="flex">
                 <ng-template pTemplate="header">
                   <tr>
                     <th></th>
@@ -236,6 +236,13 @@ const UNDO_WINDOW_MS = 5000;
     /* Centrar verticalmente el empty-state de cada columna (Cola: directo; En curso: dentro de app-in-progress-list). */
     .block > ui-empty-state { margin: auto 0; }
     .block > app-in-progress-list { flex: 1; min-height: 0; }
+    /* Cola: la p-table llena el alto del .block y scrollea su body internamente,
+       con el header sticky (PrimeNG scrollHeight="flex"). Cadena con min-height:0
+       para que el scroll no empuje. Scope al hijo directo para no afectar la tabla
+       de app-in-progress-list (que se ocupa por su cuenta). */
+    .block > p-table { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .block > p-table ::ng-deep .p-datatable { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+    .block > p-table ::ng-deep .p-datatable-table-container { flex: 1 1 auto; min-height: 0; }
     .block__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
     .actions-col { width: 1%; white-space: nowrap; text-align: right; }
     .actions-cell { display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center; }
