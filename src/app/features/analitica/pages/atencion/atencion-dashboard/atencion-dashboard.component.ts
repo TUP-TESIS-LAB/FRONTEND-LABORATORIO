@@ -19,6 +19,7 @@ import { Doctor } from '@features/medicos/models/doctor.model';
 import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
 import {
   attentionGroupLabel,
+  attentionListLabel,
   attentionGroupSeverity,
   buildAttentionStateGroups,
 } from '../../../models/atencion-state-label';
@@ -88,7 +89,7 @@ import {
                     [pTooltip]="motivo" tooltipPosition="top"
                     tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
                 <p-tag
-                  [value]="groupLabel($any(row).attentionState)"
+                  [value]="listLabel($any(row).attentionState, $any(row).cancelledAtState)"
                   [severity]="groupSeverity($any(row).attentionState)" />
               </span>
             } @else {
@@ -151,6 +152,7 @@ export class AtencionDashboardComponent implements OnInit {
   protected readonly kpisExpanded = signal(false);
 
   protected readonly groupLabel    = attentionGroupLabel;
+  protected readonly listLabel     = attentionListLabel;
   protected readonly groupSeverity = attentionGroupSeverity;
 
   /** Lista de médicos del tenant, para resolver el nombre en la columna Médico (B3). */
