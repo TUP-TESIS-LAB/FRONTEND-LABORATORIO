@@ -3,7 +3,7 @@
 > **Estado:** Diseño aprobado (2026-06-14).
 > **Rama:** `feat/medicos-empleados-pulido` (worktree `.worktrees/medicos-empleados`, off `development`).
 > **Alcance:** Cross-stack. Incluye 2 bugs confirmados + refactor de empleados + drawer de médicos.
-> **Jira:** _(pendiente)_
+> **Jira:** [KAN-108](https://exequielsantoro.atlassian.net/browse/KAN-108)
 
 ## Estructura de PRs — 1 de BE + 1 de FE (regla del usuario)
 

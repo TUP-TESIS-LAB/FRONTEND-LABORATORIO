@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`).
 >
-> **Jira:** _(pendiente — `jira-workflow`, regla #1 de ambos repos)_
+> **Jira:** [KAN-108](https://exequielsantoro.atlassian.net/browse/KAN-108)
 >
 > **Spec:** `docs/superpowers/specs/2026-06-14-medicos-empleados-pulido-design.md`
 
