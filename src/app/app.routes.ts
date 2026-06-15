@@ -47,8 +47,12 @@ export const routes: Routes = [
           import('./features/portal/portal.routes').then((m) => m.PORTAL_ROUTES),
       },
       {
+        // Recepción es core (sección RECEPCION). Las sub-rutas de agendas se
+        // gatean por módulo Turnos + sección AGENDAS dentro de turnos.routes.
+        // TODO(reorg): separar recepción del module-gate de Turnos para que sea
+        // core de verdad aunque el tenant no tenga el módulo Turnos.
         path: 'turnos',
-        canMatch: [moduleActiveGuard(ModuleKey.Turnos), sectionGuard('TURNOS')],
+        canMatch: [moduleActiveGuard(ModuleKey.Turnos), sectionGuard('RECEPCION')],
         loadChildren: () =>
           import('./features/turnos/turnos.routes').then((m) => m.TURNOS_ROUTES),
       },

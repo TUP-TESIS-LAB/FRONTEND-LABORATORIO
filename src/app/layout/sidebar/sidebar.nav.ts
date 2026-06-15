@@ -36,11 +36,16 @@ export interface NavSection { label: string; items: NavItem[]; }
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    label: 'Principal',
-    items: [{ kind: 'link', label: 'Inicio', icon: 'pi pi-home', path: '/home' }],
+    label: 'Recepción',
+    items: [
+      { kind: 'link', label: 'Recepción', icon: 'pi pi-bell', path: '/turnos/recepcion', sectionKey: 'RECEPCION' },
+      { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes', sectionKey: 'PACIENTES' },
+      { kind: 'link', label: 'Configuración de agendas', icon: 'pi pi-calendar-plus', path: '/turnos/configuracion', moduleKey: ModuleKey.Turnos, sectionKey: 'AGENDAS' },
+      { kind: 'link', label: 'Médicos derivantes', icon: 'pi pi-heart', path: '/medicos', moduleKey: ModuleKey.Medicos, sectionKey: 'MEDICOS' },
+    ],
   },
   {
-    label: 'Core clínico',
+    label: 'Clínico',
     items: [
       {
         kind: 'expandable', label: 'Muestras', icon: 'pi pi-flask',
@@ -52,45 +57,17 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: 'Descarte',      path: '/analitica/descarte',      sectionKey: 'POSTANALITICA' },
         ],
       },
-      { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes', sectionKey: 'PACIENTES' },
-      {
-        kind: 'link',
-        label: 'Recepción',
-        icon: 'pi pi-bell',
-        path: '/turnos/recepcion',
-        moduleKey: ModuleKey.Turnos,
-        sectionKey: 'TURNOS',
-      },
-      {
-        kind: 'link',
-        label: 'Configuración de agendas',
-        icon: 'pi pi-calendar-plus',
-        path: '/turnos/configuracion',
-        roleKey: 'ADMINISTRADOR',
-      },
-      {
-        kind: 'link',
-        label: 'Cola de extracción',
-        icon: 'pi pi-bolt',
-        path: '/analitica/extraccion',
-      },
+      { kind: 'link', label: 'Cola de extracción', icon: 'pi pi-bolt', path: '/analitica/extraccion', sectionKey: 'EXTRACCIONES' },
     ],
   },
   {
     label: 'Gestión',
     items: [
-      { kind: 'link', label: 'Empresa',          icon: 'pi pi-building', path: '/empresa', roleKey: 'ADMINISTRADOR' },
-      { kind: 'link', label: 'Sucursales',       icon: 'pi pi-building', path: '/sucursales', sectionKey: 'SUCURSALES', roleKey: 'ADMINISTRADOR' },
+      { kind: 'link', label: 'Empresa',          icon: 'pi pi-building', path: '/empresa', sectionKey: 'EMPRESA' },
+      { kind: 'link', label: 'Sucursales',       icon: 'pi pi-building', path: '/sucursales', sectionKey: 'SUCURSALES' },
+      { kind: 'link', label: 'Obras sociales',   icon: 'pi pi-id-card',  path: '/obras-sociales', sectionKey: 'OBRAS_SOCIALES' },
       { kind: 'link', label: 'Financiero',       icon: 'pi pi-wallet',   path: '/financiero', moduleKey: ModuleKey.Financiero, sectionKey: 'FINANCIERO' },
-      { kind: 'link', label: 'Obras Sociales',   icon: 'pi pi-id-card',  path: '/obras-sociales', sectionKey: 'OBRAS_SOCIALES' },
-    ],
-  },
-  {
-    label: 'Servicios clínicos',
-    items: [
-      { kind: 'link', label: 'Médicos derivantes', icon: 'pi pi-heart', path: '/medicos', moduleKey: ModuleKey.Medicos, chip: 'Beta' },
-      { kind: 'link', label: 'Stock e insumos',    icon: 'pi pi-box',   path: '/stock',   moduleKey: ModuleKey.Stock, sectionKey: 'STOCK', chip: 'Beta' },
-      { kind: 'link', label: 'Portal paciente',    icon: 'pi pi-globe', path: '/portal',  moduleKey: ModuleKey.Portal, sectionKey: 'PORTAL' },
+      { kind: 'link', label: 'Stock e insumos',  icon: 'pi pi-box',      path: '/stock', moduleKey: ModuleKey.Stock, sectionKey: 'STOCK' },
     ],
   },
 ];
