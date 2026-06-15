@@ -112,18 +112,40 @@ describe('AnalysisPickerComponent', () => {
     expect(fixture.componentInstance.items()).toEqual([]);
   });
 
-  it('addAnalysis crea fila con isAuthorized=false por defecto', () => {
+  it('item 3: con obra social (no particular) addAnalysis crea fila con isAuthorized=true', () => {
+    // default isParticular = false ⇒ obra social
     fixture.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
-    expect(fixture.componentInstance.items()[0].isAuthorized).toBe(false);
+    expect(fixture.componentInstance.items()[0].isAuthorized).toBe(true);
   });
 
-  it('analysisAdded emite un PickerRow con isAuthorized=false', () => {
+  it('item 3: con cobertura Particular addAnalysis crea fila con isAuthorized=false', () => {
+    const f = TestBed.createComponent(AnalysisPickerComponent);
+    f.componentRef.setInput('isParticular', true);
+    f.detectChanges();
+    f.componentInstance.addAnalysis(a({ id: 1, shortCode: '1001' }));
+    expect(f.componentInstance.items()[0].isAuthorized).toBe(false);
+  });
+
+  it('analysisAdded emite un PickerRow con isAuthorized=true en obra social', () => {
     const emitted: PickerRow[] = [];
     fixture.componentInstance.analysisAdded.subscribe((row) => emitted.push(row));
     fixture.componentInstance.addAnalysis(a({ id: 7, shortCode: '2001', name: 'Glucemia' }));
     expect(emitted).toHaveLength(1);
-    expect(emitted[0].isAuthorized).toBe(false);
+    expect(emitted[0].isAuthorized).toBe(true);
     expect(emitted[0].id).toBe(7);
+  });
+
+  it('item 2: con cobertura Particular NO se renderiza la columna "Autorizado"', () => {
+    const f = TestBed.createComponent(AnalysisPickerComponent);
+    f.componentRef.setInput('isParticular', true);
+    f.detectChanges();
+    const headers = Array.from((f.nativeElement as HTMLElement).querySelectorAll('th')).map((th) => th.textContent?.trim() ?? '');
+    expect(headers.some((h) => h.includes('Autorizado'))).toBe(false);
+  });
+
+  it('item 2: con obra social SÍ se renderiza la columna "Autorizado"', () => {
+    const headers = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('th')).map((th) => th.textContent?.trim() ?? '');
+    expect(headers.some((h) => h.includes('Autorizado'))).toBe(true);
   });
 
   it('hidrata initialItems preservando isAuthorized y emite itemsChanged (003)', () => {
