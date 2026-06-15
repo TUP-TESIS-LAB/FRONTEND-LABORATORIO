@@ -7,7 +7,7 @@ export const loadBranchTotemConfig = createAction(
 
 export const loadBranchTotemConfigSuccess = createAction(
   '[BranchTotemConfig] Load Success',
-  props<{ branchId: number; enabled: boolean }>()
+  props<{ branchId: number; enabled: boolean; atencionDisplayEnabled: boolean; extraccionDisplayEnabled: boolean }>()
 );
 
 export const loadBranchTotemConfigFailure = createAction(

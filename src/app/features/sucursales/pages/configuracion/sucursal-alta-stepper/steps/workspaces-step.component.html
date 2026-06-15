@@ -76,17 +76,6 @@
         <label>Nombre <span class="pat-form__req">*</span></label>
         <input pInputText [(ngModel)]="newAreaName" class="w-full" />
       </div>
-      <div class="form-field">
-        <label>Tipo</label>
-        <p-select [options]="areaTypeOptions" [(ngModel)]="newAreaType"
-                  optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
-      </div>
-      @if (newAreaType === 'EXTERNO') {
-        <div class="form-field">
-          <label>Laboratorio externo</label>
-          <input pInputText [(ngModel)]="newAreaExternalLab" class="w-full" />
-        </div>
-      }
     </div>
     <ng-template pTemplate="footer">
       <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="areaModalOpen.set(false)" />

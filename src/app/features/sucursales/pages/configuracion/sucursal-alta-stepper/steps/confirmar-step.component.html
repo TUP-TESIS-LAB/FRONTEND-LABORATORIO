@@ -1,8 +1,58 @@
 <div class="confirmar-step">
-  <div class="confirmar-content-center">
-    <p class="confirmar-message">
-      Verificá que los datos cargados en los pasos anteriores sean correctos
-      antes de finalizar. Si necesitás corregir algo, volvé al paso correspondiente.
+  <p class="confirmar-intro">Revisá los datos cargados antes de finalizar.</p>
+
+  <section class="resumen-section">
+    <h3>Datos</h3>
+    <p class="resumen-line"><strong>{{ nombre() }}</strong></p>
+    <p class="resumen-line">{{ direccion() }}</p>
+  </section>
+
+  <section class="resumen-section">
+    <h3>Horarios</h3>
+    @if (horarioLineas().length === 0) {
+      <p class="resumen-line muted">Sin horarios</p>
+    } @else {
+      @for (linea of horarioLineas(); track $index) {
+        <p class="resumen-line">{{ linea }}</p>
+      }
+    }
+  </section>
+
+  <section class="resumen-section">
+    <h3>Contactos</h3>
+    @if (contactoLineas().length === 0) {
+      <p class="resumen-line muted">Sin contactos</p>
+    } @else {
+      @for (linea of contactoLineas(); track $index) {
+        <p class="resumen-line">{{ linea }}</p>
+      }
+    }
+  </section>
+
+  <section class="resumen-section">
+    <h3>Áreas y secciones</h3>
+    @if (areaLineas().length === 0) {
+      <p class="resumen-line muted">Sin áreas asociadas</p>
+    } @else {
+      @for (area of areaLineas(); track $index) {
+        <p class="resumen-line">{{ area.areaName }}: {{ area.sections.join(', ') }}</p>
+      }
+    }
+  </section>
+
+  <section class="resumen-section">
+    <h3>Tótem</h3>
+    <p class="resumen-line">
+      {{ totemHabilitado() ? 'Habilitado' : 'Deshabilitado' }}
+      · Boxes atención: {{ boxesAtencion() }}
+      · Boxes extracción: {{ boxesExtraccion() }}
     </p>
-  </div>
+  </section>
+
+  <section class="resumen-section">
+    <h3>Pantallas</h3>
+    <p class="resumen-line">
+      Sala de espera: {{ siNo(pantallaAtencion()) }} · Extracción: {{ siNo(pantallaExtraccion()) }}
+    </p>
+  </section>
 </div>

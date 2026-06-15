@@ -18,7 +18,11 @@ import { ModuleRegistry } from '@core/tenant/module-registry';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadBranchTotemConfig } from '@features/turnos/store/branch-totem-config/branch-totem-config.actions';
-import { selectBranchTotemEnabled } from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
+import {
+  selectBranchTotemEnabled,
+  selectAtencionDisplayEnabled,
+  selectExtraccionDisplayEnabled,
+} from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
 import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
 import { AccessRegistry } from '@core/access/access-registry';
 import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
@@ -146,23 +150,60 @@ import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
         }
       }
 
-      @if (salaEsperaUrl(); as url) {
+      @if (tvSalaUrl() || tvExtraccionUrl() || totemUrl()) {
         <div class="ui-sidebar__divider"></div>
         <div class="ui-sidebar__section">
-          <a
-            [href]="url"
-            target="_blank"
-            rel="noopener"
-            class="ui-sidebar__item"
-            [pTooltip]="collapsed() ? 'Sala de espera' : ''"
-            tooltipPosition="right"
-            (click)="itemClick.emit()">
-            <span class="ui-sidebar__icon"><i class="pi pi-desktop"></i></span>
-            @if (!collapsed()) {
-              <span class="ui-sidebar__label">Sala de espera</span>
-              <i class="pi pi-external-link ui-sidebar__chevron"></i>
-            }
-          </a>
+          @if (!collapsed()) {
+            <div class="ui-sidebar__section-label">Pantallas en sala</div>
+          }
+          @if (tvSalaUrl(); as url) {
+            <a
+              [href]="url"
+              target="_blank"
+              rel="noopener"
+              class="ui-sidebar__item"
+              [pTooltip]="collapsed() ? 'TV sala de espera' : ''"
+              tooltipPosition="right"
+              (click)="itemClick.emit()">
+              <span class="ui-sidebar__icon"><i class="pi pi-desktop"></i></span>
+              @if (!collapsed()) {
+                <span class="ui-sidebar__label">TV sala de espera</span>
+                <i class="pi pi-external-link ui-sidebar__chevron"></i>
+              }
+            </a>
+          }
+          @if (tvExtraccionUrl(); as url) {
+            <a
+              [href]="url"
+              target="_blank"
+              rel="noopener"
+              class="ui-sidebar__item"
+              [pTooltip]="collapsed() ? 'TV extracción' : ''"
+              tooltipPosition="right"
+              (click)="itemClick.emit()">
+              <span class="ui-sidebar__icon"><i class="pi pi-desktop"></i></span>
+              @if (!collapsed()) {
+                <span class="ui-sidebar__label">TV extracción</span>
+                <i class="pi pi-external-link ui-sidebar__chevron"></i>
+              }
+            </a>
+          }
+          @if (totemUrl(); as url) {
+            <a
+              [href]="url"
+              target="_blank"
+              rel="noopener"
+              class="ui-sidebar__item"
+              [pTooltip]="collapsed() ? 'Tótem' : ''"
+              tooltipPosition="right"
+              (click)="itemClick.emit()">
+              <span class="ui-sidebar__icon"><i class="pi pi-mobile"></i></span>
+              @if (!collapsed()) {
+                <span class="ui-sidebar__label">Tótem</span>
+                <i class="pi pi-external-link ui-sidebar__chevron"></i>
+              }
+            </a>
+          }
         </div>
       }
     </nav>
@@ -410,11 +451,13 @@ export class SidebarComponent implements OnInit {
       .filter((section) => section.items.length > 0),
   );
 
-  // ---- Sala de espera (TV) link condicional ----
-  // Visible solo si la sucursal del usuario tiene tótem ON y conocemos el
-  // `tenantSlug` (necesario para armar la URL pública `/display/:slug/:branchId`).
-  // El backend expone `tenantSlug` en `UserResponse` desde la respuesta de login.
+  // ---- Pantallas (TV) + tótem: links condicionales en el footer ----
+  // Cada link es visible solo si su flag está ON en la config de la sucursal del
+  // usuario y conocemos el `tenantSlug` (necesario para armar la URL pública
+  // `/display/:slug/:branchId`). El backend expone `tenantSlug` en `UserResponse`.
   private readonly totemEnabled = this.store.selectSignal(selectBranchTotemEnabled);
+  private readonly atencionDisplay = this.store.selectSignal(selectAtencionDisplayEnabled);
+  private readonly extraccionDisplay = this.store.selectSignal(selectExtraccionDisplayEnabled);
 
   private readonly branchId = computed<number | null>(
     () => this.session.currentUser()?.branch ?? null,
@@ -424,11 +467,28 @@ export class SidebarComponent implements OnInit {
     () => this.session.currentUser()?.tenantSlug ?? null,
   );
 
-  readonly salaEsperaUrl = computed<string | null>(() => {
-    if (!this.totemEnabled()) return null;
+  /** TV de sala de espera (atención). Visible si `atencionDisplayEnabled`. */
+  readonly tvSalaUrl = computed<string | null>(() => {
+    if (!this.atencionDisplay()) return null;
     const slug = this.tenantSlug();
     const id = this.branchId();
     return slug && id ? `/display/${slug}/${id}` : null;
+  });
+
+  /** TV de extracción. Visible si `extraccionDisplayEnabled`. */
+  readonly tvExtraccionUrl = computed<string | null>(() => {
+    if (!this.extraccionDisplay()) return null;
+    const slug = this.tenantSlug();
+    const id = this.branchId();
+    return slug && id ? `/display/extraccion/${slug}/${id}` : null;
+  });
+
+  /** Tótem walk-in. Visible si el tótem está habilitado (`enabled`). */
+  readonly totemUrl = computed<string | null>(() => {
+    if (!this.totemEnabled()) return null;
+    const slug = this.tenantSlug();
+    const id = this.branchId();
+    return slug && id ? '/turnos/totem' : null;
   });
 
   constructor() {

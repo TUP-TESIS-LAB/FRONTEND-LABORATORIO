@@ -7,10 +7,10 @@ export const branchTotemConfigReducer = createReducer(
   on(A.loadBranchTotemConfig, (s, { branchId }) => ({
     ...s, branchId, loading: true, error: null,
   })),
-  on(A.loadBranchTotemConfigSuccess, (s, { branchId, enabled }) => ({
-    ...s, branchId, enabled, loading: false, error: null,
+  on(A.loadBranchTotemConfigSuccess, (s, { branchId, enabled, atencionDisplayEnabled, extraccionDisplayEnabled }) => ({
+    ...s, branchId, enabled, atencionDisplayEnabled, extraccionDisplayEnabled, loading: false, error: null,
   })),
   on(A.loadBranchTotemConfigFailure, (s, { error }) => ({
-    ...s, loading: false, error,
+    ...s, enabled: false, atencionDisplayEnabled: false, extraccionDisplayEnabled: false, loading: false, error,
   })),
 );

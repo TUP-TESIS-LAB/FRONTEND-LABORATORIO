@@ -101,7 +101,8 @@ export const loadTotemConfig = createAction('[Sucursal] Load Totem Config', prop
 export const loadTotemConfigSuccess = createAction('[Sucursal] Load Totem Config Success', props<{ totemConfig: BranchTotemConfig | null }>());
 export const loadTotemConfigFailure = createAction('[Sucursal] Load Totem Config Failure', props<{ error: unknown }>());
 
-export const upsertTotemConfig = createAction('[Sucursal] Upsert Totem Config', props<{ branchId: number; enabled: boolean }>());
+export const upsertTotemConfig = createAction('[Sucursal] Upsert Totem Config',
+  props<{ branchId: number; enabled: boolean; atencionDisplayEnabled: boolean; extraccionDisplayEnabled: boolean }>());
 export const upsertTotemConfigSuccess = createAction('[Sucursal] Upsert Totem Config Success', props<{ totemConfig: BranchTotemConfig }>());
 export const upsertTotemConfigFailure = createAction('[Sucursal] Upsert Totem Config Failure', props<{ error: unknown }>());
 

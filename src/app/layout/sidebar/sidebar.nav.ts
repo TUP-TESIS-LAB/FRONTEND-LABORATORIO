@@ -62,19 +62,6 @@ export const NAV_SECTIONS: NavSection[] = [
         sectionKey: 'TURNOS',
       },
       {
-        // Pantallas externas que el laboratorio expone en sala/recepción (TVs + tótem).
-        // Agrupadas en un desplegable porque se abren en otro dispositivo/pestaña, no
-        // son pantallas del shell admin. branch 1001 = Sede Central del seed local-dev (V902).
-        kind: 'expandable',
-        label: 'Pantallas en sala',
-        icon: 'pi pi-desktop',
-        children: [
-          { label: 'TV sala de espera', path: '/display/lab-demo/1001',            icon: 'pi pi-desktop', external: true },
-          { label: 'TV extracción',     path: '/display/extraccion/lab-demo/1001', icon: 'pi pi-desktop', external: true },
-          { label: 'Tótem',             path: '/turnos/totem',                      icon: 'pi pi-mobile',  external: true },
-        ],
-      },
-      {
         kind: 'link',
         label: 'Configuración de agendas',
         icon: 'pi pi-calendar-plus',

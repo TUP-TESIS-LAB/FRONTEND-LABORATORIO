@@ -7,7 +7,6 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
-import { TooltipModule } from 'primeng/tooltip';
 
 import { selectSchedules } from '../../../../store/sucursal.selectors';
 import { loadSchedules, addSchedule, deleteSchedule } from '../../../../store/sucursal.actions';
@@ -39,7 +38,7 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
   selector: 'app-horarios-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TableModule, ButtonModule, SelectModule, InputTextModule, TooltipModule],
+  imports: [ReactiveFormsModule, TableModule, ButtonModule, SelectModule, InputTextModule],
   templateUrl: './horarios-step.component.html',
   styleUrl: './horarios-step.component.scss',
 })

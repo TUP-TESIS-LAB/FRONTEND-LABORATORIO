@@ -57,7 +57,10 @@ const mockContact: BranchContact = {
 
 const mockWorkspace: BranchWorkspace = { id: 3, branchId: 1, areaId: 100, sectionId: 200 };
 
-const mockTotemConfig: BranchTotemConfig = { branchId: 1, enabled: true };
+const mockTotemConfig: BranchTotemConfig = {
+  branchId: 1, enabled: true, active: true,
+  atencionDisplayEnabled: true, extraccionDisplayEnabled: false,
+};
 
 const mockArea: Area = { id: 100, name: 'Química Clínica', areaType: 'QUIMICA_CLINICA', externalLabName: null, active: true };
 
@@ -236,6 +239,28 @@ describe('SucursalEffects', () => {
 
         effects.loadDetail$.subscribe((action) => {
           expect(action.type).toBe('[Sucursal] Load Detail Failure');
+          resolve();
+        });
+      });
+    });
+  });
+
+  // ── upsertTotemConfig$ ────────────────────────────────────────────────────
+
+  describe('upsertTotemConfig$', () => {
+    it('success: manda al service los 3 flags y dispatcha upsertTotemConfigSuccess', () => {
+      return new Promise<void>((resolve) => {
+        totemConfigService.upsert.mockReturnValue(of(mockTotemConfig));
+
+        actions$ = of(A.upsertTotemConfig({
+          branchId: 1, enabled: true, atencionDisplayEnabled: true, extraccionDisplayEnabled: false,
+        }));
+
+        effects.upsertTotemConfig$.subscribe((action) => {
+          expect(totemConfigService.upsert).toHaveBeenCalledWith(1, {
+            enabled: true, atencionDisplayEnabled: true, extraccionDisplayEnabled: false,
+          });
+          expect(action).toEqual(A.upsertTotemConfigSuccess({ totemConfig: mockTotemConfig }));
           resolve();
         });
       });

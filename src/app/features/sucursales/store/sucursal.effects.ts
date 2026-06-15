@@ -195,10 +195,11 @@ export class SucursalEffects {
 
   upsertTotemConfig$ = createEffect(() => this.actions$.pipe(
     ofType(A.upsertTotemConfig),
-    switchMap(({ branchId, enabled }) => this.totemConfigService.upsert(branchId, enabled).pipe(
-      map(totemConfig => A.upsertTotemConfigSuccess({ totemConfig })),
-      catchError(err => of(A.upsertTotemConfigFailure({ error: this.errorMessage(err) }))),
-    )),
+    switchMap(({ branchId, enabled, atencionDisplayEnabled, extraccionDisplayEnabled }) =>
+      this.totemConfigService.upsert(branchId, { enabled, atencionDisplayEnabled, extraccionDisplayEnabled }).pipe(
+        map(totemConfig => A.upsertTotemConfigSuccess({ totemConfig })),
+        catchError(err => of(A.upsertTotemConfigFailure({ error: this.errorMessage(err) }))),
+      )),
   ));
 
   // ──────────────────────────────────────────────────────────────────────────

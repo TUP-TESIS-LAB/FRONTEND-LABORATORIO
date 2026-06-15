@@ -1,6 +1,4 @@
 <div class="horarios-step">
-  <p class="muted">Seleccioná los días, el horario y el tipo. Podés agregar múltiples bloques.</p>
-
   <form [formGroup]="form" (ngSubmit)="add()" class="inline-form">
     <div class="form-field full-width">
       <label>Días <span class="pat-form__req">*</span></label>
@@ -33,8 +31,7 @@
       </div>
       <div class="form-field">
         <label>Tipo <span class="pat-form__req">*</span></label>
-        <p-select formControlName="scheduleType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body"
-                  pTooltip="Jornada completa, solo mañana, solo tarde o turno noche" tooltipPosition="top" />
+        <p-select formControlName="scheduleType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body" />
       </div>
       <div class="form-action">
         <p-button label="Agregar" type="submit" [disabled]="!canAdd()" />

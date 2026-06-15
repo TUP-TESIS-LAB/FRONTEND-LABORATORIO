@@ -1,24 +1,26 @@
 <div class="totem-step">
-  <p class="muted">
-    Configurá el tótem y la cantidad de boxes físicos de esta sucursal.
-    Podés modificar estos valores más tarde desde la configuración de la sucursal.
-  </p>
-
   <section class="totem-section">
     <h3>Tótem</h3>
-    <p class="muted">Habilitá el tótem para aceptar walk-ins (pacientes sin turno previo). Sin él, recepción muestra solo turnos agendados.</p>
     <div class="big-switch">
       <p-toggleswitch [ngModel]="enabled()" (ngModelChange)="onToggle($event)" />
       <span class="switch-label">{{ enabled() ? 'Tótem habilitado' : 'Tótem deshabilitado' }}</span>
     </div>
-    @if (!enabled()) {
-      <p class="helper-text">Podés activarlo más tarde desde la configuración de la sucursal.</p>
-    }
+  </section>
+
+  <section class="pantallas-section">
+    <h3>Pantallas</h3>
+    <label class="display-toggle">
+      <p-toggleswitch [ngModel]="atencionDisplay()" (ngModelChange)="upsert({ atencionDisplayEnabled: $event })" />
+      <span class="switch-label">Pantalla de sala de espera (atención)</span>
+    </label>
+    <label class="display-toggle">
+      <p-toggleswitch [ngModel]="extraccionDisplay()" (ngModelChange)="upsert({ extraccionDisplayEnabled: $event })" />
+      <span class="switch-label">Pantalla de extracción</span>
+    </label>
   </section>
 
   <section class="boxes-section">
     <h3>Boxes</h3>
-    <p class="muted">Cantidad de boxes físicos disponibles en esta sucursal. Se usan para los llamados de los pacientes en la TV de sala de espera.</p>
     <form [formGroup]="boxesForm" (ngSubmit)="saveBoxes()" class="form">
       <div class="form-row">
         <div class="form-field">

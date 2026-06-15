@@ -40,19 +40,19 @@ describe('BranchTotemConfigService', () => {
     expect(error).toBeDefined();
   });
 
-  it('upsert sends PUT with enabled body', () => {
-    service.upsert(4, true).subscribe();
+  it('upsert sends PUT with the three flags', () => {
+    service.upsert(4, { enabled: true, atencionDisplayEnabled: true, extraccionDisplayEnabled: false }).subscribe();
     const req = httpMock.expectOne('/api/v1/sucursales/branches/4/totem-config');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ enabled: true });
-    req.flush({ branchId: 4, enabled: true });
+    expect(req.request.body).toEqual({ enabled: true, atencionDisplayEnabled: true, extraccionDisplayEnabled: false });
+    req.flush({ branchId: 4, enabled: true, active: true, atencionDisplayEnabled: true, extraccionDisplayEnabled: false });
   });
 
   it('upsert sends PUT with enabled=false', () => {
-    service.upsert(4, false).subscribe();
+    service.upsert(4, { enabled: false, atencionDisplayEnabled: false, extraccionDisplayEnabled: false }).subscribe();
     const req = httpMock.expectOne('/api/v1/sucursales/branches/4/totem-config');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ enabled: false });
-    req.flush({ branchId: 4, enabled: false });
+    expect(req.request.body).toEqual({ enabled: false, atencionDisplayEnabled: false, extraccionDisplayEnabled: false });
+    req.flush({ branchId: 4, enabled: false, active: true, atencionDisplayEnabled: false, extraccionDisplayEnabled: false });
   });
 });
