@@ -7,6 +7,12 @@ import { ModuleRegistry } from '@core/tenant/module-registry';
 import { AccessRegistry } from '@core/access/access-registry';
 import { TokenService } from '@core/auth/token.service';
 import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
+import { UserSessionService } from '@features/profile/services/user-session.service';
+import {
+  selectBranchTotemEnabled,
+  selectAtencionDisplayEnabled,
+  selectExtraccionDisplayEnabled,
+} from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
 
 describe('SidebarComponent visibility', () => {
   function setup(sections: string[], roles: string[]) {
@@ -45,29 +51,10 @@ describe('SidebarComponent visibility', () => {
     expect(core2?.items.some((i) => i.label === 'Recepción') ?? false).toBe(false);
   });
 
-  it('agrupa las pantallas externas en el desplegable "Pantallas en sala" (TV sala, TV extracción, Tótem), todas external', () => {
+  it('ya NO existe el desplegable hardcodeado "Pantallas en sala" en el nav', () => {
     const s = setup([], []);
-    const core = s.visibleSections().find((sec) => sec.label === 'Core clínico');
-    const grupo = core?.items.find((i) => i.label === 'Pantallas en sala');
-    expect(grupo?.kind).toBe('expandable');
-    if (grupo?.kind === 'expandable') {
-      expect(grupo.children.map((c) => c.label)).toEqual(['TV sala de espera', 'TV extracción', 'Tótem']);
-      expect(grupo.children.every((c) => c.external === true)).toBe(true);
-    }
-    // Ya no existen como items sueltos con chip "Smoke".
-    const allLabels = core?.items.map((i) => i.label) ?? [];
-    expect(allLabels).not.toContain('TV sala de espera');
-  });
-
-  it('los hijos de "Pantallas en sala" tienen icono (desktop/mobile) en lugar de puntito', () => {
-    const s = setup([], []);
-    const core = s.visibleSections().find((sec) => sec.label === 'Core clínico');
-    const grupo = core?.items.find((i) => i.label === 'Pantallas en sala');
-    if (grupo?.kind === 'expandable') {
-      expect(grupo.children.map((c) => c.icon)).toEqual([
-        'pi pi-desktop', 'pi pi-desktop', 'pi pi-mobile',
-      ]);
-    }
+    const allLabels = s.visibleSections().flatMap((sec) => sec.items.map((i) => i.label));
+    expect(allLabels).not.toContain('Pantallas en sala');
   });
 
   it('Empresa (admin-only) visible solo para ADMINISTRADOR', () => {
@@ -121,5 +108,82 @@ describe('SidebarComponent visibility', () => {
     if (muestras?.kind === 'expandable') {
       expect(muestras.children.map((c) => c.label)).toEqual(['Descarte']);
     }
+  });
+});
+
+describe('SidebarComponent — links de pantallas (gating dinámico)', () => {
+  function setup(flags: { enabled: boolean; atencion: boolean; extraccion: boolean }) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [SidebarComponent],
+      providers: [
+        provideNoopAnimations(),
+        provideRouter([]),
+        provideMockStore({
+          initialState: {},
+          selectors: [
+            { selector: selectTenantConfig, value: null },
+            { selector: selectBranchTotemEnabled, value: flags.enabled },
+            { selector: selectAtencionDisplayEnabled, value: flags.atencion },
+            { selector: selectExtraccionDisplayEnabled, value: flags.extraccion },
+          ],
+        }),
+        { provide: ModuleRegistry, useValue: { isActive: () => true } },
+        { provide: AccessRegistry, useValue: { has: () => true } },
+        { provide: TokenService, useValue: { getRoles: () => [] } },
+        { provide: UserSessionService, useValue: { currentUser: () => ({ branch: 1001, tenantSlug: 'lab-demo' }) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(SidebarComponent);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('solo atención ON → muestra solo "TV sala de espera" con la URL correcta', () => {
+    const fixture = setup({ enabled: false, atencion: true, extraccion: false });
+    const cmp = fixture.componentInstance as SidebarComponent;
+    expect(cmp.tvSalaUrl()).toBe('/display/lab-demo/1001');
+    expect(cmp.tvExtraccionUrl()).toBeNull();
+    expect(cmp.totemUrl()).toBeNull();
+
+    const labels = Array.from(fixture.nativeElement.querySelectorAll('.ui-sidebar__item .ui-sidebar__label'))
+      .map((el) => (el as HTMLElement).textContent?.trim());
+    expect(labels).toContain('TV sala de espera');
+    expect(labels).not.toContain('TV extracción');
+    expect(labels).not.toContain('Tótem');
+  });
+
+  it('solo extracción ON → muestra solo "TV extracción"', () => {
+    const fixture = setup({ enabled: false, atencion: false, extraccion: true });
+    const cmp = fixture.componentInstance as SidebarComponent;
+    expect(cmp.tvExtraccionUrl()).toBe('/display/extraccion/lab-demo/1001');
+    expect(cmp.tvSalaUrl()).toBeNull();
+    expect(cmp.totemUrl()).toBeNull();
+
+    const labels = Array.from(fixture.nativeElement.querySelectorAll('.ui-sidebar__item .ui-sidebar__label'))
+      .map((el) => (el as HTMLElement).textContent?.trim());
+    expect(labels).toContain('TV extracción');
+    expect(labels).not.toContain('TV sala de espera');
+  });
+
+  it('tótem ON → muestra "Tótem" con /turnos/totem', () => {
+    const fixture = setup({ enabled: true, atencion: false, extraccion: false });
+    const cmp = fixture.componentInstance as SidebarComponent;
+    expect(cmp.totemUrl()).toBe('/turnos/totem');
+    expect(cmp.tvSalaUrl()).toBeNull();
+    expect(cmp.tvExtraccionUrl()).toBeNull();
+  });
+
+  it('todo OFF → no muestra ningún link de pantallas', () => {
+    const fixture = setup({ enabled: false, atencion: false, extraccion: false });
+    const cmp = fixture.componentInstance as SidebarComponent;
+    expect(cmp.tvSalaUrl()).toBeNull();
+    expect(cmp.tvExtraccionUrl()).toBeNull();
+    expect(cmp.totemUrl()).toBeNull();
+    const labels = Array.from(fixture.nativeElement.querySelectorAll('.ui-sidebar__item .ui-sidebar__label'))
+      .map((el) => (el as HTMLElement).textContent?.trim());
+    expect(labels).not.toContain('TV sala de espera');
+    expect(labels).not.toContain('TV extracción');
+    expect(labels).not.toContain('Tótem');
   });
 });
