@@ -15,8 +15,8 @@ describe('AccessRegistry', () => {
   }
 
   it('has() true si la seccion esta concedida', () => {
-    const reg = setup(['ATENCION', 'TURNOS']);
-    expect(reg.has('ATENCION')).toBe(true);
+    const reg = setup(['RECEPCION', 'AGENDAS']);
+    expect(reg.has('RECEPCION')).toBe(true);
     expect(reg.has('FINANCIERO')).toBe(false);
   });
 });

@@ -31,6 +31,10 @@ export interface EmpresaState {
   smtpTestResult: TestEmailResult | null;
   smtpTestError: string | null;
 
+  // Link de primer login a mostrar tras crear/regenerar (no se manda email aún).
+  // El componente lo lee, arma el link y lo ofrece para copiar; null = sin dialog.
+  lastFirstLoginToken: string | null;
+
   // Compartidos
   pending: boolean;
   error: HttpErrorResponse | null;
@@ -54,6 +58,8 @@ export const initialEmpresaState: EmpresaState = {
   smtpTesting: false,
   smtpTestResult: null,
   smtpTestError: null,
+
+  lastFirstLoginToken: null,
 
   pending: false,
   error: null,

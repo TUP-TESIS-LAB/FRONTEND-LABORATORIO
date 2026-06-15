@@ -61,6 +61,18 @@ export const SUCURSALES_ROUTES: Routes = [
         ],
       },
       {
+        path: 'configuracion/:id/editar',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        loadComponent: () =>
+          import('./pages/configuracion/sucursal-alta-stepper/sucursal-alta-stepper.page')
+            .then(m => m.SucursalAltaStepperPage),
+        providers: [
+          provideState(SUCURSAL_FEATURE_KEY, sucursalReducer),
+          provideEffects([SucursalEffects]),
+          MessageService,
+        ],
+      },
+      {
         path: 'configuracion/:id',
         canMatch: [roleGuard('ADMINISTRADOR')],
         loadComponent: () =>

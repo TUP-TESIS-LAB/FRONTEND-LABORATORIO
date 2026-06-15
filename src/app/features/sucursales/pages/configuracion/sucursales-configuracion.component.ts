@@ -46,8 +46,9 @@ export class SucursalesConfiguracionComponent implements OnInit {
     this.router.navigate(['/sucursales/configuracion/nueva']);
   }
 
-  openDetail(sucursal: Sucursal): void {
-    this.router.navigate(['/sucursales/configuracion', sucursal.id]);
+  openEdit(sucursal: Sucursal): void {
+    // El "editar" abre el stepper editable, no la vista por tabs.
+    this.router.navigate(['/sucursales/configuracion', sucursal.id, 'editar']);
   }
 
   remove(s: Sucursal): void {

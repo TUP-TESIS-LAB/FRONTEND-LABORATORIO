@@ -1,17 +1,12 @@
 <div class="totem-step">
-  <section class="totem-section">
-    <h3>Tótem</h3>
-    <div class="big-switch">
+  <section class="toggles-section">
+    <label class="display-toggle">
       <p-toggleswitch [ngModel]="enabled()" (ngModelChange)="onToggle($event)" />
-      <span class="switch-label">{{ enabled() ? 'Tótem habilitado' : 'Tótem deshabilitado' }}</span>
-    </div>
-  </section>
-
-  <section class="pantallas-section">
-    <h3>Pantallas</h3>
+      <span class="switch-label">Tótem</span>
+    </label>
     <label class="display-toggle">
       <p-toggleswitch [ngModel]="atencionDisplay()" (ngModelChange)="upsert({ atencionDisplayEnabled: $event })" />
-      <span class="switch-label">Pantalla de sala de espera (atención)</span>
+      <span class="switch-label">Pantalla sala de espera</span>
     </label>
     <label class="display-toggle">
       <p-toggleswitch [ngModel]="extraccionDisplay()" (ngModelChange)="upsert({ extraccionDisplayEnabled: $event })" />
@@ -21,7 +16,7 @@
 
   <section class="boxes-section">
     <h3>Boxes</h3>
-    <form [formGroup]="boxesForm" (ngSubmit)="saveBoxes()" class="form">
+    <form [formGroup]="boxesForm" class="form">
       <div class="form-row">
         <div class="form-field">
           <label for="atencionBoxesCount">Cantidad de boxes de atención <span class="pat-form__req">*</span></label>
@@ -38,9 +33,7 @@
           }
         </div>
       </div>
-      <div class="boxes-actions">
-        <p-button label="Guardar boxes" type="submit" [disabled]="boxesForm.invalid || savingBoxes()" [loading]="savingBoxes()" />
-      </div>
+      <p class="boxes-hint">La cantidad de boxes se guarda automáticamente al finalizar.</p>
     </form>
   </section>
 </div>

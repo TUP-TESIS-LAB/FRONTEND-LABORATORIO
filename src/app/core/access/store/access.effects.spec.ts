@@ -23,11 +23,11 @@ describe('AccessEffects', () => {
   });
 
   it('mapea SectionResponse[] a codes en success', async () => {
-    api.getMySections.mockReturnValue(of([{ code: 'ATENCION', label: 'Atención' }, { code: 'TURNOS', label: 'Turnos' }]));
+    api.getMySections.mockReturnValue(of([{ code: 'RECEPCION', label: 'Atención' }, { code: 'AGENDAS', label: 'Turnos' }]));
     actions$ = of(loadMySections());
     const effects = TestBed.inject(AccessEffects);
     const action = await firstValueFrom(effects.loadMySections$);
-    expect(action).toEqual(loadMySectionsSuccess({ sections: ['ATENCION', 'TURNOS'] }));
+    expect(action).toEqual(loadMySectionsSuccess({ sections: ['RECEPCION', 'AGENDAS'] }));
   });
 
   it('failure', async () => {

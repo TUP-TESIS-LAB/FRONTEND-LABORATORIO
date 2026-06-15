@@ -5,14 +5,12 @@ export interface SectionGroup {
   sections: AccessSection[];
 }
 
-/** Orden y agrupación visual del checklist. Solo presentación: el set que se manda es plano. */
+/**
+ * Orden y agrupación visual del checklist, espejando los folders del sidebar
+ * (Recepción / Clínico / Gestión). Solo presentación: el set que se manda es plano.
+ */
 export const SECTION_GROUPS: SectionGroup[] = [
-  { label: 'Atención', sections: ['ATENCION', 'EXTRACCIONES'] },
-  { label: 'Analítica', sections: ['PREANALITICA', 'ANALITICA', 'POSTANALITICA'] },
-  { label: 'Pacientes', sections: ['PACIENTES'] },
-  { label: 'Turnos', sections: ['TURNOS'] },
-  { label: 'Financiero', sections: ['FINANCIERO', 'OBRAS_SOCIALES'] },
-  { label: 'Stock', sections: ['STOCK'] },
-  { label: 'Portal', sections: ['PORTAL'] },
-  { label: 'Sucursales', sections: ['SUCURSALES'] },
+  { label: 'Recepción', sections: ['RECEPCION', 'PACIENTES', 'AGENDAS', 'MEDICOS'] },
+  { label: 'Clínico', sections: ['PREANALITICA', 'ANALITICA', 'POSTANALITICA', 'EXTRACCIONES'] },
+  { label: 'Gestión', sections: ['EMPRESA', 'SUCURSALES', 'OBRAS_SOCIALES', 'FINANCIERO', 'STOCK'] },
 ];

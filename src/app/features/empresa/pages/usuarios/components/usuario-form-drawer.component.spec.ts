@@ -10,8 +10,8 @@ const ROLES: Rol[] = [
   { id: 5, code: 'BIOQUIMICO', description: 'Bioquímico', hierarchy: 2 },
 ];
 const CATALOG: SectionResponse[] = [
-  { code: 'ATENCION', label: 'Atención' }, { code: 'PACIENTES', label: 'Pacientes' },
-  { code: 'TURNOS', label: 'Turnos' }, { code: 'OBRAS_SOCIALES', label: 'Obras Sociales' },
+  { code: 'RECEPCION', label: 'Recepción' }, { code: 'PACIENTES', label: 'Pacientes' },
+  { code: 'AGENDAS', label: 'Agendas' }, { code: 'OBRAS_SOCIALES', label: 'Obras Sociales' },
   { code: 'ANALITICA', label: 'Analítica' },
 ];
 const BRANCHES: Sucursal[] = [
@@ -40,7 +40,7 @@ describe('UsuarioFormDrawerComponent', () => {
   it('al elegir un rol, aplica su preset ∩ catálogo al workingSet', () => {
     const { comp } = build();
     comp.onRoleChange(2);
-    expect(comp.workingSet()).toEqual(['ATENCION', 'PACIENTES', 'TURNOS', 'OBRAS_SOCIALES']);
+    expect(comp.workingSet()).toEqual(['RECEPCION', 'PACIENTES', 'AGENDAS', 'OBRAS_SOCIALES']);
   });
 
   it('cambiar de rol reemplaza el preset', () => {
@@ -53,8 +53,8 @@ describe('UsuarioFormDrawerComponent', () => {
   it('toggle agrega/saca una sección', () => {
     const { comp } = build();
     comp.onRoleChange(2);
-    comp.onToggleSection('ATENCION');
-    expect(comp.workingSet()).not.toContain('ATENCION');
+    comp.onToggleSection('RECEPCION');
+    expect(comp.workingSet()).not.toContain('RECEPCION');
     comp.onToggleSection('ANALITICA');
     expect(comp.workingSet()).toContain('ANALITICA');
   });
@@ -67,7 +67,7 @@ describe('UsuarioFormDrawerComponent', () => {
     comp.create.subscribe((p: any) => (emitted = p));
     comp.onSubmit();
     expect(emitted.roleIds).toEqual([2]);
-    expect(emitted.sections).toEqual(['ATENCION', 'PACIENTES', 'TURNOS', 'OBRAS_SOCIALES']);
+    expect(emitted.sections).toEqual(['RECEPCION', 'PACIENTES', 'AGENDAS', 'OBRAS_SOCIALES']);
     expect(emitted.branchId).toBe(1);
   });
 

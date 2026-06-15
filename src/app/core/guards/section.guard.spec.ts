@@ -18,13 +18,13 @@ describe('sectionGuard', () => {
   }
 
   it('permite si la seccion esta concedida y access loaded', async () => {
-    const result = run('TURNOS', { loaded: true, sections: ['TURNOS'] as any });
+    const result = run('AGENDAS', { loaded: true, sections: ['AGENDAS'] as any });
     const value = isObservable(result) ? await firstValueFrom(result) : result;
     expect(value).toBe(true);
   });
 
   it('redirige a /home si falta la seccion', async () => {
-    const result = run('TURNOS', { loaded: true, sections: [] as any });
+    const result = run('AGENDAS', { loaded: true, sections: [] as any });
     const value = isObservable(result) ? await firstValueFrom(result) : result;
     expect(value instanceof UrlTree).toBe(true);
     expect(TestBed.inject(Router).serializeUrl(value as UrlTree)).toBe('/home');

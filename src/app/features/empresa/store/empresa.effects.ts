@@ -101,7 +101,7 @@ export class EmpresaEffects {
     () =>
       this.actions$.pipe(
         ofType(addUsuarioSuccess),
-        map(() => this.notifications.success('Invitación enviada al email del usuario')),
+        map(() => this.notifications.success('Usuario creado. Copiá el link de acceso y pasáselo al usuario.')),
       ),
     { dispatch: false },
   );

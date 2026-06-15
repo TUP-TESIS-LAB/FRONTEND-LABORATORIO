@@ -1,16 +1,17 @@
 export type AccessSection =
-  | 'ATENCION'
-  | 'EXTRACCIONES'
+  | 'RECEPCION'
+  | 'PACIENTES'
+  | 'AGENDAS'
+  | 'MEDICOS'
   | 'PREANALITICA'
   | 'ANALITICA'
   | 'POSTANALITICA'
-  | 'PACIENTES'
-  | 'TURNOS'
-  | 'FINANCIERO'
+  | 'EXTRACCIONES'
+  | 'EMPRESA'
+  | 'SUCURSALES'
   | 'OBRAS_SOCIALES'
-  | 'STOCK'
-  | 'PORTAL'
-  | 'SUCURSALES';
+  | 'FINANCIERO'
+  | 'STOCK';
 
 export interface SectionResponse {
   code: AccessSection;

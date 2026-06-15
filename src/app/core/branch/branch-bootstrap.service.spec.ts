@@ -11,6 +11,7 @@ describe('BranchBootstrapService', () => {
     branchId: ReturnType<typeof signal<number | null>>;
     branchName: ReturnType<typeof signal<string | null>>;
     setBranch: ReturnType<typeof vi.fn>;
+    clear: ReturnType<typeof vi.fn>;
   };
   let user: { currentUser: ReturnType<typeof signal<any>> };
   let sucursales: { listBranchesForSelector: ReturnType<typeof vi.fn> };
@@ -20,6 +21,7 @@ describe('BranchBootstrapService', () => {
       branchId: signal<number | null>(null),
       branchName: signal<string | null>(null),
       setBranch: vi.fn(),
+      clear: vi.fn(),
     };
     user = { currentUser: signal<any>(null) };
     sucursales = { listBranchesForSelector: vi.fn() };
@@ -34,13 +36,20 @@ describe('BranchBootstrapService', () => {
     });
   });
 
-  it('si ya hay id y name en context, no hace nada', async () => {
+  it('si el id persistido pertenece al tenant y el name coincide, no re-setea', async () => {
+    // Antes cortábamos sin pegarle a la API; ahora SIEMPRE validamos el id
+    // persistido contra las sucursales del tenant actual (evita arrastrar la
+    // sucursal de otro tenant). Si el id existe y el name coincide, no toca nada.
     ctx.branchId.set(5);
     ctx.branchName.set('Central');
+    sucursales.listBranchesForSelector.mockReturnValue(of([
+      { id: 5, name: 'Central' },
+      { id: 3, name: 'Norte' },
+    ]));
     const svc = TestBed.inject(BranchBootstrapService);
     await firstValueFrom(svc.init());
     expect(ctx.setBranch).not.toHaveBeenCalled();
-    expect(sucursales.listBranchesForSelector).not.toHaveBeenCalled();
+    expect(ctx.clear).not.toHaveBeenCalled();
   });
 
   it('si hay id pero no name, resuelve el name desde la lista de branches', async () => {
