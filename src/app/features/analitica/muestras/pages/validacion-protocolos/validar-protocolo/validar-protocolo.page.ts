@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { calcularEdad } from '@shared/utils/calcular-edad';
@@ -12,7 +11,7 @@ import { selectDetalle, selectDetalleLoading, selectDetalleSaving } from '../../
   selector: 'app-validar-protocolo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink],
   templateUrl: './validar-protocolo.page.html',
   styleUrl: './validar-protocolo.page.scss',
 })

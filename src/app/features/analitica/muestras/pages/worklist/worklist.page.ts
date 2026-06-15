@@ -93,7 +93,7 @@ export class WorklistPage {
 
   validarResultados(): void {
     const pid = this.selectedTubeProtocolId();
-    if (pid != null) this.router.navigate(['/analitica/procesamiento/validacion', pid]);
+    if (pid != null) this.router.navigate(['/analitica/validacion', pid]);
   }
 
   private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
