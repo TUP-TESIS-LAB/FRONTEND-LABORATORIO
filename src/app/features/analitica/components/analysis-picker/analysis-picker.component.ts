@@ -62,7 +62,9 @@ export interface PickerRow extends Analysis {
             <th>Código</th>
             <th>Práctica</th>
             <th>Familia</th>
-            <th class="text-center w-28">Autorizado</th>
+            @if (!isParticular()) {
+              <th class="text-center w-28">Autorizado</th>
+            }
             <th class="w-24"></th>
           </tr>
         </ng-template>
@@ -71,10 +73,12 @@ export interface PickerRow extends Analysis {
             <td class="font-mono">{{ row.shortCode }}</td>
             <td>{{ row.name }}</td>
             <td>{{ row.familyName ?? '—' }}</td>
-            <td class="text-center">
-              <p-checkbox [ngModel]="row.isAuthorized" [binary]="true" [disabled]="readOnly()"
-                          (onChange)="onAuthorizedChange(row, $event.checked)" />
-            </td>
+            @if (!isParticular()) {
+              <td class="text-center">
+                <p-checkbox [ngModel]="row.isAuthorized" [binary]="true" [disabled]="readOnly()"
+                            (onChange)="onAuthorizedChange(row, $event.checked)" />
+              </td>
+            }
             <td class="text-right">
               <p-button icon="pi pi-eye" severity="secondary" [text]="true" size="small"
                         (onClick)="detailRequested.emit(row.id)" />
@@ -101,6 +105,14 @@ export class AnalysisPickerComponent implements AfterViewInit {
 
   /** Modo solo-lectura: oculta el buscador y las acciones de agregar/quitar/togglear. */
   readonly readOnly = input<boolean>(false);
+
+  /**
+   * Cobertura Particular (sin obra social). Cuando es `true`:
+   *  - se oculta la columna "Autorizado" (item 2: no aplica sin obra social),
+   *  - las filas nuevas nacen con `isAuthorized = false` (item 3).
+   * Con obra social (`false`) la columna se muestra y las filas nacen autorizadas.
+   */
+  readonly isParticular = input<boolean>(false);
 
   readonly analysisAdded   = output<PickerRow>();
   readonly analysisRemoved = output<number>();
@@ -202,7 +214,9 @@ export class AnalysisPickerComponent implements AfterViewInit {
       return;
     }
     this.errorText.set(null);
-    const row: PickerRow = { ...a, isAuthorized: false };
+    // Item 3: con obra social los análisis nacen autorizados (editables por fila);
+    // como Particular nacen sin autorizar (la columna está oculta de todos modos).
+    const row: PickerRow = { ...a, isAuthorized: !this.isParticular() };
     this.items.update((arr) => [...arr, row]);
     this.analysisAdded.emit(row);
   }

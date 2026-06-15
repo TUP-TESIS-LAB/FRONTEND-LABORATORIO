@@ -11,6 +11,7 @@ import {
   CancelAttentionRequest,
   CreateBlankAttentionRequest,
   CreatePreFilledAttentionRequest,
+  SetAuthorizationNumberRequest,
   SetCopaymentRequest,
 } from '../models/atencion.model';
 import { AttentionPricing } from '../models/pricing.model';
@@ -82,5 +83,9 @@ export class AtencionApiService {
 
   setCopayment(id: number, body: SetCopaymentRequest): Observable<AttentionResponse> {
     return this.http.patch<AttentionResponse>(`${this.base}/${id}/copayment`, body);
+  }
+
+  setAuthorizationNumber(id: number, body: SetAuthorizationNumberRequest): Observable<AttentionResponse> {
+    return this.http.patch<AttentionResponse>(`${this.base}/${id}/authorization-number`, body);
   }
 }

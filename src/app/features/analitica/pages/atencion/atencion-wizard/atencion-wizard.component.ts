@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal,
+  ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -11,7 +11,7 @@ import { race, take } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
-import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { FormStep } from '@shared/ui/models/form-step';
 import { AttentionState, isTerminal } from '../../../models/atencion.model';
 import { attentionStateLabel } from '../../../models/atencion-state-label';
@@ -27,7 +27,7 @@ import {
   returnPhase,
 } from '../../../store/atencion/atencion.actions';
 import {
-  selectDetail, selectDetailLoading, selectMutating, selectResolvedPatient,
+  selectDetail, selectDetailLoading, selectMutating, selectPatientResolving, selectResolvedPatient,
 } from '../../../store/atencion/atencion.selectors';
 import {
   clearAtencionSession, readAtencionSession, writeAtencionSession,
@@ -59,7 +59,7 @@ const ALL_STEPS: WizardStepDef[] = [
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ButtonModule, TagModule, EmptyStateComponent, FormStepperHeaderComponent,
+    ButtonModule, TagModule, EmptyStateComponent, WizardShellComponent,
     DatosGeneralesStepComponent, AnalisisStepComponent, ResumenStepComponent,
     CancelAttentionModalComponent,
   ],
@@ -87,7 +87,9 @@ const ALL_STEPS: WizardStepDef[] = [
              que deja la pantalla colgada en "Cargando atención…". -->
         <div class="text-center py-12 opacity-70">Cargando atención…</div>
       } @else if (creating()) {
-        <!-- Modo "crear nueva atención" — sin detail todavía, solo el paso 1 -->
+        <!-- Modo "crear nueva atención" — sin detail todavía, solo el paso 1.
+             El footer (Confirmar y seguir) lo provee el contenedor: el step ya no
+             pinta su propio footer (item 1 — navegación centralizada). -->
         <header class="flex items-center justify-between mb-6">
           <div>
             <h2 class="text-xl font-semibold">Nueva atención</h2>
@@ -99,6 +101,10 @@ const ALL_STEPS: WizardStepDef[] = [
         <div class="aw-step">
           <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
         </div>
+        <div class="flex justify-end pt-3">
+          <p-button label="Confirmar y seguir" [disabled]="!datosCanConfirm()"
+                    (onClick)="advanceCurrent()" />
+        </div>
       } @else if (mutating() && !detail()) {
         <!-- Caso: createPreFilledAtencion en vuelo (?appointmentId=X). Mientras la
              creación va, detail() es null pero mutating() es true. Mostramos un
@@ -107,49 +113,47 @@ const ALL_STEPS: WizardStepDef[] = [
       } @else if (!detail()) {
         <ui-empty-state heading="Atención no encontrada" icon="pi-exclamation-circle" />
       } @else {
-        <header class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-xl font-semibold">Atención {{ headerTitle() }}</h2>
-            @if (detail()!.isUrgent) {
-              <div class="mt-1">
-                <p-tag value="URGENTE" severity="danger" />
-              </div>
-            }
-          </div>
-          <div class="flex items-center gap-2">
+        <!-- Item 1+5: el wizard de atención usa el shell estándar (ui-wizard-shell).
+             URGENTE va inline al lado del título ([headingBadge]); las acciones de
+             header (Volver al listado / Cancelar) en [headerActions]; el banner de
+             solo-lectura + Descargar rótulos en [wizardBanner]; y los botones de
+             navegación de cada paso suben al footer del shell ([wizardFooter]). -->
+        <ui-wizard-shell
+          [heading]="'Atención ' + headerTitle()"
+          [steps]="stepperSteps()"
+          [currentIndex]="activeIndex()"
+          [visited]="completedSteps()"
+          [clickable]="readOnly()"
+          [customFooter]="true"
+          [maxWidth]="'1040px'"
+          (stepSelected)="goToStep($event)">
+
+          @if (detail()!.isUrgent) {
+            <p-tag headingBadge value="URGENTE" severity="danger" />
+          }
+
+          <div headerActions class="flex items-center gap-2">
             <p-button label="Volver al listado" severity="secondary" [text]="true"
                       (onClick)="backToList()" />
             @if (canCancel()) {
               <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
             }
           </div>
-        </header>
 
-        @if (readOnly()) {
-          <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800 flex items-center gap-2">
-            <i class="pi pi-eye"></i>
-            <span>{{ readOnlyBanner() }}</span>
-          </div>
-          <!-- T7: la reimpresión de rótulos SOLO en "esperando extracción".
-               Una atención finalizada/en-extracción NO reimprime. -->
-          @if (detail()!.attentionState === AttentionState.AWAITING_EXTRACTION && detail()!.protocolId != null) {
-            <div class="flex justify-end mb-4">
-              <p-button label="Descargar rótulos" severity="secondary"
-                        (onClick)="downloadLabels()" />
+          @if (readOnly()) {
+            <div wizardBanner class="mx-8 mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800 flex items-center gap-2">
+              <i class="pi pi-eye"></i>
+              <span>{{ readOnlyBanner() }}</span>
+              <!-- T7: la reimpresión de rótulos SOLO en "esperando extracción".
+                   Una atención finalizada/en-extracción NO reimprime. -->
+              @if (detail()!.attentionState === AttentionState.AWAITING_EXTRACTION && detail()!.protocolId != null) {
+                <p-button class="ml-auto" label="Descargar rótulos" severity="secondary"
+                          (onClick)="downloadLabels()" />
+              }
             </div>
           }
-        }
 
-        <div class="mb-6 rounded-lg border border-surface-200 overflow-hidden">
-          <ui-form-stepper-header
-            [steps]="stepperSteps()"
-            [currentIndex]="activeIndex()"
-            [visited]="completedSteps()"
-            [clickable]="readOnly()"
-            (stepSelected)="goToStep($event)" />
-        </div>
-
-        <div class="aw-step">
+          <!-- Cuerpo del paso (proyectado al área scrollable del shell). -->
           @switch (uiStep()?.key) {
             @case ('datos') {
               <lab-datos-generales-step [atencionId]="detail()!.id" [initialDni]="dni() ?? null"
@@ -157,22 +161,39 @@ const ALL_STEPS: WizardStepDef[] = [
                                         [initialIndications]="detail()!.indications"
                                         [initialDoctorId]="detail()!.doctorId"
                                         [initialInsurancePlanId]="detail()!.insurancePlanId"
-                                        [readOnly]="readOnly()"
-                                        [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                                        (returnPhase)="onReturnPhase()" />
+                                        [readOnly]="readOnly()" />
             }
             @case ('analisis') {
               <lab-analisis-step [atencionId]="detail()!.id" [readOnly]="readOnly()"
-                                 [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                                 (returnPhase)="onReturnPhase()" (stepAdvanced)="onAnalysisAdvanced()" />
+                                 (itemsCount)="analysisCount.set($event)"
+                                 (stepAdvanced)="onAnalysisAdvanced()" />
             }
             @case ('confirmar') {
               <lab-resumen-step [atencion]="detail()!" [readOnly]="readOnly()"
-                                [canReturn]="canReturn()" [returnDisabled]="mutating()"
-                                (returnPhase)="onReturnPhase()" (finished)="onFinished()" />
+                                (finished)="onFinished()" />
             }
           }
-        </div>
+
+          <!-- Footer del shell: botones según el paso actual + la máquina de estados. -->
+          @if (!readOnly()) {
+            <div wizardFooter class="flex items-center gap-2">
+              @if (canReturn()) {
+                <p-button label="Volver fase" severity="secondary" [outlined]="true"
+                          [disabled]="mutating()" (onClick)="onReturnPhase()" />
+              }
+              @switch (uiStep()?.key) {
+                @case ('confirmar') {
+                  <p-button label="Finalizar atención" [loading]="mutating()" [disabled]="mutating()"
+                            (onClick)="advanceCurrent()" />
+                }
+                @default {
+                  <p-button label="Continuar" [loading]="mutating()" [disabled]="continueDisabled()"
+                            (onClick)="advanceCurrent()" />
+                }
+              }
+            </div>
+          }
+        </ui-wizard-shell>
       }
     </div>
 
@@ -207,8 +228,45 @@ export class AtencionWizardComponent {
   protected readonly detail   = this.store.selectSignal(selectDetail);
   protected readonly loading  = this.store.selectSignal(selectDetailLoading);
   protected readonly mutating = this.store.selectSignal(selectMutating);
+  protected readonly patientResolving = this.store.selectSignal(selectPatientResolving);
   protected readonly isTerminal    = isTerminal;
   protected readonly AttentionState = AttentionState;
+
+  // Item 1: la navegación se centraliza en el contenedor. Referencias a los step
+  // components para disparar su acción de avance desde el footer del shell.
+  private readonly datosRef    = viewChild(DatosGeneralesStepComponent);
+  private readonly analisisRef = viewChild(AnalisisStepComponent);
+  private readonly resumenRef  = viewChild(ResumenStepComponent);
+
+  /** Cantidad de análisis cargados en el paso 2 (lo emite el step). Gate de "Continuar". */
+  protected readonly analysisCount = signal(0);
+
+  /**
+   * "Confirmar y seguir" del paso 1: habilitado con un paciente resuelto y sin una
+   * búsqueda de DNI en curso. Se deriva del store (reactivo) en vez de leer el step
+   * vía viewChild, para que el `[disabled]` del footer se refresque correctamente.
+   */
+  protected readonly datosCanConfirm = computed(
+    () => this.resolvedPatient() != null && !this.patientResolving(),
+  );
+
+  /** Disabled del botón "Continuar" del footer, según el paso actual. */
+  protected continueDisabled(): boolean {
+    switch (this.uiStep()?.key) {
+      case 'datos':    return !this.datosCanConfirm();
+      case 'analisis': return this.analysisCount() === 0 || this.mutating();
+      default:         return this.mutating();
+    }
+  }
+
+  /** Dispara la acción de avance del paso actual desde el footer del shell. */
+  protected advanceCurrent(): void {
+    switch (this.uiStep()?.key) {
+      case 'datos':     this.datosRef()?.onConfirm(); break;
+      case 'analisis':  this.analisisRef()?.onContinue(); break;
+      case 'confirmar': this.resumenRef()?.openFinalize(); break;
+    }
+  }
 
   /**
    * Título grande del header (C6): el código público del turno (ST-/CT-…) si existe.

@@ -83,6 +83,11 @@ export const setCopayment        = createAction('[Atencion Resumen] Set Copaymen
 export const setCopaymentSuccess = createAction('[Atencion API] Set Copayment Success',   props<{ item: AttentionResponse }>());
 export const setCopaymentFailure = createAction('[Atencion API] Set Copayment Failure',   props<{ error: HttpErrorResponse }>());
 
+// Authorization number ----------------------------------------------------------
+export const setAuthorizationNumber        = createAction('[Atencion Resumen] Set Authorization Number',     props<{ attentionId: number; authorizationNumber: string | null }>());
+export const setAuthorizationNumberSuccess = createAction('[Atencion API] Set Authorization Number Success', props<{ item: AttentionResponse }>());
+export const setAuthorizationNumberFailure = createAction('[Atencion API] Set Authorization Number Failure', props<{ error: HttpErrorResponse }>());
+
 // Remove analysis from resumen (B3c) -------------------------------------------
 export const removeAnalysisFromResumen = createAction(
   '[Atencion Resumen] Remove Analysis',

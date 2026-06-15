@@ -41,6 +41,19 @@ describe('AnalisisStepComponent', () => {
     (fixture.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
   });
 
+  /** Setea el plan de la atención en el store para controlar `isParticular` (null ⇒ Particular). */
+  function setDetailInsurancePlan(insurancePlanId: number | null): void {
+    const store = (fixture.componentInstance as any)['store'];
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        detail: { id: 42, insurancePlanId, isUrgent: false, analysisAuthorizations: [] } as any,
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+  }
+
   it('onContinue with empty list does NOT dispatch', () => {
     fixture.componentInstance.onContinue();
     expect(dispatched).toHaveLength(0);
@@ -53,7 +66,8 @@ describe('AnalisisStepComponent', () => {
     expect(dispatched.find((a) => a.type === A.endSecretaryPhase.type)).toBeUndefined();
   });
 
-  it('onContinue payload usa items con analysisId e isAuthorized', () => {
+  it('onContinue payload usa items con analysisId e isAuthorized (obra social)', () => {
+    setDetailInsurancePlan(7); // obra social ⇒ se respeta el isAuthorized por fila
     fixture.componentInstance.onAnalysisAdded(makeRow({ id: 5, isAuthorized: false }));
     fixture.componentInstance.onAnalysisAdded(makeRow({ id: 9, shortCode: '2001', name: 'Glucemia', isAuthorized: true }));
     fixture.componentInstance.onContinue();
@@ -62,6 +76,22 @@ describe('AnalisisStepComponent', () => {
       { analysisId: 5, isAuthorized: false },
       { analysisId: 9, isAuthorized: true },
     ]);
+  });
+
+  it('item 3: con cobertura Particular el payload fuerza isAuthorized=false en todas las filas', () => {
+    setDetailInsurancePlan(null); // Particular
+    fixture.componentInstance.onAnalysisAdded(makeRow({ id: 5, isAuthorized: true }));
+    fixture.componentInstance.onAnalysisAdded(makeRow({ id: 9, shortCode: '2001', name: 'Glucemia', isAuthorized: true }));
+    fixture.componentInstance.onContinue();
+    expect(dispatched[0].payload.items).toEqual([
+      { analysisId: 5, isAuthorized: false },
+      { analysisId: 9, isAuthorized: false },
+    ]);
+  });
+
+  it('item 6: con 0 análisis muestra el empty state "Ingrese análisis para continuar"', () => {
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Ingrese análisis para continuar');
   });
 
   it('stepAdvanced emits ONLY after atencionMutationSuccess (pessimistic)', () => {
@@ -85,18 +115,15 @@ describe('AnalisisStepComponent', () => {
     expect(stepAdvanced).toBe(false);
   });
 
-  it('el botón "Volver fase" emite returnPhase al clickear cuando canReturn es true', () => {
-    fixture.componentRef.setInput('canReturn', true);
-    fixture.componentRef.setInput('returnDisabled', false);
+  // El footer "Volver fase" se movió al contenedor (ui-wizard-shell): el step ya no
+  // lo renderiza ni expone returnPhase. La navegación se prueba en el wizard.
+
+  it('emite itemsCount con la cantidad de análisis cargados', () => {
+    const counts: number[] = [];
+    fixture.componentInstance.itemsCount.subscribe((n) => counts.push(n));
+    fixture.componentInstance.onAnalysisAdded({ id: 1, isAuthorized: true } as any);
     fixture.detectChanges();
-    let emitted = false;
-    fixture.componentInstance.returnPhase.subscribe(() => (emitted = true));
-    const el: HTMLElement = fixture.nativeElement;
-    const btn = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Volver fase'));
-    expect(btn).toBeTruthy();
-    expect(btn!.disabled).toBe(false);
-    btn!.click();
-    expect(emitted).toBe(true);
+    expect(counts.at(-1)).toBe(1);
   });
 
   it('al retomar: dispatcha loadAttentionAnalyses, hidrata isUrgent y arma initialItems con isAuthorized (003)', () => {
@@ -161,6 +188,7 @@ describe('AnalisisStepComponent', () => {
   });
 
   it('onContinue deduplica items por analysisId antes de despachar', () => {
+    setDetailInsurancePlan(7); // obra social ⇒ se respeta isAuthorized por fila
     fixture.componentInstance.onItemsChanged([
       makeRow({ id: 5, isAuthorized: false }),
       makeRow({ id: 5, isAuthorized: true }),
@@ -182,6 +210,7 @@ describe('AnalisisStepComponent', () => {
   });
 
   it('onItemsChanged actualiza la lista de items para el dispatch', () => {
+    setDetailInsurancePlan(7); // obra social ⇒ se respeta isAuthorized por fila
     const rows = [makeRow({ id: 3, isAuthorized: true }), makeRow({ id: 4, shortCode: '2001', name: 'Bio', isAuthorized: false })];
     fixture.componentInstance.onItemsChanged(rows);
     fixture.componentInstance.onContinue();

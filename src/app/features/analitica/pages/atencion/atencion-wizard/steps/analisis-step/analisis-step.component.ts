@@ -5,7 +5,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { ButtonModule } from 'primeng/button';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { race, take } from 'rxjs';
 import { Analysis } from '../../../../../models/atencion.model';
@@ -26,13 +25,14 @@ import {
   selector: 'lab-analisis-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
+  imports: [FormsModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
       <lab-analysis-picker
         [initialItems]="initialItems()"
         [readOnly]="readOnly()"
+        [isParticular]="isParticular()"
         (analysisAdded)="onAnalysisAdded($event)"
         (analysisRemoved)="onAnalysisRemoved($event)"
         (itemsChanged)="onItemsChanged($event)"
@@ -46,15 +46,9 @@ import {
         }
       </lab-analysis-picker>
 
-      @if (!readOnly()) {
-        <div class="flex justify-between items-center mt-auto pt-3">
-          <p-button label="Volver fase" severity="secondary" [outlined]="true"
-                    [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
-          <p-button [label]="continueLabel()"
-                    [loading]="mutating()"
-                    [disabled]="items().length === 0 || mutating()"
-                    (onClick)="onContinue()" />
-        </div>
+      <!-- Item 6: empty state cuando todavía no se cargó ningún análisis. -->
+      @if (items().length === 0) {
+        <p class="text-sm text-surface-500 text-center py-4">Ingrese análisis para continuar</p>
       }
     </div>
 
@@ -74,10 +68,11 @@ export class AnalisisStepComponent implements OnInit {
   readonly atencionId   = input.required<number>();
   readonly stepAdvanced = output<void>();
 
-  /** Footer "Volver fase" — el wizard provee el estado y bindea el handler. */
-  readonly canReturn      = input<boolean>(false);
-  readonly returnDisabled = input<boolean>(false);
-  readonly returnPhase    = output<void>();
+  /**
+   * Cantidad de análisis cargados. El contenedor (wizard) la usa para habilitar el
+   * botón "Continuar" de su footer (item 1: navegación centralizada en el shell).
+   */
+  readonly itemsCount = output<number>();
 
   /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
   readonly readOnly = input<boolean>(false);
@@ -91,6 +86,13 @@ export class AnalisisStepComponent implements OnInit {
 
   private readonly detail          = this.store.selectSignal(selectDetail);
   private readonly summaryAnalyses = this.store.selectSignal(selectSummaryAnalyses);
+
+  /**
+   * Cobertura Particular = la atención no tiene plan (`insurancePlanId == null`).
+   * Fuente de verdad: el `detail()` (lo setea el selector de chips del paso 1).
+   * Items 2 y 3: gatea la columna "Autorizado" y el default de autorización del picker.
+   */
+  readonly isParticular = computed(() => this.detail()?.insurancePlanId == null);
 
   /** Filas con las que arranca el picker: backend si hay, si no el borrador local. */
   private readonly draftRows = signal<AnalisisDraftRow[]>([]);
@@ -124,6 +126,10 @@ export class AnalisisStepComponent implements OnInit {
   });
 
   constructor() {
+    // Emitir la cantidad de análisis al contenedor (gate del botón "Continuar" del
+    // footer del shell). Fuente única: el signal `items()`.
+    effect(() => this.itemsCount.emit(this.items().length));
+
     // Persistir el borrador (red de seguridad) cada vez que cambian items o urgente.
     effect(() => {
       const id = this.atencionId();
@@ -163,10 +169,6 @@ export class AnalisisStepComponent implements OnInit {
     }
   }
 
-  continueLabel(): string {
-    return 'Continuar';
-  }
-
   onAnalysisAdded(row: PickerRow): void { this.items.update((arr) => [...arr, row]); }
   onAnalysisRemoved(id: number): void { this.items.update((arr) => arr.filter((x) => x.id !== id)); }
   onItemsChanged(rows: PickerRow[]): void { this.items.set(rows); }
@@ -195,12 +197,26 @@ export class AnalisisStepComponent implements OnInit {
     this.submitting = true;
     // Dedupe por análisis (el back deduplica, pero evitamos enviar duplicados).
     const seen = new Set<number>();
+    // Item 3: con cobertura Particular el concepto "autorizado" no aplica → enviamos
+    // siempre isAuthorized=false (la columna está oculta). Con obra social respetamos
+    // el valor por fila (default true, destildable por el operador).
+    // Límite conocido: si el operador cambia la cobertura en el paso 1 DESPUÉS de
+    // cargar análisis, el default se re-deriva solo para los NUEVOS análisis (no se
+    // pisan las ediciones manuales previas); este filtro final sí normaliza Particular.
+    const isParticular = this.isParticular();
     const analysisItems = this.items()
       .filter((x) => (seen.has(x.id) ? false : seen.add(x.id)))
-      .map((x) => ({ analysisId: x.id, isAuthorized: x.isAuthorized }));
+      .map((x) => ({ analysisId: x.id, isAuthorized: isParticular ? false : x.isAuthorized }));
     this.store.dispatch(addAnalysisList({
       id: this.atencionId(),
-      payload: { items: analysisItems, isUrgent: this.isUrgentValue, authorizationNumber: null },
+      // El writer canónico del nro de autorización es el endpoint dedicado (paso final).
+      // Reenviamos el valor actual de la atención para no pisarlo; el back además preserva
+      // cuando llega null (ver SetAuthorizationNumberUseCase / AddAnalysisListUseCase).
+      payload: {
+        items: analysisItems,
+        isUrgent: this.isUrgentValue,
+        authorizationNumber: this.detail()?.authorizationNumber ?? null,
+      },
     }));
     this.waitForMutation((ok) => {
       this.submitting = false;

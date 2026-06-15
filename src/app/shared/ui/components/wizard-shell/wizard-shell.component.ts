@@ -23,10 +23,18 @@ import { FormStep } from '@shared/ui/models/form-step';
   template: `
     <div class="flex flex-col h-full">
       <header class="wz-bar wz-bar--top flex items-center gap-3 px-8 py-4 bg-surface-0 sticky top-0 z-10">
-        <h1 class="text-xl font-bold m-0 leading-tight">{{ heading() }}</h1>
-        @if (breadcrumb()) {
-          <nav class="ml-auto text-xs text-surface-500">{{ breadcrumb() }}</nav>
-        }
+        <div class="flex items-center gap-2 min-w-0">
+          <h1 class="text-xl font-bold m-0 leading-tight truncate">{{ heading() }}</h1>
+          <!-- Slot inline al lado del título (p.ej. badge URGENTE). -->
+          <ng-content select="[headingBadge]" />
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          @if (breadcrumb()) {
+            <nav class="text-xs text-surface-500">{{ breadcrumb() }}</nav>
+          }
+          <!-- Slot de acciones de header alineadas a la derecha (p.ej. Volver / Cancelar). -->
+          <ng-content select="[headerActions]" />
+        </div>
       </header>
 
       <ui-form-stepper-header
@@ -36,6 +44,9 @@ import { FormStep } from '@shared/ui/models/form-step';
         [completed]="completed()"
         [clickable]="clickable()"
         (stepSelected)="stepSelected.emit($event)" />
+
+      <!-- Banner opcional bajo el stepper (p.ej. read-only + descargar rótulos). -->
+      <ng-content select="[wizardBanner]" />
 
       <div class="flex-1 overflow-y-auto px-8 py-6">
         <div class="w-full mx-auto" [style.max-width]="maxWidth()">
