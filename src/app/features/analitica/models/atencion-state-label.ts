@@ -81,6 +81,31 @@ export function attentionGroupLabel(state: AttentionState | null | undefined): s
   return ATTENTION_GROUP_BY_STATE[state] ?? state;
 }
 
+/** Estados de extracción: si una atención se canceló en uno de estos, fue en la extracción. */
+const EXTRACTION_STATES: readonly AttentionState[] = [
+  AttentionState.AWAITING_EXTRACTION,
+  AttentionState.IN_EXTRACTION,
+];
+
+/**
+ * Etiqueta del listado que DISTINGUE en qué fase se canceló una atención:
+ * "Cancelada (extracción)" si `cancelledAtState` es una fase de extracción,
+ * "Cancelada (atención)" si se canceló antes (registro/cobro/confirmación).
+ * Para los demás estados usa la etiqueta de grupo normal.
+ */
+export function attentionListLabel(
+  state: AttentionState | null | undefined,
+  cancelledAtState: AttentionState | null | undefined,
+): string {
+  if (state === AttentionState.CANCELED) {
+    if (cancelledAtState == null) return 'Cancelada';
+    return EXTRACTION_STATES.includes(cancelledAtState)
+      ? 'Cancelada (extracción)'
+      : 'Cancelada (atención)';
+  }
+  return attentionGroupLabel(state);
+}
+
 /** Severidad del tag para la etiqueta de grupo del listado. */
 export function attentionGroupSeverity(state: AttentionState | null | undefined): StateTagSeverity {
   if (!state) return 'secondary';
