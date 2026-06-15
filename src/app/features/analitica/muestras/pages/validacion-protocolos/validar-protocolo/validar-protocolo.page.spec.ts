@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { provideMockStore } from '@ngrx/store/testing';
 import { ValidarProtocoloPage } from './validar-protocolo.page';
-import { selectDetalle, selectDetalleLoading, selectDetalleSaving } from '../../../store/validacion-detalle/validacion-detalle.selectors';
+import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetalleError } from '../../../store/validacion-detalle/validacion-detalle.selectors';
 import { firmarEstudio } from '../../../store/validacion-detalle/validacion-detalle.actions';
 import type { DetalleEstudio } from '../../../models/postanalitica.model';
 
@@ -65,6 +65,7 @@ function setup() {
           { selector: selectDetalle, value: FIXTURE },
           { selector: selectDetalleLoading, value: false },
           { selector: selectDetalleSaving, value: false },
+          { selector: selectDetalleError, value: null },
         ],
       }),
     ],

@@ -6,7 +6,7 @@ import { of } from 'rxjs';
 import { catchError, concatMap, filter, map, switchMap, withLatestFrom } from 'rxjs/operators';
 import { PostanaliticaApiService } from '../../services/postanalitica-api.service';
 import { selectDetalle } from './validacion-detalle.selectors';
-import { loadDetalle, loadDetalleSuccess, loadDetalleFailure, validarDet, validarTodo, mutarOk, mutarFail, firmarResultado, firmarEstudio } from './validacion-detalle.actions';
+import { loadDetalle, loadDetalleSuccess, loadDetalleFailure, validarTodo, mutarOk, mutarFail, firmarResultado, firmarEstudio } from './validacion-detalle.actions';
 
 @Injectable()
 export class ValidacionDetalleEffects {
@@ -20,13 +20,6 @@ export class ValidacionDetalleEffects {
       this.api.getDetalle(protocolId).pipe(
         map(res => loadDetalleSuccess({ detalle: { ...res, patientName, patientSex, patientBirthDate } })),
         catchError((error: HttpErrorResponse) => of(loadDetalleFailure({ error }))))),
-  ));
-
-  validarDet$ = createEffect(() => this.actions$.pipe(
-    ofType(validarDet),
-    concatMap(({ resultId, determinationId, outcome }) =>
-      this.api.validateDetermination(resultId, determinationId, outcome).pipe(
-        map(() => mutarOk()), catchError((error: HttpErrorResponse) => of(mutarFail({ error }))))),
   ));
 
   validarTodo$ = createEffect(() => this.actions$.pipe(

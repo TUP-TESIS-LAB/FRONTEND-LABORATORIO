@@ -30,7 +30,7 @@
     <div class="psum-field"><span class="psum-lbl">PROTOCOLO</span><b class="mono">{{ protocolId }}</b></div>
     <div class="psum-field">
       <span class="psum-lbl">ESTADO DE FIRMA</span>
-      <span [class]="'badge-st ' + badgeFirma(studyStatus())[0]"><span class="dot"></span>{{ badgeFirma(studyStatus())[1] }}</span>
+      <span [class]="'badge-st ' + firmaBadge()[0]"><span class="dot"></span>{{ firmaBadge()[1] }}</span>
     </div>
     <div class="psum-firma">
       <span class="psum-lbl">FIRMA ELECTRÓNICA</span>
@@ -68,7 +68,7 @@
           </div>
           <span class="anx-meta">
             <span class="anx-det">{{ r.determinations.length }} det</span>
-            <span class="badge-st st-parcial"><span class="dot"></span>{{ r.status }}</span>
+            <span [class]="'badge-st ' + badgeResultado(r.status)[0]"><span class="dot"></span>{{ badgeResultado(r.status)[1] }}</span>
           </span>
         </div>
 
@@ -101,4 +101,6 @@
       </section>
     }
   </div>
+
+  <p-toast position="bottom-right" />
 </section>

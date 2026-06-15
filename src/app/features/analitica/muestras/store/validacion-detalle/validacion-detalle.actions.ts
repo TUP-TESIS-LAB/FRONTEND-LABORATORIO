@@ -6,7 +6,6 @@ export const loadDetalle = createAction('[Validar Protocolo Page] Load Detalle',
 export const loadDetalleSuccess = createAction('[Postanalitica API] Load Detalle Success', props<{ detalle: DetalleEstudio }>());
 export const loadDetalleFailure = createAction('[Postanalitica API] Load Detalle Failure', props<{ error: HttpErrorResponse }>());
 
-export const validarDet = createAction('[Validar Protocolo Page] Validar Det', props<{ resultId: number; determinationId: number; outcome: ValidationOutcome }>());
 export const validarTodo = createAction('[Validar Protocolo Page] Validar Todo', props<{ resultId: number; outcome: ValidationOutcome }>());
 export const mutarOk = createAction('[Postanalitica API] Mutacion Ok');
 export const mutarFail = createAction('[Postanalitica API] Mutacion Fail', props<{ error: HttpErrorResponse }>());

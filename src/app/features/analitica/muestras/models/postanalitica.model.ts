@@ -13,32 +13,6 @@ export interface DetValidation {
 }
 export interface ResultWithValidation { result: PostResult; validations: { validation: DetValidation }[]; }
 
-export interface ValidationRow { determinationId: number; name: string; aggregateOutcome: ValidationOutcome | null; manualOutcome: ValidationOutcome | null; }
-export interface ValidationResultVM { resultId: number; status: ResultStatus; rows: ValidationRow[]; }
-export interface ValidationView { protocolId: number; studyStatus: StudyStatus | null; results: ValidationResultVM[]; }
-
-export interface BuildValidationViewInput {
-  protocolId: number;
-  study: Study | null;
-  resultsWithValidation: ResultWithValidation[];
-  nameByDeterminationId: Record<number, string>;
-}
-
-export function buildValidationView(input: BuildValidationViewInput): ValidationView {
-  const { protocolId, study, resultsWithValidation, nameByDeterminationId } = input;
-  const results: ValidationResultVM[] = resultsWithValidation.map(rwv => ({
-    resultId: rwv.result.id,
-    status: rwv.result.status,
-    rows: (rwv.validations ?? []).map(v => ({
-      determinationId: v.validation.determinationId,
-      name: nameByDeterminationId[v.validation.determinationId] ?? `#${v.validation.determinationId}`,
-      aggregateOutcome: v.validation.aggregateOutcome,
-      manualOutcome: v.validation.manualOutcome,
-    })),
-  }));
-  return { protocolId, studyStatus: study?.currentStatus ?? null, results };
-}
-
 /** Respuesta cruda del back para una fila del listado (StudyResponse enriquecido). */
 export interface StudyListItemResponse {
   id: number;
@@ -95,6 +69,16 @@ export function badgeFirma(status: StudyStatus): [string, string] {
     case 'sin': return ['st-sin', 'Sin firma'];
     case 'parcial': return ['st-parcial', 'Firma parcial'];
     case 'total': return ['st-total', 'Firma total'];
+  }
+}
+
+export function badgeResultado(status: ResultStatus): [string, string] {
+  switch (status) {
+    case 'PENDING': return ['st-sin', 'Pendiente'];
+    case 'VALIDATING': return ['st-parcial', 'Validando'];
+    case 'VALIDATED': return ['st-cargado', 'Validado'];
+    case 'SIGNED': return ['st-total', 'Firmado'];
+    case 'REJECTED': return ['st-sin', 'Rechazado'];
   }
 }
 
