@@ -85,18 +85,15 @@ describe('AnalisisStepComponent', () => {
     expect(stepAdvanced).toBe(false);
   });
 
-  it('el botón "Volver fase" emite returnPhase al clickear cuando canReturn es true', () => {
-    fixture.componentRef.setInput('canReturn', true);
-    fixture.componentRef.setInput('returnDisabled', false);
+  // El footer "Volver fase" se movió al contenedor (ui-wizard-shell): el step ya no
+  // lo renderiza ni expone returnPhase. La navegación se prueba en el wizard.
+
+  it('emite itemsCount con la cantidad de análisis cargados', () => {
+    const counts: number[] = [];
+    fixture.componentInstance.itemsCount.subscribe((n) => counts.push(n));
+    fixture.componentInstance.onAnalysisAdded({ id: 1, isAuthorized: true } as any);
     fixture.detectChanges();
-    let emitted = false;
-    fixture.componentInstance.returnPhase.subscribe(() => (emitted = true));
-    const el: HTMLElement = fixture.nativeElement;
-    const btn = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Volver fase'));
-    expect(btn).toBeTruthy();
-    expect(btn!.disabled).toBe(false);
-    btn!.click();
-    expect(emitted).toBe(true);
+    expect(counts.at(-1)).toBe(1);
   });
 
   it('al retomar: dispatcha loadAttentionAnalyses, hidrata isUrgent y arma initialItems con isAuthorized (003)', () => {

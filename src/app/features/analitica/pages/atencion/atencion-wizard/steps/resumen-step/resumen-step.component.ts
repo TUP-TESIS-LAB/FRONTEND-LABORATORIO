@@ -14,7 +14,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
@@ -58,7 +57,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ButtonModule, FinalizeAttentionModalComponent, InputNumberModule, FormsModule,
+    FinalizeAttentionModalComponent, InputNumberModule, FormsModule,
     CurrencyArPipe, DataTableComponent, UiCellDirective, TagModule,
   ],
   styles: [`:host { display: block; height: 100%; }`],
@@ -170,16 +169,8 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         </section>
       }
 
-      @if (!readOnly()) {
-        <div class="flex justify-between items-center mt-auto pt-3">
-          <p-button label="Volver fase" severity="secondary" [outlined]="true"
-                    [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
-          <p-button label="Finalizar atención"
-                    [loading]="mutating()"
-                    [disabled]="mutating()"
-                    (onClick)="openFinalize()" />
-        </div>
-      }
+      <!-- Item 1: el footer (Volver fase / Finalizar atención) lo provee el contenedor
+           (ui-wizard-shell). El step solo conserva el modal de finalización. -->
     </div>
 
     <!-- Fuera del contenedor flex con space-y-4 para no dejar un hueco bajo el footer. -->
@@ -198,11 +189,6 @@ export class ResumenStepComponent implements OnInit {
 
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
-
-  /** Footer "Volver fase" — el wizard provee el estado y bindea el handler. */
-  readonly canReturn      = input<boolean>(false);
-  readonly returnDisabled = input<boolean>(false);
-  readonly returnPhase    = output<void>();
 
   /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
   readonly readOnly = input<boolean>(false);

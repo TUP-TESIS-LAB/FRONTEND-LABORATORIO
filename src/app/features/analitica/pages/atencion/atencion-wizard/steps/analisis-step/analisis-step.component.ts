@@ -5,7 +5,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { ButtonModule } from 'primeng/button';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { race, take } from 'rxjs';
 import { Analysis } from '../../../../../models/atencion.model';
@@ -26,7 +25,7 @@ import {
   selector: 'lab-analisis-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
+  imports: [FormsModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
@@ -45,17 +44,6 @@ import {
           </label>
         }
       </lab-analysis-picker>
-
-      @if (!readOnly()) {
-        <div class="flex justify-between items-center mt-auto pt-3">
-          <p-button label="Volver fase" severity="secondary" [outlined]="true"
-                    [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
-          <p-button [label]="continueLabel()"
-                    [loading]="mutating()"
-                    [disabled]="items().length === 0 || mutating()"
-                    (onClick)="onContinue()" />
-        </div>
-      }
     </div>
 
     <!-- El modal va FUERA del contenedor flex con space-y-4: si queda adentro, recibe
@@ -74,10 +62,11 @@ export class AnalisisStepComponent implements OnInit {
   readonly atencionId   = input.required<number>();
   readonly stepAdvanced = output<void>();
 
-  /** Footer "Volver fase" — el wizard provee el estado y bindea el handler. */
-  readonly canReturn      = input<boolean>(false);
-  readonly returnDisabled = input<boolean>(false);
-  readonly returnPhase    = output<void>();
+  /**
+   * Cantidad de análisis cargados. El contenedor (wizard) la usa para habilitar el
+   * botón "Continuar" de su footer (item 1: navegación centralizada en el shell).
+   */
+  readonly itemsCount = output<number>();
 
   /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
   readonly readOnly = input<boolean>(false);
@@ -124,6 +113,10 @@ export class AnalisisStepComponent implements OnInit {
   });
 
   constructor() {
+    // Emitir la cantidad de análisis al contenedor (gate del botón "Continuar" del
+    // footer del shell). Fuente única: el signal `items()`.
+    effect(() => this.itemsCount.emit(this.items().length));
+
     // Persistir el borrador (red de seguridad) cada vez que cambian items o urgente.
     effect(() => {
       const id = this.atencionId();
@@ -161,10 +154,6 @@ export class AnalisisStepComponent implements OnInit {
     } else if (d) {
       this.isUrgentValue = d.isUrgent;
     }
-  }
-
-  continueLabel(): string {
-    return 'Continuar';
   }
 
   onAnalysisAdded(row: PickerRow): void { this.items.update((arr) => [...arr, row]); }

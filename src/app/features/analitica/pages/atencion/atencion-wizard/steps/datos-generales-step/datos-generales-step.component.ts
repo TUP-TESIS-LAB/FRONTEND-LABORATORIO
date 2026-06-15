@@ -7,7 +7,6 @@ import {
   effect,
   inject,
   input,
-  output,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -394,17 +393,8 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
 
       </div><!-- /contenido scrolleable -->
 
-      @if (!readOnly()) {
-        <div class="flex justify-between items-center mt-auto pt-3">
-          <p-button label="Volver fase" severity="secondary" [outlined]="true"
-                    [disabled]="returnDisabled() || !canReturn()" (onClick)="returnPhase.emit()" />
-          <p-button
-            label="Confirmar y seguir"
-            [disabled]="!canConfirm()"
-            (onClick)="onConfirm()" />
-        </div>
-      }
-
+      <!-- Item 1: el footer (Volver fase / Confirmar y seguir) lo provee el contenedor
+           (ui-wizard-shell), no el step. -->
     </div>
   `,
   styles: [`
@@ -479,15 +469,6 @@ export class DatosGeneralesStepComponent implements OnInit {
   readonly initialDoctorId = input<number | null>(null);
   /** Cobertura (plan) ya asociada a la atención (al retomar) — pre-selecciona el chip. */
   readonly initialInsurancePlanId = input<number | null>(null);
-
-  /**
-   * Footer "Volver fase" — el wizard provee el estado y bindea el handler.
-   * En el paso datos (paso 1) y en el modo "creating", canReturn es false,
-   * así que el botón queda visible pero deshabilitado, alineado a la izquierda.
-   */
-  readonly canReturn      = input<boolean>(false);
-  readonly returnDisabled = input<boolean>(false);
-  readonly returnPhase    = output<void>();
 
   /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
   readonly readOnly = input<boolean>(false);
