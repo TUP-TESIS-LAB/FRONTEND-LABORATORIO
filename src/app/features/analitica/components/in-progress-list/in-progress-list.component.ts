@@ -33,7 +33,7 @@ import { InExtractionItem } from '../../models/extraction.model';
         heading="No hay extracciones en curso"
         description="Cuando un extractor tome un paciente de la cola va a aparecer acá." />
     } @else {
-      <p-table [value]="items()" styleClass="p-datatable-sm">
+      <p-table [value]="items()" styleClass="p-datatable-sm" scrollable scrollHeight="flex">
         <ng-template pTemplate="header">
           <tr>
             <th>Box</th>
@@ -103,6 +103,12 @@ import { InExtractionItem } from '../../models/extraction.model';
     /* Llena la card y centra verticalmente el empty-state (cuando no hay tabla). */
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
     :host > ui-empty-state { margin: auto 0; }
+
+    /* La p-table llena el alto del host y scrollea su body internamente, con el
+       header sticky (PrimeNG scrollHeight="flex"). Cadena con min-height:0. */
+    :host > p-table { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    :host ::ng-deep .p-datatable { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+    :host ::ng-deep .p-datatable-table-container { flex: 1 1 auto; min-height: 0; }
 
     .box-pill {
       display: inline-flex;
