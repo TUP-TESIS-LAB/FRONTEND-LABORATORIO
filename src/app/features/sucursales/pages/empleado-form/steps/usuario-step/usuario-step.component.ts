@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, of, retry } from 'rxjs';
 import { NotificationService } from '@core/services/notification.service';
@@ -10,6 +10,7 @@ import { RolesApiService } from '@features/empresa/services/roles-api.service';
 import { RolesPermisosApiService } from '@features/roles-permisos/services/roles-permisos-api.service';
 import { UsuariosApiService } from '@features/empresa/services/usuarios-api.service';
 import { Rol } from '@features/empresa/models/rol.model';
+import { Usuario } from '@features/empresa/models/usuario.model';
 import { SucursalService } from '@features/sucursales/services/sucursal.service';
 import { Sucursal } from '@features/sucursales/models/sucursal.model';
 import { AccessSection, SectionResponse } from '@core/access/access.model';
@@ -29,14 +30,30 @@ interface UserOption { id: number; label: string; }
   template: `
     <div [formGroup]="group()" class="max-w-2xl flex flex-col gap-4">
       @if (isEdit()) {
-        <p class="text-sm text-surface-600">
-          @if (currentUserId()) {
-            Usuario vinculado: <strong>#{{ currentUserId() }}</strong>.
+        @if (currentUserId()) {
+          @if (linkedUser(); as u) {
+            <section class="pat-form__card">
+              <div class="pat-form__card-header"><span>Usuario vinculado</span></div>
+              <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div><dt class="text-surface-400 text-xs">Nombre</dt><dd>{{ u.firstName }} {{ u.lastName }}</dd></div>
+                <div><dt class="text-surface-400 text-xs">Usuario</dt><dd>{{ u.username }}</dd></div>
+                <div><dt class="text-surface-400 text-xs">Email</dt><dd>{{ u.email }}</dd></div>
+                <div><dt class="text-surface-400 text-xs">Documento</dt><dd>{{ u.document || '—' }}</dd></div>
+                <div><dt class="text-surface-400 text-xs">Rol</dt><dd>{{ rolName() }}</dd></div>
+                <div><dt class="text-surface-400 text-xs">Sucursal</dt><dd>{{ branchName() }}</dd></div>
+              </dl>
+            </section>
           } @else {
-            Este empleado no tiene un usuario vinculado.
+            <p class="text-sm text-surface-400">Cargando datos del usuario…</p>
           }
-          <span class="block text-xs text-surface-400 mt-1">La vinculación o creación de usuario se hace en el alta.</span>
-        </p>
+          <p class="text-xs text-surface-400">
+            La sucursal, el rol y los accesos del usuario se editan en <strong>Empresa › Usuarios</strong>.
+          </p>
+        } @else {
+          <p class="text-sm text-surface-600">Este empleado no tiene un usuario vinculado.
+            <span class="block text-xs text-surface-400 mt-1">La vinculación o creación de usuario se hace en el alta.</span>
+          </p>
+        }
       } @else {
         <p class="text-sm text-surface-500">¿Asociar un usuario del sistema a este empleado?</p>
         <div class="flex flex-col gap-2">
@@ -121,11 +138,21 @@ export class UsuarioStepComponent {
   private readonly usersApi = inject(UsuariosApiService);
   private readonly sucursalService = inject(SucursalService);
   private readonly notification = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly roles = signal<Rol[]>([]);
   readonly catalog = signal<SectionResponse[]>([]);
   readonly users = signal<UserOption[]>([]);
   readonly branches = signal<Sucursal[]>([]);
+
+  /** Datos del usuario vinculado (edición), para mostrarlos en vez del #id. */
+  readonly linkedUser = signal<Usuario | null>(null);
+  readonly rolName = computed(() => this.linkedUser()?.roles?.[0]?.description ?? '—');
+  readonly branchName = computed(() => {
+    const branchId = this.linkedUser()?.branch ?? null;
+    if (branchId == null) return 'Sin sucursal';
+    return this.branches().find((b) => b.id === branchId)?.description ?? `#${branchId}`;
+  });
 
   constructor() {
     // Carga robusta: 1 reintento y, si falla, aviso al usuario (antes quedaba el
@@ -144,6 +171,19 @@ export class UsuarioStepComponent {
       this.users.set(page.content.map((u) => ({ id: u.id, label: `${u.lastName}, ${u.firstName} (${u.username})` }))));
     this.sucursalService.list().pipe(takeUntilDestroyed()).subscribe((res) =>
       this.branches.set(res.content.filter((s) => s.active)));
+
+    // En edición: trae los datos del usuario vinculado para mostrarlos (en vez del #id).
+    let lastFetched: number | null = null;
+    effect(() => {
+      const uid = this.currentUserId();
+      if (!this.isEdit() || uid == null) { return; }
+      if (lastFetched === uid) return;
+      lastFetched = uid;
+      this.usersApi.getById(uid).pipe(
+        catchError(() => of(null)),
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe((u) => this.linkedUser.set(u));
+    });
 
     // Precarga nombre/apellido/documento del empleado al crear usuario nuevo. Solo pisa
     // controles `pristine` (no tocados manualmente); el email NO se precarga (puede ser otro).
