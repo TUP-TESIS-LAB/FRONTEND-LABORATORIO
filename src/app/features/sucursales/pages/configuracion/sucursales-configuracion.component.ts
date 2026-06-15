@@ -1,14 +1,12 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
-import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { TableColumn } from '@shared/ui/models/table-column.model';
 
 import * as A from '../../store/sucursal.actions';
@@ -19,7 +17,7 @@ import { Sucursal } from '../../models/sucursal.model';
   selector: 'app-sucursales-configuracion',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, TagModule, ConfirmDialogModule, ToastModule, DataTableComponent, UiCellDirective, PageHeaderComponent],
+  imports: [TagModule, ConfirmDialogModule, ToastModule, DataTableComponent, UiCellDirective],
   providers: [ConfirmationService, MessageService],
   templateUrl: './sucursales-configuracion.component.html',
 })
