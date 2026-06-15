@@ -3,34 +3,36 @@ import {
 } from '@angular/core';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Actions, ofType } from '@ngrx/effects';
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
-import { humanizeBackendError } from '@shared/utils/error-messages';
 import {
   addEmployee, addEmployeeSuccess, updateEmployee, updateEmployeeSuccess, createEmployeeWithUser,
   loadEmployee, loadEmployeeContacts, clearSelectedEmployee,
 } from '../../store/employee.actions';
 import {
-  selectEmployeePending, selectEmployeeError, selectSelectedEmployee, selectSelectedEmployeeContacts,
+  selectEmployeePending, selectSelectedEmployee, selectSelectedEmployeeContacts,
 } from '../../store/employee.selectors';
 import {
-  CreateEmployeeRequest, Employee, EmployeeContact, EmployeeContactInput, EmployeeContactType, UpdateEmployeeRequest,
+  CreateEmployeeRequest, Employee, EmployeeContact, EmployeeContactInput, UpdateEmployeeRequest,
 } from '../../models/employee.model';
+import { Address } from '../../models/address.model';
 import { CrearUsuarioPayload } from '@features/empresa/models/usuario.model';
 import { AccessSection } from '@core/access/access.model';
 import { EMPLOYEE_FORM_STEPS } from './employee-form-steps';
 import { DatosStepComponent } from './steps/datos-step/datos-step.component';
-import { ContactosStepComponent } from './steps/contactos-step/contactos-step.component';
-import { DireccionStepComponent } from './steps/direccion-step/direccion-step.component';
 import { UsuarioStepComponent } from './steps/usuario-step/usuario-step.component';
 import { ResumenStepComponent, EmployeeSummaryView } from './steps/resumen-step/resumen-step.component';
 
-interface ContactRow { id: number | null; contactType: EmployeeContactType; value: string; }
+interface DatosValue {
+  firstName: string; lastName: string; document: string; registration: string; isBiochemist: boolean;
+  email: string; mobile: string;
+}
+interface DireccionValue { street: string; streetNumber: string; neighborhood: string; city: string; province: string; }
 
 @Component({
   selector: 'emp-empleado-form-page',
@@ -38,8 +40,7 @@ interface ContactRow { id: number | null; contactType: EmployeeContactType; valu
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    WizardShellComponent, DatosStepComponent, ContactosStepComponent, DireccionStepComponent,
-    UsuarioStepComponent, ResumenStepComponent,
+    WizardShellComponent, DatosStepComponent, UsuarioStepComponent, ResumenStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
@@ -52,20 +53,14 @@ interface ContactRow { id: number | null; contactType: EmployeeContactType; valu
         [currentIndex]="currentStep()"
         [visited]="visited()"
         (stepSelected)="goToStep($event)">
-        @if (saveError(); as err) {
-          <div class="mb-3 p-3 rounded" style="background:#fef2f2;border:1px solid var(--ds-danger);color:var(--ds-danger);">
-            {{ saveErrorMessage(err) }}
-          </div>
-        }
         @switch (currentStep()) {
-          @case (0) { <emp-datos-step [group]="datosGroup" /> }
-          @case (1) { <emp-contactos-step [array]="contactosArray" /> }
-          @case (2) { <emp-direccion-step [group]="direccionGroup" /> }
-          @case (3) {
+          @case (0) { <emp-datos-step [group]="datosGroup" [addressGroup]="direccionGroup" /> }
+          @case (1) {
             <emp-usuario-step [group]="usuarioGroup" [mode]="usuarioMode()"
-                              [isEdit]="isEdit()" [currentUserId]="employee()?.userId ?? null" />
+                              [isEdit]="isEdit()" [currentUserId]="employee()?.userId ?? null"
+                              [identity]="usuarioPreload()" />
           }
-          @case (4) { <emp-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
+          @case (2) { <emp-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
         }
 
         <ng-container wizardFooter>
@@ -101,7 +96,6 @@ export class EmpleadoFormPage implements OnDestroy {
   readonly steps = EMPLOYEE_FORM_STEPS;
 
   readonly pending = this.store.selectSignal(selectEmployeePending);
-  readonly saveError = this.store.selectSignal(selectEmployeeError);
   readonly employee = this.store.selectSignal(selectSelectedEmployee);
   private readonly contacts = this.store.selectSignal(selectSelectedEmployeeContacts);
 
@@ -114,11 +108,13 @@ export class EmpleadoFormPage implements OnDestroy {
       document: ['', Validators.required],
       registration: [''],
       isBiochemist: [false],
+      // Contacto: 2 campos fijos (ocultan los 6 tipos del back); mapean a EMAIL/MOBILE.
+      email: ['', [Validators.email]],
+      mobile: [''],
     }),
-    contactos: this.fb.array<FormGroup>([]),
+    // Dirección texto-libre, igual a paciente.
     direccion: this.fb.group({
-      street: [''],
-      streetNumber: [''],
+      street: [''], streetNumber: [''], neighborhood: [''], city: [''], province: [''],
     }),
     usuario: this.fb.group({
       mode: ['none' as 'none' | 'existing' | 'new'],
@@ -149,8 +145,15 @@ export class EmpleadoFormPage implements OnDestroy {
   });
 
   readonly datosValid = computed(() => { void this.value(); void this.status(); return this.datosGroup.valid; });
-  readonly contactosValid = computed(() => { void this.value(); void this.status(); return this.contactosArray.valid; });
   readonly usuarioMode = computed<string>(() => { void this.value(); return this.usuarioGroup.get('mode')!.value as string; });
+
+  /** Identidad del empleado para precargar el usuario nuevo (nombre/apellido/documento; NO email). */
+  readonly usuarioPreload = computed<{ firstName: string; lastName: string; document: string }>(() => {
+    void this.value();
+    const d = this.datosGroup.getRawValue() as DatosValue;
+    return { firstName: d.firstName ?? '', lastName: d.lastName ?? '', document: d.document ?? '' };
+  });
+
   readonly usuarioValid = computed(() => {
     void this.value(); void this.status();
     const mode = this.usuarioMode();
@@ -172,12 +175,11 @@ export class EmpleadoFormPage implements OnDestroy {
 
   readonly canContinue = computed(() => {
     if (this.currentStep() === 0) return this.datosValid();
-    if (this.currentStep() === 1) return this.contactosValid();
-    if (this.currentStep() === 3) return this.usuarioValid();
+    if (this.currentStep() === 1) return this.usuarioValid();
     return true;
   });
   readonly canSubmit = computed(() =>
-    this.datosValid() && this.contactosValid() && this.usuarioValid() && !this.pending() && (this.isEdit() || this.isLastStep()));
+    this.datosValid() && this.usuarioValid() && !this.pending() && (this.isEdit() || this.isLastStep()));
   readonly showContinueButton = computed(() => !this.isLastStep() && !this.isEdit());
   readonly showSubmitButton = computed(() => this.isEdit() || this.isLastStep());
 
@@ -189,21 +191,19 @@ export class EmpleadoFormPage implements OnDestroy {
 
   readonly summaryView = computed<EmployeeSummaryView>(() => {
     void this.value();
-    const d = this.datosGroup.getRawValue() as {
-      firstName: string; lastName: string; document: string; registration: string; isBiochemist: boolean;
-    };
-    const dir = this.direccionGroup.getRawValue() as { street: string; streetNumber: string };
+    const d = this.datosGroup.getRawValue() as DatosValue;
+    const dir = this.direccionGroup.getRawValue() as DireccionValue;
     return {
       firstName: d.firstName, lastName: d.lastName, document: d.document,
       registration: d.registration || null, isBiochemist: d.isBiochemist,
+      email: d.email?.trim() || null, mobile: d.mobile?.trim() || null,
       street: dir.street?.trim() || null, streetNumber: dir.streetNumber?.trim() || null,
+      neighborhood: dir.neighborhood?.trim() || null, city: dir.city?.trim() || null, province: dir.province?.trim() || null,
       userLabel: this.userSummaryLabel(),
-      contacts: this.filledContacts().map((c) => ({ contactType: c.contactType, value: c.value })),
     };
   });
 
   get datosGroup(): FormGroup { return this.form.get('datos') as FormGroup; }
-  get contactosArray(): FormArray<FormGroup> { return this.form.get('contactos') as FormArray<FormGroup>; }
   get direccionGroup(): FormGroup { return this.form.get('direccion') as FormGroup; }
   get usuarioGroup(): FormGroup { return this.form.get('usuario') as FormGroup; }
 
@@ -229,7 +229,7 @@ export class EmpleadoFormPage implements OnDestroy {
       const e = this.employee();
       if (this.isEdit() && e && String(e.id) === this.id()) {
         this.hydrateDatos(e);
-        this.visited.set(new Set([0, 1, 2, 3, 4]));
+        this.visited.set(new Set([0, 1, 2]));
       }
     });
 
@@ -246,7 +246,7 @@ export class EmpleadoFormPage implements OnDestroy {
 
   goNext(): void {
     if (!this.canContinue()) {
-      (this.currentStep() === 0 ? this.datosGroup : this.contactosArray).markAllAsTouched();
+      (this.currentStep() === 0 ? this.datosGroup : this.usuarioGroup).markAllAsTouched();
       return;
     }
     const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
@@ -256,29 +256,16 @@ export class EmpleadoFormPage implements OnDestroy {
   goBack(): void { this.currentStep.set(Math.max(this.currentStep() - 1, 0)); }
   goToStep(i: number): void { if (this.visited().has(i)) this.currentStep.set(i); }
 
-  private contactGroup(row: Partial<ContactRow>): FormGroup {
-    return this.fb.group({
-      id: [row.id ?? null],
-      contactType: [(row.contactType ?? 'EMAIL') as EmployeeContactType, Validators.required],
-      value: [row.value ?? '', Validators.required],
-    });
-  }
-
-  private filledContacts(): ContactRow[] {
-    return (this.contactosArray.getRawValue() as ContactRow[]).filter((c) => c.value?.trim());
-  }
-
   private resetForCreate(): void {
     this.form.reset({
-      datos: { firstName: '', lastName: '', document: '', registration: '', isBiochemist: false },
-      direccion: { street: '', streetNumber: '' },
+      datos: { firstName: '', lastName: '', document: '', registration: '', isBiochemist: false, email: '', mobile: '' },
+      direccion: { street: '', streetNumber: '', neighborhood: '', city: '', province: '' },
       usuario: {
         mode: 'none', existingUserId: null,
         newUser: { firstName: '', lastName: '', email: '', username: '', document: '', roleId: null, branchId: null },
         sections: [],
       },
     });
-    this.contactosArray.clear();
     this.originalContacts = [];
     this.currentStep.set(0);
     this.visited.set(new Set([0]));
@@ -291,29 +278,18 @@ export class EmpleadoFormPage implements OnDestroy {
     });
     this.direccionGroup.patchValue({
       street: e.address?.street ?? '', streetNumber: e.address?.streetNumber ?? '',
+      neighborhood: e.address?.neighborhood ?? '', city: e.address?.city ?? '', province: e.address?.province ?? '',
     });
     this.form.markAsPristine();
   }
 
+  /** En edición precarga email/celular desde los contactos EMAIL/MOBILE existentes. */
   private hydrateContacts(list: EmployeeContact[]): void {
     this.originalContacts = list;
-    this.contactosArray.clear();
-    for (const c of list) {
-      this.contactosArray.push(this.contactGroup({ id: c.id, contactType: c.contactType, value: c.value }));
-    }
+    const email = list.find((c) => c.contactType === 'EMAIL')?.value ?? '';
+    const mobile = list.find((c) => c.contactType === 'MOBILE')?.value ?? '';
+    this.datosGroup.patchValue({ email, mobile });
     this.form.markAsPristine();
-  }
-
-  saveErrorMessage(err: { status?: number; error?: { message?: string } }): string {
-    return humanizeBackendError(err, {
-      fallback: 'No se pudo guardar el empleado.',
-      byStatus: {
-        409: 'Ya existe un empleado con ese documento.',
-        400: 'Algunos datos del empleado no son válidos. Revisalos e intentá de nuevo.',
-        422: 'Algunos datos del empleado no son válidos. Revisalos e intentá de nuevo.',
-        500: 'No se pudo guardar el empleado. Intentá de nuevo en unos minutos.',
-      },
-    });
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -327,21 +303,21 @@ export class EmpleadoFormPage implements OnDestroy {
 
   onSubmit(): void {
     if (!this.canSubmit()) return;
-    const d = this.datosGroup.getRawValue() as {
-      firstName: string; lastName: string; document: string; registration: string; isBiochemist: boolean;
-    };
-    const dir = this.direccionGroup.getRawValue() as { street: string; streetNumber: string };
-    const street = (dir.street ?? '').trim();
+    const d = this.datosGroup.getRawValue() as DatosValue;
+    const address = this.buildAddress();
     const req: CreateEmployeeRequest = {
       firstName: d.firstName, lastName: d.lastName, document: d.document,
       isBiochemist: d.isBiochemist, registration: d.registration?.trim() ? d.registration.trim() : null,
-      address: street ? { street, streetNumber: (dir.streetNumber ?? '').trim() || undefined } : null,
+      address,
     };
-    const rows = this.filledContacts();
+    const email = d.email?.trim() ?? '';
+    const mobile = d.mobile?.trim() ?? '';
     const editId = this.id();
 
     if (!editId) {
-      const contacts: EmployeeContactInput[] = rows.map((r) => ({ contactType: r.contactType, value: r.value.trim() }));
+      const contacts: EmployeeContactInput[] = [];
+      if (email) contacts.push({ contactType: 'EMAIL', value: email });
+      if (mobile) contacts.push({ contactType: 'MOBILE', value: mobile });
       const u = this.usuarioGroup.getRawValue() as {
         mode: string; existingUserId: number | null;
         newUser: { firstName: string; lastName: string; email: string; username: string; document: string; roleId: number | null; branchId: number | null };
@@ -369,20 +345,48 @@ export class EmpleadoFormPage implements OnDestroy {
 
     // Update: preservamos el userId actual (el alta/vinculación de usuario solo ocurre en el create).
     const updateReq: UpdateEmployeeRequest = { ...req, userId: this.employee()?.userId ?? null };
-    const toCreate: EmployeeContactInput[] = rows
-      .filter((r) => r.id == null)
-      .map((r) => ({ contactType: r.contactType, value: r.value.trim() }));
-    const toUpdate = rows
-      .filter((r) => r.id != null)
-      .filter((r) => {
-        const orig = this.originalContacts.find((o) => o.id === r.id);
-        return orig && (orig.contactType !== r.contactType || orig.value !== r.value.trim());
-      })
-      .map((r) => ({ contactId: r.id as number, input: { contactType: r.contactType, value: r.value.trim() } }));
-    const currentIds = new Set(rows.filter((r) => r.id != null).map((r) => r.id as number));
-    const toDelete = this.originalContacts.filter((o) => !currentIds.has(o.id)).map((o) => o.id);
-
+    const { toCreate, toUpdate, toDelete } = this.reconcileContacts(email, mobile);
     this.store.dispatch(updateEmployee({ id: Number(editId), req: updateReq, toCreate, toUpdate, toDelete }));
+  }
+
+  private buildAddress(): Address | null {
+    const dir = this.direccionGroup.getRawValue() as DireccionValue;
+    const street = (dir.street ?? '').trim();
+    const streetNumber = (dir.streetNumber ?? '').trim();
+    const neighborhood = (dir.neighborhood ?? '').trim();
+    const city = (dir.city ?? '').trim();
+    const province = (dir.province ?? '').trim();
+    if (!street && !streetNumber && !neighborhood && !city && !province) return null;
+    return {
+      street: street || undefined, streetNumber: streetNumber || undefined,
+      neighborhood: neighborhood || undefined, city: city || undefined, province: province || undefined,
+    };
+  }
+
+  /**
+   * Upsert acotado a EMAIL + MOBILE desde los 2 campos fijos. NO toca contactos de otros
+   * tipos (PHONE/WHATSAPP/etc.) preexistentes — quedan como estaban.
+   */
+  private reconcileContacts(email: string, mobile: string): {
+    toCreate: EmployeeContactInput[];
+    toUpdate: { contactId: number; input: EmployeeContactInput }[];
+    toDelete: number[];
+  } {
+    const toCreate: EmployeeContactInput[] = [];
+    const toUpdate: { contactId: number; input: EmployeeContactInput }[] = [];
+    const toDelete: number[] = [];
+    const reconcileType = (type: 'EMAIL' | 'MOBILE', value: string) => {
+      const orig = this.originalContacts.find((c) => c.contactType === type);
+      if (value) {
+        if (!orig) toCreate.push({ contactType: type, value });
+        else if (orig.value !== value) toUpdate.push({ contactId: orig.id, input: { contactType: type, value } });
+      } else if (orig) {
+        toDelete.push(orig.id);
+      }
+    };
+    reconcileType('EMAIL', email);
+    reconcileType('MOBILE', mobile);
+    return { toCreate, toUpdate, toDelete };
   }
 
   private userSummaryLabel(): string {
