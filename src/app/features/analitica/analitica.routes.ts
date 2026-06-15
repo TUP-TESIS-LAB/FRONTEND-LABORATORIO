@@ -61,12 +61,6 @@ export const ANALITICA_ROUTES: Routes = [
         title: 'Cargar resultados',
       },
       {
-        path: 'procesamiento/validacion/:protocolId',
-        canMatch: [sectionGuard('ANALITICA')],
-        loadComponent: () => import('./muestras/pages/validacion/validacion.page').then(m => m.ValidacionPage),
-        title: 'Validación',
-      },
-      {
         path: 'validacion',
         canMatch: [sectionGuard('ANALITICA')],
         loadComponent: () => import('./muestras/pages/validacion-protocolos/validacion-protocolos.page').then(m => m.ValidacionProtocolosPage),

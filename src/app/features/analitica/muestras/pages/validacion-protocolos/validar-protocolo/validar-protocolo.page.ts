@@ -1,118 +1,84 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import {
-  SECCIONES, findProtocolo,
-  type AnalisisProtocolo, type Determinacion, type SeccionKey,
-} from '../../../data/validacion-protocolos.mock';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { calcularEdad } from '@shared/utils/calcular-edad';
+import { humanizeBackendError } from '@shared/utils/error-messages';
+import { badgeFirma, badgeResultado } from '../../../models/postanalitica.model';
+import type { DetalleResultado, DetalleDeterminacion } from '../../../models/postanalitica.model';
+import { loadDetalle, validarTodo, firmarResultado, firmarEstudio } from '../../../store/validacion-detalle/validacion-detalle.actions';
+import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetalleError } from '../../../store/validacion-detalle/validacion-detalle.selectors';
 
-type FirmaEstado = 'no' | 'parcial' | 'total';
-
-/**
- * Pantalla interna "Validar y firmar" de un protocolo (detalle del subtab Validación).
- * Accordion de análisis con tabla de determinaciones; validación manual por análisis y
- * firma electrónica parcial/total. Todo en memoria (mock) — sin backend ni store.
- */
 @Component({
   selector: 'app-validar-protocolo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, ToastModule],
+  providers: [MessageService],
   templateUrl: './validar-protocolo.page.html',
   styleUrl: './validar-protocolo.page.scss',
 })
-export class ValidarProtocoloPage {
+export class ValidarProtocoloPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
+  private readonly messages = inject(MessageService);
 
-  readonly p = findProtocolo(this.route.snapshot.paramMap.get('protocolId'));
+  readonly badgeFirma = badgeFirma;
+  readonly badgeResultado = badgeResultado;
 
-  /** Análisis validados (arranca con los ya firmados). */
-  readonly vset = signal<ReadonlySet<string>>(
-    new Set(this.p.analisis.filter(a => a.firmado).map(a => a.id)),
-  );
-  /** Accordion: todos abiertos al entrar. */
-  readonly expanded = signal<ReadonlySet<string>>(new Set(this.p.analisis.map(a => a.id)));
-  readonly firma = signal<FirmaEstado>(
-    this.p.analisis.every(a => a.firmado) ? 'total'
-      : this.p.analisis.some(a => a.firmado) ? 'parcial'
-        : 'no',
-  );
-  readonly toast = signal('');
-  private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly detalle = this.store.selectSignal(selectDetalle);
+  readonly loading = this.store.selectSignal(selectDetalleLoading);
+  readonly saving = this.store.selectSignal(selectDetalleSaving);
+  private readonly error = this.store.selectSignal(selectDetalleError);
 
-  /** Iniciales del paciente para el avatar. */
-  readonly initials = this.p.paciente
-    .replace(',', '').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  readonly protocolId = Number(this.route.snapshot.paramMap.get('protocolId'));
+  readonly expanded = signal<ReadonlySet<number>>(new Set());
 
-  readonly allVal = computed(() => this.p.analisis.every(a => this.vset().has(a.id)));
-  readonly someVal = computed(() => this.vset().size > 0);
-  readonly nVal = computed(() => this.vset().size);
+  readonly results = computed<DetalleResultado[]>(() => this.detalle()?.results ?? []);
+  readonly studyStatus = computed(() => this.detalle()?.study.currentStatus ?? 'PENDING');
+  readonly canSignStudy = computed(() => this.studyStatus() === 'READY_FOR_SIGNATURE');
+  readonly edad = computed(() => calcularEdad(this.detalle()?.patientBirthDate ?? null));
+  readonly firmaBadge = computed(() => badgeFirma(this.studyStatus()));
 
-  // --- accordion ---
-  isOpen(id: string): boolean { return this.expanded().has(id); }
-  toggle(id: string): void {
-    this.expanded.update(set => {
-      const next = new Set(set);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
+  constructor() {
+    let lastSig: string | null = null;
+    effect(() => {
+      const err = this.error();
+      const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+      if (sig && sig !== lastSig) {
+        lastSig = sig;
+        this.messages.add({ severity: 'error', summary: 'Error',
+          detail: humanizeBackendError(err, { fallback: 'No pudimos completar la operación. Probá de nuevo.' }), life: 5000 });
+      }
     });
   }
 
-  // --- validación ---
-  isVal(id: string): boolean { return this.vset().has(id); }
+  ngOnInit(): void {
+    const st = (this.router.getCurrentNavigation()?.extras.state ?? history.state) as
+      { patientName?: string; patientSex?: string | null; patientBirthDate?: string | null };
+    this.store.dispatch(loadDetalle({
+      protocolId: this.protocolId,
+      patientName: st?.patientName, patientSex: st?.patientSex, patientBirthDate: st?.patientBirthDate,
+    }));
+  }
 
-  validar(a: AnalisisProtocolo, ev?: Event): void {
+  isOpen(id: number): boolean { return this.expanded().size === 0 || this.expanded().has(id); }
+  toggle(id: number): void { this.expanded.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+
+  canSignResult(r: DetalleResultado): boolean { return r.status === 'VALIDATED'; }
+  outOf(d: DetalleDeterminacion): boolean { return d.outOfRange; }
+
+  validarTodo(r: DetalleResultado, ev?: Event): void {
     ev?.stopPropagation();
-    this.vset.update(set => new Set(set).add(a.id));
-    this.flash('Análisis validado · ' + a.nombre);
+    this.store.dispatch(validarTodo({ resultId: r.resultId, outcome: 'PASS' }));
   }
-
-  validarTodo(): void {
-    this.vset.set(new Set(this.p.analisis.map(a => a.id)));
-    this.flash('Todos los análisis validados');
-  }
-
-  editar(a: AnalisisProtocolo, ev?: Event): void {
+  firmarResultado(r: DetalleResultado, ev?: Event): void {
     ev?.stopPropagation();
-    this.flash('Editar resultados · ' + a.nombre);
+    if (confirm('¿Firmar este resultado como bioquímico?')) this.store.dispatch(firmarResultado({ resultId: r.resultId }));
   }
-
-  /** Validación automática: dentro de rango (sin flag). */
-  autoOf(x: Determinacion): boolean { return !x.flag; }
-
-  estadoAn(a: AnalisisProtocolo): [string, string] {
-    return this.isVal(a.id) ? ['st-analisis', 'Validado'] : ['st-parcial', 'Validando'];
-  }
-
-  // --- firma ---
-  firmaBadge(): [string, string] {
-    const f = this.firma();
-    if (f === 'total') return ['st-cargado', 'Firma total'];
-    if (f === 'parcial') return ['st-parcial', 'Firma parcial'];
-    return ['st-sin', 'No firmada'];
-  }
-
-  firmarParcial(): void {
-    if (!this.someVal()) return;
-    this.firma.set(this.allVal() ? 'total' : 'parcial');
-    this.flash('Firma parcial registrada · ' + this.nVal() + ' análisis');
-  }
-
-  firmarTotal(): void {
-    if (!this.allVal()) return;
-    this.firma.set('total');
-    this.flash('Protocolo firmado · firma total');
-  }
-
-  secLabel(k: SeccionKey): string { return SECCIONES[k].label; }
-  secHue(k: SeccionKey): number { return SECCIONES[k].hue; }
-
-  valorClass(x: Determinacion): string {
-    return 'vt-v' + (x.flag === 'H' ? ' flag-h' : x.flag === 'L' ? ' flag-l' : '');
-  }
-
-  private flash(m: string): void {
-    this.toast.set(m);
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.toast.set(''), 2200);
+  firmarEstudio(): void {
+    if (confirm('¿Firmar el estudio completo? Esta acción lo cierra.')) this.store.dispatch(firmarEstudio({ protocolId: this.protocolId }));
   }
 }

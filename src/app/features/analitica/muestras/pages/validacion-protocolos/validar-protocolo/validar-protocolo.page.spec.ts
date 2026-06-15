@@ -1,76 +1,124 @@
-import { describe, expect, it } from 'vitest';
-import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { describe, expect, it, vi } from 'vitest';
+import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
+import { provideRouter } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { provideMockStore } from '@ngrx/store/testing';
 import { ValidarProtocoloPage } from './validar-protocolo.page';
+import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetalleError } from '../../../store/validacion-detalle/validacion-detalle.selectors';
+import { firmarEstudio } from '../../../store/validacion-detalle/validacion-detalle.actions';
+import type { DetalleEstudio } from '../../../models/postanalitica.model';
 
-const SMOKE_TEMPLATE = `<span>{{ firma() }}</span>`;
+const FIXTURE: DetalleEstudio = {
+  study: {
+    protocolId: 50015,
+    currentStatus: 'READY_FOR_SIGNATURE',
+    expectedResultsCount: 1,
+    signedResultsCount: 0,
+    patientId: 1,
+  },
+  results: [
+    {
+      resultId: 1,
+      status: 'VALIDATED',
+      sectionId: null,
+      determinations: [
+        {
+          determinationId: 1,
+          name: 'Glucosa',
+          value: '95',
+          unit: 'mg/dL',
+          referenceRange: '70-100',
+          aggregateOutcome: 'PASS',
+          manualOutcome: null,
+          outOfRange: false,
+        },
+        {
+          determinationId: 2,
+          name: 'Colesterol',
+          value: '250',
+          unit: 'mg/dL',
+          referenceRange: '<200',
+          aggregateOutcome: 'WARNING',
+          manualOutcome: null,
+          outOfRange: true,
+        },
+      ],
+    },
+  ],
+};
 
-// P-2606-0040 (García): 2 análisis, ninguno firmado → firma 'no', nada validado al entrar.
-function setup(protocolId = 'P-2606-0040'): ComponentFixture<ValidarProtocoloPage> {
+const SMOKE_TEMPLATE = `<span></span>`;
+
+function setup() {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ValidarProtocoloPage],
     providers: [
-      provideNoopAnimations(),
-      { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: (k: string) => (k === 'protocolId' ? protocolId : null) } } } },
+      provideRouter([]),
+      {
+        provide: ActivatedRoute,
+        useValue: { snapshot: { paramMap: new Map([['protocolId', '50015']]) } },
+      },
+      provideMockStore({
+        selectors: [
+          { selector: selectDetalle, value: FIXTURE },
+          { selector: selectDetalleLoading, value: false },
+          { selector: selectDetalleSaving, value: false },
+          { selector: selectDetalleError, value: null },
+        ],
+      }),
     ],
   });
   TestBed.overrideTemplate(ValidarProtocoloPage, SMOKE_TEMPLATE);
   const fx = TestBed.createComponent(ValidarProtocoloPage);
   fx.detectChanges();
-  return fx;
+  return fx.componentInstance;
 }
 
 describe('ValidarProtocoloPage (smoke)', () => {
-  it('carga el protocolo de la ruta', () => {
-    expect(setup().componentInstance.p.id).toBe('P-2606-0040');
+  it('results() returns the one result from the fixture', () => {
+    const cmp = setup();
+    expect(cmp.results().length).toBe(1);
+    expect(cmp.results()[0].resultId).toBe(1);
   });
 
-  it('un protocolo sin firmas arranca en firma "no" y sin análisis validados', () => {
-    const c = setup().componentInstance;
-    expect(c.firma()).toBe('no');
-    expect(c.someVal()).toBe(false);
-    expect(c.allVal()).toBe(false);
+  it('canSignResult() is true for a VALIDATED result', () => {
+    const cmp = setup();
+    expect(cmp.canSignResult(cmp.results()[0])).toBe(true);
   });
 
-  it('validar marca el análisis y habilita firma parcial', () => {
-    const c = setup().componentInstance;
-    c.validar(c.p.analisis[0]);
-    expect(c.isVal(c.p.analisis[0].id)).toBe(true);
-    expect(c.someVal()).toBe(true);
-    expect(c.allVal()).toBe(false);
+  it('canSignStudy() is true when study status is READY_FOR_SIGNATURE', () => {
+    expect(setup().canSignStudy()).toBe(true);
   });
 
-  it('validarTodo habilita firma total', () => {
-    const c = setup().componentInstance;
-    c.validarTodo();
-    expect(c.allVal()).toBe(true);
+  it('outOf() is false for in-range determination (Glucosa)', () => {
+    const cmp = setup();
+    const glucosa = cmp.results()[0].determinations[0];
+    expect(cmp.outOf(glucosa)).toBe(false);
   });
 
-  it('firmarParcial con algunos validados deja firma "parcial"; firmarTotal requiere todos', () => {
-    const c = setup().componentInstance;
-    c.validar(c.p.analisis[0]);
-    c.firmarTotal();
-    expect(c.firma()).toBe('no'); // no-op: falta validar el resto
-    c.firmarParcial();
-    expect(c.firma()).toBe('parcial');
-    c.validarTodo();
-    c.firmarTotal();
-    expect(c.firma()).toBe('total');
+  it('outOf() is true for out-of-range determination (Colesterol)', () => {
+    const cmp = setup();
+    const colesterol = cmp.results()[0].determinations[1];
+    expect(cmp.outOf(colesterol)).toBe(true);
   });
 
-  it('validación automática: en rango Validado, fuera de rango No validado', () => {
-    const c = setup().componentInstance;
-    const hemo = c.p.analisis[0]; // tiene determinaciones con flag H
-    const enRango = hemo.dets.find(x => !x.flag)!;
-    const fueraRango = hemo.dets.find(x => x.flag)!;
-    expect(c.autoOf(enRango)).toBe(true);
-    expect(c.autoOf(fueraRango)).toBe(false);
+  it('firmarEstudio() dispatches action when user confirms', () => {
+    const cmp = setup();
+    const store = TestBed.inject(Store);
+    const dispatch = vi.spyOn(store, 'dispatch');
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    cmp.firmarEstudio();
+    expect(dispatch).toHaveBeenCalledWith(firmarEstudio({ protocolId: 50015 }));
   });
 
-  it('un protocolo totalmente firmado arranca en firma "total"', () => {
-    // P-2606-0041 (Fernández): ambos análisis firmados.
-    expect(setup('P-2606-0041').componentInstance.firma()).toBe('total');
+  it('firmarEstudio() does NOT dispatch when user cancels', () => {
+    const cmp = setup();
+    const store = TestBed.inject(Store);
+    const dispatch = vi.spyOn(store, 'dispatch');
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    cmp.firmarEstudio();
+    expect(dispatch).not.toHaveBeenCalledWith(firmarEstudio({ protocolId: 50015 }));
   });
 });

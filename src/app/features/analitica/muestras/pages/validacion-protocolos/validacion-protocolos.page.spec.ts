@@ -73,6 +73,8 @@ describe('ValidacionProtocolosPage (smoke)', () => {
     const { fx, navigate } = setup();
     const r = ROWS[0];
     fx.componentInstance.validar(r, new Event('click'));
-    expect(navigate).toHaveBeenCalledWith(['/analitica/validacion', r.protocolId]);
+    expect(navigate).toHaveBeenCalledWith(['/analitica/validacion', r.protocolId], {
+      state: { patientName: r.patientName, patientSex: r.patientSex, patientBirthDate: r.patientBirthDate },
+    });
   });
 });

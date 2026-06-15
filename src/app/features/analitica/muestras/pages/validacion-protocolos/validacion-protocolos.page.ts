@@ -66,6 +66,8 @@ export class ValidacionProtocolosPage implements OnInit {
 
   validar(r: ValidationListRow, ev: Event): void {
     ev.stopPropagation();
-    this.router.navigate(['/analitica/validacion', r.protocolId]);
+    this.router.navigate(['/analitica/validacion', r.protocolId], {
+      state: { patientName: r.patientName, patientSex: r.patientSex, patientBirthDate: r.patientBirthDate },
+    });
   }
 }

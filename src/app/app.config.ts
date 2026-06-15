@@ -86,13 +86,13 @@ import { RESULTADOS_FEATURE_KEY } from '@features/analitica/muestras/store/resul
 import { resultadosReducer } from '@features/analitica/muestras/store/resultados/resultados.reducer';
 import { ResultadosEffects } from '@features/analitica/muestras/store/resultados/resultados.effects';
 
-import { POSTANALITICA_FEATURE_KEY } from '@features/analitica/muestras/store/postanalitica/postanalitica.state';
-import { postanaliticaReducer } from '@features/analitica/muestras/store/postanalitica/postanalitica.reducer';
-import { PostanaliticaEffects } from '@features/analitica/muestras/store/postanalitica/postanalitica.effects';
-
 import { VALIDACION_PROTOCOLOS_FEATURE_KEY } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.state';
 import { validacionProtocolosReducer } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.reducer';
 import { ValidacionProtocolosEffects } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.effects';
+
+import { VALIDACION_DETALLE_FEATURE_KEY } from '@features/analitica/muestras/store/validacion-detalle/validacion-detalle.state';
+import { validacionDetalleReducer } from '@features/analitica/muestras/store/validacion-detalle/validacion-detalle.reducer';
+import { ValidacionDetalleEffects } from '@features/analitica/muestras/store/validacion-detalle/validacion-detalle.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -147,10 +147,10 @@ export const appConfig: ApplicationConfig = {
     provideEffects(WorksheetTemplatesEffects),
     provideState(RESULTADOS_FEATURE_KEY, resultadosReducer),
     provideEffects(ResultadosEffects),
-    provideState(POSTANALITICA_FEATURE_KEY, postanaliticaReducer),
-    provideEffects(PostanaliticaEffects),
     provideState(VALIDACION_PROTOCOLOS_FEATURE_KEY, validacionProtocolosReducer),
     provideEffects(ValidacionProtocolosEffects),
+    provideState(VALIDACION_DETALLE_FEATURE_KEY, validacionDetalleReducer),
+    provideEffects(ValidacionDetalleEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),

@@ -400,6 +400,6 @@ describe('WorklistPage (smoke)', () => {
     const nav = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     cmp.toggleRow(cmp.rows()[0].id);
     cmp.validarResultados();
-    expect(nav).toHaveBeenCalledWith(['/analitica/procesamiento/validacion', 88]);
+    expect(nav).toHaveBeenCalledWith(['/analitica/validacion', 88]);
   });
 });
