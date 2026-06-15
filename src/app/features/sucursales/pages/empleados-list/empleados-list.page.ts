@@ -1,14 +1,11 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
-import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 import { Employee } from '../../models/employee.model';
 import { loadEmployees, toggleEmployeeStatus } from '../../store/employee.actions';
@@ -19,15 +16,9 @@ import { selectAllEmployees, selectEmployeePending } from '../../store/employee.
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
-  imports: [RouterLink, ButtonModule, TagModule, ConfirmDialogModule, DataTableComponent, UiCellDirective, PageHeaderComponent],
+  imports: [TagModule, ConfirmDialogModule, DataTableComponent, UiCellDirective],
   template: `
     <div>
-      <ui-page-header heading="Empleados">
-        <a [routerLink]="['/sucursales', 'empleados', 'nuevo']">
-          <p-button label="Nuevo empleado" />
-        </a>
-      </ui-page-header>
-
       <ui-table
         [value]="items()"
         [loading]="pending()"

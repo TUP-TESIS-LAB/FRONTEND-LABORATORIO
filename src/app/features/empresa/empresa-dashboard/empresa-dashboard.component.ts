@@ -1,14 +1,22 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
+import { UsuariosCreateBus } from '../pages/usuarios/usuarios-create.bus';
 
 @Component({
   selector: 'emp-empresa-dashboard',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, PageHeaderComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, PageHeaderComponent, ButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ui-page-header heading="Empresa" />
+    <ui-page-header heading="Empresa">
+      @if (onUsuarios()) {
+        <p-button label="Nuevo usuario" severity="primary" (onClick)="bus.requestCreate()" />
+      }
+    </ui-page-header>
 
     <nav class="emp-dashboard__tabs" role="tablist">
       <a routerLink="usuarios" routerLinkActive="is-active" role="tab">Usuarios</a>
@@ -42,4 +50,18 @@ import { PageHeaderComponent } from '@shared/ui/components/page-header/page-head
     .emp-dashboard__body { display: block; }
   `],
 })
-export class EmpresaDashboardComponent {}
+export class EmpresaDashboardComponent {
+  protected readonly bus = inject(UsuariosCreateBus);
+  private readonly router = inject(Router);
+
+  // El botón de acción del header depende de la tab activa; se actualiza con cada
+  // navegación. "Nuevo usuario" sólo se muestra en la tab Usuarios.
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+  protected readonly onUsuarios = computed(() => this.url().includes('/usuarios'));
+}

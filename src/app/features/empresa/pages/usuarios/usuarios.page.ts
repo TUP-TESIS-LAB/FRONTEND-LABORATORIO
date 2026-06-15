@@ -2,9 +2,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, injec
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { filter, take } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
-import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
+import { UsuariosCreateBus } from './usuarios-create.bus';
 
 import {
   loadUsuarios, setUsuariosFilters, loadRoles,
@@ -35,16 +34,12 @@ import { FirstLoginLinkDialogComponent } from './components/first-login-link-dia
   selector: 'emp-usuarios-page',
   standalone: true,
   imports: [
-    ButtonModule, FilterBarComponent, PageHeaderComponent,
+    FilterBarComponent,
     UsuariosTableComponent,
     UsuarioFormDrawerComponent, ToggleStatusDialogComponent, FirstLoginLinkDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ui-page-header heading="Usuarios" [subtitle]="totalElements() + ' usuarios en total'">
-      <p-button label="Invitar" severity="primary" (onClick)="openCreate()" />
-    </ui-page-header>
-
     <div class="emp-usuarios__filters">
       <ui-filter-bar [config]="filterConfig()" (valueChange)="onFilterChange($event)" />
     </div>
@@ -92,6 +87,7 @@ export class UsuariosPage implements OnInit {
   private readonly store = inject(Store);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sucursalService = inject(SucursalService);
+  private readonly createBus = inject(UsuariosCreateBus);
 
   readonly branches = signal<Sucursal[]>([]);
   readonly usuarios = this.store.selectSignal(selectAllUsuarios);
@@ -137,6 +133,12 @@ export class UsuariosPage implements OnInit {
     this.store.dispatch(loadRoles());
     this.store.dispatch(loadCatalog());
     this.store.dispatch(loadUsuarios({ filters: this.filters() }));
+
+    // El botón "Nuevo usuario" vive en el header del dashboard (padre); abre el
+    // drawer de alta acá vía el bus.
+    this.createBus.create$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.openCreate());
 
     // Sucursales del tenant para el selector del drawer (sólo activas).
     this.sucursalService.list()
