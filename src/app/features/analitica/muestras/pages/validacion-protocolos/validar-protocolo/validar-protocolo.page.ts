@@ -7,14 +7,15 @@ import { calcularEdad } from '@shared/utils/calcular-edad';
 import { humanizeBackendError } from '@shared/utils/error-messages';
 import { badgeFirma, badgeResultado } from '../../../models/postanalitica.model';
 import type { DetalleResultado, DetalleDeterminacion } from '../../../models/postanalitica.model';
-import { loadDetalle, validarTodo, firmarResultado, firmarEstudio } from '../../../store/validacion-detalle/validacion-detalle.actions';
+import { loadDetalle, validarTodo, firmarEstudio } from '../../../store/validacion-detalle/validacion-detalle.actions';
 import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetalleError } from '../../../store/validacion-detalle/validacion-detalle.selectors';
+import { FirmarEstudioModalComponent } from '../../../components/firmar-estudio-modal/firmar-estudio-modal.component';
 
 @Component({
   selector: 'app-validar-protocolo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ToastModule],
+  imports: [RouterLink, ToastModule, FirmarEstudioModalComponent],
   providers: [MessageService],
   templateUrl: './validar-protocolo.page.html',
   styleUrl: './validar-protocolo.page.scss',
@@ -34,13 +35,24 @@ export class ValidarProtocoloPage implements OnInit {
   private readonly error = this.store.selectSignal(selectDetalleError);
 
   readonly protocolId = Number(this.route.snapshot.paramMap.get('protocolId'));
+  /** Acordeón: arranca con TODOS abiertos; toggle agrega/quita de forma coherente. */
   readonly expanded = signal<ReadonlySet<number>>(new Set());
+  /** Modal de confirmación de firma de estudio. */
+  readonly firmarModalOpen = signal(false);
 
   readonly results = computed<DetalleResultado[]>(() => this.detalle()?.results ?? []);
   readonly studyStatus = computed(() => this.detalle()?.study.currentStatus ?? 'PENDING');
-  readonly canSignStudy = computed(() => this.studyStatus() === 'READY_FOR_SIGNATURE');
-  readonly edad = computed(() => calcularEdad(this.detalle()?.patientBirthDate ?? null));
+  readonly isClosed = computed(() => this.studyStatus() === 'CLOSED');
+  /** Puede firmar el estudio mientras no esté cerrado y haya al menos un resultado validado. */
+  readonly canOpenFirmaModal = computed(() =>
+    !this.isClosed() && this.results().some(r => r.status === 'VALIDATED'));
   readonly firmaBadge = computed(() => badgeFirma(this.studyStatus()));
+
+  // Datos del paciente: prioriza el header del backend (GAP-4); fallback a router.state.
+  readonly patientName = computed(() => this.detalle()?.study.patientName ?? this.detalle()?.patientName ?? null);
+  readonly patientSex = computed(() => this.detalle()?.study.patientSex ?? this.detalle()?.patientSex ?? null);
+  readonly edad = computed(() =>
+    calcularEdad(this.detalle()?.study.patientBirthDate ?? this.detalle()?.patientBirthDate ?? null));
 
   constructor() {
     let lastSig: string | null = null;
@@ -51,6 +63,17 @@ export class ValidarProtocoloPage implements OnInit {
         lastSig = sig;
         this.messages.add({ severity: 'error', summary: 'Error',
           detail: humanizeBackendError(err, { fallback: 'No pudimos completar la operación. Probá de nuevo.' }), life: 5000 });
+      }
+    });
+
+    // Cuando llegan los resultados, abrir todas las filas por defecto (una sola vez por carga).
+    let lastSeenIds = '';
+    effect(() => {
+      const ids = this.results().map(r => r.resultId);
+      const sig = ids.join(',');
+      if (sig && sig !== lastSeenIds) {
+        lastSeenIds = sig;
+        this.expanded.set(new Set(ids));
       }
     });
   }
@@ -64,21 +87,41 @@ export class ValidarProtocoloPage implements OnInit {
     }));
   }
 
-  isOpen(id: number): boolean { return this.expanded().size === 0 || this.expanded().has(id); }
-  toggle(id: number): void { this.expanded.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  isOpen(id: number): boolean { return this.expanded().has(id); }
+  toggle(id: number): void {
+    this.expanded.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
 
-  canSignResult(r: DetalleResultado): boolean { return r.status === 'VALIDATED'; }
+  /** Nombre a mostrar del análisis (GAP-4); fallback al id si el back no lo trae. */
+  nombreAnalisis(r: DetalleResultado): string {
+    return r.analysisName ?? `Resultado #${r.resultId}`;
+  }
+
+  canValidate(r: DetalleResultado): boolean {
+    return !this.isClosed() && r.status !== 'SIGNED' && r.status !== 'VALIDATED';
+  }
+  canEdit(r: DetalleResultado): boolean { return !this.isClosed() && r.status !== 'SIGNED'; }
   outOf(d: DetalleDeterminacion): boolean { return d.outOfRange; }
 
-  validarTodo(r: DetalleResultado, ev?: Event): void {
+  /** GAP-9: "Validar" deja el resultado VALIDATED (validate-all con PASS). */
+  validar(r: DetalleResultado, ev?: Event): void {
     ev?.stopPropagation();
+    if (!this.canValidate(r)) return;
     this.store.dispatch(validarTodo({ resultId: r.resultId, outcome: 'PASS' }));
   }
-  firmarResultado(r: DetalleResultado, ev?: Event): void {
+
+  /** GAP-9: "Editar" lleva a Cargar resultados de ese protocolo. */
+  editar(r: DetalleResultado, ev?: Event): void {
     ev?.stopPropagation();
-    if (confirm('¿Firmar este resultado como bioquímico?')) this.store.dispatch(firmarResultado({ resultId: r.resultId }));
+    if (!this.canEdit(r)) return;
+    this.router.navigate(['/analitica/procesamiento/cargar'], { queryParams: { protocols: this.protocolId } });
   }
-  firmarEstudio(): void {
-    if (confirm('¿Firmar el estudio completo? Esta acción lo cierra.')) this.store.dispatch(firmarEstudio({ protocolId: this.protocolId }));
+
+  // --- Firma de estudio: abre modal de confirmación; el modal orquesta la firma. ---
+  abrirFirmaModal(): void { if (this.canOpenFirmaModal()) this.firmarModalOpen.set(true); }
+  cerrarFirmaModal(): void { this.firmarModalOpen.set(false); }
+  confirmarFirma(): void {
+    this.firmarModalOpen.set(false);
+    this.store.dispatch(firmarEstudio({ protocolId: this.protocolId }));
   }
 }

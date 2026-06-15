@@ -17,11 +17,11 @@
     <div class="psum-pac">
       <div class="psum-avatar"><i class="pi pi-user"></i></div>
       <div class="psum-pac-id">
-        <b>{{ detalle()?.patientName ?? 'Paciente' }}</b>
-        @if (detalle()?.patientSex || edad() !== null) {
+        <b>{{ patientName() ?? 'Paciente' }}</b>
+        @if (patientSex() || edad() !== null) {
           <span>
-            @if (detalle()?.patientSex) { {{ detalle()?.patientSex }} }
-            @if (detalle()?.patientSex && edad() !== null) { · }
+            @if (patientSex()) { {{ patientSex() }} }
+            @if (patientSex() && edad() !== null) { · }
             @if (edad() !== null) { {{ edad() }} años }
           </span>
         }
@@ -37,7 +37,7 @@
       <div class="firma-btns">
         <button
           type="button" class="btn-firmar btn-total"
-          [disabled]="!canSignStudy() || saving()" (click)="firmarEstudio()"
+          [disabled]="!canOpenFirmaModal() || saving()" (click)="abrirFirmaModal()"
         >
           <i class="pi pi-check-circle"></i> Firmar estudio
         </button>
@@ -55,14 +55,21 @@
           >
             <i class="pi pi-chevron-down"></i>
           </button>
-          <b class="anx-name">Resultado #{{ r.resultId }}</b>
+          <b class="anx-name">{{ nombreAnalisis(r) }}</b>
+          @if (r.analysisFamily) {
+            <span class="fam-pill">{{ r.analysisFamily }}</span>
+          }
           <div class="anx-actions" (click)="$event.stopPropagation()">
-            <button type="button" class="anx-btn anx-val" [disabled]="saving()" (click)="validarTodo(r, $event)">
-              <i class="pi pi-check"></i> Validar todo
+            <button type="button" class="anx-btn anx-edit" [disabled]="!canEdit(r) || saving()" (click)="editar(r, $event)">
+              <i class="pi pi-pencil"></i> Editar
             </button>
-            @if (canSignResult(r)) {
-              <button type="button" class="anx-btn anx-done" [disabled]="saving()" (click)="firmarResultado(r, $event)">
-                <i class="pi pi-pencil"></i> Firmar
+            @if (canValidate(r)) {
+              <button type="button" class="anx-btn anx-val" [disabled]="saving()" (click)="validar(r, $event)">
+                <i class="pi pi-check"></i> Validar
+              </button>
+            } @else if (r.status === 'VALIDATED' || r.status === 'SIGNED') {
+              <button type="button" class="anx-btn anx-done" disabled>
+                <i class="pi pi-check"></i> {{ r.status === 'SIGNED' ? 'Firmado' : 'Validado' }}
               </button>
             }
           </div>
@@ -85,13 +92,23 @@
                 <span class="vt-u">{{ d.unit }}</span>
                 <span class="vt-ref">{{ d.referenceRange }}</span>
                 <span class="vt-cell">
-                  <span class="vb vb-no">{{ d.manualOutcome ?? '—' }}</span>
+                  @if (d.manualOutcome) {
+                    <span class="vb vb-ok"><i class="pi pi-check"></i> {{ d.manualOutcome }}</span>
+                  } @else {
+                    <span class="vb vb-no">—</span>
+                  }
                 </span>
                 <span class="vt-cell">
-                  @if (outOf(d)) {
-                    <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> {{ d.aggregateOutcome ?? '—' }}</span>
+                  @if (d.aggregateOutcome) {
+                    @if (outOf(d)) {
+                      <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> {{ d.aggregateOutcome }}</span>
+                    } @else {
+                      <span class="vb vb-ok"><i class="pi pi-check"></i> {{ d.aggregateOutcome }}</span>
+                    }
+                  } @else if (outOf(d)) {
+                    <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> Fuera de rango</span>
                   } @else {
-                    <span class="vb vb-ok"><i class="pi pi-check"></i> {{ d.aggregateOutcome ?? '—' }}</span>
+                    <span class="vb vb-no">—</span>
                   }
                 </span>
               </div>
@@ -101,6 +118,13 @@
       </section>
     }
   </div>
+
+  <app-firmar-estudio-modal
+    [visible]="firmarModalOpen()"
+    [results]="results()"
+    (confirmar)="confirmarFirma()"
+    (closed)="cerrarFirmaModal()"
+  />
 
   <p-toast position="bottom-right" />
 </section>

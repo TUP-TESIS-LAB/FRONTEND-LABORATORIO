@@ -109,6 +109,10 @@
   &.is-open i { transform: rotate(180deg); }
 }
 .anx-name { font-size: 15.5px; font-weight: 800; color: #1a2140; letter-spacing: -.01em; }
+.fam-pill {
+  font-size: 11.5px; font-weight: 600; color: #5b54e6; background: #eeedfc;
+  padding: 3px 11px; border-radius: 20px; white-space: nowrap;
+}
 .anx-actions { display: flex; gap: 8px; }
 .anx-btn {
   display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px;

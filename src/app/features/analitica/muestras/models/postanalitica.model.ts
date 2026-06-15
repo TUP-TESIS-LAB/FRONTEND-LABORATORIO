@@ -72,6 +72,36 @@ export function badgeFirma(status: StudyStatus): [string, string] {
   }
 }
 
+/**
+ * GAP-5: en el LISTADO se distingue el accionable "Listo para firmar"
+ * (READY_FOR_SIGNATURE) del terminal "Cerrado" (CLOSED), que `estadoFirmaDe`
+ * colapsa en 'total'. El detalle sigue usando `badgeFirma` (3 estados).
+ */
+export type EstadoFirmaListado = 'sin' | 'parcial' | 'listo' | 'cerrado';
+
+export function estadoFirmaListado(status: StudyStatus): EstadoFirmaListado {
+  switch (status) {
+    case 'PENDING': return 'sin';
+    case 'PARTIALLY_SIGNED': return 'parcial';
+    case 'READY_FOR_SIGNATURE': return 'listo';
+    case 'CLOSED': return 'cerrado';
+  }
+}
+
+export function badgeFirmaListado(status: StudyStatus): [string, string] {
+  switch (estadoFirmaListado(status)) {
+    case 'sin': return ['st-sin', 'Sin firma'];
+    case 'parcial': return ['st-parcial', 'Firma parcial'];
+    case 'listo': return ['st-cargado', 'Listo para firmar'];
+    case 'cerrado': return ['st-total', 'Cerrado'];
+  }
+}
+
+/** Un estudio accionable (no cerrado) en el listado de Validación. */
+export function esAccionable(status: StudyStatus): boolean {
+  return status !== 'CLOSED';
+}
+
 export function badgeResultado(status: ResultStatus): [string, string] {
   switch (status) {
     case 'PENDING': return ['st-sin', 'Pendiente'];
@@ -108,13 +138,20 @@ export interface DetalleDeterminacion {
 }
 export interface DetalleResultado {
   resultId: number; status: ResultStatus; sectionId: number | null;
+  analysisName: string | null; analysisFamily: string | null;
   determinations: DetalleDeterminacion[];
 }
 export interface DetalleEstudioHeader {
   protocolId: number; currentStatus: StudyStatus;
   expectedResultsCount: number; signedResultsCount: number; patientId: number;
+  patientName: string | null; patientSex: string | null; patientBirthDate: string | null;
 }
 export interface DetalleEstudioResponse { study: DetalleEstudioHeader; results: DetalleResultado[]; }
+/**
+ * El detalle ahora trae los datos del paciente en el header (backend GAP-4).
+ * Se mantienen los campos opcionales de nivel raíz por compatibilidad con el
+ * paso por router.state, pero la fuente de verdad es `study.patientName/...`.
+ */
 export interface DetalleEstudio extends DetalleEstudioResponse {
   patientName?: string; patientSex?: string | null; patientBirthDate?: string | null;
 }
