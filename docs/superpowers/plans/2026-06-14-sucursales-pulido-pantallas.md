@@ -479,7 +479,7 @@ Render por secciones (Datos, Horarios, Contactos, Áreas, Tótem, Pantallas), ca
   - En Tótem, prender solo "extracción" → en el sidebar aparece solo "TV extracción", no "TV sala de espera".
   - Prender solo "atención" → solo "TV sala de espera".
   - Sucursal con tótem habilitado (preexistente) conserva "TV sala de espera" por el backfill.
-- [ ] **Step 5: PRs (BE + FE) contra `development`**, cada uno linkeando el Jira (regla #1/#3).
+- [ ] **Step 5: PRs — exactamente 1 de BE + 1 de FE** contra `development`, cada uno linkeando el Jira (regla #1/#3). El PR de BE consolida TODO lo de backend (flags de pantallas + migración + upsert/endpoint); el PR de FE consolida TODO lo de frontend (item 4, item 1, toggles del paso Tótem, sidebar, resumen del paso 6). NO abrir un PR por fase.
 
 ---
 
