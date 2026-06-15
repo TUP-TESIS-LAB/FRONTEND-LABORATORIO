@@ -8,6 +8,7 @@ import { UserSessionService } from '@features/profile/services/user-session.serv
 import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
 import { loadMySections } from '@core/access/store/access.actions';
 import { AuthApiService } from '@features/auth/services/auth-api.service';
+import { BranchBootstrapService } from '@core/branch/branch-bootstrap.service';
 
 @Component({
   selector: 'app-login',
@@ -336,6 +337,7 @@ export class LoginComponent {
   private readonly store    = inject(Store);
   private readonly authApi  = inject(AuthApiService);
   private readonly userSession = inject(UserSessionService);
+  private readonly branchBootstrap = inject(BranchBootstrapService);
 
   protected readonly passVisible = signal(false);
   protected readonly submitting  = signal(false);
@@ -372,6 +374,12 @@ export class LoginComponent {
         this.userSession.set(response.user);
         this.store.dispatch(loadTenantConfig());
         this.store.dispatch(loadMySections());
+        // Re-resolver la sucursal activa para el tenant recién logueado. El init
+        // valida la sucursal persistida (localStorage es por origen, no por tenant):
+        // si quedó una de otro tenant (ej. tras cambiar de usuario en el mismo
+        // puerto) la limpia y cae a la sucursal del usuario / primera del tenant.
+        // Sin esto, el header podía mostrar la sede de un tenant anterior.
+        this.branchBootstrap.init().subscribe();
         await this.router.navigate(['/home']);
         return;
       }
