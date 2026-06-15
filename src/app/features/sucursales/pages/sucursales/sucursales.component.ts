@@ -12,6 +12,7 @@ import { UserSessionService } from '@features/profile/services/user-session.serv
 import { loadSucursales } from '../../store/sucursales.actions';
 import { selectAllSucursales, selectSucursalesPending } from '../../store/sucursales.selectors';
 import { BranchTotemConfigService } from '../../services/branch-totem-config.service';
+import { switchMap } from 'rxjs';
 import { Sucursal } from '../../models/sucursal.model';
 
 @Component({
@@ -98,7 +99,16 @@ export class SucursalesPageComponent implements OnInit {
   protected onToggleTotem(branchId: number, enabled: boolean): void {
     const prev = this.totemEnabledById()[branchId];
     this.totemEnabledById.update(m => ({ ...m, [branchId]: enabled }));
-    this.totemConfigService.upsert(branchId, enabled).subscribe({
+    // El upsert setea los 3 valores del config; para no pisar los flags de
+    // pantalla desde este toggle rápido, leemos la config actual y reenviamos
+    // atención/extracción sin cambiarlos.
+    this.totemConfigService.get(branchId).pipe(
+      switchMap(cfg => this.totemConfigService.upsert(branchId, {
+        enabled,
+        atencionDisplayEnabled: cfg?.atencionDisplayEnabled ?? false,
+        extraccionDisplayEnabled: cfg?.extraccionDisplayEnabled ?? false,
+      })),
+    ).subscribe({
       next: () => this.toast.add({ severity: 'success', summary: 'Tótem actualizado' }),
       error: () => {
         this.totemEnabledById.update(m => ({ ...m, [branchId]: prev }));
