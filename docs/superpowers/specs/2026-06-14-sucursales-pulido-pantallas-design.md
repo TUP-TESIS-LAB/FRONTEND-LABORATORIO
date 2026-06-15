@@ -4,7 +4,7 @@
 > **Rama:** `feat/sucursales-pulido-pantallas` (worktree `.worktrees/sucursales-pulido`, off `development`).
 > **Alcance:** Items 1, 2, 4 son **frontend puro**; item 3 es **cross-stack** (FE + BE + migración).
 > **PRs (regla del usuario): exactamente 1 PR de BE + 1 PR de FE.** Todo el backend (flags de pantallas + migración + endpoint) en un único PR de BE; todo el frontend (items 1, 2, 4 + toggles + sidebar + resumen) en un único PR de FE.
-> **Jira:** _(pendiente — completar al pasar por `jira-workflow`)_
+> **Jira:** [KAN-110](https://exequielsantoro.atlassian.net/browse/KAN-110)
 
 ## Contexto
 
