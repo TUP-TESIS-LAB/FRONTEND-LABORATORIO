@@ -5,6 +5,7 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 import { Usuario } from '../../../models/usuario.model';
+import { Sucursal } from '@features/sucursales/models/sucursal.model';
 
 @Component({
   selector: 'emp-usuarios-table',
@@ -48,7 +49,7 @@ import { Usuario } from '../../../models/usuario.model';
       </ng-template>
 
       <ng-template uiCell="branch" let-row>
-        {{ $any(row).branch ?? '—' }}
+        {{ branchName($any(row).branch) }}
       </ng-template>
 
       <ng-template uiCell="estado" let-row>
@@ -74,6 +75,14 @@ export class UsuariosTableComponent {
   @Input({ required: true }) size!: number;
   @Input({ required: true }) totalElements!: number;
   @Input() loading = false;
+  /** Sucursales del tenant para resolver el id de branch del usuario a su nombre. */
+  @Input() branches: Sucursal[] = [];
+
+  /** Nombre de la sucursal del usuario (cae al id si no está en la lista, '—' si no tiene). */
+  branchName(id: number | null | undefined): string {
+    if (id == null) return '—';
+    return this.branches.find((b) => b.id === id)?.description ?? `#${id}`;
+  }
 
   @Output() edit = new EventEmitter<Usuario>();
   @Output() toggleStatus = new EventEmitter<Usuario>();
