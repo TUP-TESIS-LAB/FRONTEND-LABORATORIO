@@ -115,7 +115,7 @@ import { presetForRole } from '../../../models/role-section-presets';
         <div class="pat-form__footer">
           <p-button label="Cancelar" severity="secondary" text type="button" (onClick)="cancel.emit()" />
           <p-button
-            [label]="editing() ? 'Confirmar' : 'Invitar'"
+            [label]="editing() ? 'Guardar cambios' : 'Invitar'"
             severity="primary"
             type="submit"
             [disabled]="!canSubmit() || saving"
@@ -155,7 +155,10 @@ export class UsuarioFormDrawerComponent implements OnChanges {
 
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
   readonly canSubmit = computed(() => this.status() === 'VALID');
-  readonly editing = computed(() => !!this.usuario);
+  // `editing` debe ser una signal seteada en ngOnChanges: un computed que lee el
+  // @Input plano `this.usuario` no registra dependencia y queda cacheado en false
+  // (por eso el drawer mostraba "Invitar" aún editando). Se actualiza al abrir.
+  readonly editing = signal(false);
 
   private wasVisible = false;
 
@@ -164,6 +167,9 @@ export class UsuarioFormDrawerComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if ('usuario' in changes || 'visible' in changes) {
+      this.editing.set(!!this.usuario);
+    }
     if ('visible' in changes) {
       this.visibleInternal = this.visible;
       if (this.visible && !this.wasVisible) {
