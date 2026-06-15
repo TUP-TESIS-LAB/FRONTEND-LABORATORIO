@@ -94,7 +94,24 @@ import { FormStep } from '@shared/ui/models/form-step';
     </div>
   `,
   styles: [`
-    :host { display: block; height: 100%; min-height: 0; }
+    /* Full-bleed: negamos el padding que el AdminShell aplica sobre
+       .ui-admin-shell__content (--space-6 desktop, --space-4 mobile ≤767px),
+       para que el wizard llegue borde a borde. Centralizado acá para que TODOS
+       los wizards (pacientes, médicos, empleados, obras sociales, sucursal,
+       agenda, atención) sean idénticos — antes cada uno lo hackeaba aparte. */
+    :host {
+      display: block;
+      min-height: 0;
+      overflow: hidden;
+      margin: calc(-1 * var(--space-6));
+      height: calc(100% + var(--space-6) * 2);
+    }
+    @media (max-width: 767px) {
+      :host {
+        margin: calc(-1 * var(--space-4));
+        height: calc(100% + var(--space-4) * 2);
+      }
+    }
     .wz-bar--top { border-bottom: 1px solid var(--ds-border); }
     .wz-bar--bottom { border-top: 1px solid var(--ds-border); }
   `],
