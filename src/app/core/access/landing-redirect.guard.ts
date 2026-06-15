@@ -1,9 +1,17 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { filter, map, take } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 import { AccessSection } from '@core/access/access.model';
 import { selectAccessState } from '@core/access/store/access.selectors';
+
+/**
+ * Tope de espera de las secciones antes de caer al home. En condiciones normales
+ * `loaded` se prende en <200ms; el timeout solo actúa si la request quedó colgada
+ * (BE caído / proxy sin responder) para no congelar el login para siempre.
+ */
+const SECTIONS_LOAD_TIMEOUT_MS = 10_000;
 
 /**
  * Landing tras el login: ya no hay pantalla "Inicio" fija. Redirige a la primera
@@ -32,10 +40,14 @@ export const landingRedirectGuard: CanActivateFn = () => {
   return store.select(selectAccessState).pipe(
     filter((s) => s.loaded),
     take(1),
-    map((s) => {
+    map((s): boolean | UrlTree => {
       const target = LANDING_ORDER.find((o) => s.sections.includes(o.section));
       // Con sección accesible → redirige a la primera. Sin ninguna → deja el fallback.
       return target ? router.createUrlTree([target.path]) : true;
     }),
+    // Si las secciones nunca cargan (request colgada), no congelar la navegación:
+    // caer al home como fallback. Mismo criterio que "sin secciones".
+    timeout({ first: SECTIONS_LOAD_TIMEOUT_MS }),
+    catchError(() => of(true as boolean | UrlTree)),
   );
 };
