@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, of, throwError } from 'rxjs';
-import { BranchTotemConfig } from '../models/branch-totem-config.model';
+import { BranchTotemConfig, UpsertBranchTotemConfigRequest } from '../models/branch-totem-config.model';
 
 @Injectable({ providedIn: 'root' })
 export class BranchTotemConfigService {
@@ -17,7 +17,7 @@ export class BranchTotemConfigService {
     );
   }
 
-  upsert(branchId: number, enabled: boolean): Observable<BranchTotemConfig> {
-    return this.http.put<BranchTotemConfig>(this.base(branchId), { enabled });
+  upsert(branchId: number, body: UpsertBranchTotemConfigRequest): Observable<BranchTotemConfig> {
+    return this.http.put<BranchTotemConfig>(this.base(branchId), body);
   }
 }
