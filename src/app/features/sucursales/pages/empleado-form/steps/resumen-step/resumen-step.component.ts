@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
-import { EmployeeContactInput } from '../../../../models/employee.model';
 
 export interface EmployeeSummaryView {
   firstName: string;
@@ -8,10 +7,14 @@ export interface EmployeeSummaryView {
   document: string;
   registration: string | null;
   isBiochemist: boolean;
+  email?: string | null;
+  mobile?: string | null;
   street?: string | null;
   streetNumber?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  province?: string | null;
   userLabel?: string;
-  contacts: EmployeeContactInput[];
 }
 
 @Component({
@@ -23,7 +26,7 @@ export interface EmployeeSummaryView {
     <div class="max-w-2xl flex flex-col gap-5">
       <section>
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-base font-semibold m-0">Datos del empleado</h3>
+          <h3 class="text-base font-semibold m-0">Datos generales</h3>
           <p-button label="Editar" [text]="true" (onClick)="editStep.emit(0)" />
         </div>
         <dl class="grid grid-cols-2 gap-y-2 text-sm">
@@ -31,34 +34,15 @@ export interface EmployeeSummaryView {
           <dt class="text-surface-500">Documento</dt><dd>{{ data().document }}</dd>
           <dt class="text-surface-500">Matrícula</dt><dd>{{ data().registration || '—' }}</dd>
           <dt class="text-surface-500">Bioquímico</dt><dd>{{ data().isBiochemist ? 'Sí' : 'No' }}</dd>
+          <dt class="text-surface-500">Email</dt><dd>{{ data().email || '—' }}</dd>
+          <dt class="text-surface-500">Celular</dt><dd>{{ data().mobile || '—' }}</dd>
+          <dt class="text-surface-500">Domicilio</dt><dd>{{ addressLabel() }}</dd>
         </dl>
       </section>
       <section>
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-base font-semibold m-0">Contactos</h3>
-          <p-button label="Editar" [text]="true" (onClick)="editStep.emit(1)" />
-        </div>
-        @if (data().contacts.length === 0) {
-          <p class="text-surface-500 text-sm">Sin contactos.</p>
-        } @else {
-          <ul class="text-sm list-disc pl-5">
-            @for (c of data().contacts; track $index) {
-              <li>{{ typeLabel(c.contactType) }}: {{ c.value }}</li>
-            }
-          </ul>
-        }
-      </section>
-      <section>
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-base font-semibold m-0">Dirección</h3>
-          <p-button label="Editar" [text]="true" (onClick)="editStep.emit(2)" />
-        </div>
-        <p class="text-sm">{{ addressLabel() }}</p>
-      </section>
-      <section>
-        <div class="flex items-center justify-between mb-2">
           <h3 class="text-base font-semibold m-0">Usuario</h3>
-          <p-button label="Editar" [text]="true" (onClick)="editStep.emit(3)" />
+          <p-button label="Editar" [text]="true" (onClick)="editStep.emit(1)" />
         </div>
         <p class="text-sm">{{ data().userLabel || 'Sin usuario' }}</p>
       </section>
@@ -71,14 +55,9 @@ export class ResumenStepComponent {
 
   readonly addressLabel = computed(() => {
     const d = this.data();
-    if (!d.street) return 'Sin dirección.';
-    return d.streetNumber ? `${d.street} ${d.streetNumber}` : d.street;
+    const line1 = [d.street, d.streetNumber].filter((p) => p?.trim()).join(' ');
+    const rest = [d.neighborhood, d.city, d.province].filter((p) => p?.trim()).join(', ');
+    const full = [line1, rest].filter((p) => p).join(' · ');
+    return full || 'Sin dirección.';
   });
-
-  typeLabel(t: string): string {
-    const map: Record<string, string> = {
-      EMAIL: 'Email', PHONE: 'Teléfono', MOBILE: 'Celular', WHATSAPP: 'WhatsApp', FAX: 'Fax', WEBSITE: 'Sitio web',
-    };
-    return map[t] ?? t;
-  }
 }

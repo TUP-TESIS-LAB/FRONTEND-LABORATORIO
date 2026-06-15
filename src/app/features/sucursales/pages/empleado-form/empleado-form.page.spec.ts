@@ -8,6 +8,8 @@ import { EmpleadoFormPage } from './empleado-form.page';
 import { EMPLOYEE_FEATURE_KEY, initialEmployeeState } from '../../store/employee.state';
 import { addEmployee, createEmployeeWithUser } from '../../store/employee.actions';
 
+const RESUMEN_STEP = 2;
+
 describe('EmpleadoFormPage (smoke)', () => {
   let store: MockStore;
 
@@ -24,8 +26,11 @@ describe('EmpleadoFormPage (smoke)', () => {
     store = TestBed.inject(MockStore);
   });
 
-  function fillDatos(cmp: EmpleadoFormPage, isBiochemist = false): void {
-    cmp.datosGroup.setValue({ firstName: 'Eva', lastName: 'Ruiz', document: '30111222', registration: '', isBiochemist });
+  function fillDatos(cmp: EmpleadoFormPage, isBiochemist = false, extra: Partial<{ email: string; mobile: string }> = {}): void {
+    cmp.datosGroup.setValue({
+      firstName: 'Eva', lastName: 'Ruiz', document: '30111222', registration: '', isBiochemist,
+      email: extra.email ?? '', mobile: extra.mobile ?? '',
+    });
   }
 
   it('renders "Nuevo empleado" in create mode', () => {
@@ -34,36 +39,52 @@ describe('EmpleadoFormPage (smoke)', () => {
     expect((fixture.nativeElement as HTMLElement).innerHTML).toContain('Nuevo empleado');
   });
 
-  it('dispatches addEmployee (no user, no address) with contacts on submit', () => {
+  it('the wizard has exactly 3 steps', () => {
+    const fixture = TestBed.createComponent(EmpleadoFormPage);
+    expect(fixture.componentInstance.steps.map((s) => s.key)).toEqual(['datos', 'usuario', 'resumen']);
+  });
+
+  it('dispatches addEmployee (no user, no address) with no contacts when contact fields are empty', () => {
     const fixture = TestBed.createComponent(EmpleadoFormPage);
     fixture.detectChanges();
     const cmp = fixture.componentInstance;
     fillDatos(cmp);
-    cmp.contactosArray.push(
-      (cmp as unknown as { contactGroup: (r: unknown) => unknown })['contactGroup']({ contactType: 'EMAIL', value: 'eva@x.com' }) as never,
-    );
-    cmp.currentStep.set(4); // resumen (último)
+    cmp.currentStep.set(RESUMEN_STEP);
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(addEmployee({
       req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null, address: null },
-      contacts: [{ contactType: 'EMAIL', value: 'eva@x.com' }],
+      contacts: [],
     }));
   });
 
-  it('includes a structured address when a street is provided', () => {
+  it('maps email -> EMAIL and celular -> MOBILE contacts', () => {
+    const fixture = TestBed.createComponent(EmpleadoFormPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    fillDatos(cmp, false, { email: 'eva@x.com', mobile: '2211234567' });
+    cmp.currentStep.set(RESUMEN_STEP);
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onSubmit();
+    expect(spy).toHaveBeenCalledWith(addEmployee({
+      req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null, address: null },
+      contacts: [{ contactType: 'EMAIL', value: 'eva@x.com' }, { contactType: 'MOBILE', value: '2211234567' }],
+    }));
+  });
+
+  it('includes the full free-text address (street, number, neighborhood, city, province)', () => {
     const fixture = TestBed.createComponent(EmpleadoFormPage);
     fixture.detectChanges();
     const cmp = fixture.componentInstance;
     fillDatos(cmp);
-    cmp.direccionGroup.setValue({ street: 'Av. Mitre', streetNumber: '500' });
-    cmp.currentStep.set(4);
+    cmp.direccionGroup.setValue({ street: 'Av. Mitre', streetNumber: '500', neighborhood: 'Centro', city: 'La Plata', province: 'Buenos Aires' });
+    cmp.currentStep.set(RESUMEN_STEP);
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(addEmployee({
       req: {
         firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null,
-        address: { street: 'Av. Mitre', streetNumber: '500' },
+        address: { street: 'Av. Mitre', streetNumber: '500', neighborhood: 'Centro', city: 'La Plata', province: 'Buenos Aires' },
       },
       contacts: [],
     }));
@@ -76,7 +97,7 @@ describe('EmpleadoFormPage (smoke)', () => {
     fillDatos(cmp);
     cmp.usuarioGroup.get('mode')!.setValue('existing');
     cmp.usuarioGroup.get('existingUserId')!.setValue(77);
-    cmp.currentStep.set(4);
+    cmp.currentStep.set(RESUMEN_STEP);
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(addEmployee({
@@ -98,7 +119,7 @@ describe('EmpleadoFormPage (smoke)', () => {
       newUser: { firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222', roleId: 3, branchId: 8 },
       sections: ['ATENCION'],
     });
-    cmp.currentStep.set(4);
+    cmp.currentStep.set(RESUMEN_STEP);
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(createEmployeeWithUser({
@@ -113,6 +134,14 @@ describe('EmpleadoFormPage (smoke)', () => {
     }));
   });
 
+  it('exposes datos identity (firstName/lastName/document) for user preload, without email', () => {
+    const fixture = TestBed.createComponent(EmpleadoFormPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    fillDatos(cmp, false, { email: 'eva@x.com' });
+    expect(cmp.usuarioPreload()).toEqual({ firstName: 'Eva', lastName: 'Ruiz', document: '30111222' });
+  });
+
   it('new user sin sucursal no permite submit', () => {
     const fixture = TestBed.createComponent(EmpleadoFormPage);
     fixture.detectChanges();
@@ -123,7 +152,7 @@ describe('EmpleadoFormPage (smoke)', () => {
       newUser: { firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222', roleId: 3, branchId: null },
       sections: ['ATENCION'],
     });
-    cmp.currentStep.set(4);
+    cmp.currentStep.set(RESUMEN_STEP);
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: createEmployeeWithUser.type }));

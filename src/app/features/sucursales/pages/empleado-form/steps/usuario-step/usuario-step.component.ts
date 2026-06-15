@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
 import { SeccionesChecklistComponent } from '@features/roles-permisos/components/secciones-checklist.component';
@@ -110,6 +110,9 @@ export class UsuarioStepComponent {
   readonly mode = input<string>('none');
   readonly isEdit = input(false);
   readonly currentUserId = input<number | null>(null);
+  /** Datos del empleado para precargar el usuario nuevo (NO email). */
+  readonly identity = input<{ firstName: string; lastName: string; document: string }>(
+    { firstName: '', lastName: '', document: '' });
 
   private readonly rolesApi = inject(RolesApiService);
   private readonly sectionsApi = inject(RolesPermisosApiService);
@@ -128,6 +131,23 @@ export class UsuarioStepComponent {
       this.users.set(page.content.map((u) => ({ id: u.id, label: `${u.lastName}, ${u.firstName} (${u.username})` }))));
     this.sucursalService.list().pipe(takeUntilDestroyed()).subscribe((res) =>
       this.branches.set(res.content.filter((s) => s.active)));
+
+    // Precarga nombre/apellido/documento del empleado al crear usuario nuevo. Solo pisa
+    // controles `pristine` (no tocados manualmente); el email NO se precarga (puede ser otro).
+    effect(() => {
+      const id = this.identity();
+      if (this.mode() !== 'new') return;
+      const nu = this.group().get('newUser') as FormGroup;
+      this.patchIfPristine(nu.get('firstName'), id.firstName);
+      this.patchIfPristine(nu.get('lastName'), id.lastName);
+      this.patchIfPristine(nu.get('document'), id.document);
+    });
+  }
+
+  private patchIfPristine(control: AbstractControl | null, value: string): void {
+    if (control && control.pristine) {
+      control.setValue(value, { emitEvent: false });
+    }
   }
 
   private sectionsControl() { return this.group().get('sections')!; }
