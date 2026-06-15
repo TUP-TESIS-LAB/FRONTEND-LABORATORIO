@@ -508,7 +508,10 @@ export class DatosGeneralesStepComponent implements OnInit {
     const p = this.resolved();
     const cat = this.catalog();
     const chips: { planId: number | null; label: string }[] = [{ planId: null, label: 'Particular' }];
-    for (const c of (p?.coverages ?? []).filter((x) => x.active)) {
+    // Excluimos las coberturas a un plan "particular" (self-pay): ya están
+    // representadas por el chip "Particular" de arriba; mostrarlas además como
+    // cobertura duplicaba "Particular" (se veían dos opciones Particular).
+    for (const c of (p?.coverages ?? []).filter((x) => x.active && !planById(cat, x.planId)?.particular)) {
       const member = c.memberNumber ? ` · N° ${c.memberNumber}` : '';
       chips.push({ planId: c.planId, label: `${insurerNameForPlan(cat, c.planId)} ${planName(cat, c.planId)}${member}` });
     }
