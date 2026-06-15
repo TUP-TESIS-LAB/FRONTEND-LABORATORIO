@@ -46,6 +46,7 @@ import { FirstLoginLinkDialogComponent } from './components/first-login-link-dia
 
     <emp-usuarios-table
       [usuarios]="usuarios()"
+      [branches]="branches()"
       [page]="page()"
       [size]="size()"
       [totalElements]="totalElements()"
