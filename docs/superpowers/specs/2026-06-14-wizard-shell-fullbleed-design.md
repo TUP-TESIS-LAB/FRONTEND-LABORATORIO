@@ -4,7 +4,7 @@
 > **Rama:** `feat/wizard-shell-fullbleed` (worktree `.worktrees/wizard-fullbleed`, off `development`).
 > **Alcance:** Frontend puro (CSS). Sin backend, sin lógica.
 > **PRs (regla del usuario): 1 solo PR de FE** (este tópico no toca backend).
-> **Jira:** _(pendiente — `jira-workflow`)_
+> **Jira:** [KAN-111](https://exequielsantoro.atlassian.net/browse/KAN-111)
 
 ## Problema
 

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax.
 >
-> **Jira:** _(pendiente — `jira-workflow`)_
+> **Jira:** [KAN-111](https://exequielsantoro.atlassian.net/browse/KAN-111)
 >
 > **Spec:** `docs/superpowers/specs/2026-06-14-wizard-shell-fullbleed-design.md`
 
