@@ -1,12 +1,13 @@
 <section class="validacion-page">
   <ui-page-header
     heading="Validación"
-    subtitle="Protocolos con resultados cargados, pendientes de firma bioquímica. Revisá los análisis y validá el protocolo."
+    subtitle="Protocolos con resultados cargados. Validá los análisis y firmá el estudio. Los cerrados quedan como historial."
   >
     <div class="stats">
       <div class="stat is-on"><b>{{ cSin() }}</b><span>sin firma</span></div>
       <div class="stat"><b>{{ cParcial() }}</b><span>firma parcial</span></div>
-      <div class="stat"><b>{{ cTotal() }}</b><span>firma total</span></div>
+      <div class="stat"><b>{{ cListo() }}</b><span>listo para firmar</span></div>
+      <div class="stat"><b>{{ cCerrado() }}</b><span>cerrados</span></div>
     </div>
   </ui-page-header>
 
@@ -30,14 +31,21 @@
   </div>
 
   <div class="thead-card prot-grid">
+    <span></span>
     <span>PROTOCOLO</span><span>ANÁLISIS</span><span>FECHA</span><span>ESTADO</span><span></span>
   </div>
 
   <section class="grp-card">
     <div class="grp-rows">
       @for (r of visibles(); track r.studyId) {
-        <div class="prot-block">
-          <div class="row prot-grid prot-row">
+        <div class="prot-block" [class.is-open]="isOpen(r.protocolId)">
+          <div class="row prot-grid prot-row" (click)="toggle(r, $event)">
+            <button
+              type="button" class="prot-chev" [class.is-open]="isOpen(r.protocolId)"
+              (click)="toggle(r, $event)" aria-label="Ver análisis"
+            >
+              <i class="pi pi-chevron-down"></i>
+            </button>
             <div class="cell-mx">
               <div class="mx-top"><span class="mx-code">{{ r.protocolCode }}</span></div>
               <div class="mx-pac">
@@ -54,10 +62,10 @@
               <span class="toma-h">{{ r.date | date: 'HH:mm' }} hs</span>
             </div>
             <div class="cell-edo">
-              <span [class]="'badge-st ' + badgeFirma(r.currentStatus)[0]"><span class="dot"></span>{{ badgeFirma(r.currentStatus)[1] }}</span>
+              <span [class]="'badge-st ' + badgeFirmaListado(r.currentStatus)[0]"><span class="dot"></span>{{ badgeFirmaListado(r.currentStatus)[1] }}</span>
             </div>
             <div class="cell-act">
-              @if (estadoFirmaDe(r.currentStatus) === 'total') {
+              @if (estadoFirmaListado(r.currentStatus) === 'cerrado') {
                 <button type="button" class="prot-validar is-done" (click)="validar(r, $event)">
                   <i class="pi pi-eye"></i> Ver
                 </button>
@@ -68,6 +76,35 @@
               }
             </div>
           </div>
+
+          @if (isOpen(r.protocolId)) {
+            <div class="prot-detail">
+              @if (isLoadingAnalisis(r.protocolId)) {
+                <p class="an-loading">Cargando análisis…</p>
+              } @else if ((analisisDe(r.protocolId) ?? []).length === 0) {
+                <p class="an-loading">Sin análisis cargados.</p>
+              } @else {
+                <div class="an-list">
+                  <div class="an-lhead an-grid">
+                    <span>ANÁLISIS</span><span>FAMILIA DE ESTUDIO</span><span>ESTADO</span>
+                  </div>
+                  @for (a of analisisDe(r.protocolId); track a.resultId) {
+                    <div class="an-row an-grid">
+                      <div class="an-cell-name">
+                        <span class="an-nm">{{ a.analysisName ?? ('Resultado #' + a.resultId) }}</span>
+                      </div>
+                      <div class="an-cell-fam">
+                        @if (a.analysisFamily) { <span class="fam-pill">{{ a.analysisFamily }}</span> }
+                      </div>
+                      <div class="an-cell-st">
+                        <span [class]="'fst ' + badgeResultado(a.status)[0]">{{ badgeResultado(a.status)[1] }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
       }
       @if (!pending() && visibles().length === 0) {
