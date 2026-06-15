@@ -32,8 +32,9 @@ describe('authTokenInterceptor', () => {
     localStorage.clear();
   });
 
-  it('should add Authorization header when token exists', () => {
-    tokenService.setToken('my.jwt.token');
+  it('should add Authorization header when token is valid', () => {
+    vi.spyOn(tokenService, 'getToken').mockReturnValue('my.jwt.token');
+    vi.spyOn(tokenService, 'isTokenValid').mockReturnValue(true);
     http.get('/api/test').subscribe();
     const req = httpMock.expectOne('/api/test');
     expect(req.request.headers.get('Authorization')).toBe('Bearer my.jwt.token');
@@ -46,6 +47,39 @@ describe('authTokenInterceptor', () => {
     const req = httpMock.expectOne('/api/test');
     expect(req.request.headers.get('Authorization')).toBeNull();
     req.flush({});
+  });
+
+  it('does NOT attach an expired/invalid token (no envenenar requests)', () => {
+    vi.spyOn(tokenService, 'getToken').mockReturnValue('expired.jwt.token');
+    vi.spyOn(tokenService, 'isTokenValid').mockReturnValue(false);
+    http.get('/api/test').subscribe();
+    const req = httpMock.expectOne('/api/test');
+    expect(req.request.headers.get('Authorization')).toBeNull();
+    req.flush({});
+  });
+
+  it('does NOT attach token to public auth endpoints (login)', () => {
+    vi.spyOn(tokenService, 'getToken').mockReturnValue('my.jwt.token');
+    vi.spyOn(tokenService, 'isTokenValid').mockReturnValue(true);
+    http.post('/api/v1/auth/internal/login', {}).subscribe();
+    const req = httpMock.expectOne('/api/v1/auth/internal/login');
+    expect(req.request.headers.get('Authorization')).toBeNull();
+    req.flush({});
+  });
+
+  it('un 401 del login NO limpia sesión ni redirige (lo maneja la pantalla)', async () => {
+    const router = TestBed.inject(Router);
+    const removeSpy = vi.spyOn(tokenService, 'removeToken');
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const errorPromise = firstValueFrom(http.post('/api/v1/auth/internal/login', {})).catch((e: unknown) => e);
+    const req = httpMock.expectOne('/api/v1/auth/internal/login');
+    req.flush({ message: 'bad creds' }, { status: 401, statusText: 'Unauthorized' });
+
+    const err = await errorPromise as { status: number };
+    expect(err.status).toBe(401);
+    expect(removeSpy).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 
   it('clears token and redirects to /login on 401', async () => {
