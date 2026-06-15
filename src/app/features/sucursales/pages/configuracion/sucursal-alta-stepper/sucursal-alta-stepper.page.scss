@@ -1,23 +1,2 @@
-/*
- * Full-bleed wizard: el AdminShell aplica padding (--space-6 en >= 768px,
- * --space-4 en mobile) sobre `.ui-admin-shell__content`, pero el wizard
- * gestiona su propio chrome (header sticky + body scrollable + footer sticky)
- * y queda mal con ese gap alrededor. Negamos el padding con margin negativo
- * + height compensado para llegar borde a borde del viewport del shell.
- *
- * Layout 100% Tailwind tras migrar a la UX completa de patient-form.
- */
-:host {
-  display: block;
-  margin: calc(-1 * var(--space-6));
-  height: calc(100% + var(--space-6) * 2);
-  min-height: 0;
-  overflow: hidden;
-}
-
-@media (max-width: 767px) {
-  :host {
-    margin: calc(-1 * var(--space-4));
-    height: calc(100% + var(--space-4) * 2);
-  }
-}
+/* El full-bleed ahora lo da el `:host` de `ui-wizard-shell` (centralizado).
+   Esta página no necesita estilos propios. */
