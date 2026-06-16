@@ -49,6 +49,7 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           [first]="first()"
           [paginator]="paginator()"
           [pageLinks]="5"
+          [paginatorDropdownAppendTo]="'body'"
           [scrollable]="scrollHeight() !== null"
           [scrollHeight]="scrollHeight() ?? undefined"
           (onLazyLoad)="lazyLoad.emit($event)">
