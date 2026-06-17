@@ -1,0 +1,25 @@
+:host { display: block; }
+
+.cargar-page { display: flex; flex-direction: column; gap: 16px; }
+
+.cargar-head {
+  display: flex; flex-direction: column; gap: 4px;
+
+  h1 { margin: 4px 0 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: #1a2140; }
+  .sub { margin: 0; font-size: 13px; color: #8a90a3; }
+}
+.back-link {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; cursor: pointer; padding: 4px 0;
+  font-size: 13px; color: #5b54e6; font-weight: 600;
+  &:hover { text-decoration: underline; }
+}
+
+.state { font-size: 13px; color: #8a90a3; }
+
+.ui-empty-state {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px; text-align: center;
+  > i { font-size: 30px; color: #8a90a3; }
+  h4 { margin: 4px 0 0; font-size: 16px; font-weight: 600; color: #1a2140; }
+  p { margin: 0; font-size: 13px; color: #8a90a3; max-width: 320px; }
+}

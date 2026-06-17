@@ -22,3 +22,13 @@ export const saveTemplateFailure = createAction(
   '[Worksheet Templates API] Save Template Failure',
   props<{ error: HttpErrorResponse }>()
 );
+
+export const deleteTemplate = createAction(
+  '[Planillas Modal] Delete Template',
+  props<{ id: number }>()
+);
+export const deleteTemplateSuccess = createAction('[Worksheet Templates API] Delete Template Success');
+export const deleteTemplateFailure = createAction(
+  '[Worksheet Templates API] Delete Template Failure',
+  props<{ error: HttpErrorResponse }>()
+);

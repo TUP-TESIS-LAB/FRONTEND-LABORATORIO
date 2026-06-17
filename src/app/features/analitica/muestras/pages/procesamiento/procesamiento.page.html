@@ -1,0 +1,74 @@
+<section class="proc-page">
+  <ui-page-header
+    heading="Muestras en procesamiento"
+    subtitle="Cada planilla agrupa los análisis con los que se configuró. Seleccioná muestras y elegí una planilla para cargar sus resultados."
+  >
+    <div class="stats">
+      <div class="stat" [class.is-on]="total() > 0"><b>{{ total() }}</b><span>en proceso</span></div>
+      <div class="stat"><b>{{ templatesCount() }}</b><span>planillas</span></div>
+      <div class="stat" [class.is-on]="selectedCount() > 0"><b>{{ selectedCount() }}</b><span>seleccionadas</span></div>
+    </div>
+  </ui-page-header>
+
+  <div class="scanbar">
+    <div class="scan-input">
+      <i class="pi pi-search"></i>
+      <input [value]="query()" (input)="setQuery($any($event.target).value)"
+             placeholder="Escaneá o buscá una muestra…" aria-label="Buscar muestra" />
+    </div>
+    <button type="button" class="btn-ghost" [disabled]="selectedCount() === 0" (click)="clearSelection()">Limpiar</button>
+    <button type="button" class="btn-orange" (click)="openPlanillas()">
+      <i class="pi pi-table"></i> Planillas
+    </button>
+  </div>
+
+  <div class="thead-card proc-grid">
+    <label class="cell-chk" (click)="$event.stopPropagation()">
+      <input type="checkbox" [checked]="allVisibleSelected()" (change)="toggleAll()" aria-label="Seleccionar todas" />
+    </label>
+    <span>MUESTRA</span><span>ESTUDIO</span><span>SUCURSAL/SEDE</span><span>TOMA</span><span>ESTADO</span>
+  </div>
+
+  <section class="grp-card">
+    <div class="grp-rows">
+      @for (t of visibleRows(); track t.id) {
+        <div class="row proc-grid proc-row" [class.is-sel]="isSelected(t.id)" (click)="toggleRow(t.id)">
+          <label class="cell-chk" (click)="$event.stopPropagation()">
+            <input type="checkbox" [checked]="isSelected(t.id)" (change)="toggleRow(t.id)" [attr.aria-label]="'Seleccionar ' + t.barcode" />
+          </label>
+          <div class="cell-mx">
+            <div class="mx-top">
+              <span class="mx-code">{{ t.barcode }}</span>
+              @if (t.urgent) { <span class="badge-urg">URGENTE</span> }
+            </div>
+            <div class="mx-pac">{{ t.patient }}</div>
+          </div>
+          <div class="cell-an">
+            <span class="an-count">{{ t.study }}</span>
+            <span class="an-sub">{{ t.analyses.length }} {{ t.analyses.length === 1 ? 'etiqueta' : 'etiquetas' }}</span>
+          </div>
+          <div class="cell-ori"><i class="pi pi-map-marker"></i> {{ t.branch }}</div>
+          <div class="cell-toma"><span class="toma-d">{{ t.date }}</span><span class="toma-h">{{ t.time }} hs</span></div>
+          <div class="cell-edo">
+            <span class="badge-st st-proc"><span class="dot"></span>En proceso</span>
+          </div>
+        </div>
+      }
+      @if (visibleRows().length === 0) {
+        <div class="empty">
+          <i class="pi pi-check-circle"></i>
+          <p>No quedan muestras en procesamiento.</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <app-planillas-modal [visible]="planillasOpen()" [selectionCount]="selectedProtocolIds().length"
+    (closed)="closePlanillas()" (newSheet)="onNewSheet()" (editSheet)="onEditSheet($event)"
+    (verDetalle)="onEditSheet($event)" (cargarConPlanilla)="onCargarConPlanilla($event)" />
+
+  <app-worksheet-config-modal [visible]="configOpen()" [templateId]="editingTemplateId()"
+    (closed)="closeConfig()" (saved)="onConfigSaved()" />
+
+  <p-toast position="bottom-right" />
+</section>

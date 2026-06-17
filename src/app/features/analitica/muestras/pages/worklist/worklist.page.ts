@@ -79,21 +79,10 @@ export class WorklistPage {
     )],
   );
 
-  /** Único protocolId seleccionado (validación). null si hay 0 o más de uno. */
-  readonly selectedTubeProtocolId = computed<number | null>(() => {
-    const ids = this.selectedProtocolIds();
-    return ids.length === 1 ? ids[0] : null;
-  });
-
   cargarResultados(): void {
     const ids = this.selectedProtocolIds();
     if (ids.length === 0) return;
     this.router.navigate(['/analitica/procesamiento/cargar'], { queryParams: { protocols: ids.join(',') } });
-  }
-
-  validarResultados(): void {
-    const pid = this.selectedTubeProtocolId();
-    if (pid != null) this.router.navigate(['/analitica/validacion', pid]);
   }
 
   private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
@@ -272,6 +261,16 @@ export class WorklistPage {
   onEditSheet(id: number): void { this.editingTemplateId.set(id); this.planillasOpen.set(false); this.configOpen.set(true); }
   closeConfig(): void { this.configOpen.set(false); }
   onConfigSaved(): void { this.configOpen.set(false); this.planillasOpen.set(true); }
+
+  /** GAP-P1: cargar resultados con una planilla + las muestras seleccionadas (columnas = protocolos). */
+  onCargarConPlanilla(templateId: number): void {
+    const ids = this.selectedProtocolIds();
+    if (ids.length === 0) return;
+    this.planillasOpen.set(false);
+    this.router.navigate(['/analitica/procesamiento/cargar'], {
+      queryParams: { protocols: ids.join(','), templateId },
+    });
+  }
 
   readonly menuOpen = signal(false);
   readonly activeTransition = signal<Transition | null>(null);

@@ -31,6 +31,7 @@ function setup(templateId: number | null = null) {
       }),
     ],
   });
+  TestBed.overrideTemplate(WorksheetConfigModalComponent, '<span>{{ name() }}</span>');
   const fx = TestBed.createComponent(WorksheetConfigModalComponent);
   fx.componentRef.setInput('visible', true);
   fx.componentRef.setInput('templateId', templateId);

@@ -16,49 +16,9 @@ interface OrderedAnalysis { analysisTypeId: number; name: string; }
   selector: 'app-worksheet-config-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DialogModule, ButtonModule],
-  template: `
-    <p-dialog [visible]="visible()" (onHide)="close()" [modal]="true" [draggable]="false" [style]="{ width: '720px' }"
-              [header]="templateId() ? 'Modificar hoja de trabajo' : 'Nueva hoja de trabajo'">
-      <div class="flex flex-col gap-3">
-        <label class="text-xs font-semibold opacity-70">NOMBRE DE LA HOJA</label>
-        <input class="w-full border rounded p-2 text-sm" [ngModel]="name()" (ngModelChange)="name.set($event)"
-               placeholder="Ej.: Coagulación · Planilla B" />
-
-        <label class="text-xs font-semibold opacity-70">BUSCAR ANÁLISIS</label>
-        <input class="w-full border rounded p-2 text-sm" [ngModel]="query()" (ngModelChange)="onQuery($event)"
-               placeholder="Buscar análisis…" />
-        @if (results().length) {
-          <div class="border rounded divide-y">
-            @for (a of results(); track a.id) {
-              <button type="button" class="w-full text-left p-2 text-sm hover:bg-gray-50 flex justify-between"
-                      [attr.aria-label]="'Agregar ' + a.name" (click)="add(a)"><span>{{ a.name }}</span><i class="pi pi-plus"></i></button>
-            }
-          </div>
-        }
-
-        <label class="text-xs font-semibold opacity-70">ORDEN EN LA PLANILLA{{ ordered().length ? ' · ' + ordered().length : '' }}</label>
-        <div class="flex flex-col gap-1">
-          @for (a of ordered(); track a.analysisTypeId; let i = $index) {
-            <div class="flex items-center gap-2 border rounded p-2 text-sm">
-              <span class="opacity-50 w-6">{{ i + 1 }}</span>
-              <span class="flex-1">{{ a.name }}</span>
-              <button type="button" class="pi pi-chevron-up" aria-label="Subir" title="Subir" [disabled]="i === 0" (click)="moveItem(i, -1)"></button>
-              <button type="button" class="pi pi-chevron-down" aria-label="Bajar" title="Bajar" [disabled]="i === ordered().length - 1" (click)="moveItem(i, 1)"></button>
-              <button type="button" class="pi pi-times" aria-label="Quitar" title="Quitar" (click)="removeAt(a.analysisTypeId)"></button>
-            </div>
-          }
-          @if (!ordered().length) {
-            <p class="text-sm opacity-60">Buscá y elegí análisis: definen qué aparece en la planilla.</p>
-          }
-        </div>
-      </div>
-      <ng-template pTemplate="footer">
-        <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="close()" />
-        <p-button label="Guardar hoja" [disabled]="!valid()" (onClick)="save()" />
-      </ng-template>
-    </p-dialog>
-  `,
+  imports: [FormsModule, DialogModule],
+  templateUrl: './worksheet-config-modal.component.html',
+  styleUrl: './worksheet-config-modal.component.scss',
 })
 export class WorksheetConfigModalComponent {
   private readonly store = inject(Store);
@@ -101,7 +61,8 @@ export class WorksheetConfigModalComponent {
 
   readonly valid = computed(() => this.name().trim() !== '' && this.ordered().length > 0);
 
-  onQuery(q: string): void { this.query.set(q); this.query$.next(q); }
+  pad(n: number): string { return String(n).padStart(2, '0'); }
+  onQuery(q: string): void { this.query.set(q); this.query$.next(q); if (q.trim() === '') this.results.set([]); }
 
   add(a: Analysis): void {
     if (this.ordered().some(x => x.analysisTypeId === a.id)) return;
