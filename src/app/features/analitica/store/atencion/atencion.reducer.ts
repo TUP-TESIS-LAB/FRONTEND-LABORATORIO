@@ -1,4 +1,5 @@
 import { createReducer, on } from '@ngrx/store';
+import { createPatientPortalAccountSuccess } from '../../../pacientes/store/patient.actions';
 import {
   addAnalysisList,
   addObservations,
@@ -172,6 +173,13 @@ export const atencionReducer = createReducer(
     guardians: s.guardians.map(g => g.userPatientId === userPatientId ? { ...g, status } : g),
   })),
   on(validateBondFailure, (s): AtencionFeatureState => ({ ...s, bondMutating: false })),
+
+  // Cross-store: cuando el effect de pacientes confirma que la cuenta fue creada,
+  // refrescamos el resolvedPatient para que el botón desaparezca y aparezca "pendiente".
+  on(createPatientPortalAccountSuccess, (s, { id }): AtencionFeatureState =>
+    s.resolvedPatient?.id === id
+      ? { ...s, resolvedPatient: { ...s.resolvedPatient, accountStatus: 'PENDING' } }
+      : s),
 );
 
 function replaceInList<T extends { id: number }>(list: T[], item: T): T[] {

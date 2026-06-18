@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 import { Patient } from '../../../pacientes/models/patient.model';
 import * as A from './atencion.actions';
+import { createPatientPortalAccountSuccess } from '../../../pacientes/store/patient.actions';
 import { atencionReducer } from './atencion.reducer';
 import { initialAtencionState } from './atencion.state';
 
@@ -315,5 +316,28 @@ describe('atencionReducer', () => {
     };
     const next = atencionReducer(populated, A.resetAtencionWizard());
     expect(next.guardians).toEqual([]);
+  });
+
+  // ── Cross-store: createPatientPortalAccountSuccess ───────────────────────────
+
+  it('createPatientPortalAccountSuccess con id == resolvedPatient.id → accountStatus PENDING', () => {
+    const patient = samplePatient({ id: 10, accountStatus: 'NONE' });
+    const start = { ...initialAtencionState, resolvedPatient: patient };
+    const next = atencionReducer(start, createPatientPortalAccountSuccess({ id: 10 }));
+    expect(next.resolvedPatient?.accountStatus).toBe('PENDING');
+  });
+
+  it('createPatientPortalAccountSuccess con id distinto → state sin cambios', () => {
+    const patient = samplePatient({ id: 10, accountStatus: 'NONE' });
+    const start = { ...initialAtencionState, resolvedPatient: patient };
+    const next = atencionReducer(start, createPatientPortalAccountSuccess({ id: 99 }));
+    expect(next.resolvedPatient?.accountStatus).toBe('NONE');
+    expect(next.resolvedPatient).toBe(patient); // referencia sin cambios
+  });
+
+  it('createPatientPortalAccountSuccess sin resolvedPatient → state sin cambios', () => {
+    const start = { ...initialAtencionState, resolvedPatient: null };
+    const next = atencionReducer(start, createPatientPortalAccountSuccess({ id: 10 }));
+    expect(next.resolvedPatient).toBeNull();
   });
 });

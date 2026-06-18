@@ -36,6 +36,7 @@ import {
   validateBond,
   verifyPatient,
 } from '../../../../../store/atencion/atencion.actions';
+import { createPatientPortalAccount } from '../../../../../../pacientes/store/patient.actions';
 import {
   selectBondMutating,
   selectPatientNotFoundDni,
@@ -273,6 +274,25 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                       severity="secondary"
                       [outlined]="true"
                       (onClick)="startEdit()" />
+                  </div>
+                }
+
+                @if (puedeCrearAcceso()) {
+                  <div class="pt-1">
+                    <p-button data-testid="btn-crear-acceso" label="Crear acceso al portal"
+                              icon="pi pi-user-plus" size="small" (onClick)="crearAccesoPortal()" />
+                  </div>
+                } @else if (p.accountStatus === 'PENDING') {
+                  <div class="flex items-center gap-2 pt-1 text-xs text-surface-500" data-testid="estado-acceso-pendiente">
+                    <i class="pi pi-clock"></i><span>Acceso al portal: pendiente</span>
+                  </div>
+                } @else if (p.accountStatus === 'ACTIVE') {
+                  <div class="flex items-center gap-2 pt-1 text-xs text-green-600" data-testid="estado-acceso-activo">
+                    <i class="pi pi-check-circle"></i><span>Acceso al portal: activo</span>
+                  </div>
+                } @else if (resolved() && !tieneEmail() && resolved()!.accountStatus === 'NONE' && !readOnly()) {
+                  <div class="flex items-center gap-2 pt-1 text-xs text-surface-400" data-testid="acceso-sin-email">
+                    <i class="pi pi-info-circle"></i><span>Cargá un email para poder crear el acceso al portal</span>
                   </div>
                 }
               </div>
@@ -614,6 +634,17 @@ export class DatosGeneralesStepComponent implements OnInit {
   // ── Portal tilde ───────────────────────────────────────────────────────────
   protected readonly esPortal = computed(() => this.resolved()?.source === 'PORTAL');
 
+  // ── Portal account gate ────────────────────────────────────────────────────
+  protected readonly tieneEmail = computed(() => {
+    const p = this.resolved();
+    return !!p && (p.contacts ?? []).some(c => c.contactType === 'EMAIL' && c.active);
+  });
+
+  protected readonly puedeCrearAcceso = computed(() => {
+    const p = this.resolved();
+    return !!p && !this.readOnly() && p.accountStatus === 'NONE' && this.tieneEmail();
+  });
+
   // ── Verify gate ────────────────────────────────────────────────────────────
   protected readonly puedeVerificar = computed(() => {
     const p = this.resolved();
@@ -873,6 +904,12 @@ export class DatosGeneralesStepComponent implements OnInit {
     const p = this.resolved();
     if (!p) return;
     this.store.dispatch(verifyPatient({ id: p.id }));
+  }
+
+  protected crearAccesoPortal(): void {
+    const p = this.resolved();
+    if (!p || this.readOnly() || p.accountStatus !== 'NONE') return;
+    this.store.dispatch(createPatientPortalAccount({ id: p.id }));
   }
 
   protected validarRelacion(g: PatientGuardian): void {
