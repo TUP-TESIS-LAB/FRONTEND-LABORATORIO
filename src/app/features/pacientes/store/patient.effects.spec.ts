@@ -180,14 +180,27 @@ describe('PatientEffects', () => {
     });
   });
 
-  it('createPatientPortalAccount$ en error llama notifications.error y emite failure', () => {
+  it('createPatientPortalAccount$ en error llama notifications.error con mensaje genérico y emite failure', () => {
     return new Promise<void>((resolve) => {
       notify.error.mockClear();
       portalSvc.createAccount.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
       actions$ = of(createPatientPortalAccount({ id: 1 }));
       TestBed.inject(PatientEffects).createPatientPortalAccount$.subscribe((a) => {
         expect(a.type).toBe(createPatientPortalAccountFailure.type);
-        expect(notify.error).toHaveBeenCalled();
+        expect(notify.error).toHaveBeenCalledWith('No se pudo crear el acceso al portal');
+        resolve();
+      });
+    });
+  });
+
+  it('createPatientPortalAccount$ en error con message del backend usa el mensaje del backend', () => {
+    return new Promise<void>((resolve) => {
+      notify.error.mockClear();
+      portalSvc.createAccount.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409, error: { message: 'Ya existe una cuenta con ese DNI.' } })));
+      actions$ = of(createPatientPortalAccount({ id: 1 }));
+      TestBed.inject(PatientEffects).createPatientPortalAccount$.subscribe((a) => {
+        expect(a.type).toBe(createPatientPortalAccountFailure.type);
+        expect(notify.error).toHaveBeenCalledWith('Ya existe una cuenta con ese DNI.');
         resolve();
       });
     });
@@ -206,14 +219,27 @@ describe('PatientEffects', () => {
     });
   });
 
-  it('resendPatientPortalAccess$ en error llama notifications.error y emite failure', () => {
+  it('resendPatientPortalAccess$ en error llama notifications.error con mensaje genérico y emite failure', () => {
     return new Promise<void>((resolve) => {
       notify.error.mockClear();
       portalSvc.resendAccess.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
       actions$ = of(resendPatientPortalAccess({ id: 2 }));
       TestBed.inject(PatientEffects).resendPatientPortalAccess$.subscribe((a) => {
         expect(a.type).toBe(resendPatientPortalAccessFailure.type);
-        expect(notify.error).toHaveBeenCalled();
+        expect(notify.error).toHaveBeenCalledWith('No se pudo reenviar el acceso al portal');
+        resolve();
+      });
+    });
+  });
+
+  it('resendPatientPortalAccess$ en error con message del backend usa el mensaje del backend', () => {
+    return new Promise<void>((resolve) => {
+      notify.error.mockClear();
+      portalSvc.resendAccess.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409, error: { message: 'Ya existe una cuenta con ese DNI.' } })));
+      actions$ = of(resendPatientPortalAccess({ id: 2 }));
+      TestBed.inject(PatientEffects).resendPatientPortalAccess$.subscribe((a) => {
+        expect(a.type).toBe(resendPatientPortalAccessFailure.type);
+        expect(notify.error).toHaveBeenCalledWith('Ya existe una cuenta con ese DNI.');
         resolve();
       });
     });

@@ -11,7 +11,7 @@ import {
   checkPatientDniSuccess,
   verifyPatientSuccess,
   createPatientPortalAccount, createPatientPortalAccountSuccess, createPatientPortalAccountFailure,
-  resendPatientPortalAccess, resendPatientPortalAccessSuccess,
+  resendPatientPortalAccess, resendPatientPortalAccessSuccess, resendPatientPortalAccessFailure,
 } from './patient.actions';
 import { Patient } from '../models/patient.model';
 
@@ -158,5 +158,12 @@ describe('patientReducer', () => {
     expect(next.items[0].accountStatus).toBe('NONE'); // sin cambio
     expect(next.pending).toBe(false);
     expect(next.error).toBeNull();
+  });
+
+  it('resendPatientPortalAccessFailure stores error y clears pending', () => {
+    const err = { status: 404 } as HttpErrorResponse;
+    const next = patientReducer({ ...initialPatientState, pending: true }, resendPatientPortalAccessFailure({ error: err }));
+    expect(next.pending).toBe(false);
+    expect(next.error).toBe(err);
   });
 });

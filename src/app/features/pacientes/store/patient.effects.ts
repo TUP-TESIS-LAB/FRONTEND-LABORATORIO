@@ -4,7 +4,7 @@ import { Store } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   catchError, concatMap, debounceTime, distinctUntilChanged, exhaustMap, filter,
-  map, of, switchMap, withLatestFrom,
+  map, of, switchMap, tap, withLatestFrom,
 } from 'rxjs';
 import { PatientService } from '../services/patient.service';
 import { PortalAccountService } from '../services/portal-account.service';
@@ -161,10 +161,8 @@ export class PatientEffects {
       ofType(createPatientPortalAccount),
       concatMap(({ id }) =>
         this.portalAccounts.createAccount(id).pipe(
-          map(() => {
-            this.notifications.success('Acceso al portal creado. Se envió el mail de primer acceso.');
-            return createPatientPortalAccountSuccess({ id });
-          }),
+          tap(() => this.notifications.success('Acceso al portal creado. Se envió el mail de primer acceso.')),
+          map(() => createPatientPortalAccountSuccess({ id })),
           catchError((error: HttpErrorResponse) => {
             const msg = typeof error.error?.message === 'string'
               ? error.error.message
@@ -182,10 +180,8 @@ export class PatientEffects {
       ofType(resendPatientPortalAccess),
       concatMap(({ id }) =>
         this.portalAccounts.resendAccess(id).pipe(
-          map(() => {
-            this.notifications.success('Se reenviaron las credenciales de acceso.');
-            return resendPatientPortalAccessSuccess({ id });
-          }),
+          tap(() => this.notifications.success('Se reenviaron las credenciales de acceso.')),
+          map(() => resendPatientPortalAccessSuccess({ id })),
           catchError((error: HttpErrorResponse) => {
             const msg = typeof error.error?.message === 'string'
               ? error.error.message
