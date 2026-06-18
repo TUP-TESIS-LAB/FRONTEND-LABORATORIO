@@ -551,4 +551,14 @@ describe('AtencionEffects', () => {
     const out = await firstValueFrom(effects.validateBond$.pipe(take(1)));
     expect(out).toEqual(A.validateBondFailure({ error }));
   });
+
+  it('validateBond$ → HTTP error → muestra toast en español sin leak de internals', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    familyLink.verifyBond.mockReturnValue(throwError(() => error));
+    actions$.next(A.validateBond({ userPatientId: 1, status: 'VERIFIED' }));
+    await firstValueFrom(effects.validateBond$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo actualizar la relación familiar. Revisá la conexión e intentá de nuevo.'
+    );
+  });
 });

@@ -441,7 +441,10 @@ export class AtencionEffects {
       concatMap(({ userPatientId, status }) =>
         this.familyLink.verifyBond(userPatientId, status).pipe(
           map(() => validateBondSuccess({ userPatientId, status })),
-          catchError((error: HttpErrorResponse) => of(validateBondFailure({ error }))),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo actualizar la relación familiar. Revisá la conexión e intentá de nuevo.');
+            return of(validateBondFailure({ error }));
+          }),
         ),
       ),
     ),

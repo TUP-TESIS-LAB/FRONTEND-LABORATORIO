@@ -194,6 +194,21 @@ describe('atencionReducer', () => {
     expect(state.resolvedPatient).toBeNull();
   });
 
+  it('resolvePatientByDni limpia guardians del paciente previo para evitar stale banner', () => {
+    const staleGuardians = [
+      { userPatientId: 10, titularNombre: 'Juan Titular', titularDni: '11223344', bond: 'PADRE', status: 'VERIFIED' as const },
+    ];
+    const prev = {
+      ...initialAtencionState,
+      resolvedPatient: samplePatient({ id: 5 }),
+      guardians: staleGuardians,
+    };
+    const next = atencionReducer(prev, A.resolvePatientByDni({ dni: '99887766' }));
+    expect(next.guardians).toEqual([]);
+    expect(next.resolvedPatient).toBeNull();
+    expect(next.patientResolving).toBe(true);
+  });
+
   it('verifyPatient sets verifyingPatient=true', () => {
     const next = atencionReducer(initialAtencionState, A.verifyPatient({ id: 1 }));
     expect(next.verifyingPatient).toBe(true);
