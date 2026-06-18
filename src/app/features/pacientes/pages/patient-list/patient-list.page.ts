@@ -24,6 +24,7 @@ import { getCoveragePlanLabel, CoveragePlanOption } from '../../models/coverage-
 import { CoveragePlansService } from '../../services/coverage-plans.service';
 import {
   setPatientPageRequest, togglePatientActive,
+  createPatientPortalAccount, resendPatientPortalAccess,
 } from '../../store/patient.actions';
 import {
   selectAllPatients, selectPatientPending, selectPatientPageRequest, selectPatientTotalElements,
@@ -70,7 +71,7 @@ import {
         [first]="pageRequest().page * pageRequest().size"
         [showView]="true"
         [showEdit]="canMutate()"
-        [actions]="canMutate() ? toggleAction : []"
+        [actions]="canMutate() ? portalActions : []"
         emptyHeading="Sin pacientes"
         emptyIcon="pi-users"
         [emptyCtaLabel]="canMutate() ? 'Nuevo paciente' : null"
@@ -107,6 +108,16 @@ import {
             <p-tag severity="danger" value="Inactivo" class="ml-1" />
           }
         </ng-template>
+
+        <ng-template uiCell="accesoPortal" let-row>
+          @if ($any(row).accountStatus === 'ACTIVE') {
+            <span class="text-green-600 text-xs"><i class="pi pi-check-circle mr-1"></i>Activa</span>
+          } @else if ($any(row).accountStatus === 'PENDING') {
+            <span class="text-yellow-600 text-xs"><i class="pi pi-clock mr-1"></i>Pendiente</span>
+          } @else {
+            <span class="text-surface-400 text-xs">Sin cuenta</span>
+          }
+        </ng-template>
       </ui-table>
       </div>
 
@@ -131,17 +142,40 @@ export class PatientListPage implements OnInit {
   private readonly plans = signal<readonly CoveragePlanOption[]>([]);
 
   readonly columns: readonly TableColumn[] = [
-    { field: 'paciente',   header: 'Paciente' },
-    { field: 'dni',        header: 'DNI' },
-    { field: 'birthDate',  header: 'Fecha nac.' },
-    { field: 'obraSocial', header: 'Obra social' },
-    { field: 'telefono',   header: 'Teléfono' },
-    { field: 'estado',     header: 'Estado' },
+    { field: 'paciente',      header: 'Paciente' },
+    { field: 'dni',           header: 'DNI' },
+    { field: 'birthDate',     header: 'Fecha nac.' },
+    { field: 'obraSocial',    header: 'Obra social' },
+    { field: 'telefono',      header: 'Teléfono' },
+    { field: 'estado',        header: 'Estado' },
+    { field: 'accesoPortal',  header: 'Acceso al portal' },
   ];
 
   readonly toggleAction: readonly TableAction[] = [
     { key: 'toggle', icon: 'pi-times-circle', label: 'Activar/Desactivar' },
   ];
+
+  readonly createAccountAction: TableAction = {
+    key: 'create-account',
+    icon: 'pi-user-plus',
+    label: 'Crear acceso al portal',
+    hidden: (row) => {
+      const p = row as Patient;
+      const tieneEmail = (p.contacts ?? []).some(c => c.contactType === 'EMAIL' && c.active);
+      return p.accountStatus !== 'NONE' || !tieneEmail;
+    },
+  };
+
+  readonly resendAccountAction: TableAction = {
+    key: 'resend-access',
+    icon: 'pi-envelope',
+    label: 'Reenviar credenciales',
+    hidden: (row) => (row as Patient).accountStatus !== 'PENDING',
+  };
+
+  get portalActions(): TableAction[] {
+    return [this.toggleAction[0], this.createAccountAction, this.resendAccountAction];
+  }
 
   readonly stateOptions: { value: PatientStateFilter; label: string }[] = [
     { value: 'active', label: 'Activos' },
@@ -221,7 +255,10 @@ export class PatientListPage implements OnInit {
   }
 
   onAction(ev: { key: string; row: unknown }): void {
-    if (ev.key === 'toggle') this.confirmToggle(ev.row as Patient);
+    const p = ev.row as Patient;
+    if (ev.key === 'toggle') this.confirmToggle(p);
+    else if (ev.key === 'create-account') this.confirmCreateAccount(p);
+    else if (ev.key === 'resend-access') this.confirmResendAccess(p);
   }
 
   confirmToggle(p: Patient): void {
@@ -233,6 +270,26 @@ export class PatientListPage implements OnInit {
       acceptLabel: deleted ? 'Desactivar' : 'Reactivar',
       rejectLabel: 'Cancelar',
       accept: () => this.store.dispatch(togglePatientActive({ id: p.id, deleted })),
+    });
+  }
+
+  private confirmCreateAccount(p: Patient): void {
+    this.confirm.confirm({
+      header: '¿Crear acceso al portal?',
+      message: `${p.lastName}, ${p.firstName} — se enviará un mail de primer acceso.`,
+      acceptLabel: 'Crear',
+      rejectLabel: 'Cancelar',
+      accept: () => this.store.dispatch(createPatientPortalAccount({ id: p.id })),
+    });
+  }
+
+  private confirmResendAccess(p: Patient): void {
+    this.confirm.confirm({
+      header: '¿Reenviar credenciales?',
+      message: `${p.lastName}, ${p.firstName}`,
+      acceptLabel: 'Reenviar',
+      rejectLabel: 'Cancelar',
+      accept: () => this.store.dispatch(resendPatientPortalAccess({ id: p.id })),
     });
   }
 

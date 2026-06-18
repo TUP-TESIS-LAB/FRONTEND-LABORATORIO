@@ -6,9 +6,14 @@ import { signal } from '@angular/core';
 import { of } from 'rxjs';
 import { PatientListPage } from './patient-list.page';
 import { PATIENT_FEATURE_KEY, initialPatientState } from '../../store/patient.state';
-import { setPatientPageRequest } from '../../store/patient.actions';
+import {
+  setPatientPageRequest,
+  createPatientPortalAccount,
+  resendPatientPortalAccess,
+} from '../../store/patient.actions';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { CoveragePlansService } from '../../services/coverage-plans.service';
+import { Patient } from '../../models/patient.model';
 
 const mockPlansService = {
   getActivePlans: () => of([{ planId: 1, label: 'Particular', particular: true }]),
@@ -93,5 +98,109 @@ describe('PatientListPage (smoke)', () => {
     fixture.detectChanges();
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
     expect(html).toMatch(/href="[^"]*\/pacientes\/nuevo"/);
+  });
+
+  // ---- A8: portal account actions ----
+
+  const basePatient: Patient = {
+    id: 42,
+    dni: '30000000',
+    firstName: 'Juan',
+    lastName: 'Pérez',
+    birthDate: '1990-01-01',
+    gender: 'MALE',
+    sexAtBirth: 'MALE',
+    status: 'COMPLETE',
+    source: 'STAFF',
+    verifiedAt: null,
+    contacts: [],
+    addresses: [],
+    coverages: [],
+    active: true,
+    accountStatus: 'NONE',
+  };
+
+  it('confirmCreateAccount abre confirm y despacha createPatientPortalAccount al aceptar', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+    const confirmSpy = vi.spyOn(cmp['confirm'], 'confirm');
+
+    cmp['confirmCreateAccount'](basePatient);
+
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    const call = confirmSpy.mock.calls[0][0];
+    expect(call.header).toBe('¿Crear acceso al portal?');
+    call.accept?.();
+    expect(dispatchSpy).toHaveBeenCalledWith(createPatientPortalAccount({ id: 42 }));
+  });
+
+  it('confirmResendAccess abre confirm y despacha resendPatientPortalAccess al aceptar', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+    const confirmSpy = vi.spyOn(cmp['confirm'], 'confirm');
+
+    cmp['confirmResendAccess'](basePatient);
+
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    const call = confirmSpy.mock.calls[0][0];
+    expect(call.header).toBe('¿Reenviar credenciales?');
+    call.accept?.();
+    expect(dispatchSpy).toHaveBeenCalledWith(resendPatientPortalAccess({ id: 42 }));
+  });
+
+  it('onAction rutea create-account → confirmCreateAccount', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    const spy = vi.spyOn(cmp as any, 'confirmCreateAccount');
+
+    cmp.onAction({ key: 'create-account', row: basePatient });
+
+    expect(spy).toHaveBeenCalledWith(basePatient);
+  });
+
+  it('onAction rutea resend-access → confirmResendAccess', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    const spy = vi.spyOn(cmp as any, 'confirmResendAccess');
+
+    cmp.onAction({ key: 'resend-access', row: basePatient });
+
+    expect(spy).toHaveBeenCalledWith(basePatient);
+  });
+
+  it('createAccountAction.hidden oculta cuando accountStatus≠NONE', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    const cmp = fixture.componentInstance;
+    const patientWithEmail: Patient = {
+      ...basePatient,
+      contacts: [{ contactType: 'EMAIL', contactValue: 'a@b.com', isPrimary: true, active: true }],
+    };
+    // NONE + email → visible (hidden=false)
+    expect(cmp.createAccountAction.hidden!(patientWithEmail)).toBe(false);
+    // PENDING + email → hidden
+    expect(cmp.createAccountAction.hidden!({ ...patientWithEmail, accountStatus: 'PENDING' })).toBe(true);
+    // ACTIVE + email → hidden
+    expect(cmp.createAccountAction.hidden!({ ...patientWithEmail, accountStatus: 'ACTIVE' })).toBe(true);
+    // NONE + sin email activo → hidden
+    expect(cmp.createAccountAction.hidden!({ ...basePatient, contacts: [] })).toBe(true);
+    // NONE + email inactivo → hidden
+    expect(cmp.createAccountAction.hidden!({
+      ...basePatient,
+      contacts: [{ contactType: 'EMAIL', contactValue: 'a@b.com', isPrimary: true, active: false }],
+    })).toBe(true);
+  });
+
+  it('resendAccountAction.hidden visible solo para PENDING', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    const cmp = fixture.componentInstance;
+    expect(cmp.resendAccountAction.hidden!({ ...basePatient, accountStatus: 'NONE' })).toBe(true);
+    expect(cmp.resendAccountAction.hidden!({ ...basePatient, accountStatus: 'PENDING' })).toBe(false);
+    expect(cmp.resendAccountAction.hidden!({ ...basePatient, accountStatus: 'ACTIVE' })).toBe(true);
   });
 });
