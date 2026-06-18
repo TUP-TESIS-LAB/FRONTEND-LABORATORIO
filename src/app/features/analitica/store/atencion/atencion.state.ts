@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Patient } from '../../../pacientes/models/patient.model';
 import { Analysis, AttentionResponse, AttentionState } from '../../models/atencion.model';
 import { AttentionPricing } from '../../models/pricing.model';
+import { PatientGuardian } from '../../models/patient-guardian.model';
 
 /**
  * Filtros del dashboard. Solo incluyen lo que efectivamente filtramos en el cliente.
@@ -36,6 +37,9 @@ export interface AtencionFeatureState {
   authorizationMutating: boolean;
   removingAnalysis: boolean;
   verifyingPatient: boolean;
+  guardians: PatientGuardian[];
+  guardiansLoading: boolean;
+  bondMutating: boolean;
 }
 
 export const initialAtencionState: AtencionFeatureState = {
@@ -63,6 +67,9 @@ export const initialAtencionState: AtencionFeatureState = {
   authorizationMutating: false,
   removingAnalysis: false,
   verifyingPatient: false,
+  guardians: [],
+  guardiansLoading: false,
+  bondMutating: false,
 };
 
 export const ATENCION_FEATURE_KEY = 'atencion';

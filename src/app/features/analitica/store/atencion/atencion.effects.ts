@@ -11,6 +11,7 @@ import { LabelsService } from '../../services/labels.service';
 import { RotuloPdfService } from '../../services/rotulo-pdf.service';
 import { NotificationService } from '@core/services/notification.service';
 import { Analysis } from '../../models/atencion.model';
+import { FamilyLinkService } from '../../services/family-link.service';
 import {
   addAnalysisList,
   addObservations,
@@ -58,6 +59,12 @@ import {
   verifyPatient,
   verifyPatientSuccess,
   verifyPatientFailure,
+  loadPatientGuardians,
+  loadPatientGuardiansSuccess,
+  loadPatientGuardiansFailure,
+  validateBond,
+  validateBondSuccess,
+  validateBondFailure,
 } from './atencion.actions';
 
 /**
@@ -82,6 +89,7 @@ export class AtencionEffects {
   private readonly rotuloPdf     = inject(RotuloPdfService);
   private readonly notification  = inject(NotificationService);
   private readonly branchCtx     = inject(OperatorBranchContextService);
+  private readonly familyLink    = inject(FamilyLinkService);
 
   loadList$ = createEffect(() =>
     this.actions$.pipe(
@@ -410,6 +418,30 @@ export class AtencionEffects {
             this.notification.error(this.verifyErrorMessage(error));
             return of(verifyPatientFailure({ error }));
           }),
+        ),
+      ),
+    ),
+  );
+
+  loadPatientGuardians$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadPatientGuardians),
+      switchMap(({ patientId }) =>
+        this.familyLink.getGuardians(patientId).pipe(
+          map(guardians => loadPatientGuardiansSuccess({ guardians })),
+          catchError((error: HttpErrorResponse) => of(loadPatientGuardiansFailure({ error }))),
+        ),
+      ),
+    ),
+  );
+
+  validateBond$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(validateBond),
+      concatMap(({ userPatientId, status }) =>
+        this.familyLink.verifyBond(userPatientId, status).pipe(
+          map(() => validateBondSuccess({ userPatientId, status })),
+          catchError((error: HttpErrorResponse) => of(validateBondFailure({ error }))),
         ),
       ),
     ),

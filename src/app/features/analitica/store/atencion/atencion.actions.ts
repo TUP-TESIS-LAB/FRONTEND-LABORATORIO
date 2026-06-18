@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { createAction, props } from '@ngrx/store';
 import { CreatePatientRequest, Patient, UpdatePatientRequest } from '../../../pacientes/models/patient.model';
+import { PatientGuardian } from '../../models/patient-guardian.model';
 import {
   AddAnalysisListRequest,
   AddObservationsRequest,
@@ -101,3 +102,12 @@ export const removeAnalysisFromResumenFailure = createAction(
   '[Atencion API] Remove Analysis From Resumen Failure',
   props<{ error: HttpErrorResponse }>()
 );
+
+// Family link (guardians / vínculo familiar) ------------------------------------
+export const loadPatientGuardians        = createAction('[Atencion Wizard] Load Patient Guardians',         props<{ patientId: number }>());
+export const loadPatientGuardiansSuccess = createAction('[Atencion API] Load Patient Guardians Success',    props<{ guardians: PatientGuardian[] }>());
+export const loadPatientGuardiansFailure = createAction('[Atencion API] Load Patient Guardians Failure',    props<{ error: HttpErrorResponse }>());
+
+export const validateBond        = createAction('[Atencion Wizard] Validate Bond',         props<{ userPatientId: number; status: 'VERIFIED' | 'REJECTED' }>());
+export const validateBondSuccess = createAction('[Atencion API] Validate Bond Success',    props<{ userPatientId: number; status: 'VERIFIED' | 'REJECTED' }>());
+export const validateBondFailure = createAction('[Atencion API] Validate Bond Failure',    props<{ error: HttpErrorResponse }>());

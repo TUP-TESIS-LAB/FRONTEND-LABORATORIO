@@ -229,4 +229,75 @@ describe('atencionReducer', () => {
     expect(state.summaryAnalyses).toEqual([]);
     expect(state.pricing).toBeNull();
   });
+
+  // ── Guardians / family link ──────────────────────────────────────────────────
+
+  it('loadPatientGuardians sets guardiansLoading=true', () => {
+    const next = atencionReducer(initialAtencionState, A.loadPatientGuardians({ patientId: 42 }));
+    expect(next.guardiansLoading).toBe(true);
+  });
+
+  it('loadPatientGuardiansSuccess populates guardians and clears guardiansLoading', () => {
+    const guardians = [
+      { userPatientId: 1, titularNombre: 'María García', titularDni: '22334455', bond: 'MADRE', status: 'CREATED' as const },
+    ];
+    const next = atencionReducer(
+      { ...initialAtencionState, guardiansLoading: true },
+      A.loadPatientGuardiansSuccess({ guardians }),
+    );
+    expect(next.guardians).toEqual(guardians);
+    expect(next.guardiansLoading).toBe(false);
+  });
+
+  it('loadPatientGuardiansFailure clears guardiansLoading', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const next = atencionReducer(
+      { ...initialAtencionState, guardiansLoading: true },
+      A.loadPatientGuardiansFailure({ error }),
+    );
+    expect(next.guardiansLoading).toBe(false);
+  });
+
+  it('validateBond sets bondMutating=true', () => {
+    const next = atencionReducer(initialAtencionState, A.validateBond({ userPatientId: 1, status: 'VERIFIED' }));
+    expect(next.bondMutating).toBe(true);
+  });
+
+  it('validateBondSuccess actualiza el status del guardian correcto y limpia bondMutating', () => {
+    const guardians = [
+      { userPatientId: 1, titularNombre: 'María García', titularDni: '22334455', bond: 'MADRE', status: 'CREATED' as const },
+      { userPatientId: 2, titularNombre: 'Carlos López', titularDni: '33445566', bond: 'PADRE', status: 'CREATED' as const },
+    ];
+    const start = { ...initialAtencionState, guardians, bondMutating: true };
+    const next = atencionReducer(start, A.validateBondSuccess({ userPatientId: 1, status: 'VERIFIED' }));
+    expect(next.bondMutating).toBe(false);
+    expect(next.guardians[0].status).toBe('VERIFIED');
+    expect(next.guardians[1].status).toBe('CREATED'); // no afectado
+  });
+
+  it('validateBondSuccess con status REJECTED actualiza el guardian correcto', () => {
+    const guardians = [
+      { userPatientId: 3, titularNombre: 'Ana Ruiz', titularDni: '44556677', bond: 'HERMANA', status: 'CREATED' as const },
+    ];
+    const start = { ...initialAtencionState, guardians, bondMutating: true };
+    const next = atencionReducer(start, A.validateBondSuccess({ userPatientId: 3, status: 'REJECTED' }));
+    expect(next.guardians[0].status).toBe('REJECTED');
+    expect(next.bondMutating).toBe(false);
+  });
+
+  it('validateBondFailure clears bondMutating', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const start = { ...initialAtencionState, bondMutating: true };
+    const next = atencionReducer(start, A.validateBondFailure({ error }));
+    expect(next.bondMutating).toBe(false);
+  });
+
+  it('resetAtencionWizard limpia guardians junto al resto del wizard', () => {
+    const populated = {
+      ...initialAtencionState,
+      guardians: [{ userPatientId: 1, titularNombre: 'X', titularDni: '1', bond: 'MADRE', status: 'CREATED' as const }],
+    };
+    const next = atencionReducer(populated, A.resetAtencionWizard());
+    expect(next.guardians).toEqual([]);
+  });
 });

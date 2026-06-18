@@ -47,6 +47,12 @@ import {
   verifyPatient,
   verifyPatientSuccess,
   verifyPatientFailure,
+  loadPatientGuardians,
+  loadPatientGuardiansSuccess,
+  loadPatientGuardiansFailure,
+  validateBond,
+  validateBondSuccess,
+  validateBondFailure,
 } from './atencion.actions';
 import { AtencionFeatureState, initialAtencionState } from './atencion.state';
 
@@ -148,11 +154,24 @@ export const atencionReducer = createReducer(
     patientNotFoundDni: null,
     summaryAnalyses: [],
     pricing: null,
+    guardians: [],
   })),
 
   on(verifyPatient, (s): AtencionFeatureState => ({ ...s, verifyingPatient: true })),
   on(verifyPatientSuccess, (s, { patient }): AtencionFeatureState => ({ ...s, resolvedPatient: patient, verifyingPatient: false })),
   on(verifyPatientFailure, (s): AtencionFeatureState => ({ ...s, verifyingPatient: false })),
+
+  on(loadPatientGuardians, (s): AtencionFeatureState => ({ ...s, guardiansLoading: true })),
+  on(loadPatientGuardiansSuccess, (s, { guardians }): AtencionFeatureState => ({ ...s, guardians, guardiansLoading: false })),
+  on(loadPatientGuardiansFailure, (s): AtencionFeatureState => ({ ...s, guardiansLoading: false })),
+
+  on(validateBond, (s): AtencionFeatureState => ({ ...s, bondMutating: true })),
+  on(validateBondSuccess, (s, { userPatientId, status }): AtencionFeatureState => ({
+    ...s,
+    bondMutating: false,
+    guardians: s.guardians.map(g => g.userPatientId === userPatientId ? { ...g, status } : g),
+  })),
+  on(validateBondFailure, (s): AtencionFeatureState => ({ ...s, bondMutating: false })),
 );
 
 function replaceInList<T extends { id: number }>(list: T[], item: T): T[] {
