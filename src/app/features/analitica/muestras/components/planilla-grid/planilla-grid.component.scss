@@ -51,7 +51,6 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
   }
   &.is-filled { border-color: #bbe7c9; background: #f2fbf5; }
-  &.is-na { background: #f7f8fa; border-style: dashed; color: var(--muted); cursor: not-allowed; }
 }
 
 .ws-footer {

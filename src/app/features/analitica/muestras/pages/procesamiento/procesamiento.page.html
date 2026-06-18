@@ -20,6 +20,9 @@
     <button type="button" class="btn-orange" (click)="openPlanillas()">
       <i class="pi pi-table"></i> Planillas
     </button>
+    <button type="button" class="btn-primary" [disabled]="selectedCount() === 0" (click)="abrirCompletadas()">
+      <i class="pi pi-check"></i> Marcar completadas{{ selectedCount() ? ' · ' + selectedCount() : '' }}
+    </button>
   </div>
 
   <div class="thead-card proc-grid">
@@ -69,6 +72,9 @@
 
   <app-worksheet-config-modal [visible]="configOpen()" [templateId]="editingTemplateId()"
     (closed)="closeConfig()" (saved)="onConfigSaved()" />
+
+  <app-marcar-completadas-modal [visible]="completadasOpen()" [items]="resumenItems()"
+    (marcar)="onMarcarCompletadas($event)" (closed)="cerrarCompletadas()" />
 
   <p-toast position="bottom-right" />
 </section>

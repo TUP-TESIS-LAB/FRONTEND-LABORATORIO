@@ -11,9 +11,13 @@ export interface PlanillaSavePayload {
 /**
  * GAP-P1/P5: grilla de carga de resultados desde una PLANILLA.
  * Bloques = análisis de la planilla; columnas = protocolos; filas = determinaciones.
- * Estructura/estilo basados en el mockup (worksheet-view). Las celdas sin
- * `determinationId`/`resultId` (la muestra no pidió el análisis) se ven pero no
- * persisten (GAP-P5): input deshabilitado.
+ * Estructura/estilo basados en el mockup (worksheet-view).
+ *
+ * Todas las celdas se ven y se editan igual (sin marcas ni bloqueos). GAP-P5: si la
+ * celda no tiene `determinationId`/`resultId` (el protocolo no solicitó ese análisis),
+ * al guardar simplemente NO se incluye en el payload — el backend nunca la recibe. El
+ * front no decide qué se escribe; el valor "no correspondiente" se ignora de forma
+ * natural por no tener dónde persistir.
  */
 @Component({
   selector: 'app-planilla-grid',
@@ -27,52 +31,41 @@ export class PlanillaGridComponent {
   readonly grid = input.required<PlanillaGrid>();
   readonly save = output<PlanillaSavePayload[]>();
 
-  /** Valores editados localmente: key `resultId:determinationId` → value. */
+  /** Valores editados localmente, por identidad de celda `protocolId:catalogId`. */
   private readonly edited = signal<ReadonlyMap<string, string>>(new Map());
 
   readonly columns = computed(() => this.grid().columns);
 
-  cellKey(cell: PlanillaCell): string | null {
-    if (cell.resultId == null || cell.determinationId == null) return null;
-    return `${cell.resultId}:${cell.determinationId}`;
-  }
+  private localKey(protocolId: number, catalogId: number): string { return `${protocolId}:${catalogId}`; }
 
-  /** Una celda persiste solo si tiene result + determination reales (GAP-P5). */
-  isPersistable(cell: PlanillaCell): boolean {
-    return cell.resultId != null && cell.determinationId != null;
-  }
-
-  value(cell: PlanillaCell): string {
-    const key = this.cellKey(cell);
-    if (key == null) return cell.value;
-    const e = this.edited().get(key);
+  value(protocolId: number, catalogId: number, cell: PlanillaCell): string {
+    const e = this.edited().get(this.localKey(protocolId, catalogId));
     return e !== undefined ? e : cell.value;
   }
 
-  filled(cell: PlanillaCell): boolean {
-    return this.value(cell).trim() !== '';
+  filled(protocolId: number, catalogId: number, cell: PlanillaCell): boolean {
+    return this.value(protocolId, catalogId, cell).trim() !== '';
   }
 
-  setValue(cell: PlanillaCell, v: string): void {
-    const key = this.cellKey(cell);
-    if (key == null) return; // celda no persistible: no se registra cambio
-    this.edited.update(m => new Map(m).set(key, v));
+  /** Toda celda es editable; el valor se guarda en estado local sin importar si persiste. */
+  setValue(protocolId: number, catalogId: number, v: string): void {
+    this.edited.update(m => new Map(m).set(this.localKey(protocolId, catalogId), v));
   }
 
   gridTemplateColumns(): string {
     return `minmax(220px, 1.1fr) repeat(${this.columns().length}, minmax(150px, 1fr))`;
   }
 
-  /** Determinaciones cargadas / esperadas (solo celdas persistibles con valor). */
+  /** Progreso: solo cuentan las celdas que SÍ corresponden (tienen determinación real). */
   readonly progreso = computed(() => {
     let total = 0, filled = 0;
     for (const sec of this.grid().sections) {
       for (const row of sec.rows) {
         for (const col of this.columns()) {
           const cell = row.cells[col.protocolId];
-          if (!cell || !this.isPersistable(cell)) continue;
+          if (!cell || cell.resultId == null || cell.determinationId == null) continue;
           total++;
-          if (this.value(cell).trim() !== '') filled++;
+          if (this.value(col.protocolId, row.catalogId, cell).trim() !== '') filled++;
         }
       }
     }
@@ -80,14 +73,21 @@ export class PlanillaGridComponent {
   });
 
   onSave(): void {
+    // Solo se mandan las celdas que corresponden (tienen result+determination).
+    // Las que el protocolo no solicitó no entran al payload → el back no las recibe.
     const byResult = new Map<number, { determinationId: number; resultValue: string }[]>();
-    for (const [key, value] of this.edited()) {
-      const [resultIdStr, detIdStr] = key.split(':');
-      const resultId = Number(resultIdStr);
-      const determinationId = Number(detIdStr);
-      const arr = byResult.get(resultId) ?? [];
-      arr.push({ determinationId, resultValue: value });
-      byResult.set(resultId, arr);
+    for (const sec of this.grid().sections) {
+      for (const row of sec.rows) {
+        for (const col of this.columns()) {
+          const cell = row.cells[col.protocolId];
+          if (!cell || cell.resultId == null || cell.determinationId == null) continue;
+          const edited = this.edited().get(this.localKey(col.protocolId, row.catalogId));
+          if (edited === undefined) continue; // sin cambios → no se manda
+          const arr = byResult.get(cell.resultId) ?? [];
+          arr.push({ determinationId: cell.determinationId, resultValue: edited });
+          byResult.set(cell.resultId, arr);
+        }
+      }
     }
     const payload: PlanillaSavePayload[] = [...byResult.entries()].map(([resultId, items]) => ({ resultId, items }));
     this.save.emit(payload);

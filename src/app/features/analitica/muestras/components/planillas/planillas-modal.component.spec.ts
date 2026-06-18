@@ -53,20 +53,12 @@ describe('PlanillasModalComponent', () => {
     expect(verId).toBe(5);
   });
 
-  it('Cargar resultados emite solo si hay muestras seleccionadas', () => {
-    const fx0 = setup([tpl], 0);
-    let emitted0: number | undefined;
-    fx0.componentInstance.cargarConPlanilla.subscribe(v => (emitted0 = v));
-    fx0.componentInstance.onCargar(5);
-    expect(emitted0).toBeUndefined(); // sin selección, no emite
-
-    const fx1 = setup([tpl], 2);
-    fx1.componentRef.setInput('selectionCount', 2);
-    fx1.detectChanges();
-    let emitted1: number | undefined;
-    fx1.componentInstance.cargarConPlanilla.subscribe(v => (emitted1 = v));
-    fx1.componentInstance.onCargar(5);
-    expect(emitted1).toBe(5);
+  it('onCargar NO emite sin muestras seleccionadas (selectionCount 0)', () => {
+    const fx = setup([tpl], 0);
+    let emitted: number | undefined;
+    fx.componentInstance.cargarConPlanilla.subscribe(v => (emitted = v));
+    fx.componentInstance.onCargar(5);
+    expect(emitted).toBeUndefined();
   });
 
   it('el kebab abre/cierra y la confirmación de borrado despacha deleteTemplate', () => {

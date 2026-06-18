@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { of } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { PollingService } from '@core/refresh';
@@ -15,6 +16,9 @@ import { loadTemplates } from '../../store/worksheet-templates/worksheet-templat
 import { selectTemplates, selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
 import { WorksheetConfigModalComponent } from '../../components/planillas/worksheet-config-modal.component';
+import { MarcarCompletadasModalComponent, type ResumenMuestra } from '../../components/marcar-completadas-modal/marcar-completadas-modal.component';
+import { ProcesamientoProgresoService } from '../../services/procesamiento-progreso.service';
+import { ResultadosApiService } from '../../services/resultados-api.service';
 
 /**
  * Pantalla de Procesamiento (propia, separada del worklist genérico — GAP-P7).
@@ -27,7 +31,7 @@ import { WorksheetConfigModalComponent } from '../../components/planillas/worksh
   selector: 'app-procesamiento',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeaderComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent],
+  imports: [PageHeaderComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent, MarcarCompletadasModalComponent],
   providers: [MessageService],
   templateUrl: './procesamiento.page.html',
   styleUrl: './procesamiento.page.scss',
@@ -38,6 +42,8 @@ export class ProcesamientoPage implements OnInit {
   private readonly polling = inject(PollingService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly messages = inject(MessageService);
+  private readonly progresoSvc = inject(ProcesamientoProgresoService);
+  private readonly resultados = inject(ResultadosApiService);
 
   private readonly items = this.store.selectSignal(selectProcesamientoItems);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
@@ -73,6 +79,10 @@ export class ProcesamientoPage implements OnInit {
   readonly planillasOpen = signal(false);
   readonly configOpen = signal(false);
   readonly editingTemplateId = signal<number | null>(null);
+
+  // --- marcar completadas (GAP-P2) ---
+  readonly completadasOpen = signal(false);
+  readonly resumenItems = signal<ResumenMuestra[]>([]);
 
   constructor() {
     let lastSig: string | null = null;
@@ -134,5 +144,50 @@ export class ProcesamientoPage implements OnInit {
     this.router.navigate(['/analitica/procesamiento/cargar'], {
       queryParams: { protocols: ids.join(','), templateId },
     });
+  }
+
+  // --- GAP-P2: marcar completadas ---
+  abrirCompletadas(): void {
+    const tubes = this.selectedTubes();
+    if (tubes.length === 0) return;
+    const protocolIds = [...new Set(tubes.map(t => t.protocolId))];
+    // Usa la cache de progreso (consulta backend solo lo que falta).
+    this.progresoSvc.getMany(protocolIds).pipe(
+      catchError(err => { this.error(err); return of([]); }),
+    ).subscribe(progresos => {
+      const byProtocol = new Map(progresos.map(p => [p.protocolId, p]));
+      const items: ResumenMuestra[] = tubes.map(t => {
+        const p = byProtocol.get(t.protocolId);
+        return {
+          protocolId: t.protocolId,
+          resultIds: p?.resultIds ?? [],
+          filled: p?.filled ?? 0,
+          total: p?.total ?? 0,
+          status: p?.status ?? 'sin',
+          code: t.barcode,
+          patient: t.patient,
+        };
+      });
+      this.resumenItems.set(items);
+      this.completadasOpen.set(true);
+    });
+  }
+  cerrarCompletadas(): void { this.completadasOpen.set(false); }
+
+  onMarcarCompletadas(resultIds: number[]): void {
+    this.completadasOpen.set(false);
+    if (resultIds.length === 0) return;
+    forkJoin(resultIds.map(id => this.resultados.markReady(id).pipe(catchError(err => { this.error(err); return of(null); }))))
+      .subscribe(() => {
+        // invalidar progreso de los protocolos afectados (se recalcula la próxima vez)
+        for (const it of this.resumenItems()) this.progresoSvc.invalidate(it.protocolId);
+        this.clearSelection();
+        this.messages.add({ severity: 'success', summary: 'Listo', detail: 'Resultados marcados como completados.', life: 3500 });
+      });
+  }
+
+  private error(err: unknown): void {
+    this.messages.add({ severity: 'error', summary: 'Error',
+      detail: humanizeBackendError(err as BackendErrorShape | null, { fallback: 'No pudimos completar la operación. Probá de nuevo.' }), life: 5000 });
   }
 }

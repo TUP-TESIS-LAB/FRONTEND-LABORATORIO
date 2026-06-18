@@ -19,14 +19,11 @@
                 @if (row.cells[col.protocolId]; as cell) {
                   <input
                     class="ws-input"
-                    [class.is-filled]="filled(cell)"
-                    [class.is-na]="!isPersistable(cell)"
-                    [value]="value(cell)"
-                    [disabled]="!isPersistable(cell)"
-                    [title]="isPersistable(cell) ? '' : 'Este protocolo no solicitó este análisis'"
+                    [class.is-filled]="filled(col.protocolId, row.catalogId, cell)"
+                    [value]="value(col.protocolId, row.catalogId, cell)"
                     placeholder="—"
                     inputmode="decimal"
-                    (input)="setValue(cell, $any($event.target).value)"
+                    (input)="setValue(col.protocolId, row.catalogId, $any($event.target).value)"
                   />
                 }
               </div>

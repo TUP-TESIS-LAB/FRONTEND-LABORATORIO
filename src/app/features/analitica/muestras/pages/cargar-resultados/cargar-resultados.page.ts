@@ -10,6 +10,7 @@ import { PlanillaGridComponent, type PlanillaSavePayload } from '../../component
 import { ResumenResultadosModalComponent, type ResumenItem } from '../../components/resumen-resultados-modal/resumen-resultados-modal.component';
 import { PlanillaGridBuilderService } from '../../services/planilla-grid-builder.service';
 import { ResultadosApiService } from '../../services/resultados-api.service';
+import { ProcesamientoProgresoService } from '../../services/procesamiento-progreso.service';
 import type { PlanillaGrid } from '../../models/resultado.model';
 
 @Component({
@@ -27,6 +28,7 @@ export class CargarResultadosPage {
   private readonly location = inject(Location);
   private readonly builder = inject(PlanillaGridBuilderService);
   private readonly resultados = inject(ResultadosApiService);
+  private readonly progresoSvc = inject(ProcesamientoProgresoService);
 
   readonly protocolIds = (this.route.snapshot.queryParamMap.get('protocols') ?? '')
     .split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n) && n > 0);
@@ -80,7 +82,11 @@ export class CargarResultadosPage {
       this.resultados.batchUpdate(p.resultId, p.items.map(i => ({
         determinationId: i.determinationId, resultValue: i.resultValue, observations: null,
       }))).pipe(catchError(err => { this.error(err); return of(null); })),
-    )).subscribe(() => this.resumenOpen.set(true));
+    )).subscribe(() => {
+      // Se cargaron/actualizaron valores → invalidar el progreso cacheado de estos protocolos.
+      for (const pid of this.protocolIds) this.progresoSvc.invalidate(pid);
+      this.resumenOpen.set(true);
+    });
   }
 
   onMarkCompleted(resultIds: number[]): void {
