@@ -7,6 +7,7 @@ export type SexAtBirth = 'MALE' | 'FEMALE' | 'INTERSEX';
 // valores sin haberlos sumado primero al enum del back — el alta de paciente
 // fallaría con 400 al postear.
 export type ContactType = 'EMAIL' | 'PHONE';
+export type AccountStatus = 'NONE' | 'PENDING' | 'ACTIVE';
 
 export interface Contact {
   id?: number;
@@ -52,6 +53,7 @@ export interface Patient {
   addresses: Address[];
   coverages: Coverage[];
   active: boolean;
+  accountStatus: AccountStatus;
 }
 
 export interface CreatePatientRequest {

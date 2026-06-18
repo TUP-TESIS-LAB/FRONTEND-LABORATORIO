@@ -6,12 +6,15 @@ import { Action } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PatientEffects } from './patient.effects';
 import { PatientService } from '../services/patient.service';
+import { PortalAccountService } from '../services/portal-account.service';
 import { NotificationService } from '@core/services/notification.service';
 import {
   loadPatients, loadPatientsSuccess, loadPatientsFailure,
   addPatient, addPatientSuccess, updatePatientSuccess,
   togglePatientActive, togglePatientActiveSuccess,
   verifyPatient, verifyPatientSuccess, verifyPatientFailure,
+  createPatientPortalAccount, createPatientPortalAccountSuccess, createPatientPortalAccountFailure,
+  resendPatientPortalAccess, resendPatientPortalAccessSuccess, resendPatientPortalAccessFailure,
 } from './patient.actions';
 import { initialPatientState, PATIENT_FEATURE_KEY } from './patient.state';
 import { Patient } from '../models/patient.model';
@@ -19,22 +22,25 @@ import { Patient } from '../models/patient.model';
 const patient: Patient = {
   id: 1, dni: '32456789', firstName: 'a', lastName: 'b', birthDate: null,
   gender: null, sexAtBirth: null, status: 'MIN', source: 'STAFF', verifiedAt: null,
-  contacts: [], addresses: [], coverages: [], active: true,
+  contacts: [], addresses: [], coverages: [], active: true, accountStatus: 'NONE',
 };
 
 describe('PatientEffects', () => {
   let actions$: Observable<Action>;
   let svc: { search: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; toggleActive: ReturnType<typeof vi.fn>; existsByDni: ReturnType<typeof vi.fn>; verify: ReturnType<typeof vi.fn> };
+  let portalSvc: { createAccount: ReturnType<typeof vi.fn>; resendAccess: ReturnType<typeof vi.fn> };
   const notify = { error: vi.fn(), success: vi.fn(), info: vi.fn(), warn: vi.fn(), show: vi.fn(), dismiss: vi.fn(), clear: vi.fn() };
 
   beforeEach(() => {
     svc = { search: vi.fn(), getById: vi.fn(), create: vi.fn(), update: vi.fn(), toggleActive: vi.fn(), existsByDni: vi.fn(), verify: vi.fn() };
+    portalSvc = { createAccount: vi.fn(), resendAccess: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
         PatientEffects,
         provideMockActions(() => actions$),
         provideMockStore({ initialState: { [PATIENT_FEATURE_KEY]: initialPatientState } }),
         { provide: PatientService, useValue: svc },
+        { provide: PortalAccountService, useValue: portalSvc },
         { provide: NotificationService, useValue: notify },
       ],
     });
@@ -154,6 +160,60 @@ describe('PatientEffects', () => {
       actions$ = of(togglePatientActive({ id: 1, deleted: true }));
       TestBed.inject(PatientEffects).togglePatientActive$.subscribe((a) => {
         expect(a).toEqual(togglePatientActiveSuccess({ id: 1, deleted: true }));
+        resolve();
+      });
+    });
+  });
+
+  // --- Portal account effects ---
+
+  it('createPatientPortalAccount$ maps to createPatientPortalAccountSuccess', () => {
+    return new Promise<void>((resolve) => {
+      portalSvc.createAccount.mockReturnValue(of(undefined));
+      actions$ = of(createPatientPortalAccount({ id: 1 }));
+      TestBed.inject(PatientEffects).createPatientPortalAccount$.subscribe((a) => {
+        expect(portalSvc.createAccount).toHaveBeenCalledWith(1);
+        expect(a).toEqual(createPatientPortalAccountSuccess({ id: 1 }));
+        expect(notify.success).toHaveBeenCalledWith('Acceso al portal creado. Se envió el mail de primer acceso.');
+        resolve();
+      });
+    });
+  });
+
+  it('createPatientPortalAccount$ en error llama notifications.error y emite failure', () => {
+    return new Promise<void>((resolve) => {
+      notify.error.mockClear();
+      portalSvc.createAccount.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+      actions$ = of(createPatientPortalAccount({ id: 1 }));
+      TestBed.inject(PatientEffects).createPatientPortalAccount$.subscribe((a) => {
+        expect(a.type).toBe(createPatientPortalAccountFailure.type);
+        expect(notify.error).toHaveBeenCalled();
+        resolve();
+      });
+    });
+  });
+
+  it('resendPatientPortalAccess$ maps to resendPatientPortalAccessSuccess', () => {
+    return new Promise<void>((resolve) => {
+      portalSvc.resendAccess.mockReturnValue(of(undefined));
+      actions$ = of(resendPatientPortalAccess({ id: 2 }));
+      TestBed.inject(PatientEffects).resendPatientPortalAccess$.subscribe((a) => {
+        expect(portalSvc.resendAccess).toHaveBeenCalledWith(2);
+        expect(a).toEqual(resendPatientPortalAccessSuccess({ id: 2 }));
+        expect(notify.success).toHaveBeenCalledWith('Se reenviaron las credenciales de acceso.');
+        resolve();
+      });
+    });
+  });
+
+  it('resendPatientPortalAccess$ en error llama notifications.error y emite failure', () => {
+    return new Promise<void>((resolve) => {
+      notify.error.mockClear();
+      portalSvc.resendAccess.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+      actions$ = of(resendPatientPortalAccess({ id: 2 }));
+      TestBed.inject(PatientEffects).resendPatientPortalAccess$.subscribe((a) => {
+        expect(a.type).toBe(resendPatientPortalAccessFailure.type);
+        expect(notify.error).toHaveBeenCalled();
         resolve();
       });
     });

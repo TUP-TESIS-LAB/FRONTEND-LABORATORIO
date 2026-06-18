@@ -7,6 +7,7 @@ import {
   map, of, switchMap, withLatestFrom,
 } from 'rxjs';
 import { PatientService } from '../services/patient.service';
+import { PortalAccountService } from '../services/portal-account.service';
 import { NotificationService } from '@core/services/notification.service';
 import {
   loadPatients, loadPatientsSuccess, loadPatientsFailure,
@@ -17,6 +18,8 @@ import {
   checkPatientDni, checkPatientDniSuccess, checkPatientDniFailure,
   togglePatientActive, togglePatientActiveSuccess, togglePatientActiveFailure,
   verifyPatient, verifyPatientSuccess, verifyPatientFailure,
+  createPatientPortalAccount, createPatientPortalAccountSuccess, createPatientPortalAccountFailure,
+  resendPatientPortalAccess, resendPatientPortalAccessSuccess, resendPatientPortalAccessFailure,
 } from './patient.actions';
 import { selectPatientPageRequest } from './patient.selectors';
 
@@ -24,6 +27,7 @@ import { selectPatientPageRequest } from './patient.selectors';
 export class PatientEffects {
   private readonly actions$ = inject(Actions);
   private readonly patientService = inject(PatientService);
+  private readonly portalAccounts = inject(PortalAccountService);
   private readonly store = inject(Store);
   private readonly notifications = inject(NotificationService);
 
@@ -147,6 +151,48 @@ export class PatientEffects {
         this.patientService.existsByDni(dni).pipe(
           map((exists) => checkPatientDniSuccess({ dni, exists })),
           catchError((error: HttpErrorResponse) => of(checkPatientDniFailure({ error }))),
+        ),
+      ),
+    ),
+  );
+
+  createPatientPortalAccount$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(createPatientPortalAccount),
+      concatMap(({ id }) =>
+        this.portalAccounts.createAccount(id).pipe(
+          map(() => {
+            this.notifications.success('Acceso al portal creado. Se envió el mail de primer acceso.');
+            return createPatientPortalAccountSuccess({ id });
+          }),
+          catchError((error: HttpErrorResponse) => {
+            const msg = typeof error.error?.message === 'string'
+              ? error.error.message
+              : 'No se pudo crear el acceso al portal';
+            this.notifications.error(msg);
+            return of(createPatientPortalAccountFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  resendPatientPortalAccess$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(resendPatientPortalAccess),
+      concatMap(({ id }) =>
+        this.portalAccounts.resendAccess(id).pipe(
+          map(() => {
+            this.notifications.success('Se reenviaron las credenciales de acceso.');
+            return resendPatientPortalAccessSuccess({ id });
+          }),
+          catchError((error: HttpErrorResponse) => {
+            const msg = typeof error.error?.message === 'string'
+              ? error.error.message
+              : 'No se pudo reenviar el acceso al portal';
+            this.notifications.error(msg);
+            return of(resendPatientPortalAccessFailure({ error }));
+          }),
         ),
       ),
     ),

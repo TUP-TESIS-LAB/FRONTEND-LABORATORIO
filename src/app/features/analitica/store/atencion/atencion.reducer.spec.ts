@@ -21,6 +21,7 @@ function samplePatient(over: Partial<Patient> = {}): Patient {
     addresses: [],
     coverages: [],
     active: true,
+    accountStatus: 'NONE',
     ...over,
   };
 }

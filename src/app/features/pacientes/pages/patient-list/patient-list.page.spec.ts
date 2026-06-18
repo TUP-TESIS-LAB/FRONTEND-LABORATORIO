@@ -69,6 +69,7 @@ describe('PatientListPage (smoke)', () => {
       id: 1, dni: '1', firstName: 'a', lastName: 'b', birthDate: null,
       gender: null, sexAtBirth: null, status: 'COMPLETE' as const,
       source: 'STAFF' as const, contacts: [], addresses: [], coverages: [], active: true,
+      accountStatus: 'NONE' as const,
     };
     expect(cmp.rowStatusLabel({ ...base, verifiedAt: '2026-06-09T10:00:00Z' })).toBe('Verificado');
     expect(cmp.rowStatusSeverity({ ...base, verifiedAt: '2026-06-09T10:00:00Z' })).toBe('info');

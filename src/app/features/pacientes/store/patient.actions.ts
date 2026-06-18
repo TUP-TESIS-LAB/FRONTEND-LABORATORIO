@@ -110,3 +110,31 @@ export const togglePatientActiveFailure = createAction(
   '[Patients API] Toggle Patient Active Failure',
   props<{ error: HttpErrorResponse }>(),
 );
+
+// --- Portal account — create (mutation, concatMap) ---
+export const createPatientPortalAccount = createAction(
+  '[Patient Row] Create Patient Portal Account',
+  props<{ id: number }>(),
+);
+export const createPatientPortalAccountSuccess = createAction(
+  '[Patients API] Create Patient Portal Account Success',
+  props<{ id: number }>(),
+);
+export const createPatientPortalAccountFailure = createAction(
+  '[Patients API] Create Patient Portal Account Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+// --- Portal account — resend (mutation, concatMap) ---
+export const resendPatientPortalAccess = createAction(
+  '[Patient Row] Resend Patient Portal Access',
+  props<{ id: number }>(),
+);
+export const resendPatientPortalAccessSuccess = createAction(
+  '[Patients API] Resend Patient Portal Access Success',
+  props<{ id: number }>(),
+);
+export const resendPatientPortalAccessFailure = createAction(
+  '[Patients API] Resend Patient Portal Access Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
