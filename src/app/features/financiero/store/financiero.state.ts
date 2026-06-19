@@ -1,20 +1,15 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Pago, Cobertura, Movimiento } from '../models/financiero.model';
+﻿import { CashSession, SessionActivity, PaymentListItem, Payment, TenantFiscalConfig } from '../models/financiero.model';
+
+export const FINANCIERO_FEATURE_KEY = 'financiero';
 
 export interface FinancieroState {
-  pagos: Pago[];
-  coberturas: Cobertura[];
-  movimientos: Movimiento[];
-  pending: boolean;
-  error: HttpErrorResponse | null;
+  caja:   { session: CashSession | null; activity: SessionActivity | null; loading: boolean; error: string | null };
+  cobros: { list: PaymentListItem[]; selected: Payment | null; loading: boolean; error: string | null };
+  config: { current: TenantFiscalConfig | null; saving: boolean; error: string | null };
 }
 
 export const initialFinancieroState: FinancieroState = {
-  pagos: [],
-  coberturas: [],
-  movimientos: [],
-  pending: false,
-  error: null,
+  caja:   { session: null, activity: null, loading: false, error: null },
+  cobros: { list: [], selected: null, loading: false, error: null },
+  config: { current: null, saving: false, error: null },
 };
-
-export const FINANCIERO_FEATURE_KEY = 'financiero';

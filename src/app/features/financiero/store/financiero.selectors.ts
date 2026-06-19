@@ -1,31 +1,42 @@
-import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { FinancieroState } from './financiero.state';
-import { FINANCIERO_FEATURE_KEY } from './financiero.state';
+﻿import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { FinancieroState, FINANCIERO_FEATURE_KEY } from './financiero.state';
 
-export const selectFinancieroState =
-  createFeatureSelector<FinancieroState>(FINANCIERO_FEATURE_KEY);
+export const selectFinancieroState = createFeatureSelector<FinancieroState>(FINANCIERO_FEATURE_KEY);
 
-export const selectAllPagos = createSelector(
-  selectFinancieroState,
-  (state) => state.pagos
+// ── Caja ─────────────────────────────────────────────────────────────────────
+export const selectCajaSlice = createSelector(selectFinancieroState, s => s.caja);
+
+export const selectCajaSession = createSelector(selectCajaSlice, c => c.session);
+export const selectCajaActivity = createSelector(selectCajaSlice, c => c.activity);
+export const selectCajaLoading = createSelector(selectCajaSlice, c => c.loading);
+export const selectCajaError = createSelector(selectCajaSlice, c => c.error);
+
+/** true cuando hay una sesión y su estado es OPEN */
+export const selectIsCajaOpen = createSelector(
+  selectCajaSession,
+  session => session?.status === 'OPEN',
 );
 
-export const selectAllCoberturas = createSelector(
-  selectFinancieroState,
-  (state) => state.coberturas
+/**
+ * Saldo actual de la caja.
+ * Prioridad: saldoActual (calculado por el backend) → openingAmount (mínimo garantizado).
+ */
+export const selectCajaSaldo = createSelector(
+  selectCajaSession,
+  session => session?.saldoActual ?? session?.openingAmount ?? 0,
 );
 
-export const selectAllMovimientos = createSelector(
-  selectFinancieroState,
-  (state) => state.movimientos
-);
+// ── Cobros ────────────────────────────────────────────────────────────────────
+export const selectCobrosSlice = createSelector(selectFinancieroState, s => s.cobros);
 
-export const selectFinancieroPending = createSelector(
-  selectFinancieroState,
-  (state) => state.pending
-);
+export const selectCobrosList = createSelector(selectCobrosSlice, c => c.list);
+export const selectCobrosLoading = createSelector(selectCobrosSlice, c => c.loading);
+export const selectCobrosError = createSelector(selectCobrosSlice, c => c.error);
+export const selectCobroSelected = createSelector(selectCobrosSlice, c => c.selected);
 
-export const selectFinancieroError = createSelector(
-  selectFinancieroState,
-  (state) => state.error
-);
+// ── Config fiscal ─────────────────────────────────────────────────────────────
+export const selectConfigSlice = createSelector(selectFinancieroState, s => s.config);
+
+export const selectFiscalConfig = createSelector(selectConfigSlice, c => c.current);
+export const selectFiscalSaving = createSelector(selectConfigSlice, c => c.saving);
+export const selectFiscalConfigError = createSelector(selectConfigSlice, c => c.error);
