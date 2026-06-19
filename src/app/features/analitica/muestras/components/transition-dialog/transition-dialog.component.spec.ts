@@ -9,7 +9,7 @@ function makeSample(over: Partial<Sample> = {}): Sample {
   return {
     id: 's-1', barcode: 'MX-2606-40801', study: 'Hemograma',
     patient: 'García, M.', branch: 'CENTRAL — Sede Central',
-    date: '07/06', time: '08:42', urgent: false, state: 'transito',
+    receivedAt: '2026-06-07T08:42:00Z', urgent: false, state: 'transito',
     ...over,
   };
 }

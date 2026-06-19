@@ -22,14 +22,16 @@ const branches = ['CENTRAL — Sede Central', 'NORTE — Belgrano', 'OESTE — M
 
 function sample(i: number, state: Sample['state'], overrides: Partial<Sample> = {}): Sample {
   const num = 40800 + i;
+  const hour = 7 + (i % 4);
+  const minute = (i * 7) % 60;
+  const ts = `2026-06-07T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
   return {
     id: `s-${num}`,
     barcode: `MX-2606-${num}`,
     study: studies[i % studies.length],
     patient: patients[i % patients.length],
     branch: branches[i % branches.length],
-    date: '07/06',
-    time: `${String(7 + (i % 4)).padStart(2, '0')}:${String((i * 7) % 60).padStart(2, '0')}`,
+    receivedAt: ts,
     urgent: i % 5 === 0,
     state,
     ...overrides,

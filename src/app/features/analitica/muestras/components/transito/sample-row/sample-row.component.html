@@ -18,6 +18,6 @@
   </div>
   <div class="col-study">{{ sample.study }}</div>
   <div class="col-origin">{{ branchShort() }}</div>
-  <div class="col-time">{{ sample.date }} · {{ sample.time }}</div>
+  <div class="col-time">{{ sample.receivedAt | dateEs:'date' }} · {{ sample.receivedAt | dateEs:'time' }}</div>
   <div class="col-state"><span class="badge teal">En tránsito</span></div>
 </div>

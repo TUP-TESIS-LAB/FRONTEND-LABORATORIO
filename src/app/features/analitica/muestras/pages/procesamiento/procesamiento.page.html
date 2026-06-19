@@ -51,7 +51,7 @@
             <span class="an-sub">{{ t.analyses.length }} {{ t.analyses.length === 1 ? 'etiqueta' : 'etiquetas' }}</span>
           </div>
           <div class="cell-ori"><i class="pi pi-map-marker"></i> {{ t.branch }}</div>
-          <div class="cell-toma"><span class="toma-d">{{ t.date }}</span><span class="toma-h">{{ t.time }} hs</span></div>
+          <div class="cell-toma"><span class="toma-d">{{ t.receivedAt | dateEs:'date' }}</span><span class="toma-h">{{ t.receivedAt | dateEs:'time' }} hs</span></div>
           <div class="cell-edo">
             <span class="badge-st st-proc"><span class="dot"></span>En proceso</span>
           </div>

@@ -5,10 +5,12 @@
 // sample-row.component.scss are kept as separate files for reference by other tasks.
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import type { Sample } from '../../../models/sample.model';
+import { DateEsPipe } from '@shared/pipes/date-es.pipe';
 
 @Component({
   selector: 'app-sample-row',
   standalone: true,
+  imports: [DateEsPipe],
   template: `
 <div
   class="row"
@@ -30,7 +32,7 @@ import type { Sample } from '../../../models/sample.model';
   </div>
   <div class="col-study">{{ sample.study }}</div>
   <div class="col-origin">{{ branchShort() }}</div>
-  <div class="col-time">{{ sample.date }} · {{ sample.time }}</div>
+  <div class="col-time">{{ sample.receivedAt | dateEs:'date' }} · {{ sample.receivedAt | dateEs:'time' }}</div>
   <div class="col-state"><span class="badge teal">En tránsito</span></div>
 </div>
   `,

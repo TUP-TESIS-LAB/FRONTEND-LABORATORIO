@@ -12,7 +12,7 @@ const LOTE: TemporalLote = {
 const SAMPLE: Sample = {
   id: 's-1', barcode: 'MX-2606-00001', study: 'Hemograma completo',
   patient: 'García, M.', branch: 'NORTE — Belgrano',
-  date: '07/06', time: '08:00', urgent: false, state: 'transito',
+  receivedAt: '2026-06-07T08:00:00Z', urgent: false, state: 'transito',
 };
 const BRANCH_OPTIONS = [
   { id: 1001, name: 'CENTRAL — Sede Central' },

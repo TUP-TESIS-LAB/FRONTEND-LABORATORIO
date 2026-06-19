@@ -19,6 +19,7 @@ import { WorksheetConfigModalComponent } from '../../components/planillas/worksh
 import { MarcarCompletadasModalComponent, type ResumenMuestra } from '../../components/marcar-completadas-modal/marcar-completadas-modal.component';
 import { ProcesamientoProgresoService } from '../../services/procesamiento-progreso.service';
 import { ResultadosApiService } from '../../services/resultados-api.service';
+import { DateEsPipe } from '@shared/pipes/date-es.pipe';
 
 /**
  * Pantalla de Procesamiento (propia, separada del worklist genérico — GAP-P7).
@@ -31,7 +32,7 @@ import { ResultadosApiService } from '../../services/resultados-api.service';
   selector: 'app-procesamiento',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeaderComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent, MarcarCompletadasModalComponent],
+  imports: [PageHeaderComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent, MarcarCompletadasModalComponent, DateEsPipe],
   providers: [MessageService],
   templateUrl: './procesamiento.page.html',
   styleUrl: './procesamiento.page.scss',
