@@ -2,6 +2,7 @@
 import {
   selectCajaSession, selectCajaActivity, selectCajaLoading,
   selectIsCajaOpen, selectCajaSaldo, selectCajaError,
+  selectCobrosList, selectCobrosLoading, selectCobrosError, selectCobroSelected,
 } from './financiero.selectors';
 import { initialFinancieroState, FinancieroState } from './financiero.state';
 
@@ -67,5 +68,38 @@ describe('financiero selectors — caja', () => {
 
   it('selectCajaSaldo devuelve 0 cuando no hay sesión', () => {
     expect(selectCajaSaldo.projector(null)).toBe(0);
+  });
+});
+
+describe('financiero selectors — cobros', () => {
+  const payment = { id: 9, status: 'PROCESSED', totalAmount: 5000 } as any;
+  const list = [payment, { id: 10, status: 'CANCELLED', totalAmount: 2000 } as any];
+
+  it('selectCobrosList proyecta la lista de pagos', () => {
+    const cobros = { ...initialFinancieroState.cobros, list };
+    expect(selectCobrosList.projector(cobros)).toEqual(list);
+  });
+
+  it('selectCobrosList devuelve array vacío en estado inicial', () => {
+    expect(selectCobrosList.projector(initialFinancieroState.cobros)).toEqual([]);
+  });
+
+  it('selectCobrosLoading proyecta loading', () => {
+    const cobros = { ...initialFinancieroState.cobros, loading: true };
+    expect(selectCobrosLoading.projector(cobros)).toBe(true);
+  });
+
+  it('selectCobrosError proyecta el error', () => {
+    const cobros = { ...initialFinancieroState.cobros, error: 'Error de carga' };
+    expect(selectCobrosError.projector(cobros)).toBe('Error de carga');
+  });
+
+  it('selectCobroSelected proyecta el pago seleccionado', () => {
+    const cobros = { ...initialFinancieroState.cobros, selected: payment };
+    expect(selectCobroSelected.projector(cobros)).toEqual(payment);
+  });
+
+  it('selectCobroSelected devuelve null en estado inicial', () => {
+    expect(selectCobroSelected.projector(initialFinancieroState.cobros)).toBeNull();
   });
 });

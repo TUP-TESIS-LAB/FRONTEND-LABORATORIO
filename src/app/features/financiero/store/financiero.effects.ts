@@ -12,11 +12,21 @@ import {
   openSession, openSessionSuccess, openSessionFailure,
   closeSession, closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
+  loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
+  loadPayment, loadPaymentSuccess, loadPaymentFailure,
+  cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
 } from './financiero.actions';
 
 function mapCajaError(e: HttpErrorResponse): string {
   if (e.status === 409) return 'Ya hay una caja abierta para esta sucursal.';
   if (e.status === 422) return 'No se puede cobrar: no hay una caja abierta.';
+  return 'Ocurrió un error al procesar la operación. Intentá de nuevo.';
+}
+
+function mapCobrosError(e: HttpErrorResponse): string {
+  if (e.status === 404) return 'El pago solicitado no existe.';
+  if (e.status === 409) return 'El pago ya fue cancelado o no se puede cancelar en su estado actual.';
+  if (e.status === 422) return 'La suma de los medios de pago no coincide con el total.';
   return 'Ocurrió un error al procesar la operación. Intentá de nuevo.';
 }
 
@@ -117,6 +127,66 @@ export class FinancieroEffects {
           }),
         ),
       ),
+    ),
+  );
+
+  // ── cobros: listar pagos ───────────────────────────────────────────────────
+  loadPayments$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadPayments),
+      switchMap(({ branchId, status }) =>
+        this.api.listPayments({ branchId, status }).pipe(
+          map(items => loadPaymentsSuccess({ items })),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapCobrosError(e);
+            return of(loadPaymentsFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── cobros: detalle de pago ────────────────────────────────────────────────
+  loadPayment$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadPayment),
+      switchMap(({ id }) =>
+        this.api.getPayment(id).pipe(
+          map(payment => loadPaymentSuccess({ payment })),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapCobrosError(e);
+            return of(loadPaymentFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── cobros: cancelar pago ──────────────────────────────────────────────────
+  cancelPayment$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(cancelPayment),
+      concatMap(({ id, reason }) =>
+        this.api.cancelPayment(id, reason).pipe(
+          map(payment => {
+            this.notif.success('Pago cancelado · reversa en caja');
+            return cancelPaymentSuccess({ payment });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapCobrosError(e);
+            this.notif.error(error);
+            return of(cancelPaymentFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── cobros: recargar detalle tras cancelar ─────────────────────────────────
+  reloadPaymentAfterCancel$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(cancelPaymentSuccess),
+      map(({ payment }) => loadPayment({ id: payment.id })),
     ),
   );
 

@@ -6,6 +6,9 @@ import {
   openSessionSuccess, openSessionFailure,
   closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
+  loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
+  loadPayment, loadPaymentSuccess, loadPaymentFailure,
+  cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
 } from './financiero.actions';
 
 export const initialState = initialFinancieroState;
@@ -69,5 +72,47 @@ export const financieroReducer = createReducer(
   on(registerTransactionFailure, (state, { error }): FinancieroState => ({
     ...state,
     caja: { ...state.caja, error },
+  })),
+
+  // ── cobros: listar pagos ───────────────────────────────────────────────────
+  on(loadPayments, (state): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, loading: true, error: null },
+  })),
+  on(loadPaymentsSuccess, (state, { items }): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, list: items, loading: false, error: null },
+  })),
+  on(loadPaymentsFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, loading: false, error },
+  })),
+
+  // ── cobros: detalle de pago ────────────────────────────────────────────────
+  on(loadPayment, (state): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, loading: true, error: null },
+  })),
+  on(loadPaymentSuccess, (state, { payment }): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, selected: payment, loading: false, error: null },
+  })),
+  on(loadPaymentFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, loading: false, error },
+  })),
+
+  // ── cobros: cancelar pago ──────────────────────────────────────────────────
+  on(cancelPayment, (state): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, loading: true, error: null },
+  })),
+  on(cancelPaymentSuccess, (state, { payment }): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, selected: payment, loading: false, error: null },
+  })),
+  on(cancelPaymentFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, loading: false, error },
   })),
 );

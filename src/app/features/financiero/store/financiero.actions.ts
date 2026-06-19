@@ -1,5 +1,5 @@
 ﻿import { createAction, props } from '@ngrx/store';
-import { CashSession, SessionActivity, TransactionType } from '../models/financiero.model';
+import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus } from '../models/financiero.model';
 
 // ── Caja: cargar sesión abierta ──────────────────────────────────────────────
 export const loadOpenSession = createAction(
@@ -73,5 +73,47 @@ export const registerTransactionSuccess = createAction(
 );
 export const registerTransactionFailure = createAction(
   '[Financiero Caja API] Register Transaction Failure',
+  props<{ error: string }>(),
+);
+
+// ── Cobros: listar pagos ─────────────────────────────────────────────────────
+export const loadPayments = createAction(
+  '[Financiero Cobros] Load Payments',
+  props<{ branchId?: number; status?: PaymentStatus }>(),
+);
+export const loadPaymentsSuccess = createAction(
+  '[Financiero Cobros API] Load Payments Success',
+  props<{ items: PaymentListItem[] }>(),
+);
+export const loadPaymentsFailure = createAction(
+  '[Financiero Cobros API] Load Payments Failure',
+  props<{ error: string }>(),
+);
+
+// ── Cobros: obtener detalle de pago ──────────────────────────────────────────
+export const loadPayment = createAction(
+  '[Financiero Cobros] Load Payment',
+  props<{ id: number }>(),
+);
+export const loadPaymentSuccess = createAction(
+  '[Financiero Cobros API] Load Payment Success',
+  props<{ payment: Payment }>(),
+);
+export const loadPaymentFailure = createAction(
+  '[Financiero Cobros API] Load Payment Failure',
+  props<{ error: string }>(),
+);
+
+// ── Cobros: cancelar pago ────────────────────────────────────────────────────
+export const cancelPayment = createAction(
+  '[Financiero Cobros] Cancel Payment',
+  props<{ id: number; reason: string }>(),
+);
+export const cancelPaymentSuccess = createAction(
+  '[Financiero Cobros API] Cancel Payment Success',
+  props<{ payment: Payment }>(),
+);
+export const cancelPaymentFailure = createAction(
+  '[Financiero Cobros API] Cancel Payment Failure',
   props<{ error: string }>(),
 );

@@ -14,6 +14,9 @@ import {
   openSession, openSessionSuccess, openSessionFailure,
   closeSession, closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
+  loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
+  loadPayment, loadPaymentSuccess, loadPaymentFailure,
+  cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
 } from './financiero.actions';
 import { NOT_MODIFIED } from '@core/refresh/polling-context';
 
@@ -32,6 +35,9 @@ describe('FinancieroEffects', () => {
     openSession: ReturnType<typeof vi.fn>;
     closeSession: ReturnType<typeof vi.fn>;
     registerTransaction: ReturnType<typeof vi.fn>;
+    listPayments: ReturnType<typeof vi.fn>;
+    getPayment: ReturnType<typeof vi.fn>;
+    cancelPayment: ReturnType<typeof vi.fn>;
   };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
@@ -42,6 +48,9 @@ describe('FinancieroEffects', () => {
       openSession: vi.fn(),
       closeSession: vi.fn(),
       registerTransaction: vi.fn(),
+      listPayments: vi.fn(),
+      getPayment: vi.fn(),
+      cancelPayment: vi.fn(),
     };
     notif = { success: vi.fn(), error: vi.fn() };
 
@@ -192,5 +201,86 @@ describe('FinancieroEffects', () => {
     const action = await firstValueFrom(effects.registerTransaction$);
     expect(action.type).toBe('[Financiero Caja API] Register Transaction Failure');
     expect(notif.error).toHaveBeenCalled();
+  });
+
+  // ── loadPayments$ ──────────────────────────────────────────────────────────
+
+  it('loadPayments$ emite loadPaymentsSuccess con la lista devuelta', async () => {
+    const items = [{ id: 1, status: 'PROCESSED' }, { id: 2, status: 'CANCELLED' }] as any[];
+    api.listPayments.mockReturnValue(of(items));
+    actions$ = of(loadPayments({ branchId: 5, status: 'PROCESSED' }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.loadPayments$);
+    expect(api.listPayments).toHaveBeenCalledWith({ branchId: 5, status: 'PROCESSED' });
+    expect(action).toEqual(loadPaymentsSuccess({ items }));
+  });
+
+  it('loadPayments$ sin filtros llama a listPayments con objeto vacío', async () => {
+    api.listPayments.mockReturnValue(of([]));
+    actions$ = of(loadPayments({}));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.loadPayments$);
+    expect(api.listPayments).toHaveBeenCalledWith({ branchId: undefined, status: undefined });
+    expect(action).toEqual(loadPaymentsSuccess({ items: [] }));
+  });
+
+  it('loadPayments$ mapea errores a loadPaymentsFailure', async () => {
+    api.listPayments.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    actions$ = of(loadPayments({}));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.loadPayments$);
+    expect(action.type).toBe('[Financiero Cobros API] Load Payments Failure');
+  });
+
+  // ── loadPayment$ ───────────────────────────────────────────────────────────
+
+  it('loadPayment$ emite loadPaymentSuccess con el pago devuelto', async () => {
+    const payment = { id: 9, status: 'PROCESSED', totalAmount: 5000 } as any;
+    api.getPayment.mockReturnValue(of(payment));
+    actions$ = of(loadPayment({ id: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.loadPayment$);
+    expect(api.getPayment).toHaveBeenCalledWith(9);
+    expect(action).toEqual(loadPaymentSuccess({ payment }));
+  });
+
+  it('loadPayment$ mapea errores a loadPaymentFailure', async () => {
+    api.getPayment.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    actions$ = of(loadPayment({ id: 99 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.loadPayment$);
+    expect(action.type).toBe('[Financiero Cobros API] Load Payment Failure');
+  });
+
+  // ── cancelPayment$ ─────────────────────────────────────────────────────────
+
+  it('cancelPayment$ ante éxito muestra notif.success y emite cancelPaymentSuccess', async () => {
+    const payment = { id: 9, status: 'CANCELLED' } as any;
+    api.cancelPayment.mockReturnValue(of(payment));
+    actions$ = of(cancelPayment({ id: 9, reason: 'cobro duplicado' }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.cancelPayment$);
+    expect(api.cancelPayment).toHaveBeenCalledWith(9, 'cobro duplicado');
+    expect(notif.success).toHaveBeenCalledWith('Pago cancelado · reversa en caja');
+    expect(action).toEqual(cancelPaymentSuccess({ payment }));
+  });
+
+  it('cancelPayment$ mapea errores a cancelPaymentFailure y muestra notif.error', async () => {
+    api.cancelPayment.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    actions$ = of(cancelPayment({ id: 9, reason: 'duplicado' }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.cancelPayment$);
+    expect(action.type).toBe('[Financiero Cobros API] Cancel Payment Failure');
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  // ── reloadPaymentAfterCancel$ ──────────────────────────────────────────────
+
+  it('reloadPaymentAfterCancel$ despacha loadPayment con el id del pago cancelado', async () => {
+    const payment = { id: 9, status: 'CANCELLED' } as any;
+    actions$ = of(cancelPaymentSuccess({ payment }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.reloadPaymentAfterCancel$);
+    expect(action).toEqual(loadPayment({ id: 9 }));
   });
 });

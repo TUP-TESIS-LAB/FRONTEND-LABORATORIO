@@ -99,3 +99,73 @@ describe('financiero reducer — caja', () => {
     expect(s.config).toBe(initialState.config);
   });
 });
+
+describe('financiero reducer — cobros', () => {
+  it('estado inicial tiene cobros con list vacía, selected null y loading false', () => {
+    expect(initialState.cobros.list).toEqual([]);
+    expect(initialState.cobros.selected).toBeNull();
+    expect(initialState.cobros.loading).toBe(false);
+    expect(initialState.cobros.error).toBeNull();
+  });
+
+  it('loadPayments marca loading', () => {
+    const s = financieroReducer(initialState, A.loadPayments({ branchId: 5 }));
+    expect(s.cobros.loading).toBe(true);
+    expect(s.cobros.error).toBeNull();
+  });
+
+  it('loadPaymentsSuccess guarda la lista y limpia loading', () => {
+    const s = financieroReducer(initialState, A.loadPaymentsSuccess({ items: [{ id: 1 } as any] }));
+    expect(s.cobros.list.length).toBe(1);
+    expect(s.cobros.loading).toBe(false);
+    expect(s.cobros.error).toBeNull();
+  });
+
+  it('loadPaymentsFailure guarda el error y limpia loading', () => {
+    const s = financieroReducer(
+      { ...initialState, cobros: { ...initialState.cobros, loading: true } },
+      A.loadPaymentsFailure({ error: 'Error de red' }),
+    );
+    expect(s.cobros.loading).toBe(false);
+    expect(s.cobros.error).toBe('Error de red');
+  });
+
+  it('loadPayment marca loading', () => {
+    const s = financieroReducer(initialState, A.loadPayment({ id: 9 }));
+    expect(s.cobros.loading).toBe(true);
+    expect(s.cobros.error).toBeNull();
+  });
+
+  it('loadPaymentSuccess guarda el pago seleccionado y limpia loading', () => {
+    const s = financieroReducer(initialState, A.loadPaymentSuccess({ payment: { id: 9, status: 'PROCESSED' } as any }));
+    expect(s.cobros.selected?.id).toBe(9);
+    expect(s.cobros.loading).toBe(false);
+  });
+
+  it('loadPaymentFailure guarda el error y limpia loading', () => {
+    const s = financieroReducer(initialState, A.loadPaymentFailure({ error: 'No encontrado' }));
+    expect(s.cobros.loading).toBe(false);
+    expect(s.cobros.error).toBe('No encontrado');
+  });
+
+  it('cancelPaymentSuccess actualiza el seleccionado a CANCELLED', () => {
+    const sel = financieroReducer(initialState, A.loadPaymentSuccess({ payment: { id: 9, status: 'PROCESSED' } as any }));
+    const s = financieroReducer(sel, A.cancelPaymentSuccess({ payment: { id: 9, status: 'CANCELLED' } as any }));
+    expect(s.cobros.selected?.status).toBe('CANCELLED');
+  });
+
+  it('cancelPaymentFailure guarda el error', () => {
+    const s = financieroReducer(initialState, A.cancelPaymentFailure({ error: 'No se pudo cancelar' }));
+    expect(s.cobros.error).toBe('No se pudo cancelar');
+  });
+
+  it('no muta el slice caja al operar sobre cobros', () => {
+    const s = financieroReducer(initialState, A.loadPaymentsSuccess({ items: [] }));
+    expect(s.caja).toBe(initialState.caja);
+  });
+
+  it('no muta el slice config al operar sobre cobros', () => {
+    const s = financieroReducer(initialState, A.loadPaymentsSuccess({ items: [] }));
+    expect(s.config).toBe(initialState.config);
+  });
+});

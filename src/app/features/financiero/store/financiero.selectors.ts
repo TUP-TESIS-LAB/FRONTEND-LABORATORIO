@@ -25,3 +25,11 @@ export const selectCajaSaldo = createSelector(
   selectCajaSession,
   session => session?.saldoActual ?? session?.openingAmount ?? 0,
 );
+
+// ── Cobros ────────────────────────────────────────────────────────────────────
+export const selectCobrosSlice = createSelector(selectFinancieroState, s => s.cobros);
+
+export const selectCobrosList = createSelector(selectCobrosSlice, c => c.list);
+export const selectCobrosLoading = createSelector(selectCobrosSlice, c => c.loading);
+export const selectCobrosError = createSelector(selectCobrosSlice, c => c.error);
+export const selectCobroSelected = createSelector(selectCobrosSlice, c => c.selected);
