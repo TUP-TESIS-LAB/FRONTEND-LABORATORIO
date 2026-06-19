@@ -92,12 +92,10 @@ describe('NbuParticularTabComponent', () => {
     expect(text).toContain('Origen');
   });
 
-  it('muestra la card de valor U.B. con el valor del store', () => {
+  it('inicializa el valor editable de U.B. desde el store en ngOnInit', () => {
     const { fixture } = setup(350);
     fixture.detectChanges();
-    const el = fixture.nativeElement as HTMLElement;
-    // La card debe mostrar el valor U.B. inicial (350)
-    expect(el.textContent).toContain('350');
+    expect((fixture.componentInstance as unknown as { valorUbEdit: number }).valorUbEdit).toBe(350);
   });
 
   it('muestra badge Manual en filas con override', () => {

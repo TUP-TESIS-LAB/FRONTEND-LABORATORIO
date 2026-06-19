@@ -23,29 +23,28 @@ import { matchesFilter } from './nbu-filter';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CurrencyArPipe, FormsModule, DataTableComponent, UiCellDirective],
   template: `
-    <!-- Card: Valor U.B. particular -->
-    <div class="mb-4 p-4 bg-[var(--ds-surface,#fff)] border border-[var(--ds-border,#e4e4e7)] rounded-lg shadow-sm">
-      <div class="flex flex-wrap items-end gap-3">
-        <div class="flex-1 min-w-[200px]">
-          <label class="block text-xs font-medium text-[var(--ds-text-muted,#71717a)] mb-1">
-            Valor U.B. particular ($) —
-            <span class="font-semibold text-[var(--ds-text,#18181b)]" data-testid="valor-ub-actual">{{ valorUb() }}</span>
-          </label>
-          <input
-            type="number" min="0" step="0.01" data-testid="valor-ub-input"
-            class="w-full border border-[var(--ds-border,#e4e4e7)] rounded-lg px-4 py-2.5 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary,#4f46e5)]"
-            [(ngModel)]="valorUbEdit" />
-        </div>
-        <button
-          type="button" data-testid="guardar-valor-btn"
-          class="px-5 py-2.5 bg-[var(--brand-primary,#4f46e5)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-          (click)="guardarValorDesdeInput()">
-          Guardar
-        </button>
+    <!-- Card: Valor U.B. particular (inline) -->
+    <div class="mb-4 flex flex-wrap items-center gap-4 p-4 bg-white border border-[var(--ds-border,#e4e4e7)] rounded-lg shadow-sm">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-dollar text-[var(--brand-primary,#4f46e5)]"></i>
+        <span class="text-sm font-semibold text-[var(--ds-text,#18181b)]">Valor U.B. particular</span>
       </div>
-      <p class="mt-2 text-xs text-[var(--ds-text-muted,#71717a)]">
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ds-text-muted,#71717a)] font-semibold pointer-events-none">$</span>
+        <input
+          type="number" min="0" step="0.01" data-testid="valor-ub-input"
+          class="w-44 border border-[var(--ds-border,#e4e4e7)] rounded-lg pl-7 pr-3 py-2.5 text-lg font-bold text-[var(--brand-primary,#4f46e5)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary,#4f46e5)]"
+          [(ngModel)]="valorUbEdit" />
+      </div>
+      <button
+        type="button" data-testid="guardar-valor-btn"
+        class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[var(--brand-primary,#4f46e5)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+        (click)="guardarValorDesdeInput()">
+        <i class="pi pi-check"></i> Guardar
+      </button>
+      <p class="text-xs text-[var(--ds-text-muted,#71717a)] ml-auto max-w-[380px] leading-snug">
         <i class="pi pi-info-circle mr-1"></i>
-        Este valor se configura en el laboratorio, no en Obras Sociales.
+        Precio = <b>cantidad U.B.</b> (de la versión NBU elegida arriba) × <b>valor U.B.</b> Configurado a nivel laboratorio, sin pasar por Obras Sociales.
       </p>
     </div>
 

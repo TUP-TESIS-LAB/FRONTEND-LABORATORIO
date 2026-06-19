@@ -107,12 +107,12 @@ describe('NbuComponent', () => {
     expect(text).toContain('Nomenclador NBU');
   });
 
-  // Header: icono pi pi-book
-  it('muestra el ícono pi-book en el header', () => {
+  // Header: sin ícono junto al título (convención de la app — se removieron)
+  it('no muestra ícono pi-book junto al título', () => {
     const { fixture } = setup();
     fixture.detectChanges();
     const icon = (fixture.nativeElement as HTMLElement).querySelector('.pi-book');
-    expect(icon).not.toBeNull();
+    expect(icon).toBeNull();
   });
 
   // (c) tab-switching sigue funcionando

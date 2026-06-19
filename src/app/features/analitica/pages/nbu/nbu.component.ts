@@ -28,26 +28,18 @@ type NbuTab = 'catalogo' | 'particular';
     <div class="p-4">
       <!-- Header -->
       <div class="flex items-start justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <i class="pi pi-book text-2xl text-[var(--brand-primary,#4f46e5)]"></i>
-          <div>
-            <p class="text-xs font-medium text-[var(--ds-text-muted,#71717a)] uppercase tracking-wide">Clínico</p>
-            <h1 class="text-xl font-semibold text-[var(--ds-text,#18181b)]">Nomenclador NBU</h1>
-          </div>
+        <div>
+          <p class="text-xs font-medium text-[var(--ds-text-muted,#71717a)] uppercase tracking-wide">Clínico</p>
+          <h1 class="text-xl font-semibold text-[var(--ds-text,#18181b)]">Nomenclador NBU</h1>
         </div>
 
-        <!-- Selector de versión NBU -->
-        <div class="flex flex-col items-end gap-1">
-          <label
-            for="nbu-version-select"
-            class="text-xs font-medium text-[var(--ds-text-muted,#71717a)]"
-          >
-            Versión NBU
-          </label>
+        <!-- Selector de versión NBU (caja visible) -->
+        <div class="flex items-center gap-2 border border-[var(--ds-border,#e4e4e7)] rounded-lg bg-white px-3 py-2 shadow-sm">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-[var(--ds-text-muted,#71717a)]">Versión</span>
           <select
             id="nbu-version-select"
             data-testid="version-select"
-            class="border border-[var(--ds-border,#e4e4e7)] rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary,#4f46e5)]"
+            class="bg-transparent text-sm font-semibold text-[var(--brand-primary,#2563eb)] cursor-pointer pr-1 focus:outline-none"
             [value]="selectedVersionId()"
             (change)="onVersionChange($event)"
           >
