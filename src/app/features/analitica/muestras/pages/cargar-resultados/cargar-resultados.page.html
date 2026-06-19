@@ -1,0 +1,33 @@
+<section class="cargar-page">
+  <header class="cargar-head">
+    <button type="button" class="back-link" (click)="back()">
+      <i class="pi pi-arrow-left"></i> Volver a procesamiento
+    </button>
+    <h1>{{ grid()?.templateName ?? 'Cargar resultados' }}</h1>
+    @if (grid()) {
+      <p class="sub">
+        {{ grid()!.columns.length }} {{ grid()!.columns.length === 1 ? 'protocolo' : 'protocolos' }} ·
+        {{ grid()!.sections.length }} {{ grid()!.sections.length === 1 ? 'análisis' : 'análisis' }} de la planilla
+      </p>
+    }
+  </header>
+
+  @if (loading()) {
+    <p class="state">Cargando resultados…</p>
+  } @else if (templateId == null || protocolIds.length === 0) {
+    <div class="ui-empty-state">
+      <i class="pi pi-exclamation-circle"></i>
+      <h4>Faltan datos para cargar</h4>
+      <p>Volvé a Procesamiento, seleccioná las muestras y una planilla.</p>
+    </div>
+  } @else if (grid()) {
+    <app-planilla-grid [grid]="grid()!" (save)="onSave($event)" />
+  }
+
+  @if (resumenOpen()) {
+    <app-resumen-resultados-modal
+      [visible]="resumenOpen()" [items]="resumenItems()"
+      (markCompleted)="onMarkCompleted($event)" (closed)="resumenClosed()" />
+  }
+  <p-toast position="bottom-right" />
+</section>

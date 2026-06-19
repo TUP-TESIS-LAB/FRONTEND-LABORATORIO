@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import type { AnalyticalResult, Determination, DeterminationCatalogEntry } from '../models/resultado.model';
 
@@ -19,6 +19,11 @@ export class ResultadosApiService {
   }
   getDeterminationCatalog(catalogId: number): Observable<DeterminationCatalogEntry> {
     return this.http.get<DeterminationCatalogEntry>(`${this.catalogBase}/${catalogId}`);
+  }
+  /** Determinaciones de catálogo de un análisis (filas del grid de planilla). */
+  getDeterminationCatalogByAnalysis(analysisCatalogId: number): Observable<DeterminationCatalogEntry[]> {
+    const params = new HttpParams().set('analysisId', analysisCatalogId);
+    return this.http.get<DeterminationCatalogEntry[]>(this.catalogBase, { params });
   }
   batchUpdate(resultId: number, items: BatchDeterminationItem[]): Observable<Determination[]> {
     return this.http.patch<Determination[]>(`${this.base}/${resultId}/determinations/batch`, { items });

@@ -1,0 +1,75 @@
+<p-dialog [visible]="visible()" (onHide)="close()" [modal]="true" [draggable]="false"
+          [style]="{ width: '720px' }" [breakpoints]="{ '768px': '100vw' }"
+          styleClass="ui-dialog-fullscreen-mobile cfg-dialog" [showHeader]="false">
+  <div class="modal-h">
+    <div>
+      <h2>{{ templateId() ? 'Modificar hoja de trabajo' : 'Nueva hoja de trabajo' }}</h2>
+      <p>Definí el nombre, elegí los análisis y ordená cómo aparecen en la planilla.</p>
+    </div>
+    <button type="button" class="modal-x" (click)="close()" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+  </div>
+
+  <div class="cfg">
+    <div class="cfg-row">
+      <div class="cfg-col cfg-stack">
+        <div>
+          <span class="cfg-lbl">NOMBRE DE LA HOJA</span>
+          <input class="cfg-input" [ngModel]="name()" (ngModelChange)="name.set($event)"
+                 placeholder="Ej.: Coagulación · Planilla B" />
+        </div>
+        <div>
+          <span class="cfg-lbl">ANÁLISIS DISPONIBLES</span>
+          <div class="cfg-search-wrap">
+            <div class="cfg-search">
+              <i class="pi pi-search"></i>
+              <input [ngModel]="query()" (ngModelChange)="onQuery($event)" placeholder="Buscar análisis…" />
+              @if (query().trim() !== '') {
+                <button type="button" class="cfg-search-x" aria-label="Limpiar búsqueda" (click)="onQuery('')"><i class="pi pi-times"></i></button>
+              }
+            </div>
+            @if (query().trim() !== '' && results().length) {
+              <div class="cat-drop">
+                @for (a of results(); track a.id) {
+                  <button type="button" class="cat-item" (click)="add(a)">
+                    <span class="cat-txt"><b>{{ a.name }}</b></span>
+                    <span class="cat-add"><i class="pi pi-plus"></i></span>
+                  </button>
+                }
+              </div>
+            } @else if (query().trim() !== '') {
+              <div class="cat-drop"><div class="cat-none">Sin resultados para “{{ query().trim() }}”.</div></div>
+            }
+          </div>
+          <p class="cfg-hint">Escribí para buscar entre los análisis del laboratorio y agregalos a la planilla.</p>
+        </div>
+      </div>
+
+      <div class="cfg-col">
+        <span class="cfg-lbl">ORDEN EN LA PLANILLA{{ ordered().length ? ' · ' + ordered().length : '' }}</span>
+        <div class="ord">
+          @for (a of ordered(); track a.analysisTypeId; let i = $index) {
+            <div class="ord-item">
+              <span class="ord-handle"><i class="pi pi-bars"></i></span>
+              <span class="ord-n">{{ pad(i + 1) }}</span>
+              <span class="ord-txt"><b>{{ a.name }}</b></span>
+              <span class="ord-btns">
+                <button type="button" class="ord-btn" title="Subir" aria-label="Subir" [disabled]="i === 0" (click)="moveItem(i, -1)"><i class="pi pi-chevron-up"></i></button>
+                <button type="button" class="ord-btn" title="Bajar" aria-label="Bajar" [disabled]="i === ordered().length - 1" (click)="moveItem(i, 1)"><i class="pi pi-chevron-down"></i></button>
+                <button type="button" class="ord-btn" title="Quitar" aria-label="Quitar" (click)="removeAt(a.analysisTypeId)"><i class="pi pi-times"></i></button>
+              </span>
+            </div>
+          }
+          @if (ordered().length === 0) {
+            <div class="ord-empty">Buscá y elegí análisis a la izquierda: acá se define en qué orden aparecen en la planilla.</div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="cfg-foot">
+      <span class="cfg-note"><i class="pi pi-bars"></i> Usá las flechas para definir el orden en la planilla.</span>
+      <button type="button" class="grp-btn" (click)="close()">Cancelar</button>
+      <button type="button" class="grp-send" [disabled]="!valid()" (click)="save()"><i class="pi pi-check"></i> Guardar hoja</button>
+    </div>
+  </div>
+</p-dialog>

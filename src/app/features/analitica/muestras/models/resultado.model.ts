@@ -14,6 +14,88 @@ export interface GridRow { catalogId: number; name: string; unit: string | null;
 export interface GridSection { analysisCatalogId: number; analysisName: string; resultIds: number[]; rows: GridRow[]; }
 export interface ResultGrid { protocolIds: number[]; sections: GridSection[]; resultLabels: Partial<Record<number, string>>; }
 
+// ---- Grid armado desde la PLANILLA (GAP-P1/P5) ----
+// Las columnas son los PROTOCOLOS seleccionados (no los results). Cada análisis de
+// la planilla es un bloque; las filas son sus determinaciones de catálogo. Para cada
+// cruce (análisis × protocolo) se busca el AnalyticalResult de ese protocolo para ese
+// análisis: si existe → celda editable; si no (la muestra no pidió el análisis) → la
+// columna se muestra igual pero la celda NO persiste (GAP-P5).
+
+/** Columna del grid de planilla: un protocolo (con su paciente). */
+export interface PlanillaColumn { protocolId: number; label: string; }
+
+/** Celda de planilla: si `determinationId`/`resultId` son null, la celda no persiste. */
+export interface PlanillaCell { resultId: number | null; determinationId: number | null; value: string; }
+
+export interface PlanillaRow { catalogId: number; name: string; unit: string | null; cells: Record<number, PlanillaCell>; }
+
+export interface PlanillaSection { analysisCatalogId: number; analysisName: string; rows: PlanillaRow[]; }
+
+export interface PlanillaGrid {
+  templateId: number;
+  templateName: string;
+  columns: PlanillaColumn[];               // un protocolo por columna
+  sections: PlanillaSection[];             // un análisis de la planilla por bloque
+}
+
+export interface TemplateAnalysisRow { analysisTypeId: number; displayOrder: number; analysisName: string | null; }
+
+export interface BuildPlanillaGridInput {
+  templateId: number;
+  templateName: string;
+  templateAnalyses: TemplateAnalysisRow[];                       // análisis de la planilla (orden)
+  determinationCatalogByAnalysis: Record<number, DeterminationCatalogEntry[]>; // filas por análisis
+  protocolIds: number[];                                         // columnas
+  patientNameByProtocol: Record<number, string>;
+  // por (protocolId, analysisCatalogId) → el AnalyticalResult de ese protocolo para ese análisis
+  resultByProtocolAnalysis: Record<string, AnalyticalResult | undefined>;
+  determinationsByResult: Record<number, Determination[]>;
+}
+
+/** key estable protocolo+análisis. */
+export const pAKey = (protocolId: number, analysisCatalogId: number): string => `${protocolId}:${analysisCatalogId}`;
+
+export function buildPlanillaGrid(input: BuildPlanillaGridInput): PlanillaGrid {
+  const {
+    templateId, templateName, templateAnalyses, determinationCatalogByAnalysis,
+    protocolIds, patientNameByProtocol, resultByProtocolAnalysis, determinationsByResult,
+  } = input;
+
+  const columns: PlanillaColumn[] = protocolIds.map(pid => ({
+    protocolId: pid,
+    label: patientNameByProtocol[pid] ?? `Protocolo #${pid}`,
+  }));
+
+  const sections: PlanillaSection[] = [...templateAnalyses]
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map(ta => {
+      const analysisCatalogId = ta.analysisTypeId;
+      const catalogRows = determinationCatalogByAnalysis[analysisCatalogId] ?? [];
+
+      const rows: PlanillaRow[] = catalogRows.map(cat => {
+        const cells: Record<number, PlanillaCell> = {};
+        for (const pid of protocolIds) {
+          const result = resultByProtocolAnalysis[pAKey(pid, analysisCatalogId)];
+          if (!result) {
+            // GAP-P5: la muestra no pidió este análisis → celda visible pero no persiste.
+            cells[pid] = { resultId: null, determinationId: null, value: '' };
+            continue;
+          }
+          const det = (determinationsByResult[result.id] ?? [])
+            .find(d => d.determinationCatalogId === cat.id);
+          cells[pid] = det
+            ? { resultId: result.id, determinationId: det.id, value: det.resultValue ?? '' }
+            : { resultId: result.id, determinationId: null, value: '' };
+        }
+        return { catalogId: cat.id, name: cat.name, unit: cat.unit, cells };
+      });
+
+      return { analysisCatalogId, analysisName: ta.analysisName ?? `#${analysisCatalogId}`, rows };
+    });
+
+  return { templateId, templateName, columns, sections };
+}
+
 export interface BuildGridInput {
   protocolIds: number[];
   results: AnalyticalResult[];

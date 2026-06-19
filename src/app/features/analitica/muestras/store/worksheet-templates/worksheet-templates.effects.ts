@@ -7,6 +7,7 @@ import { WorksheetTemplatesApiService } from '../../services/worksheet-templates
 import {
   loadTemplates, loadTemplatesSuccess, loadTemplatesFailure,
   saveTemplate, saveTemplateSuccess, saveTemplateFailure,
+  deleteTemplate, deleteTemplateSuccess, deleteTemplateFailure,
 } from './worksheet-templates.actions';
 
 @Injectable()
@@ -40,9 +41,21 @@ export class WorksheetTemplatesEffects {
     ),
   );
 
+  deleteTemplate$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(deleteTemplate),
+      concatMap(({ id }) =>
+        this.api.deleteTemplate(id).pipe(
+          map(() => deleteTemplateSuccess()),
+          catchError((error: HttpErrorResponse) => of(deleteTemplateFailure({ error }))),
+        ),
+      ),
+    ),
+  );
+
   reloadAfterSave$ = createEffect(() =>
     this.actions$.pipe(
-      ofType(saveTemplateSuccess),
+      ofType(saveTemplateSuccess, deleteTemplateSuccess),
       map(() => loadTemplates()),
     ),
   );

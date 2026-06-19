@@ -1,0 +1,66 @@
+<p-dialog [visible]="visible()" (onHide)="onClose()" [modal]="true" [draggable]="false"
+          [style]="{ width: '640px' }" [breakpoints]="{ '768px': '100vw' }"
+          styleClass="ui-dialog-fullscreen-mobile pl-dialog" [showHeader]="false">
+  <div class="modal-h">
+    <div>
+      <h2>Planillas</h2>
+      <p>Gestioná las hojas de trabajo: cargá resultados, editá o eliminá cada planilla.</p>
+    </div>
+    <button type="button" class="modal-x" (click)="onClose()" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+  </div>
+
+  <div class="modal-body" (click)="closeMenus()">
+    <div class="pl-head"><span>NOMBRE</span><span>ACCIONES</span></div>
+
+    @if (pending()) {
+      <div class="pl-empty">Cargando planillas…</div>
+    } @else if (!templates().length) {
+      <div class="pl-empty">Todavía no hay planillas configuradas. Creá una nueva.</div>
+    } @else {
+      @for (ws of templates(); track ws.id) {
+        <div class="pl-row">
+          <div class="pl-name">
+            <i class="pi pi-table"></i>
+            <div>
+              <b>{{ ws.name }}</b>
+              <span>{{ analysisCount(ws) }} {{ analysisCount(ws) === 1 ? 'análisis' : 'análisis' }}</span>
+            </div>
+          </div>
+          <div class="pl-actions">
+            <button type="button" class="pl-load" [disabled]="selectionCount() === 0"
+                    [title]="selectionCount() === 0 ? 'Seleccioná muestras en la lista' : 'Cargar resultados con esta planilla'"
+                    (click)="onCargar(ws.id); $event.stopPropagation()">
+              <i class="pi pi-table"></i> Cargar resultados
+            </button>
+            <div class="pl-kebab-wrap">
+              <button type="button" class="pl-kebab" [class.is-open]="menuOpen() === ws.id"
+                      title="Más acciones" aria-label="Más acciones" (click)="toggleMenu(ws.id, $event)">
+                <i class="pi pi-ellipsis-v"></i>
+              </button>
+              @if (menuOpen() === ws.id) {
+                <div class="pl-menu" (click)="$event.stopPropagation()">
+                  <button type="button" class="pl-mi" (click)="onVerDetalle(ws.id)"><i class="pi pi-eye"></i> Ver detalle</button>
+                  <button type="button" class="pl-mi" (click)="onEdit(ws.id)"><i class="pi pi-pencil"></i> Editar</button>
+                  <button type="button" class="pl-mi pl-mi-del" (click)="askDelete(ws.id, $event)"><i class="pi pi-trash"></i> Eliminar</button>
+                  @if (confirmDeleteId() === ws.id) {
+                    <div class="pl-confirm">
+                      <p>¿Eliminar “{{ ws.name }}”? Esta acción no se puede deshacer.</p>
+                      <div class="pl-confirm-btns">
+                        <button type="button" class="grp-btn" (click)="cancelDelete($event)">Cancelar</button>
+                        <button type="button" class="pl-del-yes" (click)="confirmDelete(ws.id, $event)">Eliminar</button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="modal-foot">
+    <button type="button" class="grp-send" (click)="onNewSheet()"><i class="pi pi-plus"></i> Nueva hoja</button>
+  </div>
+</p-dialog>

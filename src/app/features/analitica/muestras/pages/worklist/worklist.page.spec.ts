@@ -388,18 +388,4 @@ describe('WorklistPage (smoke)', () => {
     cmp.cargarResultados();
     expect(navigate).toHaveBeenCalledWith(['/analitica/procesamiento/cargar'], { queryParams: { protocols: '88,99' } });
   });
-
-  it('Procesamiento: validarResultados navega a la ruta de validación del protocolo', () => {
-    const item: LabelWorklistItem = {
-      labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'Hemograma',
-      patientName: 'Marta', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
-    };
-    const fx = setup('procesamiento', [], [], [item]);
-    const cmp = fx.componentInstance;
-    const router = TestBed.inject(Router);
-    const nav = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-    cmp.toggleRow(cmp.rows()[0].id);
-    cmp.validarResultados();
-    expect(nav).toHaveBeenCalledWith(['/analitica/validacion', 88]);
-  });
 });

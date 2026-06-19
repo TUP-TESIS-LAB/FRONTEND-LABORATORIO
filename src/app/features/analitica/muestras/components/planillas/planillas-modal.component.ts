@@ -1,64 +1,66 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { selectTemplates, selectTemplatesPending } from '../../store/worksheet-templates/worksheet-templates.selectors';
+import { deleteTemplate } from '../../store/worksheet-templates/worksheet-templates.actions';
 import type { WorksheetTemplate } from '../../models/worksheet-template.model';
 
+/**
+ * GAP-P4 + GAP-P7: modal de gestión de planillas (paso 1), fiel al mockup.
+ * Header con subtítulo, encabezado NOMBRE/ACCIONES, una fila por planilla con
+ * "Cargar resultados" + menú kebab (Ver detalle / Editar / Eliminar) con confirmación
+ * inline. Mantiene p-dialog (regla del DS) y tokens del proyecto.
+ */
 @Component({
   selector: 'app-planillas-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DialogModule, ButtonModule],
-  template: `
-    <p-dialog [visible]="visible()" (onHide)="onClose()" [modal]="true" [draggable]="false" [style]="{ width: '640px' }"
-              header="Planillas">
-      <p class="text-sm opacity-70 mb-3">Gestioná las hojas de trabajo: creá o editá cada planilla.</p>
-      @if (pending()) {
-        <p class="text-sm opacity-60">Cargando planillas…</p>
-      } @else if (!templates().length) {
-        <p class="text-sm opacity-60">Todavía no hay planillas configuradas. Creá una nueva.</p>
-      } @else {
-        <div class="divide-y">
-          @for (ws of templates(); track ws.id) {
-            <div class="flex items-center justify-between py-2">
-              <div class="flex items-center gap-2">
-                <i class="pi pi-table"></i>
-                <div>
-                  <b class="block text-sm">{{ ws.name }}</b>
-                  <span class="text-xs opacity-60">{{ analysisCount(ws) }} análisis</span>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <p-button label="Cargar resultados" size="small" severity="secondary" [outlined]="true"
-                          [disabled]="true" title="Próximamente" />
-                <button type="button" class="pi pi-pencil p-2" aria-label="Editar" title="Editar" (click)="onEdit(ws.id)"></button>
-                <button type="button" class="pi pi-eye p-2 opacity-40" aria-label="Ver detalle (próximamente)" title="Próximamente" disabled></button>
-                <button type="button" class="pi pi-trash p-2 opacity-40" aria-label="Eliminar (próximamente)" title="Próximamente" disabled></button>
-              </div>
-            </div>
-          }
-        </div>
-      }
-      <ng-template pTemplate="footer">
-        <p-button label="Nueva hoja" icon="pi pi-plus" (onClick)="onNewSheet()" />
-      </ng-template>
-    </p-dialog>
-  `,
+  templateUrl: './planillas-modal.component.html',
+  styleUrl: './planillas-modal.component.scss',
 })
 export class PlanillasModalComponent {
   private readonly store = inject(Store);
 
   readonly visible = input<boolean>(false);
+  /** Muestras seleccionadas en la lista (habilita "Cargar resultados"). */
+  readonly selectionCount = input<number>(0);
+
   readonly closed = output<void>();
   readonly newSheet = output<void>();
   readonly editSheet = output<number>();
+  readonly cargarConPlanilla = output<number>();
+  readonly verDetalle = output<number>();
 
   readonly templates = this.store.selectSignal(selectTemplates);
   readonly pending = this.store.selectSignal(selectTemplatesPending);
 
+  /** Id de la planilla con el menú kebab abierto (null = ninguno). */
+  readonly menuOpen = signal<number | null>(null);
+  /** Id de la planilla en confirmación de borrado. */
+  readonly confirmDeleteId = signal<number | null>(null);
+
   analysisCount(ws: WorksheetTemplate): number { return ws.analyses.length; }
-  onClose(): void { this.closed.emit(); }
-  onNewSheet(): void { this.newSheet.emit(); }
-  onEdit(id: number): void { this.editSheet.emit(id); }
+
+  toggleMenu(id: number, ev: Event): void {
+    ev.stopPropagation();
+    this.menuOpen.update(cur => (cur === id ? null : id));
+    this.confirmDeleteId.set(null);
+  }
+  closeMenus(): void { this.menuOpen.set(null); this.confirmDeleteId.set(null); }
+
+  onClose(): void { this.closeMenus(); this.closed.emit(); }
+  onNewSheet(): void { this.closeMenus(); this.newSheet.emit(); }
+  onEdit(id: number): void { this.closeMenus(); this.editSheet.emit(id); }
+  onVerDetalle(id: number): void { this.closeMenus(); this.verDetalle.emit(id); }
+  onCargar(id: number): void { if (this.selectionCount() > 0) { this.closeMenus(); this.cargarConPlanilla.emit(id); } }
+
+  askDelete(id: number, ev: Event): void { ev.stopPropagation(); this.confirmDeleteId.set(id); }
+  cancelDelete(ev: Event): void { ev.stopPropagation(); this.confirmDeleteId.set(null); }
+  confirmDelete(id: number, ev: Event): void {
+    ev.stopPropagation();
+    this.store.dispatch(deleteTemplate({ id }));
+    this.closeMenus();
+  }
 }

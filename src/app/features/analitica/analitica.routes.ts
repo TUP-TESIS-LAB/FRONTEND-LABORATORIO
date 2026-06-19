@@ -50,8 +50,7 @@ export const ANALITICA_ROUTES: Routes = [
       {
         path: 'procesamiento',
         canMatch: [sectionGuard('ANALITICA')],
-        loadComponent: () => import('./muestras/pages/worklist/worklist.page').then(m => m.WorklistPage),
-        data: { screenKey: 'procesamiento' },
+        loadComponent: () => import('./muestras/pages/procesamiento/procesamiento.page').then(m => m.ProcesamientoPage),
         title: 'Procesamiento',
       },
       {

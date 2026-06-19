@@ -37,10 +37,6 @@
                 title="Seleccioná uno o más tubos para cargar sus resultados" (click)="cargarResultados()">
           Cargar resultados
         </button>
-        <button type="button" class="ws-btn ws-btn--ghost" [disabled]="selectedTubeProtocolId() == null"
-                title="Seleccioná un tubo para validar sus resultados" (click)="validarResultados()">
-          Validación
-        </button>
       </div>
     }
   </div>
@@ -69,8 +65,9 @@
   }
 
   @if (planillasOpen()) {
-    <app-planillas-modal [visible]="planillasOpen()"
-      (closed)="closePlanillas()" (newSheet)="onNewSheet()" (editSheet)="onEditSheet($event)" />
+    <app-planillas-modal [visible]="planillasOpen()" [selectionCount]="selectedProtocolIds().length"
+      (closed)="closePlanillas()" (newSheet)="onNewSheet()" (editSheet)="onEditSheet($event)"
+      (verDetalle)="onEditSheet($event)" (cargarConPlanilla)="onCargarConPlanilla($event)" />
   }
   @if (configOpen()) {
     <app-worksheet-config-modal [visible]="configOpen()" [templateId]="editingTemplateId()"

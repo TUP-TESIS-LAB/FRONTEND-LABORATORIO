@@ -3,6 +3,7 @@ import { initialWorksheetTemplatesState, WorksheetTemplatesState } from './works
 import {
   loadTemplates, loadTemplatesSuccess, loadTemplatesFailure,
   saveTemplate, saveTemplateSuccess, saveTemplateFailure,
+  deleteTemplate, deleteTemplateSuccess, deleteTemplateFailure,
 } from './worksheet-templates.actions';
 
 export const worksheetTemplatesReducer = createReducer(
@@ -15,4 +16,7 @@ export const worksheetTemplatesReducer = createReducer(
   on(saveTemplate, (state): WorksheetTemplatesState => ({ ...state, saving: true, error: null })),
   on(saveTemplateSuccess, (state): WorksheetTemplatesState => ({ ...state, saving: false })),
   on(saveTemplateFailure, (state, { error }): WorksheetTemplatesState => ({ ...state, saving: false, error })),
+  on(deleteTemplate, (state): WorksheetTemplatesState => ({ ...state, saving: true, error: null })),
+  on(deleteTemplateSuccess, (state): WorksheetTemplatesState => ({ ...state, saving: false })),
+  on(deleteTemplateFailure, (state, { error }): WorksheetTemplatesState => ({ ...state, saving: false, error })),
 );
