@@ -443,7 +443,7 @@ export class CajaPage implements OnInit {
   }
 
   protected cobrarAtencion(): void {
-    this.router.navigate(['/financiero/cobrar']);
+    this.router.navigate(['/turnos/recepcion']);
   }
 
   protected retry(): void {

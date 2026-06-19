@@ -209,6 +209,6 @@ export class CobrosPage implements OnInit {
   }
 
   protected irACobrar(): void {
-    this.router.navigate(['/financiero/cobrar']);
+    this.router.navigate(['/turnos/recepcion']);
   }
 }
