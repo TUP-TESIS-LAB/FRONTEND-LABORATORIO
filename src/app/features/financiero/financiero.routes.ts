@@ -28,6 +28,13 @@ export const FINANCIERO_ROUTES: Routes = [
           ),
       },
       {
+        path: 'cobrar/:attentionId',
+        loadComponent: () =>
+          import('./components/cobro-atencion/cobro-atencion.component').then(
+            (m) => m.CobroAtencionComponent,
+          ),
+      },
+      {
         path: 'config-fiscal',
         canActivate: [saasAdminGuard],
         loadComponent: () =>

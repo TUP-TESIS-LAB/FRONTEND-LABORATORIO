@@ -21,6 +21,7 @@ import {
   cancelAtencion,
   createPreFilledAtencion,
   downloadProtocolLabels,
+  endCollection,
   loadAtencion,
   loadAttentionPatient,
   resetAtencionWizard,
@@ -37,6 +38,8 @@ import { DatosGeneralesStepComponent } from './steps/datos-generales-step/datos-
 import { AnalisisStepComponent } from './steps/analisis-step/analisis-step.component';
 import { ResumenStepComponent } from './steps/resumen-step/resumen-step.component';
 import { CancelAttentionModalComponent } from '../../../components/cancel-attention-modal/cancel-attention-modal.component';
+import { CobroStepComponent } from './steps/cobro-step/cobro-step.component';
+import { CobroAtencionComponent } from '@features/financiero/components/cobro-atencion/cobro-atencion.component';
 
 type StepKey = 'datos' | 'analisis' | 'cobro' | 'facturacion' | 'confirmar';
 interface WizardStepDef {
@@ -61,7 +64,7 @@ const ALL_STEPS: WizardStepDef[] = [
   imports: [
     ButtonModule, TagModule, EmptyStateComponent, WizardShellComponent,
     DatosGeneralesStepComponent, AnalisisStepComponent, ResumenStepComponent,
-    CancelAttentionModalComponent,
+    CancelAttentionModalComponent, CobroStepComponent, CobroAtencionComponent,
   ],
   // T8: el wizard ocupa el alto del viewport (menos el topbar) y es una columna flex,
   // así el contenido del paso flexiona y el footer (Volver/Confirmar) queda abajo, sin
@@ -168,6 +171,12 @@ const ALL_STEPS: WizardStepDef[] = [
                                  (itemsCount)="analysisCount.set($event)"
                                  (stepAdvanced)="onAnalysisAdvanced()" />
             }
+            @case ('cobro') {
+              <lab-cobro-step [atencionId]="detail()!.id" />
+            }
+            @case ('facturacion') {
+              <fin-cobro-atencion [attentionId]="detail()!.id" [embedded]="true" />
+            }
             @case ('confirmar') {
               <lab-resumen-step [atencion]="detail()!" [readOnly]="readOnly()"
                                 (finished)="onFinished()" />
@@ -185,6 +194,9 @@ const ALL_STEPS: WizardStepDef[] = [
                 @case ('confirmar') {
                   <p-button label="Finalizar atención" [loading]="mutating()" [disabled]="mutating()"
                             (onClick)="advanceCurrent()" />
+                }
+                @case ('facturacion') {
+                  <!-- El botón "Confirmar cobro" lo provee fin-cobro-atencion. Sin botón en el footer. -->
                 }
                 @default {
                   <p-button label="Continuar" [loading]="mutating()" [disabled]="continueDisabled()"
@@ -264,6 +276,7 @@ export class AtencionWizardComponent {
     switch (this.uiStep()?.key) {
       case 'datos':     this.datosRef()?.onConfirm(); break;
       case 'analisis':  this.analisisRef()?.onContinue(); break;
+      case 'cobro':     { const d = this.detail(); if (d) this.store.dispatch(endCollection({ id: d.id })); break; }
       case 'confirmar': this.resumenRef()?.openFinalize(); break;
     }
   }

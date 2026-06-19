@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, computed, effect, inject, Input, signal,
+  ChangeDetectionStrategy, Component, computed, effect, inject, Input, numberAttribute, signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -144,7 +144,8 @@ export class CobroAtencionComponent {
   // NOTE: Degraded from input.required<number>() / input<boolean>(false) to classic @Input()
   // decorators to work around the known vitest NG0950 bug: input.required() fires effects in
   // the constructor before setInput() assigns the value. Template is still inline per repo convention.
-  @Input() attentionId!: number;
+  // numberAttribute transform coerces the string route param (:attentionId) to a number.
+  @Input({ transform: numberAttribute }) attentionId!: number;
   @Input() embedded: boolean = false;
 
   protected readonly METHOD_META = METHOD_META;
