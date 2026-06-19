@@ -58,8 +58,8 @@
               <span class="an-sub">{{ r.signedAnalysisCount }} de {{ r.analysisCount }} firmados</span>
             </div>
             <div class="cell-toma">
-              <span class="toma-d">{{ r.date | date: 'dd/MM/yyyy' }}</span>
-              <span class="toma-h">{{ r.date | date: 'HH:mm' }} hs</span>
+              <span class="toma-d">{{ r.date | dateEs }}</span>
+              <span class="toma-h">{{ r.date | dateEs: 'time' }} hs</span>
             </div>
             <div class="cell-edo">
               <span [class]="'badge-st ' + badgeFirmaListado(r.currentStatus)[0]"><span class="dot"></span>{{ badgeFirmaListado(r.currentStatus)[1] }}</span>
