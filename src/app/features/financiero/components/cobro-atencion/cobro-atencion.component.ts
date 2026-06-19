@@ -194,6 +194,9 @@ export class CobroAtencionComponent {
   }
 
   ngOnInit(): void {
+    // Limpia cualquier resultado/error de un cobro anterior antes de cargar datos del nuevo.
+    // Ownership del reset: ngOnInit (montaje), no los handlers de éxito.
+    this.store.dispatch(resetCobro());
     // Asegura detail + pricing para el attentionId dado (ruta directa o wizard).
     // Moved out of constructor effect() since attentionId is now @Input() (not a signal).
     // loadPricing se despacha siempre: el attentionId montado es autoritativo.
@@ -253,14 +256,15 @@ export class CobroAtencionComponent {
   /** Tras el éxito: avanzar la atención (endBilling) y navegar/cerrar según el contexto. */
   protected continuarTrasExito(): void {
     this.store.dispatch(endBilling({ id: this.attentionId }));
-    this.store.dispatch(resetCobro());
     if (!this.embedded) this.router.navigate(['/financiero/caja']);
     // embedded: el wizard auto-avanza a 'confirmar' por el cambio de estado.
+    // No se despacha resetCobro() aquí: la pantalla de éxito permanece visible
+    // hasta que el componente se desmonte (navegación o cambio de step del wizard).
   }
   protected cobrarOtra(): void {
     this.store.dispatch(endBilling({ id: this.attentionId }));
-    this.store.dispatch(resetCobro());
     this.router.navigate(['/turnos/recepcion']);
+    // No se despacha resetCobro() aquí: el slice se limpiará en ngOnInit del próximo montaje.
   }
   protected irACaja(): void { this.router.navigate(['/financiero/caja']); }
   protected imprimir(): void { window.print(); }
