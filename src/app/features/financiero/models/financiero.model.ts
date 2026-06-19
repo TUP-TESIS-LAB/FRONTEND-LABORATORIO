@@ -1,0 +1,57 @@
+export type PaymentMethod = 'CASH' | 'QR' | 'POSNET' | 'TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD';
+export type PaymentStatus = 'CREATED' | 'PROCESSED' | 'CANCELLED';
+export type TransactionType = 'INGRESS' | 'EGRESS';
+export type CashSessionStatus = 'OPEN' | 'CLOSED';
+export type FiscalProvider = 'ARCA' | 'COLPPY' | 'NONE';
+export type ComprobanteTipo = 'FACTURA_X' | 'FACTURA_A' | 'FACTURA_B' | 'FACTURA_C';
+
+export interface CashSession {
+  id: number; tenantId: number; cashRegisterId: number; openedByUserId: number;
+  openedAt: string; closedAt: string | null; status: CashSessionStatus;
+  openingAmount: number; expectedAmount: number | null; declaredAmount: number | null;
+  difference: number | null; saldoActual: number | null;
+}
+export interface SessionActivityRow {
+  type: TransactionType; method: PaymentMethod; amount: number;
+  description: string | null; reference: string | null; occurredAt: string;
+  esEfectivo: boolean; paymentId: number | null;
+}
+export interface SessionActivity { rows: SessionActivityRow[]; otrosMediosTotal: number; cobrosCount: number; }
+export interface Collection { id: number; method: PaymentMethod; amount: number; reference: string | null; }
+export interface PaymentDetail { id: number; analysisId: number; coverageId: number | null; covered: boolean; chargedAmount: number; }
+export interface FiscalInvoiceReference {
+  id: number; paymentId: number; provider: FiscalProvider; comprobanteTipo: ComprobanteTipo;
+  internalReference: string | null; externalInvoiceId: string | null; electronic: boolean; isVoid: boolean; emittedAt: string;
+}
+export interface Payment {
+  id: number; tenantId: number; attentionId: number; branchId: number;
+  totalAmount: number; copaymentAmount: number; status: PaymentStatus;
+  cashTransactionId: number | null; cancelledAt: string | null; cancelReason: string | null;
+  collections: Collection[]; details: PaymentDetail[];
+}
+export interface PaymentListItem {
+  id: number; attentionId: number; branchId: number; totalAmount: number; copaymentAmount: number;
+  status: PaymentStatus; createdAt: string; collections: Collection[];
+}
+export interface TenantFiscalConfig { id: number; targetTenantId: number; provider: FiscalProvider; invoicePointOfSale: string | null; active: boolean; }
+
+export interface MethodMeta { label: string; icon: string; color: string; esEfectivo: boolean; refLabel: string; }
+export const METHOD_META: Record<PaymentMethod, MethodMeta> = {
+  CASH:        { label: 'Efectivo',           icon: 'pi-money-bill',             color: 'green',  esEfectivo: true,  refLabel: 'N° de recibo' },
+  QR:          { label: 'QR',                 icon: 'pi-qrcode',                 color: 'purple', esEfectivo: false, refLabel: 'ID de operación' },
+  POSNET:      { label: 'Posnet',             icon: 'pi-credit-card',            color: 'blue',   esEfectivo: false, refLabel: 'N° de lote / cupón' },
+  TRANSFER:    { label: 'Transferencia',      icon: 'pi-arrow-right-arrow-left', color: 'teal',   esEfectivo: false, refLabel: 'CBU / comprobante' },
+  CREDIT_CARD: { label: 'Tarjeta de crédito', icon: 'pi-credit-card',            color: 'amber',  esEfectivo: false, refLabel: 'N° de cupón' },
+  DEBIT_CARD:  { label: 'Tarjeta de débito',  icon: 'pi-credit-card',            color: 'slate',  esEfectivo: false, refLabel: 'N° de cupón' },
+};
+export const COMPROBANTE_META: Record<ComprobanteTipo, { label: string; sub: string }> = {
+  FACTURA_X: { label: 'Factura X', sub: 'Recibo interno · no fiscal' },
+  FACTURA_A: { label: 'Factura A', sub: 'Responsable inscripto' },
+  FACTURA_B: { label: 'Factura B', sub: 'Consumidor final' },
+  FACTURA_C: { label: 'Factura C', sub: 'Monotributo' },
+};
+export const PROVIDER_META: Record<FiscalProvider, { label: string; sub: string; icon: string }> = {
+  ARCA:   { label: 'ARCA',          sub: 'Facturación electrónica AFIP/ARCA', icon: 'pi-verified' },
+  COLPPY: { label: 'Colppy',        sub: 'Integración contable Colppy',       icon: 'pi-sync' },
+  NONE:   { label: 'Sin proveedor', sub: 'Solo Factura X (recibos internos)', icon: 'pi-ban' },
+};
