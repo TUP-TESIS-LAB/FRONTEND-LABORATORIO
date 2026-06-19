@@ -5,7 +5,6 @@ import { of } from 'rxjs';
 import { AnaliticaService } from '../services/analitica.service';
 import {
   loadProtocolos, loadProtocolosSuccess, loadProtocolosFailure,
-  loadNbus, loadNbusSuccess, loadNbusFailure,
 } from './analitica.actions';
 
 @Injectable()
@@ -20,18 +19,6 @@ export class AnaliticaEffects {
         this.analiticaService.getProtocolos().pipe(
           map((protocolos) => loadProtocolosSuccess({ protocolos })),
           catchError((error) => of(loadProtocolosFailure({ error })))
-        )
-      )
-    )
-  );
-
-  loadNbus$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(loadNbus),
-      switchMap(() =>
-        this.analiticaService.getNbus().pipe(
-          map((nbus) => loadNbusSuccess({ nbus })),
-          catchError((error) => of(loadNbusFailure({ error })))
         )
       )
     )

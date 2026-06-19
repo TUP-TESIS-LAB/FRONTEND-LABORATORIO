@@ -8,11 +8,6 @@ export const selectAllProtocolos = createSelector(
   (state) => state.protocolos
 );
 
-export const selectAllNbus = createSelector(
-  selectAnaliticaState,
-  (state) => state.nbus
-);
-
 export const selectAnaliticaPending = createSelector(
   selectAnaliticaState,
   (state) => state.pending

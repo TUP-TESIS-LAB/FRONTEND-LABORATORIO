@@ -5,10 +5,3 @@ export interface Protocolo {
   fecha: string;
   estado: 'pendiente' | 'en_proceso' | 'finalizado';
 }
-
-export interface Nbu {
-  id: string;
-  codigo: string;
-  descripcion: string;
-  precio: number;
-}

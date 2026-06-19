@@ -1,37 +1,18 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { Store } from '@ngrx/store';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
-import { loadNbus } from '../../store/analitica.actions';
-import { selectAllNbus, selectAnaliticaPending } from '../../store/analitica.selectors';
 
+/**
+ * Placeholder — Task 4 (KAN-118) implementa la pantalla real del nomenclador.
+ * Se mantiene la ruta /nbu activa pero sin lógica de store.
+ */
 @Component({
   selector: 'app-nbu',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [EmptyStateComponent],
   template: `
-    @if (pending()) {
-      <p>Cargando...</p>
-    } @else if (nbus().length === 0) {
-      <h2>NBU</h2>
-      <ui-empty-state heading="Sin NBU configurados" icon="pi-list" />
-    } @else {
-      <h2>NBU</h2>
-      <ul>
-        @for (item of nbus(); track item.id) {
-          <li>{{ item.codigo }} — {{ item.descripcion }}</li>
-        }
-      </ul>
-    }
+    <h2>NBU</h2>
+    <ui-empty-state heading="Nomenclador en construcción" icon="pi-list" />
   `,
 })
-export class NbuComponent implements OnInit {
-  private readonly store = inject(Store);
-
-  readonly nbus = this.store.selectSignal(selectAllNbus);
-  readonly pending = this.store.selectSignal(selectAnaliticaPending);
-
-  ngOnInit(): void {
-    this.store.dispatch(loadNbus());
-  }
-}
+export class NbuComponent {}
