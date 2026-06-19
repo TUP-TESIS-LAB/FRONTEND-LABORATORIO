@@ -1,67 +1,50 @@
 import { createAction, props } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
-import { CatalogRow, NbuVersion, ParticularPricing } from '../../models/nomenclador.model';
+import { CatalogRow, Determination, NbuVersion, ParticularPricing } from '../../models/nomenclador.model';
 
-// ── Versiones ────────────────────────────────────────────────────────────────
-export const cargarVersiones = createAction('[Nomenclador Page] Cargar versiones');
-export const cargarVersionesSuccess = createAction(
-  '[Nomenclador API] Cargar versiones success',
-  props<{ versiones: NbuVersion[] }>(),
+// ── Carga inicial (forkJoin de versiones + catálogo + pricing) ────────────────
+export const loadNomenclador = createAction('[Nomenclador] Load');
+export const loadNomencladorSuccess = createAction(
+  '[Nomenclador API] Load Success',
+  props<{ versions: NbuVersion[]; catalog: CatalogRow[]; pricing: ParticularPricing }>(),
 );
-export const cargarVersionesFailure = createAction(
-  '[Nomenclador API] Cargar versiones failure',
+export const loadNomencladorFailure = createAction(
+  '[Nomenclador API] Load Failure',
   props<{ error: HttpErrorResponse }>(),
 );
 
-export const seleccionarVersion = createAction(
-  '[Nomenclador Page] Seleccionar version',
+// ── Versión seleccionada ──────────────────────────────────────────────────────
+export const selectNbuVersion = createAction(
+  '[Nomenclador] Select Version',
   props<{ versionId: string }>(),
 );
 
-// ── Catálogo ─────────────────────────────────────────────────────────────────
-export const cargarCatalog = createAction('[Nomenclador Page] Cargar catalog');
-export const cargarCatalogSuccess = createAction(
-  '[Nomenclador API] Cargar catalog success',
-  props<{ catalog: CatalogRow[] }>(),
+// ── Determinaciones (lazy por análisisId) ────────────────────────────────────
+export const loadDeterminations = createAction(
+  '[Nomenclador] Load Determinations',
+  props<{ analysisId: number }>(),
 );
-export const cargarCatalogFailure = createAction(
-  '[Nomenclador API] Cargar catalog failure',
-  props<{ error: HttpErrorResponse }>(),
-);
-
-// ── Pricing particular ───────────────────────────────────────────────────────
-export const cargarPricing = createAction('[Nomenclador Page] Cargar pricing');
-export const cargarPricingSuccess = createAction(
-  '[Nomenclador API] Cargar pricing success',
-  props<{ pricing: ParticularPricing }>(),
-);
-export const cargarPricingFailure = createAction(
-  '[Nomenclador API] Cargar pricing failure',
-  props<{ error: HttpErrorResponse }>(),
+export const loadDeterminationsSuccess = createAction(
+  '[Nomenclador API] Load Determinations Success',
+  props<{ analysisId: number; determinations: Determination[] }>(),
 );
 
-export const guardarValorUb = createAction(
-  '[Nomenclador Page] Guardar valorUb',
+// ── Valor U.B. particular ────────────────────────────────────────────────────
+export const saveValorUb = createAction(
+  '[Nomenclador] Save Valor UB',
   props<{ valor: number }>(),
 );
-export const guardarValorUbSuccess = createAction(
-  '[Nomenclador API] Guardar valorUb success',
+export const saveValorUbSuccess = createAction(
+  '[Nomenclador API] Save Valor UB Success',
   props<{ valor: number }>(),
 );
-export const guardarValorUbFailure = createAction(
-  '[Nomenclador API] Guardar valorUb failure',
-  props<{ error: HttpErrorResponse }>(),
-);
 
+// ── Override manual de precio por análisis ───────────────────────────────────
 export const setOverride = createAction(
-  '[Nomenclador Page] Set override',
+  '[Nomenclador] Set Override',
   props<{ analysisId: number; precio: number | null }>(),
 );
 export const setOverrideSuccess = createAction(
-  '[Nomenclador API] Set override success',
+  '[Nomenclador API] Set Override Success',
   props<{ analysisId: number; precio: number | null }>(),
-);
-export const setOverrideFailure = createAction(
-  '[Nomenclador API] Set override failure',
-  props<{ error: HttpErrorResponse }>(),
 );

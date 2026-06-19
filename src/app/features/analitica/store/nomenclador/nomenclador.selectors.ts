@@ -6,47 +6,99 @@ export const selectNomencladorState =
   createFeatureSelector<NomencladorFeatureState>(NOMENCLADOR_FEATURE_KEY);
 
 // ── Slices básicos ────────────────────────────────────────────────────────────
-export const selectVersiones      = createSelector(selectNomencladorState, s => s.versiones);
-export const selectVersionActiva  = createSelector(selectNomencladorState, s => s.versionActiva);
-export const selectCatalog        = createSelector(selectNomencladorState, s => s.catalog);
-export const selectCatalogLoading = createSelector(selectNomencladorState, s => s.catalogLoading);
-export const selectPricing        = createSelector(selectNomencladorState, s => s.pricing);
-export const selectPricingLoading = createSelector(selectNomencladorState, s => s.pricingLoading);
+
+export const selectNbuVersions = createSelector(selectNomencladorState, s => s.nbuVersions);
+export const selectSelectedVersionId = createSelector(selectNomencladorState, s => s.selectedVersionId);
+export const selectValorUb = createSelector(selectNomencladorState, s => s.particular.valorUb);
+export const selectNomencladorPending = createSelector(selectNomencladorState, s => s.pending);
+
+// ── Catálogo con cantidadUb resuelta por versión ──────────────────────────────
 
 /**
- * Selector derivado: precio particular de un análisis en la versión activa.
+ * Filas del catálogo con cantidadUb ajustada al factor de la versión seleccionada.
+ * Precondición: selectedVersionId != null (cae al factor 1 si es null).
+ */
+export const selectCatalogRows = createSelector(
+  selectNomencladorState,
+  (s) => {
+    const versionId = s.selectedVersionId ?? 'v2024';
+    return s.catalog.map(r => ({
+      ...r,
+      cantidadUb: cantidadUbParaVersion(r.cantidadUb, versionId),
+    }));
+  },
+);
+
+// ── Determinaciones (lazy, por analysisId) ────────────────────────────────────
+
+/**
+ * Factory — devuelve un selector para las determinaciones de un analysisId.
+ * Retorna null mientras no se hayan cargado (distinto de [] = cargado sin datos).
+ */
+export function selectDeterminations(analysisId: number) {
+  return createSelector(
+    selectNomencladorState,
+    s => s.determinationsByAnalysis[analysisId] ?? null,
+  );
+}
+
+// ── Precio particular — colección ─────────────────────────────────────────────
+
+/**
+ * Colección completa de filas de precio particular.
+ *
+ * Campos calculados:
+ *  - cantidadUb: base ajustada por versión activa.
+ *  - auto: cantidadUb × valorUb (null si cantidadUb es null).
+ *  - precio: override manual ?? auto.
+ *  - esManual: hay override manual para este analysisId.
+ */
+export const selectParticularRows = createSelector(
+  selectNomencladorState,
+  (s) => {
+    const versionId = s.selectedVersionId ?? 'v2024';
+    return s.catalog.map(r => {
+      const cant = cantidadUbParaVersion(r.cantidadUb, versionId);
+      const override = s.particular.overrides[r.id];
+      const auto = cant == null ? null : Math.round(cant * s.particular.valorUb * 100) / 100;
+      return {
+        id: r.id,
+        shortCode: r.shortCode,
+        name: r.name,
+        familyName: r.familyName,
+        nbuCode: r.nbuCode,
+        cantidadUb: cant,
+        auto,
+        precio: override != null ? override : auto,
+        esManual: override != null,
+      };
+    });
+  },
+);
+
+/**
+ * Factory — precio particular de un único análisis.
+ * Útil para editores de override individuales.
  *
  * Lógica (en orden):
- *  1. Si no hay pricing cargado → null.
- *  2. Si hay override manual para el analysisId → devuelve el override.
- *  3. Busca el análisis en el catálogo; si no aparece → null.
- *  4. Si cantidadUb es null o versionActiva es null → null.
- *  5. precio = cantidadUbParaVersion(cantidadUb, versionActiva) * valorUb.
- *
- * Factory (función que devuelve selector) para parametrizar por analysisId.
+ *  1. Si hay override manual → override.
+ *  2. Si cantidadUb es null o selectedVersionId es null → null.
+ *  3. precio = cantidadUbParaVersion(cantidadUb, versionId) × valorUb.
  */
 export function selectPrecioParticular(analysisId: number) {
-  return createSelector(
-    selectPricing,
-    selectVersionActiva,
-    selectCatalog,
-    (pricing, versionActiva, catalog): number | null => {
-      if (!pricing) return null;
+  return createSelector(selectNomencladorState, (s): number | null => {
+    const override = s.particular.overrides[analysisId];
+    if (override != null) return override;
 
-      // Override manual tiene prioridad
-      if (analysisId in pricing.overrides) {
-        return pricing.overrides[analysisId];
-      }
+    const versionId = s.selectedVersionId;
+    if (!versionId) return null;
 
-      if (!versionActiva) return null;
+    const fila = s.catalog.find(r => r.id === analysisId);
+    if (!fila) return null;
 
-      const fila = catalog.find(r => r.id === analysisId);
-      if (!fila) return null;
+    const ub = cantidadUbParaVersion(fila.cantidadUb, versionId);
+    if (ub == null) return null;
 
-      const ub = cantidadUbParaVersion(fila.cantidadUb, versionActiva);
-      if (ub == null) return null;
-
-      return Math.round(ub * pricing.valorUb * 100) / 100;
-    },
-  );
+    return Math.round(ub * s.particular.valorUb * 100) / 100;
+  });
 }

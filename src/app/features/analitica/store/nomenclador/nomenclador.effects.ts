@@ -1,14 +1,18 @@
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, map, switchMap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { catchError, map, mergeMap, switchMap } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
 import { NomencladorService } from '../../services/nomenclador.service';
 import {
-  cargarCatalog, cargarCatalogFailure, cargarCatalogSuccess,
-  cargarPricing, cargarPricingFailure, cargarPricingSuccess,
-  cargarVersiones, cargarVersionesFailure, cargarVersionesSuccess,
-  guardarValorUb, guardarValorUbFailure, guardarValorUbSuccess,
-  setOverride, setOverrideFailure, setOverrideSuccess,
+  loadDeterminations,
+  loadDeterminationsSuccess,
+  loadNomenclador,
+  loadNomencladorFailure,
+  loadNomencladorSuccess,
+  saveValorUb,
+  saveValorUbSuccess,
+  setOverride,
+  setOverrideSuccess,
 } from './nomenclador.actions';
 
 @Injectable()
@@ -16,61 +20,64 @@ export class NomencladorEffects {
   private readonly actions$ = inject(Actions);
   private readonly svc = inject(NomencladorService);
 
-  cargarVersiones$ = createEffect(() =>
+  /**
+   * Carga inicial: versiones + catálogo + pricing en paralelo.
+   * Un único dispatch de `loadNomenclador` dispara todo.
+   */
+  loadNomenclador$ = createEffect(() =>
     this.actions$.pipe(
-      ofType(cargarVersiones),
+      ofType(loadNomenclador),
       switchMap(() =>
-        this.svc.getVersions().pipe(
-          map(versiones => cargarVersionesSuccess({ versiones })),
-          catchError(error => of(cargarVersionesFailure({ error }))),
+        forkJoin({
+          versions: this.svc.getVersions(),
+          catalog: this.svc.getCatalog(),
+          pricing: this.svc.getParticularPricing(),
+        }).pipe(
+          map(({ versions, catalog, pricing }) =>
+            loadNomencladorSuccess({ versions, catalog, pricing }),
+          ),
+          catchError(error => of(loadNomencladorFailure({ error }))),
         ),
       ),
     ),
   );
 
-  cargarCatalog$ = createEffect(() =>
+  /**
+   * Carga lazy de determinaciones de un análisis (tab Catálogo).
+   * Usa mergeMap para permitir cargas simultáneas de distintos analysisId.
+   * En error: éxito con array vacío (no bloquea la UI).
+   */
+  loadDeterminations$ = createEffect(() =>
     this.actions$.pipe(
-      ofType(cargarCatalog),
-      switchMap(() =>
-        this.svc.getCatalog().pipe(
-          map(catalog => cargarCatalogSuccess({ catalog })),
-          catchError(error => of(cargarCatalogFailure({ error }))),
+      ofType(loadDeterminations),
+      mergeMap(({ analysisId }) =>
+        this.svc.getDeterminations(analysisId).pipe(
+          map(determinations => loadDeterminationsSuccess({ analysisId, determinations })),
+          catchError(() => of(loadDeterminationsSuccess({ analysisId, determinations: [] }))),
         ),
       ),
     ),
   );
 
-  cargarPricing$ = createEffect(() =>
+  /** Pessimistic: persiste el valorUb y confirma con el valor devuelto por el servicio. */
+  saveValorUb$ = createEffect(() =>
     this.actions$.pipe(
-      ofType(cargarPricing),
-      switchMap(() =>
-        this.svc.getParticularPricing().pipe(
-          map(pricing => cargarPricingSuccess({ pricing })),
-          catchError(error => of(cargarPricingFailure({ error }))),
-        ),
-      ),
-    ),
-  );
-
-  guardarValorUb$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(guardarValorUb),
+      ofType(saveValorUb),
       switchMap(({ valor }) =>
         this.svc.saveValorUb(valor).pipe(
-          map(v => guardarValorUbSuccess({ valor: v })),
-          catchError(error => of(guardarValorUbFailure({ error }))),
+          map(v => saveValorUbSuccess({ valor: v })),
         ),
       ),
     ),
   );
 
+  /** Pessimistic: persiste el override y confirma con los ids devueltos por el servicio. */
   setOverride$ = createEffect(() =>
     this.actions$.pipe(
       ofType(setOverride),
-      switchMap(({ analysisId, precio }) =>
+      mergeMap(({ analysisId, precio }) =>
         this.svc.setOverride(analysisId, precio).pipe(
           map(r => setOverrideSuccess({ analysisId: r.analysisId, precio: r.precio })),
-          catchError(error => of(setOverrideFailure({ error }))),
         ),
       ),
     ),

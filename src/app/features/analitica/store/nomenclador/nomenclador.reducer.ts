@@ -1,70 +1,62 @@
 import { createReducer, on } from '@ngrx/store';
 import { initialNomencladorState, NomencladorFeatureState } from './nomenclador.state';
 import {
-  cargarCatalog, cargarCatalogFailure, cargarCatalogSuccess,
-  cargarPricing, cargarPricingFailure, cargarPricingSuccess,
-  cargarVersiones, cargarVersionesFailure, cargarVersionesSuccess,
-  guardarValorUbSuccess,
-  seleccionarVersion,
+  loadNomenclador,
+  loadNomencladorFailure,
+  loadNomencladorSuccess,
+  loadDeterminationsSuccess,
+  saveValorUbSuccess,
+  selectNbuVersion,
   setOverrideSuccess,
 } from './nomenclador.actions';
 
 export const nomencladorReducer = createReducer(
   initialNomencladorState,
 
-  // ── Versiones ──────────────────────────────────────────────────────────────
-  on(cargarVersiones, (state): NomencladorFeatureState => ({
-    ...state, versionesLoading: true, versionesError: null,
+  // ── Carga inicial ──────────────────────────────────────────────────────────
+  on(loadNomenclador, (state): NomencladorFeatureState => ({
+    ...state, pending: true, error: null,
   })),
-  on(cargarVersionesSuccess, (state, { versiones }): NomencladorFeatureState => ({
+  on(loadNomencladorSuccess, (state, { versions, catalog, pricing }): NomencladorFeatureState => ({
     ...state,
-    versiones,
-    versionesLoading: false,
-    versionActiva: state.versionActiva ?? (versiones.find(v => v.vigente)?.id ?? versiones[0]?.id ?? null),
+    pending: false,
+    error: null,
+    nbuVersions: versions,
+    catalog,
+    particular: pricing,
+    // Mantener la versión seleccionada si ya hay una; si no, tomar la vigente.
+    selectedVersionId: state.selectedVersionId
+      ?? (versions.find(v => v.vigente)?.id ?? versions[0]?.id ?? null),
   })),
-  on(cargarVersionesFailure, (state, { error }): NomencladorFeatureState => ({
-    ...state, versionesLoading: false, versionesError: error,
-  })),
-
-  on(seleccionarVersion, (state, { versionId }): NomencladorFeatureState => ({
-    ...state, versionActiva: versionId,
-  })),
-
-  // ── Catálogo ───────────────────────────────────────────────────────────────
-  on(cargarCatalog, (state): NomencladorFeatureState => ({
-    ...state, catalogLoading: true, catalogError: null,
-  })),
-  on(cargarCatalogSuccess, (state, { catalog }): NomencladorFeatureState => ({
-    ...state, catalog, catalogLoading: false,
-  })),
-  on(cargarCatalogFailure, (state, { error }): NomencladorFeatureState => ({
-    ...state, catalogLoading: false, catalogError: error,
+  on(loadNomencladorFailure, (state, { error }): NomencladorFeatureState => ({
+    ...state, pending: false, error,
   })),
 
-  // ── Pricing ────────────────────────────────────────────────────────────────
-  on(cargarPricing, (state): NomencladorFeatureState => ({
-    ...state, pricingLoading: true, pricingError: null,
-  })),
-  on(cargarPricingSuccess, (state, { pricing }): NomencladorFeatureState => ({
-    ...state, pricing, pricingLoading: false,
-  })),
-  on(cargarPricingFailure, (state, { error }): NomencladorFeatureState => ({
-    ...state, pricingLoading: false, pricingError: error,
+  // ── Versión seleccionada ───────────────────────────────────────────────────
+  on(selectNbuVersion, (state, { versionId }): NomencladorFeatureState => ({
+    ...state, selectedVersionId: versionId,
   })),
 
-  on(guardarValorUbSuccess, (state, { valor }): NomencladorFeatureState => ({
+  // ── Determinaciones ────────────────────────────────────────────────────────
+  on(loadDeterminationsSuccess, (state, { analysisId, determinations }): NomencladorFeatureState => ({
     ...state,
-    pricing: state.pricing ? { ...state.pricing, valorUb: valor } : null,
+    determinationsByAnalysis: { ...state.determinationsByAnalysis, [analysisId]: determinations },
   })),
 
+  // ── Valor U.B. ─────────────────────────────────────────────────────────────
+  on(saveValorUbSuccess, (state, { valor }): NomencladorFeatureState => ({
+    ...state,
+    particular: { ...state.particular, valorUb: valor },
+  })),
+
+  // ── Override manual ────────────────────────────────────────────────────────
   on(setOverrideSuccess, (state, { analysisId, precio }): NomencladorFeatureState => {
-    if (!state.pricing) return state;
-    const overrides = { ...state.pricing.overrides };
+    const overrides = { ...state.particular.overrides };
     if (precio == null) {
       delete overrides[analysisId];
     } else {
       overrides[analysisId] = precio;
     }
-    return { ...state, pricing: { ...state.pricing, overrides } };
+    return { ...state, particular: { ...state.particular, overrides } };
   }),
 );
