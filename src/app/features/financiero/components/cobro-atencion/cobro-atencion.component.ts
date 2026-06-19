@@ -196,12 +196,13 @@ export class CobroAtencionComponent {
   ngOnInit(): void {
     // Asegura detail + pricing para el attentionId dado (ruta directa o wizard).
     // Moved out of constructor effect() since attentionId is now @Input() (not a signal).
-    if (this.detail()?.id !== this.attentionId) {
-      this.store.dispatch(loadAtencion({ id: this.attentionId }));
+    // loadPricing se despacha siempre: el attentionId montado es autoritativo.
+    // Si el store tuviera pricing de una atención diferente, quedaba dato viejo sin este fix.
+    const id = this.attentionId;
+    if (this.detail()?.id !== id) {
+      this.store.dispatch(loadAtencion({ id }));
     }
-    if (!this.pricing()) {
-      this.store.dispatch(loadPricing({ attentionId: this.attentionId }));
-    }
+    this.store.dispatch(loadPricing({ attentionId: id }));
   }
 
   protected agregarLinea(): void {

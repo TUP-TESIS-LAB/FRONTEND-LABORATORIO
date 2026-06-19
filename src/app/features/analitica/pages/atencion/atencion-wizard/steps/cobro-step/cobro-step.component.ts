@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, Input, numberAttribute } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Input, numberAttribute, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { loadPricing } from '@features/analitica/store/atencion/atencion.actions';
@@ -21,7 +21,7 @@ import { selectPricing } from '@features/analitica/store/atencion/atencion.selec
     </div>
   `,
 })
-export class CobroStepComponent {
+export class CobroStepComponent implements OnInit {
   private readonly store = inject(Store);
 
   @Input({ transform: numberAttribute }) atencionId!: number;
@@ -33,12 +33,10 @@ export class CobroStepComponent {
     return p ? Math.max(0, p.total - p.copayment) : 0;
   }
 
-  constructor() {
-    effect(() => {
-      const id = this.atencionId;
-      if (id != null && !this.pricing()) {
-        this.store.dispatch(loadPricing({ attentionId: id }));
-      }
-    });
+  ngOnInit(): void {
+    // El attentionId montado es autoritativo: se despacha siempre para no mostrar
+    // pricing de una atención diferente que pudiera quedar en el store.
+    // ngOnInit garantiza que @Input() ya tiene el valor asignado (no el constructor).
+    this.store.dispatch(loadPricing({ attentionId: this.atencionId }));
   }
 }
