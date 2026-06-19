@@ -52,7 +52,8 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           [paginatorDropdownAppendTo]="'body'"
           [scrollable]="scrollHeight() !== null"
           [scrollHeight]="scrollHeight() ?? undefined"
-          (onLazyLoad)="lazyLoad.emit($event)">
+          (onLazyLoad)="lazyLoad.emit($event)"
+          (onRowExpand)="rowExpand.emit($event.data)">
 
           <ng-template pTemplate="header">
             <tr>
@@ -394,6 +395,8 @@ export class DataTableComponent {
   readonly rowDelete     = output<unknown>();
   readonly action        = output<{ key: string; row: unknown }>();
   readonly emptyCtaClick = output<void>();
+  /** Emite la fila al expandirla (solo con [expandable]=true). Útil para lazy-load del contenido. */
+  readonly rowExpand     = output<unknown>();
 
   // ── Internal ──
   protected readonly hasActions = computed(() =>

@@ -1,86 +1,81 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
 import { CatalogRow, Determination } from '../../../models/nomenclador.model';
 import { loadDeterminations } from '../../../store/nomenclador/nomenclador.actions';
 import { selectCatalogRows, selectDeterminations } from '../../../store/nomenclador/nomenclador.selectors';
 
 /**
- * Tab "Catálogo de análisis" de la pantalla NBU (KAN-118, task 5).
+ * Tab "Catálogo de análisis" de la pantalla NBU (KAN-118).
  *
- * Muestra la tabla de análisis con fila expandible que carga las determinaciones
- * de forma lazy: la primera expansión despacha loadDeterminations; las siguientes
- * reutilizan lo que ya hay en el store.
+ * Usa el componente genérico `ui-table` con fila expandible (`expandable`). Las
+ * determinaciones se cargan lazy: al expandir, `(rowExpand)` despacha loadDeterminations
+ * una sola vez por análisis; las re-expansiones reutilizan lo que ya está en el store.
  */
 @Component({
   selector: 'lab-nbu-catalogo-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DataTableComponent, UiCellDirective, UiRowExpansionDirective],
   template: `
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="border-b border-[var(--ds-border,#e4e4e7)] text-xs text-[var(--ds-text-muted,#71717a)] uppercase">
-          <tr>
-            <th class="px-3 py-2 text-left">Código</th>
-            <th class="px-3 py-2 text-left">Análisis</th>
-            <th class="px-3 py-2 text-left">Familia</th>
-            <th class="px-3 py-2 text-left">Cód. NBU</th>
-            <th class="px-3 py-2 text-right">Cantidad U.B.</th>
-            <th class="px-3 py-2 text-center">Determinaciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of rows(); track row.id) {
-            <tr class="border-b border-[var(--ds-border,#e4e4e7)] hover:bg-[var(--ds-surface-alt,#f4f4f5)]">
-              <td class="px-3 py-2 font-mono font-medium">{{ row.shortCode }}</td>
-              <td class="px-3 py-2">{{ row.name }}</td>
-              <td class="px-3 py-2 text-[var(--ds-text-muted,#71717a)]">{{ row.familyName ?? '—' }}</td>
-              <td class="px-3 py-2 text-[var(--ds-text-muted,#71717a)]">{{ row.nbuCode ?? '—' }}</td>
-              <td class="px-3 py-2 text-right tabular-nums">{{ row.cantidadUb ?? '—' }}</td>
-              <td class="px-3 py-2 text-center">
-                <button
-                  type="button"
-                  data-testid="expand-btn"
-                  class="inline-flex items-center gap-1 text-xs text-[var(--brand-primary,#4f46e5)] hover:underline"
-                  [attr.aria-expanded]="isExpanded(row.id)"
-                  (click)="toggleRow(row)"
-                >
-                  <i class="pi text-[10px]"
-                     [class.pi-chevron-right]="!isExpanded(row.id)"
-                     [class.pi-chevron-down]="isExpanded(row.id)"></i>
-                  Ver
-                </button>
-              </td>
-            </tr>
-            @if (isExpanded(row.id)) {
-              <tr class="expansion-row bg-[var(--ds-surface-alt,#f9f9f9)]">
-                <td colspan="6" class="px-6 py-3">
-                  @let dets = determinationsFor(row.id);
-                  @if (dets === null) {
-                    <span class="text-xs text-[var(--ds-text-muted,#71717a)] italic">Cargando…</span>
-                  } @else if (dets.length === 0) {
-                    <span class="text-xs text-[var(--ds-text-muted,#71717a)]">Sin determinaciones</span>
-                  } @else {
-                    <ul class="flex flex-wrap gap-2">
-                      @for (det of dets; track det.id) {
-                        <li class="text-xs bg-white border border-[var(--ds-border,#e4e4e7)] rounded px-2 py-0.5">
-                          {{ det.name }}
-                        </li>
-                      }
-                    </ul>
-                  }
-                </td>
-              </tr>
-            }
-          } @empty {
-            <tr>
-              <td colspan="6" class="px-3 py-8 text-center text-sm text-[var(--ds-text-muted,#71717a)]">
-                Sin análisis en el catálogo.
-              </td>
-            </tr>
+    <ui-table
+      [value]="rows()"
+      [columns]="columns"
+      [expandable]="true"
+      dataKey="id"
+      emptyHeading="Sin análisis en el catálogo"
+      emptyIcon="pi-flask"
+      (rowExpand)="onExpand($any($event))">
+
+      <ng-template uiCell="familyName" let-row>
+        @if ($any(row).familyName) {
+          <span class="inline-block text-xs rounded px-2 py-0.5 bg-[var(--brand-tint,#eff6ff)] text-[var(--brand-primary,#2563eb)]">
+            {{ $any(row).familyName }}
+          </span>
+        } @else {
+          <span class="text-[var(--ds-text-muted,#71717a)]">—</span>
+        }
+      </ng-template>
+
+      <ng-template uiCell="nbuCode" let-row>
+        @if ($any(row).nbuCode) {
+          <span class="font-mono text-xs rounded px-1.5 py-0.5 bg-[var(--ds-surface,#f1f5f9)] text-[var(--ds-text-muted,#475569)]">
+            {{ $any(row).nbuCode }}
+          </span>
+        } @else {
+          <span class="text-[var(--ds-text-muted,#71717a)]">—</span>
+        }
+      </ng-template>
+
+      <ng-template uiCell="cantidadUb" let-row>
+        <span class="tabular-nums">{{ ub($any(row)) }}</span>
+      </ng-template>
+
+      <ng-template uiRowExpansion let-row>
+        @let dets = determinationsFor($any(row).id);
+        <div class="px-2 py-1">
+          <div class="text-xs font-semibold text-[var(--ds-text-muted,#71717a)] uppercase mb-2">
+            Determinaciones
+          </div>
+          @if (dets === null) {
+            <span class="text-xs text-[var(--ds-text-muted,#71717a)] italic">Cargando…</span>
+          } @else if (dets.length === 0) {
+            <span class="text-xs text-[var(--ds-text-muted,#71717a)]">Sin determinaciones</span>
+          } @else {
+            <ul class="flex flex-wrap gap-2">
+              @for (det of dets; track det.id) {
+                <li class="text-xs bg-white border border-[var(--ds-border,#e4e4e7)] rounded px-2 py-0.5">
+                  {{ det.name }}
+                </li>
+              }
+            </ul>
           }
-        </tbody>
-      </table>
-    </div>
+        </div>
+      </ng-template>
+    </ui-table>
   `,
 })
 export class NbuCatalogoTabComponent {
@@ -89,24 +84,27 @@ export class NbuCatalogoTabComponent {
   /** Filas del catálogo con cantidadUb resuelta para la versión seleccionada. */
   protected readonly rows = this.store.selectSignal(selectCatalogRows);
 
-  /** IDs de filas actualmente expandidas. */
-  private readonly expandedIds = signal<Set<number>>(new Set());
+  readonly columns: readonly TableColumn[] = [
+    { field: 'shortCode', header: 'Código' },
+    { field: 'name', header: 'Análisis' },
+    { field: 'familyName', header: 'Familia' },
+    { field: 'nbuCode', header: 'Cód. NBU' },
+    { field: 'cantidadUb', header: 'Cantidad U.B.', align: 'right' },
+  ];
 
-  /**
-   * IDs para los que ya se despachó loadDeterminations (evita re-despachos al
-   * colapsar y re-expandir la misma fila).
-   */
+  /** IDs para los que ya se despachó loadDeterminations (evita re-despachos). */
   private readonly loadedIds = new Set<number>();
 
   /** Caché de signals por analysisId para no crear un nuevo selector en cada render. */
   private readonly detSignals = new Map<number, ReturnType<typeof this.store.selectSignal>>();
 
-  protected isExpanded(id: number): boolean {
-    return this.expandedIds().has(id);
+  /** Formatea la cantidad de U.B. a 2 decimales (o — si no está configurada). */
+  protected ub(row: CatalogRow): string {
+    return row.cantidadUb == null ? '—' : row.cantidadUb.toFixed(2).replace('.', ',');
   }
 
   /**
-   * Devuelve las determinaciones para un analysisId directamente desde el store.
+   * Determinaciones para un analysisId directamente desde el store.
    * null = no cargado, [] = cargado sin datos, Determination[] = cargado con datos.
    */
   protected determinationsFor(id: number): Determination[] | null {
@@ -116,21 +114,10 @@ export class NbuCatalogoTabComponent {
     return (this.detSignals.get(id) as () => Determination[] | null)();
   }
 
-  protected toggleRow(row: CatalogRow): void {
-    const id = row.id;
-    this.expandedIds.update(set => {
-      const next = new Set(set);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-        // Lazy-load: solo despachar la primera vez
-        if (!this.loadedIds.has(id)) {
-          this.loadedIds.add(id);
-          this.store.dispatch(loadDeterminations({ analysisId: id }));
-        }
-      }
-      return next;
-    });
+  /** Lazy-load: la primera expansión de cada análisis despacha loadDeterminations. */
+  protected onExpand(row: CatalogRow): void {
+    if (this.loadedIds.has(row.id)) return;
+    this.loadedIds.add(row.id);
+    this.store.dispatch(loadDeterminations({ analysisId: row.id }));
   }
 }
