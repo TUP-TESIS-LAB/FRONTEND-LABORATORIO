@@ -33,12 +33,12 @@ import { matchesFilter } from './nbu-filter';
           </label>
           <input
             type="number" min="0" step="0.01" data-testid="valor-ub-input"
-            class="w-full border border-[var(--ds-border,#e4e4e7)] rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary,#4f46e5)]"
+            class="w-full border border-[var(--ds-border,#e4e4e7)] rounded-lg px-4 py-2.5 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary,#4f46e5)]"
             [(ngModel)]="valorUbEdit" />
         </div>
         <button
           type="button" data-testid="guardar-valor-btn"
-          class="px-4 py-1.5 bg-[var(--brand-primary,#4f46e5)] text-white text-sm font-medium rounded hover:opacity-90 transition-opacity"
+          class="px-5 py-2.5 bg-[var(--brand-primary,#4f46e5)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
           (click)="guardarValorDesdeInput()">
           Guardar
         </button>
@@ -55,6 +55,8 @@ import { matchesFilter } from './nbu-filter';
       [columns]="columns"
       [paginator]="true"
       [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50, 100]"
+      size="comfortable"
       dataKey="id"
       emptyHeading="Sin análisis en el catálogo"
       emptyIcon="pi-dollar">
@@ -80,7 +82,7 @@ import { matchesFilter } from './nbu-filter';
         @if (editing() === $any(row).id) {
           <input
             type="number" min="0" step="0.01" data-testid="override-input"
-            class="w-28 border border-[var(--brand-primary,#4f46e5)] rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary,#4f46e5)]"
+            class="w-32 border border-[var(--brand-primary,#4f46e5)] rounded-lg px-3 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary,#4f46e5)]"
             [(ngModel)]="overrideEdit" (keydown.enter)="confirmarOverride($any(row).id, overrideEdit)" />
         } @else if ($any(row).esManual) {
           <div class="flex flex-col items-end gap-0.5">

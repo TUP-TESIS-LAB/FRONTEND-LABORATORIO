@@ -28,6 +28,8 @@ import { matchesFilter } from '../nbu-filter';
       [expandable]="true"
       [paginator]="true"
       [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50, 100]"
+      size="comfortable"
       dataKey="id"
       emptyHeading="Sin análisis en el catálogo"
       emptyIcon="pi-flask"
