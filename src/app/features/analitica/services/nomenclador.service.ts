@@ -33,7 +33,7 @@ export class NomencladorService {
       map(list => list.map(a => ({
         id: a.id, shortCode: a.shortCode, name: a.name, familyName: a.familyName,
         nbuCode: null,            // el list no trae nbuCode; se completa al expandir (getDeterminations) con PR #97 vía /catalog
-        cantidadUb: a.ubCount,    // real hoy (puede ser null si no configurado)
+        cantidadUb: a.cantidadUb ?? a.ubCount ?? null,  // real hoy (backend manda cantidadUb); null si no configurado
       }))),
     );
   }

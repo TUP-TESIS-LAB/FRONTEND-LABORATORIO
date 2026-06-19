@@ -34,10 +34,12 @@ export class AnalysisService {
   }
 
   /**
-   * Lista análisis del catálogo. HOY usa el endpoint de búsqueda con un límite alto.
+   * Lista el catálogo de análisis activado del tenant. HOY usa el endpoint de búsqueda
+   * con `shortCodePrefix` vacío, que devuelve todas las filas activadas (pasar solo `limit`
+   * no lista nada: el endpoint es de búsqueda y necesita un criterio).
    * MOCK-CONNECT — PR #97: reemplazar por GET /api/v1/analitica/catalog (paginado real).
    */
   list(limit = 200): Observable<Analysis[]> {
-    return this.http.get<Analysis[]>(this.baseUrl, { params: { limit: String(limit) } });
+    return this.http.get<Analysis[]>(this.baseUrl, { params: { shortCodePrefix: '', limit: String(limit) } });
   }
 }
