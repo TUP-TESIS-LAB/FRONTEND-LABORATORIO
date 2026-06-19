@@ -10,6 +10,8 @@ import {
   togglePatientActive, togglePatientActiveSuccess,
   checkPatientDniSuccess,
   verifyPatientSuccess,
+  createPatientPortalAccount, createPatientPortalAccountSuccess, createPatientPortalAccountFailure,
+  resendPatientPortalAccess, resendPatientPortalAccessSuccess, resendPatientPortalAccessFailure,
 } from './patient.actions';
 import { Patient } from '../models/patient.model';
 
@@ -17,6 +19,7 @@ const mkPatient = (id: number, active = true): Patient => ({
   id, dni: `${id}`, firstName: `f${id}`, lastName: `l${id}`,
   birthDate: '1990-01-01', gender: 'FEMALE', sexAtBirth: 'FEMALE',
   status: 'MIN', source: 'STAFF', verifiedAt: null, contacts: [], addresses: [], coverages: [], active,
+  accountStatus: 'NONE',
 });
 
 describe('patientReducer', () => {
@@ -113,5 +116,54 @@ describe('patientReducer', () => {
   it('checkPatientDniSuccess stores last check', () => {
     const next = patientReducer(initialPatientState, checkPatientDniSuccess({ dni: '32456789', exists: true }));
     expect(next.dniCheck).toEqual({ dni: '32456789', exists: true });
+  });
+
+  it('createPatientPortalAccount sets pending=true', () => {
+    const next = patientReducer(initialPatientState, createPatientPortalAccount({ id: 1 }));
+    expect(next.pending).toBe(true);
+  });
+
+  it('createPatientPortalAccountSuccess marca accountStatus PENDING en el paciente y clears pending', () => {
+    const before = { ...initialPatientState, items: [mkPatient(1), mkPatient(2)], selected: mkPatient(1), pending: true };
+    const next = patientReducer(before, createPatientPortalAccountSuccess({ id: 1 }));
+    expect(next.items[0].accountStatus).toBe('PENDING');
+    expect(next.items[1].accountStatus).toBe('NONE'); // no tocado
+    expect(next.selected?.accountStatus).toBe('PENDING');
+    expect(next.pending).toBe(false);
+    expect(next.error).toBeNull();
+  });
+
+  it('createPatientPortalAccountSuccess actualiza selected solo si coincide el id', () => {
+    const before = { ...initialPatientState, items: [mkPatient(1), mkPatient(2)], selected: mkPatient(2), pending: true };
+    const next = patientReducer(before, createPatientPortalAccountSuccess({ id: 1 }));
+    expect(next.items[0].accountStatus).toBe('PENDING');
+    expect(next.selected?.accountStatus).toBe('NONE'); // selected es id=2, no cambia
+  });
+
+  it('createPatientPortalAccountFailure stores error y clears pending', () => {
+    const err = { status: 409 } as HttpErrorResponse;
+    const next = patientReducer({ ...initialPatientState, pending: true }, createPatientPortalAccountFailure({ error: err }));
+    expect(next.pending).toBe(false);
+    expect(next.error).toBe(err);
+  });
+
+  it('resendPatientPortalAccess sets pending=true', () => {
+    const next = patientReducer(initialPatientState, resendPatientPortalAccess({ id: 1 }));
+    expect(next.pending).toBe(true);
+  });
+
+  it('resendPatientPortalAccessSuccess NO cambia accountStatus, solo clears pending', () => {
+    const before = { ...initialPatientState, items: [mkPatient(1)], selected: mkPatient(1), pending: true };
+    const next = patientReducer(before, resendPatientPortalAccessSuccess({ id: 1 }));
+    expect(next.items[0].accountStatus).toBe('NONE'); // sin cambio
+    expect(next.pending).toBe(false);
+    expect(next.error).toBeNull();
+  });
+
+  it('resendPatientPortalAccessFailure stores error y clears pending', () => {
+    const err = { status: 404 } as HttpErrorResponse;
+    const next = patientReducer({ ...initialPatientState, pending: true }, resendPatientPortalAccessFailure({ error: err }));
+    expect(next.pending).toBe(false);
+    expect(next.error).toBe(err);
   });
 });

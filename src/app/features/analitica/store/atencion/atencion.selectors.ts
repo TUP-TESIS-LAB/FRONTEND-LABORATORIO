@@ -24,6 +24,10 @@ export const selectCopaymentMutating      = createSelector(selectAtencionState, 
 export const selectAuthorizationMutating  = createSelector(selectAtencionState, s => s.authorizationMutating);
 export const selectRemovingAnalysis       = createSelector(selectAtencionState, s => s.removingAnalysis);
 export const selectVerifyingPatient       = createSelector(selectAtencionState, s => s.verifyingPatient);
+export const selectGuardians              = createSelector(selectAtencionState, s => s.guardians);
+export const selectGuardiansLoading       = createSelector(selectAtencionState, s => s.guardiansLoading);
+export const selectBondMutating           = createSelector(selectAtencionState, s => s.bondMutating);
+export const selectPendingGuardian        = createSelector(selectGuardians, gs => gs.find(g => g.status === 'CREATED') ?? null);
 
 export const selectFilteredAtenciones = createSelector(
   selectAtencionList,

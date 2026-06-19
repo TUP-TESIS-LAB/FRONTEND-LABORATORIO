@@ -15,6 +15,8 @@ import { LabelsService } from '../../services/labels.service';
 import { RotuloPdfService } from '../../services/rotulo-pdf.service';
 import { NotificationService } from '@core/services/notification.service';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
+import { FamilyLinkService } from '../../services/family-link.service';
+import { PatientGuardian } from '../../models/patient-guardian.model';
 import * as A from './atencion.actions';
 import { AtencionEffects } from './atencion.effects';
 
@@ -47,6 +49,7 @@ describe('AtencionEffects', () => {
   let labels: { getByProtocol: ReturnType<typeof vi.fn> };
   let rotuloPdf: { generate: ReturnType<typeof vi.fn> };
   let notification: { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> };
+  let familyLink: { getGuardians: ReturnType<typeof vi.fn>; verifyBond: ReturnType<typeof vi.fn> };
   let effects: AtencionEffects;
 
   beforeEach(() => {
@@ -75,6 +78,7 @@ describe('AtencionEffects', () => {
     labels = { getByProtocol: vi.fn() };
     rotuloPdf = { generate: vi.fn().mockResolvedValue(undefined) };
     notification = { error: vi.fn(), success: vi.fn() };
+    familyLink = { getGuardians: vi.fn(), verifyBond: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -88,6 +92,7 @@ describe('AtencionEffects', () => {
         { provide: RotuloPdfService, useValue: rotuloPdf },
         { provide: NotificationService, useValue: notification },
         { provide: OperatorBranchContextService, useValue: { branchId: () => 1001, branchName: () => 'Central' } },
+        { provide: FamilyLinkService, useValue: familyLink },
       ],
     });
     effects = TestBed.inject(AtencionEffects);
@@ -490,5 +495,70 @@ describe('AtencionEffects', () => {
       'No se pudo verificar el paciente. Revisá la conexión y volvé a intentarlo.'
     );
     expect(out).toEqual(A.verifyPatientFailure({ error }));
+  });
+
+  // ── loadPatientGuardians$ ────────────────────────────────────────────────────
+
+  it('loadPatientGuardians$ → success → loadPatientGuardiansSuccess con los guardians', async () => {
+    const guardians: PatientGuardian[] = [
+      { userPatientId: 1, titularNombre: 'María García', titularDni: '22334455', bond: 'MADRE', status: 'CREATED' },
+    ];
+    familyLink.getGuardians.mockReturnValue(of(guardians));
+    actions$.next(A.loadPatientGuardians({ patientId: 42 }));
+    const out = await firstValueFrom(effects.loadPatientGuardians$.pipe(take(1)));
+    expect(familyLink.getGuardians).toHaveBeenCalledWith(42);
+    expect(out).toEqual(A.loadPatientGuardiansSuccess({ guardians }));
+  });
+
+  it('loadPatientGuardians$ → HTTP error → loadPatientGuardiansFailure', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    familyLink.getGuardians.mockReturnValue(throwError(() => error));
+    actions$.next(A.loadPatientGuardians({ patientId: 42 }));
+    const out = await firstValueFrom(effects.loadPatientGuardians$.pipe(take(1)));
+    expect(out).toEqual(A.loadPatientGuardiansFailure({ error }));
+  });
+
+  it('loadPatientGuardians$ pasa el patientId correcto al service', async () => {
+    const guardians: PatientGuardian[] = [];
+    familyLink.getGuardians.mockReturnValue(of(guardians));
+    actions$.next(A.loadPatientGuardians({ patientId: 77 }));
+    await firstValueFrom(effects.loadPatientGuardians$.pipe(take(1)));
+    expect(familyLink.getGuardians).toHaveBeenCalledWith(77);
+  });
+
+  // ── validateBond$ ────────────────────────────────────────────────────────────
+
+  it('validateBond$ → success → validateBondSuccess con { userPatientId, status }', async () => {
+    familyLink.verifyBond.mockReturnValue(of({ userPatientId: 1, status: 'VERIFIED' }));
+    actions$.next(A.validateBond({ userPatientId: 1, status: 'VERIFIED' }));
+    const out = await firstValueFrom(effects.validateBond$.pipe(take(1)));
+    expect(familyLink.verifyBond).toHaveBeenCalledWith(1, 'VERIFIED');
+    expect(out).toEqual(A.validateBondSuccess({ userPatientId: 1, status: 'VERIFIED' }));
+  });
+
+  it('validateBond$ → success con REJECTED → validateBondSuccess con { userPatientId, status: REJECTED }', async () => {
+    familyLink.verifyBond.mockReturnValue(of({}));
+    actions$.next(A.validateBond({ userPatientId: 5, status: 'REJECTED' }));
+    const out = await firstValueFrom(effects.validateBond$.pipe(take(1)));
+    expect(familyLink.verifyBond).toHaveBeenCalledWith(5, 'REJECTED');
+    expect(out).toEqual(A.validateBondSuccess({ userPatientId: 5, status: 'REJECTED' }));
+  });
+
+  it('validateBond$ → HTTP error → validateBondFailure', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    familyLink.verifyBond.mockReturnValue(throwError(() => error));
+    actions$.next(A.validateBond({ userPatientId: 1, status: 'VERIFIED' }));
+    const out = await firstValueFrom(effects.validateBond$.pipe(take(1)));
+    expect(out).toEqual(A.validateBondFailure({ error }));
+  });
+
+  it('validateBond$ → HTTP error → muestra toast en español sin leak de internals', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    familyLink.verifyBond.mockReturnValue(throwError(() => error));
+    actions$.next(A.validateBond({ userPatientId: 1, status: 'VERIFIED' }));
+    await firstValueFrom(effects.validateBond$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo actualizar la relación familiar. Revisá la conexión e intentá de nuevo.'
+    );
   });
 });

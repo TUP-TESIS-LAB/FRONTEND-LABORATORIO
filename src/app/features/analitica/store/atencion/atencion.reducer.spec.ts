@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AttentionResponse, AttentionState } from '../../models/atencion.model';
 import { Patient } from '../../../pacientes/models/patient.model';
 import * as A from './atencion.actions';
+import { createPatientPortalAccountSuccess } from '../../../pacientes/store/patient.actions';
 import { atencionReducer } from './atencion.reducer';
 import { initialAtencionState } from './atencion.state';
 
@@ -21,6 +22,7 @@ function samplePatient(over: Partial<Patient> = {}): Patient {
     addresses: [],
     coverages: [],
     active: true,
+    accountStatus: 'NONE',
     ...over,
   };
 }
@@ -194,6 +196,21 @@ describe('atencionReducer', () => {
     expect(state.resolvedPatient).toBeNull();
   });
 
+  it('resolvePatientByDni limpia guardians del paciente previo para evitar stale banner', () => {
+    const staleGuardians = [
+      { userPatientId: 10, titularNombre: 'Juan Titular', titularDni: '11223344', bond: 'PADRE', status: 'VERIFIED' as const },
+    ];
+    const prev = {
+      ...initialAtencionState,
+      resolvedPatient: samplePatient({ id: 5 }),
+      guardians: staleGuardians,
+    };
+    const next = atencionReducer(prev, A.resolvePatientByDni({ dni: '99887766' }));
+    expect(next.guardians).toEqual([]);
+    expect(next.resolvedPatient).toBeNull();
+    expect(next.patientResolving).toBe(true);
+  });
+
   it('verifyPatient sets verifyingPatient=true', () => {
     const next = atencionReducer(initialAtencionState, A.verifyPatient({ id: 1 }));
     expect(next.verifyingPatient).toBe(true);
@@ -228,5 +245,99 @@ describe('atencionReducer', () => {
     expect(state.patientNotFoundDni).toBeNull();
     expect(state.summaryAnalyses).toEqual([]);
     expect(state.pricing).toBeNull();
+  });
+
+  // ── Guardians / family link ──────────────────────────────────────────────────
+
+  it('loadPatientGuardians sets guardiansLoading=true', () => {
+    const next = atencionReducer(initialAtencionState, A.loadPatientGuardians({ patientId: 42 }));
+    expect(next.guardiansLoading).toBe(true);
+  });
+
+  it('loadPatientGuardiansSuccess populates guardians and clears guardiansLoading', () => {
+    const guardians = [
+      { userPatientId: 1, titularNombre: 'María García', titularDni: '22334455', bond: 'MADRE', status: 'CREATED' as const },
+    ];
+    const next = atencionReducer(
+      { ...initialAtencionState, guardiansLoading: true },
+      A.loadPatientGuardiansSuccess({ guardians }),
+    );
+    expect(next.guardians).toEqual(guardians);
+    expect(next.guardiansLoading).toBe(false);
+  });
+
+  it('loadPatientGuardiansFailure clears guardiansLoading', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const next = atencionReducer(
+      { ...initialAtencionState, guardiansLoading: true },
+      A.loadPatientGuardiansFailure({ error }),
+    );
+    expect(next.guardiansLoading).toBe(false);
+  });
+
+  it('validateBond sets bondMutating=true', () => {
+    const next = atencionReducer(initialAtencionState, A.validateBond({ userPatientId: 1, status: 'VERIFIED' }));
+    expect(next.bondMutating).toBe(true);
+  });
+
+  it('validateBondSuccess actualiza el status del guardian correcto y limpia bondMutating', () => {
+    const guardians = [
+      { userPatientId: 1, titularNombre: 'María García', titularDni: '22334455', bond: 'MADRE', status: 'CREATED' as const },
+      { userPatientId: 2, titularNombre: 'Carlos López', titularDni: '33445566', bond: 'PADRE', status: 'CREATED' as const },
+    ];
+    const start = { ...initialAtencionState, guardians, bondMutating: true };
+    const next = atencionReducer(start, A.validateBondSuccess({ userPatientId: 1, status: 'VERIFIED' }));
+    expect(next.bondMutating).toBe(false);
+    expect(next.guardians[0].status).toBe('VERIFIED');
+    expect(next.guardians[1].status).toBe('CREATED'); // no afectado
+  });
+
+  it('validateBondSuccess con status REJECTED actualiza el guardian correcto', () => {
+    const guardians = [
+      { userPatientId: 3, titularNombre: 'Ana Ruiz', titularDni: '44556677', bond: 'HERMANA', status: 'CREATED' as const },
+    ];
+    const start = { ...initialAtencionState, guardians, bondMutating: true };
+    const next = atencionReducer(start, A.validateBondSuccess({ userPatientId: 3, status: 'REJECTED' }));
+    expect(next.guardians[0].status).toBe('REJECTED');
+    expect(next.bondMutating).toBe(false);
+  });
+
+  it('validateBondFailure clears bondMutating', () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    const start = { ...initialAtencionState, bondMutating: true };
+    const next = atencionReducer(start, A.validateBondFailure({ error }));
+    expect(next.bondMutating).toBe(false);
+  });
+
+  it('resetAtencionWizard limpia guardians junto al resto del wizard', () => {
+    const populated = {
+      ...initialAtencionState,
+      guardians: [{ userPatientId: 1, titularNombre: 'X', titularDni: '1', bond: 'MADRE', status: 'CREATED' as const }],
+    };
+    const next = atencionReducer(populated, A.resetAtencionWizard());
+    expect(next.guardians).toEqual([]);
+  });
+
+  // ── Cross-store: createPatientPortalAccountSuccess ───────────────────────────
+
+  it('createPatientPortalAccountSuccess con id == resolvedPatient.id → accountStatus PENDING', () => {
+    const patient = samplePatient({ id: 10, accountStatus: 'NONE' });
+    const start = { ...initialAtencionState, resolvedPatient: patient };
+    const next = atencionReducer(start, createPatientPortalAccountSuccess({ id: 10 }));
+    expect(next.resolvedPatient?.accountStatus).toBe('PENDING');
+  });
+
+  it('createPatientPortalAccountSuccess con id distinto → state sin cambios', () => {
+    const patient = samplePatient({ id: 10, accountStatus: 'NONE' });
+    const start = { ...initialAtencionState, resolvedPatient: patient };
+    const next = atencionReducer(start, createPatientPortalAccountSuccess({ id: 99 }));
+    expect(next.resolvedPatient?.accountStatus).toBe('NONE');
+    expect(next.resolvedPatient).toBe(patient); // referencia sin cambios
+  });
+
+  it('createPatientPortalAccountSuccess sin resolvedPatient → state sin cambios', () => {
+    const start = { ...initialAtencionState, resolvedPatient: null };
+    const next = atencionReducer(start, createPatientPortalAccountSuccess({ id: 10 }));
+    expect(next.resolvedPatient).toBeNull();
   });
 });

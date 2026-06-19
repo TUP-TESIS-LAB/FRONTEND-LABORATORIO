@@ -99,7 +99,7 @@ describe('PatientFormPage', () => {
     const patient = {
       id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
       birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
-      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true,
+      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true, accountStatus: 'NONE' as const,
     };
     actions$.next(addPatientSuccess({ patient }));
     expect(navSpy).toHaveBeenCalledWith('/pacientes');
@@ -116,7 +116,7 @@ describe('PatientFormPage', () => {
     const patient = {
       id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
       birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
-      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true,
+      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true, accountStatus: 'NONE' as const,
     };
     actions$.next(updatePatientSuccess({ patient }));
     expect(navSpy).toHaveBeenCalledWith('/pacientes');
@@ -228,7 +228,7 @@ describe('PatientFormPage', () => {
     const patient = {
       id: 1, dni: '32456789', firstName: 'María', lastName: 'García',
       birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
-      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true,
+      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true, accountStatus: 'NONE' as const,
     };
     store.setState({ [KEY]: { ...initialPatientState, selected: patient } });
     store.refreshState();

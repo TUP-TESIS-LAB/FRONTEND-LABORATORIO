@@ -7,12 +7,16 @@ import { initialAtencionState, ATENCION_FEATURE_KEY } from '../../../../../store
 import {
   resolvePatientByDni,
   loadAttentionPatient,
+  loadPatientGuardians,
   startAttentionForPatient,
   assignGeneralData,
   createPatientInline,
   updatePatientInline,
+  validateBond,
   verifyPatient,
 } from '../../../../../store/atencion/atencion.actions';
+import { createPatientPortalAccount } from '../../../../../../pacientes/store/patient.actions';
+import { PatientGuardian } from '../../../../../models/patient-guardian.model';
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
@@ -719,6 +723,229 @@ describe('DatosGeneralesStepComponent', () => {
         }),
       }),
     );
+  });
+
+  // ── L2: banner de relación no validada ───────────────────────────────────
+
+  const GUARDIAN_STUB: PatientGuardian = {
+    userPatientId: 55,
+    titularNombre: 'María García',
+    titularDni: '20304050',
+    bond: 'HIJO',
+    status: 'CREATED',
+  };
+
+  it('L2: validarRelacion() despacha validateBond con status VERIFIED', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const spy = vi.spyOn(store, 'dispatch');
+    (fixture.componentInstance as any).validarRelacion(GUARDIAN_STUB);
+    expect(spy).toHaveBeenCalledWith(
+      validateBond({ userPatientId: 55, status: 'VERIFIED' }),
+    );
+  });
+
+  it('L2: rechazarRelacion() despacha validateBond con status REJECTED', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    const spy = vi.spyOn(store, 'dispatch');
+    (fixture.componentInstance as any).rechazarRelacion(GUARDIAN_STUB);
+    expect(spy).toHaveBeenCalledWith(
+      validateBond({ userPatientId: 55, status: 'REJECTED' }),
+    );
+  });
+
+  it('L2: effect despacha loadPatientGuardians cuando aparece un paciente resuelto', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { id: 77, dni: '77777777', firstName: 'Test', lastName: 'User', coverages: [], contacts: [], addresses: [] } as any,
+      },
+    });
+    store.refreshState();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    expect(spy).toHaveBeenCalledWith(loadPatientGuardians({ patientId: 77 }));
+  });
+
+  it('L2: effect NO despacha loadPatientGuardians si el paciente ya fue cargado (mismo id)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { id: 88, dni: '88888888', firstName: 'Test', lastName: 'User', coverages: [], contacts: [], addresses: [] } as any,
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    // Reset spy and trigger detectChanges again with same patient id
+    const spy = vi.spyOn(store, 'dispatch');
+    store.refreshState();
+    fixture.detectChanges();
+    expect(spy).not.toHaveBeenCalledWith(loadPatientGuardians({ patientId: 88 }));
+  });
+
+  it('L2: banner se renderiza cuando pendingGuardian tiene status CREATED', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { id: 99, dni: '99999999', firstName: 'Dep', lastName: 'Paciente', coverages: [], contacts: [], addresses: [] } as any,
+        guardians: [GUARDIAN_STUB],
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const banner = fixture.nativeElement.querySelector('[data-testid="banner-relacion-pendiente"]');
+    expect(banner).toBeTruthy();
+  });
+
+  it('L2: banner NO se renderiza cuando no hay guardian pendiente', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { id: 100, dni: '10000000', firstName: 'Ok', lastName: 'Paciente', coverages: [], contacts: [], addresses: [] } as any,
+        guardians: [],
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const banner = fixture.nativeElement.querySelector('[data-testid="banner-relacion-pendiente"]');
+    expect(banner).toBeNull();
+  });
+
+  // ── A7: "Crear acceso al portal" ─────────────────────────────────────────
+
+  const PATIENT_WITH_EMAIL = {
+    id: 200,
+    dni: '20000000',
+    firstName: 'Ana',
+    lastName: 'López',
+    verifiedAt: null,
+    source: 'STAFF',
+    coverages: [],
+    contacts: [{ contactType: 'EMAIL', contactValue: 'ana@example.com', isPrimary: true, active: true }],
+    addresses: [],
+    accountStatus: 'NONE',
+  } as any;
+
+  const PATIENT_NO_EMAIL = {
+    ...PATIENT_WITH_EMAIL,
+    id: 201,
+    contacts: [],
+    accountStatus: 'NONE',
+  } as any;
+
+  it('A7: btn-crear-acceso visible cuando accountStatus=NONE + email activo + no readOnly', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: PATIENT_WITH_EMAIL } });
+    store.refreshState();
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]');
+    expect(btn).toBeTruthy();
+  });
+
+  it('A7: click en btn-crear-acceso despacha createPatientPortalAccount con el id del paciente', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: PATIENT_WITH_EMAIL } });
+    store.refreshState();
+    fixture.detectChanges();
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance['crearAccesoPortal']();
+    expect(spy).toHaveBeenCalledWith(createPatientPortalAccount({ id: 200 }));
+  });
+
+  it('A7: btn-crear-acceso oculto cuando no hay email activo → muestra acceso-sin-email', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: PATIENT_NO_EMAIL } });
+    store.refreshState();
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]');
+    expect(btn).toBeNull();
+    const hint = fixture.nativeElement.querySelector('[data-testid="acceso-sin-email"]');
+    expect(hint).toBeTruthy();
+  });
+
+  it('A7: btn-crear-acceso oculto si accountStatus !== NONE (ya PENDING)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { ...PATIENT_WITH_EMAIL, accountStatus: 'PENDING' },
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]');
+    expect(btn).toBeNull();
+  });
+
+  it('A7: btn-crear-acceso oculto si readOnly=true', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.detectChanges();
+    store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: PATIENT_WITH_EMAIL } });
+    store.refreshState();
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]');
+    expect(btn).toBeNull();
+  });
+
+  it('A7: muestra estado-acceso-pendiente cuando accountStatus=PENDING', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { ...PATIENT_WITH_EMAIL, accountStatus: 'PENDING' },
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const el = fixture.nativeElement.querySelector('[data-testid="estado-acceso-pendiente"]');
+    expect(el).toBeTruthy();
+  });
+
+  it('A7: muestra estado-acceso-activo cuando accountStatus=ACTIVE', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { ...PATIENT_WITH_EMAIL, accountStatus: 'ACTIVE' },
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const el = fixture.nativeElement.querySelector('[data-testid="estado-acceso-activo"]');
+    expect(el).toBeTruthy();
   });
 });
 

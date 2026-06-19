@@ -29,17 +29,23 @@ import {
   assignGeneralData,
   createPatientInline,
   loadAttentionPatient,
+  loadPatientGuardians,
   resolvePatientByDni,
   startAttentionForPatient,
   updatePatientInline,
+  validateBond,
   verifyPatient,
 } from '../../../../../store/atencion/atencion.actions';
+import { createPatientPortalAccount } from '../../../../../../pacientes/store/patient.actions';
 import {
+  selectBondMutating,
   selectPatientNotFoundDni,
   selectPatientResolving,
   selectPatientResolutionError,
+  selectPendingGuardian,
   selectResolvedPatient,
 } from '../../../../../store/atencion/atencion.selectors';
+import { PatientGuardian } from '../../../../../models/patient-guardian.model';
 
 const GENDER_OPTS: { value: Gender; label: string }[] = [
   { value: 'MALE', label: 'Masculino' },
@@ -198,6 +204,24 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   </span>
                 </div>
 
+                @if (pendingGuardian(); as g) {
+                  <div data-testid="banner-relacion-pendiente" class="ui-estado-naranja" style="display:flex; flex-direction:column; gap:8px; padding:10px 12px; border-radius:8px; margin-top:8px;">
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                      <i class="pi pi-exclamation-triangle" style="margin-top:2px;"></i>
+                      <span>
+                        Este paciente depende de <strong>{{ g.titularNombre }}</strong> (DNI {{ g.titularDni }}).
+                        La relación no está validada. Verificá los DNI antes de validar.
+                      </span>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                      <p-button label="Validar relación" size="small" severity="success"
+                                [loading]="bondMutating()" (onClick)="validarRelacion(g)" />
+                      <p-button label="Rechazar" size="small" severity="danger" [outlined]="true"
+                                [loading]="bondMutating()" (onClick)="rechazarRelacion(g)" />
+                    </div>
+                  </div>
+                }
+
                 <!-- Cobertura a usar en la atención: chips seleccionables (default = la
                      principal). Permite cambiar la cobertura sin entrar a "Corregir datos". -->
                 <div class="pt-1">
@@ -250,6 +274,25 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                       severity="secondary"
                       [outlined]="true"
                       (onClick)="startEdit()" />
+                  </div>
+                }
+
+                @if (puedeCrearAcceso()) {
+                  <div class="pt-1">
+                    <p-button data-testid="btn-crear-acceso" label="Crear acceso al portal"
+                              icon="pi pi-user-plus" size="small" (onClick)="crearAccesoPortal()" />
+                  </div>
+                } @else if (p.accountStatus === 'PENDING') {
+                  <div class="flex items-center gap-2 pt-1 text-xs text-surface-500" data-testid="estado-acceso-pendiente">
+                    <i class="pi pi-clock"></i><span>Acceso al portal: pendiente</span>
+                  </div>
+                } @else if (p.accountStatus === 'ACTIVE') {
+                  <div class="flex items-center gap-2 pt-1 text-xs text-green-600" data-testid="estado-acceso-activo">
+                    <i class="pi pi-check-circle"></i><span>Acceso al portal: activo</span>
+                  </div>
+                } @else if (resolved() && !tieneEmail() && resolved()!.accountStatus === 'NONE' && !readOnly()) {
+                  <div class="flex items-center gap-2 pt-1 text-xs text-surface-400" data-testid="acceso-sin-email">
+                    <i class="pi pi-info-circle"></i><span>Cargá un email para poder crear el acceso al portal</span>
                   </div>
                 }
               </div>
@@ -477,6 +520,9 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected readonly resolving        = this.store.selectSignal(selectPatientResolving);
   protected readonly notFoundDni      = this.store.selectSignal(selectPatientNotFoundDni);
   protected readonly resolutionError  = this.store.selectSignal(selectPatientResolutionError);
+  protected readonly pendingGuardian = this.store.selectSignal(selectPendingGuardian);
+  protected readonly bondMutating    = this.store.selectSignal(selectBondMutating);
+  private lastGuardiansPatientId: number | null = null;
 
   protected readonly editing = signal(false);
 
@@ -588,6 +634,17 @@ export class DatosGeneralesStepComponent implements OnInit {
   // ── Portal tilde ───────────────────────────────────────────────────────────
   protected readonly esPortal = computed(() => this.resolved()?.source === 'PORTAL');
 
+  // ── Portal account gate ────────────────────────────────────────────────────
+  protected readonly tieneEmail = computed(() => {
+    const p = this.resolved();
+    return !!p && (p.contacts ?? []).some(c => c.contactType === 'EMAIL' && c.active);
+  });
+
+  protected readonly puedeCrearAcceso = computed(() => {
+    const p = this.resolved();
+    return !!p && !this.readOnly() && p.accountStatus === 'NONE' && this.tieneEmail();
+  });
+
   // ── Verify gate ────────────────────────────────────────────────────────────
   protected readonly puedeVerificar = computed(() => {
     const p = this.resolved();
@@ -637,6 +694,16 @@ export class DatosGeneralesStepComponent implements OnInit {
       const primary = p.coverages?.find((c) => c.isPrimary && c.active)
         ?? p.coverages?.find((c) => c.active) ?? null;
       this.selectedInsurancePlanId.set(primary?.planId ?? null);
+    });
+
+    // Carga los guardians (relaciones familiares) cuando aparece un nuevo paciente resuelto.
+    // Se evita re-disparar para el mismo id para no hacer peticiones redundantes.
+    effect(() => {
+      const p = this.resolved();
+      if (!p) { this.lastGuardiansPatientId = null; return; }
+      if (this.lastGuardiansPatientId === p.id) return;
+      this.lastGuardiansPatientId = p.id;
+      this.store.dispatch(loadPatientGuardians({ patientId: p.id }));
     });
   }
 
@@ -837,6 +904,20 @@ export class DatosGeneralesStepComponent implements OnInit {
     const p = this.resolved();
     if (!p) return;
     this.store.dispatch(verifyPatient({ id: p.id }));
+  }
+
+  protected crearAccesoPortal(): void {
+    const p = this.resolved();
+    if (!p || this.readOnly() || p.accountStatus !== 'NONE') return;
+    this.store.dispatch(createPatientPortalAccount({ id: p.id }));
+  }
+
+  protected validarRelacion(g: PatientGuardian): void {
+    this.store.dispatch(validateBond({ userPatientId: g.userPatientId, status: 'VERIFIED' }));
+  }
+
+  protected rechazarRelacion(g: PatientGuardian): void {
+    this.store.dispatch(validateBond({ userPatientId: g.userPatientId, status: 'REJECTED' }));
   }
 
   onConfirm(): void {

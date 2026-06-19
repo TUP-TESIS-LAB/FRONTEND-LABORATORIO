@@ -9,6 +9,8 @@ import {
   checkPatientDni, checkPatientDniSuccess, checkPatientDniFailure,
   togglePatientActive, togglePatientActiveSuccess, togglePatientActiveFailure,
   verifyPatientSuccess,
+  createPatientPortalAccount, createPatientPortalAccountSuccess, createPatientPortalAccountFailure,
+  resendPatientPortalAccess, resendPatientPortalAccessSuccess, resendPatientPortalAccessFailure,
 } from './patient.actions';
 
 export const patientReducer = createReducer(
@@ -25,6 +27,8 @@ export const patientReducer = createReducer(
   on(addPatient, (state): PatientState => ({ ...state, pending: true, error: null })),
   on(updatePatient, (state): PatientState => ({ ...state, pending: true, error: null })),
   on(togglePatientActive, (state): PatientState => ({ ...state, pending: true, error: null })),
+  on(createPatientPortalAccount, (state): PatientState => ({ ...state, pending: true, error: null })),
+  on(resendPatientPortalAccess, (state): PatientState => ({ ...state, pending: true, error: null })),
   on(checkPatientDni, (state): PatientState => ({ ...state, error: null })),
 
   // Success / data updates
@@ -72,6 +76,18 @@ export const patientReducer = createReducer(
     ...state, dniCheck: { dni, exists }, error: null,
   })),
 
+  on(createPatientPortalAccountSuccess, (state, { id }): PatientState => ({
+    ...state,
+    items: state.items.map((p) => (p.id === id ? { ...p, accountStatus: 'PENDING' as const } : p)),
+    selected: state.selected?.id === id ? { ...state.selected, accountStatus: 'PENDING' as const } : state.selected,
+    pending: false,
+    error: null,
+  })),
+
+  on(resendPatientPortalAccessSuccess, (state): PatientState => ({
+    ...state, pending: false, error: null,
+  })),
+
   // Failures
   on(loadPatientsFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
   on(loadPatientFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
@@ -79,6 +95,8 @@ export const patientReducer = createReducer(
   on(updatePatientFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
   on(togglePatientActiveFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
   on(checkPatientDniFailure, (state, { error }): PatientState => ({ ...state, error })),
+  on(createPatientPortalAccountFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
+  on(resendPatientPortalAccessFailure, (state, { error }): PatientState => ({ ...state, pending: false, error })),
 
   // Misc UI state
   on(setPatientPageRequest, (state, { patch }): PatientState => ({
