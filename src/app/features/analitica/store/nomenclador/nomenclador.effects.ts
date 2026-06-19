@@ -52,8 +52,10 @@ export class NomencladorEffects {
       ofType(loadDeterminations),
       mergeMap(({ analysisId }) =>
         this.svc.getDeterminations(analysisId).pipe(
-          map(determinations => loadDeterminationsSuccess({ analysisId, determinations })),
-          catchError(() => of(loadDeterminationsSuccess({ analysisId, determinations: [] }))),
+          map(({ nbuCode, determinations }) =>
+            loadDeterminationsSuccess({ analysisId, nbuCode, determinations }),
+          ),
+          catchError(() => of(loadDeterminationsSuccess({ analysisId, nbuCode: null, determinations: [] }))),
         ),
       ),
     ),

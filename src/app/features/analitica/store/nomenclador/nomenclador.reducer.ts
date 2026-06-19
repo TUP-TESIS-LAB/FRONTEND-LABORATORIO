@@ -38,9 +38,13 @@ export const nomencladorReducer = createReducer(
   })),
 
   // ── Determinaciones ────────────────────────────────────────────────────────
-  on(loadDeterminationsSuccess, (state, { analysisId, determinations }): NomencladorFeatureState => ({
+  on(loadDeterminationsSuccess, (state, { analysisId, nbuCode, determinations }): NomencladorFeatureState => ({
     ...state,
     determinationsByAnalysis: { ...state.determinationsByAnalysis, [analysisId]: determinations },
+    // Parchear el nbuCode en la fila del catálogo correspondiente (viene del detalle al expandir)
+    catalog: state.catalog.map(row =>
+      row.id === analysisId ? { ...row, nbuCode } : row,
+    ),
   })),
 
   // ── Valor U.B. ─────────────────────────────────────────────────────────────

@@ -60,22 +60,20 @@ type NbuTab = 'catalogo' | 'particular';
       <div class="flex gap-1 mb-4 border-b border-[var(--ds-border,#e4e4e7)]">
         <button
           type="button"
-          class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-          [class.border-[var(--brand-primary,#4f46e5)]]="tab() === 'catalogo'"
-          [class.text-[var(--brand-primary,#4f46e5)]]="tab() === 'catalogo'"
-          [class.border-transparent]="tab() !== 'catalogo'"
-          [class.text-[var(--ds-text-muted,#71717a)]]="tab() !== 'catalogo'"
+          data-testid="tab-catalogo"
+          class="px-4 py-2 text-sm font-medium border-b-2 border-transparent transition-colors"
+          [style.borderBottomColor]="tab() === 'catalogo' ? 'var(--brand-primary,#2563eb)' : 'transparent'"
+          [style.color]="tab() === 'catalogo' ? 'var(--brand-primary,#2563eb)' : 'var(--ds-text-muted,#71717a)'"
           (click)="setTab('catalogo')"
         >
           Catálogo de análisis
         </button>
         <button
           type="button"
-          class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-          [class.border-[var(--brand-primary,#4f46e5)]]="tab() === 'particular'"
-          [class.text-[var(--brand-primary,#4f46e5)]]="tab() === 'particular'"
-          [class.border-transparent]="tab() !== 'particular'"
-          [class.text-[var(--ds-text-muted,#71717a)]]="tab() !== 'particular'"
+          data-testid="tab-particular"
+          class="px-4 py-2 text-sm font-medium border-b-2 border-transparent transition-colors"
+          [style.borderBottomColor]="tab() === 'particular' ? 'var(--brand-primary,#2563eb)' : 'transparent'"
+          [style.color]="tab() === 'particular' ? 'var(--brand-primary,#2563eb)' : 'var(--ds-text-muted,#71717a)'"
           (click)="setTab('particular')"
         >
           Precio particular

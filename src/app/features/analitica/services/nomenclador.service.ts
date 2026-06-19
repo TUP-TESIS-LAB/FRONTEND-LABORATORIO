@@ -32,16 +32,20 @@ export class NomencladorService {
     return this.analysis.list(200).pipe(
       map(list => list.map(a => ({
         id: a.id, shortCode: a.shortCode, name: a.name, familyName: a.familyName,
-        nbuCode: null,            // el list no trae nbuCode; se completa al expandir (getDeterminations) o con #97
+        nbuCode: null,            // el list no trae nbuCode; se completa al expandir (getDeterminations) con PR #97 vía /catalog
         cantidadUb: a.ubCount,    // real hoy (puede ser null si no configurado)
       }))),
     );
   }
 
-  /** REAL: determinaciones (y nbuCode) del detalle del análisis. */
-  getDeterminations(analysisId: number): Observable<Determination[]> {
+  /** REAL: determinaciones y nbuCode del detalle del análisis.
+   *  El nbuCode se extrae del detalle y se usa para parchear la fila del catálogo en el store. */
+  getDeterminations(analysisId: number): Observable<{ nbuCode: string | null; determinations: Determination[] }> {
     return this.analysis.getById(analysisId).pipe(
-      map(detail => detail.determinations.map(d => ({ id: d.id, name: d.name }))),
+      map(detail => ({
+        nbuCode: detail.nbuCode,
+        determinations: detail.determinations.map(d => ({ id: d.id, name: d.name })),
+      })),
     );
   }
 

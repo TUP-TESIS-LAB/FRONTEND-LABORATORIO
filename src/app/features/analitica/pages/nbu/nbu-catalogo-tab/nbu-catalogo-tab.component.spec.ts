@@ -193,6 +193,28 @@ describe('NbuCatalogoTabComponent', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.expansion-row')).toBeNull();
   });
 
+  it('muestra el nbuCode cuando el reducer lo parchea en el catalog tras expandir', () => {
+    // Simula el estado tras loadDeterminationsSuccess: la fila ya tiene nbuCode seteado
+    const row = catalogRow({ id: 7, nbuCode: null });
+    const { fixture, store } = setup([row]);
+    fixture.detectChanges();
+
+    // El reducer parchea: actualizamos el estado del store con nbuCode ya seteado
+    store.setState({
+      [NOMENCLADOR_FEATURE_KEY]: {
+        ...initialNomencladorState,
+        catalog: [{ ...row, nbuCode: '475' }],
+        selectedVersionId: 'v2024',
+        determinationsByAnalysis: {},
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('475');
+  });
+
   it('loadDeterminations se despacha solo una vez aunque se expanda/colapse/expanda', () => {
     const row = catalogRow({ id: 7 });
     const { fixture, store } = setup([row]);

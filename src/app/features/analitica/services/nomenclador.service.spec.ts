@@ -22,9 +22,10 @@ describe('NomencladorService', () => {
     expect(rows[0]).toEqual({ id: 1, shortCode: 'HEMO', name: 'Hemograma', familyName: 'Hematología', nbuCode: null, cantidadUb: 14 });
   });
 
-  it('getDeterminations devuelve las determinaciones REALES del detalle', async () => {
-    const dets = await firstValueFrom(svc.getDeterminations(1));
-    expect(dets).toEqual([{ id: 9, name: 'Hemoglobina' }]);
+  it('getDeterminations devuelve nbuCode y determinaciones REALES del detalle', async () => {
+    const result = await firstValueFrom(svc.getDeterminations(1));
+    expect(result.nbuCode).toBe('475');
+    expect(result.determinations).toEqual([{ id: 9, name: 'Hemoglobina' }]);
   });
 
   it('getVersions (MOCK) devuelve al menos la versión vigente', async () => {

@@ -26,7 +26,7 @@ export const loadDeterminations = createAction(
 );
 export const loadDeterminationsSuccess = createAction(
   '[Nomenclador API] Load Determinations Success',
-  props<{ analysisId: number; determinations: Determination[] }>(),
+  props<{ analysisId: number; nbuCode: string | null; determinations: Determination[] }>(),
 );
 
 // ── Valor U.B. particular ────────────────────────────────────────────────────

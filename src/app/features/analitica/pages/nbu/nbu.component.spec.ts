@@ -138,4 +138,35 @@ describe('NbuComponent', () => {
     // La instancia del componente debe reflejar el cambio de tab
     expect(fixture.componentInstance.tab()).toBe('particular');
   });
+
+  // (d) Resalte del tab activo
+  it('tab "catálogo" activo tiene borderBottomColor con brand-primary y color con brand-primary', () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+
+    const catalogBtn = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="tab-catalogo"]');
+    const particularBtn = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="tab-particular"]');
+    expect(catalogBtn).not.toBeNull();
+    expect(particularBtn).not.toBeNull();
+
+    // Tab activo por defecto: catálogo
+    expect(catalogBtn!.style.borderBottomColor).not.toBe('transparent');
+    expect(particularBtn!.style.borderBottomColor).toBe('transparent');
+  });
+
+  it('al cambiar a "particular" el estilo activo se mueve al botón correcto', () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+
+    const particularBtn = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="tab-particular"]');
+    const catalogBtn = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="tab-catalogo"]');
+    expect(particularBtn).not.toBeNull();
+
+    particularBtn!.click();
+    fixture.detectChanges();
+
+    // Ahora particular está activo; catálogo pasa a transparente
+    expect(particularBtn!.style.borderBottomColor).not.toBe('transparent');
+    expect(catalogBtn!.style.borderBottomColor).toBe('transparent');
+  });
 });

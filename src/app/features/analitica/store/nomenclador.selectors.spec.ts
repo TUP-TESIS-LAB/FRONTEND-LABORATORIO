@@ -122,6 +122,15 @@ describe('nomenclador selectors', () => {
     it('devuelve [] en estado inicial', () => {
       expect(selectCatalogRows(stateWith({}))).toEqual([]);
     });
+
+    it('refleja el nbuCode parchado en la fila (simulando el patch del reducer tras loadDeterminationsSuccess)', () => {
+      // El reducer parchea nbuCode en catalog al recibir loadDeterminationsSuccess.
+      // El selector expone el catalog tal cual; este test verifica que selectCatalogRows
+      // propaga correctamente el nbuCode ya seteado en la fila.
+      const catalog = [row({ id: 5, cantidadUb: 10, nbuCode: '475' })];
+      const rows = selectCatalogRows(stateWith({ catalog, selectedVersionId: 'v2024' }));
+      expect(rows[0].nbuCode).toBe('475');
+    });
   });
 
   // ── selectParticularRows (colección) ──────────────────────────────────────
