@@ -12,6 +12,7 @@ import {
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
   loadTransito, loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
   loadDescarte, loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
+  loadDescartadas, loadDescartadasSuccess, loadDescartadasNotModified, loadDescartadasFailure,
   loadProcesamiento, loadProcesamientoSuccess, loadProcesamientoNotModified, loadProcesamientoFailure,
   resolveRouting, resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
@@ -84,10 +85,15 @@ export class MuestrasEffects {
     ),
   );
 
+  // El descarte físico ocurre desde la pantalla Descarte → recargar ambas vistas (a descartar /
+  // descartadas). El resto de las transiciones son de Recolección → recargar esa lista.
   reloadAfterTransition$ = createEffect(() =>
     this.actions$.pipe(
       ofType(transitionLabelsSuccess),
-      map(() => loadRecoleccion()),
+      concatMap(({ transitionKey }) =>
+        transitionKey === 'discard'
+          ? [loadDescarte(), loadDescartadas()]
+          : [loadRecoleccion()]),
     ),
   );
 
@@ -105,15 +111,31 @@ export class MuestrasEffects {
     ),
   );
 
+  // "A descartar": tubos COMPLETED listos para descarte físico.
   loadDescarte$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadDescarte),
       withLatestFrom(this.store.select(selectMuestrasBranchId)),
       switchMap(([, branchId]) => {
         if (branchId == null) return EMPTY;
-        return this.api.getWorklist('REJECTED,LOST,DISCARDED', branchId).pipe(
+        return this.api.getWorklist('COMPLETED', branchId).pipe(
           map(res => isNotModified(res) ? loadDescarteNotModified() : loadDescarteSuccess({ items: res })),
           catchError((error: HttpErrorResponse) => of(loadDescarteFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  // "Descartadas": historial de tubos ya en DISCARDED (solo lectura).
+  loadDescartadas$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadDescartadas),
+      withLatestFrom(this.store.select(selectMuestrasBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getWorklist('DISCARDED', branchId).pipe(
+          map(res => isNotModified(res) ? loadDescartadasNotModified() : loadDescartadasSuccess({ items: res })),
+          catchError((error: HttpErrorResponse) => of(loadDescartadasFailure({ error }))),
         );
       }),
     ),
@@ -208,6 +230,8 @@ export class MuestrasEffects {
         return labelIds.length ? forkJoin(labelIds.map(id => this.api.markLost(id))) : of(null);
       case 'rollback':
         return this.api.rollback(labelIds);
+      case 'discard':
+        return this.api.discard(labelIds);
       default:
         // Recolección solo expone transito/rejected/lost/rollback; el resto es del arco mochila.
         return EMPTY;

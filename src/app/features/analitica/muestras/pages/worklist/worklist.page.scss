@@ -27,6 +27,34 @@
   flex-shrink: 0;
 }
 
+.descarte-switch {
+  display: inline-flex;
+  align-self: center;
+  gap: 4px;
+  margin-right: 4px;
+  padding: 3px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+
+  button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--ink-2);
+    font: inherit;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+
+    &:hover { color: var(--ink); }
+    &.active { background: var(--brand); color: #fff; }
+  }
+}
+
 .chip {
   background: var(--card);
   border: 1px solid var(--line);

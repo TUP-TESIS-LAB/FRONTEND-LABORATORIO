@@ -55,7 +55,7 @@ export const loadTransitoFailure = createAction(
   props<{ error: HttpErrorResponse }>()
 );
 
-// Worklist Descarte (REJECTED,LOST,DISCARDED) — polleada, solo lectura
+// Worklist "A descartar" (COMPLETED) — polleada; permite descarte físico
 export const loadDescarte = createAction('[Muestras Page] Load Descarte');
 export const loadDescarteSuccess = createAction(
   '[Muestras API] Load Descarte Success',
@@ -64,6 +64,18 @@ export const loadDescarteSuccess = createAction(
 export const loadDescarteNotModified = createAction('[Muestras API] Load Descarte Not Modified');
 export const loadDescarteFailure = createAction(
   '[Muestras API] Load Descarte Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
+// Worklist "Descartadas" (DISCARDED) — polleada, solo lectura (historial)
+export const loadDescartadas = createAction('[Muestras Page] Load Descartadas');
+export const loadDescartadasSuccess = createAction(
+  '[Muestras API] Load Descartadas Success',
+  props<{ items: LabelWorklistItem[] }>()
+);
+export const loadDescartadasNotModified = createAction('[Muestras API] Load Descartadas Not Modified');
+export const loadDescartadasFailure = createAction(
+  '[Muestras API] Load Descartadas Failure',
   props<{ error: HttpErrorResponse }>()
 );
 

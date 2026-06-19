@@ -6,6 +6,7 @@ import {
   transitionLabels, transitionLabelsSuccess, transitionLabelsFailure,
   loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
   loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
+  loadDescartadasSuccess, loadDescartadasNotModified, loadDescartadasFailure,
   loadProcesamientoSuccess, loadProcesamientoNotModified, loadProcesamientoFailure,
   resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspacesSuccess, loadWorkspacesFailure,
@@ -39,6 +40,10 @@ export const muestrasReducer = createReducer(
   on(loadDescarteSuccess, (state, { items }): MuestrasState => ({ ...state, descarte: items, error: null })),
   on(loadDescarteNotModified, (state): MuestrasState => ({ ...state })),
   on(loadDescarteFailure, (state, { error }): MuestrasState => ({ ...state, error })),
+
+  on(loadDescartadasSuccess, (state, { items }): MuestrasState => ({ ...state, descartadas: items, error: null })),
+  on(loadDescartadasNotModified, (state): MuestrasState => ({ ...state })),
+  on(loadDescartadasFailure, (state, { error }): MuestrasState => ({ ...state, error })),
 
   on(loadProcesamientoSuccess, (state, { items }): MuestrasState => ({ ...state, procesamiento: items, error: null })),
   on(loadProcesamientoNotModified, (state): MuestrasState => ({ ...state })),
