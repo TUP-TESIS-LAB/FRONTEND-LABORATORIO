@@ -78,10 +78,11 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           </ng-template>
 
           <ng-template pTemplate="body" let-row let-expanded="expanded">
-            <tr>
+            <tr [pRowToggler]="row" [pRowTogglerDisabled]="!expandable()"
+                [class.ut-row-clickable]="expandable()">
               @if (expandable()) {
                 <td class="ut-expander-td">
-                  <button class="ut-ibtn" type="button" [pRowToggler]="row"
+                  <button class="ut-ibtn" type="button"
                           [attr.aria-label]="expanded ? 'Contraer' : 'Expandir'">
                     <i class="pi" [class.pi-chevron-right]="!expanded" [class.pi-chevron-down]="expanded"></i>
                   </button>
@@ -101,7 +102,7 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
                 </td>
               }
               @if (hasActions()) {
-                <td class="ut-actions-td">
+                <td class="ut-actions-td" (click)="$event.stopPropagation()">
                   <div class="ut-actions-cell">
                     @if (showView()) {
                       <button class="ut-ibtn" type="button"
@@ -298,6 +299,8 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
     :host ::ng-deep td.ut-actions-td { width: 1%; white-space: nowrap; }
 
     /* ── Row expansion ── */
+    /* Fila clickeable completa para expandir (no solo el chevron). */
+    :host ::ng-deep tr.ut-row-clickable { cursor: pointer; }
     :host ::ng-deep th.ut-expander-th { width: 1%; white-space: nowrap; }
     :host ::ng-deep td.ut-expander-td { width: 1%; white-space: nowrap; }
     /* La fila de expansión NO usa el zebra/hover de las filas normales. */

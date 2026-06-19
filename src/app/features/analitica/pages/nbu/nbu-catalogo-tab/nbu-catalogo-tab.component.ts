@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
@@ -7,6 +7,7 @@ import { TableColumn } from '@shared/ui/models/table-column.model';
 import { CatalogRow, Determination } from '../../../models/nomenclador.model';
 import { loadDeterminations } from '../../../store/nomenclador/nomenclador.actions';
 import { selectCatalogRows, selectDeterminations } from '../../../store/nomenclador/nomenclador.selectors';
+import { matchesFilter } from '../nbu-filter';
 
 /**
  * Tab "Catálogo de análisis" de la pantalla NBU (KAN-118).
@@ -22,9 +23,11 @@ import { selectCatalogRows, selectDeterminations } from '../../../store/nomencla
   imports: [DataTableComponent, UiCellDirective, UiRowExpansionDirective],
   template: `
     <ui-table
-      [value]="rows()"
+      [value]="filteredRows()"
       [columns]="columns"
       [expandable]="true"
+      [paginator]="true"
+      [rows]="20"
       dataKey="id"
       emptyHeading="Sin análisis en el catálogo"
       emptyIcon="pi-flask"
@@ -81,8 +84,17 @@ import { selectCatalogRows, selectDeterminations } from '../../../store/nomencla
 export class NbuCatalogoTabComponent {
   private readonly store = inject(Store);
 
+  /** Filtros provistos por el shell (búsqueda + familias seleccionadas). */
+  readonly search = input<string>('');
+  readonly families = input<readonly string[]>([]);
+
   /** Filas del catálogo con cantidadUb resuelta para la versión seleccionada. */
-  protected readonly rows = this.store.selectSignal(selectCatalogRows);
+  private readonly allRows = this.store.selectSignal(selectCatalogRows);
+
+  /** Filas tras aplicar búsqueda + filtro de familia. */
+  protected readonly filteredRows = computed(() =>
+    this.allRows().filter(r => matchesFilter(r, this.search(), this.families())),
+  );
 
   readonly columns: readonly TableColumn[] = [
     { field: 'shortCode', header: 'Código' },

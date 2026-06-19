@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Store } from '@ngrx/store';
+import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { NbuCatalogoTabComponent } from './nbu-catalogo-tab/nbu-catalogo-tab.component';
 import { NbuParticularTabComponent } from './nbu-particular-tab.component';
 import { loadNomenclador, selectNbuVersion } from '../../store/nomenclador/nomenclador.actions';
@@ -7,6 +8,7 @@ import {
   selectNbuVersions,
   selectSelectedVersionId,
   selectNomencladorPending,
+  selectCatalogRows,
 } from '../../store/nomenclador/nomenclador.selectors';
 
 type NbuTab = 'catalogo' | 'particular';
@@ -21,7 +23,7 @@ type NbuTab = 'catalogo' | 'particular';
   selector: 'app-nbu',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NbuCatalogoTabComponent, NbuParticularTabComponent],
+  imports: [NbuCatalogoTabComponent, NbuParticularTabComponent, FilterBarComponent],
   template: `
     <div class="p-4">
       <!-- Header -->
@@ -80,11 +82,16 @@ type NbuTab = 'catalogo' | 'particular';
         </button>
       </div>
 
+      <!-- Búsqueda + filtro por familia (compartido entre tabs) -->
+      <div class="mb-3">
+        <ui-filter-bar [config]="filterConfig()" (valueChange)="onFilter($event)" />
+      </div>
+
       <div class="bg-white rounded-lg shadow-sm">
         @if (tab() === 'catalogo') {
-          <lab-nbu-catalogo-tab />
+          <lab-nbu-catalogo-tab [search]="search()" [families]="families()" />
         } @else {
-          <lab-nbu-particular-tab />
+          <lab-nbu-particular-tab [search]="search()" [families]="families()" />
         }
       </div>
     </div>
@@ -98,6 +105,28 @@ export class NbuComponent implements OnInit {
   protected readonly versions = this.store.selectSignal(selectNbuVersions);
   protected readonly selectedVersionId = this.store.selectSignal(selectSelectedVersionId);
   protected readonly pending = this.store.selectSignal(selectNomencladorPending);
+
+  // ── Filtro compartido (búsqueda + familia) ──
+  protected readonly search = signal<string>('');
+  protected readonly families = signal<readonly string[]>([]);
+
+  private readonly catalog = this.store.selectSignal(selectCatalogRows);
+
+  /** Config del filtro: search + familias (opciones derivadas del catálogo). */
+  protected readonly filterConfig = computed<FilterBarConfig>(() => {
+    const familias = [...new Set(this.catalog().map(r => r.familyName).filter((f): f is string => !!f))].sort();
+    return {
+      searchPlaceholder: 'Buscar por nombre, código o NBU…',
+      selects: [
+        { key: 'family', label: 'Familia', options: familias.map(f => ({ value: f, label: f })) },
+      ],
+    };
+  });
+
+  protected onFilter(value: FilterBarValue): void {
+    this.search.set(value.search ?? '');
+    this.families.set((value['family'] as string[]) ?? []);
+  }
 
   ngOnInit(): void {
     this.store.dispatch(loadNomenclador());
