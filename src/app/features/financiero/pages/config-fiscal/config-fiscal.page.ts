@@ -3,6 +3,7 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -466,6 +467,16 @@ export class ConfigFiscalPage implements OnInit {
 
   readonly selectedProvider = signal<FiscalProvider>('NONE');
 
+  // ── Reactive prefill: seeds the form when the store resolves the config ────
+  // Runs in injection context (field initializer) so Angular's effect() works.
+  private readonly _prefillEffect = effect(() => {
+    const c = this.existingConfig();
+    if (!c) return;
+    this.selectedProvider.set(c.provider);
+    this.invoicePointOfSale = c.invoicePointOfSale ?? '';
+    this._parseConfigJson(c.provider, (c as any).configJson ?? null);
+  });
+
   // ── Credential form state ──────────────────────────────────────────────────
   /** Shared field: punto de venta (invoicePointOfSale) */
   invoicePointOfSale = '';
@@ -489,14 +500,8 @@ export class ConfigFiscalPage implements OnInit {
     if (tenantIdRaw) {
       this.store.dispatch(loadFiscalConfig({ tenantId: Number(tenantIdRaw) }));
     }
-
-    // Pre-populate form from store when config loads
-    const config = this.existingConfig();
-    if (config) {
-      this.selectedProvider.set(config.provider);
-      this.invoicePointOfSale = config.invoicePointOfSale ?? '';
-      this._parseConfigJson(config.provider, (config as any).configJson ?? null);
-    }
+    // Form prefill is driven reactively via _prefillEffect (field initializer above),
+    // which fires when existingConfig() becomes non-null after the store loads.
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────

@@ -79,6 +79,7 @@ import { TableColumn } from '@shared/ui/models/table-column.model';
           [value]="list()"
           [columns]="columns"
           [loading]="loading()"
+          [showView]="true"
           emptyHeading="Todavía no registraste cobros"
           emptyIcon="pi-receipt"
           emptyDescription="Los pagos que registres en esta sucursal van a aparecer acá, con su comprobante y estado."
