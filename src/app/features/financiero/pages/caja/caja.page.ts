@@ -11,15 +11,15 @@ import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
+import { TooltipModule } from 'primeng/tooltip';
+import { TokenService } from '@core/auth/token.service';
 
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
-import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicator/refresh-indicator.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
-import { HasRoleDirective } from '@shared/directives/has-role.directive';
 
 import { PollingService, PollingHandle } from '@core/refresh';
 
@@ -54,14 +54,13 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
+    TooltipModule,
     PageHeaderComponent,
     EmptyStateComponent,
-    StatCardComponent,
     DataTableComponent,
     RefreshIndicatorComponent,
     UiCellDirective,
     CurrencyArPipe,
-    HasRoleDirective,
     MetodoChipComponent,
     EstadoCajaPillComponent,
     AbrirCajaModalComponent,
@@ -134,11 +133,25 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
             <button class="fin-btn fin-btn--primary" type="button" (click)="cobrarAtencion()">
               <i class="pi pi-dollar"></i> Cobrar atención
             </button>
-            <ng-container *hasRole="'ADMINISTRADOR'">
+            @if (isAdmin()) {
               <button class="fin-btn fin-btn--danger" type="button" (click)="openModal('arqueo')">
                 <i class="pi pi-lock"></i> Cerrar caja
               </button>
-            </ng-container>
+            } @else {
+              <div class="fin-cerrar-caja-wrap">
+                <button
+                  class="fin-btn fin-btn--ghost fin-btn--disabled"
+                  type="button"
+                  disabled
+                  pTooltip="Solo un administrador puede cerrar la caja"
+                  tooltipPosition="top">
+                  <i class="pi pi-lock"></i> Cerrar caja
+                </button>
+                <span class="fin-cerrar-caja-note">
+                  Cerrar caja es una acción de administrador. Pedile el arqueo a quien tenga ese rol.
+                </span>
+              </div>
+            }
           </div>
         </div>
 
@@ -278,6 +291,12 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
     .fin-btn--primary:hover { background: #3a3cc0; }
     .fin-btn--ghost { background: white; color: #4a4d63; border: 1.5px solid #e8e9f0; }
     .fin-btn--ghost:hover { background: #f5f6f9; }
+    .fin-btn--disabled { opacity: 0.5; cursor: not-allowed; }
+    .fin-btn--disabled:hover { background: white; }
+
+    /* ── Cerrar caja no-admin ── */
+    .fin-cerrar-caja-wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+    .fin-cerrar-caja-note { font-size: 11.5px; color: #7c8092; max-width: 280px; line-height: 1.4; }
     .fin-btn--success { background: #0f8a55; color: white; margin-top: 18px; }
     .fin-btn--success:hover { background: #0a6b41; }
     .fin-btn--danger { background: #d83a3a; color: white; }
@@ -358,6 +377,10 @@ export class CajaPage implements OnInit {
   private readonly polling = inject(PollingService);
   private readonly destroy = inject(DestroyRef);
   private readonly branchCtx = inject(OperatorBranchContextService);
+  private readonly tokens    = inject(TokenService);
+
+  // Role check
+  readonly isAdmin = signal(this.tokens.getRoles().includes('ADMINISTRADOR'));
 
   // Selectors
   readonly isCajaOpen = this.store.selectSignal(selectIsCajaOpen);

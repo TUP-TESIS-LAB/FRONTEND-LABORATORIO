@@ -53,7 +53,7 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
               <div class="fin-big-input fin-big-input--sm">
                 <span class="fin-big-input__prefix">$</span>
                 <p-inputNumber
-                  [(ngModel)]="declarado"
+                  [ngModel]="declarado()" (ngModelChange)="declarado.set($event)"
                   [min]="0"
                   [minFractionDigits]="2"
                   [maxFractionDigits]="2"
@@ -96,7 +96,7 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
             label="Confirmar cierre"
             severity="danger"
             icon="pi pi-lock"
-            [disabled]="declarado === null"
+            [disabled]="declarado() === null"
             (onClick)="confirm()" />
         </div>
       </ng-template>
@@ -158,10 +158,10 @@ export class ArqueoModalComponent {
   private readonly store   = inject(Store);
   private readonly session = this.store.selectSignal(selectCajaSession);
 
-  protected declarado: number | null = null;
+  protected declarado = signal<number | null>(null);
 
   protected readonly diff = computed<number | null>(() =>
-    this.declarado !== null ? this.declarado - this.esperado() : null,
+    this.declarado() !== null ? this.declarado()! - this.esperado() : null,
   );
 
   protected readonly diffClass = computed<'ok' | 'warn' | 'danger'>(() => {
@@ -173,8 +173,8 @@ export class ArqueoModalComponent {
 
   protected confirm(): void {
     const sess = this.session();
-    if (!sess || this.declarado === null) return;
-    this.store.dispatch(closeSession({ id: sess.id, declaredAmount: this.declarado }));
+    if (!sess || this.declarado() === null) return;
+    this.store.dispatch(closeSession({ id: sess.id, declaredAmount: this.declarado()! }));
     this.closed.emit();
   }
 }

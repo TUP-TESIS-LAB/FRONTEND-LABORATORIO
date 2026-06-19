@@ -43,7 +43,7 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
           <div class="fin-big-input">
             <span class="fin-big-input__prefix">$</span>
             <p-inputNumber
-              [(ngModel)]="montoApertura"
+              [ngModel]="montoApertura()" (ngModelChange)="montoApertura.set($event)"
               [min]="0"
               [minFractionDigits]="2"
               [maxFractionDigits]="2"
@@ -61,7 +61,7 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
         <div class="fin-modal__footer">
           <p-button label="Cancelar" severity="secondary" (onClick)="closed.emit()" />
           <p-button
-            [label]="'Abrir caja con ' + (montoApertura | currencyAr)"
+            [label]="'Abrir caja con ' + (montoApertura() | currencyAr)"
             severity="success"
             icon="pi pi-lock-open"
             [disabled]="!canConfirm()"
@@ -111,13 +111,13 @@ export class AbrirCajaModalComponent {
   private readonly store = inject(Store);
   private readonly branchCtx = inject(OperatorBranchContextService);
 
-  protected montoApertura = 0;
-  protected readonly canConfirm = computed(() => this.montoApertura > 0);
+  protected montoApertura = signal(0);
+  protected readonly canConfirm = computed(() => this.montoApertura() > 0);
 
   protected confirm(): void {
     const branchId = this.branchCtx.branchId();
-    if (!branchId || this.montoApertura <= 0) return;
-    this.store.dispatch(openSession({ branchId, openingAmount: this.montoApertura }));
+    if (!branchId || this.montoApertura() <= 0) return;
+    this.store.dispatch(openSession({ branchId, openingAmount: this.montoApertura() }));
     this.closed.emit();
   }
 }

@@ -65,7 +65,7 @@ import { OperatorBranchContextService } from '@features/turnos/services/operator
           <div class="fin-big-input">
             <span class="fin-big-input__prefix">$</span>
             <p-inputNumber
-              [(ngModel)]="monto"
+              [ngModel]="monto()" (ngModelChange)="monto.set($event)"
               [min]="0"
               [minFractionDigits]="2"
               [maxFractionDigits]="2"
@@ -79,7 +79,7 @@ import { OperatorBranchContextService } from '@features/turnos/services/operator
           <label>Descripción <span class="fin-req">obligatorio</span></label>
           <textarea
             pTextarea
-            [(ngModel)]="descripcion"
+            [ngModel]="descripcion()" (ngModelChange)="descripcion.set($event)"
             rows="3"
             style="width:100%"
             [placeholder]="tipo() === 'INGRESS'
@@ -156,11 +156,11 @@ export class MovimientoModalComponent {
   private readonly session = this.store.selectSignal(selectCajaSession);
 
   protected tipo = signal<TransactionType>('INGRESS');
-  protected monto = 0;
-  protected descripcion = '';
+  protected monto = signal(0);
+  protected descripcion = signal('');
 
   protected readonly canConfirm = computed(
-    () => this.monto > 0 && this.descripcion.trim().length > 0,
+    () => this.monto() > 0 && this.descripcion().trim().length > 0,
   );
 
   protected confirm(): void {
@@ -174,8 +174,8 @@ export class MovimientoModalComponent {
         body: {
           branchId,
           type: this.tipo(),
-          amount: this.monto,
-          description: this.descripcion.trim(),
+          amount: this.monto(),
+          description: this.descripcion().trim(),
         },
       }),
     );
