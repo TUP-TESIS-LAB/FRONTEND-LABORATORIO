@@ -1,6 +1,6 @@
 # Pantalla Nomenclador NBU (Clínico) con precio particular — Design
 
-> **Jira:** _a crear con `jira-workflow` al cerrar el plan (regla #1/#3)._
+> **Jira:** [KAN-118](https://exequielsantoro.atlassian.net/browse/KAN-118)
 > **Fecha:** 2026-06-19 · **Rama:** `feat/nomenclador-nbu-clinico` (desde `development` d372c92)
 > **Mockup de referencia:** `mockups/nbu-clinico-v3.html` (interactivo)
 

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
-> **Jira:** _a crear con `jira-workflow` al cerrar este plan._
+> **Jira:** [KAN-118](https://exequielsantoro.atlassian.net/browse/KAN-118)
 > **Spec:** `docs/superpowers/specs/2026-06-19-nomenclador-nbu-clinico-design.md`
 > **Mockup (markup de referencia, aprobado):** `mockups/nbu-clinico-v3.html`
 > **Rama/worktree:** `feat/nomenclador-nbu-clinico` en `.worktrees/nomenclador-nbu-clinico` (desde `development` d372c92)
