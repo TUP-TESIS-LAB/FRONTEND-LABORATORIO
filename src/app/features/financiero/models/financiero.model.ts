@@ -55,3 +55,35 @@ export const PROVIDER_META: Record<FiscalProvider, { label: string; sub: string;
   COLPPY: { label: 'Colppy',        sub: 'Integración contable Colppy',       icon: 'pi-sync' },
   NONE:   { label: 'Sin proveedor', sub: 'Solo Factura X (recibos internos)', icon: 'pi-ban' },
 };
+
+/** Línea de método de pago para registrar un cobro (request al backend). */
+export interface CollectionItemInput {
+  method: PaymentMethod;
+  amount: number;
+  reference?: string | null;
+}
+
+/** Detalle por análisis del cobro (request). Informativo: el backend solo lo persiste. */
+export interface PaymentDetailItemInput {
+  analysisId: number;
+  coverageId: number | null;
+  covered: boolean;
+  chargedAmount: number;
+}
+
+/** Body de POST /api/v1/financiero/payments — espejo de RegisterPaymentRequest. */
+export interface CreatePaymentRequest {
+  attentionId: number;
+  branchId: number;
+  totalAmount: number;
+  copaymentAmount: number;
+  collections: CollectionItemInput[];
+  details: PaymentDetailItemInput[];
+  operatorOptedOutOfElectronic: boolean;
+}
+
+/** Respuesta 201 de POST /payments. */
+export interface RegisterPaymentResponse {
+  payment: Payment;
+  fiscalReference: FiscalInvoiceReference;
+}

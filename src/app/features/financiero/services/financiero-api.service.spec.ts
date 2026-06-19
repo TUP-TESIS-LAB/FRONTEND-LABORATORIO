@@ -35,4 +35,31 @@ describe('FinancieroApiService', () => {
     expect(req.request.body).toEqual({ reason: 'cobro duplicado' });
     req.flush({});
   });
+
+  it('createPayment hace POST a /payments con el body y devuelve la respuesta', () => {
+    const body = {
+      attentionId: 7, branchId: 3, totalAmount: 1500, copaymentAmount: 1500,
+      collections: [{ method: 'CASH' as const, amount: 1500, reference: null }],
+      details: [{ analysisId: 10, coverageId: null, covered: false, chargedAmount: 1500 }],
+      operatorOptedOutOfElectronic: false,
+    };
+    const resp = {
+      payment: { id: 99, tenantId: 1, attentionId: 7, branchId: 3, totalAmount: 1500,
+        copaymentAmount: 1500, status: 'CREATED', cashTransactionId: 1, cancelledAt: null,
+        cancelReason: null, collections: [], details: [] },
+      fiscalReference: { id: 1, paymentId: 99, provider: 'NONE', comprobanteTipo: 'FACTURA_X',
+        internalReference: 'R-0001', externalInvoiceId: null, electronic: false, isVoid: false,
+        emittedAt: '2026-06-19T10:00:00Z' },
+    };
+
+    let result: unknown;
+    svc.createPayment(body).subscribe(r => (result = r));
+
+    const req = http.expectOne('/api/v1/financiero/payments');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(body);
+    req.flush(resp);
+
+    expect(result).toEqual(resp);
+  });
 });

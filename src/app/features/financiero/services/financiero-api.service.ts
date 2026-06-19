@@ -5,6 +5,7 @@ import { withPolling, NotModified } from '@core/refresh';
 import {
   CashSession, SessionActivity, PaymentListItem, Payment, PaymentStatus,
   TransactionType, TenantFiscalConfig, FiscalProvider, FiscalInvoiceReference,
+  CreatePaymentRequest, RegisterPaymentResponse,
 } from '../models/financiero.model';
 
 @Injectable({ providedIn: 'root' })
@@ -51,6 +52,10 @@ export class FinancieroApiService {
 
   cancelPayment(id: number, reason: string): Observable<Payment> {
     return this.http.request<Payment>('delete', `${this.base}/payments/${id}`, { body: { reason } });
+  }
+
+  createPayment(body: CreatePaymentRequest): Observable<RegisterPaymentResponse> {
+    return this.http.post<RegisterPaymentResponse>(`${this.base}/payments`, body);
   }
 
   getFiscalConfig(tenantId: number): Observable<TenantFiscalConfig> {
