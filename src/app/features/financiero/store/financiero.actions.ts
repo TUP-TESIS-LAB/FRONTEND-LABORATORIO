@@ -1,5 +1,5 @@
 ﻿import { createAction, props } from '@ngrx/store';
-import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider } from '../models/financiero.model';
+import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider, CreatePaymentRequest, RegisterPaymentResponse } from '../models/financiero.model';
 
 // ── Caja: cargar sesión abierta ──────────────────────────────────────────────
 export const loadOpenSession = createAction(
@@ -117,6 +117,15 @@ export const cancelPaymentFailure = createAction(
   '[Financiero Cobros API] Cancel Payment Failure',
   props<{ error: string }>(),
 );
+
+// ── cobro: registrar pago de atención ──
+export const registerPayment = createAction(
+  '[Financiero Cobro] Register Payment', props<{ body: CreatePaymentRequest }>());
+export const registerPaymentSuccess = createAction(
+  '[Financiero Cobro] Register Payment Success', props<{ result: RegisterPaymentResponse }>());
+export const registerPaymentFailure = createAction(
+  '[Financiero Cobro] Register Payment Failure', props<{ error: string }>());
+export const resetCobro = createAction('[Financiero Cobro] Reset');
 
 // ── Config fiscal: cargar ────────────────────────────────────────────────────
 export const loadFiscalConfig = createAction(

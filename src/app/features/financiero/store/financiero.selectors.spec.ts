@@ -3,9 +3,10 @@ import {
   selectCajaSession, selectCajaActivity, selectCajaLoading,
   selectIsCajaOpen, selectCajaSaldo, selectCajaError,
   selectCobrosList, selectCobrosLoading, selectCobrosError, selectCobroSelected,
+  selectCobroSubmitting, selectCobroResult, selectCobroError,
   selectFiscalConfig, selectFiscalSaving, selectFiscalConfigError,
 } from './financiero.selectors';
-import { initialFinancieroState, FinancieroState } from './financiero.state';
+import { initialFinancieroState, FinancieroState, FINANCIERO_FEATURE_KEY } from './financiero.state';
 
 const openSession = {
   id: 100, tenantId: 1, cashRegisterId: 5, openedByUserId: 2,
@@ -102,6 +103,16 @@ describe('financiero selectors — cobros', () => {
 
   it('selectCobroSelected devuelve null en estado inicial', () => {
     expect(selectCobroSelected.projector(initialFinancieroState.cobros)).toBeNull();
+  });
+});
+
+describe('financiero selectors — cobro (slice registrar pago)', () => {
+  it('selectCobroSubmitting / Result / Error leen el slice cobro', () => {
+    const state: any = { [FINANCIERO_FEATURE_KEY]: { ...initialFinancieroState,
+      cobro: { submitting: true, result: { payment: { id: 9 } } as any, error: 'E' } } };
+    expect(selectCobroSubmitting.projector(state[FINANCIERO_FEATURE_KEY].cobro)).toBe(true);
+    expect(selectCobroResult.projector(state[FINANCIERO_FEATURE_KEY].cobro)).toEqual({ payment: { id: 9 } });
+    expect(selectCobroError.projector(state[FINANCIERO_FEATURE_KEY].cobro)).toBe('E');
   });
 });
 

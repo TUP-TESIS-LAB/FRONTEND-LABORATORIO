@@ -227,3 +227,30 @@ describe('financiero reducer — config fiscal', () => {
     expect(s.cobros).toBe(initialState.cobros);
   });
 });
+
+describe('financiero reducer — cobro (slice registrar pago)', () => {
+  it('registerPayment marca submitting y limpia error', () => {
+    const s = financieroReducer(initialState, A.registerPayment({ body: {} as any }));
+    expect(s.cobro.submitting).toBe(true);
+    expect(s.cobro.error).toBeNull();
+  });
+
+  it('registerPaymentSuccess guarda result y baja submitting', () => {
+    const result = { payment: { id: 1 } as any, fiscalReference: { id: 2 } as any };
+    const s = financieroReducer(initialState, A.registerPaymentSuccess({ result }));
+    expect(s.cobro.submitting).toBe(false);
+    expect(s.cobro.result).toEqual(result);
+  });
+
+  it('registerPaymentFailure guarda error y baja submitting', () => {
+    const s = financieroReducer(initialState, A.registerPaymentFailure({ error: 'X' }));
+    expect(s.cobro.submitting).toBe(false);
+    expect(s.cobro.error).toBe('X');
+  });
+
+  it('resetCobro vuelve el slice al inicial', () => {
+    const dirty = financieroReducer(initialState, A.registerPaymentFailure({ error: 'X' }));
+    const s = financieroReducer(dirty, A.resetCobro());
+    expect(s.cobro).toEqual(initialState.cobro);
+  });
+});
