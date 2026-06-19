@@ -17,6 +17,7 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  registerPayment, registerPaymentSuccess, registerPaymentFailure,
   loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
   saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
 } from './financiero.actions';
@@ -40,6 +41,7 @@ describe('FinancieroEffects', () => {
     listPayments: ReturnType<typeof vi.fn>;
     getPayment: ReturnType<typeof vi.fn>;
     cancelPayment: ReturnType<typeof vi.fn>;
+    createPayment: ReturnType<typeof vi.fn>;
     getFiscalConfig: ReturnType<typeof vi.fn>;
     saveFiscalConfig: ReturnType<typeof vi.fn>;
   };
@@ -55,6 +57,7 @@ describe('FinancieroEffects', () => {
       listPayments: vi.fn(),
       getPayment: vi.fn(),
       cancelPayment: vi.fn(),
+      createPayment: vi.fn(),
       getFiscalConfig: vi.fn(),
       saveFiscalConfig: vi.fn(),
     };
@@ -340,5 +343,38 @@ describe('FinancieroEffects', () => {
     const action = await firstValueFrom(effects.saveFiscalConfig$);
     expect((action as ReturnType<typeof saveFiscalConfigFailure>).error).toBe('Ocurrió un error al guardar la configuración fiscal.');
     expect(notif.error).toHaveBeenCalled();
+  });
+
+  // ── registerPayment$ ───────────────────────────────────────────────────────
+
+  it('registerPayment$ éxito → registerPaymentSuccess con el result', async () => {
+    const result = { payment: { id: 5 }, fiscalReference: { id: 1 } } as any;
+    api.createPayment.mockReturnValue(of(result));
+    actions$ = of(registerPayment({ body: {} as any }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.registerPayment$);
+    expect(api.createPayment).toHaveBeenCalled();
+    expect(action).toEqual(registerPaymentSuccess({ result }));
+  });
+
+  it('registerPayment$ 409 "caja" → mensaje sin-caja + notif.error', async () => {
+    api.createPayment.mockReturnValue(throwError(() => new HttpErrorResponse({
+      status: 409, error: { message: 'No hay caja abierta para la sucursal indicada' } })));
+    actions$ = of(registerPayment({ body: {} as any }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.registerPayment$);
+    expect((action as ReturnType<typeof registerPaymentFailure>).error)
+      .toBe('No se puede cobrar: no hay una caja abierta.');
+    expect(notif.error).toHaveBeenCalledWith('No se puede cobrar: no hay una caja abierta.');
+  });
+
+  it('registerPayment$ 409 "monto" → mensaje de montos', async () => {
+    api.createPayment.mockReturnValue(throwError(() => new HttpErrorResponse({
+      status: 409, error: { message: 'El monto total no coincide con la suma de los métodos de pago' } })));
+    actions$ = of(registerPayment({ body: {} as any }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.registerPayment$);
+    expect((action as ReturnType<typeof registerPaymentFailure>).error)
+      .toBe('La suma de los medios de pago no coincide con el total.');
   });
 });

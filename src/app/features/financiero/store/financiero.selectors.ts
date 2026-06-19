@@ -34,6 +34,12 @@ export const selectCobrosLoading = createSelector(selectCobrosSlice, c => c.load
 export const selectCobrosError = createSelector(selectCobrosSlice, c => c.error);
 export const selectCobroSelected = createSelector(selectCobrosSlice, c => c.selected);
 
+// ── Cobro (registrar pago) ────────────────────────────────────────────────────
+export const selectCobroSlice = createSelector(selectFinancieroState, s => s.cobro);
+export const selectCobroSubmitting = createSelector(selectCobroSlice, c => c.submitting);
+export const selectCobroResult = createSelector(selectCobroSlice, c => c.result);
+export const selectCobroError = createSelector(selectCobroSlice, c => c.error);
+
 // ── Config fiscal ─────────────────────────────────────────────────────────────
 export const selectConfigSlice = createSelector(selectFinancieroState, s => s.config);
 

@@ -15,6 +15,7 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  registerPayment, registerPaymentSuccess, registerPaymentFailure,
   loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
   saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
 } from './financiero.actions';
@@ -30,6 +31,17 @@ function mapCobrosError(e: HttpErrorResponse): string {
   if (e.status === 409) return 'El pago ya fue cancelado o no se puede cancelar en su estado actual.';
   if (e.status === 422) return 'La suma de los medios de pago no coincide con el total.';
   return 'Ocurrió un error al procesar la operación. Intentá de nuevo.';
+}
+
+function mapRegisterPaymentError(e: HttpErrorResponse): string {
+  const apiMsg = typeof e.error?.message === 'string' ? e.error.message : '';
+  if (e.status === 409) {
+    if (/caja/i.test(apiMsg)) return 'No se puede cobrar: no hay una caja abierta.';
+    if (/monto|suma|importe/i.test(apiMsg)) return 'La suma de los medios de pago no coincide con el total.';
+    return 'No se pudo registrar el cobro. Revisá la caja y los montos e intentá de nuevo.';
+  }
+  if (e.status === 422) return 'Los datos del cobro son inválidos.';
+  return 'Ocurrió un error al registrar el cobro. Intentá de nuevo.';
 }
 
 @Injectable()
@@ -189,6 +201,26 @@ export class FinancieroEffects {
     this.actions$.pipe(
       ofType(cancelPaymentSuccess),
       map(({ payment }) => loadPayment({ id: payment.id })),
+    ),
+  );
+
+  // ── cobro: registrar pago de atención ─────────────────────────────────────
+  registerPayment$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(registerPayment),
+      concatMap(({ body }) =>
+        this.api.createPayment(body).pipe(
+          map(result => {
+            this.notif.success('Cobro registrado correctamente.');
+            return registerPaymentSuccess({ result });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapRegisterPaymentError(e);
+            this.notif.error(error);
+            return of(registerPaymentFailure({ error }));
+          }),
+        ),
+      ),
     ),
   );
 

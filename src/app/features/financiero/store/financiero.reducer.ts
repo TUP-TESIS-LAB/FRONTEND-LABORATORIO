@@ -9,6 +9,7 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  registerPayment, registerPaymentSuccess, registerPaymentFailure, resetCobro,
   loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
   saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
 } from './financiero.actions';
@@ -116,6 +117,20 @@ export const financieroReducer = createReducer(
   on(cancelPaymentFailure, (state, { error }): FinancieroState => ({
     ...state,
     cobros: { ...state.cobros, loading: false, error },
+  })),
+
+  // ── cobro: registrar pago ─────────────────────────────────────────────────
+  on(registerPayment, (state): FinancieroState => ({
+    ...state, cobro: { ...state.cobro, submitting: true, error: null },
+  })),
+  on(registerPaymentSuccess, (state, { result }): FinancieroState => ({
+    ...state, cobro: { submitting: false, result, error: null },
+  })),
+  on(registerPaymentFailure, (state, { error }): FinancieroState => ({
+    ...state, cobro: { ...state.cobro, submitting: false, error },
+  })),
+  on(resetCobro, (state): FinancieroState => ({
+    ...state, cobro: { submitting: false, result: null, error: null },
   })),
 
   // ── config fiscal: cargar ──────────────────────────────────────────────────
