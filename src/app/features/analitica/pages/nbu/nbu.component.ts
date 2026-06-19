@@ -1,18 +1,22 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { NbuCatalogoTabComponent } from './nbu-catalogo-tab/nbu-catalogo-tab.component';
 
 /**
- * Placeholder — Task 4 (KAN-118) implementa la pantalla real del nomenclador.
- * Se mantiene la ruta /nbu activa pero sin lógica de store.
+ * Pantalla NBU (KAN-118).
+ * Task 5: tab "Catálogo de análisis" con tabla expandible de determinaciones.
  */
 @Component({
   selector: 'app-nbu',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EmptyStateComponent],
+  imports: [NbuCatalogoTabComponent],
   template: `
-    <h2>NBU</h2>
-    <ui-empty-state heading="Nomenclador en construcción" icon="pi-list" />
+    <div class="p-4">
+      <h2 class="text-lg font-semibold mb-4">Nomenclador NBU — Catálogo de análisis</h2>
+      <div class="bg-white rounded-lg shadow-sm">
+        <lab-nbu-catalogo-tab />
+      </div>
+    </div>
   `,
 })
 export class NbuComponent {}
