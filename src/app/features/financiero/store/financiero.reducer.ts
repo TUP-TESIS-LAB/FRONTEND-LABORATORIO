@@ -9,6 +9,8 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
+  saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
 } from './financiero.actions';
 
 export const initialState = initialFinancieroState;
@@ -114,5 +116,33 @@ export const financieroReducer = createReducer(
   on(cancelPaymentFailure, (state, { error }): FinancieroState => ({
     ...state,
     cobros: { ...state.cobros, loading: false, error },
+  })),
+
+  // ── config fiscal: cargar ──────────────────────────────────────────────────
+  on(loadFiscalConfig, (state): FinancieroState => ({
+    ...state,
+    config: { ...state.config, error: null },
+  })),
+  on(loadFiscalConfigSuccess, (state, { config }): FinancieroState => ({
+    ...state,
+    config: { ...state.config, current: config, error: null },
+  })),
+  on(loadFiscalConfigFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    config: { ...state.config, error },
+  })),
+
+  // ── config fiscal: guardar ─────────────────────────────────────────────────
+  on(saveFiscalConfig, (state): FinancieroState => ({
+    ...state,
+    config: { ...state.config, saving: true, error: null },
+  })),
+  on(saveFiscalConfigSuccess, (state, { config }): FinancieroState => ({
+    ...state,
+    config: { ...state.config, current: config, saving: false, error: null },
+  })),
+  on(saveFiscalConfigFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    config: { ...state.config, saving: false, error },
   })),
 );

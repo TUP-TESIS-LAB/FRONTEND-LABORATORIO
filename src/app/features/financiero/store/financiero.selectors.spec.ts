@@ -3,6 +3,7 @@ import {
   selectCajaSession, selectCajaActivity, selectCajaLoading,
   selectIsCajaOpen, selectCajaSaldo, selectCajaError,
   selectCobrosList, selectCobrosLoading, selectCobrosError, selectCobroSelected,
+  selectFiscalConfig, selectFiscalSaving, selectFiscalConfigError,
 } from './financiero.selectors';
 import { initialFinancieroState, FinancieroState } from './financiero.state';
 
@@ -101,5 +102,36 @@ describe('financiero selectors — cobros', () => {
 
   it('selectCobroSelected devuelve null en estado inicial', () => {
     expect(selectCobroSelected.projector(initialFinancieroState.cobros)).toBeNull();
+  });
+});
+
+describe('financiero selectors — config fiscal', () => {
+  const config = { id: 1, targetTenantId: 2, provider: 'ARCA' as const, invoicePointOfSale: '0001', active: true };
+
+  it('selectFiscalConfig proyecta la config fiscal', () => {
+    const configSlice = { ...initialFinancieroState.config, current: config };
+    expect(selectFiscalConfig.projector(configSlice)).toEqual(config);
+  });
+
+  it('selectFiscalConfig devuelve null en estado inicial', () => {
+    expect(selectFiscalConfig.projector(initialFinancieroState.config)).toBeNull();
+  });
+
+  it('selectFiscalSaving proyecta saving', () => {
+    const configSlice = { ...initialFinancieroState.config, saving: true };
+    expect(selectFiscalSaving.projector(configSlice)).toBe(true);
+  });
+
+  it('selectFiscalSaving es false en estado inicial', () => {
+    expect(selectFiscalSaving.projector(initialFinancieroState.config)).toBe(false);
+  });
+
+  it('selectFiscalConfigError proyecta el error', () => {
+    const configSlice = { ...initialFinancieroState.config, error: 'Error de carga' };
+    expect(selectFiscalConfigError.projector(configSlice)).toBe('Error de carga');
+  });
+
+  it('selectFiscalConfigError es null en estado inicial', () => {
+    expect(selectFiscalConfigError.projector(initialFinancieroState.config)).toBeNull();
   });
 });

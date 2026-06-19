@@ -33,3 +33,10 @@ export const selectCobrosList = createSelector(selectCobrosSlice, c => c.list);
 export const selectCobrosLoading = createSelector(selectCobrosSlice, c => c.loading);
 export const selectCobrosError = createSelector(selectCobrosSlice, c => c.error);
 export const selectCobroSelected = createSelector(selectCobrosSlice, c => c.selected);
+
+// ── Config fiscal ─────────────────────────────────────────────────────────────
+export const selectConfigSlice = createSelector(selectFinancieroState, s => s.config);
+
+export const selectFiscalConfig = createSelector(selectConfigSlice, c => c.current);
+export const selectFiscalSaving = createSelector(selectConfigSlice, c => c.saving);
+export const selectFiscalConfigError = createSelector(selectConfigSlice, c => c.error);

@@ -1,5 +1,5 @@
 ﻿import { createAction, props } from '@ngrx/store';
-import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus } from '../models/financiero.model';
+import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider } from '../models/financiero.model';
 
 // ── Caja: cargar sesión abierta ──────────────────────────────────────────────
 export const loadOpenSession = createAction(
@@ -115,5 +115,33 @@ export const cancelPaymentSuccess = createAction(
 );
 export const cancelPaymentFailure = createAction(
   '[Financiero Cobros API] Cancel Payment Failure',
+  props<{ error: string }>(),
+);
+
+// ── Config fiscal: cargar ────────────────────────────────────────────────────
+export const loadFiscalConfig = createAction(
+  '[Financiero Config] Load Fiscal Config',
+  props<{ tenantId: number }>(),
+);
+export const loadFiscalConfigSuccess = createAction(
+  '[Financiero Config API] Load Fiscal Config Success',
+  props<{ config: TenantFiscalConfig }>(),
+);
+export const loadFiscalConfigFailure = createAction(
+  '[Financiero Config API] Load Fiscal Config Failure',
+  props<{ error: string }>(),
+);
+
+// ── Config fiscal: guardar ───────────────────────────────────────────────────
+export const saveFiscalConfig = createAction(
+  '[Financiero Config] Save Fiscal Config',
+  props<{ body: { targetTenantId: number; provider: FiscalProvider; invoicePointOfSale?: string; configJson?: string } }>(),
+);
+export const saveFiscalConfigSuccess = createAction(
+  '[Financiero Config API] Save Fiscal Config Success',
+  props<{ config: TenantFiscalConfig }>(),
+);
+export const saveFiscalConfigFailure = createAction(
+  '[Financiero Config API] Save Fiscal Config Failure',
   props<{ error: string }>(),
 );

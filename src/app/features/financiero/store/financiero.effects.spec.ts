@@ -17,6 +17,8 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
+  saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
 } from './financiero.actions';
 import { NOT_MODIFIED } from '@core/refresh/polling-context';
 
@@ -38,6 +40,8 @@ describe('FinancieroEffects', () => {
     listPayments: ReturnType<typeof vi.fn>;
     getPayment: ReturnType<typeof vi.fn>;
     cancelPayment: ReturnType<typeof vi.fn>;
+    getFiscalConfig: ReturnType<typeof vi.fn>;
+    saveFiscalConfig: ReturnType<typeof vi.fn>;
   };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
@@ -51,6 +55,8 @@ describe('FinancieroEffects', () => {
       listPayments: vi.fn(),
       getPayment: vi.fn(),
       cancelPayment: vi.fn(),
+      getFiscalConfig: vi.fn(),
+      saveFiscalConfig: vi.fn(),
     };
     notif = { success: vi.fn(), error: vi.fn() };
 
@@ -282,5 +288,57 @@ describe('FinancieroEffects', () => {
     const effects = TestBed.inject(FinancieroEffects);
     const action = await firstValueFrom(effects.reloadPaymentAfterCancel$);
     expect(action).toEqual(loadPayment({ id: 9 }));
+  });
+
+  // ── loadFiscalConfig$ ──────────────────────────────────────────────────────
+
+  it('loadFiscalConfig$ emite loadFiscalConfigSuccess con la config devuelta', async () => {
+    const config = { id: 1, targetTenantId: 2, provider: 'ARCA' as const, invoicePointOfSale: '0001', active: true };
+    api.getFiscalConfig.mockReturnValue(of(config));
+    actions$ = of(loadFiscalConfig({ tenantId: 2 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.loadFiscalConfig$);
+    expect(api.getFiscalConfig).toHaveBeenCalledWith(2);
+    expect(action).toEqual(loadFiscalConfigSuccess({ config }));
+  });
+
+  it('loadFiscalConfig$ mapea errores a loadFiscalConfigFailure', async () => {
+    api.getFiscalConfig.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    actions$ = of(loadFiscalConfig({ tenantId: 2 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.loadFiscalConfig$);
+    expect(action.type).toBe('[Financiero Config API] Load Fiscal Config Failure');
+  });
+
+  // ── saveFiscalConfig$ ──────────────────────────────────────────────────────
+
+  it('saveFiscalConfig$ ante éxito muestra notif.success y emite saveFiscalConfigSuccess', async () => {
+    const config = { id: 1, targetTenantId: 2, provider: 'ARCA' as const, invoicePointOfSale: '0001', active: true };
+    api.saveFiscalConfig.mockReturnValue(of(config));
+    const body = { targetTenantId: 2, provider: 'ARCA' as const };
+    actions$ = of(saveFiscalConfig({ body }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.saveFiscalConfig$);
+    expect(api.saveFiscalConfig).toHaveBeenCalledWith(body);
+    expect(notif.success).toHaveBeenCalledWith('Configuración fiscal guardada');
+    expect(action).toEqual(saveFiscalConfigSuccess({ config }));
+  });
+
+  it('saveFiscalConfig$ ante error emite saveFiscalConfigFailure y muestra notif.error', async () => {
+    api.saveFiscalConfig.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
+    actions$ = of(saveFiscalConfig({ body: { targetTenantId: 2, provider: 'NONE' as const } }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.saveFiscalConfig$);
+    expect(action.type).toBe('[Financiero Config API] Save Fiscal Config Failure');
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  it('saveFiscalConfig$ ante 500 emite saveFiscalConfigFailure con mensaje genérico', async () => {
+    api.saveFiscalConfig.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    actions$ = of(saveFiscalConfig({ body: { targetTenantId: 2, provider: 'COLPPY' as const } }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.saveFiscalConfig$);
+    expect((action as ReturnType<typeof saveFiscalConfigFailure>).error).toBe('Ocurrió un error al guardar la configuración fiscal.');
+    expect(notif.error).toHaveBeenCalled();
   });
 });

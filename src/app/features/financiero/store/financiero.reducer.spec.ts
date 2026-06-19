@@ -169,3 +169,61 @@ describe('financiero reducer — cobros', () => {
     expect(s.config).toBe(initialState.config);
   });
 });
+
+describe('financiero reducer — config fiscal', () => {
+  const config = { id: 1, targetTenantId: 2, provider: 'ARCA' as const, invoicePointOfSale: '0001', active: true };
+
+  it('estado inicial tiene config con current null, saving false y error null', () => {
+    expect(initialState.config.current).toBeNull();
+    expect(initialState.config.saving).toBe(false);
+    expect(initialState.config.error).toBeNull();
+  });
+
+  it('loadFiscalConfig marca saving false (no cambia) y limpia error', () => {
+    const s = financieroReducer(initialState, A.loadFiscalConfig({ tenantId: 2 }));
+    expect(s.config.error).toBeNull();
+  });
+
+  it('loadFiscalConfigSuccess guarda la config y limpia error', () => {
+    const s = financieroReducer(initialState, A.loadFiscalConfigSuccess({ config }));
+    expect(s.config.current?.id).toBe(1);
+    expect(s.config.current?.provider).toBe('ARCA');
+    expect(s.config.error).toBeNull();
+  });
+
+  it('loadFiscalConfigFailure guarda el error', () => {
+    const s = financieroReducer(initialState, A.loadFiscalConfigFailure({ error: 'Error al cargar config' }));
+    expect(s.config.error).toBe('Error al cargar config');
+  });
+
+  it('saveFiscalConfig marca saving:true y limpia error', () => {
+    const s = financieroReducer(initialState, A.saveFiscalConfig({ body: { targetTenantId: 2, provider: 'ARCA' } }));
+    expect(s.config.saving).toBe(true);
+    expect(s.config.error).toBeNull();
+  });
+
+  it('saveFiscalConfigSuccess guarda config.current y setea saving:false', () => {
+    const saving = financieroReducer(initialState, A.saveFiscalConfig({ body: { targetTenantId: 2, provider: 'ARCA' } }));
+    const s = financieroReducer(saving, A.saveFiscalConfigSuccess({ config }));
+    expect(s.config.current?.id).toBe(1);
+    expect(s.config.saving).toBe(false);
+    expect(s.config.error).toBeNull();
+  });
+
+  it('saveFiscalConfigFailure guarda el error y limpia saving', () => {
+    const saving = financieroReducer(initialState, A.saveFiscalConfig({ body: { targetTenantId: 2, provider: 'ARCA' } }));
+    const s = financieroReducer(saving, A.saveFiscalConfigFailure({ error: 'Error al guardar' }));
+    expect(s.config.saving).toBe(false);
+    expect(s.config.error).toBe('Error al guardar');
+  });
+
+  it('no muta el slice caja al operar sobre config', () => {
+    const s = financieroReducer(initialState, A.loadFiscalConfigSuccess({ config }));
+    expect(s.caja).toBe(initialState.caja);
+  });
+
+  it('no muta el slice cobros al operar sobre config', () => {
+    const s = financieroReducer(initialState, A.loadFiscalConfigSuccess({ config }));
+    expect(s.cobros).toBe(initialState.cobros);
+  });
+});

@@ -15,6 +15,8 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
+  saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
 } from './financiero.actions';
 
 function mapCajaError(e: HttpErrorResponse): string {
@@ -187,6 +189,46 @@ export class FinancieroEffects {
     this.actions$.pipe(
       ofType(cancelPaymentSuccess),
       map(({ payment }) => loadPayment({ id: payment.id })),
+    ),
+  );
+
+  // ── config fiscal: cargar ──────────────────────────────────────────────────
+  loadFiscalConfig$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadFiscalConfig),
+      switchMap(({ tenantId }) =>
+        this.api.getFiscalConfig(tenantId).pipe(
+          map(config => loadFiscalConfigSuccess({ config })),
+          catchError((e: HttpErrorResponse) => {
+            const error = e.status === 404
+              ? 'No se encontró la configuración fiscal para este tenant.'
+              : 'Ocurrió un error al cargar la configuración fiscal.';
+            return of(loadFiscalConfigFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── config fiscal: guardar ─────────────────────────────────────────────────
+  saveFiscalConfig$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(saveFiscalConfig),
+      concatMap(({ body }) =>
+        this.api.saveFiscalConfig(body).pipe(
+          map(config => {
+            this.notif.success('Configuración fiscal guardada');
+            return saveFiscalConfigSuccess({ config });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = e.status === 422
+              ? 'Los datos de configuración fiscal son inválidos.'
+              : 'Ocurrió un error al guardar la configuración fiscal.';
+            this.notif.error(error);
+            return of(saveFiscalConfigFailure({ error }));
+          }),
+        ),
+      ),
     ),
   );
 
