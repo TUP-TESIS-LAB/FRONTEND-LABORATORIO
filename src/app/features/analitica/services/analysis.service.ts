@@ -32,4 +32,12 @@ export class AnalysisService {
   getById(id: number): Observable<AnalysisDetail> {
     return this.http.get<AnalysisDetail>(`${this.baseUrl}/${id}`);
   }
+
+  /**
+   * Lista análisis del catálogo. HOY usa el endpoint de búsqueda con un límite alto.
+   * MOCK-CONNECT — PR #97: reemplazar por GET /api/v1/analitica/catalog (paginado real).
+   */
+  list(limit = 200): Observable<Analysis[]> {
+    return this.http.get<Analysis[]>(this.baseUrl, { params: { limit: String(limit) } });
+  }
 }
