@@ -1,6 +1,6 @@
 # Estándar de fechas `dd/mm/yyyy` en Muestras — Design
 
-> **Jira:** _a crear con `jira-workflow` al cerrar el plan (regla #1/#3 del CLAUDE.md)._
+> **Jira:** [KAN-117](https://exequielsantoro.atlassian.net/browse/KAN-117)
 > **Fecha:** 2026-06-19 · **Rama:** `feat/estandar-fechas-muestras` (desde `development` d372c92)
 
 ## Problema

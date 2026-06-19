@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Jira:** _a crear con `jira-workflow` al cerrar este plan (regla #1/#3 del CLAUDE.md)._
+> **Jira:** [KAN-117](https://exequielsantoro.atlassian.net/browse/KAN-117)
 > **Spec:** `docs/superpowers/specs/2026-06-19-estandar-fechas-muestras-design.md`
 > **Rama/worktree:** `feat/estandar-fechas-muestras` en `FRONTEND-LABORATORIO/.worktrees/estandar-fechas-muestras` (desde `development` d372c92)
 
