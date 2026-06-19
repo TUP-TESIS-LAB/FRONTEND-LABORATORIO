@@ -80,15 +80,6 @@ export class FinancieroEffects {
     ),
   );
 
-  /** Tras abrir sesión, recargamos el estado desde el backend para tener el ID. */
-  reloadAfterOpen$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(openSessionSuccess),
-      map(({ session }) => loadOpenSession({ branchId: session.cashRegisterId })),
-    ),
-    { dispatch: false },
-  );
-
   // ── cerrar sesión ──────────────────────────────────────────────────────────
   closeSession$ = createEffect(() =>
     this.actions$.pipe(
@@ -129,14 +120,4 @@ export class FinancieroEffects {
     ),
   );
 
-  /** Tras registrar movimiento, recargar la actividad de la sesión. */
-  reloadActivityAfterTransaction$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(registerTransactionSuccess),
-      // No tenemos el sessionId acá: el componente re-dispara loadActivity vía polling.
-      // Este effect no despacha nada — es informativo.
-      map(() => ({ type: '[Financiero Caja] Noop' })),
-    ),
-    { dispatch: false },
-  );
 }

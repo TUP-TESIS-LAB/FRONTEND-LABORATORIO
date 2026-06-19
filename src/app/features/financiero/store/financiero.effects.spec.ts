@@ -132,6 +132,15 @@ describe('FinancieroEffects', () => {
     expect(notif.error).toHaveBeenCalledWith('Ya hay una caja abierta para esta sucursal.');
   });
 
+  it('openSession$ ante 422 mapea el mensaje correcto', async () => {
+    api.openSession.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
+    actions$ = of(openSession({ branchId: 5, openingAmount: 1000 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.openSession$);
+    expect((action as ReturnType<typeof openSessionFailure>).error).toBe('No se puede cobrar: no hay una caja abierta.');
+    expect(notif.error).toHaveBeenCalledWith('No se puede cobrar: no hay una caja abierta.');
+  });
+
   it('openSession$ ante 500 muestra mensaje genérico', async () => {
     api.openSession.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     actions$ = of(openSession({ branchId: 5, openingAmount: 1000 }));
