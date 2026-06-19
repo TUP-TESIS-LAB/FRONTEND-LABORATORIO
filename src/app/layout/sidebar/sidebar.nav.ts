@@ -58,6 +58,7 @@ export const NAV_SECTIONS: NavSection[] = [
         ],
       },
       { kind: 'link', label: 'Cola de extracción', icon: 'pi pi-bolt', path: '/analitica/extraccion', sectionKey: 'EXTRACCIONES' },
+      { kind: 'link', label: 'Nomenclador NBU', icon: 'pi pi-book', path: '/analitica/nbu', sectionKey: 'ANALITICA' },
     ],
   },
   {
