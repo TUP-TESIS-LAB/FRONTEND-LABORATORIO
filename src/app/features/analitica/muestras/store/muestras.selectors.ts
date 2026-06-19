@@ -16,4 +16,5 @@ export const selectRouting = createSelector(selectMuestrasState, s => s.routing)
 export const selectWorkspaces = createSelector(selectMuestrasState, s => s.workspaces);
 export const selectDispatchPending = createSelector(selectMuestrasState, s => s.dispatchPending);
 export const selectDescarteItems = createSelector(selectMuestrasState, s => s.descarte);
+export const selectDescartadasItems = createSelector(selectMuestrasState, s => s.descartadas);
 export const selectProcesamientoItems = createSelector(selectMuestrasState, s => s.procesamiento);

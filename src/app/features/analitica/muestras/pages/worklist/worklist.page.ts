@@ -18,8 +18,8 @@ import { ScanBarComponent } from '../../components/scan-bar/scan-bar.component';
 import { BatchMenuComponent } from '../../components/batch-menu/batch-menu.component';
 import { SampleTableComponent } from '../../components/sample-table/sample-table.component';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
-import { initMuestras, loadRecoleccion, loadDescarte, loadProcesamiento, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
-import { selectRecoleccionItems, selectDescarteItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { initMuestras, loadRecoleccion, loadDescarte, loadDescartadas, loadProcesamiento, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
+import { selectRecoleccionItems, selectDescarteItems, selectDescartadasItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { groupTubes, type Tube } from '../../models/tube.model';
 import { loadTemplates } from '../../store/worksheet-templates/worksheet-templates.actions';
 import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
@@ -62,10 +62,36 @@ export class WorklistPage {
     || this.config().key === 'procesamiento',
   );
 
-  /** Descarte y procesamiento son de solo lectura: sin menú de transición ni acciones backend. */
-  readonly canTransition = computed(() =>
-    !this.isBackendScreen() || this.config().key === 'recoleccion',
-  );
+  /** Switch de la pantalla Descarte: 'pendientes' (COMPLETED, a descartar) | 'descartadas' (DISCARDED). */
+  readonly descarteView = signal<'pendientes' | 'descartadas'>('pendientes');
+
+  /** Etiqueta del KPI de conteo (dinámica en descarte según la vista del switch). */
+  readonly countLabelText = computed(() => {
+    if (this.config().key === 'descarte') {
+      return this.descarteView() === 'pendientes' ? 'a descartar' : 'descartadas';
+    }
+    return this.config().countLabel;
+  });
+
+  setDescarteView(v: 'pendientes' | 'descartadas'): void {
+    if (v === this.descarteView()) return;
+    this.descarteView.set(v);
+    this.clearSelection();
+  }
+
+  /**
+   * Transiciones habilitadas:
+   * - recolección: sí.
+   * - descarte: sólo en la vista "pendientes" (COMPLETED → descartar físico). "Descartadas" es solo lectura.
+   * - procesamiento: no.
+   * - pantallas mock: sí.
+   */
+  readonly canTransition = computed(() => {
+    const key = this.config().key;
+    if (key === 'recoleccion') return true;
+    if (key === 'descarte') return this.descarteView() === 'pendientes';
+    return !this.isBackendScreen();
+  });
 
   /** Botones Planillas/Marcar completadas (deshabilitados en Arco 1, solo en procesamiento). */
   readonly showWorksheetActions = computed(() => this.config().key === 'procesamiento');
@@ -87,6 +113,7 @@ export class WorklistPage {
 
   private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
   private readonly descarteItems = this.store.selectSignal(selectDescarteItems);
+  private readonly descartadasItems = this.store.selectSignal(selectDescartadasItems);
   private readonly procesamientoItems = this.store.selectSignal(selectProcesamientoItems);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
@@ -95,7 +122,10 @@ export class WorklistPage {
   private readonly sourceRows = computed<Sample[]>(() => {
     const key = this.config().key;
     if (key === 'recoleccion') return groupTubes(this.recoleccionItems(), this.branchName());
-    if (key === 'descarte') return groupTubes(this.descarteItems(), this.branchName());
+    if (key === 'descarte') {
+      const items = this.descarteView() === 'pendientes' ? this.descarteItems() : this.descartadasItems();
+      return groupTubes(items, this.branchName());
+    }
     if (key === 'procesamiento') return groupTubes(this.procesamientoItems(), this.branchName());
     return this.samples.byState(this.config().source)();
   });
@@ -178,7 +208,8 @@ export class WorklistPage {
         key: 'muestras-descarte',
         intervalMs: 5000,
         poll: () => {
-          this.store.dispatch(loadDescarte());
+          this.store.dispatch(loadDescarte());     // COMPLETED (a descartar)
+          this.store.dispatch(loadDescartadas());  // DISCARDED (descartadas)
           return of(null);
         },
       });

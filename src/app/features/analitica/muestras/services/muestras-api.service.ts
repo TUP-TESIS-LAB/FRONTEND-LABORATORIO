@@ -46,6 +46,11 @@ export class MuestrasApiService {
     return this.http.patch(`${this.base}/status/rollback`, { labelIds });
   }
 
+  /** backend: DiscardLabelsRequest { labelIds } — descarte físico (→ DISCARDED) */
+  discard(labelIds: number[]): Observable<unknown> {
+    return this.http.patch(`${this.base}/discard`, { labelIds });
+  }
+
   resolveRouting(protocolIds: number[], branchId: number): Observable<RoutingResolveResponse> {
     return this.http.post<RoutingResolveResponse>('/api/v1/protocols/routing/resolve', { protocolIds, branchId });
   }

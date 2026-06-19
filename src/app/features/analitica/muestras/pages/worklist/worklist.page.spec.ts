@@ -10,7 +10,7 @@ import { MessageService } from 'primeng/api';
 import { PollingService } from '@core/refresh';
 import { WorklistPage } from './worklist.page';
 import { MockSamplesService } from '../../services/mock-samples.service';
-import { selectRecoleccionItems, selectDescarteItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { selectRecoleccionItems, selectDescarteItems, selectDescartadasItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import type { LabelWorklistItem } from '../../models/label-worklist.model';
 import { transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
@@ -59,6 +59,7 @@ function setup(
   recoleccionItems: LabelWorklistItem[] = [],
   descarteItems: LabelWorklistItem[] = [],
   procesamientoItems: LabelWorklistItem[] = [],
+  descartadasItems: LabelWorklistItem[] = [],
 ): ComponentFixture<WorklistPage> {
   installLocalStorageMock();
   actions$ = new Subject<Action>();
@@ -75,6 +76,7 @@ function setup(
         selectors: [
           { selector: selectRecoleccionItems, value: recoleccionItems },
           { selector: selectDescarteItems, value: descarteItems },
+          { selector: selectDescartadasItems, value: descartadasItems },
           { selector: selectProcesamientoItems, value: procesamientoItems },
           { selector: selectMuestrasBranchName, value: 'CENTRAL' },
           { selector: selectMuestrasError, value: null },

@@ -16,7 +16,10 @@ export interface MuestrasState {
   routing: RoutingResolveResponse | null;
   workspaces: BranchWorkspace[];
   dispatchPending: boolean;
+  /** "A descartar": tubos COMPLETED listos para descarte físico. */
   descarte: LabelWorklistItem[];
+  /** "Descartadas": tubos ya en DISCARDED (historial, solo lectura). */
+  descartadas: LabelWorklistItem[];
   procesamiento: LabelWorklistItem[];
 }
 
@@ -33,6 +36,7 @@ export const initialMuestrasState: MuestrasState = {
   workspaces: [],
   dispatchPending: false,
   descarte: [],
+  descartadas: [],
   procesamiento: [],
 };
 

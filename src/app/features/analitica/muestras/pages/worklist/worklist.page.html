@@ -1,7 +1,23 @@
 <section class="worklist-page">
   <ui-page-header [heading]="config().title" [subtitle]="config().sub">
     <div class="stats">
-      <span class="chip">{{ total() }} · {{ config().countLabel }}</span>
+      @if (config().key === 'descarte') {
+        <div class="descarte-switch" role="tablist" aria-label="Vista de descarte">
+          <button type="button" role="tab"
+                  [attr.aria-selected]="descarteView() === 'pendientes'"
+                  [class.active]="descarteView() === 'pendientes'"
+                  (click)="setDescarteView('pendientes')">
+            A descartar
+          </button>
+          <button type="button" role="tab"
+                  [attr.aria-selected]="descarteView() === 'descartadas'"
+                  [class.active]="descarteView() === 'descartadas'"
+                  (click)="setDescarteView('descartadas')">
+            Descartadas
+          </button>
+        </div>
+      }
+      <span class="chip">{{ total() }} · {{ countLabelText() }}</span>
       <span class="chip" [class.chip-selected]="selectedCount() > 0">
         {{ selectedCount() }} · seleccionada(s) de {{ total() }}
       </span>
