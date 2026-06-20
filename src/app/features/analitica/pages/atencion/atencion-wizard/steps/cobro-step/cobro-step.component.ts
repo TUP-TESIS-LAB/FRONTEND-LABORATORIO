@@ -14,9 +14,11 @@ import { selectPricing } from '@features/analitica/store/atencion/atencion.selec
       <h3 class="text-lg font-semibold mb-3">Cobro</h3>
       <p class="text-sm opacity-70 mb-4">Revisá el desglose. Al continuar, pasás a la facturación y el registro del cobro.</p>
       <div class="max-w-md flex flex-col gap-1">
-        <div class="flex justify-between py-1"><span>Total de estudios</span><b>{{ pricing()?.total ?? 0 | currencyAr }}</b></div>
-        <div class="flex justify-between py-1"><span>Cubierto por obra social</span><b>{{ cubierto() | currencyAr }}</b></div>
-        <div class="flex justify-between py-1 border-t border-gray-200 text-base"><span>A cobrar al paciente</span><b>{{ pricing()?.copayment ?? 0 | currencyAr }}</b></div>
+        <div class="flex justify-between py-1"><span>Estudios a cargo del paciente</span><b>{{ pricing()?.subtotal ?? 0 | currencyAr }}</b></div>
+        @if ((pricing()?.copayment ?? 0) > 0) {
+          <div class="flex justify-between py-1"><span>Copago</span><b>{{ pricing()?.copayment ?? 0 | currencyAr }}</b></div>
+        }
+        <div class="flex justify-between py-1 border-t border-gray-200 text-base"><span>A cobrar al paciente</span><b>{{ pricing()?.total ?? 0 | currencyAr }}</b></div>
       </div>
     </div>
   `,
@@ -27,11 +29,6 @@ export class CobroStepComponent implements OnInit {
   @Input({ transform: numberAttribute }) atencionId!: number;
 
   protected readonly pricing = this.store.selectSignal(selectPricing);
-
-  protected cubierto(): number {
-    const p = this.pricing();
-    return p ? Math.max(0, p.total - p.copayment) : 0;
-  }
 
   ngOnInit(): void {
     // El attentionId montado es autoritativo: se despacha siempre para no mostrar

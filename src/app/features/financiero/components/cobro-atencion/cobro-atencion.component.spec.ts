@@ -108,6 +108,31 @@ describe('CobroAtencionComponent — smoke tests', () => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: registerPayment.type }));
   });
 
+  it('el monto a cobrar es pricing.total (subtotal no cubierto + copago), no copayment', () => {
+    // Caso real del backend: paciente particular → subtotal>0, copayment(copago manual)=0,
+    // total = subtotal + copago. El monto a cobrar debe ser `total`, no `copayment` (que sería $0).
+    const fixture = setupWithTemplate(MINIMAL_FORM_TEMPLATE, {
+      pricing: {
+        items: [{ analysisId: 1, authorized: false, precioPaciente: 525, cantidadUb: 1.5, valorUbParticular: 350 }],
+        subtotal: 525, copayment: 0, total: 525,
+      },
+    });
+    const cmp = fixture.componentInstance as any;
+    expect(cmp.aCobrar()).toBe(525);
+
+    cmp.lineas.set([{ id: 0, method: 'CASH', amount: 525, reference: '' }]);
+    fixture.detectChanges();
+    expect(cmp.puedeConfirmar()).toBe(true);
+
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.confirmar();
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+      type: registerPayment.type,
+      body: expect.objectContaining({ totalAmount: 525 }),
+    }));
+  });
+
   it('con result muestra la pantalla de éxito', () => {
     // Full template is fine here — the result branch renders ComprobanteCardComponent (not MetodoChipComponent).
     const fixture = setupWithTemplate(null, {
