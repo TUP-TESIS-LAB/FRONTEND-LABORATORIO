@@ -61,8 +61,10 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
         } @else {
           <!-- DESGLOSE -->
           <section class="fin-cobro__desglose">
-            <div class="fin-cobro__row"><span>Total de estudios</span><b>{{ pricing()?.total ?? 0 | currencyAr }}</b></div>
-            <div class="fin-cobro__row"><span>Cubierto por obra social</span><b>{{ cubierto() | currencyAr }}</b></div>
+            <div class="fin-cobro__row"><span>Estudios a cargo del paciente</span><b>{{ pricing()?.subtotal ?? 0 | currencyAr }}</b></div>
+            @if ((pricing()?.copayment ?? 0) > 0) {
+              <div class="fin-cobro__row"><span>Copago</span><b>{{ pricing()?.copayment ?? 0 | currencyAr }}</b></div>
+            }
             <div class="fin-cobro__row fin-cobro__row--target">
               <span>A cobrar al paciente</span><b>{{ aCobrar() | currencyAr }}</b>
             </div>
@@ -157,12 +159,12 @@ export class CobroAtencionComponent {
   protected readonly submitting = this.store.selectSignal(selectCobroSubmitting);
   protected readonly result = this.store.selectSignal(selectCobroResult);
 
-  /** monto a cobrar al paciente = pricing.copayment (copago si hay cobertura; total si particular). */
-  protected readonly aCobrar = computed(() => this.pricing()?.copayment ?? 0);
-  protected readonly cubierto = computed(() => {
-    const p = this.pricing();
-    return p ? Math.max(0, p.total - p.copayment) : 0;
-  });
+  /**
+   * Monto a cobrar al paciente = pricing.total (= subtotal de estudios no cubiertos + copago).
+   * NO es pricing.copayment: ese campo es solo el copago manual (att.copaymentAmount), 0/null
+   * en el flujo normal — usarlo dejaba el monto en $0 para pacientes particulares.
+   */
+  protected readonly aCobrar = computed(() => this.pricing()?.total ?? 0);
 
   protected readonly branchId = computed(() => this.detail()?.branchId ?? this.branchCtx.branchId());
 
