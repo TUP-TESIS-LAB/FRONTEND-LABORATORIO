@@ -15,7 +15,7 @@ import {
   selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
   selectPatientResolutionError, selectPricing, selectPricingLoading, selectCopaymentMutating,
 } from '../../../store/atencion/atencion.selectors';
-import { cancelAtencion, downloadProtocolLabels, resetAtencionWizard, returnPhase } from '../../../store/atencion/atencion.actions';
+import { addPayment, cancelAtencion, downloadProtocolLabels, endCollection, resetAtencionWizard, returnPhase } from '../../../store/atencion/atencion.actions';
 
 function makeDetail(state: AttentionState): AttentionResponse {
   return {
@@ -33,8 +33,8 @@ describe('AtencionWizardComponent (CORE flow)', () => {
   let fixture: ComponentFixture<AtencionWizardComponent>;
   let registry: { isActive: ReturnType<typeof vi.fn> };
 
-  function setup(state: AttentionState) {
-    registry = { isActive: vi.fn().mockReturnValue(false) }; // Financiero OFF
+  function setup(state: AttentionState, financieroActive = false) {
+    registry = { isActive: vi.fn().mockReturnValue(financieroActive) }; // Financiero OFF por default
     TestBed.configureTestingModule({
       imports: [AtencionWizardComponent],
       providers: [
@@ -84,6 +84,31 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     fixture.componentInstance.onAnalysisAdvanced();
     fixture.detectChanges();
     expect((fixture.componentInstance as any).uiStep().key).toBe('confirmar');
+  });
+
+  // ── Cobro (FINANCIERO activo): entrada a ON_COLLECTION + avance a facturación ──
+  it('con FINANCIERO activo, onAnalysisAdvanced entra a cobro y despacha addPayment(null)', () => {
+    setup(AttentionState.REGISTERING_ANALYSES, true);
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.onAnalysisAdvanced();
+    fixture.detectChanges();
+    // El backend (REGISTERING_ANALYSES) entra a la fase de cobro vía addPayment con paymentId null.
+    expect(spy).toHaveBeenCalledWith(addPayment({ id: 1, payload: { paymentId: null } }));
+    expect((fixture.componentInstance as any).uiStep().key).toBe('cobro');
+  });
+
+  it('advanceCurrent en el paso cobro despacha endCollection y limpia el override', () => {
+    setup(AttentionState.ON_COLLECTION_PROCESS, true);
+    // Simulamos el override que dejó onAnalysisAdvanced.
+    (fixture.componentInstance as any).uiStepOverride.set('cobro');
+    fixture.detectChanges();
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    (fixture.componentInstance as any).advanceCurrent();
+    expect(spy).toHaveBeenCalledWith(endCollection({ id: 1 }));
+    // Override limpio → el wizard sigue el estado real hacia 'facturación'.
+    expect((fixture.componentInstance as any).uiStepOverride()).toBeNull();
   });
 
   it('onCancelConfirmed despacha cancelAtencion con el motivo', () => {

@@ -16,6 +16,7 @@ import { FormStep } from '@shared/ui/models/form-step';
 import { AttentionState, isTerminal } from '../../../models/atencion.model';
 import { attentionStateLabel } from '../../../models/atencion-state-label';
 import {
+  addPayment,
   atencionMutationFailure,
   atencionMutationSuccess,
   cancelAtencion,
@@ -276,7 +277,14 @@ export class AtencionWizardComponent {
     switch (this.uiStep()?.key) {
       case 'datos':     this.datosRef()?.onConfirm(); break;
       case 'analisis':  this.analisisRef()?.onContinue(); break;
-      case 'cobro':     { const d = this.detail(); if (d) this.store.dispatch(endCollection({ id: d.id })); break; }
+      case 'cobro':     {
+        // endCollection: ON_COLLECTION_PROCESS -> ON_BILLING_PROCESS. Limpiamos el override
+        // de UI para que el wizard siga el estado real del backend hacia 'facturación'
+        // (si no, el override 'cobro' dejaba la UI clavada en el paso Cobro tras avanzar).
+        const d = this.detail();
+        if (d) { this.store.dispatch(endCollection({ id: d.id })); this.uiStepOverride.set(null); }
+        break;
+      }
       case 'confirmar': this.resumenRef()?.openFinalize(); break;
     }
   }
@@ -472,7 +480,16 @@ export class AtencionWizardComponent {
     const steps = this.visibleSteps();
     const idx = steps.findIndex((s) => s.key === 'analisis');
     const next = steps[idx + 1]?.key;
-    if (next) this.uiStepOverride.set(next);
+    if (!next) return;
+    // Con FINANCIERO activo el siguiente paso es 'cobro' (ON_COLLECTION_PROCESS). El backend
+    // solo entra a esa fase vía addPayment; en el flujo nuevo aún no hay pago (se registra en
+    // facturación), así que disparamos addPayment con paymentId null = transición de fase pura.
+    // Sin esto, el paso Cobro dispara endCollection sobre REGISTERING_ANALYSES → 409.
+    const d = this.detail();
+    if (next === 'cobro' && d) {
+      this.store.dispatch(addPayment({ id: d.id, payload: { paymentId: null } }));
+    }
+    this.uiStepOverride.set(next);
   }
   onFinished(): void {
     const d = this.detail();

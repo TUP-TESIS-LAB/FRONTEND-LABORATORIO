@@ -120,7 +120,11 @@ export interface AddAnalysisListRequest {
 }
 
 export interface AddPaymentRequest {
-  paymentId: number;
+  /**
+   * Opcional: en el cobro en atención se entra a la fase de cobro SIN pago todavía
+   * (el pago se registra en facturación). null = transición de fase pura.
+   */
+  paymentId: number | null;
 }
 
 export interface CancelAttentionRequest {
