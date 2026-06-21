@@ -172,7 +172,7 @@ describe('MockSamplesService', () => {
   it('al inicializar con storage previo válido, lo usa en lugar del seed', () => {
     const seedOverride: Sample[] = [{
       id: 'x-1', barcode: 'XX-0001', study: 'X', patient: 'X', branch: 'X',
-      date: '01/01', time: '00:00', urgent: false, state: 'collected',
+      receivedAt: '2026-01-01T00:00:00Z', urgent: false, state: 'collected',
     }];
     lsStore.set('muestras:samples:v1', JSON.stringify(seedOverride));
     TestBed.resetTestingModule();

@@ -32,4 +32,14 @@ describe('groupTubes', () => {
     const tubes = groupTubes(items, 'CENTRAL');
     expect(tubes[0].protocolId).toBe(77);
   });
+
+  it('groupTubes produce receivedAt ISO y NO produce date ni time', () => {
+    const items = [
+      { labelId: 1, sampleId: 50, barcode: 'b1', protocolId: 77, analysisName: 'A', patientName: 'P', urgent: false, status: 'COLLECTED' as const, updatedAt: '2026-06-12T10:30:00Z' },
+    ];
+    const tubes = groupTubes(items, 'CENTRAL');
+    expect(tubes[0].receivedAt).toBe('2026-06-12T10:30:00Z');
+    expect((tubes[0] as unknown as Record<string, unknown>)['date']).toBeUndefined();
+    expect((tubes[0] as unknown as Record<string, unknown>)['time']).toBeUndefined();
+  });
 });

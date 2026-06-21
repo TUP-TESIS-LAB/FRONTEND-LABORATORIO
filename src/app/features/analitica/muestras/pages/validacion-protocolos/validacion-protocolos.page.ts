@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DateEsPipe } from '@shared/pipes/date-es.pipe';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
@@ -26,7 +26,7 @@ const FILTROS: ReadonlyArray<{ id: 'todos' | EstadoFirmaListado; label: string }
   selector: 'app-validacion-protocolos',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeaderComponent, DatePipe],
+  imports: [PageHeaderComponent, DateEsPipe],
   templateUrl: './validacion-protocolos.page.html',
   styleUrl: './validacion-protocolos.page.scss',
 })
