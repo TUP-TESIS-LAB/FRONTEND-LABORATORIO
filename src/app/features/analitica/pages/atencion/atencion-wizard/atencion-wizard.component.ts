@@ -16,11 +16,13 @@ import { FormStep } from '@shared/ui/models/form-step';
 import { AttentionState, isTerminal } from '../../../models/atencion.model';
 import { attentionStateLabel } from '../../../models/atencion-state-label';
 import {
+  addPayment,
   atencionMutationFailure,
   atencionMutationSuccess,
   cancelAtencion,
   createPreFilledAtencion,
   downloadProtocolLabels,
+  endCollection,
   loadAtencion,
   loadAttentionPatient,
   resetAtencionWizard,
@@ -37,6 +39,8 @@ import { DatosGeneralesStepComponent } from './steps/datos-generales-step/datos-
 import { AnalisisStepComponent } from './steps/analisis-step/analisis-step.component';
 import { ResumenStepComponent } from './steps/resumen-step/resumen-step.component';
 import { CancelAttentionModalComponent } from '../../../components/cancel-attention-modal/cancel-attention-modal.component';
+import { CobroStepComponent } from './steps/cobro-step/cobro-step.component';
+import { CobroAtencionComponent } from '@features/financiero/components/cobro-atencion/cobro-atencion.component';
 
 type StepKey = 'datos' | 'analisis' | 'cobro' | 'facturacion' | 'confirmar';
 interface WizardStepDef {
@@ -61,7 +65,7 @@ const ALL_STEPS: WizardStepDef[] = [
   imports: [
     ButtonModule, TagModule, EmptyStateComponent, WizardShellComponent,
     DatosGeneralesStepComponent, AnalisisStepComponent, ResumenStepComponent,
-    CancelAttentionModalComponent,
+    CancelAttentionModalComponent, CobroStepComponent, CobroAtencionComponent,
   ],
   // T8: el wizard ocupa el alto del viewport (menos el topbar) y es una columna flex,
   // así el contenido del paso flexiona y el footer (Volver/Confirmar) queda abajo, sin
@@ -168,6 +172,12 @@ const ALL_STEPS: WizardStepDef[] = [
                                  (itemsCount)="analysisCount.set($event)"
                                  (stepAdvanced)="onAnalysisAdvanced()" />
             }
+            @case ('cobro') {
+              <lab-cobro-step [atencionId]="detail()!.id" />
+            }
+            @case ('facturacion') {
+              <fin-cobro-atencion [attentionId]="detail()!.id" [embedded]="true" />
+            }
             @case ('confirmar') {
               <lab-resumen-step [atencion]="detail()!" [readOnly]="readOnly()"
                                 (finished)="onFinished()" />
@@ -185,6 +195,9 @@ const ALL_STEPS: WizardStepDef[] = [
                 @case ('confirmar') {
                   <p-button label="Finalizar atención" [loading]="mutating()" [disabled]="mutating()"
                             (onClick)="advanceCurrent()" />
+                }
+                @case ('facturacion') {
+                  <!-- El botón "Confirmar cobro" lo provee fin-cobro-atencion. Sin botón en el footer. -->
                 }
                 @default {
                   <p-button label="Continuar" [loading]="mutating()" [disabled]="continueDisabled()"
@@ -264,6 +277,14 @@ export class AtencionWizardComponent {
     switch (this.uiStep()?.key) {
       case 'datos':     this.datosRef()?.onConfirm(); break;
       case 'analisis':  this.analisisRef()?.onContinue(); break;
+      case 'cobro':     {
+        // endCollection: ON_COLLECTION_PROCESS -> ON_BILLING_PROCESS. Limpiamos el override
+        // de UI para que el wizard siga el estado real del backend hacia 'facturación'
+        // (si no, el override 'cobro' dejaba la UI clavada en el paso Cobro tras avanzar).
+        const d = this.detail();
+        if (d) { this.store.dispatch(endCollection({ id: d.id })); this.uiStepOverride.set(null); }
+        break;
+      }
       case 'confirmar': this.resumenRef()?.openFinalize(); break;
     }
   }
@@ -459,7 +480,16 @@ export class AtencionWizardComponent {
     const steps = this.visibleSteps();
     const idx = steps.findIndex((s) => s.key === 'analisis');
     const next = steps[idx + 1]?.key;
-    if (next) this.uiStepOverride.set(next);
+    if (!next) return;
+    // Con FINANCIERO activo el siguiente paso es 'cobro' (ON_COLLECTION_PROCESS). El backend
+    // solo entra a esa fase vía addPayment; en el flujo nuevo aún no hay pago (se registra en
+    // facturación), así que disparamos addPayment con paymentId null = transición de fase pura.
+    // Sin esto, el paso Cobro dispara endCollection sobre REGISTERING_ANALYSES → 409.
+    const d = this.detail();
+    if (next === 'cobro' && d) {
+      this.store.dispatch(addPayment({ id: d.id, payload: { paymentId: null } }));
+    }
+    this.uiStepOverride.set(next);
   }
   onFinished(): void {
     const d = this.detail();

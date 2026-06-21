@@ -14,8 +14,8 @@ export interface Sample {
   study: string;
   patient: string;
   branch: string;
-  date: string;
-  time: string;
+  /** ISO 8601 timestamp del momento de recepción/toma. */
+  receivedAt: string;
   urgent: boolean;
   state: SampleState;
   destino?: string;

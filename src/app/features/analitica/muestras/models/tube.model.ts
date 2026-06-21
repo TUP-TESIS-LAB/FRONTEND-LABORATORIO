@@ -13,8 +13,6 @@ export interface Tube extends Sample {
   rejectionReason?: string | null;
 }
 
-const two = (n: number): string => String(n).padStart(2, '0');
-
 export function groupTubes(items: LabelWorklistItem[], branchName: string): Tube[] {
   const bySample = new Map<string, LabelWorklistItem[]>();
   for (const i of items) {
@@ -26,7 +24,6 @@ export function groupTubes(items: LabelWorklistItem[], branchName: string): Tube
   return Array.from(bySample.values()).map(labels => {
     const first = labels[0];
     const latest = labels.reduce((a, b) => (a.updatedAt > b.updatedAt ? a : b));
-    const d = new Date(latest.updatedAt);
     return {
       id: first.sampleId != null ? `t${first.sampleId}` : `l${first.labelId}`,
       sampleId: first.sampleId,
@@ -37,8 +34,7 @@ export function groupTubes(items: LabelWorklistItem[], branchName: string): Tube
       study: labels.length === 1 ? first.analysisName : `${labels.length} análisis`,
       patient: first.patientName,
       branch: branchName,
-      date: `${two(d.getDate())}/${two(d.getMonth() + 1)}`,
-      time: `${two(d.getHours())}:${two(d.getMinutes())}`,
+      receivedAt: latest.updatedAt,
       urgent: labels.some(l => l.urgent),
       state: BACKEND_TO_SAMPLE_STATE[first.status] ?? 'collected',
       rejectionReason: first.rejectionReason ?? null,

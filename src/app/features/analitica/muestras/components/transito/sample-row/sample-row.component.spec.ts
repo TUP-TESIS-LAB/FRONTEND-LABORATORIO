@@ -8,7 +8,7 @@ import type { Sample } from '../../../models/sample.model';
 const SAMPLE: Sample = {
   id: 's-1', barcode: 'MX-2606-00001', study: 'Hemograma completo',
   patient: 'García, M.', branch: 'CENTRAL — Sede Central',
-  date: '07/06', time: '08:42', urgent: false, state: 'transito',
+  receivedAt: '2026-06-07T08:42:00Z', urgent: false, state: 'transito',
 };
 
 describe('SampleRowComponent', () => {

@@ -30,7 +30,7 @@ function tube(sampleId: number | null, labelIds: number[]): Tube {
     analyses: labelIds.map(l => ({ labelId: l, barcode: `BC-${l}`, name: 'Hemograma' })),
     barcode: labelIds.map(l => `BC-${l}`).join(' '),
     study: 'Hemograma', patient: 'García, M.', branch: 'CENTRAL',
-    date: '12/06', time: '08:00', urgent: false, state: 'transito',
+    receivedAt: '2026-06-12T08:00:00Z', urgent: false, state: 'transito',
     rejectionReason: null,
   };
 }

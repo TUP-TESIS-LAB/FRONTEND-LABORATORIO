@@ -9,7 +9,7 @@ function makeSample(over: Partial<Sample> = {}): Sample {
   return {
     id: 's-1', barcode: 'MX-001', study: 'Hemograma',
     patient: 'García, M.', branch: 'CENTRAL',
-    date: '12/06', time: '10:00', urgent: false, state: 'collected',
+    receivedAt: '2026-06-12T10:00:00Z', urgent: false, state: 'collected',
     ...over,
   };
 }
@@ -29,8 +29,7 @@ function makeTube(
     study: labels.length === 1 ? labels[0].name : `${labels.length} análisis`,
     patient: 'García, M.',
     branch: 'CENTRAL',
-    date: '12/06',
-    time: '10:00',
+    receivedAt: '2026-06-12T10:00:00Z',
     urgent: false,
     state: 'collected',
     ...extra,

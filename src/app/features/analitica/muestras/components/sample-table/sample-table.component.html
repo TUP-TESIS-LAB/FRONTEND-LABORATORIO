@@ -64,7 +64,7 @@
           <td>
             {{ row.branch }}
           </td>
-          <td>{{ row.date }} · {{ row.time }}</td>
+          <td>{{ row.receivedAt | dateEs:'date' }} · {{ row.receivedAt | dateEs:'time' }}</td>
           <td>
             <span class="state-badge" [attr.data-color]="stateColor(row.state)">
               {{ stateLabel(row.state) }}
