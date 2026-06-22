@@ -26,7 +26,10 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   // En modo flex-scroll (scrollHeight="flex") el componente llena el alto de su contenedor
   // flex y la tabla scrollea internamente; así el footer/pricing de alrededor queda fijo.
-  host: { '[class.ut-flex-scroll]': "scrollHeight() === 'flex'" },
+  host: {
+    '[class.ut-flex-scroll]': "scrollHeight() === 'flex'",
+    '[class.ut-comfortable]': "size() === 'comfortable'",
+  },
   imports: [TableModule, NgTemplateOutlet, TooltipModule, MenuModule, EmptyStateComponent],
   template: `
     @if (!lazy() && value().length === 0 && !loading()) {
@@ -52,7 +55,8 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           [paginatorDropdownAppendTo]="'body'"
           [scrollable]="scrollHeight() !== null"
           [scrollHeight]="scrollHeight() ?? undefined"
-          (onLazyLoad)="lazyLoad.emit($event)">
+          (onLazyLoad)="lazyLoad.emit($event)"
+          (onRowExpand)="rowExpand.emit($event.data)">
 
           <ng-template pTemplate="header">
             <tr>
@@ -77,10 +81,11 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           </ng-template>
 
           <ng-template pTemplate="body" let-row let-expanded="expanded">
-            <tr>
+            <tr [pRowToggler]="row" [pRowTogglerDisabled]="!expandable()"
+                [class.ut-row-clickable]="expandable()">
               @if (expandable()) {
                 <td class="ut-expander-td">
-                  <button class="ut-ibtn" type="button" [pRowToggler]="row"
+                  <button class="ut-ibtn" type="button"
                           [attr.aria-label]="expanded ? 'Contraer' : 'Expandir'">
                     <i class="pi" [class.pi-chevron-right]="!expanded" [class.pi-chevron-down]="expanded"></i>
                   </button>
@@ -100,7 +105,7 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
                 </td>
               }
               @if (hasActions()) {
-                <td class="ut-actions-td">
+                <td class="ut-actions-td" (click)="$event.stopPropagation()">
                   <div class="ut-actions-cell">
                     @if (showView()) {
                       <button class="ut-ibtn" type="button"
@@ -276,6 +281,11 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
     :host ::ng-deep tbody > tr:nth-child(even) { background: #fafbfd; }
     :host ::ng-deep tbody > tr:hover { background: #eef4ff !important; }
 
+    /* ── Densidad "comfortable" (opt-in vía [size]="comfortable") — celdas más grandes ── */
+    :host(.ut-comfortable) ::ng-deep thead > tr > th { padding: 13px 18px !important; font-size: 12px !important; }
+    :host(.ut-comfortable) ::ng-deep tbody > tr > td { padding: 14px 18px !important; font-size: 14px !important; }
+    :host(.ut-comfortable) ::ng-deep td .p-tag { font-size: 11.5px; padding: 2px 9px; }
+
     /* Strip PrimeNG outer borders */
     :host ::ng-deep .p-datatable { border: none !important; border-radius: 0 !important; }
 
@@ -297,6 +307,8 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
     :host ::ng-deep td.ut-actions-td { width: 1%; white-space: nowrap; }
 
     /* ── Row expansion ── */
+    /* Fila clickeable completa para expandir (no solo el chevron). */
+    :host ::ng-deep tr.ut-row-clickable { cursor: pointer; }
     :host ::ng-deep th.ut-expander-th { width: 1%; white-space: nowrap; }
     :host ::ng-deep td.ut-expander-td { width: 1%; white-space: nowrap; }
     /* La fila de expansión NO usa el zebra/hover de las filas normales. */
@@ -367,6 +379,8 @@ export class DataTableComponent {
 
   // ── Scroll ──
   readonly scrollHeight = input<string | null>(null);
+  /** Densidad de la tabla. 'comfortable' agranda padding y tipografía de celdas. */
+  readonly size = input<'normal' | 'comfortable'>('normal');
 
   // ── Row expansion ──
   // Cuando es true, se agrega una columna con un toggle (chevron) y cada fila puede
@@ -394,6 +408,8 @@ export class DataTableComponent {
   readonly rowDelete     = output<unknown>();
   readonly action        = output<{ key: string; row: unknown }>();
   readonly emptyCtaClick = output<void>();
+  /** Emite la fila al expandirla (solo con [expandable]=true). Útil para lazy-load del contenido. */
+  readonly rowExpand     = output<unknown>();
 
   // ── Internal ──
   protected readonly hasActions = computed(() =>

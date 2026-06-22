@@ -150,6 +150,7 @@ export interface Analysis {
   name: string;
   familyName: string | null;
   ubCount: number | null; // unidades bioquímicas; null si no configurado
+  cantidadUb?: number | null; // campo real del backend (AnalysisResponse.cantidadUb)
 }
 
 export interface AnalysisDetail extends Analysis {

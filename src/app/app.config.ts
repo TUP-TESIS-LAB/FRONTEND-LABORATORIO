@@ -94,6 +94,10 @@ import { VALIDACION_DETALLE_FEATURE_KEY } from '@features/analitica/muestras/sto
 import { validacionDetalleReducer } from '@features/analitica/muestras/store/validacion-detalle/validacion-detalle.reducer';
 import { ValidacionDetalleEffects } from '@features/analitica/muestras/store/validacion-detalle/validacion-detalle.effects';
 
+import { NOMENCLADOR_FEATURE_KEY } from '@features/analitica/store/nomenclador/nomenclador.state';
+import { nomencladorReducer } from '@features/analitica/store/nomenclador/nomenclador.reducer';
+import { NomencladorEffects } from '@features/analitica/store/nomenclador/nomenclador.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -151,6 +155,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(ValidacionProtocolosEffects),
     provideState(VALIDACION_DETALLE_FEATURE_KEY, validacionDetalleReducer),
     provideEffects(ValidacionDetalleEffects),
+    provideState(NOMENCLADOR_FEATURE_KEY, nomencladorReducer),
+    provideEffects(NomencladorEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),

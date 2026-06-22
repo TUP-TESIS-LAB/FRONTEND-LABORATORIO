@@ -32,4 +32,15 @@ export class AnalysisService {
   getById(id: number): Observable<AnalysisDetail> {
     return this.http.get<AnalysisDetail>(`${this.baseUrl}/${id}`);
   }
+
+  /**
+   * Lista el catálogo de análisis activado del tenant (REAL). Usa el endpoint de búsqueda
+   * con `shortCodePrefix` vacío, que devuelve todas las filas activadas con su `cantidadUb`
+   * (pasar solo `limit` no lista nada: el endpoint es de búsqueda y necesita un criterio).
+   * Nota: GET /api/v1/analitica/catalog lista el catálogo global pero NO trae cantidadUb,
+   * por eso para el Nomenclador usamos /analysis (tenant-scoped, con cantidadUb).
+   */
+  list(limit = 200): Observable<Analysis[]> {
+    return this.http.get<Analysis[]>(this.baseUrl, { params: { shortCodePrefix: '', limit: String(limit) } });
+  }
 }
