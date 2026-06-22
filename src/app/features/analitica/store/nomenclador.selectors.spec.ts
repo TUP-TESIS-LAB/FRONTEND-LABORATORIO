@@ -101,10 +101,10 @@ describe('nomenclador selectors', () => {
       expect(rows[0].cantidadUb).toBe(10);
     });
 
-    it('cambiar de versión recalcula cantidadUb (v2021 factor=0.85)', () => {
+    it('cambiar de versión NO altera cantidadUb hoy (passthrough; resolución por versión es follow-up BE)', () => {
       const catalog = [row({ id: 1, cantidadUb: 10 })];
       const rows = selectCatalogRows(stateWith({ catalog, selectedVersionId: 'v2021' }));
-      expect(rows[0].cantidadUb).toBe(8.5); // 10 * 0.85
+      expect(rows[0].cantidadUb).toBe(10);
     });
 
     it('devuelve cantidadUb=null cuando la base es null', () => {
@@ -171,13 +171,13 @@ describe('nomenclador selectors', () => {
       expect(rows[0].esManual).toBe(true);
     });
 
-    it('aplica factor de versión v2021=0.85 en el precio automático', () => {
+    it('la versión no altera la cantidadUb hoy (passthrough): auto = cantidadUb × valorUb', () => {
       const catalog = [row({ id: 1, cantidadUb: 10 })];
       const particular = pricing({ valorUb: 350, overrides: {} });
       const rows = selectParticularRows(stateWith({ catalog, particular, selectedVersionId: 'v2021' }));
-      expect(rows[0].cantidadUb).toBe(8.5);
-      expect(rows[0].auto).toBe(2975); // 8.5 × 350
-      expect(rows[0].precio).toBe(2975);
+      expect(rows[0].cantidadUb).toBe(10);
+      expect(rows[0].auto).toBe(3500); // 10 × 350
+      expect(rows[0].precio).toBe(3500);
     });
 
     it('devuelve múltiples filas con sus propios overrides', () => {
@@ -253,13 +253,12 @@ describe('nomenclador selectors', () => {
       expect(result).toBe(3500);
     });
 
-    it('aplica factor de versión correctamente (v2021 = 0.85)', () => {
-      // v2021 factor=0.85: 10 * 0.85 = 8.5 UB × 350 = 2975
+    it('la versión no altera la cantidadUb hoy (passthrough): 10 UB × 350 = 3500', () => {
       const p = pricing({ valorUb: 350, overrides: {} });
       const result = selectPrecioParticular(1)(
         stateWith({ particular: p, selectedVersionId: 'v2021', catalog: [row({ id: 1, cantidadUb: 10 })] }),
       );
-      expect(result).toBe(2975);
+      expect(result).toBe(3500);
     });
 
     it('devuelve null cuando cantidadUb es null y no hay override', () => {

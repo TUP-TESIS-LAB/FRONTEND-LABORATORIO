@@ -1,4 +1,4 @@
-/** Versión del nomenclador NBU. MOCK — PR #97 expone NbuVersion/NbuVersionDetail reales. */
+/** Versión del nomenclador NBU. REAL — GET /api/v1/analitica/nbu-versions (PR #97). */
 export interface NbuVersion {
   id: string;
   label: string;
@@ -21,29 +21,18 @@ export interface Determination {
   name: string;
 }
 
-/** Config de precio particular del laboratorio. MOCK — coverages (no en PR #97). */
+/** Config de precio particular del laboratorio. MOCK — sin endpoint BE todavía (feature futura). */
 export interface ParticularPricing {
   valorUb: number;
   overrides: Record<number, number>; // analysisId -> precio manual
 }
 
 /**
- * Factor mock por versión. MOCK — PR #97: saldrá de NbuVersionDetail real.
- * Expuesto como constante pura para que pueda usarse en selectores sin DI.
+ * Función pura standalone: cantidad de U.B. base para la versión del nomenclador, usable en selectores.
+ * Passthrough HOY: el backend devuelve la cantidadUb global de analysis_catalog y todavía NO resuelve
+ * la cantidad por versión (nbu_version_details existe pero la búsqueda no lo aplica). Cuando el BE
+ * implemente la resolución por versión, mapear la cantidad correcta por (análisis, versión) acá.
  */
-export const NBU_VERSION_FACTOR: Record<string, number> = {
-  v2024: 1,
-  v2021: 0.85,
-  v2018: 0.7,
-};
-
-/**
- * Función pura standalone: ajusta la cantidad de U.B. base según la versión del nomenclador.
- * Equivalente a NomencladorService.cantidadUbForVersion pero sin DI, usable en selectores.
- * MOCK — PR #97: la cantidad real saldrá de NbuVersionDetail por (práctica, versión).
- */
-export function cantidadUbParaVersion(base: number | null, versionId: string): number | null {
-  if (base == null) return null;
-  const f = NBU_VERSION_FACTOR[versionId] ?? 1;
-  return Math.round(base * f * 100) / 100;
+export function cantidadUbParaVersion(base: number | null, _versionId: string): number | null {
+  return base;
 }
