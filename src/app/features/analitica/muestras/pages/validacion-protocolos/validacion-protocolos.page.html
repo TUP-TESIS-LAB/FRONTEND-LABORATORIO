@@ -49,7 +49,7 @@
             <div class="cell-mx">
               <div class="mx-top"><span class="mx-code">{{ r.protocolCode }}</span></div>
               <div class="mx-pac">
-                {{ r.patientName }}@if (r.patientSex || edad(r) !== null) { · @if (r.patientSex) {{{ r.patientSex }} }@if (edad(r) !== null) {{{ edad(r) }}a}}
+                {{ r.patientName }}
               </div>
             </div>
             <div class="cell-an">
@@ -88,7 +88,7 @@
                   <div class="an-lhead an-grid">
                     <span>ANÁLISIS</span><span>FAMILIA DE ESTUDIO</span><span>ESTADO</span>
                   </div>
-                  @for (a of analisisDe(r.protocolId); track a.resultId) {
+                  @for (a of analisisDe(r.protocolId); track trackAnalisis($index, a)) {
                     <div class="an-row an-grid">
                       <div class="an-cell-name">
                         <span class="an-nm">{{ a.analysisName ?? ('Resultado #' + a.resultId) }}</span>
@@ -97,7 +97,7 @@
                         @if (a.analysisFamily) { <span class="fam-pill">{{ a.analysisFamily }}</span> }
                       </div>
                       <div class="an-cell-st">
-                        <span [class]="'fst ' + badgeResultado(a.status)[0]">{{ badgeResultado(a.status)[1] }}</span>
+                        <span [class]="'fst ' + badgeAnalisis(a)[0]">{{ badgeAnalisis(a)[1] }}</span>
                       </div>
                     </div>
                   }

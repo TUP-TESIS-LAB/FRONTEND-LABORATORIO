@@ -11,13 +11,21 @@ export interface LoteDestPatch extends Partial<TransitoDest> {
   observation?: string;
 }
 
-/** Opción de sección (workspace de la sucursal actual) para asignación manual. */
+/** Opción de sección (workspace) para asignación manual. */
 export interface SectionOption {
   sectionId: number;
   sectionName: string;
   areaName: string;
-  /** "Área · Sección" o el nombre de la sección si no se conoce el área. */
+  /**
+   * Texto que se muestra en la opción.
+   * Misma sucursal: "Área · Sección" (o solo la sección si no se conoce el área).
+   * Otra sucursal (fallback inter-sucursal): se agrega "(→ Sucursal)".
+   */
   label: string;
+  /** Nombre de la sucursal destino, cuando se conoce (back nuevo). */
+  branchName?: string;
+  /** true si la sección destino está en otra sucursal distinta de la actual. */
+  isOtherBranch?: boolean;
 }
 
 export const SIN_DESTINO_GROUP_ID = 'sin-destino';

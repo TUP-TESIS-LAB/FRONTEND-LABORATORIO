@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import type { DetalleResultado } from '../../models/postanalitica.model';
+import { esPendiente, type DetalleResultado } from '../../models/postanalitica.model';
 
 /**
  * GAP-9: modal de confirmación de "Firmar estudio".
@@ -10,8 +10,8 @@ import type { DetalleResultado } from '../../models/postanalitica.model';
  * validación y, según falten o no resultados por validar, anticipa si la firma
  * será PARCIAL (el estudio queda PARTIALLY_SIGNED) o TOTAL (se cierra el estudio).
  *
- * Sigue el patrón visual de resumen-resultados-modal (p-dialog modal, no draggable,
- * fullscreen en mobile, footer con dos p-button).
+ * Sigue el patrón visual estándar de los modales de confirmación (p-dialog modal, no
+ * draggable, fullscreen en mobile, footer con dos p-button).
  */
 @Component({
   selector: 'app-firmar-estudio-modal',
@@ -26,6 +26,9 @@ import type { DetalleResultado } from '../../models/postanalitica.model';
         @if (esTotal()) {
           Todos los análisis están validados. Al confirmar se firmarán y el estudio quedará
           <b>cerrado (firma total)</b>.
+        } @else if (hayPendientes()) {
+          Hay análisis <b>sin resultado todavía</b> (su muestra está en proceso). Al confirmar se firmarán solo
+          los validados y el estudio quedará en <b>firma parcial</b>; el resto podrá firmarse cuando se carguen.
         } @else {
           Hay análisis sin validar. Al confirmar se firmarán solo los validados y el estudio quedará en
           <b>firma parcial</b>; los pendientes podrán firmarse después.
@@ -33,7 +36,7 @@ import type { DetalleResultado } from '../../models/postanalitica.model';
       </p>
 
       <div class="fe-list">
-        @for (r of results(); track r.resultId) {
+        @for (r of results(); track esPendiente(r) ? ('p-' + $index + '-' + (r.analysisName ?? '')) : ('r-' + r.resultId)) {
           <div class="fe-row">
             <span class="fe-name">{{ r.analysisName ?? ('Resultado #' + r.resultId) }}</span>
             <span class="fe-state" [class.is-ok]="esFirmable(r)" [class.is-pending]="!esFirmable(r)">
@@ -70,12 +73,33 @@ export class FirmarEstudioModalComponent {
   readonly confirmar = output<void>();
   readonly closed = output<void>();
 
-  /** Un resultado es firmable si ya está validado (o firmado, que cuenta como hecho). */
-  esFirmable(r: DetalleResultado): boolean { return r.status === 'VALIDATED' || r.status === 'SIGNED'; }
-  readonly firmablesCount = computed(() => this.results().filter(r => r.status === 'VALIDATED').length);
-  readonly esTotal = computed(() => this.results().length > 0 && this.results().every(r => this.esFirmable(r)));
+  readonly esPendiente = esPendiente;
+
+  /**
+   * Un resultado es firmable si ya está validado (o firmado, que cuenta como hecho).
+   * Un PENDIENTE nunca es firmable (no tiene resultado todavía).
+   */
+  esFirmable(r: DetalleResultado): boolean {
+    if (esPendiente(r)) return false;
+    return r.status === 'VALIDATED' || r.status === 'SIGNED';
+  }
+  /** Hay al menos un análisis pendiente (sin resultado): nunca puede ser firma total. */
+  readonly hayPendientes = computed(() => this.results().some(r => esPendiente(r)));
+  /** Firmables = sólo NO-pendientes en estado VALIDATED (los pendientes no cuentan). */
+  readonly firmablesCount = computed(() =>
+    this.results().filter(r => !esPendiente(r) && r.status === 'VALIDATED').length);
+  /**
+   * Es firma TOTAL sólo si NO hay pendientes Y todos los NO-pendientes son firmables
+   * (y hay al menos uno). Con cualquier pendiente → firma parcial.
+   */
+  readonly esTotal = computed(() => {
+    if (this.hayPendientes()) return false;
+    const noPendientes = this.results().filter(r => !esPendiente(r));
+    return noPendientes.length > 0 && noPendientes.every(r => this.esFirmable(r));
+  });
 
   etiqueta(r: DetalleResultado): string {
+    if (esPendiente(r)) return 'Sin resultado';
     if (r.status === 'SIGNED') return 'Firmado';
     if (r.status === 'VALIDATED') return 'Listo para firmar';
     return 'Sin validar';

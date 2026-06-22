@@ -129,6 +129,10 @@
   &:hover:not(:disabled) { background: #138a3e; }
   &:disabled { background: #cdd0dc; cursor: not-allowed; }
 }
+.anx-incompleto {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600;
+  color: #b45309; background: #fef3c7; padding: 4px 10px; border-radius: 7px; white-space: nowrap;
+}
 .anx-meta { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .anx-det {
   font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--bg);
@@ -161,3 +165,11 @@
 .vb-ok { color: #15803d; background: #dcfce7; }
 .vb-no { color: var(--ink-2); background: #eef0f5; }
 .vb-warn { color: #b45309; background: #fef3c7; }
+
+/* Análisis pendiente (sin resultado todavía): mensaje en vez de la tabla de determinaciones. */
+.anx-body--pending { padding: 16px 18px; }
+.anx-pending-msg {
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  font-size: 13.5px; color: var(--ink-2);
+}
+.anx-pending-msg i { color: #b45309; }

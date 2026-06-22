@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildResultGrid } from './resultado.model';
+import { buildPlanillaGrid, buildResultGrid, pAKey } from './resultado.model';
 import type { AnalyticalResult, Determination, DeterminationCatalogEntry } from './resultado.model';
 
 const results: AnalyticalResult[] = [
@@ -38,5 +38,39 @@ describe('buildResultGrid', () => {
     const grid = buildResultGrid({ protocolIds: [9], results: [], determinationsByResult: {}, catalogById: {}, analysisNameById: {}, patientNameById: {} });
     expect(grid.sections).toEqual([]);
     expect(grid.resultLabels).toEqual({});
+  });
+});
+
+describe('buildPlanillaGrid', () => {
+  const result: AnalyticalResult = { id: 700, protocolId: 50014, analysisOrderId: 100, sectionId: 80012, patientId: 20002 };
+  const baseInput = () => ({
+    templateId: 1,
+    templateName: 'prueba',
+    templateAnalyses: [{ analysisTypeId: 6, displayOrder: 1, analysisName: 'Colesterol Total' }],
+    determinationCatalogByAnalysis: {
+      6: [{ id: 90100, name: 'Colesterol', unit: 'mg/dL', referenceValues: '< 200', analysisCatalogId: 6 }],
+    } as Record<number, DeterminationCatalogEntry[]>,
+    protocolIds: [50014],
+    patientNameByProtocol: { 50014: 'María López' },
+    resultByProtocolAnalysis: { [pAKey(50014, 6)]: result } as Record<string, AnalyticalResult | undefined>,
+    determinationsByResult: {
+      700: [{ id: 800, analyticalResultId: 700, determinationCatalogId: 90100, resultValue: '210', observations: null }],
+    } as Record<number, Determination[]>,
+  });
+
+  // Decisión de UX: la planilla abre SIEMPRE en blanco; NO hidrata el resultValue ya
+  // guardado. La celda igual debe quedar persistible (conserva resultId/determinationId)
+  // para que onSave pueda pisar el AnalyticalResult compartido (last-write-wins en el back).
+  it('abre la celda en blanco aunque exista un resultValue guardado, conservando los ids persistibles', () => {
+    const grid = buildPlanillaGrid(baseInput());
+    const cell = grid.sections[0].rows[0].cells[50014];
+    expect(cell).toEqual({ resultId: 700, determinationId: 800, value: '' });
+  });
+
+  it('GAP-P5: si el protocolo no pidió el análisis, la celda no persiste y va vacía', () => {
+    const input = baseInput();
+    input.resultByProtocolAnalysis = {};
+    const grid = buildPlanillaGrid(input);
+    expect(grid.sections[0].rows[0].cells[50014]).toEqual({ resultId: null, determinationId: null, value: '' });
   });
 });

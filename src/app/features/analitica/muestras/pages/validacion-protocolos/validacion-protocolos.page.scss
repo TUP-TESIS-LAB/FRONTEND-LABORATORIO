@@ -122,7 +122,8 @@
 
 .cell-act { display: flex; justify-content: flex-end; }
 .prot-validar {
-  display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 15px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 36px; padding: 0 15px; min-width: 116px;
   border-radius: 9px; border: none; background: var(--accent); color: #fff;
   font-size: 13px; font-weight: 700; cursor: pointer;
   box-shadow: 0 4px 11px color-mix(in srgb, var(--accent) 32%, transparent);

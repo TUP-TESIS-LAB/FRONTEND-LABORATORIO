@@ -4,6 +4,8 @@ export interface WorkSection {
   sectionId: number;
   areaName: string;
   sectionName: string;
+  /** Nombre de la sucursal destino. El back lo resuelve (puede ser otra sucursal del tenant). */
+  branchName: string;
 }
 
 export interface RoutingAssignment {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, input, output, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import type { PlanillaGrid, PlanillaCell } from '../../models/resultado.model';
 
@@ -27,7 +27,7 @@ export interface PlanillaSavePayload {
   templateUrl: './planilla-grid.component.html',
   styleUrl: './planilla-grid.component.scss',
 })
-export class PlanillaGridComponent {
+export class PlanillaGridComponent implements OnDestroy {
   readonly grid = input.required<PlanillaGrid>();
   readonly save = output<PlanillaSavePayload[]>();
 
@@ -35,6 +35,22 @@ export class PlanillaGridComponent {
   private readonly edited = signal<ReadonlyMap<string, string>>(new Map());
 
   readonly columns = computed(() => this.grid().columns);
+
+  constructor() {
+    // STATELESS: cada planilla que llega parte del estado persistido en el back, nunca
+    // de ediciones locales previas. Al recibir un grid nuevo (reabrir la planilla),
+    // descartamos lo tipeado antes. El builder emite el grid una sola vez por carga,
+    // así que el reset no pisa una sesión de edición activa.
+    effect(() => {
+      this.grid(); // dependencia: corre en cada nuevo grid emitido
+      this.edited.set(new Map());
+    });
+  }
+
+  /** Refuerzo: si el componente se destruye, las ediciones locales no sobreviven. */
+  ngOnDestroy(): void {
+    this.edited.set(new Map());
+  }
 
   private localKey(protocolId: number, catalogId: number): string { return `${protocolId}:${catalogId}`; }
 
@@ -82,7 +98,10 @@ export class PlanillaGridComponent {
           const cell = row.cells[col.protocolId];
           if (!cell || cell.resultId == null || cell.determinationId == null) continue;
           const edited = this.edited().get(this.localKey(col.protocolId, row.catalogId));
-          if (edited === undefined) continue; // sin cambios → no se manda
+          // Regla de negocio: una celda sin cambios (undefined) o editada a vacío NO se manda.
+          // Dejar una celda en blanco no debe pisar el valor viejo (que pudo cargarse en otra
+          // hoja) ni romper el batch en el back. El '' nunca sale al back.
+          if (edited === undefined || edited.trim() === '') continue;
           const arr = byResult.get(cell.resultId) ?? [];
           arr.push({ determinationId: cell.determinationId, resultValue: edited });
           byResult.set(cell.resultId, arr);

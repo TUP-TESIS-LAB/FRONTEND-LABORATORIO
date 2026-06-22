@@ -35,26 +35,61 @@
   <section class="grp-card">
     <div class="grp-rows">
       @for (t of visibleRows(); track t.id) {
-        <div class="row proc-grid proc-row" [class.is-sel]="isSelected(t.id)" (click)="toggleRow(t.id)">
-          <label class="cell-chk" (click)="$event.stopPropagation()">
-            <input type="checkbox" [checked]="isSelected(t.id)" (change)="toggleRow(t.id)" [attr.aria-label]="'Seleccionar ' + t.barcode" />
-          </label>
-          <div class="cell-mx">
-            <div class="mx-top">
-              <span class="mx-code">{{ t.barcode }}</span>
-              @if (t.urgent) { <span class="badge-urg">URGENTE</span> }
+        <div class="proc-block" [class.is-open]="isOpen(t.id)">
+          <div class="row proc-grid proc-row" [class.is-sel]="isSelected(t.id)" (click)="toggleRow(t.id)">
+            <label class="cell-chk" (click)="$event.stopPropagation()">
+              <input type="checkbox" [checked]="isSelected(t.id)" (change)="toggleRow(t.id)" [attr.aria-label]="'Seleccionar ' + t.barcode" />
+            </label>
+            <div class="cell-mx">
+              <button
+                type="button" class="proc-chev" [class.is-open]="isOpen(t.id)"
+                (click)="toggleExpand(t.id, $event)" [attr.aria-label]="'Ver análisis de ' + t.barcode"
+                [attr.aria-expanded]="isOpen(t.id)"
+              >
+                <i class="pi pi-chevron-down"></i>
+              </button>
+              <div class="mx-text">
+                <div class="mx-top">
+                  <span class="mx-code">{{ t.barcode }}</span>
+                  @if (t.urgent) { <span class="badge-urg">URGENTE</span> }
+                </div>
+                <div class="mx-pac">{{ t.patient }}</div>
+              </div>
             </div>
-            <div class="mx-pac">{{ t.patient }}</div>
+            <div class="cell-an">
+              <span class="an-count">{{ t.study }}</span>
+              <span class="an-sub">{{ t.analyses.length }} {{ t.analyses.length === 1 ? 'etiqueta' : 'etiquetas' }}</span>
+            </div>
+            <div class="cell-ori"><i class="pi pi-map-marker"></i> {{ t.branch }}</div>
+            <div class="cell-toma"><span class="toma-d">{{ t.receivedAt | dateEs:'date' }}</span><span class="toma-h">{{ t.receivedAt | dateEs:'time' }} hs</span></div>
+            <div class="cell-edo">
+              @switch (t.cargaStatus) {
+                @case ('COMPLETA') { <span class="badge-st st-completa"><span class="dot"></span>Carga completa</span> }
+                @case ('PARCIAL') { <span class="badge-st st-parcial"><span class="dot"></span>Carga parcial</span> }
+                @default { <span class="badge-st st-proc"><span class="dot"></span>En proceso</span> }
+              }
+            </div>
           </div>
-          <div class="cell-an">
-            <span class="an-count">{{ t.study }}</span>
-            <span class="an-sub">{{ t.analyses.length }} {{ t.analyses.length === 1 ? 'etiqueta' : 'etiquetas' }}</span>
-          </div>
-          <div class="cell-ori"><i class="pi pi-map-marker"></i> {{ t.branch }}</div>
-          <div class="cell-toma"><span class="toma-d">{{ t.receivedAt | dateEs:'date' }}</span><span class="toma-h">{{ t.receivedAt | dateEs:'time' }} hs</span></div>
-          <div class="cell-edo">
-            <span class="badge-st st-proc"><span class="dot"></span>En proceso</span>
-          </div>
+
+          @if (isOpen(t.id)) {
+            <div class="proc-detail">
+              @if (t.analyses.length === 0) {
+                <p class="an-loading">Sin análisis en este tubo.</p>
+              } @else {
+                <div class="an-list">
+                  <div class="an-lhead an-grid">
+                    <span>ANÁLISIS</span><span>CÓDIGO DE BARRA</span>
+                  </div>
+                  @for (a of t.analyses; track a.labelId) {
+                    <div class="an-row an-grid">
+                      <div class="an-cell-name"><span class="an-nm">{{ a.name }}</span></div>
+                      <div class="an-cell-bc"><span class="an-bc">{{ a.barcode }}</span></div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
       }
       @if (visibleRows().length === 0) {
@@ -71,6 +106,7 @@
     (verDetalle)="onEditSheet($event)" (cargarConPlanilla)="onCargarConPlanilla($event)" />
 
   <app-worksheet-config-modal [visible]="configOpen()" [templateId]="editingTemplateId()"
+    [seedAnalyses]="seedAnalyses()"
     (closed)="closeConfig()" (saved)="onConfigSaved()" />
 
   <app-marcar-completadas-modal [visible]="completadasOpen()" [items]="resumenItems()"

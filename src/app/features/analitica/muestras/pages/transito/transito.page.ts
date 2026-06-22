@@ -77,11 +77,14 @@ export class TransitoPage {
    * con nombres resueltos por el routing (preferente), el catálogo de secciones, o `Sección {id}`.
    */
   protected readonly sectionOptions = computed<SectionOption[]>(() => {
-    const fromRouting = new Map<number, { areaName: string; sectionName: string }>();
+    const currentBranchId = this.branchId();
+    const fromRouting = new Map<number, { areaName: string; sectionName: string; branchId: number; branchName: string }>();
     for (const g of this.routing()?.groups ?? []) {
       fromRouting.set(g.workSection.sectionId, {
         areaName: g.workSection.areaName,
         sectionName: g.workSection.sectionName,
+        branchId: g.workSection.branchId,
+        branchName: g.workSection.branchName,
       });
     }
     const catalog = new Map(this.sectionsCatalog().map(s => [s.id, s.name]));
@@ -89,11 +92,19 @@ export class TransitoPage {
       const known = fromRouting.get(w.sectionId);
       const sectionName = known?.sectionName ?? catalog.get(w.sectionId) ?? `Sección ${w.sectionId}`;
       const areaName = known?.areaName ?? '';
+      const branchName = known?.branchName;
+      // "Otra sucursal" se decide por branchId destino vs branchId actual.
+      // Degradado suave: sin branchName/branchId del back (back viejo) → se trata como sucursal actual.
+      const isOtherBranch =
+        !!branchName && known?.branchId != null && currentBranchId != null && known.branchId !== currentBranchId;
+      const base = areaName ? `${areaName} · ${sectionName}` : sectionName;
       return {
         sectionId: w.sectionId,
         sectionName,
         areaName,
-        label: areaName ? `${areaName} · ${sectionName}` : sectionName,
+        branchName,
+        isOtherBranch,
+        label: isOtherBranch ? `${base} (→ ${branchName})` : base,
       };
     });
   });

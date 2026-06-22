@@ -27,6 +27,7 @@ export class WorksheetConfigModalComponent {
 
   readonly visible = input<boolean>(false);
   readonly templateId = input<number | null>(null);
+  readonly seedAnalyses = input<OrderedAnalysis[]>([]);
   readonly saved = output<void>();
   readonly closed = output<void>();
 
@@ -56,6 +57,23 @@ export class WorksheetConfigModalComponent {
       forkJoin(sorted.map(a => this.analysis.getById(a.analysisTypeId)))
         .pipe(takeUntilDestroyed(this.destroyRef), catchError(() => of([])))
         .subscribe(details => this.ordered.set(details.map(d => ({ analysisTypeId: d.id, name: d.name }))));
+    });
+
+    // Modo NUEVA plantilla: precarga los análisis de las muestras seleccionadas.
+    effect(() => {
+      if (!this.visible() || this.templateId() != null) return;
+      const seed = this.seedAnalyses();
+      if (seed.length === 0) return;
+      this.ordered.update(list => {
+        const seen = new Set(list.map(x => x.analysisTypeId));
+        const extra: OrderedAnalysis[] = [];
+        for (const s of seed) {
+          if (seen.has(s.analysisTypeId)) continue;
+          seen.add(s.analysisTypeId);
+          extra.push({ analysisTypeId: s.analysisTypeId, name: s.name });
+        }
+        return extra.length ? [...list, ...extra] : list;
+      });
     });
   }
 

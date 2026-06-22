@@ -13,7 +13,8 @@ export interface ResumenMuestra extends ProtocoloProgreso {
  * Resumen de las muestras seleccionadas (completas / parciales / sin resultados),
  * con warning para las sin resultados, tabla de selección y "Marcar completadas".
  * Fiel al mockup (sin la barra de progreso, por decisión del usuario).
- * Solo se pueden marcar las "completas" (todas sus determinaciones cargadas).
+ * Se pueden marcar las muestras con al menos un valor cargado (completas y parciales);
+ * las "sin resultados" quedan en análisis.
  */
 @Component({
   selector: 'app-marcar-completadas-modal',
@@ -37,7 +38,7 @@ export class MarcarCompletadasModalComponent {
   readonly completas = computed(() => this.items().filter(i => i.status === 'completa'));
   readonly parciales = computed(() => this.items().filter(i => i.status === 'parcial'));
   readonly sin = computed(() => this.items().filter(i => i.status === 'sin'));
-  private readonly seleccionables = computed(() => this.items().filter(i => i.status === 'completa'));
+  private readonly seleccionables = computed(() => this.items().filter(i => i.status !== 'sin'));
 
   readonly allSel = computed(() => {
     const s = this.seleccionables();
@@ -49,7 +50,7 @@ export class MarcarCompletadasModalComponent {
     if (i.status === 'parcial') return ['st-mid', 'Parcial'];
     return ['st-no', 'Sin resultados'];
   }
-  isSelectable(i: ResumenMuestra): boolean { return i.status === 'completa'; }
+  isSelectable(i: ResumenMuestra): boolean { return i.status !== 'sin'; }
   isChecked(i: ResumenMuestra): boolean { return this.checked().has(i.protocolId); }
 
   toggle(i: ResumenMuestra): void {
