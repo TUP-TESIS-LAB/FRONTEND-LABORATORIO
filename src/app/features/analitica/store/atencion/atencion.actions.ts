@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { createAction, props } from '@ngrx/store';
 import { CreatePatientRequest, Patient, UpdatePatientRequest } from '../../../pacientes/models/patient.model';
 import { PatientGuardian } from '../../models/patient-guardian.model';
+import { RegisterGuardianBody } from '../../services/family-link.service';
 import {
   AddAnalysisListRequest,
   AddObservationsRequest,
@@ -111,3 +112,7 @@ export const loadPatientGuardiansFailure = createAction('[Atencion API] Load Pat
 export const validateBond        = createAction('[Atencion Wizard] Validate Bond',         props<{ userPatientId: number; status: 'VERIFIED' | 'REJECTED' }>());
 export const validateBondSuccess = createAction('[Atencion API] Validate Bond Success',    props<{ userPatientId: number; status: 'VERIFIED' | 'REJECTED' }>());
 export const validateBondFailure = createAction('[Atencion API] Validate Bond Failure',    props<{ error: HttpErrorResponse }>());
+
+export const registerGuardian        = createAction('[Atencion Wizard] Register Guardian',         props<RegisterGuardianBody>());
+export const registerGuardianSuccess = createAction('[Atencion API] Register Guardian Success',    props<{ patientId: number }>());
+export const registerGuardianFailure = createAction('[Atencion API] Register Guardian Failure',    props<{ error: HttpErrorResponse }>());

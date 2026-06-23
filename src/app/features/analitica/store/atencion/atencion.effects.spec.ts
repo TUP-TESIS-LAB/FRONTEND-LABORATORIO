@@ -49,7 +49,7 @@ describe('AtencionEffects', () => {
   let labels: { getByProtocol: ReturnType<typeof vi.fn> };
   let rotuloPdf: { generate: ReturnType<typeof vi.fn> };
   let notification: { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> };
-  let familyLink: { getGuardians: ReturnType<typeof vi.fn>; verifyBond: ReturnType<typeof vi.fn> };
+  let familyLink: { getGuardians: ReturnType<typeof vi.fn>; verifyBond: ReturnType<typeof vi.fn>; registerGuardian: ReturnType<typeof vi.fn> };
   let effects: AtencionEffects;
 
   beforeEach(() => {
@@ -78,7 +78,7 @@ describe('AtencionEffects', () => {
     labels = { getByProtocol: vi.fn() };
     rotuloPdf = { generate: vi.fn().mockResolvedValue(undefined) };
     notification = { error: vi.fn(), success: vi.fn() };
-    familyLink = { getGuardians: vi.fn(), verifyBond: vi.fn() };
+    familyLink = { getGuardians: vi.fn(), verifyBond: vi.fn(), registerGuardian: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -560,5 +560,30 @@ describe('AtencionEffects', () => {
     expect(notification.error).toHaveBeenCalledWith(
       'No se pudo actualizar la relación familiar. Revisá la conexión e intentá de nuevo.'
     );
+  });
+
+  // ── registerGuardian$ ────────────────────────────────────────────────────────
+
+  it('registerGuardian$ → success refresca guardianes y emite registerGuardianSuccess', async () => {
+    familyLink.registerGuardian.mockReturnValue(of({}));
+    actions$.next(A.registerGuardian({ firstName: 'Ana', lastName: 'Pérez', email: 'a@x.com', document: '30111222', patientId: 20, bond: 'MADRE' }));
+    const out = await firstValueFrom(effects.registerGuardian$.pipe(take(1)));
+    expect(familyLink.registerGuardian).toHaveBeenCalled();
+    expect(out).toEqual(A.registerGuardianSuccess({ patientId: 20 }));
+  });
+
+  it('registerGuardian$ → error → toast en español + registerGuardianFailure', async () => {
+    const error = new HttpErrorResponse({ status: 400 });
+    familyLink.registerGuardian.mockReturnValue(throwError(() => error));
+    actions$.next(A.registerGuardian({ firstName: 'Ana', lastName: 'Pérez', email: 'a@x.com', document: '30111222', patientId: 20, bond: 'MADRE' }));
+    const out = await firstValueFrom(effects.registerGuardian$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalled();
+    expect(out).toEqual(A.registerGuardianFailure({ error }));
+  });
+
+  it('refreshGuardiansAfterRegister$ → registerGuardianSuccess → loadPatientGuardians', async () => {
+    actions$.next(A.registerGuardianSuccess({ patientId: 20 }));
+    const out = await firstValueFrom(effects.refreshGuardiansAfterRegister$.pipe(take(1)));
+    expect(out).toEqual(A.loadPatientGuardians({ patientId: 20 }));
   });
 });

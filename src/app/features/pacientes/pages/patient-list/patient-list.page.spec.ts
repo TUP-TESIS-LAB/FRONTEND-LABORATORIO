@@ -211,6 +211,41 @@ describe('PatientListPage (smoke)', () => {
     expect(cmp.resendAccountAction.hidden!({ ...basePatient, accountStatus: 'PENDING' })).toBe(false);
     expect(cmp.resendAccountAction.hidden!({ ...basePatient, accountStatus: 'ACTIVE' })).toBe(true);
   });
+
+  // ---- Arco 2B: managedBy ----
+
+  it('accesoPortal cell label: NONE + managedBy(count=1) → "Sin cuenta · Gestionado por Ana Pérez"', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    const cmp = fixture.componentInstance;
+    const p: Patient = {
+      ...basePatient,
+      accountStatus: 'NONE',
+      managedBy: { titularNombre: 'Ana Pérez', count: 1 },
+    };
+    expect(cmp.accesoPortalLabel(p)).toBe('Sin cuenta · Gestionado por Ana Pérez');
+  });
+
+  it('accesoPortal cell label: NONE + managedBy(count=2) → "Sin cuenta · Gestionado por Ana Pérez +1"', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    const cmp = fixture.componentInstance;
+    const p: Patient = {
+      ...basePatient,
+      accountStatus: 'NONE',
+      managedBy: { titularNombre: 'Ana Pérez', count: 2 },
+    };
+    expect(cmp.accesoPortalLabel(p)).toBe('Sin cuenta · Gestionado por Ana Pérez +1');
+  });
+
+  it('createAccountAction.hidden es true cuando managedBy está presente (no ofrecer cuenta propia)', () => {
+    const fixture = TestBed.createComponent(PatientListPage);
+    const cmp = fixture.componentInstance;
+    const p: Patient = {
+      ...basePatient,
+      contacts: [{ contactType: 'EMAIL', contactValue: 'a@b.com', isPrimary: true, active: true }],
+      managedBy: { titularNombre: 'Ana Pérez', count: 1 },
+    };
+    expect(cmp.createAccountAction.hidden!(p)).toBe(true);
+  });
 });
 
 // ---- B3: gating por ModuleKey.Portal ----

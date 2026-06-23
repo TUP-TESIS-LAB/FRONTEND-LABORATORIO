@@ -65,6 +65,9 @@ import {
   validateBond,
   validateBondSuccess,
   validateBondFailure,
+  registerGuardian,
+  registerGuardianSuccess,
+  registerGuardianFailure,
 } from './atencion.actions';
 
 /**
@@ -447,6 +450,29 @@ export class AtencionEffects {
           }),
         ),
       ),
+    ),
+  );
+
+  registerGuardian$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(registerGuardian),
+      concatMap((body) =>
+        this.familyLink.registerGuardian(body).pipe(
+          tap(() => this.notification.success('Responsable vinculado. Se envió el mail de primer acceso si la cuenta es nueva.')),
+          map(() => registerGuardianSuccess({ patientId: body.patientId })),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error(error?.error?.message ?? 'No se pudo dar de alta al responsable. Intentá de nuevo.');
+            return of(registerGuardianFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  refreshGuardiansAfterRegister$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(registerGuardianSuccess),
+      map(({ patientId }) => loadPatientGuardians({ patientId })),
     ),
   );
 

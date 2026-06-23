@@ -116,6 +116,10 @@ import {
             <span class="text-green-600 text-xs"><i class="pi pi-check-circle mr-1"></i>Activa</span>
           } @else if ($any(row).accountStatus === 'PENDING') {
             <span class="text-yellow-600 text-xs"><i class="pi pi-clock mr-1"></i>Pendiente</span>
+          } @else if ($any(row).managedBy) {
+            <span class="text-surface-500 text-xs">
+              <i class="pi pi-users mr-1"></i>{{ accesoPortalLabel($any(row)) }}
+            </span>
           } @else {
             <span class="text-surface-400 text-xs">Sin cuenta</span>
           }
@@ -172,7 +176,7 @@ export class PatientListPage implements OnInit {
     hidden: (row) => {
       const p = row as Patient;
       const tieneEmail = (p.contacts ?? []).some(c => c.contactType === 'EMAIL' && c.active);
-      return p.accountStatus !== 'NONE' || !tieneEmail;
+      return p.accountStatus !== 'NONE' || !tieneEmail || !!p.managedBy;
     },
   };
 
@@ -330,5 +334,19 @@ export class PatientListPage implements OnInit {
   primaryPhone(p: Patient): string {
     const c = p.contacts.find((x) => x.contactType === 'PHONE' && x.active);
     return c?.contactValue ?? '—';
+  }
+
+  /**
+   * Returns the display label for the accesoPortal cell when accountStatus is 'NONE'.
+   * Single source of truth — template delegates the managedBy branch to this helper.
+   * no managedBy → "Sin cuenta"
+   * managedBy count=1 → "Sin cuenta · Gestionado por {titularNombre}"
+   * managedBy count>1 → "Sin cuenta · Gestionado por {titularNombre} +{count-1}"
+   */
+  accesoPortalLabel(p: Patient): string {
+    const mb = p.managedBy;
+    if (!mb) return 'Sin cuenta';
+    const base = `Sin cuenta · Gestionado por ${mb.titularNombre}`;
+    return mb.count > 1 ? `${base} +${mb.count - 1}` : base;
   }
 }
