@@ -5,6 +5,7 @@ import {
   loadNomencladorFailure,
   loadNomencladorSuccess,
   loadDeterminationsSuccess,
+  loadConfigResumenSuccess,
   saveValorUbSuccess,
   selectNbuVersion,
   setOverrideSuccess,
@@ -45,6 +46,12 @@ export const nomencladorReducer = createReducer(
     catalog: state.catalog.map(row =>
       row.id === analysisId ? { ...row, nbuCode } : row,
     ),
+  })),
+
+  // ── Resumen de config ──────────────────────────────────────────────────────
+  on(loadConfigResumenSuccess, (state, { analysisId, resumen }): NomencladorFeatureState => ({
+    ...state,
+    configByAnalysis: { ...state.configByAnalysis, [analysisId]: resumen },
   })),
 
   // ── Valor U.B. ─────────────────────────────────────────────────────────────

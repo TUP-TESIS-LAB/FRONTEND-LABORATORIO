@@ -1,6 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
-import { CatalogRow, Determination, NbuVersion, ParticularPricing } from '../../models/nomenclador.model';
+import { CatalogRow, ConfigResumen, Determination, NbuVersion, ParticularPricing } from '../../models/nomenclador.model';
 
 // ── Carga inicial (forkJoin de versiones + catálogo + pricing) ────────────────
 export const loadNomenclador = createAction('[Nomenclador] Load');
@@ -27,6 +27,20 @@ export const loadDeterminations = createAction(
 export const loadDeterminationsSuccess = createAction(
   '[Nomenclador API] Load Determinations Success',
   props<{ analysisId: number; nbuCode: string | null; determinations: Determination[] }>(),
+);
+
+// ── Resumen de config por análisis (lazy por análisisId) ─────────────────────
+export const loadConfigResumen = createAction(
+  '[Nomenclador] Load Config Resumen',
+  props<{ analysisId: number }>(),
+);
+export const loadConfigResumenSuccess = createAction(
+  '[Nomenclador API] Load Config Resumen Success',
+  props<{ analysisId: number; resumen: ConfigResumen }>(),
+);
+export const loadConfigResumenFailure = createAction(
+  '[Nomenclador API] Load Config Resumen Failure',
+  props<{ analysisId: number }>(),
 );
 
 // ── Valor U.B. particular ────────────────────────────────────────────────────
