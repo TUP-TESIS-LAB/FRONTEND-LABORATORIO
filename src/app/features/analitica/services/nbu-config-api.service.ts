@@ -43,6 +43,13 @@ export interface ReferenceValueItem {
   unit: string | null;
 }
 
+/** Determinación del catálogo de un análisis (id + nombre + unidad de medida). */
+export interface DeterminationCatalogItem {
+  id: number;
+  name: string;
+  unit: string | null;
+}
+
 /** Fila de tenant_analysis (activación + alias + sección del laboratorio). */
 export interface TenantAnalysisRow {
   id: number;            // tenant_analysis.id (el que recibe PATCH)
@@ -63,7 +70,16 @@ export interface TenantAnalysisRow {
 export class NbuConfigApiService {
   private readonly http = inject(HttpClient);
   private readonly detBase = '/api/v1/analitica/determinations';
+  private readonly catalogBase = '/api/v1/analitica/catalog';
   private readonly tenantAnalysesBase = '/api/v1/tenant-analyses';
+
+  /**
+   * Determinaciones del catálogo de un análisis (id + nombre + unidad). La unidad se
+   * muestra read-only como contexto en cada panel de valores de referencia del drawer.
+   */
+  getCatalogDeterminations(analysisCatalogId: number): Observable<DeterminationCatalogItem[]> {
+    return this.http.get<DeterminationCatalogItem[]>(`${this.catalogBase}/${analysisCatalogId}/determinations`);
+  }
 
   getOverride(determinationId: number): Observable<TenantOverrideResponse> {
     return this.http.get<TenantOverrideResponse>(`${this.detBase}/${determinationId}/override`);

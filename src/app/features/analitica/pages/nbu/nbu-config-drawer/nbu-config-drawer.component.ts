@@ -9,48 +9,62 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
-import { ToggleSwitch } from 'primeng/toggleswitch';
 import { AccordionModule } from 'primeng/accordion';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
-import { AnalysisService } from '../../../services/analysis.service';
 import { SectionService } from '../../../../sucursales/services/section.service';
 import {
-  DeterminationOverride, NbuConfigApiService, ReferenceValueItem, TenantAnalysisRow,
+  DeterminationCatalogItem, DeterminationOverride, NbuConfigApiService, ReferenceValueItem,
+  TenantAnalysisRow,
 } from '../../../services/nbu-config-api.service';
 import { CatalogRow } from '../../../models/nomenclador.model';
 
-interface SectionOption { label: string; value: number; }
 interface GenderOption { label: string; value: 'MALE' | 'FEMALE' | null; }
 
 /**
- * Modelo de trabajo del form por determinación: override + valores de referencia,
- * más un snapshot del estado original para detectar cambios al guardar.
+ * Modelo de trabajo del form por determinación: SOLO la tabla de valores de referencia
+ * (editable) + el override existente intacto (para mergear el ayuno al guardar) + la unidad
+ * de la determinación (read-only) + snapshot original para detectar cambios.
  */
 interface DetForm {
   detId: number;
   detName: string;
-  override: FormGroup;
+  /** Unidad de medida de la determinación (read-only, contexto). */
+  unit: string | null;
+  /** Override existente tal cual lo trajo el BE — base para mergear el ayuno (fix pérdida de datos). */
+  existingOverride: DeterminationOverride | null;
   refValues: FormArray;
-  /** Snapshot serializado del override y ref-values al cargar (para diff). */
-  originalOverride: string;
+  /** Snapshot serializado de los ref-values al cargar (para diff). */
   originalRefValues: string;
+}
+
+/** Edad en años → meses para la API (soporta decimales para pediatría). */
+function yearsToMonths(years: number | null): number | null {
+  return years == null ? null : Math.round(years * 12);
+}
+
+/** Edad en meses (API) → años para la UI (redondeo). */
+function monthsToYears(months: number | null): number | null {
+  return months == null ? null : Math.round(months / 12);
 }
 
 /**
  * Drawer de configuración por tenant de un análisis del Nomenclador NBU (KAN-130).
  *
- * Edita, por análisis: la sección/área del laboratorio (PATCH tenant-analyses) y, por
- * cada determinación, su override de fase preanalítica (ayuno, unidad, validación,
- * orden de impresión) y sus valores de referencia propios. Solo opera ADMINISTRADOR
- * (gating BE + el botón "Configurar" del tab se oculta a no-admin).
+ * Diseño orientado al admin de laboratorio (no volcado 1:1 del DTO):
+ * - General: TODO read-only (sección/área por nombre, estado, contexto NBU/familia).
+ * - Preparación del paciente / ayuno: UN solo campo a nivel análisis (se replica a todas
+ *   las determinaciones, mergeando el override existente para no pisar config técnica).
+ * - Valores de referencia: por determinación, en años (se convierten a meses para la API),
+ *   con la unidad de la determinación como contexto read-only.
  *
  * Patrón de drawer del repo (`medico-form-drawer`): `p-drawer position="right"
  * styleClass="ui-drawer-half"`, footer sticky Cancelar/Guardar, `ngOnChanges` abre/cierra.
  * Editor aislado: carga y guarda vía services directos con signals locales (no NgRx).
+ * Solo opera ADMINISTRADOR (gating BE + el botón "Configurar" se oculta a no-admin).
  */
 @Component({
   selector: 'lab-nbu-config-drawer',
@@ -59,7 +73,7 @@ interface DetForm {
   providers: [MessageService],
   imports: [
     ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, InputNumberModule,
-    TextareaModule, SelectModule, ToggleSwitch, AccordionModule, ToastModule,
+    TextareaModule, SelectModule, AccordionModule, ToastModule,
   ],
   template: `
     <p-drawer
@@ -79,63 +93,62 @@ interface DetForm {
           } @else if (loadError()) {
             <span class="text-sm text-[var(--ds-danger)] px-2">{{ loadError() }}</span>
           } @else {
-            <!-- General -->
+            <!-- General — todo read-only -->
             <section class="pat-form__card">
               <div class="pat-form__card-header"><span>General</span></div>
               <div class="pat-form__grid">
                 <div class="pat-form__field">
                   <label class="pat-form__label">Sección / área</label>
-                  <p-select
-                    [options]="sectionOptions()"
-                    optionLabel="label"
-                    optionValue="value"
-                    [formControl]="$any(generalForm.controls.sectionId)"
-                    placeholder="Sin sección"
-                    [showClear]="true"
-                    appendTo="body"
-                    class="w-full" />
+                  <span class="text-sm">{{ sectionName() }}</span>
+                  <span class="text-xs text-[var(--ds-text-muted)] mt-1">
+                    La sección se configura en otra pantalla.
+                  </span>
                 </div>
                 <div class="pat-form__field">
                   <label class="pat-form__label">Estado</label>
                   <span class="text-sm">{{ active() ? 'Activo' : 'Inactivo' }}</span>
                 </div>
+                <div class="pat-form__field">
+                  <label class="pat-form__label">Cód. NBU</label>
+                  <span class="text-sm">{{ analysis?.nbuCode || '—' }}</span>
+                </div>
+                <div class="pat-form__field">
+                  <label class="pat-form__label">Familia</label>
+                  <span class="text-sm">{{ analysis?.familyName || '—' }}</span>
+                </div>
               </div>
             </section>
 
-            <!-- Determinaciones -->
-            @if (detForms.length === 0) {
-              <span class="text-sm text-[var(--ds-text-muted)] px-2">Este análisis no tiene determinaciones.</span>
-            } @else {
-              <p-accordion [multiple]="true">
-                @for (det of detForms; track det.detId) {
-                  <p-accordion-panel [value]="det.detId">
-                    <p-accordion-header>{{ det.detName }}</p-accordion-header>
-                    <p-accordion-content>
-                      <div [formGroup]="det.override" class="pat-form__grid">
-                        <div class="pat-form__field" style="grid-column: 1 / -1;">
-                          <label class="pat-form__label">Ayuno / indicaciones preanalíticas</label>
-                          <textarea pTextarea formControlName="preIndications" rows="2"
-                                    class="pat-form__input" autocomplete="off"></textarea>
-                        </div>
-                        <div class="pat-form__field">
-                          <label class="pat-form__label">Orden de impresión</label>
-                          <p-inputnumber formControlName="printOrder" [useGrouping]="false"
-                                         inputStyleClass="pat-form__input w-full" class="w-full" />
-                        </div>
-                        <div class="pat-form__field flex flex-row items-center gap-2">
-                          <p-toggleswitch formControlName="requiresApproval" />
-                          <label class="pat-form__label !mb-0">Requiere validación</label>
-                        </div>
-                        <div class="pat-form__field flex flex-row items-center gap-2">
-                          <p-toggleswitch formControlName="canSelfApprove" />
-                          <label class="pat-form__label !mb-0">Auto-validable</label>
-                        </div>
-                      </div>
+            <!-- Preparación del paciente / ayuno — un solo campo a nivel análisis -->
+            <section class="pat-form__card">
+              <div class="pat-form__card-header"><span>Preparación del paciente</span></div>
+              <div class="pat-form__grid">
+                <div class="pat-form__field" style="grid-column: 1 / -1;">
+                  <label class="pat-form__label" for="nbu-ayuno">Preparación del paciente / ayuno</label>
+                  <textarea id="nbu-ayuno" pTextarea rows="2" autocomplete="off"
+                            class="pat-form__input"
+                            placeholder="Ej: Ayuno de 8 horas. Concurrir con primera orina."
+                            [value]="ayuno()"
+                            (input)="onAyunoInput($event)"></textarea>
+                </div>
+              </div>
+            </section>
 
-                      <!-- Valores de referencia -->
-                      <div class="mt-3">
+            <!-- Valores de referencia — por determinación -->
+            <section class="pat-form__card">
+              <div class="pat-form__card-header"><span>Valores de referencia</span></div>
+              @if (detForms.length === 0) {
+                <span class="text-sm text-[var(--ds-text-muted)] px-2">Este análisis no tiene determinaciones.</span>
+              } @else {
+                <p-accordion [multiple]="true">
+                  @for (det of detForms; track det.detId) {
+                    <p-accordion-panel [value]="det.detId">
+                      <p-accordion-header>{{ det.detName }}</p-accordion-header>
+                      <p-accordion-content>
                         <div class="flex items-center justify-between mb-2">
-                          <span class="pat-form__label !mb-0">Valores de referencia</span>
+                          <span class="text-xs text-[var(--ds-text-muted)]">
+                            Unidad: {{ det.unit || '—' }}
+                          </span>
                           <p-button label="Agregar fila" icon="pi pi-plus" severity="secondary"
                                     [text]="true" size="small" type="button"
                                     (onClick)="addRefValue(det)" />
@@ -152,15 +165,15 @@ interface DetForm {
                                   <th class="py-1 pr-2 font-medium">Crít. mín</th>
                                   <th class="py-1 pr-2 font-medium">Crít. máx</th>
                                   <th class="py-1 pr-2 font-medium">Sexo</th>
-                                  <th class="py-1 pr-2 font-medium">Edad mín (m)</th>
-                                  <th class="py-1 pr-2 font-medium">Edad máx (m)</th>
-                                  <th class="py-1 pr-2 font-medium">Unidad</th>
+                                  <th class="py-1 pr-2 font-medium">Edad mín (años)</th>
+                                  <th class="py-1 pr-2 font-medium">Edad máx (años)</th>
                                   <th class="py-1"></th>
                                 </tr>
                               </thead>
                               <tbody>
                                 @for (rvCtrl of det.refValues.controls; track $index) {
-                                  <tr [formGroup]="$any(rvCtrl)">
+                                  <tr [formGroup]="$any(rvCtrl)"
+                                      [class.nbu-rv-row--invalid]="isRowInvalid($any(rvCtrl))">
                                     <td class="py-0.5 pr-2"><p-inputnumber formControlName="minValue" [useGrouping]="false" inputStyleClass="pat-form__input w-20" /></td>
                                     <td class="py-0.5 pr-2"><p-inputnumber formControlName="maxValue" [useGrouping]="false" inputStyleClass="pat-form__input w-20" /></td>
                                     <td class="py-0.5 pr-2"><p-inputnumber formControlName="criticalMinValue" [useGrouping]="false" inputStyleClass="pat-form__input w-20" /></td>
@@ -169,26 +182,32 @@ interface DetForm {
                                       <p-select [options]="genderOptions" optionLabel="label" optionValue="value"
                                                 formControlName="gender" appendTo="body" styleClass="w-28" />
                                     </td>
-                                    <td class="py-0.5 pr-2"><p-inputnumber formControlName="ageMinMonths" [useGrouping]="false" inputStyleClass="pat-form__input w-20" /></td>
-                                    <td class="py-0.5 pr-2"><p-inputnumber formControlName="ageMaxMonths" [useGrouping]="false" inputStyleClass="pat-form__input w-20" /></td>
-                                    <td class="py-0.5 pr-2"><input pInputText formControlName="unit" class="pat-form__input w-20" autocomplete="off" /></td>
+                                    <td class="py-0.5 pr-2"><p-inputnumber formControlName="ageMinYears" [useGrouping]="false" [min]="0" inputStyleClass="pat-form__input w-20" /></td>
+                                    <td class="py-0.5 pr-2"><p-inputnumber formControlName="ageMaxYears" [useGrouping]="false" [min]="0" inputStyleClass="pat-form__input w-20" /></td>
                                     <td class="py-0.5">
                                       <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small"
                                                 type="button" ariaLabel="Quitar fila"
                                                 (onClick)="removeRefValue(det, $index)" />
                                     </td>
                                   </tr>
+                                  @if (isRowInvalid($any(rvCtrl))) {
+                                    <tr>
+                                      <td colspan="8" class="pb-1 text-[11px] text-[var(--ds-danger)]">
+                                        El mínimo debe ser menor al máximo.
+                                      </td>
+                                    </tr>
+                                  }
                                 }
                               </tbody>
                             </table>
                           </div>
                         }
-                      </div>
-                    </p-accordion-content>
-                  </p-accordion-panel>
-                }
-              </p-accordion>
-            }
+                      </p-accordion-content>
+                    </p-accordion-panel>
+                  }
+                </p-accordion>
+              }
+            </section>
           }
         </div>
 
@@ -202,10 +221,14 @@ interface DetForm {
       </div>
     </p-drawer>
   `,
+  styles: [`
+    .nbu-rv-row--invalid {
+      background: var(--ds-danger-soft, rgba(220, 38, 38, 0.08));
+    }
+  `],
 })
 export class NbuConfigDrawerComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);
-  private readonly analysisService = inject(AnalysisService);
   private readonly sectionService = inject(SectionService);
   private readonly nbuConfig = inject(NbuConfigApiService);
   private readonly messageService = inject(MessageService);
@@ -223,7 +246,8 @@ export class NbuConfigDrawerComponent implements OnChanges {
   protected readonly loadError = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly active = signal(false);
-  protected readonly sectionOptions = signal<SectionOption[]>([]);
+  protected readonly sectionName = signal('Sin sección asignada');
+  protected readonly ayuno = signal('');
 
   protected readonly genderOptions: GenderOption[] = [
     { label: 'Ambos', value: null },
@@ -231,14 +255,11 @@ export class NbuConfigDrawerComponent implements OnChanges {
     { label: 'Femenino', value: 'FEMALE' },
   ];
 
-  /** Form general (sección). El estado activo es informativo en v1. */
-  protected generalForm = this.fb.group({ sectionId: this.fb.control<number | null>(null) });
-
-  /** Forms por determinación (override + ref-values). */
+  /** Forms por determinación (solo ref-values; el override existente se guarda aparte). */
   protected detForms: DetForm[] = [];
 
-  private tenantAnalysisId: number | null = null;
-  private originalSectionId: number | null = null;
+  /** Texto de ayuno original (para detectar cambios al guardar). */
+  private originalAyuno = '';
   private wasVisible = false;
 
   protected headerLabel(): string {
@@ -265,38 +286,44 @@ export class NbuConfigDrawerComponent implements OnChanges {
     this.cancel.emit();
   }
 
+  protected onAyunoInput(event: Event): void {
+    this.ayuno.set((event.target as HTMLTextAreaElement).value);
+  }
+
   // ── Carga ────────────────────────────────────────────────────────────────────
 
   private loadConfig(analysis: CatalogRow): void {
     this.loading.set(true);
     this.loadError.set(null);
     this.detForms = [];
-    this.tenantAnalysisId = null;
-    this.originalSectionId = null;
+    this.active.set(false);
+    this.sectionName.set('Sin sección asignada');
+    this.ayuno.set('');
+    this.originalAyuno = '';
 
     forkJoin({
-      detail: this.analysisService.getById(analysis.id),
+      determinations: this.nbuConfig.getCatalogDeterminations(analysis.id).pipe(
+        catchError(() => of([] as DeterminationCatalogItem[])),
+      ),
       tenantRows: this.nbuConfig.listTenantAnalyses().pipe(catchError(() => of([] as TenantAnalysisRow[]))),
       sections: this.sectionService.list({ size: 200 }).pipe(
         map((p) => p.content),
         catchError(() => of([])),
       ),
     }).subscribe({
-      next: ({ detail, tenantRows, sections }) => {
-        this.sectionOptions.set(sections.map((s) => ({ label: s.name, value: s.id })));
-
+      next: ({ determinations, tenantRows, sections }) => {
         const tenantRow = tenantRows.find((r) => r.catalogId === analysis.id) ?? null;
-        this.tenantAnalysisId = tenantRow?.id ?? null;
         this.active.set(tenantRow?.active ?? false);
-        this.originalSectionId = tenantRow?.defaultSectionId ?? null;
-        this.generalForm.controls.sectionId.setValue(this.originalSectionId);
 
-        const dets = detail.determinations ?? [];
-        if (dets.length === 0) {
+        const sectionId = tenantRow?.defaultSectionId ?? null;
+        const section = sectionId != null ? sections.find((s) => s.id === sectionId) : null;
+        this.sectionName.set(section?.name ?? 'Sin sección asignada');
+
+        if (determinations.length === 0) {
           this.loading.set(false);
           return;
         }
-        this.loadDeterminations(dets);
+        this.loadDeterminations(determinations);
       },
       error: () => {
         this.loading.set(false);
@@ -305,7 +332,7 @@ export class NbuConfigDrawerComponent implements OnChanges {
     });
   }
 
-  private loadDeterminations(dets: ReadonlyArray<{ id: number; name: string }>): void {
+  private loadDeterminations(dets: ReadonlyArray<DeterminationCatalogItem>): void {
     forkJoin(
       dets.map((det) =>
         forkJoin({
@@ -323,6 +350,13 @@ export class NbuConfigDrawerComponent implements OnChanges {
         this.detForms = results.map(({ det, override, refValues }) =>
           this.buildDetForm(det, override, refValues),
         );
+
+        // Ayuno: el preIndications de la primera determinación que lo tenga cargado.
+        const withAyuno = results.find((r) => (r.override?.preIndications ?? '').trim().length > 0);
+        const ayunoInicial = withAyuno?.override?.preIndications ?? '';
+        this.ayuno.set(ayunoInicial);
+        this.originalAyuno = ayunoInicial;
+
         this.loading.set(false);
       },
       error: () => {
@@ -333,23 +367,17 @@ export class NbuConfigDrawerComponent implements OnChanges {
   }
 
   private buildDetForm(
-    det: { id: number; name: string },
+    det: DeterminationCatalogItem,
     override: DeterminationOverride | null,
     refValues: ReferenceValueItem[],
   ): DetForm {
-    const overrideForm = this.fb.group({
-      preIndications: this.fb.control<string | null>(override?.preIndications ?? null),
-      printOrder: this.fb.control<number | null>(override?.printOrder ?? null),
-      requiresApproval: this.fb.control<boolean>(override?.requiresApproval ?? false),
-      canSelfApprove: this.fb.control<boolean>(override?.canSelfApprove ?? false),
-    });
     const refArray = this.fb.array(refValues.map((rv) => this.buildRefValueGroup(rv)));
     return {
       detId: det.id,
       detName: det.name,
-      override: overrideForm,
+      unit: det.unit,
+      existingOverride: override,
       refValues: refArray,
-      originalOverride: JSON.stringify(overrideForm.getRawValue()),
       originalRefValues: JSON.stringify(refArray.getRawValue()),
     };
   }
@@ -360,10 +388,9 @@ export class NbuConfigDrawerComponent implements OnChanges {
       maxValue: this.fb.control<number | null>(rv?.maxValue ?? null),
       criticalMinValue: this.fb.control<number | null>(rv?.criticalMinValue ?? null),
       criticalMaxValue: this.fb.control<number | null>(rv?.criticalMaxValue ?? null),
-      ageMinMonths: this.fb.control<number | null>(rv?.ageMinMonths ?? null),
-      ageMaxMonths: this.fb.control<number | null>(rv?.ageMaxMonths ?? null),
+      ageMinYears: this.fb.control<number | null>(monthsToYears(rv?.ageMinMonths ?? null)),
+      ageMaxYears: this.fb.control<number | null>(monthsToYears(rv?.ageMaxMonths ?? null)),
       gender: this.fb.control<'MALE' | 'FEMALE' | null>(rv?.gender ?? null),
-      unit: this.fb.control<string | null>(rv?.unit ?? null),
     });
   }
 
@@ -375,31 +402,77 @@ export class NbuConfigDrawerComponent implements OnChanges {
     det.refValues.removeAt(index);
   }
 
+  /**
+   * Fila inválida: mín ≥ máx (ambos cargados), o crít.mín > mín, o máx > crít.máx.
+   * Solo valida los pares que están cargados.
+   */
+  protected isRowInvalid(group: FormGroup): boolean {
+    const v = group.getRawValue() as {
+      minValue: number | null; maxValue: number | null;
+      criticalMinValue: number | null; criticalMaxValue: number | null;
+    };
+    if (v.minValue != null && v.maxValue != null && v.minValue >= v.maxValue) return true;
+    if (v.criticalMinValue != null && v.minValue != null && v.criticalMinValue > v.minValue) return true;
+    if (v.criticalMaxValue != null && v.maxValue != null && v.maxValue > v.criticalMaxValue) return true;
+    return false;
+  }
+
+  private hasInvalidRows(): boolean {
+    return this.detForms.some((det) =>
+      det.refValues.controls.some((c) => this.isRowInvalid(c as FormGroup)),
+    );
+  }
+
   // ── Guardado ───────────────────────────────────────────────────────────────────
 
   protected onSave(): void {
     if (!this.analysis || this.saving()) return;
 
-    const calls: Array<ReturnType<NbuConfigApiService['upsertOverride']> |
-      ReturnType<NbuConfigApiService['upsertReferenceValues']> |
-      ReturnType<NbuConfigApiService['patchSection']>> = [];
-
-    // Sección (solo si cambió y hay tenant_analysis para patchear).
-    const sectionId = this.generalForm.controls.sectionId.value ?? null;
-    if (this.tenantAnalysisId != null && sectionId !== this.originalSectionId) {
-      calls.push(this.nbuConfig.patchSection(this.tenantAnalysisId, sectionId));
+    if (this.hasInvalidRows()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Valores inválidos',
+        detail: 'Revisá los valores de referencia (mínimo debe ser menor al máximo).',
+      });
+      return;
     }
 
-    // Por determinación: override y/o ref-values si cambiaron.
+    const calls: Array<Observable<unknown>> = [];
+
+    // Ayuno: si cambió, mergear el override existente y solo pisar preIndications en TODAS.
+    const ayunoNuevo = this.ayuno().trim();
+    const ayunoChanged = ayunoNuevo !== (this.originalAyuno ?? '').trim();
+    if (ayunoChanged) {
+      for (const det of this.detForms) {
+        const body: Partial<DeterminationOverride> = {
+          ...(det.existingOverride ?? {}),
+          preIndications: ayunoNuevo.length > 0 ? ayunoNuevo : null,
+        };
+        calls.push(this.nbuConfig.upsertOverride(det.detId, body));
+      }
+    }
+
+    // Ref-values: por determinación cuya tabla cambió, con unit de la determinación y edades en meses.
     for (const det of this.detForms) {
-      const overrideRaw = det.override.getRawValue();
-      if (JSON.stringify(overrideRaw) !== det.originalOverride) {
-        calls.push(this.nbuConfig.upsertOverride(det.detId, overrideRaw as Partial<DeterminationOverride>));
-      }
-      const refRaw = det.refValues.getRawValue();
-      if (JSON.stringify(refRaw) !== det.originalRefValues) {
-        calls.push(this.nbuConfig.upsertReferenceValues(det.detId, refRaw as ReferenceValueItem[]));
-      }
+      const rawRows = det.refValues.getRawValue() as Array<{
+        minValue: number | null; maxValue: number | null;
+        criticalMinValue: number | null; criticalMaxValue: number | null;
+        ageMinYears: number | null; ageMaxYears: number | null;
+        gender: 'MALE' | 'FEMALE' | null;
+      }>;
+      if (JSON.stringify(rawRows) === det.originalRefValues) continue;
+
+      const items: ReferenceValueItem[] = rawRows.map((r) => ({
+        minValue: r.minValue,
+        maxValue: r.maxValue,
+        criticalMinValue: r.criticalMinValue,
+        criticalMaxValue: r.criticalMaxValue,
+        ageMinMonths: yearsToMonths(r.ageMinYears),
+        ageMaxMonths: yearsToMonths(r.ageMaxYears),
+        gender: r.gender,
+        unit: det.unit,
+      }));
+      calls.push(this.nbuConfig.upsertReferenceValues(det.detId, items));
     }
 
     if (calls.length === 0) {

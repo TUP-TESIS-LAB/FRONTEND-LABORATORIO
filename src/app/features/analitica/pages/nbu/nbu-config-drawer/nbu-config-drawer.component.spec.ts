@@ -6,6 +6,7 @@ import { ComponentFixture } from '@angular/core/testing';
 
 import { NbuConfigDrawerComponent } from './nbu-config-drawer.component';
 import { CatalogRow } from '../../../models/nomenclador.model';
+import { DeterminationOverride } from '../../../services/nbu-config-api.service';
 
 function catalogRow(over: Partial<CatalogRow> = {}): CatalogRow {
   return {
@@ -16,6 +17,16 @@ function catalogRow(over: Partial<CatalogRow> = {}): CatalogRow {
     nbuCode: 'NBU-099',
     cantidadUb: 5,
     ...over,
+  };
+}
+
+function emptyOverride(): DeterminationOverride {
+  return {
+    percentageVariationTolerated: null, preIndications: null, preObservations: null,
+    analyticalType: null, canBringSample: null, measurementUnitId: null, isPrintable: null,
+    printOrder: null, printGroup: null, specialPrintName: null, loadingResultOrder: null,
+    requiresLoadValue: null, requiresApproval: null, canSelfApprove: null,
+    handlingTimeValue: null, handlingTimeUnit: null,
   };
 }
 
@@ -40,13 +51,19 @@ function open(fixture: ComponentFixture<NbuConfigDrawerComponent>, analysis = ca
   fixture.detectChanges();
 }
 
-/** Responde la carga inicial: detalle del análisis (1 determinación), tenant-analyses, secciones. */
-function flushLoad(http: HttpTestingController, analysisId = 42, detId = 100): void {
-  http.expectOne(`/api/v1/analitica/analysis/${analysisId}`).flush({
-    id: analysisId, shortCode: 'GLUC', name: 'Glucosa', familyName: 'Bioquímica', ubCount: 5,
-    description: null, determinations: [{ id: detId, name: 'Glucemia' }],
-    processingTime: null, processingTimeUnit: null, nbuCode: 'NBU-099',
-  });
+interface FlushOpts {
+  override?: Partial<DeterminationOverride> | null;
+  refValues?: unknown[];
+}
+
+/**
+ * Responde la carga inicial: catalog determinations (1 det con unidad), tenant-analyses,
+ * secciones, y por determinación override + ref-values.
+ */
+function flushLoad(http: HttpTestingController, opts: FlushOpts = {}, analysisId = 42, detId = 100): void {
+  http.expectOne(`/api/v1/analitica/catalog/${analysisId}/determinations`).flush([
+    { id: detId, name: 'Glucemia', unit: 'g/dL' },
+  ]);
   http.expectOne('/api/v1/tenant-analyses').flush([
     { id: 7, catalogId: analysisId, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
   ]);
@@ -54,9 +71,12 @@ function flushLoad(http: HttpTestingController, analysisId = 42, detId = 100): v
     content: [{ id: 3, name: 'Química', areaId: 1, active: true }, { id: 4, name: 'Hematología', areaId: 1, active: true }],
     totalElements: 2, totalPages: 1, number: 0, size: 200,
   });
-  // Carga por determinación.
-  http.expectOne(`/api/v1/analitica/determinations/${detId}/override`).flush({ hasOverride: false, override: null });
-  http.expectOne(`/api/v1/analitica/determinations/${detId}/reference-values/override`).flush([]);
+  const override = opts.override === undefined ? null : opts.override;
+  http.expectOne(`/api/v1/analitica/determinations/${detId}/override`).flush({
+    hasOverride: override != null,
+    override: override == null ? null : { ...emptyOverride(), ...override },
+  });
+  http.expectOne(`/api/v1/analitica/determinations/${detId}/reference-values/override`).flush(opts.refValues ?? []);
 }
 
 describe('NbuConfigDrawerComponent', () => {
@@ -66,15 +86,13 @@ describe('NbuConfigDrawerComponent', () => {
     http.verify();
   });
 
-  it('al abrir dispara los GET de carga (getById, tenant-analyses, sections, override, ref-values)', () => {
+  it('al abrir dispara los GET de carga (catalog determinations, tenant-analyses, sections, override, ref-values)', () => {
     const { fixture, http } = setup();
     open(fixture);
 
-    http.expectOne('/api/v1/analitica/analysis/42').flush({
-      id: 42, shortCode: 'GLUC', name: 'Glucosa', familyName: null, ubCount: 5,
-      description: null, determinations: [{ id: 100, name: 'Glucemia' }],
-      processingTime: null, processingTimeUnit: null, nbuCode: 'NBU-099',
-    });
+    http.expectOne('/api/v1/analitica/catalog/42/determinations').flush([
+      { id: 100, name: 'Glucemia', unit: 'g/dL' },
+    ]);
     http.expectOne('/api/v1/tenant-analyses').flush([
       { id: 7, catalogId: 42, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
     ]);
@@ -87,23 +105,43 @@ describe('NbuConfigDrawerComponent', () => {
     http.verify();
   });
 
-  it('Guardar con cambio de sección dispara PATCH /tenant-analyses/{id}', () => {
+  it('resuelve el nombre de la sección desde tenant-analyses + sections', () => {
     const { fixture, http } = setup();
     open(fixture);
     flushLoad(http);
     fixture.detectChanges();
 
-    const cmp = fixture.componentInstance as unknown as {
-      generalForm: { controls: { sectionId: { setValue(v: number | null): void } } };
-      onSave(): void;
-    };
-    // Cambiar sección 3 → 4.
-    cmp.generalForm.controls.sectionId.setValue(4);
+    const cmp = fixture.componentInstance as unknown as { sectionName(): string; active(): boolean };
+    expect(cmp.sectionName()).toBe('Química');
+    expect(cmp.active()).toBe(true);
+  });
+
+  it('precarga el ayuno desde el preIndications del override', () => {
+    const { fixture, http } = setup();
+    open(fixture);
+    flushLoad(http, { override: { preIndications: 'Ayuno de 8 horas.' } });
+    fixture.detectChanges();
+
+    const cmp = fixture.componentInstance as unknown as { ayuno(): string };
+    expect(cmp.ayuno()).toBe('Ayuno de 8 horas.');
+  });
+
+  it('Guardar el ayuno dispara PUT mergeado (preserva campos técnicos del override)', () => {
+    const { fixture, http } = setup();
+    open(fixture);
+    flushLoad(http, { override: { requiresApproval: true, printOrder: 5 } });
+    fixture.detectChanges();
+
+    const cmp = fixture.componentInstance as unknown as { ayuno: { set(v: string): void }; onSave(): void };
+    cmp.ayuno.set('Ayuno de 8 horas.');
     cmp.onSave();
 
-    const req = http.expectOne('/api/v1/tenant-analyses/7');
-    expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({ defaultSectionId: 4 });
+    const req = http.expectOne('/api/v1/analitica/determinations/100/override');
+    expect(req.request.method).toBe('PUT');
+    // Mergea: preserva requiresApproval/printOrder, solo cambia preIndications.
+    expect(req.request.body.requiresApproval).toBe(true);
+    expect(req.request.body.printOrder).toBe(5);
+    expect(req.request.body.preIndications).toBe('Ayuno de 8 horas.');
     req.flush({});
 
     http.verify();
@@ -124,24 +162,44 @@ describe('NbuConfigDrawerComponent', () => {
     expect(emitted).toBe(42);
   });
 
-  it('Guardar con override modificado dispara PUT /determinations/{id}/override', () => {
+  it('Guardar ref-values manda unit de la determinación y edades en meses', () => {
     const { fixture, http } = setup();
     open(fixture);
-    flushLoad(http);
+    flushLoad(http, { refValues: [{ minValue: 70, maxValue: 100, criticalMinValue: null, criticalMaxValue: null, ageMinMonths: 240, ageMaxMonths: 600, gender: null, unit: 'g/dL' }] });
     fixture.detectChanges();
 
     const cmp = fixture.componentInstance as unknown as {
-      detForms: Array<{ detId: number; override: { controls: { preIndications: { setValue(v: string): void } } } }>;
+      detForms: Array<{ refValues: { controls: Array<{ controls: { ageMinYears: { setValue(v: number): void } } }> } }>;
       onSave(): void;
     };
-    cmp.detForms[0].override.controls.preIndications.setValue('Ayuno 8h');
+    // Edad cargada 240m = 20 años; la cambio a 30 años → 360m.
+    cmp.detForms[0].refValues.controls[0].controls.ageMinYears.setValue(30);
     cmp.onSave();
 
-    const req = http.expectOne('/api/v1/analitica/determinations/100/override');
+    const req = http.expectOne('/api/v1/analitica/determinations/100/reference-values/override');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body.preIndications).toBe('Ayuno 8h');
-    req.flush({});
+    expect(req.request.body[0].unit).toBe('g/dL');
+    expect(req.request.body[0].ageMinMonths).toBe(360);
+    expect(req.request.body[0].ageMaxMonths).toBe(600);
+    req.flush([]);
 
     http.verify();
+  });
+
+  it('validación mín>=máx bloquea el guardado (no dispara mutaciones)', () => {
+    const { fixture, http } = setup();
+    open(fixture);
+    flushLoad(http, { refValues: [{ minValue: 100, maxValue: 70, criticalMinValue: null, criticalMaxValue: null, ageMinMonths: null, ageMaxMonths: null, gender: null, unit: 'g/dL' }] });
+    fixture.detectChanges();
+
+    const cmp = fixture.componentInstance as unknown as {
+      detForms: Array<{ refValues: { controls: Array<{ controls: { maxValue: { setValue(v: number): void } } }> } }>;
+      onSave(): void;
+    };
+    // Forzar un cambio inválido (mín 100 >= máx 50) y guardar.
+    cmp.detForms[0].refValues.controls[0].controls.maxValue.setValue(50);
+    cmp.onSave();
+
+    http.verify(); // no debe haber mutaciones: la validación bloqueó
   });
 });
