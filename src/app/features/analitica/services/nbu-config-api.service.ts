@@ -104,4 +104,11 @@ export class NbuConfigApiService {
   patchSection(tenantAnalysisId: number, defaultSectionId: number | null): Observable<unknown> {
     return this.http.patch(`${this.tenantAnalysesBase}/${tenantAnalysisId}`, { defaultSectionId });
   }
+
+  updateTenantAnalysis(
+    tenantAnalysisId: number,
+    body: { shortCode?: string; customName?: string | null },
+  ): Observable<unknown> {
+    return this.http.patch(`${this.tenantAnalysesBase}/${tenantAnalysisId}`, body);
+  }
 }

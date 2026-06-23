@@ -66,4 +66,12 @@ describe('NbuConfigApiService', () => {
     expect(req.request.body).toEqual({ defaultSectionId: 3 });
     req.flush({});
   });
+
+  it('updateTenantAnalysis → PATCH /tenant-analyses/{id} con {shortCode, customName}', () => {
+    svc.updateTenantAnalysis(9, { shortCode: 'GLU', customName: 'Glucemia' }).subscribe();
+    const req = http.expectOne('/api/v1/tenant-analyses/9');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ shortCode: 'GLU', customName: 'Glucemia' });
+    req.flush({});
+  });
 });

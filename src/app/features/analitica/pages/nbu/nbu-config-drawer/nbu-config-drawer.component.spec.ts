@@ -58,19 +58,15 @@ interface FlushOpts {
 
 /**
  * Responde la carga inicial: catalog determinations (1 det con unidad), tenant-analyses,
- * secciones, y por determinación override + ref-values.
+ * y por determinación override + ref-values.
  */
-function flushLoad(http: HttpTestingController, opts: FlushOpts = {}, analysisId = 42, detId = 100): void {
+function flushLoad(http: HttpTestingController, opts: FlushOpts = {}, analysisId = 42, detId = 100, tenantRow?: Record<string, unknown>): void {
   http.expectOne(`/api/v1/analitica/catalog/${analysisId}/determinations`).flush([
     { id: detId, name: 'Glucemia', unit: 'g/dL' },
   ]);
   http.expectOne('/api/v1/tenant-analyses').flush([
-    { id: 7, catalogId: analysisId, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
+    tenantRow ?? { id: 7, catalogId: analysisId, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
   ]);
-  http.expectOne((r) => r.url === '/api/v1/sucursales/sections').flush({
-    content: [{ id: 3, name: 'Química', areaId: 1, active: true }, { id: 4, name: 'Hematología', areaId: 1, active: true }],
-    totalElements: 2, totalPages: 1, number: 0, size: 200,
-  });
   const override = opts.override === undefined ? null : opts.override;
   http.expectOne(`/api/v1/analitica/determinations/${detId}/override`).flush({
     hasOverride: override != null,
@@ -86,7 +82,7 @@ describe('NbuConfigDrawerComponent', () => {
     http.verify();
   });
 
-  it('al abrir dispara los GET de carga (catalog determinations, tenant-analyses, sections, override, ref-values)', () => {
+  it('al abrir dispara los GET de carga (catalog determinations, tenant-analyses, override, ref-values) y NO pide sections', () => {
     const { fixture, http } = setup();
     open(fixture);
 
@@ -96,24 +92,66 @@ describe('NbuConfigDrawerComponent', () => {
     http.expectOne('/api/v1/tenant-analyses').flush([
       { id: 7, catalogId: 42, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
     ]);
-    http.expectOne((r) => r.url === '/api/v1/sucursales/sections').flush({
-      content: [], totalElements: 0, totalPages: 0, number: 0, size: 200,
-    });
     http.expectOne('/api/v1/analitica/determinations/100/override').flush({ hasOverride: false, override: null });
     http.expectOne('/api/v1/analitica/determinations/100/reference-values/override').flush([]);
+
+    // Ya no se piden las secciones (la sección se configura en otra pantalla).
+    expect(http.match((r) => r.url === '/api/v1/sucursales/sections').length).toBe(0);
 
     http.verify();
   });
 
-  it('resuelve el nombre de la sección desde tenant-analyses + sections', () => {
+  it('prefilla código interno y nombre propio desde tenant-analyses', () => {
+    const { fixture, http } = setup();
+    open(fixture);
+    flushLoad(http, {}, 42, 100, { id: 7, catalogId: 42, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: 'Glucemia', active: true, defaultSectionId: 3 });
+    fixture.detectChanges();
+
+    const cmp = fixture.componentInstance as unknown as {
+      active(): boolean;
+      generalForm: { controls: { shortCode: { value: string }; customName: { value: string | null } } };
+    };
+    expect(cmp.generalForm.controls.shortCode.value).toBe('GLUC');
+    expect(cmp.generalForm.controls.customName.value).toBe('Glucemia');
+    expect(cmp.active()).toBe(true);
+  });
+
+  it('Guardar con código interno y nombre propio cambiados dispara PATCH /tenant-analyses/{id}', () => {
     const { fixture, http } = setup();
     open(fixture);
     flushLoad(http);
     fixture.detectChanges();
 
-    const cmp = fixture.componentInstance as unknown as { sectionName(): string; active(): boolean };
-    expect(cmp.sectionName()).toBe('Química');
-    expect(cmp.active()).toBe(true);
+    const cmp = fixture.componentInstance as unknown as {
+      generalForm: { controls: { shortCode: { setValue(v: string): void }; customName: { setValue(v: string | null): void } } };
+      onSave(): void;
+    };
+    cmp.generalForm.controls.shortCode.setValue('GLU2');
+    cmp.generalForm.controls.customName.setValue('Glucemia basal');
+    cmp.onSave();
+
+    const req = http.expectOne('/api/v1/tenant-analyses/7');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ shortCode: 'GLU2', customName: 'Glucemia basal' });
+    req.flush({});
+
+    http.verify();
+  });
+
+  it('código interno vacío bloquea el guardado (no dispara mutaciones)', () => {
+    const { fixture, http } = setup();
+    open(fixture);
+    flushLoad(http);
+    fixture.detectChanges();
+
+    const cmp = fixture.componentInstance as unknown as {
+      generalForm: { controls: { shortCode: { setValue(v: string): void } } };
+      onSave(): void;
+    };
+    cmp.generalForm.controls.shortCode.setValue('   ');
+    cmp.onSave();
+
+    http.verify(); // sin mutaciones: la validación bloqueó
   });
 
   it('precarga el ayuno desde el preIndications del override', () => {

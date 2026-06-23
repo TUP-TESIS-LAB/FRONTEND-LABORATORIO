@@ -6,7 +6,7 @@ import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.direct
 import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
 import { CatalogRow, ConfigResumen, Determination } from '../../../models/nomenclador.model';
-import { loadConfigResumen, loadDeterminations } from '../../../store/nomenclador/nomenclador.actions';
+import { loadConfigResumen, loadDeterminations, loadNomenclador } from '../../../store/nomenclador/nomenclador.actions';
 import { selectCatalogRows, selectConfigResumen, selectDeterminations } from '../../../store/nomenclador/nomenclador.selectors';
 import { matchesFilter } from '../nbu-filter';
 import { NbuConfigDrawerComponent } from '../nbu-config-drawer/nbu-config-drawer.component';
@@ -144,10 +144,14 @@ export class NbuCatalogoTabComponent {
     }
   }
 
-  /** El drawer guardó: cerrar y refrescar el resumen de config de ese análisis. */
+  /**
+   * El drawer guardó: cerrar, refrescar el resumen de config de ese análisis y recargar
+   * el catálogo para que las columnas Código/Análisis reflejen el alias nuevo (shortCode/customName).
+   */
   protected onConfigSaved(analysisId: number): void {
     this.drawerVisible.set(false);
     this.store.dispatch(loadConfigResumen({ analysisId }));
+    this.store.dispatch(loadNomenclador());
   }
 
   /** Filas del catálogo con cantidadUb resuelta para la versión seleccionada. */

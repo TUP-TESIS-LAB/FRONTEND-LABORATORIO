@@ -9,7 +9,7 @@ import {
   NOMENCLADOR_FEATURE_KEY,
   initialNomencladorState,
 } from '../../../store/nomenclador/nomenclador.state';
-import { loadConfigResumen, loadDeterminations } from '../../../store/nomenclador/nomenclador.actions';
+import { loadConfigResumen, loadDeterminations, loadNomenclador } from '../../../store/nomenclador/nomenclador.actions';
 import { CatalogRow, Determination } from '../../../models/nomenclador.model';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -168,13 +168,14 @@ describe('NbuCatalogoTabComponent (ui-table)', () => {
     expect(cmp.drawerRow()).toEqual(row);
   });
 
-  it('onConfigSaved(): cierra el drawer y re-despacha loadConfigResumen', () => {
+  it('onConfigSaved(): cierra el drawer, re-despacha loadConfigResumen y recarga el catálogo', () => {
     const { store, cmp } = setup([catalogRow({ id: 7 })]);
     cmp.onAction({ key: 'config', row: catalogRow({ id: 7 }) });
     const dispatchSpy = vi.spyOn(store, 'dispatch');
     cmp.onConfigSaved(7);
     expect(cmp.drawerVisible()).toBe(false);
     expect(dispatchSpy).toHaveBeenCalledWith(loadConfigResumen({ analysisId: 7 }));
+    expect(dispatchSpy).toHaveBeenCalledWith(loadNomenclador());
   });
 
   it('onExpand(): despacha loadDeterminations solo una vez por análisis', () => {

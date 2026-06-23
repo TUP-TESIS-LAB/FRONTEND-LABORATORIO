@@ -15,7 +15,6 @@ import { MessageService } from 'primeng/api';
 import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
-import { SectionService } from '../../../../sucursales/services/section.service';
 import {
   DeterminationCatalogItem, DeterminationOverride, NbuConfigApiService, ReferenceValueItem,
   TenantAnalysisRow,
@@ -55,7 +54,8 @@ function monthsToYears(months: number | null): number | null {
  * Drawer de configuración por tenant de un análisis del Nomenclador NBU (KAN-130).
  *
  * Diseño orientado al admin de laboratorio (no volcado 1:1 del DTO):
- * - General: TODO read-only (sección/área por nombre, estado, contexto NBU/familia).
+ * - General: código interno (requerido) y nombre propio (opcional) editables, con estado
+ *   y contexto NBU/familia read-only. La sección se configura en otra pantalla.
  * - Preparación del paciente / ayuno: UN solo campo a nivel análisis (se replica a todas
  *   las determinaciones, mergeando el override existente para no pisar config técnica).
  * - Valores de referencia: por determinación, en años (se convierten a meses para la API),
@@ -93,28 +93,30 @@ function monthsToYears(months: number | null): number | null {
           } @else if (loadError()) {
             <span class="text-sm text-[var(--ds-danger)] px-2">{{ loadError() }}</span>
           } @else {
-            <!-- General — todo read-only -->
-            <section class="pat-form__card">
+            <!-- General — código interno y nombre propio editables + contexto read-only -->
+            <section class="pat-form__card" [formGroup]="generalForm">
               <div class="pat-form__card-header"><span>General</span></div>
               <div class="pat-form__grid">
                 <div class="pat-form__field">
-                  <label class="pat-form__label">Sección / área</label>
-                  <span class="text-sm">{{ sectionName() }}</span>
-                  <span class="text-xs text-[var(--ds-text-muted)] mt-1">
-                    La sección se configura en otra pantalla.
+                  <label class="pat-form__label" for="nbu-short-code">
+                    Código interno <span class="text-[var(--ds-danger)]">*</span>
+                  </label>
+                  <input id="nbu-short-code" pInputText type="text" autocomplete="off"
+                         class="pat-form__input" formControlName="shortCode"
+                         placeholder="Ej: GLUC" />
+                </div>
+                <div class="pat-form__field">
+                  <label class="pat-form__label" for="nbu-custom-name">Nombre propio</label>
+                  <input id="nbu-custom-name" pInputText type="text" autocomplete="off"
+                         class="pat-form__input" formControlName="customName"
+                         placeholder="Ej: Glucemia en ayunas" />
+                </div>
+                <div class="pat-form__field" style="grid-column: 1 / -1;">
+                  <span class="text-xs text-[var(--ds-text-muted)]">
+                    Estado: {{ active() ? 'Activo' : 'Inactivo' }}
+                    · Cód. NBU: {{ analysis?.nbuCode ?? '—' }}
+                    · Familia: {{ analysis?.familyName ?? '—' }}
                   </span>
-                </div>
-                <div class="pat-form__field">
-                  <label class="pat-form__label">Estado</label>
-                  <span class="text-sm">{{ active() ? 'Activo' : 'Inactivo' }}</span>
-                </div>
-                <div class="pat-form__field">
-                  <label class="pat-form__label">Cód. NBU</label>
-                  <span class="text-sm">{{ analysis?.nbuCode || '—' }}</span>
-                </div>
-                <div class="pat-form__field">
-                  <label class="pat-form__label">Familia</label>
-                  <span class="text-sm">{{ analysis?.familyName || '—' }}</span>
                 </div>
               </div>
             </section>
@@ -229,7 +231,6 @@ function monthsToYears(months: number | null): number | null {
 })
 export class NbuConfigDrawerComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);
-  private readonly sectionService = inject(SectionService);
   private readonly nbuConfig = inject(NbuConfigApiService);
   private readonly messageService = inject(MessageService);
 
@@ -246,8 +247,13 @@ export class NbuConfigDrawerComponent implements OnChanges {
   protected readonly loadError = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly active = signal(false);
-  protected readonly sectionName = signal('Sin sección asignada');
   protected readonly ayuno = signal('');
+
+  /** Form de la sección General: código interno (requerido) y nombre propio (opcional). */
+  protected readonly generalForm = this.fb.group({
+    shortCode: this.fb.control<string>('', { nonNullable: true }),
+    customName: this.fb.control<string | null>(null),
+  });
 
   protected readonly genderOptions: GenderOption[] = [
     { label: 'Ambos', value: null },
@@ -261,6 +267,12 @@ export class NbuConfigDrawerComponent implements OnChanges {
   /** Texto de ayuno original (para detectar cambios al guardar). */
   private originalAyuno = '';
   private wasVisible = false;
+
+  /** tenant_analysis.id de la fila (destino del PATCH de shortCode/customName). */
+  private tenantAnalysisId: number | null = null;
+  /** Valores originales de shortCode/customName (para detectar cambios al guardar). */
+  private originalShortCode = '';
+  private originalCustomName: string | null = null;
 
   protected headerLabel(): string {
     return this.analysis ? `Configurar — ${this.analysis.name}` : 'Configurar análisis';
@@ -297,27 +309,30 @@ export class NbuConfigDrawerComponent implements OnChanges {
     this.loadError.set(null);
     this.detForms = [];
     this.active.set(false);
-    this.sectionName.set('Sin sección asignada');
     this.ayuno.set('');
     this.originalAyuno = '';
+    this.tenantAnalysisId = null;
+    this.originalShortCode = '';
+    this.originalCustomName = null;
+    this.generalForm.reset({ shortCode: '', customName: null });
 
     forkJoin({
       determinations: this.nbuConfig.getCatalogDeterminations(analysis.id).pipe(
         catchError(() => of([] as DeterminationCatalogItem[])),
       ),
       tenantRows: this.nbuConfig.listTenantAnalyses().pipe(catchError(() => of([] as TenantAnalysisRow[]))),
-      sections: this.sectionService.list({ size: 200 }).pipe(
-        map((p) => p.content),
-        catchError(() => of([])),
-      ),
     }).subscribe({
-      next: ({ determinations, tenantRows, sections }) => {
+      next: ({ determinations, tenantRows }) => {
         const tenantRow = tenantRows.find((r) => r.catalogId === analysis.id) ?? null;
         this.active.set(tenantRow?.active ?? false);
 
-        const sectionId = tenantRow?.defaultSectionId ?? null;
-        const section = sectionId != null ? sections.find((s) => s.id === sectionId) : null;
-        this.sectionName.set(section?.name ?? 'Sin sección asignada');
+        this.tenantAnalysisId = tenantRow?.id ?? null;
+        this.originalShortCode = tenantRow?.shortCode ?? '';
+        this.originalCustomName = tenantRow?.customName ?? null;
+        this.generalForm.setValue({
+          shortCode: this.originalShortCode,
+          customName: this.originalCustomName,
+        });
 
         if (determinations.length === 0) {
           this.loading.set(false);
@@ -428,6 +443,16 @@ export class NbuConfigDrawerComponent implements OnChanges {
   protected onSave(): void {
     if (!this.analysis || this.saving()) return;
 
+    const shortCodeNuevo = (this.generalForm.controls.shortCode.value ?? '').trim();
+    if (shortCodeNuevo.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Falta el código interno',
+        detail: 'El código interno es obligatorio.',
+      });
+      return;
+    }
+
     if (this.hasInvalidRows()) {
       this.messageService.add({
         severity: 'warn',
@@ -438,6 +463,21 @@ export class NbuConfigDrawerComponent implements OnChanges {
     }
 
     const calls: Array<Observable<unknown>> = [];
+
+    // General: si cambió el código interno o el nombre propio, PATCH a tenant-analyses.
+    const customNameRaw = this.generalForm.controls.customName.value;
+    const customNameNuevo = customNameRaw == null || customNameRaw.trim().length === 0
+      ? null
+      : customNameRaw.trim();
+    const generalChanged =
+      shortCodeNuevo !== (this.originalShortCode ?? '').trim() ||
+      customNameNuevo !== (this.originalCustomName ?? null);
+    if (generalChanged && this.tenantAnalysisId != null) {
+      calls.push(this.nbuConfig.updateTenantAnalysis(this.tenantAnalysisId, {
+        shortCode: shortCodeNuevo,
+        customName: customNameNuevo,
+      }));
+    }
 
     // Ayuno: si cambió, mergear el override existente y solo pisar preIndications en TODAS.
     const ayunoNuevo = this.ayuno().trim();
