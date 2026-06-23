@@ -54,6 +54,7 @@ export interface Patient {
   coverages: Coverage[];
   active: boolean;
   accountStatus: AccountStatus;
+  managedBy?: { titularNombre: string; count: number } | null;
 }
 
 export interface CreatePatientRequest {

@@ -116,6 +116,10 @@ import {
             <span class="text-green-600 text-xs"><i class="pi pi-check-circle mr-1"></i>Activa</span>
           } @else if ($any(row).accountStatus === 'PENDING') {
             <span class="text-yellow-600 text-xs"><i class="pi pi-clock mr-1"></i>Pendiente</span>
+          } @else if ($any(row).managedBy) {
+            <span class="text-surface-500 text-xs">
+              <i class="pi pi-users mr-1"></i>Sin cuenta · Gestionado por {{ $any(row).managedBy.titularNombre }}@if ($any(row).managedBy.count > 1) { +{{ $any(row).managedBy.count - 1 }} }
+            </span>
           } @else {
             <span class="text-surface-400 text-xs">Sin cuenta</span>
           }
@@ -172,7 +176,7 @@ export class PatientListPage implements OnInit {
     hidden: (row) => {
       const p = row as Patient;
       const tieneEmail = (p.contacts ?? []).some(c => c.contactType === 'EMAIL' && c.active);
-      return p.accountStatus !== 'NONE' || !tieneEmail;
+      return p.accountStatus !== 'NONE' || !tieneEmail || !!p.managedBy;
     },
   };
 
@@ -330,5 +334,18 @@ export class PatientListPage implements OnInit {
   primaryPhone(p: Patient): string {
     const c = p.contacts.find((x) => x.contactType === 'PHONE' && x.active);
     return c?.contactValue ?? '—';
+  }
+
+  /**
+   * Returns the display label for the accesoPortal cell when accountStatus is 'NONE'
+   * and managedBy is present. Used in tests to verify the cell text logic.
+   * count=1 → "Gestionado por {titularNombre}"
+   * count>1 → "{titularNombre} +{count-1}"
+   */
+  accesoPortalLabel(p: Patient): string {
+    const mb = p.managedBy;
+    if (!mb) return 'Sin cuenta';
+    if (mb.count > 1) return `${mb.titularNombre} +${mb.count - 1}`;
+    return `Gestionado por ${mb.titularNombre}`;
   }
 }
