@@ -24,10 +24,15 @@ describe('ResultadosApiService', () => {
     const req = http.expectOne('/api/v1/analitica/resultados/1/determinations');
     expect(req.request.method).toBe('GET'); req.flush([]);
   });
-  it('getDeterminationCatalog → GET /determination-catalog/{id}', () => {
+  it('getDeterminationCatalog → GET /determinations/{id}', () => {
     service.getDeterminationCatalog(500).subscribe();
-    const req = http.expectOne('/api/v1/analitica/determination-catalog/500');
+    const req = http.expectOne('/api/v1/analitica/determinations/500');
     expect(req.request.method).toBe('GET'); req.flush({});
+  });
+  it('getDeterminationCatalogByAnalysis → GET /determinations?analysisId=', () => {
+    service.getDeterminationCatalogByAnalysis(1).subscribe();
+    const req = http.expectOne('/api/v1/analitica/determinations?analysisId=1');
+    expect(req.request.method).toBe('GET'); req.flush([]);
   });
   it('batchUpdate → PATCH /resultados/{id}/determinations/batch con {items}', () => {
     const items = [{ determinationId: 11, resultValue: '180', observations: null }];

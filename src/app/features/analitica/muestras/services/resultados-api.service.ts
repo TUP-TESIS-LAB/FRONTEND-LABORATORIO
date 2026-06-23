@@ -9,7 +9,7 @@ export interface BatchDeterminationItem { determinationId: number; resultValue: 
 export class ResultadosApiService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/analitica/resultados';
-  private readonly catalogBase = '/api/v1/analitica/determination-catalog';
+  private readonly catalogBase = '/api/v1/analitica/determinations';
 
   getResultsByProtocol(protocolId: number): Observable<AnalyticalResult[]> {
     return this.http.get<AnalyticalResult[]>(`${this.base}/protocol/${protocolId}`);
