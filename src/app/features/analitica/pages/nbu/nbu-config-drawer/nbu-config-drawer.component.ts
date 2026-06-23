@@ -118,11 +118,6 @@ interface DetForm {
                                     class="pat-form__input" autocomplete="off"></textarea>
                         </div>
                         <div class="pat-form__field">
-                          <label class="pat-form__label">Unidad de medida (ID)</label>
-                          <p-inputnumber formControlName="measurementUnitId" [useGrouping]="false"
-                                         inputStyleClass="pat-form__input w-full" class="w-full" />
-                        </div>
-                        <div class="pat-form__field">
                           <label class="pat-form__label">Orden de impresión</label>
                           <p-inputnumber formControlName="printOrder" [useGrouping]="false"
                                          inputStyleClass="pat-form__input w-full" class="w-full" />
@@ -344,7 +339,6 @@ export class NbuConfigDrawerComponent implements OnChanges {
   ): DetForm {
     const overrideForm = this.fb.group({
       preIndications: this.fb.control<string | null>(override?.preIndications ?? null),
-      measurementUnitId: this.fb.control<number | null>(override?.measurementUnitId ?? null),
       printOrder: this.fb.control<number | null>(override?.printOrder ?? null),
       requiresApproval: this.fb.control<boolean>(override?.requiresApproval ?? false),
       canSelfApprove: this.fb.control<boolean>(override?.canSelfApprove ?? false),
