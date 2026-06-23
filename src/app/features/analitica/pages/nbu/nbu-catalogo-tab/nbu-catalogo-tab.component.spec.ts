@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { TokenService } from '@core/auth/token.service';
 import { NbuCatalogoTabComponent } from './nbu-catalogo-tab.component';
@@ -43,6 +45,8 @@ function setup(
     providers: [
       provideMockStore({ initialState }),
       provideNoopAnimations(),
+      provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: TokenService, useValue: tokenStub },
     ],
   });
@@ -52,10 +56,13 @@ function setup(
   const cmp = fixture.componentInstance as unknown as {
     onExpand(row: CatalogRow): void;
     onAction(e: { key: string; row: unknown }): void;
+    onConfigSaved(analysisId: number): void;
     determinationsFor(id: number): Determination[] | null;
     ub(row: CatalogRow): string;
     isAdmin(): boolean;
     rowActions: readonly { key: string; hidden?: (row: unknown) => boolean }[];
+    drawerVisible(): boolean;
+    drawerRow(): CatalogRow | null;
   };
   return { fixture, store, cmp };
 }
@@ -150,6 +157,24 @@ describe('NbuCatalogoTabComponent (ui-table)', () => {
     fixture.componentInstance.configRequested.subscribe((r: CatalogRow) => (emitted = r));
     cmp.onAction({ key: 'config', row });
     expect(emitted).toEqual(row);
+  });
+
+  it('onAction("config"): abre el drawer con la fila seleccionada', () => {
+    const { cmp } = setup([catalogRow({ id: 7 })]);
+    const row = catalogRow({ id: 7 });
+    expect(cmp.drawerVisible()).toBe(false);
+    cmp.onAction({ key: 'config', row });
+    expect(cmp.drawerVisible()).toBe(true);
+    expect(cmp.drawerRow()).toEqual(row);
+  });
+
+  it('onConfigSaved(): cierra el drawer y re-despacha loadConfigResumen', () => {
+    const { store, cmp } = setup([catalogRow({ id: 7 })]);
+    cmp.onAction({ key: 'config', row: catalogRow({ id: 7 }) });
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+    cmp.onConfigSaved(7);
+    expect(cmp.drawerVisible()).toBe(false);
+    expect(dispatchSpy).toHaveBeenCalledWith(loadConfigResumen({ analysisId: 7 }));
   });
 
   it('onExpand(): despacha loadDeterminations solo una vez por análisis', () => {

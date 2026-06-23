@@ -9,6 +9,7 @@ import { CatalogRow, ConfigResumen, Determination } from '../../../models/nomenc
 import { loadConfigResumen, loadDeterminations } from '../../../store/nomenclador/nomenclador.actions';
 import { selectCatalogRows, selectConfigResumen, selectDeterminations } from '../../../store/nomenclador/nomenclador.selectors';
 import { matchesFilter } from '../nbu-filter';
+import { NbuConfigDrawerComponent } from '../nbu-config-drawer/nbu-config-drawer.component';
 
 /**
  * Tab "Catálogo de análisis" de la pantalla NBU (KAN-118).
@@ -21,7 +22,7 @@ import { matchesFilter } from '../nbu-filter';
   selector: 'lab-nbu-catalogo-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableComponent, UiCellDirective, UiRowExpansionDirective],
+  imports: [DataTableComponent, UiCellDirective, UiRowExpansionDirective, NbuConfigDrawerComponent],
   template: `
     <ui-table
       [value]="filteredRows()"
@@ -99,6 +100,12 @@ import { matchesFilter } from '../nbu-filter';
         </div>
       </ng-template>
     </ui-table>
+
+    <lab-nbu-config-drawer
+      [visible]="drawerVisible()"
+      [analysis]="drawerRow()"
+      (cancel)="drawerVisible.set(false)"
+      (saved)="onConfigSaved($event)" />
   `,
 })
 export class NbuCatalogoTabComponent {
@@ -112,19 +119,35 @@ export class NbuCatalogoTabComponent {
   readonly search = input<string>('');
   readonly families = input<readonly string[]>([]);
 
-  /** Solicitud de configuración de una fila (la integración con el drawer es F5). */
+  /**
+   * Solicitud de configuración de una fila. Se mantiene como output para consumidores
+   * externos, pero el propio tab abre el drawer (F5): el drawer es un editor aislado.
+   */
   readonly configRequested = output<CatalogRow>();
+
+  /** Estado del drawer de configuración por análisis (F5). */
+  protected readonly drawerVisible = signal(false);
+  protected readonly drawerRow = signal<CatalogRow | null>(null);
 
   /** Acciones por fila del ui-table. "Configurar" se oculta a no-admin. */
   protected readonly rowActions: readonly TableAction[] = [
     { key: 'config', icon: 'pi-pencil', label: 'Configurar', hidden: () => !this.isAdmin() },
   ];
 
-  /** Maneja el click en una acción de fila. Por ahora solo emite el output de configuración. */
+  /** Maneja el click en una acción de fila: abre el drawer de config y notifica al exterior. */
   protected onAction(e: { key: string; row: unknown }): void {
     if (e.key === 'config') {
-      this.configRequested.emit(e.row as CatalogRow);
+      const row = e.row as CatalogRow;
+      this.drawerRow.set(row);
+      this.drawerVisible.set(true);
+      this.configRequested.emit(row);
     }
+  }
+
+  /** El drawer guardó: cerrar y refrescar el resumen de config de ese análisis. */
+  protected onConfigSaved(analysisId: number): void {
+    this.drawerVisible.set(false);
+    this.store.dispatch(loadConfigResumen({ analysisId }));
   }
 
   /** Filas del catálogo con cantidadUb resuelta para la versión seleccionada. */
