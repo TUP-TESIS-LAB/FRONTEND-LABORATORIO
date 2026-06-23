@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { TokenService } from '@core/auth/token.service';
 import { NbuCatalogoTabComponent } from './nbu-catalogo-tab.component';
 import {
   NOMENCLADOR_FEATURE_KEY,
   initialNomencladorState,
 } from '../../../store/nomenclador/nomenclador.state';
-import { loadDeterminations } from '../../../store/nomenclador/nomenclador.actions';
+import { loadConfigResumen, loadDeterminations } from '../../../store/nomenclador/nomenclador.actions';
 import { CatalogRow, Determination } from '../../../models/nomenclador.model';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -23,7 +24,11 @@ function catalogRow(over: Partial<CatalogRow> = {}): CatalogRow {
   };
 }
 
-function setup(initialRows: CatalogRow[] = [], dets: Record<number, Determination[]> = {}) {
+function setup(
+  initialRows: CatalogRow[] = [],
+  dets: Record<number, Determination[]> = {},
+  roles: string[] = ['ADMINISTRADOR'],
+) {
   const initialState = {
     [NOMENCLADOR_FEATURE_KEY]: {
       ...initialNomencladorState,
@@ -32,17 +37,25 @@ function setup(initialRows: CatalogRow[] = [], dets: Record<number, Determinatio
       determinationsByAnalysis: dets,
     },
   };
+  const tokenStub: Partial<TokenService> = { getRoles: () => roles };
   TestBed.configureTestingModule({
     imports: [NbuCatalogoTabComponent],
-    providers: [provideMockStore({ initialState }), provideNoopAnimations()],
+    providers: [
+      provideMockStore({ initialState }),
+      provideNoopAnimations(),
+      { provide: TokenService, useValue: tokenStub },
+    ],
   });
   const store = TestBed.inject(MockStore);
   const fixture = TestBed.createComponent(NbuCatalogoTabComponent);
   // acceso a métodos protected para tests de lógica
   const cmp = fixture.componentInstance as unknown as {
     onExpand(row: CatalogRow): void;
+    onAction(e: { key: string; row: unknown }): void;
     determinationsFor(id: number): Determination[] | null;
     ub(row: CatalogRow): string;
+    isAdmin(): boolean;
+    rowActions: readonly { key: string; hidden?: (row: unknown) => boolean }[];
   };
   return { fixture, store, cmp };
 }
@@ -106,6 +119,37 @@ describe('NbuCatalogoTabComponent (ui-table)', () => {
     const dispatchSpy = vi.spyOn(store, 'dispatch');
     cmp.onExpand(catalogRow({ id: 7 }));
     expect(dispatchSpy).toHaveBeenCalledWith(loadDeterminations({ analysisId: 7 }));
+  });
+
+  it('onExpand(): despacha también loadConfigResumen con el analysisId', () => {
+    const { store, cmp } = setup([catalogRow({ id: 7 })]);
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+    cmp.onExpand(catalogRow({ id: 7 }));
+    expect(dispatchSpy).toHaveBeenCalledWith(loadConfigResumen({ analysisId: 7 }));
+  });
+
+  it('isAdmin(): true cuando el token tiene rol ADMINISTRADOR; la acción "config" no se oculta', () => {
+    const { cmp } = setup([catalogRow()], {}, ['ADMINISTRADOR']);
+    expect(cmp.isAdmin()).toBe(true);
+    const configAction = cmp.rowActions.find(a => a.key === 'config');
+    expect(configAction).toBeDefined();
+    expect(configAction?.hidden?.({})).toBe(false);
+  });
+
+  it('isAdmin(): false sin el rol; la acción "config" queda oculta', () => {
+    const { cmp } = setup([catalogRow()], {}, ['SECRETARIA']);
+    expect(cmp.isAdmin()).toBe(false);
+    const configAction = cmp.rowActions.find(a => a.key === 'config');
+    expect(configAction?.hidden?.({})).toBe(true);
+  });
+
+  it('onAction("config"): emite configRequested con la fila', () => {
+    const { fixture, cmp } = setup([catalogRow({ id: 7 })]);
+    const row = catalogRow({ id: 7 });
+    let emitted: CatalogRow | undefined;
+    fixture.componentInstance.configRequested.subscribe((r: CatalogRow) => (emitted = r));
+    cmp.onAction({ key: 'config', row });
+    expect(emitted).toEqual(row);
   });
 
   it('onExpand(): despacha loadDeterminations solo una vez por análisis', () => {
