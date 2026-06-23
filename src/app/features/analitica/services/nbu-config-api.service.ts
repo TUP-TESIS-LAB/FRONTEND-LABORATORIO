@@ -51,6 +51,7 @@ export interface TenantAnalysisRow {
   shortCode: string;
   customName: string | null;
   active: boolean;
+  defaultSectionId: number | null;
 }
 
 /**
