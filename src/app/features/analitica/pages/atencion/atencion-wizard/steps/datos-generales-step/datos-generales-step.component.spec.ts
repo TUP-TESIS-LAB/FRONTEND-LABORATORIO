@@ -22,6 +22,7 @@ import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
+import { PatientService } from '@features/pacientes/services/patient.service';
 
 const STUB_CATALOG = {
   insurers: [
@@ -57,6 +58,12 @@ const makeModuleRegistryStub = (portalActive = true) => ({
   isActive: (key: ModuleKey) => key === ModuleKey.Portal ? portalActive : false,
 });
 
+/** PatientService stub: requerido por PortalAccessDialogComponent (importado en el componente). */
+const patientServiceStub = {
+  existsByDni: vi.fn().mockReturnValue(of(false)),
+  getByDni: vi.fn(),
+};
+
 describe('DatosGeneralesStepComponent', () => {
   let store: MockStore;
 
@@ -72,6 +79,7 @@ describe('DatosGeneralesStepComponent', () => {
         { provide: NotificationService, useValue: notificationStub },
         { provide: ActivatedRoute, useValue: defaultRouteStub },
         { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true) },
+        { provide: PatientService, useValue: patientServiceStub },
       ],
     }).compileComponents();
     store = TestBed.inject(MockStore);
@@ -868,7 +876,7 @@ describe('DatosGeneralesStepComponent', () => {
     expect(btn).toBeTruthy();
   });
 
-  it('A7: click en btn-crear-acceso despacha createPatientPortalAccount con el id del paciente', () => {
+  it('A7→2B: click en btn-crear-acceso abre el diálogo (portalDialogVisible true), NO despacha directo', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
     fixture.componentRef.setInput('readOnly', false);
@@ -878,10 +886,13 @@ describe('DatosGeneralesStepComponent', () => {
     fixture.detectChanges();
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance['crearAccesoPortal']();
-    expect(spy).toHaveBeenCalledWith(createPatientPortalAccount({ id: 200 }));
+    // Must NOT dispatch the old direct action
+    expect(spy).not.toHaveBeenCalledWith(createPatientPortalAccount({ id: 200 }));
+    // Must open the dialog
+    expect((fixture.componentInstance as any).portalDialogVisible()).toBe(true);
   });
 
-  it('A7: btn-crear-acceso oculto cuando no hay email activo → muestra acceso-sin-email', () => {
+  it('2B: btn-crear-acceso visible cuando accountStatus=NONE + no readOnly (SIN email también)', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
     fixture.componentRef.setInput('readOnly', false);
@@ -890,9 +901,23 @@ describe('DatosGeneralesStepComponent', () => {
     store.refreshState();
     fixture.detectChanges();
     const btn = fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]');
-    expect(btn).toBeNull();
-    const hint = fixture.nativeElement.querySelector('[data-testid="acceso-sin-email"]');
-    expect(hint).toBeTruthy();
+    expect(btn).toBeTruthy();
+  });
+
+  it('2B: lab-portal-access-dialog recibe [patientId] del paciente resuelto', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: PATIENT_WITH_EMAIL } });
+    store.refreshState();
+    fixture.detectChanges();
+    // Open the dialog
+    (fixture.componentInstance as any).crearAccesoPortal();
+    fixture.detectChanges();
+    // The dialog element should be in the DOM
+    const dialog = fixture.nativeElement.querySelector('lab-portal-access-dialog');
+    expect(dialog).toBeTruthy();
   });
 
   it('A7: btn-crear-acceso oculto si accountStatus !== NONE (ya PENDING)', () => {
@@ -972,6 +997,7 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: NotificationService, useValue: notificationStub },
         { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true) },
+        { provide: PatientService, useValue: patientServiceStub },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: { get: (k: string) => k === 'queueEntryId' ? '99' : null } } },
@@ -1032,6 +1058,7 @@ describe('DatosGeneralesStepComponent — B2: banner relacion gateado por PORTAL
         { provide: NotificationService, useValue: notificationStub },
         { provide: ActivatedRoute, useValue: defaultRouteStub },
         { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true) },
+        { provide: PatientService, useValue: patientServiceStub },
       ],
     }).compileComponents();
     store = TestBed.inject(MockStore);
@@ -1062,6 +1089,7 @@ describe('DatosGeneralesStepComponent — B2: banner relacion gateado por PORTAL
         { provide: NotificationService, useValue: notificationStub },
         { provide: ActivatedRoute, useValue: defaultRouteStub },
         { provide: ModuleRegistry, useValue: makeModuleRegistryStub(false) },
+        { provide: PatientService, useValue: patientServiceStub },
       ],
     }).compileComponents();
     store = TestBed.inject(MockStore);

@@ -27,6 +27,7 @@ import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
+import { PortalAccessDialogComponent } from '@features/analitica/components/portal-access-dialog/portal-access-dialog.component';
 import {
   assignGeneralData,
   createPatientInline,
@@ -38,7 +39,6 @@ import {
   validateBond,
   verifyPatient,
 } from '../../../../../store/atencion/atencion.actions';
-import { createPatientPortalAccount } from '../../../../../../pacientes/store/patient.actions';
 import {
   selectBondMutating,
   selectPatientNotFoundDni,
@@ -66,7 +66,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   selector: 'lab-datos-generales-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule],
+  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule, PortalAccessDialogComponent],
   template: `
     <div class="flex flex-col h-full min-h-0">
       <!-- T8: contenido scrolleable interno; el footer queda abajo y la página no crece. -->
@@ -292,10 +292,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   <div class="flex items-center gap-2 pt-1 text-xs text-green-600" data-testid="estado-acceso-activo">
                     <i class="pi pi-check-circle"></i><span>Acceso al portal: activo</span>
                   </div>
-                } @else if (resolved() && !tieneEmail() && resolved()!.accountStatus === 'NONE' && !readOnly()) {
-                  <div class="flex items-center gap-2 pt-1 text-xs text-surface-400" data-testid="acceso-sin-email">
-                    <i class="pi pi-info-circle"></i><span>Cargá un email para poder crear el acceso al portal</span>
-                  </div>
                 }
               </div>
             } @else {
@@ -441,6 +437,13 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       <!-- Item 1: el footer (Volver fase / Confirmar y seguir) lo provee el contenedor
            (ui-wizard-shell), no el step. -->
     </div>
+
+    <!-- Diálogo de acceso al portal (Arco 2B): gestiona rama propio / responsable. -->
+    <lab-portal-access-dialog
+      [visible]="portalDialogVisible()"
+      [patientId]="resolved()?.id ?? null"
+      [patientHasEmail]="tieneEmail()"
+      (closed)="portalDialogVisible.set(false)" />
   `,
   styles: [`
     :host { display: block; height: 100%; }
@@ -531,6 +534,9 @@ export class DatosGeneralesStepComponent implements OnInit {
   private lastGuardiansPatientId: number | null = null;
 
   protected readonly editing = signal(false);
+
+  /** Controla la visibilidad del diálogo de acceso al portal (Arco 2B). */
+  protected readonly portalDialogVisible = signal(false);
 
   // ── Cobertura del alta/edición inline: cascada Obra social → Plan ────────────
   /** Obra social elegida en el form de alta/edición (UI; el plan es lo que se envía). */
@@ -648,7 +654,9 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   protected readonly puedeCrearAcceso = computed(() => {
     const p = this.resolved();
-    return !!p && !this.readOnly() && p.accountStatus === 'NONE' && this.tieneEmail();
+    // El email ya no es condición para mostrar el botón: el diálogo gestiona ambas ramas
+    // (propio → requiere email; responsable → no lo requiere).
+    return !!p && !this.readOnly() && p.accountStatus === 'NONE';
   });
 
   // ── Verify gate ────────────────────────────────────────────────────────────
@@ -915,7 +923,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected crearAccesoPortal(): void {
     const p = this.resolved();
     if (!p || this.readOnly() || p.accountStatus !== 'NONE') return;
-    this.store.dispatch(createPatientPortalAccount({ id: p.id }));
+    // Arco 2B: abre el diálogo que gestiona ambas ramas (propio / responsable).
+    this.portalDialogVisible.set(true);
   }
 
   protected validarRelacion(g: PatientGuardian): void {
