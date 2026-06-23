@@ -118,7 +118,7 @@ import {
             <span class="text-yellow-600 text-xs"><i class="pi pi-clock mr-1"></i>Pendiente</span>
           } @else if ($any(row).managedBy) {
             <span class="text-surface-500 text-xs">
-              <i class="pi pi-users mr-1"></i>Sin cuenta · Gestionado por {{ $any(row).managedBy.titularNombre }}@if ($any(row).managedBy.count > 1) { +{{ $any(row).managedBy.count - 1 }} }
+              <i class="pi pi-users mr-1"></i>{{ accesoPortalLabel($any(row)) }}
             </span>
           } @else {
             <span class="text-surface-400 text-xs">Sin cuenta</span>
@@ -337,15 +337,16 @@ export class PatientListPage implements OnInit {
   }
 
   /**
-   * Returns the display label for the accesoPortal cell when accountStatus is 'NONE'
-   * and managedBy is present. Used in tests to verify the cell text logic.
-   * count=1 → "Gestionado por {titularNombre}"
-   * count>1 → "{titularNombre} +{count-1}"
+   * Returns the display label for the accesoPortal cell when accountStatus is 'NONE'.
+   * Single source of truth — template delegates the managedBy branch to this helper.
+   * no managedBy → "Sin cuenta"
+   * managedBy count=1 → "Sin cuenta · Gestionado por {titularNombre}"
+   * managedBy count>1 → "Sin cuenta · Gestionado por {titularNombre} +{count-1}"
    */
   accesoPortalLabel(p: Patient): string {
     const mb = p.managedBy;
     if (!mb) return 'Sin cuenta';
-    if (mb.count > 1) return `${mb.titularNombre} +${mb.count - 1}`;
-    return `Gestionado por ${mb.titularNombre}`;
+    const base = `Sin cuenta · Gestionado por ${mb.titularNombre}`;
+    return mb.count > 1 ? `${base} +${mb.count - 1}` : base;
   }
 }

@@ -214,7 +214,7 @@ describe('PatientListPage (smoke)', () => {
 
   // ---- Arco 2B: managedBy ----
 
-  it('accesoPortal cell label: NONE + managedBy(count=1) → "Gestionado por Ana Pérez"', () => {
+  it('accesoPortal cell label: NONE + managedBy(count=1) → "Sin cuenta · Gestionado por Ana Pérez"', () => {
     const fixture = TestBed.createComponent(PatientListPage);
     const cmp = fixture.componentInstance;
     const p: Patient = {
@@ -222,10 +222,10 @@ describe('PatientListPage (smoke)', () => {
       accountStatus: 'NONE',
       managedBy: { titularNombre: 'Ana Pérez', count: 1 },
     };
-    expect(cmp.accesoPortalLabel(p)).toBe('Gestionado por Ana Pérez');
+    expect(cmp.accesoPortalLabel(p)).toBe('Sin cuenta · Gestionado por Ana Pérez');
   });
 
-  it('accesoPortal cell label: NONE + managedBy(count=2) → "Ana Pérez +1"', () => {
+  it('accesoPortal cell label: NONE + managedBy(count=2) → "Sin cuenta · Gestionado por Ana Pérez +1"', () => {
     const fixture = TestBed.createComponent(PatientListPage);
     const cmp = fixture.componentInstance;
     const p: Patient = {
@@ -233,7 +233,7 @@ describe('PatientListPage (smoke)', () => {
       accountStatus: 'NONE',
       managedBy: { titularNombre: 'Ana Pérez', count: 2 },
     };
-    expect(cmp.accesoPortalLabel(p)).toBe('Ana Pérez +1');
+    expect(cmp.accesoPortalLabel(p)).toBe('Sin cuenta · Gestionado por Ana Pérez +1');
   });
 
   it('createAccountAction.hidden es true cuando managedBy está presente (no ofrecer cuenta propia)', () => {
