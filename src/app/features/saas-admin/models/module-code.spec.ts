@@ -2,7 +2,7 @@ import { MODULE_CATALOG } from './module-code';
 
 describe('MODULE_CATALOG', () => {
   it('no incluye el modulo FAMILIA (fusionado en PORTAL)', () => {
-    expect(MODULE_CATALOG.some(m => m.code === 'FAMILIA')).toBe(false);
+    expect(MODULE_CATALOG.some(m => (m.code as string) === 'FAMILIA')).toBe(false);
   });
 
   it('mantiene PORTAL como activable', () => {

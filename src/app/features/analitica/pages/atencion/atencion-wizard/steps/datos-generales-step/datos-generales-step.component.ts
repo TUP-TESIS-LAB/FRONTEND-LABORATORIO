@@ -25,6 +25,8 @@ import { CoverageCatalogService } from '@features/pacientes/services/coverage-ca
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import {
   assignGeneralData,
   createPatientInline,
@@ -204,7 +206,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   </span>
                 </div>
 
-                @if (pendingGuardian(); as g) {
+                @if (portalActive() && pendingGuardian(); as g) {
                   <div data-testid="banner-relacion-pendiente" class="ui-estado-naranja" style="display:flex; flex-direction:column; gap:8px; padding:10px 12px; border-radius:8px; margin-top:8px;">
                     <div style="display:flex; align-items:flex-start; gap:8px;">
                       <i class="pi pi-exclamation-triangle" style="margin-top:2px;"></i>
@@ -491,6 +493,10 @@ export class DatosGeneralesStepComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly moduleRegistry = inject(ModuleRegistry);
+
+  /** Módulo PORTAL activo para el tenant: gatea el banner de relación familiar pendiente. */
+  protected readonly portalActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Portal));
 
   /** Búsqueda automática del DNI: se dispara con debounce al tipear y al blur. */
   private readonly dniSearch$ = new Subject<string>();

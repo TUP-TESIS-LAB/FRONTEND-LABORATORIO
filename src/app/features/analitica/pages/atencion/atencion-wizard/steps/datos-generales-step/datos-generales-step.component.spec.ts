@@ -20,6 +20,8 @@ import { PatientGuardian } from '../../../../../models/patient-guardian.model';
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { NotificationService } from '@core/services/notification.service';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 
 const STUB_CATALOG = {
   insurers: [
@@ -50,6 +52,11 @@ const defaultRouteStub = {
   snapshot: { queryParamMap: { get: () => null } },
 };
 
+/** ModuleRegistry stub: por defecto PORTAL activo (para no romper tests L2 existentes). */
+const makeModuleRegistryStub = (portalActive = true) => ({
+  isActive: (key: ModuleKey) => key === ModuleKey.Portal ? portalActive : false,
+});
+
 describe('DatosGeneralesStepComponent', () => {
   let store: MockStore;
 
@@ -64,6 +71,7 @@ describe('DatosGeneralesStepComponent', () => {
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: NotificationService, useValue: notificationStub },
         { provide: ActivatedRoute, useValue: defaultRouteStub },
+        { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true) },
       ],
     }).compileComponents();
     store = TestBed.inject(MockStore);
@@ -947,6 +955,7 @@ describe('DatosGeneralesStepComponent', () => {
     const el = fixture.nativeElement.querySelector('[data-testid="estado-acceso-activo"]');
     expect(el).toBeTruthy();
   });
+
 });
 
 describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
@@ -962,6 +971,7 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
         { provide: CoverageCatalogService, useValue: coverageCatalogStub },
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: NotificationService, useValue: notificationStub },
+        { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true) },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: { get: (k: string) => k === 'queueEntryId' ? '99' : null } } },
@@ -985,5 +995,86 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
     expect(spy).toHaveBeenCalledWith(
       startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: 99 }),
     );
+  });
+});
+
+// ── B2: gatear banner de relación por ModuleKey.Portal ───────────────────────
+
+const GUARDIAN_STUB_B2: PatientGuardian = {
+  userPatientId: 55,
+  titularNombre: 'María García',
+  titularDni: '20304050',
+  bond: 'HIJO',
+  status: 'CREATED',
+};
+
+const PATIENT_WITH_GUARDIAN_STATE = {
+  [ATENCION_FEATURE_KEY]: {
+    ...initialAtencionState,
+    resolvedPatient: {
+      id: 99, dni: '99999999', firstName: 'Dep', lastName: 'Paciente',
+      coverages: [], contacts: [], addresses: [],
+    } as any,
+    guardians: [GUARDIAN_STUB_B2],
+  },
+};
+
+describe('DatosGeneralesStepComponent — B2: banner relacion gateado por PORTAL (activo)', () => {
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DatosGeneralesStepComponent],
+      providers: [
+        provideMockStore({ initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState } }),
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
+        { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: NotificationService, useValue: notificationStub },
+        { provide: ActivatedRoute, useValue: defaultRouteStub },
+        { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true) },
+      ],
+    }).compileComponents();
+    store = TestBed.inject(MockStore);
+  });
+
+  it('B2: banner-relacion-pendiente se renderiza cuando PORTAL activo + pendingGuardian', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState(PATIENT_WITH_GUARDIAN_STATE);
+    store.refreshState();
+    fixture.detectChanges();
+    const banner = fixture.nativeElement.querySelector('[data-testid="banner-relacion-pendiente"]');
+    expect(banner).toBeTruthy();
+  });
+});
+
+describe('DatosGeneralesStepComponent — B2: banner relacion gateado por PORTAL (inactivo)', () => {
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DatosGeneralesStepComponent],
+      providers: [
+        provideMockStore({ initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState } }),
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
+        { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: NotificationService, useValue: notificationStub },
+        { provide: ActivatedRoute, useValue: defaultRouteStub },
+        { provide: ModuleRegistry, useValue: makeModuleRegistryStub(false) },
+      ],
+    }).compileComponents();
+    store = TestBed.inject(MockStore);
+  });
+
+  it('B2: banner-relacion-pendiente NO se renderiza cuando PORTAL inactivo (aunque haya guardian pendiente)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState(PATIENT_WITH_GUARDIAN_STATE);
+    store.refreshState();
+    fixture.detectChanges();
+    const banner = fixture.nativeElement.querySelector('[data-testid="banner-relacion-pendiente"]');
+    expect(banner).toBeNull();
   });
 });
