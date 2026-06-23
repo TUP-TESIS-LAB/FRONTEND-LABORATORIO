@@ -14,10 +14,14 @@ import {
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { CoveragePlansService } from '../../services/coverage-plans.service';
 import { Patient } from '../../models/patient.model';
+import { ModuleRegistry } from '@core/tenant/module-registry';
 
 const mockPlansService = {
   getActivePlans: () => of([{ planId: 1, label: 'Particular', particular: true }]),
 };
+
+// Default mock: PORTAL active (preserves existing test expectations for portalActions)
+const mockRegistryPortalActive = { isActive: vi.fn().mockReturnValue(true) };
 
 describe('PatientListPage (smoke)', () => {
   let store: MockStore;
@@ -36,6 +40,10 @@ describe('PatientListPage (smoke)', () => {
         {
           provide: CoveragePlansService,
           useValue: mockPlansService,
+        },
+        {
+          provide: ModuleRegistry,
+          useValue: mockRegistryPortalActive,
         },
       ],
     });
@@ -202,5 +210,49 @@ describe('PatientListPage (smoke)', () => {
     expect(cmp.resendAccountAction.hidden!({ ...basePatient, accountStatus: 'NONE' })).toBe(true);
     expect(cmp.resendAccountAction.hidden!({ ...basePatient, accountStatus: 'PENDING' })).toBe(false);
     expect(cmp.resendAccountAction.hidden!({ ...basePatient, accountStatus: 'ACTIVE' })).toBe(true);
+  });
+});
+
+// ---- B3: gating por ModuleKey.Portal ----
+
+function makePortalHarness(portalActive: boolean) {
+  const mockRegistry = { isActive: vi.fn().mockReturnValue(portalActive) };
+  TestBed.configureTestingModule({
+    imports: [PatientListPage],
+    providers: [
+      provideMockStore({ initialState: { [PATIENT_FEATURE_KEY]: initialPatientState } }),
+      provideRouter([]),
+      provideNoopAnimations(),
+      { provide: PatientPermissionsService, useValue: { canMutate: signal(true) } },
+      { provide: CoveragePlansService, useValue: mockPlansService },
+      { provide: ModuleRegistry, useValue: mockRegistry },
+    ],
+  });
+  const fixture = TestBed.createComponent(PatientListPage);
+  fixture.detectChanges();
+  return fixture.componentInstance;
+}
+
+describe('PatientListPage – gating Portal (B3)', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('no expone acciones de portal cuando PORTAL esta inactivo', () => {
+    const cmp = makePortalHarness(false);
+    expect(cmp.portalActions.length).toBe(0);
+  });
+
+  it('expone acciones de portal cuando PORTAL esta activo', () => {
+    const cmp = makePortalHarness(true);
+    expect(cmp.portalActions.length).toBeGreaterThan(0);
+  });
+
+  it('oculta la columna Acceso al portal cuando PORTAL esta inactivo', () => {
+    const cmp = makePortalHarness(false);
+    expect(cmp.columns.some((c: { field: string }) => c.field === 'accesoPortal')).toBe(false);
+  });
+
+  it('muestra la columna Acceso al portal cuando PORTAL esta activo', () => {
+    const cmp = makePortalHarness(true);
+    expect(cmp.columns.some((c: { field: string }) => c.field === 'accesoPortal')).toBe(true);
   });
 });

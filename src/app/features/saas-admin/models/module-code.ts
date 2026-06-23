@@ -6,8 +6,7 @@ export type ModuleCode =
   | 'PORTAL'
   | 'TURNOS'
   | 'FINANCIERO'
-  | 'STOCK'
-  | 'FAMILIA';
+  | 'STOCK';
 
 export type ModuleKind = 'PLATFORM' | 'CORE' | 'ACTIVABLE';
 
@@ -27,7 +26,6 @@ export const MODULE_CATALOG: readonly ModuleCatalogEntry[] = [
   { code: 'TURNOS',      kind: 'ACTIVABLE', label: 'Turnos',      description: 'Agenda y reserva de turnos.',                  icon: 'pi pi-calendar' },
   { code: 'FINANCIERO',  kind: 'ACTIVABLE', label: 'Financiero',  description: 'Facturación y cobranzas.',                     icon: 'pi pi-wallet' },
   { code: 'STOCK',       kind: 'ACTIVABLE', label: 'Stock',       description: 'Inventario e insumos.',                        icon: 'pi pi-box' },
-  { code: 'FAMILIA',     kind: 'ACTIVABLE', label: 'Familia',     description: 'Vinculación de pacientes en grupo familiar.',  icon: 'pi pi-users' },
 ];
 
 export const ACTIVABLE_MODULES = MODULE_CATALOG.filter((m) => m.kind === 'ACTIVABLE');

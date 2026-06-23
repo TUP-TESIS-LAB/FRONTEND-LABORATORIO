@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -16,6 +16,8 @@ import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.direct
 import { TableColumn, TableAction } from '@shared/ui/models/table-column.model';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import { PatientPermissionsService } from '../../services/patient-permissions.service';
 import { Patient, PatientStatus } from '../../models/patient.model';
 import { genderLabel, statusLabel } from '../../models/patient-labels';
@@ -131,8 +133,10 @@ export class PatientListPage implements OnInit {
   private readonly search$ = new Subject<string>();
   private readonly perms = inject(PatientPermissionsService);
   private readonly plansService = inject(CoveragePlansService);
+  private readonly moduleRegistry = inject(ModuleRegistry);
   protected readonly router = inject(Router);
   readonly canMutate = this.perms.canMutate;
+  protected readonly portalActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Portal));
 
   readonly items = this.store.selectSignal(selectAllPatients);
   readonly pending = this.store.selectSignal(selectPatientPending);
@@ -141,7 +145,7 @@ export class PatientListPage implements OnInit {
 
   private readonly plans = signal<readonly CoveragePlanOption[]>([]);
 
-  readonly columns: readonly TableColumn[] = [
+  private readonly baseColumns: readonly TableColumn[] = [
     { field: 'paciente',      header: 'Paciente' },
     { field: 'dni',           header: 'DNI' },
     { field: 'birthDate',     header: 'Fecha nac.' },
@@ -150,6 +154,12 @@ export class PatientListPage implements OnInit {
     { field: 'estado',        header: 'Estado' },
     { field: 'accesoPortal',  header: 'Acceso al portal' },
   ];
+
+  get columns(): readonly TableColumn[] {
+    return this.portalActive()
+      ? this.baseColumns
+      : this.baseColumns.filter(c => c.field !== 'accesoPortal');
+  }
 
   readonly toggleAction: readonly TableAction[] = [
     { key: 'toggle', icon: 'pi-times-circle', label: 'Activar/Desactivar' },
@@ -174,6 +184,7 @@ export class PatientListPage implements OnInit {
   };
 
   get portalActions(): TableAction[] {
+    if (!this.portalActive()) return [];
     return [this.toggleAction[0], this.createAccountAction, this.resendAccountAction];
   }
 
