@@ -197,7 +197,7 @@ export class PortalAccessDialogComponent {
 
   // Two-way ngModel bridges (needed for [(ngModel)] in template)
   get dniValue(): string { return this._dni(); }
-  set dniValue(v: string) { this._dni.set(v); }
+  set dniValue(v: string) { this.setDni(v); }
 
   get firstNameValue(): string { return this.firstName(); }
   set firstNameValue(v: string) { this.firstName.set(v); }
@@ -212,6 +212,8 @@ export class PortalAccessDialogComponent {
   set bondValue(v: string) { this.bond.set(v); }
 
   private readonly _dni = signal('');
+  /** DNI that was used in the last successful prefill lookup. */
+  private _prefilledForDni: string | null = null;
 
   // ── Bonds ────────────────────────────────────────────────────────────────────
   readonly bonds = [...GUARDIAN_BONDS];
@@ -244,6 +246,10 @@ export class PortalAccessDialogComponent {
 
   setDni(dni: string): void {
     this._dni.set(dni);
+    // If the DNI changed from the one we last prefilled, clear stale prefill data.
+    if (this._prefilledForDni !== null && dni !== this._prefilledForDni) {
+      this._clearPrefill();
+    }
   }
 
   setBond(b: string): void {
@@ -262,6 +268,7 @@ export class PortalAccessDialogComponent {
         this.firstName.set(patient.firstName);
         this.lastName.set(patient.lastName);
         this.prefilled.set(true);
+        this._prefilledForDni = dni;
 
         const emailContact = patient.contacts?.find(
           (c) => c.contactType === 'EMAIL' && c.active,
@@ -274,6 +281,7 @@ export class PortalAccessDialogComponent {
           this.emailPrefilled.set(false);
         }
       } else {
+        this._prefilledForDni = null;
         this.prefilled.set(false);
         this.emailPrefilled.set(false);
       }
@@ -312,7 +320,19 @@ export class PortalAccessDialogComponent {
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
+
+  /** Clear prefill flags and name/email fields when the DNI changes mid-session. */
+  private _clearPrefill(): void {
+    this.prefilled.set(false);
+    this.emailPrefilled.set(false);
+    this.firstName.set('');
+    this.lastName.set('');
+    this.email.set('');
+    this._prefilledForDni = null;
+  }
+
   private _resetResponsableForm(): void {
+    this._prefilledForDni = null;
     this._dni.set('');
     this.firstName.set('');
     this.lastName.set('');

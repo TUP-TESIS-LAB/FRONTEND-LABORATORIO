@@ -177,6 +177,90 @@ describe('PortalAccessDialogComponent', () => {
     });
   });
 
+  // ── (d) Cambio de DNI post-prefill limpia el estado ──────────────────────────
+
+  describe('Rama responsable — cambio de DNI post-prefill', () => {
+    it('cambiar el DNI después de un prefill exitoso limpia prefilled, firstName, lastName y email', async () => {
+      patientServiceSpy.existsByDni.mockReturnValue(of(true));
+      patientServiceSpy.getByDni.mockReturnValue(of(makePatient()));
+
+      const fixture = TestBed.createComponent(PortalAccessDialogComponent);
+      const c = fixture.componentInstance;
+      fixture.componentRef.setInput('visible', true);
+      fixture.componentRef.setInput('patientId', 42);
+      fixture.componentRef.setInput('patientHasEmail', false);
+      fixture.detectChanges();
+
+      c.selectModo('responsable');
+      c.setDni('30000000');
+      await c.lookupDni();
+
+      // Sanity: prefill should be active after lookup
+      expect(c.prefilled()).toBe(true);
+      expect(c.firstName()).toBe('Ana');
+
+      // Now change the DNI to a different value without re-running lookup
+      c.setDni('99999999');
+
+      // Prefill state must be cleared
+      expect(c.prefilled()).toBe(false);
+      expect(c.emailPrefilled()).toBe(false);
+      expect(c.firstName()).toBe('');
+      expect(c.lastName()).toBe('');
+      expect(c.email()).toBe('');
+    });
+
+    it('cambiar el DNI al mismo valor NO limpia el prefill', async () => {
+      patientServiceSpy.existsByDni.mockReturnValue(of(true));
+      patientServiceSpy.getByDni.mockReturnValue(of(makePatient()));
+
+      const fixture = TestBed.createComponent(PortalAccessDialogComponent);
+      const c = fixture.componentInstance;
+      fixture.componentRef.setInput('visible', true);
+      fixture.componentRef.setInput('patientId', 42);
+      fixture.componentRef.setInput('patientHasEmail', false);
+      fixture.detectChanges();
+
+      c.selectModo('responsable');
+      c.setDni('30000000');
+      await c.lookupDni();
+
+      expect(c.prefilled()).toBe(true);
+
+      // Setting the same DNI value should NOT clear the prefill
+      c.setDni('30000000');
+
+      expect(c.prefilled()).toBe(true);
+      expect(c.firstName()).toBe('Ana');
+      expect(c.lastName()).toBe('Gómez');
+    });
+  });
+
+  // ── (e) DNI no encontrado → formulario editable ───────────────────────────────
+
+  describe('Rama responsable — DNI no encontrado', () => {
+    it('lookupDni con DNI inexistente deja prefilled en false y los campos editables/vacíos', async () => {
+      patientServiceSpy.existsByDni.mockReturnValue(of(false));
+
+      const fixture = TestBed.createComponent(PortalAccessDialogComponent);
+      const c = fixture.componentInstance;
+      fixture.componentRef.setInput('visible', true);
+      fixture.componentRef.setInput('patientId', 42);
+      fixture.componentRef.setInput('patientHasEmail', false);
+      fixture.detectChanges();
+
+      c.selectModo('responsable');
+      c.setDni('00000001');
+      await c.lookupDni();
+
+      expect(c.prefilled()).toBe(false);
+      expect(c.emailPrefilled()).toBe(false);
+      expect(c.firstName()).toBe('');
+      expect(c.lastName()).toBe('');
+      expect(c.email()).toBe('');
+    });
+  });
+
   // ── (c) Dropdown de vínculo excluye PROPIO ────────────────────────────────────
 
   describe('Vínculos disponibles', () => {
