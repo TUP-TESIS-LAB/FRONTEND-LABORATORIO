@@ -72,9 +72,6 @@ export const GUARDIAN_BONDS = [
             styleClass="w-full justify-start"
           />
         </div>
-        <ng-template pTemplate="footer">
-          <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="onHide()" />
-        </ng-template>
       }
 
       <!-- ── Pantalla: propio ─────────────────────────────────────────────── -->
@@ -82,10 +79,6 @@ export const GUARDIAN_BONDS = [
         <p class="text-sm opacity-70 mb-4">
           Se enviará un email al paciente para que active su cuenta portal.
         </p>
-        <ng-template pTemplate="footer">
-          <p-button label="Volver" severity="secondary" [text]="true" (onClick)="selectModo('choose')" />
-          <p-button label="Confirmar" (onClick)="confirmPropio()" />
-        </ng-template>
       }
 
       <!-- ── Pantalla: responsable ─────────────────────────────────────────── -->
@@ -156,19 +149,28 @@ export const GUARDIAN_BONDS = [
               [(ngModel)]="bondValue"
               placeholder="Seleccionar vínculo"
               styleClass="w-full"
+              appendTo="body"
             />
           </div>
         </div>
+      }
 
-        <ng-template pTemplate="footer">
+      <!-- ── Footer único (conmuta por modo; un solo pTemplate para que PrimeNG lo refresque) ── -->
+      <ng-template pTemplate="footer">
+        @if (modo() === 'choose') {
+          <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="onHide()" />
+        } @else if (modo() === 'propio') {
+          <p-button label="Volver" severity="secondary" [text]="true" (onClick)="selectModo('choose')" />
+          <p-button label="Confirmar" (onClick)="confirmPropio()" />
+        } @else {
           <p-button label="Volver" severity="secondary" [text]="true" (onClick)="selectModo('choose')" />
           <p-button
             label="Confirmar"
             [disabled]="!responsableValid()"
             (onClick)="confirmResponsable()"
           />
-        </ng-template>
-      }
+        }
+      </ng-template>
 
     </p-dialog>
   `,
