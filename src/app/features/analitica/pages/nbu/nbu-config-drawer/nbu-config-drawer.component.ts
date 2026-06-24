@@ -125,10 +125,9 @@ function monthsToYears(months: number | null): number | null {
               <div class="pat-form__card-header"><span>Preparación del paciente</span></div>
               <div class="pat-form__grid">
                 <div class="pat-form__field" style="grid-column: 1 / -1;">
-                  <label class="pat-form__label" for="nbu-ayuno">Preparación del paciente / ayuno</label>
+                  <label class="pat-form__label" for="nbu-ayuno">Preparación previa</label>
                   <textarea id="nbu-ayuno" pTextarea rows="2" autocomplete="off"
                             class="pat-form__input"
-                            placeholder="Ej: Ayuno de 8 horas. Concurrir con primera orina."
                             [value]="ayuno()"
                             (input)="onAyunoInput($event)"></textarea>
                 </div>

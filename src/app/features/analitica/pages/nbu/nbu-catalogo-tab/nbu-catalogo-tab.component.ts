@@ -92,7 +92,7 @@ import { NbuConfigDrawerComponent } from '../nbu-config-drawer/nbu-config-drawer
           } @else {
             <div class="text-sm text-[var(--ds-text-muted,#71717a)] flex flex-wrap gap-x-4 gap-y-1">
               <span>Nombre propio: {{ cfg.customName ?? '—' }}</span>
-              <span>Ayuno: {{ cfg.ayuno ?? '—' }}</span>
+              <span>Preparación previa: {{ cfg.ayuno ?? '—' }}</span>
             </div>
           }
         </div>
