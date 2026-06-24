@@ -94,4 +94,60 @@ describe('ValidacionProtocolosPage (smoke)', () => {
       state: { patientName: r.patientName, patientSex: r.patientSex, patientBirthDate: r.patientBirthDate },
     });
   });
+
+  // --- Análisis PENDIENTES (sin resultado todavía, flujo asíncrono por-orden) ---
+
+  it('badgeAnalisis(): estado neutro "No disponible" para un análisis pendiente', () => {
+    const c = setup().fx.componentInstance;
+    const pendiente = {
+      resultId: 0, status: 'PENDING' as const, sectionId: null,
+      analysisName: 'Hemograma', analysisFamily: 'Hematología', determinations: [], pending: true,
+    };
+    expect(c.badgeAnalisis(pendiente)[1]).toBe('No disponible');
+  });
+
+  it('badgeAnalisis(): estado normal para un análisis NO pendiente (no regresión)', () => {
+    const c = setup().fx.componentInstance;
+    const materializado = {
+      resultId: 1, status: 'VALIDATED' as const, sectionId: null,
+      analysisName: 'TSH', analysisFamily: 'Endocrino', determinations: [],
+    };
+    expect(c.badgeAnalisis(materializado)[1]).toBe('Validado');
+  });
+
+  it('trackAnalisis(): los pendientes (sin resultId real) no colisionan entre sí', () => {
+    const c = setup().fx.componentInstance;
+    const p1 = { resultId: 0, status: 'PENDING' as const, sectionId: null, analysisName: 'Hemograma', analysisFamily: null, determinations: [], pending: true };
+    const p2 = { resultId: 0, status: 'PENDING' as const, sectionId: null, analysisName: 'Orina', analysisFamily: null, determinations: [], pending: true };
+    expect(c.trackAnalisis(0, p1)).not.toBe(c.trackAnalisis(1, p2));
+  });
+
+  it('el detalle pendiente queda disponible en analisisDe tras expandir', () => {
+    const navigate = vi.fn();
+    const getDetalle = vi.fn().mockReturnValue(of({
+      study: {}, results: [
+        { resultId: 1, status: 'VALIDATED', sectionId: null, analysisName: 'TSH', analysisFamily: 'Endocrino', determinations: [] },
+        { resultId: 0, status: 'PENDING', sectionId: null, analysisName: 'Hemograma', analysisFamily: 'Hematología', determinations: [], pending: true },
+      ],
+    }));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ValidacionProtocolosPage],
+      providers: [
+        provideNoopAnimations(),
+        { provide: Router, useValue: { navigate } },
+        { provide: PostanaliticaApiService, useValue: { getDetalle } },
+        provideMockStore({ selectors: [
+          { selector: selectValidacionRows, value: ROWS },
+          { selector: selectValidacionPending, value: false },
+        ] }),
+      ],
+    });
+    TestBed.overrideTemplate(ValidacionProtocolosPage, SMOKE_TEMPLATE);
+    const c = TestBed.createComponent(ValidacionProtocolosPage).componentInstance;
+    c.toggle(ROWS[0], new Event('click'));
+    const analisis = c.analisisDe(ROWS[0].protocolId) ?? [];
+    expect(analisis.length).toBe(2);
+    expect(analisis.some(a => a.pending === true)).toBe(true);
+  });
 });

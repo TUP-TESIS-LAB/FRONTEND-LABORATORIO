@@ -10,7 +10,7 @@
         <div class="ws-grid" [style.gridTemplateColumns]="gridTemplateColumns()">
           <div class="ws-corner">DETERMINACIONES</div>
           @for (col of columns(); track col.protocolId) {
-            <div class="ws-col"><b>#{{ col.protocolId }}</b><span>{{ col.label }}</span></div>
+            <div class="ws-col"><b>{{ col.patientName }}</b><span>#{{ col.protocolId }}</span></div>
           }
           @for (row of sec.rows; track row.catalogId) {
             <div class="ws-det">{{ row.name }}@if (row.unit) { <small class="ws-unit">({{ row.unit }})</small> }</div>

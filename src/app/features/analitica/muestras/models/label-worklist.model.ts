@@ -11,12 +11,15 @@ export interface LabelWorklistItem {
   sampleId: number | null;
   barcode: string;
   protocolId: number;
+  analysisTypeId: number;
   analysisName: string;
   patientName: string;
   urgent: boolean;
   status: BackendLabelStatus;
   updatedAt: string;
   rejectionReason?: string | null;
+  /** Estado de carga de las determinaciones. Solo llega para status PROCESSING. */
+  cargaStatus?: 'PARCIAL' | 'COMPLETA';
 }
 
 /** PENDING y CANCELED no tienen pantalla en las worklists. */

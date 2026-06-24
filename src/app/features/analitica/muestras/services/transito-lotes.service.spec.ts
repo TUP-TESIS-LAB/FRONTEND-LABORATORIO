@@ -43,7 +43,7 @@ function routingOf(
     groups: groups.map(g => ({
       workSection: {
         branchId: 1001, areaId: 1, sectionId: g.sectionId,
-        areaName: g.areaName, sectionName: g.sectionName,
+        areaName: g.areaName, sectionName: g.sectionName, branchName: 'CENTRAL',
       },
       assignments: g.sampleIds.map(sid => ({
         protocolId: 1, sampleId: sid, analysisOrderId: sid, analysisName: 'Hemograma',

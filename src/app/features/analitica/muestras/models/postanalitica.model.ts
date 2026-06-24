@@ -140,6 +140,29 @@ export interface DetalleResultado {
   resultId: number; status: ResultStatus; sectionId: number | null;
   analysisName: string | null; analysisFamily: string | null;
   determinations: DetalleDeterminacion[];
+  /**
+   * Completitud del resultado (Parte 2 — gate de validación): true cuando TODAS
+   * las determinaciones tienen valor cargado. Un resultado incompleto no puede
+   * validarse/firmarse. El backend lo expone por resultado.
+   * Degradación suave: si el back todavía no lo envía (undefined), se trata como
+   * completo (no se bloquea de más). Ver `ValidarProtocoloPage.esCompleto`.
+   */
+  isComplete?: boolean;
+  /**
+   * Análisis PENDIENTE (flujo asíncrono por-orden): la orden está activa pero su
+   * muestra todavía viaja, por lo que NO tiene resultado materializado. El back lo
+   * marca con `pending: true`; trae `analysisName`/`analysisFamily` pero NO trae
+   * determinaciones (lista vacía) ni `resultId` real. La UI lo muestra en la lista
+   * y en firma con estado neutro y todas las acciones deshabilitadas.
+   * Degradación suave: undefined/false (back viejo) = NO pendiente (comportamiento
+   * actual). Ver `esPendiente(...)`.
+   */
+  pending?: boolean;
+}
+
+/** True si el análisis está pendiente (sin resultado todavía). Trata undefined como NO pendiente. */
+export function esPendiente(r: DetalleResultado): boolean {
+  return r.pending === true;
 }
 export interface DetalleEstudioHeader {
   protocolId: number; currentStatus: StudyStatus;

@@ -3,9 +3,8 @@ import { DateEsPipe } from '@shared/pipes/date-es.pipe';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
-import { calcularEdad } from '@shared/utils/calcular-edad';
 import {
-  estadoFirmaListado, badgeFirmaListado, badgeResultado,
+  estadoFirmaListado, badgeFirmaListado, badgeResultado, esPendiente,
   type ValidationListRow, type EstadoFirmaListado, type DetalleResultado,
 } from '../../models/postanalitica.model';
 import { PostanaliticaApiService } from '../../services/postanalitica-api.service';
@@ -39,6 +38,7 @@ export class ValidacionProtocolosPage implements OnInit {
   readonly estadoFirmaListado = estadoFirmaListado;
   readonly badgeFirmaListado = badgeFirmaListado;
   readonly badgeResultado = badgeResultado;
+  readonly esPendiente = esPendiente;
 
   readonly rows = this.store.selectSignal(selectValidacionRows);
   readonly pending = this.store.selectSignal(selectValidacionPending);
@@ -73,12 +73,24 @@ export class ValidacionProtocolosPage implements OnInit {
 
   setQ(v: string): void { this.q.set(v); }
   setFiltro(v: 'todos' | EstadoFirmaListado): void { this.filtro.set(v); }
-  edad(r: ValidationListRow): number | null { return calcularEdad(r.patientBirthDate); }
 
   // --- GAP-8: expandible de análisis (cerrado por defecto, carga lazy) ---
   isOpen(protocolId: number): boolean { return this.expanded().has(protocolId); }
   analisisDe(protocolId: number): DetalleResultado[] | undefined { return this.analisis().get(protocolId); }
   isLoadingAnalisis(protocolId: number): boolean { return this.loadingAnalisis().has(protocolId); }
+
+  /**
+   * Track de las sub-filas de análisis. Los pendientes no traen `resultId` real
+   * (null/0/repetido), así que se trackean por índice + nombre para no colisionar.
+   */
+  trackAnalisis(i: number, a: DetalleResultado): string {
+    return esPendiente(a) ? `p-${i}-${a.analysisName ?? ''}` : `r-${a.resultId}`;
+  }
+
+  /** Badge de estado de la sub-fila: neutro para pendientes, estado normal para el resto. */
+  badgeAnalisis(a: DetalleResultado): [string, string] {
+    return esPendiente(a) ? ['st-sin', 'No disponible'] : badgeResultado(a.status);
+  }
 
   toggle(r: ValidationListRow, ev?: Event): void {
     ev?.stopPropagation();

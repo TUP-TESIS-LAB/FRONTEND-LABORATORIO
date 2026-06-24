@@ -5,8 +5,8 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { calcularEdad } from '@shared/utils/calcular-edad';
 import { humanizeBackendError } from '@shared/utils/error-messages';
-import { badgeFirma, badgeResultado } from '../../../models/postanalitica.model';
-import type { DetalleResultado, DetalleDeterminacion } from '../../../models/postanalitica.model';
+import { badgeFirma, badgeResultado, esPendiente } from '../../../models/postanalitica.model';
+import type { DetalleResultado, DetalleDeterminacion, ValidationOutcome } from '../../../models/postanalitica.model';
 import { loadDetalle, validarTodo, firmarEstudio } from '../../../store/validacion-detalle/validacion-detalle.actions';
 import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetalleError } from '../../../store/validacion-detalle/validacion-detalle.selectors';
 import { FirmarEstudioModalComponent } from '../../../components/firmar-estudio-modal/firmar-estudio-modal.component';
@@ -28,6 +28,7 @@ export class ValidarProtocoloPage implements OnInit {
 
   readonly badgeFirma = badgeFirma;
   readonly badgeResultado = badgeResultado;
+  readonly esPendiente = esPendiente;
 
   readonly detalle = this.store.selectSignal(selectDetalle);
   readonly loading = this.store.selectSignal(selectDetalleLoading);
@@ -35,8 +36,11 @@ export class ValidarProtocoloPage implements OnInit {
   private readonly error = this.store.selectSignal(selectDetalleError);
 
   readonly protocolId = Number(this.route.snapshot.paramMap.get('protocolId'));
-  /** Acordeón: arranca con TODOS abiertos; toggle agrega/quita de forma coherente. */
-  readonly expanded = signal<ReadonlySet<number>>(new Set());
+  /**
+   * Acordeón: arranca con TODOS abiertos; toggle agrega/quita de forma coherente.
+   * La clave es string (no resultId) porque los pendientes no traen resultId real.
+   */
+  readonly expanded = signal<ReadonlySet<string>>(new Set());
   /** Modal de confirmación de firma de estudio. */
   readonly firmarModalOpen = signal(false);
 
@@ -69,11 +73,11 @@ export class ValidarProtocoloPage implements OnInit {
     // Cuando llegan los resultados, abrir todas las filas por defecto (una sola vez por carga).
     let lastSeenIds = '';
     effect(() => {
-      const ids = this.results().map(r => r.resultId);
-      const sig = ids.join(',');
+      const keys = this.results().map((r, i) => this.rowKey(r, i));
+      const sig = keys.join(',');
       if (sig && sig !== lastSeenIds) {
         lastSeenIds = sig;
-        this.expanded.set(new Set(ids));
+        this.expanded.set(new Set(keys));
       }
     });
   }
@@ -87,9 +91,17 @@ export class ValidarProtocoloPage implements OnInit {
     }));
   }
 
-  isOpen(id: number): boolean { return this.expanded().has(id); }
-  toggle(id: number): void {
-    this.expanded.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  /**
+   * Clave estable de la fila para track/acordeón. Los pendientes no traen
+   * `resultId` real, así que se identifican por índice + nombre.
+   */
+  rowKey(r: DetalleResultado, i: number): string {
+    return esPendiente(r) ? `p-${i}-${r.analysisName ?? ''}` : `r-${r.resultId}`;
+  }
+
+  isOpen(key: string): boolean { return this.expanded().has(key); }
+  toggle(key: string): void {
+    this.expanded.update(s => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n; });
   }
 
   /** Nombre a mostrar del análisis (GAP-4); fallback al id si el back no lo trae. */
@@ -97,10 +109,59 @@ export class ValidarProtocoloPage implements OnInit {
     return r.analysisName ?? `Resultado #${r.resultId}`;
   }
 
-  canValidate(r: DetalleResultado): boolean {
+  /** Traduce el sexo crudo del back (MALE/FEMALE/INTERSEX) a español; valor crudo si no mapea. */
+  sexoLabel(value: string | null): string {
+    switch (value) {
+      case 'MALE': return 'Masculino';
+      case 'FEMALE': return 'Femenino';
+      case 'INTERSEX': return 'Intersex';
+      default: return value ?? '';
+    }
+  }
+
+  /** Traduce el outcome de validación (PASS/WARNING/FAIL) a español. */
+  outcomeLabel(o: ValidationOutcome | null): string {
+    switch (o) {
+      case 'PASS': return 'Correcto';
+      case 'WARNING': return 'Advertencia';
+      case 'FAIL': return 'Fuera de rango';
+      default: return '';
+    }
+  }
+
+  /** Badge de estado de la fila: neutro ("Pendiente") para pendientes; estado normal para el resto. */
+  badgeAnalisis(r: DetalleResultado): [string, string] {
+    return esPendiente(r) ? ['st-sin', 'Pendiente'] : badgeResultado(r.status);
+  }
+
+  /**
+   * Completitud del resultado (Parte 2 — gate de validación). Un resultado está
+   * completo cuando todas sus determinaciones tienen valor cargado; el back lo
+   * expone en `isComplete`. Degradación suave: si llega undefined/null (back viejo
+   * sin desplegar), se trata como completo para NO bloquear de más.
+   */
+  esCompleto(r: DetalleResultado): boolean {
+    return r.isComplete !== false;
+  }
+
+  /**
+   * El resultado está en un estado en el que la acción "Validar" aplica
+   * (no cerrado, no firmado, no ya validado). Independiente de la completitud:
+   * sirve para decidir si MOSTRAR el botón (que luego se deshabilita si falta
+   * cargar determinaciones).
+   */
+  esValidable(r: DetalleResultado): boolean {
+    if (esPendiente(r)) return false; // un pendiente no se valida (sin resultado todavía)
     return !this.isClosed() && r.status !== 'SIGNED' && r.status !== 'VALIDATED';
   }
-  canEdit(r: DetalleResultado): boolean { return !this.isClosed() && r.status !== 'SIGNED'; }
+
+  canValidate(r: DetalleResultado): boolean {
+    return this.esValidable(r) && this.esCompleto(r);
+  }
+  canEdit(r: DetalleResultado): boolean {
+    if (esPendiente(r)) return false; // sin resultado: nada para editar
+    return !this.isClosed() && r.status !== 'SIGNED';
+  }
   outOf(d: DetalleDeterminacion): boolean { return d.outOfRange; }
 
   /** GAP-9: "Validar" deja el resultado VALIDATED (validate-all con PASS). */

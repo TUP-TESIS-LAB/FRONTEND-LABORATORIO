@@ -21,8 +21,10 @@ export interface ResultGrid { protocolIds: number[]; sections: GridSection[]; re
 // análisis: si existe → celda editable; si no (la muestra no pidió el análisis) → la
 // columna se muestra igual pero la celda NO persiste (GAP-P5).
 
-/** Columna del grid de planilla: un protocolo (con su paciente). */
-export interface PlanillaColumn { protocolId: number; label: string; }
+/** Columna del grid de planilla: un protocolo (con su paciente).
+ * `patientName` es el nombre resuelto del paciente (con fallback `Protocolo #pid`).
+ * `label` se mantiene como alias de `patientName` por compatibilidad con consumidores existentes. */
+export interface PlanillaColumn { protocolId: number; patientName: string; label: string; }
 
 /** Celda de planilla: si `determinationId`/`resultId` son null, la celda no persiste. */
 export interface PlanillaCell { resultId: number | null; determinationId: number | null; value: string; }
@@ -61,10 +63,10 @@ export function buildPlanillaGrid(input: BuildPlanillaGridInput): PlanillaGrid {
     protocolIds, patientNameByProtocol, resultByProtocolAnalysis, determinationsByResult,
   } = input;
 
-  const columns: PlanillaColumn[] = protocolIds.map(pid => ({
-    protocolId: pid,
-    label: patientNameByProtocol[pid] ?? `Protocolo #${pid}`,
-  }));
+  const columns: PlanillaColumn[] = protocolIds.map(pid => {
+    const patientName = patientNameByProtocol[pid] ?? `Protocolo #${pid}`;
+    return { protocolId: pid, patientName, label: patientName };
+  });
 
   const sections: PlanillaSection[] = [...templateAnalyses]
     .sort((a, b) => a.displayOrder - b.displayOrder)
@@ -84,7 +86,7 @@ export function buildPlanillaGrid(input: BuildPlanillaGridInput): PlanillaGrid {
           const det = (determinationsByResult[result.id] ?? [])
             .find(d => d.determinationCatalogId === cat.id);
           cells[pid] = det
-            ? { resultId: result.id, determinationId: det.id, value: det.resultValue ?? '' }
+            ? { resultId: result.id, determinationId: det.id, value: '' } // abrir en blanco; el back conserva lo guardado
             : { resultId: result.id, determinationId: null, value: '' };
         }
         return { catalogId: cat.id, name: cat.name, unit: cat.unit, cells };

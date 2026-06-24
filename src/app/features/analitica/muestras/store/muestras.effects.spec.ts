@@ -25,7 +25,7 @@ import type { LabelWorklistItem } from '../models/label-worklist.model';
 import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.model';
 
 const item: LabelWorklistItem = {
-  labelId: 60005, sampleId: null, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
+  labelId: 60005, analysisTypeId: 60005, sampleId: null, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
   patientName: 'Ana López', urgent: false, status: 'COLLECTED', updatedAt: '2026-06-11T10:00:00Z',
 };
 
@@ -45,7 +45,7 @@ describe('MuestrasEffects', () => {
   };
 
   const transitoItem: LabelWorklistItem = {
-    labelId: 70001, sampleId: 80001, barcode: '70001', protocolId: 50002, analysisName: 'Glucemia',
+    labelId: 70001, analysisTypeId: 70001, sampleId: 80001, barcode: '70001', protocolId: 50002, analysisName: 'Glucemia',
     patientName: 'Pedro García', urgent: false, status: 'IN_TRANSIT', updatedAt: '2026-06-12T08:00:00Z',
   };
 
@@ -186,7 +186,7 @@ describe('MuestrasEffects', () => {
   // ── loadDescarte ──────────────────────────────────────────────────────────
 
   const descarteItem: LabelWorklistItem = {
-    labelId: 90001, sampleId: 80002, barcode: '90001', protocolId: 50003, analysisName: 'Cultivo',
+    labelId: 90001, analysisTypeId: 90001, sampleId: 80002, barcode: '90001', protocolId: 50003, analysisName: 'Cultivo',
     patientName: 'Carlos Ruiz', urgent: false, status: 'REJECTED', updatedAt: '2026-06-12T09:00:00Z',
     rejectionReason: 'Hemólisis severa',
   };
@@ -219,7 +219,7 @@ describe('MuestrasEffects', () => {
 
   // ── loadProcesamiento ───────────────────────────────────────────────────────
   const procItem: LabelWorklistItem = {
-    labelId: 70002, sampleId: 50050, barcode: '70002', protocolId: 50005, analysisName: 'Hemograma',
+    labelId: 70002, analysisTypeId: 70002, sampleId: 50050, barcode: '70002', protocolId: 50005, analysisName: 'Hemograma',
     patientName: 'Marta Gómez', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
   };
 
@@ -252,7 +252,7 @@ describe('MuestrasEffects', () => {
   // ── resolveRouting ────────────────────────────────────────────────────────
 
   it('resolveRouting deduplica protocolIds y mapea success', async () => {
-    const dupItem: LabelWorklistItem = { ...transitoItem, labelId: 70002, protocolId: 50002 };
+    const dupItem: LabelWorklistItem = { ...transitoItem, labelId: 70002, analysisTypeId: 70002, protocolId: 50002 };
     // Reinicializar con dos items que tienen el mismo protocolId para probar la deduplicación real
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({

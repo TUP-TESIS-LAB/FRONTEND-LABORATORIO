@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { groupTubes } from './tube.model';
 import type { LabelWorklistItem } from './label-worklist.model';
 
-const item = (labelId: number, sampleId: number | null, analysisName: string, urgent = false): LabelWorklistItem => ({
-  labelId, sampleId, barcode: String(labelId), protocolId: 50002, analysisName,
-  patientName: 'María López', urgent, status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+const item = (
+  labelId: number, sampleId: number | null, analysisName: string, urgent = false,
+  cargaStatus?: LabelWorklistItem['cargaStatus'],
+): LabelWorklistItem => ({
+  labelId, sampleId, barcode: String(labelId), protocolId: 50002, analysisTypeId: labelId, analysisName,
+  patientName: 'María López', urgent, status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z', cargaStatus,
 });
 
 describe('groupTubes', () => {
@@ -27,7 +30,7 @@ describe('groupTubes', () => {
 
   it('groupTubes propaga protocolId del primer label', () => {
     const items = [
-      { labelId: 1, sampleId: 50, barcode: 'b1', protocolId: 77, analysisName: 'A', patientName: 'P', urgent: false, status: 'PROCESSING' as const, updatedAt: '2026-06-13T08:00:00Z' },
+      { labelId: 1, sampleId: 50, barcode: 'b1', protocolId: 77, analysisTypeId: 1, analysisName: 'A', patientName: 'P', urgent: false, status: 'PROCESSING' as const, updatedAt: '2026-06-13T08:00:00Z' },
     ];
     const tubes = groupTubes(items, 'CENTRAL');
     expect(tubes[0].protocolId).toBe(77);
@@ -41,5 +44,26 @@ describe('groupTubes', () => {
     expect(tubes[0].receivedAt).toBe('2026-06-12T10:30:00Z');
     expect((tubes[0] as unknown as Record<string, unknown>)['date']).toBeUndefined();
     expect((tubes[0] as unknown as Record<string, unknown>)['time']).toBeUndefined();
+  });
+
+  it('cargaStatus del tubo es COMPLETA si todas las labels son COMPLETA', () => {
+    const tubes = groupTubes([item(1, 50, 'A', false, 'COMPLETA'), item(2, 50, 'B', false, 'COMPLETA')], 'CENTRAL');
+    expect(tubes[0].cargaStatus).toBe('COMPLETA');
+  });
+
+  // SIN se eliminó: solo quedan PARCIAL y COMPLETA. Cualquier label no-COMPLETA agrega a PARCIAL.
+  it('cargaStatus del tubo es PARCIAL ante cualquier mezcla con PARCIAL', () => {
+    const tubes = groupTubes([item(1, 50, 'A', false, 'COMPLETA'), item(2, 50, 'B', false, 'PARCIAL')], 'CENTRAL');
+    expect(tubes[0].cargaStatus).toBe('PARCIAL');
+  });
+
+  it('cargaStatus del tubo es PARCIAL si alguna label es PARCIAL', () => {
+    const tubes = groupTubes([item(1, 50, 'A', false, 'COMPLETA'), item(2, 50, 'B', false, 'PARCIAL')], 'CENTRAL');
+    expect(tubes[0].cargaStatus).toBe('PARCIAL');
+  });
+
+  it('cargaStatus es undefined (degradado) si alguna label no lo trae', () => {
+    const tubes = groupTubes([item(1, 50, 'A', false, 'COMPLETA'), item(2, 50, 'B')], 'CENTRAL');
+    expect(tubes[0].cargaStatus).toBeUndefined();
   });
 });

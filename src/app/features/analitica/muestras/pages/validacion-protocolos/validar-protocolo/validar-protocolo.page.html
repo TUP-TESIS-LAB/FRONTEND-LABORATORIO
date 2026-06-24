@@ -20,7 +20,7 @@
         <b>{{ patientName() ?? 'Paciente' }}</b>
         @if (patientSex() || edad() !== null) {
           <span>
-            @if (patientSex()) { {{ patientSex() }} }
+            @if (patientSex()) { {{ sexoLabel(patientSex()) }} }
             @if (patientSex() && edad() !== null) { · }
             @if (edad() !== null) { {{ edad() }} años }
           </span>
@@ -46,12 +46,12 @@
   </section>
 
   <div class="anx-list">
-    @for (r of results(); track r.resultId) {
-      <section class="anx" [class.is-open]="isOpen(r.resultId)" [class.is-val]="r.status === 'VALIDATED' || r.status === 'SIGNED'">
-        <div class="anx-head" (click)="toggle(r.resultId)">
+    @for (r of results(); track rowKey(r, $index); let i = $index) {
+      <section class="anx" [class.is-open]="isOpen(rowKey(r, i))" [class.is-val]="r.status === 'VALIDATED' || r.status === 'SIGNED'">
+        <div class="anx-head" (click)="toggle(rowKey(r, i))">
           <button
-            type="button" class="anx-chev" [class.is-open]="isOpen(r.resultId)"
-            (click)="toggle(r.resultId); $event.stopPropagation()" aria-label="Ver determinaciones"
+            type="button" class="anx-chev" [class.is-open]="isOpen(rowKey(r, i))"
+            (click)="toggle(rowKey(r, i)); $event.stopPropagation()" aria-label="Ver determinaciones"
           >
             <i class="pi pi-chevron-down"></i>
           </button>
@@ -60,13 +60,21 @@
             <span class="fam-pill">{{ r.analysisFamily }}</span>
           }
           <div class="anx-actions" (click)="$event.stopPropagation()">
-            <button type="button" class="anx-btn anx-edit" [disabled]="!canEdit(r) || saving()" (click)="editar(r, $event)">
+            <button type="button" class="anx-btn anx-edit" [disabled]="esPendiente(r) || !canEdit(r) || saving()" (click)="editar(r, $event)">
               <i class="pi pi-pencil"></i> Editar
             </button>
-            @if (canValidate(r)) {
-              <button type="button" class="anx-btn anx-val" [disabled]="saving()" (click)="validar(r, $event)">
+            @if (esValidable(r)) {
+              <button
+                type="button" class="anx-btn anx-val"
+                [disabled]="esPendiente(r) || saving() || !esCompleto(r)"
+                [title]="esCompleto(r) ? 'Validar resultado' : 'Faltan determinaciones por cargar'"
+                (click)="validar(r, $event)"
+              >
                 <i class="pi pi-check"></i> Validar
               </button>
+              @if (!esCompleto(r)) {
+                <span class="anx-incompleto"><i class="pi pi-exclamation-circle"></i> Faltan determinaciones por cargar</span>
+              }
             } @else if (r.status === 'VALIDATED' || r.status === 'SIGNED') {
               <button type="button" class="anx-btn anx-done" disabled>
                 <i class="pi pi-check"></i> {{ r.status === 'SIGNED' ? 'Firmado' : 'Validado' }}
@@ -75,11 +83,18 @@
           </div>
           <span class="anx-meta">
             <span class="anx-det">{{ r.determinations.length }} det</span>
-            <span [class]="'badge-st ' + badgeResultado(r.status)[0]"><span class="dot"></span>{{ badgeResultado(r.status)[1] }}</span>
+            <span [class]="'badge-st ' + badgeAnalisis(r)[0]"><span class="dot"></span>{{ badgeAnalisis(r)[1] }}</span>
           </span>
         </div>
 
-        @if (isOpen(r.resultId)) {
+        @if (isOpen(rowKey(r, i))) {
+          @if (esPendiente(r)) {
+            <div class="anx-body anx-body--pending">
+              <p class="anx-pending-msg">
+                <i class="pi pi-clock"></i> Todavía no se cargaron resultados para este análisis.
+              </p>
+            </div>
+          } @else {
           <div class="anx-body">
             <div class="vt-head vt-grid">
               <span>DETERMINACIÓN</span><span>VALOR</span><span>UNIDAD</span><span>REFERENCIA</span>
@@ -93,7 +108,7 @@
                 <span class="vt-ref">{{ d.referenceRange }}</span>
                 <span class="vt-cell">
                   @if (d.manualOutcome) {
-                    <span class="vb vb-ok"><i class="pi pi-check"></i> {{ d.manualOutcome }}</span>
+                    <span class="vb vb-ok"><i class="pi pi-check"></i> {{ outcomeLabel(d.manualOutcome) }}</span>
                   } @else {
                     <span class="vb vb-no">—</span>
                   }
@@ -101,9 +116,9 @@
                 <span class="vt-cell">
                   @if (d.aggregateOutcome) {
                     @if (outOf(d)) {
-                      <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> {{ d.aggregateOutcome }}</span>
+                      <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> {{ outcomeLabel(d.aggregateOutcome) }}</span>
                     } @else {
-                      <span class="vb vb-ok"><i class="pi pi-check"></i> {{ d.aggregateOutcome }}</span>
+                      <span class="vb vb-ok"><i class="pi pi-check"></i> {{ outcomeLabel(d.aggregateOutcome) }}</span>
                     }
                   } @else if (outOf(d)) {
                     <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> Fuera de rango</span>
@@ -114,6 +129,7 @@
               </div>
             }
           </div>
+          }
         }
       </section>
     }

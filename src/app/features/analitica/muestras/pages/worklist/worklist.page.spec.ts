@@ -109,7 +109,7 @@ describe('WorklistPage (smoke)', () => {
 
   it('Recolección mapea items del store al view-model', () => {
     const item: LabelWorklistItem = {
-      labelId: 60005, sampleId: null, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
+      labelId: 60005, analysisTypeId: 60005, sampleId: null, barcode: '60005', protocolId: 50001, analysisName: 'Hemograma',
       patientName: 'Ana López', urgent: false, status: 'COLLECTED', updatedAt: '2026-06-11T10:00:00Z',
     };
     const fx = setup('recoleccion', [item]);
@@ -134,7 +134,7 @@ describe('WorklistPage (smoke)', () => {
 
   it('Procesamiento mapea items PROCESSING del store al view-model agrupado', () => {
     const item: LabelWorklistItem = {
-      labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 50005, analysisName: 'Hemograma',
+      labelId: 70001, analysisTypeId: 70001, sampleId: 50050, barcode: '70001', protocolId: 50005, analysisName: 'Hemograma',
       patientName: 'Marta Gómez', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
     };
     const fx = setup('procesamiento', [], [], [item]);
@@ -167,7 +167,7 @@ describe('WorklistPage (smoke)', () => {
 
   it('Descarte mapea items del store al view-model agrupado', () => {
     const item: LabelWorklistItem = {
-      labelId: 90001, sampleId: null, barcode: '90001', protocolId: 50003,
+      labelId: 90001, analysisTypeId: 90001, sampleId: null, barcode: '90001', protocolId: 50003,
       analysisName: 'Cultivo', patientName: 'Carlos Ruiz', urgent: false,
       status: 'REJECTED', updatedAt: '2026-06-12T09:00:00Z',
       rejectionReason: 'Hemólisis severa',
@@ -195,7 +195,7 @@ describe('WorklistPage (smoke)', () => {
 
   it('toggleRow selecciona y deselecciona', () => {
     const item: LabelWorklistItem = {
-      labelId: 70010, sampleId: 50060, barcode: '70010', protocolId: 50005, analysisName: 'Glucosa',
+      labelId: 70010, analysisTypeId: 70010, sampleId: 50060, barcode: '70010', protocolId: 50005, analysisName: 'Glucosa',
       patientName: 'Luis Soto', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:05:00Z',
     };
     const fx = setup('procesamiento', [], [], [item]);
@@ -209,7 +209,7 @@ describe('WorklistPage (smoke)', () => {
 
   it('query filtra rows en vivo', () => {
     const item: LabelWorklistItem = {
-      labelId: 70011, sampleId: 50061, barcode: '70011', protocolId: 50005, analysisName: 'Urea',
+      labelId: 70011, analysisTypeId: 70011, sampleId: 50061, barcode: '70011', protocolId: 50005, analysisName: 'Urea',
       patientName: 'Rosa Vera', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:06:00Z',
     };
     const fx = setup('procesamiento', [], [], [item]);
@@ -222,12 +222,12 @@ describe('WorklistPage (smoke)', () => {
   it('Recolección agrupa dos labels del mismo sampleId en UN tubo', () => {
     const items: LabelWorklistItem[] = [
       {
-        labelId: 60010, sampleId: 50010, barcode: '60010', protocolId: 50001,
+        labelId: 60010, analysisTypeId: 60010, sampleId: 50010, barcode: '60010', protocolId: 50001,
         analysisName: 'Hemograma', patientName: 'Juan Pérez', urgent: false,
         status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
       },
       {
-        labelId: 60011, sampleId: 50010, barcode: '60011', protocolId: 50001,
+        labelId: 60011, analysisTypeId: 60011, sampleId: 50010, barcode: '60011', protocolId: 50001,
         analysisName: 'Glucosa', patientName: 'Juan Pérez', urgent: false,
         status: 'COLLECTED', updatedAt: '2026-06-12T10:01:00Z',
       },
@@ -241,12 +241,12 @@ describe('WorklistPage (smoke)', () => {
   it('confirmDialog (backend) despacha transitionLabels con AMBOS labelIds del tubo', async () => {
     const items: LabelWorklistItem[] = [
       {
-        labelId: 60020, sampleId: 50020, barcode: '60020', protocolId: 50001,
+        labelId: 60020, analysisTypeId: 60020, sampleId: 50020, barcode: '60020', protocolId: 50001,
         analysisName: 'Hemograma', patientName: 'Ana García', urgent: false,
         status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
       },
       {
-        labelId: 60021, sampleId: 50020, barcode: '60021', protocolId: 50001,
+        labelId: 60021, analysisTypeId: 60021, sampleId: 50020, barcode: '60021', protocolId: 50001,
         analysisName: 'Colesterol', patientName: 'Ana García', urgent: false,
         status: 'COLLECTED', updatedAt: '2026-06-12T10:01:00Z',
       },
@@ -280,7 +280,7 @@ describe('WorklistPage (smoke)', () => {
   it('confirmDialog (backend) NO muestra toast optimista — espera transitionLabelsSuccess', async () => {
     const items: LabelWorklistItem[] = [
       {
-        labelId: 60030, sampleId: 50030, barcode: '60030', protocolId: 50001,
+        labelId: 60030, analysisTypeId: 60030, sampleId: 50030, barcode: '60030', protocolId: 50001,
         analysisName: 'Hemograma', patientName: 'Pedro Ruiz', urgent: false,
         status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
       },
@@ -302,7 +302,7 @@ describe('WorklistPage (smoke)', () => {
   it('muestra toast de éxito en Recolección cuando llega transitionLabelsSuccess', async () => {
     const items: LabelWorklistItem[] = [
       {
-        labelId: 60040, sampleId: 50040, barcode: '60040', protocolId: 50001,
+        labelId: 60040, analysisTypeId: 60040, sampleId: 50040, barcode: '60040', protocolId: 50001,
         analysisName: 'Glucemia', patientName: 'Laura Díaz', urgent: false,
         status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
       },
@@ -355,7 +355,7 @@ describe('WorklistPage (smoke)', () => {
 
   it('Procesamiento: selectedProtocolIds vacío sin selección, [protocolId] con un tubo', () => {
     const item: LabelWorklistItem = {
-      labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'Hemograma',
+      labelId: 70001, analysisTypeId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'Hemograma',
       patientName: 'Marta', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
     };
     const fx = setup('procesamiento', [], [], [item]);
@@ -367,9 +367,9 @@ describe('WorklistPage (smoke)', () => {
 
   it('Procesamiento: selectedProtocolIds junta protocolIds distintos de varios tubos', () => {
     const items: LabelWorklistItem[] = [
-      { labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'A', patientName: 'M', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z' },
-      { labelId: 70002, sampleId: 50051, barcode: '70002', protocolId: 99, analysisName: 'B', patientName: 'N', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:01:00Z' },
-      { labelId: 70003, sampleId: 50052, barcode: '70003', protocolId: 88, analysisName: 'C', patientName: 'O', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:02:00Z' },
+      { labelId: 70001, analysisTypeId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'A', patientName: 'M', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z' },
+      { labelId: 70002, analysisTypeId: 70002, sampleId: 50051, barcode: '70002', protocolId: 99, analysisName: 'B', patientName: 'N', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:01:00Z' },
+      { labelId: 70003, analysisTypeId: 70003, sampleId: 50052, barcode: '70003', protocolId: 88, analysisName: 'C', patientName: 'O', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:02:00Z' },
     ];
     const fx = setup('procesamiento', [], [], items);
     const cmp = fx.componentInstance;
@@ -379,8 +379,8 @@ describe('WorklistPage (smoke)', () => {
 
   it('Procesamiento: cargarResultados navega con query param protocols (CSV distinto)', () => {
     const items: LabelWorklistItem[] = [
-      { labelId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'A', patientName: 'M', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z' },
-      { labelId: 70002, sampleId: 50051, barcode: '70002', protocolId: 99, analysisName: 'B', patientName: 'N', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:01:00Z' },
+      { labelId: 70001, analysisTypeId: 70001, sampleId: 50050, barcode: '70001', protocolId: 88, analysisName: 'A', patientName: 'M', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z' },
+      { labelId: 70002, analysisTypeId: 70002, sampleId: 50051, barcode: '70002', protocolId: 99, analysisName: 'B', patientName: 'N', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:01:00Z' },
     ];
     const fx = setup('procesamiento', [], [], items);
     const cmp = fx.componentInstance;

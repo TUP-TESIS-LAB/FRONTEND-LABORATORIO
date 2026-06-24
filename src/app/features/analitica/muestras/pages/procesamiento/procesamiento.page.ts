@@ -55,6 +55,9 @@ export class ProcesamientoPage implements OnInit {
   readonly query = signal('');
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());
 
+  // Filas desplegables: detalle de análisis del tubo (ya en memoria via tube.analyses).
+  readonly expanded = signal<ReadonlySet<string>>(new Set());
+
   readonly rows = computed<Tube[]>(() => groupTubes(this.items(), this.branchName() || CURRENT_BRANCH));
   readonly visibleRows = computed<Tube[]>(() => {
     const q = this.query().trim().toLowerCase();
@@ -75,6 +78,18 @@ export class ProcesamientoPage implements OnInit {
   });
   readonly selectedProtocolIds = computed<number[]>(() =>
     [...new Set(this.selectedTubes().map(t => t.protocolId).filter((p): p is number => p != null))]);
+
+  /** Análisis únicos de las muestras seleccionadas (dedup por analysisTypeId). */
+  readonly seedAnalyses = computed<{ analysisTypeId: number; name: string }[]>(() => {
+    const seen = new Set<number>();
+    const out: { analysisTypeId: number; name: string }[] = [];
+    for (const a of this.selectedTubes().flatMap(t => t.analyses)) {
+      if (seen.has(a.analysisTypeId)) continue;
+      seen.add(a.analysisTypeId);
+      out.push({ analysisTypeId: a.analysisTypeId, name: a.name });
+    }
+    return out;
+  });
 
   // --- modales de planillas ---
   readonly planillasOpen = signal(false);
@@ -111,6 +126,17 @@ export class ProcesamientoPage implements OnInit {
   setQuery(q: string): void { this.query.set(q); }
   clearSelection(): void { this.selectedIds.set(new Set()); }
   isSelected(id: string): boolean { return this.selectedIds().has(id); }
+
+  // --- expand de análisis (independiente de la selección) ---
+  isOpen(id: string): boolean { return this.expanded().has(id); }
+  toggleExpand(id: string, ev?: Event): void {
+    ev?.stopPropagation();
+    this.expanded.update(set => {
+      const next = new Set(set);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   toggleRow(id: string): void {
     this.selectedIds.update(set => {

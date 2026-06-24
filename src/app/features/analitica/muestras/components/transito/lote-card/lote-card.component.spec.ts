@@ -20,6 +20,10 @@ const BRANCH_OPTIONS = [
 ];
 const SECTION_OPTIONS: SectionOption[] = [
   { sectionId: 10, sectionName: 'Citometría', areaName: 'Hematología', label: 'Hematología · Citometría' },
+  {
+    sectionId: 30, sectionName: 'Microbiología', areaName: 'Bacteriología',
+    label: 'Bacteriología · Microbiología (→ NORTE)', branchName: 'NORTE', isOtherBranch: true,
+  },
 ];
 
 describe('LoteCardComponent', () => {
@@ -93,6 +97,16 @@ describe('LoteCardComponent', () => {
     obs.nativeElement.value = 'cadena de frío';
     obs.nativeElement.dispatchEvent(new Event('change'));
     expect(patches).toEqual([{ observation: 'cadena de frío' }]);
+  });
+
+  it('el select de sección muestra el label compuesto (incluye sucursal destino cuando es otra)', () => {
+    setInputs({ ...LOTE, branch: 'CENTRAL — Sede Central' });
+    const options = fixture.debugElement.queryAll(
+      By.css('select[aria-label="Sección de destino"] option'),
+    );
+    const texts = options.map(o => (o.nativeElement.textContent as string).trim());
+    expect(texts).toContain('Hematología · Citometría');
+    expect(texts).toContain('Bacteriología · Microbiología (→ NORTE)');
   });
 
   it('cambiar sucursal emite destChange con el id real y resetea la sección', () => {

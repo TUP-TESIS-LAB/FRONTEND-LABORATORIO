@@ -1,13 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { Location } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { humanizeBackendError, type BackendErrorShape } from '@shared/utils/error-messages';
 import { PlanillaGridComponent, type PlanillaSavePayload } from '../../components/planilla-grid/planilla-grid.component';
-import { ResumenResultadosModalComponent, type ResumenItem } from '../../components/resumen-resultados-modal/resumen-resultados-modal.component';
+import { MarcarCompletadasModalComponent, type ResumenMuestra } from '../../components/marcar-completadas-modal/marcar-completadas-modal.component';
 import { PlanillaGridBuilderService } from '../../services/planilla-grid-builder.service';
 import { ResultadosApiService } from '../../services/resultados-api.service';
 import { ProcesamientoProgresoService } from '../../services/procesamiento-progreso.service';
@@ -17,16 +16,19 @@ import type { PlanillaGrid } from '../../models/resultado.model';
   selector: 'app-cargar-resultados',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlanillaGridComponent, ResumenResultadosModalComponent, ToastModule],
+  imports: [PlanillaGridComponent, MarcarCompletadasModalComponent, ToastModule],
   providers: [MessageService],
   templateUrl: './cargar-resultados.page.html',
   styleUrl: './cargar-resultados.page.scss',
 })
 export class CargarResultadosPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
-  private readonly location = inject(Location);
   private readonly builder = inject(PlanillaGridBuilderService);
+
+  /** Ruta de la pantalla de procesamiento (analitica.routes → app.routes 'analitica'). */
+  private static readonly PROCESAMIENTO_ROUTE = '/analitica/procesamiento';
   private readonly resultados = inject(ResultadosApiService);
   private readonly progresoSvc = inject(ProcesamientoProgresoService);
 
@@ -40,26 +42,33 @@ export class CargarResultadosPage {
   /** Resultados que quedaron con TODAS sus determinaciones cargadas (candidatos a mark-ready). */
   private readonly savedResultIds = signal<number[]>([]);
 
-  readonly resumenItems = computed<ResumenItem[]>(() => {
+  readonly resumenItems = computed<ResumenMuestra[]>(() => {
     const g = this.grid();
     if (!g) return [];
-    const items: ResumenItem[] = [];
-    for (const sec of g.sections) {
-      for (const col of g.columns) {
-        // resultId de este protocolo para este análisis (de la primera celda persistible)
-        let resultId: number | null = null;
-        let total = 0, filled = 0;
+    const items: ResumenMuestra[] = [];
+    for (const col of g.columns) {
+      // Agregar las determinaciones persistibles de TODOS los análisis de este protocolo.
+      let total = 0, filled = 0;
+      const resultIds = new Set<number>();
+      for (const sec of g.sections) {
         for (const row of sec.rows) {
           const cell = row.cells[col.protocolId];
           if (!cell || cell.resultId == null || cell.determinationId == null) continue;
-          resultId = cell.resultId;
+          resultIds.add(cell.resultId);
           total++;
           if (cell.value.trim() !== '') filled++;
         }
-        if (resultId == null || total === 0) continue;
-        const status = filled === 0 ? 'sin' : filled === total ? 'completa' : 'parcial';
-        items.push({ resultId, label: `${sec.analysisName} · ${col.label}`, filled, total, status });
       }
+      if (total === 0) continue;
+      const status = filled === 0 ? 'sin' : filled === total ? 'completa' : 'parcial';
+      // En la planilla no hay barcode de muestra: `code` es siempre el protocolo; el paciente va abajo.
+      items.push({
+        protocolId: col.protocolId,
+        code: `Protocolo #${col.protocolId}`,
+        patient: col.patientName,
+        resultIds: [...resultIds],
+        filled, total, status,
+      });
     }
     return items;
   });
@@ -91,16 +100,25 @@ export class CargarResultadosPage {
 
   onMarkCompleted(resultIds: number[]): void {
     this.resumenOpen.set(false);
-    if (resultIds.length === 0) return;
+    if (resultIds.length === 0) { this.goToProcesamiento(); return; }
     forkJoin(resultIds.map(id =>
       this.resultados.markReady(id).pipe(catchError(err => { this.error(err); return of(null); })),
-    )).subscribe(() => this.messages.add({
-      severity: 'success', summary: 'Listo', detail: 'Resultados marcados como completados.', life: 3500,
-    }));
+    )).subscribe(() => {
+      this.messages.add({
+        severity: 'success', summary: 'Listo', detail: 'Resultados marcados como completados.', life: 3500,
+      });
+      // "Marcar completadas": tras completar el markReady, volver a procesamiento.
+      this.goToProcesamiento();
+    });
   }
 
-  resumenClosed(): void { this.resumenOpen.set(false); }
-  back(): void { this.location.back(); }
+  // "Mantener": los valores ya se guardaron en onSave; se deja la label como está y se vuelve a procesamiento.
+  resumenClosed(): void { this.resumenOpen.set(false); this.goToProcesamiento(); }
+  back(): void { this.goToProcesamiento(); }
+
+  private goToProcesamiento(): void {
+    void this.router.navigate([CargarResultadosPage.PROCESAMIENTO_ROUTE]);
+  }
 
   /** Persiste los valores editados en el modelo del grid (para el resumen y re-render). */
   private applyEdits(payload: PlanillaSavePayload[]): void {

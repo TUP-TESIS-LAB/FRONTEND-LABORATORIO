@@ -33,7 +33,7 @@ function installLocalStorageMock(): void {
 }
 
 const ITEM: LabelWorklistItem = {
-  labelId: 70001, sampleId: 80001, barcode: '70001', protocolId: 50002, analysisName: 'Glucemia',
+  labelId: 70001, analysisTypeId: 70001, sampleId: 80001, barcode: '70001', protocolId: 50002, analysisName: 'Glucemia',
   patientName: 'Pedro García', urgent: false, status: 'IN_TRANSIT', updatedAt: '2026-06-12T08:00:00Z',
 };
 
@@ -206,5 +206,56 @@ describe('TransitoPage (store-driven)', () => {
     fixture.detectChanges();
     fixture.destroy();
     expect(stopSpy).toHaveBeenCalled();
+  });
+
+  describe('sectionOptions — label con sucursal destino (fallback inter-sucursal)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function optionsOf(): any[] {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (fixture.componentInstance as any).sectionOptions();
+    }
+
+    it('sección en otra sucursal (branchId destino != actual) → el label incluye la sucursal', () => {
+      const { store } = setup();
+      // sucursal actual = 1001; la sección 10 vive en la sucursal 1002 (NORTE)
+      store.overrideSelector(selectWorkspaces, [{ id: 1, branchId: 1002, areaId: 1, sectionId: 10 }]);
+      store.overrideSelector(selectRouting, {
+        groups: [{
+          workSection: { branchId: 1002, areaId: 1, sectionId: 10, areaName: 'Hematología', sectionName: 'Citometría', branchName: 'NORTE' },
+          assignments: [],
+        }],
+        unresolvable: [],
+      });
+      store.refreshState();
+      fixture.detectChanges();
+      TestBed.flushEffects();
+
+      const opt = optionsOf().find(o => o.sectionId === 10);
+      expect(opt.isOtherBranch).toBe(true);
+      expect(opt.branchName).toBe('NORTE');
+      expect(opt.label).toContain('Citometría');
+      expect(opt.label).toContain('NORTE');
+    });
+
+    it('sección en la sucursal actual → el label NO incluye la sucursal', () => {
+      const { store } = setup();
+      // sucursal actual = 1001; la sección 10 vive en la misma sucursal
+      store.overrideSelector(selectWorkspaces, [{ id: 1, branchId: 1001, areaId: 1, sectionId: 10 }]);
+      store.overrideSelector(selectRouting, {
+        groups: [{
+          workSection: { branchId: 1001, areaId: 1, sectionId: 10, areaName: 'Hematología', sectionName: 'Citometría', branchName: 'CENTRAL' },
+          assignments: [],
+        }],
+        unresolvable: [],
+      });
+      store.refreshState();
+      fixture.detectChanges();
+      TestBed.flushEffects();
+
+      const opt = optionsOf().find(o => o.sectionId === 10);
+      expect(opt.isOtherBranch).toBe(false);
+      expect(opt.label).toBe('Hematología · Citometría');
+      expect(opt.label).not.toContain('CENTRAL');
+    });
   });
 });

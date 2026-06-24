@@ -25,9 +25,9 @@
   }
 
   @if (resumenOpen()) {
-    <app-resumen-resultados-modal
+    <app-marcar-completadas-modal
       [visible]="resumenOpen()" [items]="resumenItems()"
-      (markCompleted)="onMarkCompleted($event)" (closed)="resumenClosed()" />
+      (marcar)="onMarkCompleted($event)" (closed)="resumenClosed()" />
   }
   <p-toast position="bottom-right" />
 </section>
