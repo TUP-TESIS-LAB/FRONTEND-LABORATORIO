@@ -108,8 +108,7 @@ function monthsToYears(months: number | null): number | null {
                 <div class="pat-form__field">
                   <label class="pat-form__label" for="nbu-custom-name">Nombre propio</label>
                   <input id="nbu-custom-name" pInputText type="text" autocomplete="off"
-                         class="pat-form__input" formControlName="customName"
-                         placeholder="Ej: Glucemia en ayunas" />
+                         class="pat-form__input" formControlName="customName" />
                 </div>
                 <div class="pat-form__field" style="grid-column: 1 / -1;">
                   <span class="text-xs text-[var(--ds-text-muted)]">

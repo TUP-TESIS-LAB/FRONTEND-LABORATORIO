@@ -53,6 +53,7 @@ function resumen(over: Partial<ConfigResumen> = {}): ConfigResumen {
     tenantAnalysisId: 9,
     sectionId: 3,
     sectionName: 'Hematología',
+    customName: 'Hemograma propio',
     ayuno: 'Ayuno 8h',
     active: true,
     hasCustomConfig: true,

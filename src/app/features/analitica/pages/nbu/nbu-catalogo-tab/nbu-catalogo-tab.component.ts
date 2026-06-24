@@ -90,11 +90,9 @@ import { NbuConfigDrawerComponent } from '../nbu-config-drawer/nbu-config-drawer
           @if (cfg === null) {
             <span class="text-xs text-[var(--ds-text-muted,#71717a)] italic">Cargando…</span>
           } @else {
-            <div class="text-xs text-[var(--ds-text-muted,#71717a)] flex flex-wrap gap-x-4 gap-y-1">
-              <span>Sección: {{ cfg.sectionName ?? '—' }}</span>
+            <div class="text-sm text-[var(--ds-text-muted,#71717a)] flex flex-wrap gap-x-4 gap-y-1">
+              <span>Nombre propio: {{ cfg.customName ?? '—' }}</span>
               <span>Ayuno: {{ cfg.ayuno ?? '—' }}</span>
-              <span>Estado: {{ cfg.active ? 'Activo' : 'Inactivo' }}</span>
-              <span>Config propia: {{ cfg.hasCustomConfig ? 'Sí' : 'estándar' }}</span>
             </div>
           }
         </div>

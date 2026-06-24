@@ -109,6 +109,7 @@ export class NomencladorEffects {
               tenantAnalysisId: ta?.id ?? null,
               sectionId,
               sectionName,
+              customName: ta?.customName ?? null,
               ayuno: null,
               active: ta?.active ?? false,
               hasCustomConfig: false,
