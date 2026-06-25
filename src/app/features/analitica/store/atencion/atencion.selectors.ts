@@ -28,6 +28,8 @@ export const selectGuardians              = createSelector(selectAtencionState, 
 export const selectGuardiansLoading       = createSelector(selectAtencionState, s => s.guardiansLoading);
 export const selectBondMutating           = createSelector(selectAtencionState, s => s.bondMutating);
 export const selectPendingGuardian        = createSelector(selectGuardians, gs => gs.find(g => g.status === 'CREATED') ?? null);
+// Responsable verificado que gestiona al paciente (el back ya excluye el vínculo PROPIO y los REJECTED).
+export const selectVerifiedGuardian       = createSelector(selectGuardians, gs => gs.find(g => g.status === 'VERIFIED') ?? null);
 
 export const selectFilteredAtenciones = createSelector(
   selectAtencionList,
