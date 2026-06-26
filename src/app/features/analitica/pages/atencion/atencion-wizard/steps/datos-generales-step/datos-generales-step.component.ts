@@ -45,6 +45,7 @@ import {
   selectPatientResolving,
   selectPatientResolutionError,
   selectPendingGuardian,
+  selectVerifiedGuardian,
   selectResolvedPatient,
 } from '../../../../../store/atencion/atencion.selectors';
 import { PatientGuardian } from '../../../../../models/patient-guardian.model';
@@ -206,6 +207,14 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   </span>
                 </div>
 
+                <!-- Motivo de "Sin verificar": se muestra para cualquier paciente no
+                     verificado (no solo los de portal), para que en atención se vea qué falta. -->
+                @if (estado() === 'naranja' && faltaParaVerificar()) {
+                  <div class="flex items-start gap-1 pt-1 text-xs text-surface-500" data-testid="hint-falta-verificar">
+                    <i class="pi pi-info-circle mt-0.5"></i><span>{{ faltaParaVerificar() }}</span>
+                  </div>
+                }
+
                 @if (portalActive() && pendingGuardian(); as g) {
                   <div data-testid="banner-relacion-pendiente" class="ui-estado-naranja" style="display:flex; flex-direction:column; gap:8px; padding:10px 12px; border-radius:8px; margin-top:8px;">
                     <div style="display:flex; align-items:flex-start; gap:8px;">
@@ -261,11 +270,6 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                       [outlined]="true"
                       [disabled]="!puedeVerificar()"
                       (onClick)="marcarVerificado()" />
-                    @if (faltaParaVerificar()) {
-                      <span class="text-xs text-surface-500">
-                        <i class="pi pi-info-circle mr-1"></i>{{ faltaParaVerificar() }}
-                      </span>
-                    }
                   </div>
                 }
 
@@ -279,19 +283,25 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   </div>
                 }
 
-                @if (puedeCrearAcceso()) {
-                  <div class="pt-1">
-                    <p-button data-testid="btn-crear-acceso" label="Crear acceso al portal"
-                              icon="pi pi-user-plus" size="small" (onClick)="crearAccesoPortal()" />
-                  </div>
-                } @else if (p.accountStatus === 'PENDING') {
-                  <div class="flex items-center gap-2 pt-1 text-xs text-surface-500" data-testid="estado-acceso-pendiente">
-                    <i class="pi pi-clock"></i><span>Acceso al portal: pendiente</span>
-                  </div>
-                } @else if (p.accountStatus === 'ACTIVE') {
-                  <div class="flex items-center gap-2 pt-1 text-xs text-green-600" data-testid="estado-acceso-activo">
-                    <i class="pi pi-check-circle"></i><span>Acceso al portal: activo</span>
-                  </div>
+                @if (portalActive()) {
+                  @if (verifiedGuardian(); as g) {
+                    <div class="flex items-center gap-2 pt-1 text-xs text-surface-600" data-testid="estado-gestionado-por">
+                      <i class="pi pi-users"></i><span>Gestionado por {{ g.titularNombre }}</span>
+                    </div>
+                  } @else if (puedeCrearAcceso()) {
+                    <div class="pt-1">
+                      <p-button data-testid="btn-crear-acceso" label="Crear acceso al portal"
+                                icon="pi pi-user-plus" size="small" (onClick)="crearAccesoPortal()" />
+                    </div>
+                  } @else if (p.accountStatus === 'PENDING') {
+                    <div class="flex items-center gap-2 pt-1 text-xs text-surface-500" data-testid="estado-acceso-pendiente">
+                      <i class="pi pi-clock"></i><span>Acceso al portal: pendiente</span>
+                    </div>
+                  } @else if (p.accountStatus === 'ACTIVE') {
+                    <div class="flex items-center gap-2 pt-1 text-xs text-green-600" data-testid="estado-acceso-activo">
+                      <i class="pi pi-check-circle"></i><span>Acceso al portal: activo</span>
+                    </div>
+                  }
                 }
               </div>
             } @else {
@@ -530,6 +540,7 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected readonly notFoundDni      = this.store.selectSignal(selectPatientNotFoundDni);
   protected readonly resolutionError  = this.store.selectSignal(selectPatientResolutionError);
   protected readonly pendingGuardian = this.store.selectSignal(selectPendingGuardian);
+  protected readonly verifiedGuardian = this.store.selectSignal(selectVerifiedGuardian);
   protected readonly bondMutating    = this.store.selectSignal(selectBondMutating);
   private lastGuardiansPatientId: number | null = null;
 
@@ -656,7 +667,9 @@ export class DatosGeneralesStepComponent implements OnInit {
     const p = this.resolved();
     // El email ya no es condición para mostrar el botón: el diálogo gestiona ambas ramas
     // (propio → requiere email; responsable → no lo requiere).
-    return !!p && !this.readOnly() && p.accountStatus === 'NONE';
+    // Si ya hay un responsable verificado gestionando al paciente, no se ofrece crear acceso
+    // (se muestra "Gestionado por" en su lugar).
+    return !!p && !this.readOnly() && p.accountStatus === 'NONE' && !this.verifiedGuardian();
   });
 
   // ── Verify gate ────────────────────────────────────────────────────────────

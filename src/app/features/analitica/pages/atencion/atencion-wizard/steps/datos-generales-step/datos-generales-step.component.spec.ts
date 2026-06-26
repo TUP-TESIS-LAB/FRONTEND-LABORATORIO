@@ -540,6 +540,29 @@ describe('DatosGeneralesStepComponent', () => {
     expect((fixture.componentInstance as any).puedeVerificar()).toBe(false);
   });
 
+  it('hint-falta-verificar visible para paciente STAFF sin verificar (no solo portal) e indica qué falta', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: {
+          id: 12, dni: '12', firstName: 'A', lastName: 'B',
+          birthDate: '1990-01-01', gender: 'MALE', sexAtBirth: 'MALE',
+          verifiedAt: null, source: 'STAFF',
+          coverages: [], contacts: [], addresses: [],
+        } as any,
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const hint = fixture.nativeElement.querySelector('[data-testid="hint-falta-verificar"]');
+    expect(hint).toBeTruthy();
+    expect(hint.textContent).toContain('Falta una cobertura activa');
+  });
+
   // ── altaValida: todos los campos obligatorios (plan/N° afiliado salvo Particular) ──
 
   function fullAltaForm(over: Record<string, unknown> = {}) {
@@ -876,6 +899,26 @@ describe('DatosGeneralesStepComponent', () => {
     expect(btn).toBeTruthy();
   });
 
+  it('2B: con responsable VERIFIED muestra "Gestionado por" y oculta btn-crear-acceso', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: PATIENT_NO_EMAIL,
+        guardians: [{ userPatientId: 7, titularNombre: 'Carlos García', titularDni: '30123456', bond: 'PADRE', status: 'VERIFIED' }],
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]')).toBeNull();
+    const gestionado = fixture.nativeElement.querySelector('[data-testid="estado-gestionado-por"]');
+    expect(gestionado).toBeTruthy();
+    expect(gestionado.textContent).toContain('Carlos García');
+  });
+
   it('A7→2B: click en btn-crear-acceso abre el diálogo (portalDialogVisible true), NO despacha directo', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
@@ -1104,5 +1147,26 @@ describe('DatosGeneralesStepComponent — B2: banner relacion gateado por PORTAL
     fixture.detectChanges();
     const banner = fixture.nativeElement.querySelector('[data-testid="banner-relacion-pendiente"]');
     expect(banner).toBeNull();
+  });
+
+  it('btn-crear-acceso NO se renderiza cuando PORTAL inactivo (aunque accountStatus=NONE + email)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: {
+          id: 99, dni: '99999999', firstName: 'Dep', lastName: 'Paciente',
+          accountStatus: 'NONE', coverages: [], addresses: [],
+          contacts: [{ contactType: 'EMAIL', contactValue: 'dep@mail.com', active: true }],
+        } as any,
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]');
+    expect(btn).toBeNull();
   });
 });
