@@ -19,9 +19,8 @@ import * as S from './store/sacar-turno.selectors';
 
 const STEPS: FormStep[] = [
   { key: 'paciente', title: 'Paciente', subtitle: 'Buscar o alta' },
-  { key: 'tipos', title: 'Análisis', subtitle: 'Qué se realiza' },
-  { key: 'sucursal', title: 'Sucursal', subtitle: 'Dónde' },
-  { key: 'fecha', title: 'Fecha y hora', subtitle: 'Cuándo' },
+  { key: 'analisis', title: 'Análisis', subtitle: 'Opcional' },
+  { key: 'turno', title: 'Sucursal y horario', subtitle: 'Dónde y cuándo' },
   { key: 'confirmar', title: 'Confirmar', subtitle: 'Revisar' },
 ];
 
@@ -92,9 +91,10 @@ export class SacarTurnoPage {
   protected readonly canProceed = computed(() => {
     switch (this.currentKey()) {
       case 'paciente': return this.selectedPatient() !== null;
-      case 'tipos': return this.selectedTipoIds().length > 0;
-      case 'sucursal': return this.selectedBranchId() !== null;
-      case 'fecha': return this.selectedFecha() !== null && this.selectedHora() !== null;
+      // Opcional: el análisis definitivo se confirma en la atención (puede ir sin análisis).
+      case 'analisis': return true;
+      case 'turno': return this.selectedBranchId() !== null
+        && this.selectedFecha() !== null && this.selectedHora() !== null;
       case 'confirmar': return true;
       default: return false;
     }
@@ -203,6 +203,10 @@ export class SacarTurnoPage {
     const scheduledAt = new Date(fecha);
     scheduledAt.setHours(hh, mm, 0, 0);
 
+    // El análisis es opcional: si no se eligió ninguno, se reserva sin
+    // determinaciones (el detalle se define en la atención).
+    // TODO(futuro): que un paciente con turno facilite la atención pre-cargando
+    // estos análisis en el alta de atención (hoy no se propagan).
     // Resolver determinationIds desde los tipos elegidos (sin duplicados).
     const tiposMap = new Map(this.tipos().map(t => [t.id, t]));
     const detIds: number[] = [];
