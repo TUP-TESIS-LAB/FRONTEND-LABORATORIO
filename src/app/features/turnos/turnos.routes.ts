@@ -18,6 +18,9 @@ import { agendaConfigResolver } from './resolvers/agenda-config.resolver';
 import { BOX_OCCUPATION_FEATURE_KEY } from './box-occupation/store/box-occupation.state';
 import { boxOccupationReducer } from './box-occupation/store/box-occupation.reducer';
 import { BoxOccupationEffects } from './box-occupation/store/box-occupation.effects';
+import { SACAR_TURNO_FEATURE_KEY } from './sacar-turno/store/sacar-turno.state';
+import { sacarTurnoReducer } from './sacar-turno/store/sacar-turno.reducer';
+import { SacarTurnoEffects } from './sacar-turno/store/sacar-turno.effects';
 
 export const TURNOS_ROUTES: Routes = [
   {
@@ -33,6 +36,16 @@ export const TURNOS_ROUTES: Routes = [
     children: [
       { path: '', redirectTo: 'agenda', pathMatch: 'full' },
       { path: 'agenda',         loadComponent: () => import('./pages/agenda/agenda.component').then(m => m.AgendaComponent) },
+      {
+        // Sacar turno en nombre del paciente (secretaria). Gateado por módulo
+        // Turnos vía el canMatch del padre en app.routes. Store propia scopeada.
+        path: 'sacar',
+        providers: [
+          provideState(SACAR_TURNO_FEATURE_KEY, sacarTurnoReducer),
+          provideEffects([SacarTurnoEffects]),
+        ],
+        loadComponent: () => import('./sacar-turno/sacar-turno.page').then(m => m.SacarTurnoPage),
+      },
       {
         path: 'configuracion',
         children: [
