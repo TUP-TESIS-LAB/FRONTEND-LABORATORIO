@@ -39,12 +39,11 @@ const SEXOS: Array<{ label: string; value: SexAtBirth }> = [
       <div class="max-w-xl mx-auto">
         <h2 class="text-lg font-semibold mb-1 text-center">Paciente del turno</h2>
         <div class="mt-3 rounded-xl border border-primary bg-primary-50 p-4 flex items-center gap-3">
-          <i class="pi pi-user text-primary text-xl"></i>
           <div class="flex-1">
             <div class="font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
             <div class="text-sm text-surface-500">DNI {{ p.dni }}</div>
           </div>
-          <p-button label="Cambiar" icon="pi pi-times" severity="secondary" [text]="true"
+          <p-button label="Cambiar" severity="secondary" [text]="true"
                     (onClick)="clearSelection.emit()" />
         </div>
       </div>
@@ -103,7 +102,7 @@ const SEXOS: Array<{ label: string; value: SexAtBirth }> = [
             </div>
           </div>
           <div class="mt-4 flex justify-end">
-            <p-button type="submit" label="Dar de alta y usar" icon="pi pi-user-plus"
+            <p-button type="submit" label="Dar de alta y usar"
                       [loading]="creating()" [disabled]="form.invalid" />
           </div>
         </form>

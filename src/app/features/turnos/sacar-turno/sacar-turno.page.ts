@@ -58,6 +58,9 @@ const STEPS: FormStep[] = [
       }
     }
     .st-footer { border-top: 1px solid var(--ds-border); }
+    /* Alinear el texto de las opciones del select con el del trigger: PrimeNG
+       insetea la lista 4px y eso desplaza las opciones ~5px a la derecha. */
+    :host ::ng-deep .p-select-overlay .p-select-list { padding-left: 0; padding-right: 0; }
   `],
 })
 export class SacarTurnoPage {
@@ -217,7 +220,9 @@ export class SacarTurnoPage {
     const branchId = this.selectedBranchId();
     const fecha = this.selectedFecha();
     const hora = this.selectedHora();
-    if (!patient || branchId == null || !fecha || !hora || this.selectedTipoIds().length === 0) return;
+    // El análisis es OPCIONAL: no se exige selectedTipoIds (puede ir vacío; el
+    // detalle se define en la atención). Solo paciente + sucursal + fecha + hora.
+    if (!patient || branchId == null || !fecha || !hora) return;
 
     const [hh, mm] = hora.split(':').map(Number);
     const scheduledAt = new Date(fecha);
