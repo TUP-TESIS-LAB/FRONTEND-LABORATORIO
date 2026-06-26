@@ -3,10 +3,9 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
-import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { FormStep } from '@shared/ui/models/form-step';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { Patient } from '@features/pacientes/models/patient.model';
@@ -31,10 +30,9 @@ const STEPS: FormStep[] = [
   imports: [
     DatePipe,
     FormsModule,
-    ButtonModule,
     SelectModule,
     ToastModule,
-    FormStepperHeaderComponent,
+    WizardShellComponent,
     StepPacienteComponent,
     StepTiposComponent,
     StepFechaComponent,
@@ -69,7 +67,6 @@ export class SacarTurnoPage {
   protected readonly selectedHora = signal<string | null>(null);
 
   protected readonly currentKey = computed(() => this.steps[this.currentStep()]?.key);
-  protected readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
 
   // El backend exige fecha >= hoy + 2 días.
   protected readonly minBookingDate = (() => {
@@ -133,17 +130,19 @@ export class SacarTurnoPage {
     });
   }
 
-  // ── Navegación ──────────────────────────────────────
+  // ── Navegación (el footer del wizard-shell maneja Atrás/Cancelar/Finalizar) ──
   onNext(): void {
-    if (this.isLastStep()) { this.onConfirm(); return; }
     const next = this.currentStep() + 1;
     this.currentStep.set(next);
     this.visited.update(v => new Set(v).add(next));
   }
 
   onBack(): void {
-    if (this.currentStep() === 0) { this.router.navigate(['/turnos/agenda']); return; }
-    this.currentStep.set(this.currentStep() - 1);
+    this.currentStep.set(Math.max(0, this.currentStep() - 1));
+  }
+
+  onCancel(): void {
+    this.router.navigate(['/turnos/agenda']);
   }
 
   onStepSelected(i: number): void {
