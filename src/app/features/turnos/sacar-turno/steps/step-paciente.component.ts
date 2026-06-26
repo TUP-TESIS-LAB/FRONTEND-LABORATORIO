@@ -34,34 +34,40 @@ const SEXOS: Array<{ label: string; value: SexAtBirth }> = [
     PatientSearchAutocompleteComponent,
   ],
   template: `
-    <h2 class="text-lg font-semibold mb-1">¿A quién es el turno?</h2>
-    <p class="text-sm text-surface-500 mb-4">Buscá al paciente por nombre o DNI. Si no está, podés darlo de alta.</p>
-
     @if (selectedPatient(); as p) {
       <!-- Paciente ya seleccionado -->
-      <div class="rounded-xl border border-primary bg-primary-50 p-4 flex items-center gap-3">
-        <i class="pi pi-user text-primary text-xl"></i>
-        <div class="flex-1">
-          <div class="font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
-          <div class="text-sm text-surface-500">DNI {{ p.dni }}</div>
+      <div class="max-w-xl mx-auto">
+        <h2 class="text-lg font-semibold mb-1 text-center">Paciente del turno</h2>
+        <div class="mt-3 rounded-xl border border-primary bg-primary-50 p-4 flex items-center gap-3">
+          <i class="pi pi-user text-primary text-xl"></i>
+          <div class="flex-1">
+            <div class="font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
+            <div class="text-sm text-surface-500">DNI {{ p.dni }}</div>
+          </div>
+          <p-button label="Cambiar" icon="pi pi-times" severity="secondary" [text]="true"
+                    (onClick)="clearSelection.emit()" />
         </div>
-        <p-button label="Cambiar" icon="pi pi-times" severity="secondary" [text]="true"
-                  (onClick)="clearSelection.emit()" />
       </div>
-    } @else {
-      <!-- Búsqueda -->
-      <pat-search-autocomplete (selected)="patientSelected.emit($event)" />
-
-      @if (!showAlta) {
+    } @else if (!showAlta) {
+      <!-- Búsqueda (centrada: el paso funciona como buscador) -->
+      <div class="max-w-xl mx-auto text-center py-4">
+        <h2 class="text-lg font-semibold mb-1">¿A quién es el turno?</h2>
+        <p class="text-sm text-surface-500 mb-5">Buscá al paciente por nombre o DNI. Si no está, podés darlo de alta.</p>
+        <div class="sacar-pac-search">
+          <pat-search-autocomplete (selected)="patientSelected.emit($event)" />
+        </div>
         <div class="mt-4 text-sm">
           <span class="text-surface-500">¿El paciente no está registrado?</span>
-          <button type="button" class="text-primary font-medium ml-1" (click)="showAlta = true">
+          <button type="button" class="text-primary font-medium ml-1 hover:underline" (click)="showAlta = true">
             Darlo de alta
           </button>
         </div>
-      } @else {
+      </div>
+    } @else {
+      <div class="max-w-xl mx-auto">
+        <h2 class="text-lg font-semibold mb-1 text-center">Alta de paciente</h2>
         <!-- Alta rápida -->
-        <form class="mt-5 rounded-xl border border-surface-200 p-4" [formGroup]="form" (ngSubmit)="submitAlta()">
+        <form class="mt-3 rounded-xl border border-surface-200 p-4" [formGroup]="form" (ngSubmit)="submitAlta()">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-medium">Alta rápida de paciente</h3>
             <p-button label="Cancelar" severity="secondary" [text]="true" size="small"
@@ -101,9 +107,15 @@ const SEXOS: Array<{ label: string; value: SexAtBirth }> = [
                       [loading]="creating()" [disabled]="form.invalid" />
           </div>
         </form>
-      }
+      </div>
     }
   `,
+  styles: [`
+    /* El autocomplete (componente compartido) ocupa todo el ancho del contenedor
+       centrado, así el placeholder "Buscar por nombre o DNI…" se ve completo. */
+    .sacar-pac-search ::ng-deep .p-autocomplete { width: 100%; display: block; }
+    .sacar-pac-search ::ng-deep .p-autocomplete-input { width: 100%; }
+  `],
 })
 export class StepPacienteComponent {
   private readonly fb = inject(FormBuilder);

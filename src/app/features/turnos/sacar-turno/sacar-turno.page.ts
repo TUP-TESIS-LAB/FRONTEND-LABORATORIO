@@ -3,9 +3,10 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
-import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
+import { FormStepperHeaderComponent } from '@shared/ui/components/form-stepper-header/form-stepper-header.component';
 import { FormStep } from '@shared/ui/models/form-step';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { Patient } from '@features/pacientes/models/patient.model';
@@ -30,14 +31,34 @@ const STEPS: FormStep[] = [
   imports: [
     DatePipe,
     FormsModule,
+    ButtonModule,
     SelectModule,
     ToastModule,
-    WizardShellComponent,
+    FormStepperHeaderComponent,
     StepPacienteComponent,
     StepTiposComponent,
     StepFechaComponent,
   ],
   templateUrl: './sacar-turno.page.html',
+  styles: [`
+    /* Full-bleed: negamos el padding que el AdminShell aplica al content, para
+       que el stepper header y el footer lleguen borde a borde y queden fijos
+       (el body es el único que scrollea). Mismo enfoque que ui-wizard-shell. */
+    :host {
+      display: block;
+      min-height: 0;
+      overflow: hidden;
+      margin: calc(-1 * var(--space-6));
+      height: calc(100% + var(--space-6) * 2);
+    }
+    @media (max-width: 767px) {
+      :host {
+        margin: calc(-1 * var(--space-4));
+        height: calc(100% + var(--space-4) * 2);
+      }
+    }
+    .st-footer { border-top: 1px solid var(--ds-border); }
+  `],
 })
 export class SacarTurnoPage {
   private readonly store = inject(Store);

@@ -40,6 +40,8 @@ export const TURNOS_ROUTES: Routes = [
         // Sacar turno en nombre del paciente (secretaria). Gateado por módulo
         // Turnos vía el canMatch del padre en app.routes. Store propia scopeada.
         path: 'sacar',
+        title: 'Sacar turno',
+        data: { breadcrumb: 'Sacar turno' },
         providers: [
           provideState(SACAR_TURNO_FEATURE_KEY, sacarTurnoReducer),
           provideEffects([SacarTurnoEffects]),
