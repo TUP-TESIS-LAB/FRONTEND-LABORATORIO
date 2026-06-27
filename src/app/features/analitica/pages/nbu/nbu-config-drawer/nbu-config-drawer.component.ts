@@ -2,7 +2,7 @@ import {
   ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges,
   inject, signal,
 } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DrawerModule } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -11,6 +11,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { AccordionModule } from 'primeng/accordion';
 import { ToastModule } from 'primeng/toast';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { MessageService } from 'primeng/api';
 import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -72,8 +73,8 @@ function monthsToYears(months: number | null): number | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MessageService],
   imports: [
-    ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, InputNumberModule,
-    TextareaModule, SelectModule, AccordionModule, ToastModule,
+    FormsModule, ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, InputNumberModule,
+    TextareaModule, SelectModule, AccordionModule, ToastModule, ToggleSwitchModule,
   ],
   template: `
     <p-drawer
@@ -110,11 +111,14 @@ function monthsToYears(months: number | null): number | null {
                   <input id="nbu-custom-name" pInputText type="text" autocomplete="off"
                          class="pat-form__input" formControlName="customName" />
                 </div>
-                <div class="pat-form__field" style="grid-column: 1 / -1;">
+                <div class="pat-form__field flex items-center gap-2" style="grid-column: 1 / -1;">
+                  <p-toggleswitch [ngModel]="active()" [ngModelOptions]="{ standalone: true }"
+                                  (ngModelChange)="onToggleActive($event)" inputId="nbu-active" />
+                  <label for="nbu-active" class="pat-form__label" style="margin:0;">
+                    {{ active() ? 'Análisis activo' : 'Análisis inactivo' }}
+                  </label>
                   <span class="text-xs text-[var(--ds-text-muted)]">
-                    Estado: {{ active() ? 'Activo' : 'Inactivo' }}
-                    · Cód. NBU: {{ analysis?.nbuCode ?? '—' }}
-                    · Familia: {{ analysis?.familyName ?? '—' }}
+                    · Cód. NBU: {{ analysis?.nbuCode ?? '—' }} · Familia: {{ analysis?.familyName ?? '—' }}
                   </span>
                 </div>
               </div>
@@ -298,6 +302,34 @@ export class NbuConfigDrawerComponent implements OnChanges {
 
   protected onAyunoInput(event: Event): void {
     this.ayuno.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected onToggleActive(next: boolean): void {
+    if (!this.analysis) return;
+    const shortCode = (this.generalForm.controls.shortCode.value ?? '').trim();
+    if (next && shortCode.length === 0) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Falta el código interno',
+        detail: 'Ingresá el código interno antes de activar el análisis.',
+      });
+      return;  // no flipear el estado
+    }
+    const customName = (this.generalForm.controls.customName.value ?? '').trim() || null;
+    const prev = this.active();
+    this.active.set(next);
+    this.nbuConfig.setActivation(this.analysis.id, next, shortCode, customName).subscribe({
+      next: () => this.messageService.add({
+        severity: 'success', summary: next ? 'Análisis activado' : 'Análisis desactivado',
+        detail: 'El cambio se guardó correctamente.',
+      }),
+      error: () => {
+        this.active.set(prev);  // revertir
+        this.messageService.add({
+          severity: 'error', summary: 'Error',
+          detail: 'No se pudo cambiar el estado del análisis. Intentá de nuevo.',
+        });
+      },
+    });
   }
 
   // ── Carga ────────────────────────────────────────────────────────────────────

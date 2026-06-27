@@ -3,10 +3,11 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture } from '@angular/core/testing';
+import { of } from 'rxjs';
 
 import { NbuConfigDrawerComponent } from './nbu-config-drawer.component';
 import { CatalogRow } from '../../../models/nomenclador.model';
-import { DeterminationOverride } from '../../../services/nbu-config-api.service';
+import { DeterminationOverride, NbuConfigApiService } from '../../../services/nbu-config-api.service';
 
 function catalogRow(over: Partial<CatalogRow> = {}): CatalogRow {
   return {
@@ -239,5 +240,24 @@ describe('NbuConfigDrawerComponent', () => {
     cmp.onSave();
 
     http.verify(); // no debe haber mutaciones: la validación bloqueó
+  });
+
+  it('onToggleActive(true) llama setActivation con catalogId, active y shortCode', () => {
+    const { fixture } = setup();
+    const api = TestBed.inject(NbuConfigApiService);
+    const setActivation = vi.spyOn(api, 'setActivation').mockReturnValue(of(undefined));
+    const component = fixture.componentInstance as unknown as {
+      analysis: CatalogRow | null;
+      generalForm: { controls: { shortCode: { setValue(v: string): void }; customName: { value: string | null } } };
+      active: { set(v: boolean): void };
+      onToggleActive(v: boolean): void;
+    };
+    component.analysis = { id: 100, name: 'Glucemia' } as unknown as CatalogRow;
+    component.generalForm.controls.shortCode.setValue('GLU');
+    component.active.set(false);
+
+    component.onToggleActive(true);
+
+    expect(setActivation).toHaveBeenCalledWith(100, true, 'GLU', null);
   });
 });
