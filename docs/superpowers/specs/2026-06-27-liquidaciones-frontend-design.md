@@ -1,6 +1,6 @@
 # Liquidaciones (frontend) — Design / Spec
 
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-141](https://exequielsantoro.atlassian.net/browse/KAN-141)
 > **Branch:** `feat/liquidaciones-frontend`
 > **Fecha:** 2026-06-27
 > **Brief:** `mockups/dispatch/04-liquidaciones-fe.md`
