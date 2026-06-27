@@ -1,4 +1,4 @@
-import { CatalogRow, Determination, NbuVersion, ParticularPricing } from '../models/nomenclador.model';
+import { CatalogRow, ConfigResumen, Determination, NbuVersion, ParticularPricing } from '../models/nomenclador.model';
 import {
   NOMENCLADOR_FEATURE_KEY,
   NomencladorFeatureState,
@@ -12,6 +12,7 @@ import {
   selectCatalogRows,
   selectParticularRows,
   selectDeterminations,
+  selectConfigResumen,
   selectPrecioParticular,
 } from './nomenclador/nomenclador.selectors';
 
@@ -45,6 +46,19 @@ function pricing(over: Partial<ParticularPricing> = {}): ParticularPricing {
 
 function determination(over: Partial<Determination> = {}): Determination {
   return { id: 1, name: 'Glóbulos rojos', ...over };
+}
+
+function resumen(over: Partial<ConfigResumen> = {}): ConfigResumen {
+  return {
+    tenantAnalysisId: 9,
+    sectionId: 3,
+    sectionName: 'Hematología',
+    customName: 'Hemograma propio',
+    ayuno: 'Ayuno 8h',
+    active: true,
+    hasCustomConfig: true,
+    ...over,
+  };
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────
@@ -222,6 +236,28 @@ describe('nomenclador selectors', () => {
       const state = stateWith({ determinationsByAnalysis: { 1: dets1, 2: dets2 } });
       expect(selectDeterminations(1)(state)).toEqual(dets1);
       expect(selectDeterminations(2)(state)).toEqual(dets2);
+    });
+  });
+
+  // ── selectConfigResumen (factory) ─────────────────────────────────────────
+  describe('selectConfigResumen', () => {
+    it('devuelve null cuando el analysisId no fue cargado aún', () => {
+      const result = selectConfigResumen(1)(stateWith({ configByAnalysis: {} }));
+      expect(result).toBeNull();
+    });
+
+    it('devuelve el resumen del slice cuando está cargado', () => {
+      const r = resumen();
+      const result = selectConfigResumen(1)(stateWith({ configByAnalysis: { 1: r } }));
+      expect(result).toEqual(r);
+    });
+
+    it('no mezcla resúmenes de distintos analysisId', () => {
+      const r1 = resumen({ tenantAnalysisId: 11, sectionName: 'Hematología' });
+      const r2 = resumen({ tenantAnalysisId: 22, sectionName: 'Bioquímica' });
+      const state = stateWith({ configByAnalysis: { 1: r1, 2: r2 } });
+      expect(selectConfigResumen(1)(state)).toEqual(r1);
+      expect(selectConfigResumen(2)(state)).toEqual(r2);
     });
   });
 

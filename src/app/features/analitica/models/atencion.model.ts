@@ -151,6 +151,7 @@ export interface Analysis {
   familyName: string | null;
   ubCount: number | null; // unidades bioquímicas; null si no configurado
   cantidadUb?: number | null; // campo real del backend (AnalysisResponse.cantidadUb)
+  nbuCode?: string | null; // código NBU nacional (AnalysisResponse.nbuCode)
 }
 
 export interface AnalysisDetail extends Analysis {

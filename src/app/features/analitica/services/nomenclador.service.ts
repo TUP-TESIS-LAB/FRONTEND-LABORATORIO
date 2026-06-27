@@ -35,7 +35,7 @@ export class NomencladorService {
     return this.analysis.list(200).pipe(
       map(list => list.map(a => ({
         id: a.id, shortCode: a.shortCode, name: a.name, familyName: a.familyName,
-        nbuCode: null,            // el list no trae nbuCode; se completa al expandir (getDeterminations vía /analysis/{id})
+        nbuCode: a.nbuCode ?? null,  // el listado ya trae el código NBU (AnalysisResponse.nbuCode)
         cantidadUb: a.cantidadUb ?? a.ubCount ?? null,  // real (backend manda cantidadUb); null si no configurado
       }))),
     );
