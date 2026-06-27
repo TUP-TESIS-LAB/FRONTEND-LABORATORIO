@@ -80,16 +80,16 @@ type Modal = 'informar' | 'anular' | null;
 
         @if (isAdmin() && l.status === 'PENDING') {
           <div class="liq-actions">
-            <button class="fin-btn fin-btn--success" type="button" data-testid="btn-informar" (click)="modal.set('informar')">
+            <button class="fin-btn fin-btn--success" type="button" data-testid="btn-informar" [disabled]="lifecycleInProgress()" (click)="modal.set('informar')">
               <i class="pi pi-check"></i> Informar
             </button>
-            <button class="fin-btn fin-btn--danger" type="button" data-testid="btn-anular" (click)="modal.set('anular')">
+            <button class="fin-btn fin-btn--danger" type="button" data-testid="btn-anular" [disabled]="lifecycleInProgress()" (click)="modal.set('anular')">
               <i class="pi pi-times"></i> Anular
             </button>
           </div>
         } @else if (isAdmin() && l.status === 'INFORMED') {
           <div class="liq-actions">
-            <button class="fin-btn fin-btn--danger" type="button" data-testid="btn-anular" (click)="modal.set('anular')">
+            <button class="fin-btn fin-btn--danger" type="button" data-testid="btn-anular" [disabled]="lifecycleInProgress()" (click)="modal.set('anular')">
               <i class="pi pi-times"></i> Anular
             </button>
           </div>

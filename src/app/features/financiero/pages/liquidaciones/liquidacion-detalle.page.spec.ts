@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { provideMockStore, MockStore } from '@ngrx/store/testing';
+import { provideMockStore } from '@ngrx/store/testing';
 import { LiquidacionDetallePage } from './liquidacion-detalle.page';
 import {
   selectLiqSelected, selectLiqDetailLoading, selectLiqDetailError,
@@ -11,6 +11,8 @@ import {
 } from '../../store/financiero.selectors';
 import { TokenService } from '@core/auth/token.service';
 import { SettlementDetail } from '../../models/liquidaciones.model';
+import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidacion-pill.component';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 
 const detail: SettlementDetail = {
   id: 1, insurerId: 7, settlementNumber: 100, status: 'PENDING', type: 'SIMPLE',
@@ -18,35 +20,6 @@ const detail: SettlementDetail = {
   paymentId: null, createdAt: '2026-02-01T10:00:00',
   plans: [{ planId: 3, agreements: [{ agreementId: 9, agreementSubtotal: 1500, providedServiceIds: [1, 2], rules: [] }] }],
 };
-
-/**
- * Minimal template that exercises only the action-gating logic (isAdmin + status).
- * Uses overrideTemplate to avoid NG0950 from input.required() in
- * EstadoLiquidacionPillComponent and PrimeNG/signal rendering issues in JSDOM.
- * Pattern established in cobros.page.spec.ts and liquidaciones-list.page.spec.ts.
- */
-const minimalTemplate = `
-  <div class="fin-liq-det">
-    @if (liq(); as l) {
-      @if (isAdmin() && l.status === 'PENDING') {
-        <div class="liq-actions">
-          <button class="fin-btn fin-btn--success" type="button" data-testid="btn-informar" (click)="modal.set('informar')">
-            Informar
-          </button>
-          <button class="fin-btn fin-btn--danger" type="button" data-testid="btn-anular" (click)="modal.set('anular')">
-            Anular
-          </button>
-        </div>
-      } @else if (isAdmin() && l.status === 'INFORMED') {
-        <div class="liq-actions">
-          <button class="fin-btn fin-btn--danger" type="button" data-testid="btn-anular" (click)="modal.set('anular')">
-            Anular
-          </button>
-        </div>
-      }
-    }
-  </div>
-`;
 
 function setup(status: SettlementDetail['status'], roles: string[]) {
   return TestBed.configureTestingModule({
@@ -67,7 +40,8 @@ function setup(status: SettlementDetail['status'], roles: string[]) {
       }),
     ],
   })
-    .overrideTemplate(LiquidacionDetallePage, minimalTemplate)
+    .overrideComponent(EstadoLiquidacionPillComponent, { set: { template: '<span></span>' } })
+    .overrideComponent(PageHeaderComponent, { set: { template: '<ng-content />' } })
     .compileComponents();
 }
 
