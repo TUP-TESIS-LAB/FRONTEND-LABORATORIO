@@ -90,6 +90,11 @@ export const setAuthorizationNumber        = createAction('[Atencion Resumen] Se
 export const setAuthorizationNumberSuccess = createAction('[Atencion API] Set Authorization Number Success', props<{ item: AttentionResponse }>());
 export const setAuthorizationNumberFailure = createAction('[Atencion API] Set Authorization Number Failure', props<{ error: HttpErrorResponse }>());
 
+// Urgent flag (KAN-140) — marca urgente desde recepción (gateado por URGENCIAS) -
+export const setUrgentFlag        = createAction('[Atencion Wizard] Set Urgent Flag',        props<{ id: number; isUrgent: boolean }>());
+export const setUrgentFlagSuccess = createAction('[Atencion API] Set Urgent Flag Success',   props<{ item: AttentionResponse }>());
+export const setUrgentFlagFailure = createAction('[Atencion API] Set Urgent Flag Failure',   props<{ error: HttpErrorResponse }>());
+
 // Remove analysis from resumen (B3c) -------------------------------------------
 export const removeAnalysisFromResumen = createAction(
   '[Atencion Resumen] Remove Analysis',

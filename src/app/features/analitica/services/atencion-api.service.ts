@@ -88,4 +88,8 @@ export class AtencionApiService {
   setAuthorizationNumber(id: number, body: SetAuthorizationNumberRequest): Observable<AttentionResponse> {
     return this.http.patch<AttentionResponse>(`${this.base}/${id}/authorization-number`, body);
   }
+
+  setUrgentFlag(id: number, isUrgent: boolean): Observable<AttentionResponse> {
+    return this.http.patch<AttentionResponse>(`${this.base}/${id}/urgent`, { isUrgent });
+  }
 }

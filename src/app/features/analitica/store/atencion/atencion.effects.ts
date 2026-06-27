@@ -68,6 +68,9 @@ import {
   registerGuardian,
   registerGuardianSuccess,
   registerGuardianFailure,
+  setUrgentFlag,
+  setUrgentFlagSuccess,
+  setUrgentFlagFailure,
 } from './atencion.actions';
 
 /**
@@ -520,6 +523,22 @@ export class AtencionEffects {
           catchError((error: HttpErrorResponse) => {
             this.notification.error('No se pudo quitar el análisis. Revisá la conexión y volvé a intentarlo.');
             return of(removeAnalysisFromResumenFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
+
+  /** Marcar/desmarcar urgente desde recepción (KAN-140, gateado por módulo URGENCIAS en el BE). */
+  setUrgentFlag$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(setUrgentFlag),
+      concatMap(({ id, isUrgent }) =>
+        this.api.setUrgentFlag(id, isUrgent).pipe(
+          map(item => setUrgentFlagSuccess({ item })),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo actualizar la marca de urgente. Revisá la conexión y volvé a intentarlo.');
+            return of(setUrgentFlagFailure({ error }));
           }),
         )
       )
