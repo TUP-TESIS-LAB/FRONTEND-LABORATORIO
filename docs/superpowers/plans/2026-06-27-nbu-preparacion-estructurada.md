@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **Spec:** `docs/superpowers/specs/2026-06-27-nbu-preparacion-estructurada-design.md`
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-142](https://exequielsantoro.atlassian.net/browse/KAN-142)
 
 **Goal:** Reemplazar la preparación del paciente de texto libre por un modelo estructurado por determinación, con cómputo a nivel orden (capacidad BE) y un toggle de activación del análisis en el drawer de NBU.
 

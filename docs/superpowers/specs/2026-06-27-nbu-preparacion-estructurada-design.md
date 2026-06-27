@@ -4,7 +4,7 @@
 > **Branch:** `feat/nbu-preparacion-estructurada` (Backend + FRONTEND-LABORATORIO)
 > **Flyway asignado:** V1030–V1039 (exclusivo). Esta tanda usa **V1030** únicamente.
 > **Pre-requisito:** PR #113 (drawer NBU base, KAN-130) — MERGEADA en `development`.
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-142](https://exequielsantoro.atlassian.net/browse/KAN-142)
 
 ## Problema
 
