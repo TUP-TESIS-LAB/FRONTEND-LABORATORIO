@@ -53,10 +53,23 @@ export const FINANCIERO_ROUTES: Routes = [
       {
         path: 'liquidaciones',
         loadComponent: () =>
-          import('./pages/placeholder/modulo-no-disponible.component').then(
-            (m) => m.ModuloNoDisponibleComponent,
+          import('./pages/liquidaciones/liquidaciones-list.page').then(
+            (m) => m.LiquidacionesListPage,
           ),
-        data: { kind: 'liquidaciones' },
+      },
+      {
+        path: 'liquidaciones/nueva',
+        loadComponent: () =>
+          import('./pages/liquidaciones/generar-liquidacion.page').then(
+            (m) => m.GenerarLiquidacionPage,
+          ),
+      },
+      {
+        path: 'liquidaciones/:id',
+        loadComponent: () =>
+          import('./pages/liquidaciones/liquidacion-detalle.page').then(
+            (m) => m.LiquidacionDetallePage,
+          ),
       },
     ],
   },
