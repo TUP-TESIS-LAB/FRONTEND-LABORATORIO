@@ -50,6 +50,20 @@ export interface DeterminationCatalogItem {
   unit: string | null;
 }
 
+/** Opción de tipo de preparación (catálogo fijo del BE). */
+export interface PreparationTypeOption {
+  code: string;
+  label: string;
+  requiresHours: boolean;
+}
+
+/** Item de preparación estructurada de una determinación. */
+export interface PreparationItem {
+  type: string;
+  label?: string;       // presente en lectura, opcional en escritura
+  fastingHours: number | null;
+}
+
 /** Fila de tenant_analysis (activación + alias + sección del laboratorio). */
 export interface TenantAnalysisRow {
   id: number;            // tenant_analysis.id (el que recibe PATCH)
@@ -72,6 +86,7 @@ export class NbuConfigApiService {
   private readonly detBase = '/api/v1/analitica/determinations';
   private readonly catalogBase = '/api/v1/analitica/catalog';
   private readonly tenantAnalysesBase = '/api/v1/tenant-analyses';
+  private readonly preparationBase = '/api/v1/analitica/preparation';
 
   /**
    * Determinaciones del catálogo de un análisis (id + nombre + unidad). La unidad se
@@ -110,5 +125,31 @@ export class NbuConfigApiService {
     body: { shortCode?: string; customName?: string | null },
   ): Observable<unknown> {
     return this.http.patch(`${this.tenantAnalysesBase}/${tenantAnalysisId}`, body);
+  }
+
+  getPreparationTypes(): Observable<PreparationTypeOption[]> {
+    return this.http.get<PreparationTypeOption[]>(`${this.preparationBase}/types`);
+  }
+
+  getPreparation(determinationId: number): Observable<{ items: PreparationItem[] }> {
+    return this.http.get<{ items: PreparationItem[] }>(`${this.detBase}/${determinationId}/preparation`);
+  }
+
+  upsertPreparation(
+    determinationId: number,
+    items: { type: string; fastingHours: number | null }[],
+  ): Observable<void> {
+    return this.http.put<void>(`${this.detBase}/${determinationId}/preparation`, { items });
+  }
+
+  setActivation(
+    catalogId: number,
+    active: boolean,
+    shortCode: string,
+    customName: string | null,
+  ): Observable<void> {
+    return this.http.put<void>(`${this.tenantAnalysesBase}/activation`, {
+      catalogId, active, shortCode, customName,
+    });
   }
 }

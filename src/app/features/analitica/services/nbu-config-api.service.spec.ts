@@ -74,4 +74,27 @@ describe('NbuConfigApiService', () => {
     expect(req.request.body).toEqual({ shortCode: 'GLU', customName: 'Glucemia' });
     req.flush({});
   });
+
+  it('getPreparationTypes hace GET a /preparation/types', () => {
+    svc.getPreparationTypes().subscribe();
+    const req = http.expectOne('/api/v1/analitica/preparation/types');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('upsertPreparation hace PUT con {items} al endpoint de la determinación', () => {
+    svc.upsertPreparation(7, [{ type: 'AYUNO', fastingHours: 8 }]).subscribe();
+    const req = http.expectOne('/api/v1/analitica/determinations/7/preparation');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ items: [{ type: 'AYUNO', fastingHours: 8 }] });
+    req.flush(null);
+  });
+
+  it('setActivation hace PUT a /tenant-analyses/activation', () => {
+    svc.setActivation(100, true, 'GLU', 'Glucemia').subscribe();
+    const req = http.expectOne('/api/v1/tenant-analyses/activation');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ catalogId: 100, active: true, shortCode: 'GLU', customName: 'Glucemia' });
+    req.flush(null);
+  });
 });
