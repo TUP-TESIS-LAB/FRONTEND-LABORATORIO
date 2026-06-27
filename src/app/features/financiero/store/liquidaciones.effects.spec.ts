@@ -54,7 +54,9 @@ describe('LiquidacionesEffects', () => {
   it('generateSettlement$ con 422 emite Failure con mensaje en español y toast', async () => {
     api.generateSettlement.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
     const eff = make(generateSettlement({ body: { insurerId: 1, period: { from: '2026-01-01', to: '2026-01-31' }, specialRules: [], excludedAnalysisIdsByPs: null } }));
-    const out = await new Promise(r => eff.generateSettlement$.subscribe(r)) as ReturnType<typeof generateSettlementFailure>;
+    const out = await new Promise<ReturnType<typeof generateSettlementFailure>>(
+      r => eff.generateSettlement$.subscribe(a => r(a as ReturnType<typeof generateSettlementFailure>)),
+    );
     expect(out.type).toBe(generateSettlementFailure.type);
     expect(out.error).toContain('No hay prestaciones pendientes');
     expect(notif.error).toHaveBeenCalled();
