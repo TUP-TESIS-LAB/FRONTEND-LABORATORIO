@@ -160,7 +160,6 @@ export class LiquidacionesListPage implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(loadInsurersIndex());
-    this.recargar();
     this.handle = this.polling.startPolling({
       key: 'financiero-liquidaciones',
       intervalMs: 5000,
