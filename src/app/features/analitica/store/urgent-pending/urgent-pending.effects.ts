@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, concatMap, map, of } from 'rxjs';
+import { catchError, concatMap, map, of, switchMap } from 'rxjs';
 import { isNotModified } from '@core/refresh';
 import { NotificationService } from '@core/services/notification.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
@@ -23,7 +23,7 @@ import {
 
 /**
  * Política de operadores:
- * - loadUrgentPending: concatMap (polleable; evitar que polls solapados se cancelen).
+ * - loadUrgentPending: switchMap (GET polleado; cancela la petición stale si llega un nuevo poll).
  * - Mutaciones: concatMap (pesimista; preserva orden ante doble-click).
  */
 @Injectable()
@@ -36,7 +36,7 @@ export class UrgentPendingEffects {
   loadList$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadUrgentPending),
-      concatMap(() =>
+      switchMap(() =>
         this.api.listUrgentPending().pipe(
           map(res =>
             isNotModified(res)

@@ -5,12 +5,10 @@ import {
   OnInit,
   computed,
   inject,
-  output,
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { EMPTY, catchError } from 'rxjs';
 import { TagModule } from 'primeng/tag';
@@ -284,12 +282,6 @@ export class AtencionUrgentesDashboardComponent implements OnInit, OnDestroy {
   private readonly coverageCatalog = inject(CoverageCatalogService);
   private readonly doctorsApi      = inject(DoctorService);
 
-  /**
-   * Emite la atención seleccionada cuando se hace click en "Resolver".
-   * Mantenido para backward-compatibility con el componente padre si lo usa.
-   */
-  readonly resolver = output<AttentionResponse>();
-
   protected readonly rows      = this.store.selectSignal(selectUrgentPending);
   protected readonly loading   = this.store.selectSignal(selectUrgentPendingLoading);
   protected readonly resolving = this.store.selectSignal(selectUrgentPendingResolving);
@@ -302,8 +294,6 @@ export class AtencionUrgentesDashboardComponent implements OnInit, OnDestroy {
   readonly authForm = this.fb.group({
     authorizationNumber: ['', Validators.required],
   });
-  readonly authStatus = toSignal(this.authForm.statusChanges, { initialValue: this.authForm.status });
-  readonly authInvalid = computed(() => this.authStatus() === 'INVALID');
 
   // ── Datos administrativos: OS / médico ──────────────────────────────────────
   protected readonly catalog       = signal<CoverageCatalog>(EMPTY_CATALOG);
@@ -379,7 +369,6 @@ export class AtencionUrgentesDashboardComponent implements OnInit, OnDestroy {
     this.selectedRow.set(row);
     this.drawerVisible.set(true);
     this.pollingHandle?.setActive(false);
-    this.resolver.emit(row);
     // Reset forms for the new row.
     this.authForm.reset();
     this.datosInsurerId.set(null);

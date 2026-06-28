@@ -36,44 +36,30 @@ export const urgentPendingReducer = createReducer(
     error,
   })),
 
-  // Resolve auth
-  on(resolveAuth, (s): UrgentPendingState => ({ ...s, resolving: true, resolveError: null })),
+  // Resolve — start (identical for all three resolve actions)
+  on(resolveAuth, resolveDatos, resolveCobro,
+    (s): UrgentPendingState => ({ ...s, resolving: true, resolveError: null })),
+
+  // Resolve — success (differ: each carries its own item)
   on(resolveAuthSuccess, (s, { item }): UrgentPendingState => ({
     ...s,
     resolving: false,
     items: replaceOrRemove(s.items, item),
   })),
-  on(resolveAuthFailure, (s, { error }): UrgentPendingState => ({
-    ...s,
-    resolving: false,
-    resolveError: error,
-  })),
-
-  // Resolve datos administrativos
-  on(resolveDatos, (s): UrgentPendingState => ({ ...s, resolving: true, resolveError: null })),
   on(resolveDatosSuccess, (s, { item }): UrgentPendingState => ({
     ...s,
     resolving: false,
     items: replaceOrRemove(s.items, item),
   })),
-  on(resolveDatosFailure, (s, { error }): UrgentPendingState => ({
-    ...s,
-    resolving: false,
-    resolveError: error,
-  })),
-
-  // Resolve cobro
-  on(resolveCobro, (s): UrgentPendingState => ({ ...s, resolving: true, resolveError: null })),
   on(resolveCobroSuccess, (s, { item }): UrgentPendingState => ({
     ...s,
     resolving: false,
     items: replaceOrRemove(s.items, item),
   })),
-  on(resolveCobroFailure, (s, { error }): UrgentPendingState => ({
-    ...s,
-    resolving: false,
-    resolveError: error,
-  })),
+
+  // Resolve — failure (identical for all three)
+  on(resolveAuthFailure, resolveDatosFailure, resolveCobroFailure,
+    (s, { error }): UrgentPendingState => ({ ...s, resolving: false, resolveError: error })),
 );
 
 /**

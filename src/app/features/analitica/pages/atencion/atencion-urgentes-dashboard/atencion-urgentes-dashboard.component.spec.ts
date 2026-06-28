@@ -145,15 +145,18 @@ describe('AtencionUrgentesDashboardComponent', () => {
     expect(tagTexts).not.toContain('Autorización');
   });
 
-  it('emite resolver al hacer click en acción "Resolver"', () => {
+  it('onAction con key=resolver abre el drawer y selecciona la fila', () => {
     const fixture = setup();
-    const emitted: AttentionResponse[] = [];
-    fixture.componentInstance.resolver.subscribe((row: AttentionResponse) => emitted.push(row));
+    const comp = fixture.componentInstance;
+    const setActiveSpy = vi.fn();
+    pollingStub.startPolling.mockReturnValueOnce({ stop: vi.fn(), pokeNow: vi.fn(), setActive: setActiveSpy });
+    comp.ngOnInit();
 
     const row = rowOf({ id: 42, cobroPendiente: true });
-    fixture.componentInstance.onAction({ key: 'resolver', row });
-    expect(emitted).toHaveLength(1);
-    expect(emitted[0].id).toBe(42);
+    comp.onAction({ key: 'resolver', row });
+
+    expect(comp.drawerVisible()).toBe(true);
+    expect(comp.selectedRow()?.id).toBe(42);
   });
 
   it('muestra estado vacío cuando no hay atenciones urgentes', () => {
