@@ -129,9 +129,12 @@ function toIso(d: Date | null): string {
     .muted { color: var(--ds-text-muted, #64748b); font-size: 13px; margin: 0; }
     .form-field { display: flex; flex-direction: column; gap: 6px; }
     .form-field label { font-size: 13px; font-weight: 500; color: var(--ds-text, #1a1a2e); }
-    .form-field :is(p-select, p-datepicker) { display: block; }
+    .form-field p-select, .form-field p-datepicker { display: block; width: 100%; }
     .form-row { display: flex; gap: 14px; }
-    .form-row .form-field { flex: 1; }
+    .form-row .form-field { flex: 1; min-width: 0; }
+    :host ::ng-deep .form-field .p-datepicker { width: 100%; }
+    :host ::ng-deep .form-field .p-datepicker .p-inputtext { width: 100%; }
+    :host ::ng-deep .form-field .p-select { width: 100%; }
     .field-error { color: #d83a3a; font-size: 12.5px; }
     .liq-review { display: flex; flex-direction: column; gap: 2px; }
     .liq-review__os { font-weight: 600; font-size: 15px; }
