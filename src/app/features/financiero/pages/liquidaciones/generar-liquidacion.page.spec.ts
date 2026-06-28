@@ -8,7 +8,7 @@ import { EMPTY } from 'rxjs';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { GenerarLiquidacionPage } from './generar-liquidacion.page';
 import {
-  selectLiqInsurers, selectLiqPending, selectLiqInsurerPlanIds, selectLiqGenerating,
+  selectLiqInsurers, selectLiqGenerating, selectLiqPreviewDetail, selectLiqPreviewLoading,
 } from '../../store/financiero.selectors';
 import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 
@@ -25,9 +25,9 @@ describe('GenerarLiquidacionPage — smoke', () => {
         provideMockStore({
           selectors: [
             { selector: selectLiqInsurers, value: [{ id: 7, code: 'OS7', acronym: 'OS', name: 'IOMA', insurerType: 'SOCIAL', insurerTypeName: 'Obra Social', active: true }] },
-            { selector: selectLiqPending, value: [] },
-            { selector: selectLiqInsurerPlanIds, value: [] },
             { selector: selectLiqGenerating, value: false },
+            { selector: selectLiqPreviewDetail, value: null },
+            { selector: selectLiqPreviewLoading, value: false },
           ],
         }),
       ],

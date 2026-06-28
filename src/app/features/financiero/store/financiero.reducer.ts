@@ -19,6 +19,7 @@ import {
   cancelSettlement, cancelSettlementSuccess, cancelSettlementFailure,
   loadPendingServices, loadPendingServicesSuccess, loadPendingServicesFailure,
   loadInsurersIndexSuccess, loadInsurerPlansSuccess,
+  loadPreviewDetail, loadPreviewDetailSuccess, loadPreviewDetailFailure, resetPreviewDetail,
 } from './financiero.actions';
 
 export const initialState = initialFinancieroState;
@@ -235,5 +236,19 @@ export const financieroReducer = createReducer(
   })),
   on(loadInsurerPlansSuccess, (state, { planIds }): FinancieroState => ({
     ...state, liquidaciones: { ...state.liquidaciones, selectedInsurerPlanIds: planIds },
+  })),
+
+  // ── liquidaciones: preview detallado ───────────────────────────────────────
+  on(loadPreviewDetail, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, previewLoading: true, previewError: null },
+  })),
+  on(loadPreviewDetailSuccess, (state, { preview }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, previewDetail: preview, previewLoading: false, previewError: null },
+  })),
+  on(loadPreviewDetailFailure, (state, { error }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, previewLoading: false, previewError: error },
+  })),
+  on(resetPreviewDetail, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, previewDetail: null, previewLoading: false, previewError: null },
   })),
 );

@@ -16,6 +16,7 @@ import {
   loadPendingServices, loadPendingServicesSuccess, loadPendingServicesNotModified, loadPendingServicesFailure,
   loadInsurersIndex, loadInsurersIndexSuccess, loadInsurersIndexFailure,
   loadInsurerPlans, loadInsurerPlansSuccess, loadInsurerPlansFailure,
+  loadPreviewDetail, loadPreviewDetailSuccess, loadPreviewDetailFailure,
 } from './financiero.actions';
 
 function mapLoadError(): string {
@@ -174,6 +175,19 @@ export class LiquidacionesEffects {
         this.os.getCompleteById(insurerId).pipe(
           map(complete => loadInsurerPlansSuccess({ planIds: complete.plans.map(p => p.id) })),
           catchError(() => of(loadInsurerPlansFailure({ error: 'No se pudieron cargar los planes de la obra social.' }))),
+        ),
+      ),
+    ),
+  );
+
+  /** Preview detallado: switchMap → cada toggle cancela el preview anterior en vuelo. */
+  loadPreviewDetail$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadPreviewDetail),
+      switchMap(({ body }) =>
+        this.api.previewDetail(body).pipe(
+          map(preview => loadPreviewDetailSuccess({ preview })),
+          catchError(() => of(loadPreviewDetailFailure({ error: 'No se pudieron calcular las prestaciones de la liquidación.' }))),
         ),
       ),
     ),

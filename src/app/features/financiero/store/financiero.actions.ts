@@ -3,6 +3,7 @@ import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment
 import {
   SettlementSummary, SettlementDetail, SettlementFilters, PendingService,
   GenerateSettlementBody, InformSettlementBody, CancelSettlementBody,
+  PreviewDetailBody, SettlementPreviewDetail,
 } from '../models/liquidaciones.model';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 
@@ -225,3 +226,12 @@ export const loadInsurerPlansSuccess = createAction(
   '[Liquidaciones API] Load Insurer Plans Success', props<{ planIds: number[] }>());
 export const loadInsurerPlansFailure = createAction(
   '[Liquidaciones API] Load Insurer Plans Failure', props<{ error: string }>());
+
+// ── Liquidaciones: preview detallado (prestaciones + análisis + montos) ───────
+export const loadPreviewDetail = createAction(
+  '[Liquidaciones] Load Preview Detail', props<{ body: PreviewDetailBody }>());
+export const loadPreviewDetailSuccess = createAction(
+  '[Liquidaciones API] Load Preview Detail Success', props<{ preview: SettlementPreviewDetail }>());
+export const loadPreviewDetailFailure = createAction(
+  '[Liquidaciones API] Load Preview Detail Failure', props<{ error: string }>());
+export const resetPreviewDetail = createAction('[Liquidaciones] Reset Preview Detail');

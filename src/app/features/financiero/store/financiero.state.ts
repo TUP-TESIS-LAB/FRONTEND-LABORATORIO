@@ -1,5 +1,5 @@
 ﻿import { CashSession, SessionActivity, PaymentListItem, Payment, TenantFiscalConfig, RegisterPaymentResponse } from '../models/financiero.model';
-import { SettlementSummary, SettlementDetail, PendingService } from '../models/liquidaciones.model';
+import { SettlementSummary, SettlementDetail, PendingService, SettlementPreviewDetail } from '../models/liquidaciones.model';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 
 export const FINANCIERO_FEATURE_KEY = 'financiero';
@@ -17,6 +17,7 @@ export interface FinancieroState {
     pending: PendingService[]; pendingLoading: boolean;
     insurers: InsurerSummary[];
     selectedInsurerPlanIds: number[];
+    previewDetail: SettlementPreviewDetail | null; previewLoading: boolean; previewError: string | null;
   };
 }
 
@@ -33,5 +34,6 @@ export const initialFinancieroState: FinancieroState = {
     pending: [], pendingLoading: false,
     insurers: [],
     selectedInsurerPlanIds: [],
+    previewDetail: null, previewLoading: false, previewError: null,
   },
 };

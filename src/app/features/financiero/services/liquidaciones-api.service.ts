@@ -5,6 +5,7 @@ import { withPolling, NotModified } from '@core/refresh';
 import {
   SettlementSummary, SettlementDetail, SettlementFilters,
   GenerateSettlementBody, InformSettlementBody, CancelSettlementBody, PendingService,
+  PreviewDetailBody, SettlementPreviewDetail,
 } from '../models/liquidaciones.model';
 
 @Injectable({ providedIn: 'root' })
@@ -30,6 +31,11 @@ export class LiquidacionesApiService {
 
   generateSettlement(body: GenerateSettlementBody): Observable<SettlementDetail> {
     return this.http.post<SettlementDetail>(`${this.base}/settlements`, body);
+  }
+
+  /** Preview detallado (prestaciones + análisis + montos), recalcula con exclusiones. */
+  previewDetail(body: PreviewDetailBody): Observable<SettlementPreviewDetail> {
+    return this.http.post<SettlementPreviewDetail>(`${this.base}/settlements/preview/detail`, body);
   }
 
   informSettlement(id: number, body: InformSettlementBody): Observable<SettlementDetail> {

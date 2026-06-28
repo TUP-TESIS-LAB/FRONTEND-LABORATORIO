@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal,
+  ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,22 +12,24 @@ import { DatePickerModule } from 'primeng/datepicker';
 
 import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { FormStep } from '@shared/ui/models/form-step';
+import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 
 import {
-  selectLiqInsurers, selectLiqPending, selectLiqInsurerPlanIds, selectLiqGenerating,
+  selectLiqInsurers, selectLiqGenerating,
+  selectLiqPreviewDetail, selectLiqPreviewLoading,
 } from '../../store/financiero.selectors';
 import {
-  loadInsurersIndex, loadPendingServices, loadInsurerPlans,
+  loadInsurersIndex, loadPreviewDetail, resetPreviewDetail,
   generateSettlement, generateSettlementSuccess,
 } from '../../store/financiero.actions';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
+import { PreviewItem, ExcludedAnalysisIdsByPs } from '../../models/liquidaciones.model';
 
 const STEPS: FormStep[] = [
   { key: 'datos', title: 'Datos', subtitle: 'Obra social y período' },
-  { key: 'revisar', title: 'Revisar', subtitle: 'Prestaciones pendientes' },
+  { key: 'revisar', title: 'Revisar', subtitle: 'Prestaciones a liquidar' },
 ];
 
-/** Serializa un Date local a 'YYYY-MM-DD' (lo que espera el backend, sin TZ shift). */
 function toIso(d: Date | null): string {
   if (!d) return '';
   const y = d.getFullYear();
@@ -40,7 +42,7 @@ function toIso(d: Date | null): string {
   selector: 'fin-generar-liquidacion-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SelectModule, DatePickerModule, WizardShellComponent],
+  imports: [DatePipe, CurrencyArPipe, FormsModule, SelectModule, DatePickerModule, WizardShellComponent],
   template: `
     <ui-wizard-shell
       heading="Generar liquidación"
@@ -49,8 +51,9 @@ function toIso(d: Date | null): string {
       [visited]="visited()"
       [continueDisabled]="!paso1Valido()"
       finishLabel="Generar"
-      [finishDisabled]="!preview().length"
+      [finishDisabled]="!canGenerate()"
       [finishLoading]="generating()"
+      maxWidth="860px"
       (next)="next()"
       (back)="back()"
       (cancel)="cancelar()"
@@ -62,37 +65,20 @@ function toIso(d: Date | null): string {
 
           <div class="form-field">
             <label for="os">Obra Social <span class="pat-form__req" aria-hidden="true">*</span></label>
-            <p-select
-              inputId="os"
-              [options]="insurers()"
-              optionLabel="name"
-              [filter]="true"
-              appendTo="body"
-              [(ngModel)]="os"
-              (onChange)="onOsChange()"
-              data-testid="sel-os" />
+            <p-select inputId="os" [options]="insurers()" optionLabel="name" [filter]="true"
+                      appendTo="body" [(ngModel)]="os" data-testid="sel-os" />
           </div>
 
           <div class="form-row">
             <div class="form-field">
               <label for="from">Desde <span class="pat-form__req" aria-hidden="true">*</span></label>
-              <p-datePicker
-                inputId="from"
-                dateFormat="dd/mm/yy"
-                appendTo="body"
-                [ngModel]="from()"
-                (ngModelChange)="from.set($event)"
-                data-testid="inp-from" />
+              <p-datePicker inputId="from" dateFormat="dd/mm/yy" appendTo="body"
+                            [ngModel]="from()" (ngModelChange)="from.set($event)" data-testid="inp-from" />
             </div>
             <div class="form-field">
               <label for="to">Hasta <span class="pat-form__req" aria-hidden="true">*</span></label>
-              <p-datePicker
-                inputId="to"
-                dateFormat="dd/mm/yy"
-                appendTo="body"
-                [ngModel]="to()"
-                (ngModelChange)="to.set($event)"
-                data-testid="inp-to" />
+              <p-datePicker inputId="to" dateFormat="dd/mm/yy" appendTo="body"
+                            [ngModel]="to()" (ngModelChange)="to.set($event)" data-testid="inp-to" />
             </div>
           </div>
 
@@ -102,23 +88,67 @@ function toIso(d: Date | null): string {
         </div>
       } @else {
         <div class="step">
-          <p class="muted">Revisá la obra social y el período antes de generar.</p>
+          <p class="muted">Revisá las prestaciones y elegí cuáles incluir. Podés excluir prestaciones enteras o análisis individuales; el total se recalcula solo.</p>
 
-          <div class="liq-review">
-            <span class="liq-review__os">{{ os()?.name }}</span>
-            <span class="liq-review__period">{{ from() | date:'dd/MM/yyyy' }} – {{ to() | date:'dd/MM/yyyy' }}</span>
-          </div>
+          @if (preview(); as pv) {
+            @if (pv.previewWarning) {
+              <div class="liq-warn"><i class="pi pi-exclamation-triangle"></i> {{ pv.previewWarning }}</div>
+            }
 
-          @if (preview().length) {
-            <div class="liq-preview liq-preview--ok">
-              <i class="pi pi-check-circle"></i>
-              <span><b>{{ preview().length }}</b> {{ preview().length === 1 ? 'prestación' : 'prestaciones' }} pendiente{{ preview().length === 1 ? '' : 's' }} para liquidar.</span>
+            <div class="liq-summary">
+              <div class="liq-summary__os">
+                <span class="liq-summary__name">{{ os()?.name }}</span>
+                <span class="liq-summary__period">{{ from() | date:'dd/MM/yyyy' }} – {{ to() | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <div class="liq-summary__total">
+                <span class="liq-summary__total-label">Total a liquidar</span>
+                <span class="liq-summary__total-value" data-testid="preview-total">{{ pv.totalAmount | currencyAr }}</span>
+                <span class="liq-summary__count">{{ incluidas() }} de {{ pv.items.length }} prestaciones incluidas</span>
+              </div>
             </div>
-          } @else {
-            <div class="liq-preview liq-preview--empty">
-              <i class="pi pi-info-circle"></i>
-              <span>No hay prestaciones pendientes para esa obra social y período. No se puede generar la liquidación.</span>
-            </div>
+
+            @if (!pv.items.length) {
+              <div class="liq-empty"><i class="pi pi-info-circle"></i><span>No hay prestaciones pendientes para esa obra social y período. No se puede generar la liquidación.</span></div>
+            } @else {
+              <div class="liq-items">
+                @for (it of pv.items; track it.providedServiceId) {
+                  <div class="liq-item" [class.liq-item--excluded]="it.fullyExcluded">
+                    <div class="liq-item__head">
+                      <input type="checkbox" class="liq-check" [checked]="!it.fullyExcluded"
+                             (change)="togglePs(it)" [attr.data-testid]="'ps-' + it.providedServiceId"
+                             [attr.aria-label]="'Incluir prestación de ' + it.patientName" />
+                      <button type="button" class="liq-expand" (click)="toggleExpand(it.providedServiceId)"
+                              [attr.aria-label]="isExpanded(it.providedServiceId) ? 'Contraer análisis' : 'Ver análisis'">
+                        <i class="pi" [class.pi-chevron-right]="!isExpanded(it.providedServiceId)" [class.pi-chevron-down]="isExpanded(it.providedServiceId)"></i>
+                      </button>
+                      <div class="liq-item__info">
+                        <span class="liq-item__patient">{{ it.patientName }}</span>
+                        <span class="liq-item__meta">DNI {{ it.patientDni ?? '—' }} · {{ it.serviceDate | date:'dd/MM/yy' }} · {{ it.analyses.length }} análisis</span>
+                      </div>
+                      <div class="liq-item__amounts">
+                        <span class="liq-item__covered">{{ it.coveredAmount | currencyAr }}</span>
+                        <span class="liq-item__copay">copago {{ it.copaymentAmount | currencyAr }}</span>
+                      </div>
+                    </div>
+                    @if (isExpanded(it.providedServiceId)) {
+                      <div class="liq-analyses">
+                        @for (a of it.analyses; track a.analysisId) {
+                          <label class="liq-analysis" [class.liq-analysis--excluded]="a.excluded">
+                            <input type="checkbox" [checked]="!a.excluded" (change)="toggleAnalysis(it.providedServiceId, a.analysisId)" />
+                            <span class="liq-analysis__code">{{ a.code }}</span>
+                            <span class="liq-analysis__name">{{ a.name }}</span>
+                            <span class="liq-analysis__ub">{{ a.ubUnits }} UB</span>
+                            <span class="liq-analysis__amount">{{ a.amount | currencyAr }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          } @else if (previewLoading()) {
+            <div class="liq-loading"><i class="pi pi-spin pi-spinner"></i> Calculando prestaciones…</div>
           }
         </div>
       }
@@ -136,15 +166,46 @@ function toIso(d: Date | null): string {
     :host ::ng-deep .form-field .p-datepicker .p-inputtext { width: 100%; }
     :host ::ng-deep .form-field .p-select { width: 100%; }
     .field-error { color: #d83a3a; font-size: 12.5px; }
-    .liq-review { display: flex; flex-direction: column; gap: 2px; }
-    .liq-review__os { font-weight: 600; font-size: 15px; }
-    .liq-review__period { font-size: 13px; color: #64748b; }
-    .liq-preview { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 9px; font-size: 13.5px; }
-    .liq-preview--ok { background: #e3f6ec; color: #0f6b44; }
-    .liq-preview--empty { background: #fcf1dd; color: #b5740c; }
+
+    .liq-warn { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 10px 14px; border-radius: 9px; font-size: 13px; }
+    .liq-summary { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e8edf3; border-radius: 10px; }
+    .liq-summary__os { display: flex; flex-direction: column; gap: 2px; }
+    .liq-summary__name { font-weight: 600; font-size: 15px; }
+    .liq-summary__period { font-size: 12.5px; color: #64748b; }
+    .liq-summary__total { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+    .liq-summary__total-label { font-size: 11.5px; color: #7c8092; text-transform: uppercase; letter-spacing: .04em; }
+    .liq-summary__total-value { font-size: 22px; font-weight: 700; color: #0f6b44; }
+    .liq-summary__count { font-size: 12px; color: #7c8092; }
+
+    .liq-empty { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 12px 14px; border-radius: 9px; font-size: 13.5px; }
+    .liq-loading { color: #7c8092; font-size: 13.5px; display: flex; align-items: center; gap: 8px; padding: 12px; }
+
+    .liq-items { display: flex; flex-direction: column; gap: 8px; }
+    .liq-item { border: 1px solid #e8edf3; border-radius: 10px; overflow: hidden; }
+    .liq-item--excluded { opacity: 0.55; }
+    .liq-item__head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+    .liq-check { width: 17px; height: 17px; cursor: pointer; accent-color: #0f8a55; }
+    .liq-expand { border: none; background: transparent; color: #7c8092; cursor: pointer; padding: 2px; display: inline-flex; }
+    .liq-item__info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+    .liq-item__patient { font-weight: 600; font-size: 13.5px; }
+    .liq-item__meta { font-size: 12px; color: #7c8092; }
+    .liq-item__amounts { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+    .liq-item__covered { font-weight: 600; font-size: 13.5px; }
+    .liq-item--excluded .liq-item__covered { text-decoration: line-through; }
+    .liq-item__copay { font-size: 11.5px; color: #7c8092; }
+
+    .liq-analyses { display: flex; flex-direction: column; border-top: 1px solid #f1f5f9; background: #fafbfc; }
+    .liq-analysis { display: grid; grid-template-columns: 22px 70px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 14px 7px 38px; font-size: 12.5px; cursor: pointer; }
+    .liq-analysis + .liq-analysis { border-top: 1px solid #f1f5f9; }
+    .liq-analysis input { accent-color: #0f8a55; }
+    .liq-analysis--excluded { color: #94a3b8; }
+    .liq-analysis--excluded .liq-analysis__amount { text-decoration: line-through; }
+    .liq-analysis__code { font-family: 'Roboto Mono', monospace; color: #64748b; }
+    .liq-analysis__ub { color: #94a3b8; font-size: 11.5px; }
+    .liq-analysis__amount { font-weight: 500; }
   `],
 })
-export class GenerarLiquidacionPage implements OnInit {
+export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   private readonly store = inject(Store);
   private readonly router = inject(Router);
   private readonly actions$ = inject(Actions);
@@ -159,47 +220,85 @@ export class GenerarLiquidacionPage implements OnInit {
   protected readonly from = signal<Date | null>(null);
   protected readonly to = signal<Date | null>(null);
 
+  // selección de exclusiones { providedServiceId: [analysisId,...] } + filas expandidas
+  private readonly excluded = signal<ExcludedAnalysisIdsByPs>({});
+  protected readonly expanded = signal<ReadonlySet<number>>(new Set());
+
   protected readonly insurers = this.store.selectSignal(selectLiqInsurers);
-  protected readonly pending = this.store.selectSignal(selectLiqPending);
-  protected readonly planIds = this.store.selectSignal(selectLiqInsurerPlanIds);
   protected readonly generating = this.store.selectSignal(selectLiqGenerating);
+  protected readonly preview = this.store.selectSignal(selectLiqPreviewDetail);
+  protected readonly previewLoading = this.store.selectSignal(selectLiqPreviewLoading);
 
   protected readonly rangoInvalido = computed(() => {
     const f = this.from(); const t = this.to();
     return !!f && !!t && f.getTime() > t.getTime();
   });
-
   protected readonly paso1Valido = computed(() =>
     !!this.os() && !!this.from() && !!this.to() && !this.rangoInvalido());
 
-  /** Preview: pendientes de la OS elegida (por planId) dentro del período. */
-  protected readonly preview = computed(() => {
-    const ids = new Set(this.planIds());
-    const f = toIso(this.from()); const t = toIso(this.to());
-    if (!ids.size || !f || !t) return [];
-    return this.pending().filter(p =>
-      ids.has(p.planId) && p.serviceDate >= f && p.serviceDate <= t);
-  });
+  protected readonly incluidas = computed(() =>
+    (this.preview()?.items ?? []).filter(i => !i.fullyExcluded).length);
+  protected readonly canGenerate = computed(() => this.incluidas() > 0);
 
   ngOnInit(): void {
     this.store.dispatch(loadInsurersIndex());
-    this.store.dispatch(loadPendingServices());
-
-    // Al generarse con éxito, navegar al detalle de la nueva liquidación.
-    this.actions$.pipe(ofType(generateSettlementSuccess), takeUntilDestroyed(this.destroy)).subscribe(({ settlement }) => {
-      this.router.navigate(['/financiero/liquidaciones', settlement.id]);
-    });
+    this.actions$.pipe(ofType(generateSettlementSuccess), takeUntilDestroyed(this.destroy))
+      .subscribe(({ settlement }) => this.router.navigate(['/financiero/liquidaciones', settlement.id]));
   }
 
-  protected onOsChange(): void {
+  ngOnDestroy(): void {
+    this.store.dispatch(resetPreviewDetail());
+  }
+
+  protected isExpanded(psId: number): boolean {
+    return this.expanded().has(psId);
+  }
+
+  protected toggleExpand(psId: number): void {
+    const set = new Set(this.expanded());
+    set.has(psId) ? set.delete(psId) : set.add(psId);
+    this.expanded.set(set);
+  }
+
+  protected toggleAnalysis(psId: number, analysisId: number): void {
+    const cur = { ...this.excluded() };
+    const set = new Set(cur[psId] ?? []);
+    set.has(analysisId) ? set.delete(analysisId) : set.add(analysisId);
+    if (set.size) cur[psId] = [...set]; else delete cur[psId];
+    this.excluded.set(cur);
+    this.reloadPreview();
+  }
+
+  protected togglePs(item: PreviewItem): void {
+    const cur = { ...this.excluded() };
+    if (item.fullyExcluded) {
+      delete cur[item.providedServiceId];               // incluir toda la prestación
+    } else {
+      cur[item.providedServiceId] = item.analyses.map(a => a.analysisId); // excluir toda la prestación
+    }
+    this.excluded.set(cur);
+    this.reloadPreview();
+  }
+
+  private reloadPreview(): void {
     const insurer = this.os();
-    if (insurer) this.store.dispatch(loadInsurerPlans({ insurerId: insurer.id }));
+    if (!insurer) return;
+    const excl = this.excluded();
+    this.store.dispatch(loadPreviewDetail({
+      body: {
+        insurerId: insurer.id,
+        period: { from: toIso(this.from()), to: toIso(this.to()) },
+        excludedAnalysisIdsByPs: Object.keys(excl).length ? excl : null,
+      },
+    }));
   }
 
   protected next(): void {
     if (!this.paso1Valido()) return;
+    this.excluded.set({});
     this.step.set(1);
     this.visited.update(s => new Set(s).add(1));
+    this.reloadPreview();
   }
 
   protected back(): void {
@@ -208,13 +307,14 @@ export class GenerarLiquidacionPage implements OnInit {
 
   protected generar(): void {
     const insurer = this.os();
-    if (!insurer || !this.preview().length) return;
+    if (!insurer || !this.canGenerate()) return;
+    const excl = this.excluded();
     this.store.dispatch(generateSettlement({
       body: {
         insurerId: insurer.id,
         period: { from: toIso(this.from()), to: toIso(this.to()) },
         specialRules: [],
-        excludedAnalysisIdsByPs: null,
+        excludedAnalysisIdsByPs: Object.keys(excl).length ? excl : null,
       },
     }));
   }

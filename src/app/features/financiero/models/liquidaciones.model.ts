@@ -58,7 +58,7 @@ export interface GenerateSettlementBody {
   insurerId: number;
   period: { from: string; to: string };
   specialRules: [];
-  excludedAnalysisIdsByPs: null;
+  excludedAnalysisIdsByPs: Record<number, number[]> | null;
 }
 
 export interface InformSettlementBody {
@@ -83,6 +83,50 @@ export interface PendingService {
   authorizationNumber: string | null;
   settlementAgreementId: number | null; // null = pendiente
   analysisIds: number[];
+}
+
+/** Exclusiones por prestación: { providedServiceId: [analysisId,...] }. */
+export type ExcludedAnalysisIdsByPs = Record<number, number[]>;
+
+/** Body de POST /settlements/preview/detail. */
+export interface PreviewDetailBody {
+  insurerId: number;
+  period: { from: string; to: string };
+  excludedAnalysisIdsByPs?: ExcludedAnalysisIdsByPs | null;
+}
+
+export interface PreviewAnalysis {
+  analysisId: number;
+  code: string | null;
+  name: string;
+  ubUnits: number;
+  amount: number;
+  excluded: boolean;
+}
+
+export interface PreviewItem {
+  providedServiceId: number;
+  patientId: number;
+  patientName: string;
+  patientDni: string | null;
+  serviceDate: string;
+  authorizationNumber: string | null;
+  planId: number;
+  agreementId: number | null;
+  ubValue: number | null;
+  copaymentAmount: number;
+  coveredAmount: number;
+  fullyExcluded: boolean;
+  analyses: PreviewAnalysis[];
+}
+
+/** Respuesta de POST /settlements/preview/detail. */
+export interface SettlementPreviewDetail {
+  insurerId: number;
+  proposedNumber: number;
+  totalAmount: number;
+  previewWarning: string | null;
+  items: PreviewItem[];
 }
 
 /** Etiquetas en español para los estados. */

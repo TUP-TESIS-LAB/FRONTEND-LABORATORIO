@@ -76,3 +76,7 @@ export const selectLiqInsurersIndex = createSelector(
 );
 
 export const selectLiqInsurerPlanIds = createSelector(selectLiqSlice, l => l.selectedInsurerPlanIds);
+
+export const selectLiqPreviewDetail = createSelector(selectLiqSlice, l => l.previewDetail);
+export const selectLiqPreviewLoading = createSelector(selectLiqSlice, l => l.previewLoading);
+export const selectLiqPreviewError = createSelector(selectLiqSlice, l => l.previewError);
