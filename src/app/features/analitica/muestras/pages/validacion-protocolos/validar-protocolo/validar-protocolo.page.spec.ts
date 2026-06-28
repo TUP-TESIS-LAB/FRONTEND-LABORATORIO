@@ -5,8 +5,8 @@ import { provideRouter } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { provideMockStore } from '@ngrx/store/testing';
 import { ValidarProtocoloPage } from './validar-protocolo.page';
-import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetalleError } from '../../../store/validacion-detalle/validacion-detalle.selectors';
-import { firmarEstudio } from '../../../store/validacion-detalle/validacion-detalle.actions';
+import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetallePdfLoading } from '../../../store/validacion-detalle/validacion-detalle.selectors';
+import { firmarEstudio, verPdf } from '../../../store/validacion-detalle/validacion-detalle.actions';
 import type { DetalleEstudio } from '../../../models/postanalitica.model';
 
 const FIXTURE: DetalleEstudio = {
@@ -43,7 +43,7 @@ const FIXTURE: DetalleEstudio = {
 
 const SMOKE_TEMPLATE = `<span></span>`;
 
-function setup() {
+function setup(detalle: DetalleEstudio = FIXTURE) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ValidarProtocoloPage],
@@ -52,10 +52,10 @@ function setup() {
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: new Map([['protocolId', '50015']]) } } },
       provideMockStore({
         selectors: [
-          { selector: selectDetalle, value: FIXTURE },
+          { selector: selectDetalle, value: detalle },
           { selector: selectDetalleLoading, value: false },
           { selector: selectDetalleSaving, value: false },
-          { selector: selectDetalleError, value: null },
+          { selector: selectDetallePdfLoading, value: false },
         ],
       }),
     ],
@@ -118,6 +118,36 @@ describe('ValidarProtocoloPage (smoke)', () => {
     cmp.cerrarFirmaModal();
     expect(cmp.firmarModalOpen()).toBe(false);
     expect(dispatch).not.toHaveBeenCalledWith(firmarEstudio({ protocolId: 50015 }));
+  });
+
+  // --- Ver PDF (botón bajo demanda, visible solo si el estudio está firmado) ---
+
+  it('estaFirmado(): false para un estudio no firmado (READY_FOR_SIGNATURE)', () => {
+    expect(setup().estaFirmado()).toBe(false);
+  });
+
+  it('estaFirmado(): true para PARTIALLY_SIGNED y CLOSED', () => {
+    const parcial = { ...FIXTURE, study: { ...FIXTURE.study, currentStatus: 'PARTIALLY_SIGNED' as const } };
+    const cerrado = { ...FIXTURE, study: { ...FIXTURE.study, currentStatus: 'CLOSED' as const } };
+    expect(setup(parcial).estaFirmado()).toBe(true);
+    expect(setup(cerrado).estaFirmado()).toBe(true);
+  });
+
+  it('verPdf(): despacha verPdf cuando el estudio está firmado', () => {
+    const cerrado = { ...FIXTURE, study: { ...FIXTURE.study, currentStatus: 'CLOSED' as const } };
+    const cmp = setup(cerrado);
+    const store = TestBed.inject(Store);
+    const dispatch = vi.spyOn(store, 'dispatch');
+    cmp.verPdf();
+    expect(dispatch).toHaveBeenCalledWith(verPdf({ protocolId: 50015 }));
+  });
+
+  it('verPdf(): no despacha si el estudio no está firmado', () => {
+    const cmp = setup();
+    const store = TestBed.inject(Store);
+    const dispatch = vi.spyOn(store, 'dispatch');
+    cmp.verPdf();
+    expect(dispatch).not.toHaveBeenCalledWith(verPdf({ protocolId: 50015 }));
   });
 
   // --- Parte 2: gate de validación por completitud del resultado ---

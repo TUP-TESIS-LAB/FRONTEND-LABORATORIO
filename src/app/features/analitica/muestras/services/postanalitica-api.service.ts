@@ -36,4 +36,15 @@ export class PostanaliticaApiService {
   signStudy(protocolId: number): Observable<unknown> {
     return this.http.post(`${this.base}/studies/${protocolId}/sign`, { token: 'ui-confirm' });
   }
+
+  /** Lista los informes generados de un estudio (para el flujo "Ver PDF"). */
+  getStudyReports(protocolId: number): Observable<Array<{ id: number; versionNumber: number; reportType: string }>> {
+    return this.http.get<Array<{ id: number; versionNumber: number; reportType: string }>>(
+      `${this.base}/studies/${protocolId}/reports`);
+  }
+
+  /** Descarga el PDF de un informe de estudio (para el flujo "Ver PDF"). */
+  downloadReport(protocolId: number, reportId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/studies/${protocolId}/reports/${reportId}/pdf`, { responseType: 'blob' });
+  }
 }

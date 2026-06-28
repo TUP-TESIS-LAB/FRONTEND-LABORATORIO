@@ -15,6 +15,7 @@ export interface EmployeeSummaryView {
   city?: string | null;
   province?: string | null;
   userLabel?: string;
+  signature?: string | null;
 }
 
 @Component({
@@ -46,6 +47,20 @@ export interface EmployeeSummaryView {
         </div>
         <p class="text-sm">{{ data().userLabel || 'Sin usuario' }}</p>
       </section>
+      @if (data().isBiochemist) {
+        <section>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-base font-semibold m-0">Firma</h3>
+            <p-button label="Editar" [text]="true" (onClick)="editStep.emit(2)" />
+          </div>
+          @if (data().signature) {
+            <img [src]="data().signature!" alt="Firma del bioquímico"
+                 class="border rounded bg-surface-0 max-h-32 object-contain" />
+          } @else {
+            <p class="text-sm text-surface-500">Sin firma cargada.</p>
+          }
+        </section>
+      }
     </div>
   `,
 })

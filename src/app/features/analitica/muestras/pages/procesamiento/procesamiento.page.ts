@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { forkJoin, of } from 'rxjs';
+import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -204,8 +204,10 @@ export class ProcesamientoPage implements OnInit {
   onMarcarCompletadas(resultIds: number[]): void {
     this.completadasOpen.set(false);
     if (resultIds.length === 0) return;
-    forkJoin(resultIds.map(id => this.resultados.markReady(id).pipe(catchError(err => { this.error(err); return of(null); }))))
-      .subscribe(() => {
+    this.resultados.markReadyBatch(resultIds).pipe(catchError(err => { this.error(err); return of(null); }))
+      .subscribe(res => {
+        // null = error ya mostrado por this.error; no marcar como completado.
+        if (res === null) return;
         // invalidar progreso de los protocolos afectados (se recalcula la próxima vez)
         for (const it of this.resumenItems()) this.progresoSvc.invalidate(it.protocolId);
         this.clearSelection();

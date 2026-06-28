@@ -66,4 +66,26 @@ describe('groupTubes', () => {
     const tubes = groupTubes([item(1, 50, 'A', false, 'COMPLETA'), item(2, 50, 'B')], 'CENTRAL');
     expect(tubes[0].cargaStatus).toBeUndefined();
   });
+
+  it('propaga el destino pre-calculado (sectionId/destinationBranchId) del worklist', () => {
+    const items: LabelWorklistItem[] = [
+      { labelId: 1, sampleId: 50, barcode: 'b1', protocolId: 77, analysisTypeId: 1, analysisName: 'A',
+        patientName: 'P', urgent: false, status: 'IN_TRANSIT', updatedAt: '2026-06-24T10:00:00Z',
+        sectionId: 80005, destinationBranchId: 1002 },
+    ];
+    const tubes = groupTubes(items, 'CENTRAL');
+    expect(tubes[0].sectionId).toBe(80005);
+    expect(tubes[0].destinationBranchId).toBe(1002);
+  });
+
+  it('destino local: sectionId presente, destinationBranchId null', () => {
+    const items: LabelWorklistItem[] = [
+      { labelId: 1, sampleId: 50, barcode: 'b1', protocolId: 77, analysisTypeId: 1, analysisName: 'A',
+        patientName: 'P', urgent: false, status: 'IN_TRANSIT', updatedAt: '2026-06-24T10:00:00Z',
+        sectionId: 80002, destinationBranchId: null },
+    ];
+    const tubes = groupTubes(items, 'CENTRAL');
+    expect(tubes[0].sectionId).toBe(80002);
+    expect(tubes[0].destinationBranchId).toBeNull();
+  });
 });

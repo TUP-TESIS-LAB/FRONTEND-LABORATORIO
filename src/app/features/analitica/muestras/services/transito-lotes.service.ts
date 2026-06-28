@@ -125,43 +125,52 @@ export class TransitoLotesService {
   });
 
   /**
-   * Grupos recomendados según el routing real de la mochila.
-   * - Un grupo `ws-{sectionId}` por workSection del routing (sucursal actual).
-   * - Todo tubo no resoluble (unresolvable, sin vínculo, o no cubierto por el routing) cae en `sin-destino`.
+   * Grupos recomendados según el destino PRE-CALCULADO que la mochila propaga en cada tubo
+   * (`tube.sectionId` + `tube.destinationBranchId`), no recalculado en vivo por el /resolve.
+   * - Un grupo `ws-{sectionId}` por sección destino. Los tubos inter-sucursal (el back ahora
+   *   los devuelve al worklist del origen) quedan agrupados por su sección destino real.
+   * - El grupo se marca inter-sucursal si sus tubos traen `destinationBranchId != null && != branchId`.
+   *   El branch del grupo muestra la sucursal destino (de `_myBranches`) en ese caso.
+   * - Tubo sin `sectionId` → grupo `sin-destino` (resoluble por asignación manual).
    */
   readonly groups = computed<RecommendedGroup[]>(() => {
-    const routing = this._routing();
-    const bySample = this.tubesBySampleId();
     const loted = this.lotedIds();
     const overrides = this._groupOverrides();
     const branchName = this._branchName();
+    const branchId = this._branchId();
+    const sectionById = new Map(this._sectionOptions().map(o => [o.sectionId, o]));
+    const branchById = new Map(this._myBranches().map(b => [b.id, b.name]));
 
-    const placed = new Set<string>();
     const buckets = new Map<string, RecommendedGroup>();
+    const rest: string[] = [];
 
-    for (const rg of routing?.groups ?? []) {
-      const id = `ws-${rg.workSection.sectionId}`;
-      for (const a of rg.assignments) {
-        const tube = bySample.get(a.sampleId);
-        if (!tube || loted.has(tube.id) || placed.has(tube.id)) continue;
-        let g = buckets.get(id);
-        if (!g) {
-          const ov = overrides.get(id);
-          g = {
-            id,
-            branch: ov?.branch ?? branchName,
-            area: ov?.area ?? rg.workSection.areaName,
-            section: ov?.section ?? rg.workSection.sectionName,
-            sampleIds: [],
-          };
-          buckets.set(id, g);
-        }
-        placed.add(tube.id);
-        g.sampleIds.push(tube.id);
+    for (const tube of this._tubes()) {
+      if (loted.has(tube.id)) continue;
+      if (tube.sectionId == null) { rest.push(tube.id); continue; }
+
+      const id = `ws-${tube.sectionId}`;
+      let g = buckets.get(id);
+      if (!g) {
+        const ov = overrides.get(id);
+        const opt = sectionById.get(tube.sectionId);
+        const isOtherBranch = tube.destinationBranchId != null && tube.destinationBranchId !== branchId;
+        const destBranchName = isOtherBranch
+          ? (branchById.get(tube.destinationBranchId!) ?? opt?.branchName ?? `Sucursal ${tube.destinationBranchId}`)
+          : branchName;
+        g = {
+          id,
+          branch: ov?.branch ?? destBranchName,
+          area: ov?.area ?? opt?.areaName ?? '',
+          section: ov?.section ?? opt?.sectionName ?? `Sección ${tube.sectionId}`,
+          sampleIds: [],
+          destinationBranchId: isOtherBranch ? tube.destinationBranchId : null,
+          isOtherBranch,
+        };
+        buckets.set(id, g);
       }
+      g.sampleIds.push(tube.id);
     }
 
-    const rest = this._tubes().filter(t => !placed.has(t.id) && !loted.has(t.id)).map(t => t.id);
     const result = Array.from(buckets.values());
     if (rest.length > 0) {
       const ov = overrides.get(SIN_DESTINO_GROUP_ID);
@@ -171,22 +180,33 @@ export class TransitoLotesService {
         area: ov?.area ?? '',
         section: ov?.section ?? '',
         sampleIds: rest,
+        destinationBranchId: null,
+        isOtherBranch: false,
       });
     }
     return result;
   });
 
-  /** Motivo (texto en español) por tubo del grupo `sin-destino`. */
+  /**
+   * Motivo (texto en español) por tubo del grupo `sin-destino`.
+   * La agrupación ya no depende del /resolve: un tubo cae en `sin-destino` cuando la mochila
+   * no le pre-calculó sección (`tube.sectionId == null`). Si además no tiene vínculo
+   * (`sampleId == null`) el motivo es el de tubo sin vínculo; si no, motivo genérico de asignación manual.
+   * El /resolve aporta el detalle fino cuando está disponible (back que devuelve `unresolvable`).
+   */
   readonly reasons = computed<ReadonlyMap<string, string>>(() => {
     const map = new Map<string, string>();
     const bySample = this.tubesBySampleId();
     for (const u of this._routing()?.unresolvable ?? []) {
       const tube = bySample.get(u.sampleId);
-      if (!tube || map.has(tube.id)) continue;
+      if (!tube || tube.sectionId != null || map.has(tube.id)) continue;
       map.set(tube.id, REASON_TEXT[u.reason] ?? 'Sin destino calculado');
     }
     for (const t of this._tubes()) {
-      if (t.sampleId == null && !map.has(t.id)) map.set(t.id, NO_SAMPLE_LINK_TEXT);
+      if (t.sectionId != null || map.has(t.id)) continue;
+      map.set(t.id, t.sampleId == null
+        ? NO_SAMPLE_LINK_TEXT
+        : 'Sin destino calculado — asigná una sección');
     }
     return map;
   });
@@ -197,13 +217,19 @@ export class TransitoLotesService {
     lotes: this._lotes().length,
   }));
 
-  /** Preview para el diálogo "Enviar todo": solo grupos con sección resoluble. */
+  /** Preview para el diálogo "Enviar todo": grupos local (despacho) e inter-sucursal (derivación). */
   readonly sendAllPreview = computed(() => {
     let enProceso = 0;
+    let enTransito = 0;
     let omitidas = 0;
     let groupsCount = 0;
     const byId = this.tubesById();
     for (const g of this.groups()) {
+      if (g.isOtherBranch && g.destinationBranchId != null) {
+        groupsCount++;
+        enTransito += g.sampleIds.length;
+        continue;
+      }
       const sectionId = this.sectionIdOf(g.id);
       if (sectionId == null) {
         omitidas += g.sampleIds.length;
@@ -216,7 +242,7 @@ export class TransitoLotesService {
         else omitidas++;
       }
     }
-    return { enProceso, enTransito: 0, groupsCount, omitidas };
+    return { enProceso, enTransito, groupsCount, omitidas };
   });
 
   /** Sección efectiva de un grupo: asignación manual > la implícita en el id `ws-{sectionId}`. */
@@ -370,15 +396,33 @@ export class TransitoLotesService {
     return kind === 'lote' ? this.sendLote(targetId) : this.sendGroup(targetId);
   }
 
-  /** Envía todos los grupos recomendados resolubles en UN solo despacho atómico. */
+  /**
+   * Envía todos los grupos recomendados resolubles:
+   * - los locales en UN solo despacho atómico (dispatchTubes),
+   * - cada grupo inter-sucursal en su propia derivación (deriveTubes, un destino por grupo).
+   */
   sendAll(): { enProceso: number; enTransito: number; skipped: number } {
     const snapshot = this.groups();
     const checkIns: { sampleId: number; sectionId: number }[] = [];
     const leavingIds: string[] = [];
     const sentGroups: string[] = [];
     let skipped = 0;
+    let enTransito = 0;
 
     for (const g of snapshot) {
+      // Inter-sucursal: se deriva por separado (cada grupo tiene su sucursal destino).
+      if (g.isOtherBranch && g.destinationBranchId != null) {
+        const tubes = this.tubesByIds(g.sampleIds);
+        const labelIds = tubes.flatMap(t => t.labelIds);
+        if (labelIds.length === 0) continue;
+        this.store.dispatch(deriveTubes({
+          labelIds, destinationBranchId: g.destinationBranchId, tubeCount: tubes.length,
+        }));
+        this.markLeaving(tubes.map(t => t.id));
+        this.cleanupGroup(g.id);
+        enTransito += tubes.length;
+        continue;
+      }
       const sectionId = this.sectionIdOf(g.id);
       if (sectionId == null) continue; // sin-destino sin asignación manual: queda en pantalla
       for (const tube of this.tubesByIds(g.sampleIds)) {
@@ -395,17 +439,35 @@ export class TransitoLotesService {
       for (const id of sentGroups) this.cleanupGroup(id);
     }
     this.clearSel();
-    return { enProceso: checkIns.length, enTransito: 0, skipped };
+    return { enProceso: checkIns.length, enTransito, skipped };
   }
 
   private sendGroup(groupId: string): SendResult | null {
     const group = this.groups().find(g => g.id === groupId);
     if (!group) return null;
-    const sectionId = this.sectionIdOf(groupId);
-    if (sectionId == null) return null;
 
     const ids = this.idsToSend(group.sampleIds);
     const tubes = this.tubesByIds(ids);
+    if (tubes.length === 0) return null;
+
+    // Inter-sucursal: deriva (send-to-branch) con labels planos + destinationBranchId del grupo.
+    const destinationBranchId = group.isOtherBranch ? (group.destinationBranchId ?? null) : null;
+    if (destinationBranchId != null && destinationBranchId !== this._branchId()) {
+      const labelIds = tubes.flatMap(t => t.labelIds);
+      if (labelIds.length === 0) return null;
+      this.store.dispatch(deriveTubes({ labelIds, destinationBranchId, tubeCount: tubes.length }));
+      this.markLeaving(tubes.map(t => t.id));
+      this.cleanupGroup(groupId);
+      this.clearSel();
+      return {
+        enProceso: 0, enTransito: tubes.length, skipped: 0,
+        detail: [group.branch, group.area, group.section].filter(Boolean).join(' · '),
+      };
+    }
+
+    // Local: despacho atómico a la sección de esta sucursal.
+    const sectionId = this.sectionIdOf(groupId);
+    if (sectionId == null) return null;
     const dispatchable = tubes.filter(t => t.sampleId != null);
     const checkIns = dispatchable.map(t => ({ sampleId: t.sampleId!, sectionId }));
     const skipped = tubes.length - checkIns.length;

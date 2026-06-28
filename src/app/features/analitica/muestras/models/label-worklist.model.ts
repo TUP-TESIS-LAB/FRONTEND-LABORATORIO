@@ -20,6 +20,10 @@ export interface LabelWorklistItem {
   rejectionReason?: string | null;
   /** Estado de carga de las determinaciones. Solo llega para status PROCESSING. */
   cargaStatus?: 'PARCIAL' | 'COMPLETA';
+  /** Destino pre-calculado por la mochila (Parte B). Solo relevante para IN_TRANSIT.
+   *  sectionId = sección destino; destinationBranchId = sucursal destino si es inter-sucursal (null = local). */
+  sectionId?: number | null;
+  destinationBranchId?: number | null;
 }
 
 /** PENDING y CANCELED no tienen pantalla en las worklists. */

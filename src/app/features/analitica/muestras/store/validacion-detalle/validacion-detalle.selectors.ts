@@ -4,4 +4,5 @@ export const selectVDState = createFeatureSelector<ValidacionDetalleState>(VALID
 export const selectDetalle = createSelector(selectVDState, s => s.detalle);
 export const selectDetalleLoading = createSelector(selectVDState, s => s.loading);
 export const selectDetalleSaving = createSelector(selectVDState, s => s.saving);
+export const selectDetallePdfLoading = createSelector(selectVDState, s => s.pdfLoading);
 export const selectDetalleError = createSelector(selectVDState, s => s.error);

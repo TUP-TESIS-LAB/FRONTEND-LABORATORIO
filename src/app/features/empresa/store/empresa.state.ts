@@ -4,6 +4,7 @@ import { Rol } from '../models/rol.model';
 import { WhiteLabel } from '../models/white-label.model';
 import { ModuloTenant } from '../models/modulo.model';
 import { SmtpConfig, TestEmailResult } from '../models/smtp-config.model';
+import { AuthorizerCandidate, ReportTemplate } from '../models/report-template.model';
 
 export interface EmpresaState {
   // Usuarios
@@ -23,6 +24,11 @@ export interface EmpresaState {
 
   // Modulos
   modulos: ModuloTenant[];
+
+  // Report template (config informe PDF)
+  reportTemplate: ReportTemplate | null;
+  // Candidatos a firmante autorizante del informe (admins del tenant).
+  authorizerCandidates: AuthorizerCandidate[];
 
   // SMTP / Email
   smtpConfig: SmtpConfig | null;
@@ -52,6 +58,8 @@ export const initialEmpresaState: EmpresaState = {
   roles: [],
   whiteLabel: null,
   modulos: [],
+  reportTemplate: null,
+  authorizerCandidates: [],
 
   smtpConfig: null,
   smtpPending: false,

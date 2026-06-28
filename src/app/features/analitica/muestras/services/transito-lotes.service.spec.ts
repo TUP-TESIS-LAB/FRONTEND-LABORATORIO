@@ -21,7 +21,11 @@ function installLocalStorageMock(): Map<string, string> {
   return store;
 }
 
-function tube(sampleId: number | null, labelIds: number[]): Tube {
+function tube(
+  sampleId: number | null,
+  labelIds: number[],
+  dest: { sectionId?: number | null; destinationBranchId?: number | null } = {},
+): Tube {
   return {
     id: sampleId != null ? `t${sampleId}` : `l${labelIds[0]}`,
     sampleId,
@@ -32,6 +36,8 @@ function tube(sampleId: number | null, labelIds: number[]): Tube {
     study: 'Hemograma', patient: 'García, M.', branch: 'CENTRAL',
     receivedAt: '2026-06-12T08:00:00Z', urgent: false, state: 'transito',
     rejectionReason: null,
+    sectionId: dest.sectionId ?? null,
+    destinationBranchId: dest.destinationBranchId ?? null,
   };
 }
 
@@ -56,9 +62,11 @@ function routingOf(
   };
 }
 
-// t101/t102 → ws-10 por routing; t103 unresolvable; l4 sin vínculo (sampleId null).
-const T1 = tube(101, [1]);
-const T2 = tube(102, [2]);
+// La agrupación ahora sale del destino PRE-CALCULADO del tubo (sectionId/destinationBranchId),
+// no del /resolve. t101/t102 → ws-10 (sección local); t103 sin sección (sin-destino);
+// l4 sin vínculo (sampleId null) y sin sección → sin-destino.
+const T1 = tube(101, [1], { sectionId: 10 });
+const T2 = tube(102, [2], { sectionId: 10 });
 const T3 = tube(103, [3]);
 const T4 = tube(null, [4]);
 const ROUTING = routingOf(
@@ -92,16 +100,17 @@ function feed(): void {
   svc.setSectionOptions(SECTION_OPTIONS);
 }
 
-describe('TransitoLotesService — groups desde el routing real', () => {
+describe('TransitoLotesService — groups desde el destino pre-calculado del tubo', () => {
   beforeEach(() => { setup(); feed(); });
 
-  it('crea un grupo ws-{sectionId} por workSection con los nombres del routing', () => {
+  it('crea un grupo ws-{sectionId} por sección pre-calculada con nombres de sectionOptions', () => {
     const ws = svc.groups().find(g => g.id === 'ws-10')!;
     expect(ws).toBeDefined();
     expect(ws.branch).toBe('CENTRAL');
     expect(ws.area).toBe('Química');
     expect(ws.section).toBe('Endocrinología');
     expect(ws.sampleIds).toEqual(['t101', 't102']);
+    expect(ws.isOtherBranch).toBe(false);
   });
 
   it('tubos no resolubles o sin vínculo caen en el grupo sin-destino', () => {
@@ -117,9 +126,10 @@ describe('TransitoLotesService — groups desde el routing real', () => {
     expect(svc.reasons().get('l4')).toBe(NO_SAMPLE_LINK_TEXT);
   });
 
-  it('reasons traduce NO_WORKSPACE_FOUND', () => {
-    svc.setRouting(routingOf([], [{ sampleId: 101, reason: 'NO_WORKSPACE_FOUND' }]));
-    expect(svc.reasons().get('t101')).toBe('La sucursal no tiene esa sección');
+  it('reasons traduce NO_WORKSPACE_FOUND para un tubo sin sección pre-calculada', () => {
+    // t103 no tiene sectionId → cae en sin-destino; el detalle fino lo aporta el /resolve.
+    svc.setRouting(routingOf([], [{ sampleId: 103, reason: 'NO_WORKSPACE_FOUND' }]));
+    expect(svc.reasons().get('t103')).toBe('La sucursal no tiene esa sección');
   });
 
   it('un tubo metido en un lote desaparece de los groups (invariante 1)', () => {
@@ -310,6 +320,37 @@ describe('TransitoLotesService — send (backend real)', () => {
     })]);
     expect(result.enTransito).toBe(2);
     expect(result.enProceso).toBe(0);
+  });
+
+  it('tubo con sección inter-sucursal forma su grupo marcado y sendGroup deriva (no dispatch)', () => {
+    // T5: sección 30 en sucursal NORTE (1002, distinta de la actual 1001).
+    const t5 = tube(105, [5], { sectionId: 30, destinationBranchId: 1002 });
+    svc.setTubes([T1, T2, t5]); // T1/T2 → ws-10 local; t5 → ws-30 inter-sucursal
+    const local = svc.groups().find(g => g.id === 'ws-10')!;
+    const inter = svc.groups().find(g => g.id === 'ws-30')!;
+    expect(local.isOtherBranch).toBe(false);
+    expect(inter.isOtherBranch).toBe(true);
+    expect(inter.destinationBranchId).toBe(1002);
+    expect(inter.branch).toBe('NORTE'); // nombre resuelto desde _myBranches
+
+    const result = svc.send('ws-30', 'group')!;
+    expect(dispatched).toEqual([deriveTubes({
+      labelIds: [5], destinationBranchId: 1002, tubeCount: 1,
+    })]);
+    expect(result.enTransito).toBe(1);
+    expect(result.enProceso).toBe(0);
+  });
+
+  it('sendAll deriva los grupos inter-sucursal y despacha los locales', () => {
+    const t5 = tube(105, [5], { sectionId: 30, destinationBranchId: 1002 });
+    svc.setTubes([T1, T2, t5]);
+    const result = svc.sendAll();
+    expect(dispatched).toEqual([
+      deriveTubes({ labelIds: [5], destinationBranchId: 1002, tubeCount: 1 }),
+      dispatchTubes({ checkIns: [{ sampleId: 101, sectionId: 10 }, { sampleId: 102, sectionId: 10 }] }),
+    ]);
+    expect(result.enProceso).toBe(2);
+    expect(result.enTransito).toBe(1);
   });
 
   it('sendAll arma UN despacho atómico con los grupos resolubles y no toca lotes', () => {

@@ -23,9 +23,11 @@ import {
 import { Address } from '../../models/address.model';
 import { CrearUsuarioPayload } from '@features/empresa/models/usuario.model';
 import { AccessSection } from '@core/access/access.model';
-import { EMPLOYEE_FORM_STEPS } from './employee-form-steps';
+import { EmployeeService } from '../../services/employee.service';
+import { buildEmployeeFormSteps } from './employee-form-steps';
 import { DatosStepComponent } from './steps/datos-step/datos-step.component';
 import { UsuarioStepComponent } from './steps/usuario-step/usuario-step.component';
+import { FirmaStepComponent } from './steps/firma-step/firma-step.component';
 import { ResumenStepComponent, EmployeeSummaryView } from './steps/resumen-step/resumen-step.component';
 
 interface DatosValue {
@@ -40,7 +42,7 @@ interface DireccionValue { street: string; streetNumber: string; neighborhood: s
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
-    WizardShellComponent, DatosStepComponent, UsuarioStepComponent, ResumenStepComponent,
+    WizardShellComponent, DatosStepComponent, UsuarioStepComponent, FirmaStepComponent, ResumenStepComponent,
   ],
   providers: [ConfirmationService],
   template: `
@@ -49,18 +51,19 @@ interface DireccionValue { street: string; streetNumber: string; neighborhood: s
         [customFooter]="true"
         [heading]="pageHeading()"
         [breadcrumb]="'Sucursales › Empleados › ' + (isEdit() ? 'Editar' : 'Nuevo')"
-        [steps]="steps"
+        [steps]="steps()"
         [currentIndex]="currentStep()"
         [visited]="visited()"
         (stepSelected)="goToStep($event)">
-        @switch (currentStep()) {
-          @case (0) { <emp-datos-step [group]="datosGroup" [addressGroup]="direccionGroup" /> }
-          @case (1) {
+        @switch (currentStepKey()) {
+          @case ('datos') { <emp-datos-step [group]="datosGroup" [addressGroup]="direccionGroup" /> }
+          @case ('usuario') {
             <emp-usuario-step [group]="usuarioGroup" [mode]="usuarioMode()"
                               [isEdit]="isEdit()" [currentUserId]="employee()?.userId ?? null"
                               [identity]="usuarioPreload()" />
           }
-          @case (2) { <emp-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
+          @case ('firma') { <emp-firma-step [group]="firmaGroup" /> }
+          @case ('resumen') { <emp-resumen-step [data]="summaryView()" (editStep)="goToStep($event)" /> }
         }
 
         <ng-container wizardFooter>
@@ -92,8 +95,15 @@ export class EmpleadoFormPage implements OnDestroy {
   private readonly router = inject(Router);
   private readonly actions$ = inject(Actions);
   private readonly confirm = inject(ConfirmationService);
+  private readonly employeeService = inject(EmployeeService);
 
-  readonly steps = EMPLOYEE_FORM_STEPS;
+  /** El paso "Firma" solo aplica a bioquímicos; los pasos son dinámicos por rol. */
+  readonly isBiochemist = computed<boolean>(() => {
+    void this.value();
+    return !!this.datosGroup.get('isBiochemist')!.value;
+  });
+  readonly steps = computed(() => buildEmployeeFormSteps(this.isBiochemist()));
+  readonly currentStepKey = computed<string>(() => this.steps()[this.currentStep()]?.key ?? 'datos');
 
   readonly pending = this.store.selectSignal(selectEmployeePending);
   readonly employee = this.store.selectSignal(selectSelectedEmployee);
@@ -129,6 +139,9 @@ export class EmpleadoFormPage implements OnDestroy {
         branchId: [null as number | null],
       }),
       sections: [[] as AccessSection[]],
+    }),
+    firma: this.fb.group({
+      signature: [null as string | null],
     }),
   });
 
@@ -171,12 +184,14 @@ export class EmpleadoFormPage implements OnDestroy {
   readonly visited = signal<ReadonlySet<number>>(new Set([0]));
 
   readonly isFirstStep = computed(() => this.currentStep() === 0);
-  readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
+  readonly isLastStep = computed(() => this.currentStep() === this.steps().length - 1);
 
   readonly canContinue = computed(() => {
-    if (this.currentStep() === 0) return this.datosValid();
-    if (this.currentStep() === 1) return this.usuarioValid();
-    return true;
+    switch (this.currentStepKey()) {
+      case 'datos': return this.datosValid();
+      case 'usuario': return this.usuarioValid();
+      default: return true;
+    }
   });
   readonly canSubmit = computed(() =>
     this.datosValid() && this.usuarioValid() && !this.pending() && (this.isEdit() || this.isLastStep()));
@@ -200,12 +215,14 @@ export class EmpleadoFormPage implements OnDestroy {
       street: dir.street?.trim() || null, streetNumber: dir.streetNumber?.trim() || null,
       neighborhood: dir.neighborhood?.trim() || null, city: dir.city?.trim() || null, province: dir.province?.trim() || null,
       userLabel: this.userSummaryLabel(),
+      signature: d.isBiochemist ? (this.firmaGroup.get('signature')!.value as string | null) : null,
     };
   });
 
   get datosGroup(): FormGroup { return this.form.get('datos') as FormGroup; }
   get direccionGroup(): FormGroup { return this.form.get('direccion') as FormGroup; }
   get usuarioGroup(): FormGroup { return this.form.get('usuario') as FormGroup; }
+  get firmaGroup(): FormGroup { return this.form.get('firma') as FormGroup; }
 
   private hydratedForId: string | undefined = undefined;
 
@@ -229,8 +246,24 @@ export class EmpleadoFormPage implements OnDestroy {
       const e = this.employee();
       if (this.isEdit() && e && String(e.id) === this.id()) {
         this.hydrateDatos(e);
-        this.visited.set(new Set([0, 1, 2]));
+        // En edición todos los pasos son navegables; el set cubre el total actual
+        // (que puede incluir o no el paso "firma" según el rol cargado).
+        this.visited.set(new Set(this.steps().map((_, i) => i)));
       }
+    });
+
+    // El paso "Firma" solo existe para bioquímicos. Al desactivar isBiochemist:
+    // limpiar la firma (evita firma huérfana) y clamprear el paso actual para
+    // que no quede apuntando a un índice que ya no existe.
+    effect(() => {
+      const isBio = this.isBiochemist();
+      if (!isBio && this.firmaGroup.get('signature')!.value != null) {
+        this.firmaGroup.get('signature')!.setValue(null);
+      }
+      const lastIndex = this.steps().length - 1;
+      if (this.currentStep() > lastIndex) this.currentStep.set(lastIndex);
+      // Mantener navegables todos los pasos visitados existentes dentro del rango.
+      this.visited.update((s) => new Set([...s].filter((i) => i <= lastIndex)));
     });
 
     effect(() => {
@@ -246,10 +279,11 @@ export class EmpleadoFormPage implements OnDestroy {
 
   goNext(): void {
     if (!this.canContinue()) {
-      (this.currentStep() === 0 ? this.datosGroup : this.usuarioGroup).markAllAsTouched();
+      if (this.currentStepKey() === 'datos') this.datosGroup.markAllAsTouched();
+      if (this.currentStepKey() === 'usuario') this.usuarioGroup.markAllAsTouched();
       return;
     }
-    const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
+    const next = Math.min(this.currentStep() + 1, this.steps().length - 1);
     this.currentStep.set(next);
     this.visited.update((s) => new Set(s).add(next));
   }
@@ -265,6 +299,7 @@ export class EmpleadoFormPage implements OnDestroy {
         newUser: { firstName: '', lastName: '', email: '', username: '', document: '', roleId: null, branchId: null },
         sections: [],
       },
+      firma: { signature: null },
     });
     this.originalContacts = [];
     this.currentStep.set(0);
@@ -280,6 +315,27 @@ export class EmpleadoFormPage implements OnDestroy {
       street: e.address?.street ?? '', streetNumber: e.address?.streetNumber ?? '',
       neighborhood: e.address?.neighborhood ?? '', city: e.address?.city ?? '', province: e.address?.province ?? '',
     });
+    // La firma (base64) ya NO viaja en el GET del empleado por seguridad. Si el empleado
+    // tiene firma cargada, la pedimos al endpoint admin `/{id}/signature` para precargarla
+    // en edición; si no, dejamos null. Best-effort: ante error dejamos el campo vacío.
+    if (e.hasSignature) {
+      this.employeeService.getSignature(e.id).subscribe({
+        next: ({ signature }) => {
+          // Solo precargar si seguimos editando el mismo empleado (evita pisar otro form).
+          if (this.isEdit() && String(e.id) === this.id()) {
+            this.firmaGroup.patchValue({ signature: signature ?? null });
+            this.firmaGroup.markAsPristine();
+          }
+        },
+        error: () => {
+          if (this.isEdit() && String(e.id) === this.id()) {
+            this.firmaGroup.patchValue({ signature: null });
+          }
+        },
+      });
+    } else {
+      this.firmaGroup.patchValue({ signature: null });
+    }
     this.form.markAsPristine();
   }
 
@@ -305,10 +361,12 @@ export class EmpleadoFormPage implements OnDestroy {
     if (!this.canSubmit()) return;
     const d = this.datosGroup.getRawValue() as DatosValue;
     const address = this.buildAddress();
+    // La firma solo viaja para bioquímicos; en no-bioquímicos se manda null.
+    const signature = d.isBiochemist ? (this.firmaGroup.get('signature')!.value as string | null) : null;
     const req: CreateEmployeeRequest = {
       firstName: d.firstName, lastName: d.lastName, document: d.document,
       isBiochemist: d.isBiochemist, registration: d.registration?.trim() ? d.registration.trim() : null,
-      address,
+      address, signature: signature || null,
     };
     const email = d.email?.trim() ?? '';
     const mobile = d.mobile?.trim() ?? '';

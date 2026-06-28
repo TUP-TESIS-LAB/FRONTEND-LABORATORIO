@@ -25,7 +25,7 @@ describe('ResultadosEffects', () => {
   beforeEach(() => {
     api = {
       getResultsByProtocol: vi.fn(), getDeterminations: vi.fn(),
-      getDeterminationCatalog: vi.fn(), batchUpdate: vi.fn(), markReady: vi.fn(),
+      getDeterminationCatalog: vi.fn(), batchUpdate: vi.fn(), markReadyBatch: vi.fn(),
     };
     analysis = { getById: vi.fn() };
     pacientes = { getByIds: vi.fn() };
@@ -124,13 +124,12 @@ describe('ResultadosEffects', () => {
     expect(action).toEqual(saveResultsFailure({ error }));
   });
 
-  it('markReady$ llama markReady por id y emite success', async () => {
-    api.markReady.mockReturnValue(of({}));
+  it('markReady$ llama markReadyBatch con todos los ids (todo-o-nada) y emite success', async () => {
+    api.markReadyBatch.mockReturnValue(of([]));
     actions$ = of(markReady({ resultIds: [1, 2] }));
     const effects = TestBed.inject(ResultadosEffects);
     const action = await firstValueFrom(effects.markReady$);
-    expect(api.markReady).toHaveBeenCalledWith(1);
-    expect(api.markReady).toHaveBeenCalledWith(2);
+    expect(api.markReadyBatch).toHaveBeenCalledWith([1, 2]);
     expect(action).toEqual(markReadySuccess());
   });
 

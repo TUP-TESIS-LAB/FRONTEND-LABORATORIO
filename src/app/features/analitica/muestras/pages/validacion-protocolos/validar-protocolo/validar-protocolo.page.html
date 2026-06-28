@@ -35,6 +35,14 @@
     <div class="psum-firma">
       <span class="psum-lbl">FIRMA ELECTRÓNICA</span>
       <div class="firma-btns">
+        @if (estaFirmado()) {
+          <button
+            type="button" class="btn-firmar btn-pdf"
+            [disabled]="pdfLoading()" (click)="verPdf()"
+          >
+            <i class="pi" [class.pi-file-pdf]="!pdfLoading()" [class.pi-spinner]="pdfLoading()" [class.pi-spin]="pdfLoading()"></i> Ver PDF
+          </button>
+        }
         <button
           type="button" class="btn-firmar btn-total"
           [disabled]="!canOpenFirmaModal() || saving()" (click)="abrirFirmaModal()"
@@ -141,6 +149,4 @@
     (confirmar)="confirmarFirma()"
     (closed)="cerrarFirmaModal()"
   />
-
-  <p-toast position="bottom-right" />
 </section>

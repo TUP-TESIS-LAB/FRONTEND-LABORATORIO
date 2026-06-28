@@ -3,16 +3,24 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { HttpErrorResponse } from '@angular/common/http';
 import { concat, of } from 'rxjs';
-import { catchError, concatMap, filter, last, map, switchMap, withLatestFrom } from 'rxjs/operators';
+import { catchError, concatMap, filter, last, map, switchMap, tap, withLatestFrom } from 'rxjs/operators';
+import { NotificationService } from '@core/services/notification.service';
+import { humanizeBackendError } from '@shared/utils/error-messages';
 import { PostanaliticaApiService } from '../../services/postanalitica-api.service';
 import { selectDetalle } from './validacion-detalle.selectors';
-import { loadDetalle, loadDetalleSuccess, loadDetalleFailure, validarTodo, mutarOk, mutarFail, firmarResultado, firmarEstudio } from './validacion-detalle.actions';
+import {
+  loadDetalle, loadDetalleSuccess, loadDetalleFailure,
+  validarTodo, mutarOk, mutarFail,
+  firmarResultado, firmarEstudio,
+  verPdf, verPdfSuccess, verPdfFailure,
+} from './validacion-detalle.actions';
 
 @Injectable()
 export class ValidacionDetalleEffects {
   private readonly actions$ = inject(Actions);
   private readonly store = inject(Store);
   private readonly api = inject(PostanaliticaApiService);
+  private readonly notifications = inject(NotificationService);
 
   load$ = createEffect(() => this.actions$.pipe(
     ofType(loadDetalle),
@@ -72,4 +80,51 @@ export class ValidacionDetalleEffects {
     filter(([, d]) => d != null),
     map(([, d]) => loadDetalle({ protocolId: d!.study.protocolId, patientName: d!.patientName, patientSex: d!.patientSex, patientBirthDate: d!.patientBirthDate })),
   ));
+
+  /**
+   * Ver PDF bajo demanda: lista los informes del estudio, toma el de mayor versión,
+   * lo descarga y lo abre en una pestaña nueva. El back genera-si-falta el informe,
+   * así que un estudio firmado siempre devuelve un documento (no hay polling/reintento).
+   */
+  verPdf$ = createEffect(() => this.actions$.pipe(
+    ofType(verPdf),
+    concatMap(({ protocolId }) =>
+      this.api.getStudyReports(protocolId).pipe(
+        concatMap((reports) => {
+          if (!reports || reports.length === 0) {
+            throw new HttpErrorResponse({ status: 404 });
+          }
+          const latest = reports.reduce((a, b) => (b.versionNumber > a.versionNumber ? b : a));
+          return this.api.downloadReport(protocolId, latest.id).pipe(
+            map((blob: Blob) => {
+              const url = URL.createObjectURL(blob);
+              window.open(url, '_blank');
+              return verPdfSuccess();
+            }),
+          );
+        }),
+        catchError((error: HttpErrorResponse) => of(verPdfFailure({ error }))))),
+  ));
+
+  /** Toast de error en español cuando "Ver PDF" falla (sin leak de internals). */
+  verPdfFailureToast$ = createEffect(() => this.actions$.pipe(
+    ofType(verPdfFailure),
+    tap(({ error }) => this.notifications.error(
+      'No se pudo abrir el informe',
+      humanizeBackendError(error, {
+        fallback: 'No pudimos abrir el informe del paciente. Probá de nuevo.',
+        byStatus: {
+          403: 'No tenés permiso para ver el informe de este estudio.',
+          404: 'Todavía no hay un informe disponible para este estudio.',
+        },
+      }))),
+  ), { dispatch: false });
+
+  /** Toast de error genérico de la página (carga/validación/firma), antes en el componente. */
+  globalFailureToast$ = createEffect(() => this.actions$.pipe(
+    ofType(loadDetalleFailure, mutarFail),
+    tap(({ error }) => this.notifications.error(
+      'Operación fallida',
+      humanizeBackendError(error, { fallback: 'No pudimos completar la operación. Probá de nuevo.' }))),
+  ), { dispatch: false });
 }

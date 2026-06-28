@@ -12,3 +12,8 @@ export const mutarFail = createAction('[Postanalitica API] Mutacion Fail', props
 
 export const firmarResultado = createAction('[Validar Protocolo Page] Firmar Resultado', props<{ resultId: number }>());
 export const firmarEstudio = createAction('[Validar Protocolo Page] Firmar Estudio', props<{ protocolId: number }>());
+
+// Ver PDF bajo demanda: descarga el informe firmado del estudio y lo abre en una pestaña nueva.
+export const verPdf = createAction('[Validar Protocolo Page] Ver PDF', props<{ protocolId: number }>());
+export const verPdfSuccess = createAction('[Postanalitica API] Ver PDF Success');
+export const verPdfFailure = createAction('[Postanalitica API] Ver PDF Failure', props<{ error: HttpErrorResponse }>());
