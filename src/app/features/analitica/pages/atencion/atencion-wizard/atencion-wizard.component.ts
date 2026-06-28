@@ -190,6 +190,7 @@ const ALL_STEPS: WizardStepDef[] = [
                                         [initialIndications]="detail()!.indications"
                                         [initialDoctorId]="detail()!.doctorId"
                                         [initialInsurancePlanId]="detail()!.insurancePlanId"
+                                        [initialIsUrgent]="detail()!.isUrgent"
                                         [readOnly]="readOnly()" />
             }
             @case ('analisis') {

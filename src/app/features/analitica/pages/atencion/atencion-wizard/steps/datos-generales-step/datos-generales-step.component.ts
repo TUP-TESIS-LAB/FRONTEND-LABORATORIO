@@ -526,7 +526,7 @@ export class DatosGeneralesStepComponent implements OnInit {
   /** Módulo URGENCIAS activo: gatea el toggle de "Atención urgente" en recepción. */
   protected readonly urgenciasActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Urgencias));
 
-  /** Estado local del toggle urgente. Se hidrata desde `detail().isUrgent` en ngOnInit. */
+  /** Estado local del toggle urgente. Se hidrata desde el input initialIsUrgent en ngOnInit. */
   isUrgentValue = false;
 
   /** Búsqueda automática del DNI: se dispara con debounce al tipear y al blur. */
@@ -549,6 +549,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   readonly initialDoctorId = input<number | null>(null);
   /** Cobertura (plan) ya asociada a la atención (al retomar) — pre-selecciona el chip. */
   readonly initialInsurancePlanId = input<number | null>(null);
+  /** Flag urgente ya persistido (al retomar). Se hidrata en ngOnInit para que el toggle muestre el estado real. */
+  readonly initialIsUrgent = input<boolean | null>(null);
 
   /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
   readonly readOnly = input<boolean>(false);
@@ -768,10 +770,12 @@ export class DatosGeneralesStepComponent implements OnInit {
       catchError(() => EMPTY),
     ).subscribe(list => this.doctors.set(list.filter(d => d.active)));
 
-    // Hidratar lo ya persistido al retomar la atención. (003 / 007)
+    // Hidratar lo ya persistido al retomar la atención. (003 / 007 / urgente)
     const ind = this.initialIndications();
     if (ind != null) this.indications = ind;
     this.selectedDoctorId.set(this.initialDoctorId());
+    const isUrgent = this.initialIsUrgent();
+    if (isUrgent != null) this.isUrgentValue = isUrgent;
 
     const dni = this.initialDni();
     if (dni) {
