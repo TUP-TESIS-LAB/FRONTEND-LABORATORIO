@@ -31,6 +31,18 @@ import { OperatorBranchContextService } from '@features/turnos/services/operator
 import { createHomeVisit, createHomeVisitSuccess, createHomeVisitFailure } from '../../store/home-visit.actions';
 import { selectHomeVisitsPending } from '../../store/home-visit.selectors';
 
+/**
+ * Convierte un Date a string ISO local (sin zona) para el backend LocalDateTime.
+ * `toISOString()` usa UTC y puede desplazar la fecha un día en GMT-3.
+ */
+function toLocalDateTimeString(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  );
+}
+
 const STEPS: readonly FormStep[] = [
   { key: 'paciente', title: 'Paciente y horario', subtitle: 'Identificación del paciente, fecha y ventana horaria' },
   { key: 'direccion', title: 'Domicilio y análisis', subtitle: 'Dirección de la visita, extractor y análisis' },
@@ -75,7 +87,8 @@ const STEPS: readonly FormStep[] = [
       (stepSelected)="goTo($event)"
       (next)="next()"
       (back)="prev()"
-      (cancel)="cancel()">
+      (cancel)="cancel()"
+      (finish)="onFinish()">
 
       <!-- ─── Paso 0: Paciente + Fecha + Horario ─── -->
       @if (currentIndex() === 0) {
@@ -328,7 +341,8 @@ export class NuevaVisitaPage implements OnInit {
 
   // ── Step navigation ────────────────────────────────────────────────────────
   goTo(i: number): void {
-    this.currentIndex.set(i);
+    // Solo permite saltar a pasos ya visitados, igual que el patrón del repo.
+    if (this.visited().has(i)) this.currentIndex.set(i);
   }
 
   next(): void {
@@ -390,7 +404,7 @@ export class NuevaVisitaPage implements OnInit {
     this.submit();
   }
 
-  submit(): void {
+  private submit(): void {
     if (!this.step1Valid()) {
       this.form.markAllAsTouched();
       return;
@@ -401,8 +415,10 @@ export class NuevaVisitaPage implements OnInit {
     const branchId = this.branchCtx.branchId() ?? 1;
 
     const scheduledAtDate = f.scheduledAt as Date;
+    // Construcción local-aware: evita el desfase UTC que produce toISOString()
+    // en zonas horarias negativas (ej. GMT-3 puede retroceder la fecha un día).
     const scheduledAt = scheduledAtDate
-      ? scheduledAtDate.toISOString().replace('Z', '').substring(0, 19)
+      ? toLocalDateTimeString(scheduledAtDate)
       : '';
 
     this.store.dispatch(

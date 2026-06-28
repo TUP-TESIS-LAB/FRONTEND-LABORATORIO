@@ -18,7 +18,7 @@ import {
   selectHomeVisits,
   selectHomeVisitsPending,
 } from '../../store/home-visit.selectors';
-import { HomeVisit, HomeVisitStatus } from '../../models/home-visit.model';
+import { HomeVisitStatus } from '../../models/home-visit.model';
 
 interface StatusDisplay {
   label: string;
@@ -138,7 +138,4 @@ export class AgendaPage implements OnInit {
     if (!time) return '—';
     return time.substring(0, 5);
   }
-
-  // Exponer HomeVisit para el typecast en template
-  asVisit(row: unknown): HomeVisit { return row as HomeVisit; }
 }
