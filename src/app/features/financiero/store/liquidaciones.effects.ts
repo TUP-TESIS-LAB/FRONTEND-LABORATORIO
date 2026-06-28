@@ -30,6 +30,7 @@ function mapGenerateError(e: HttpErrorResponse): string {
 
 function mapLifecycleError(e: HttpErrorResponse, accion: 'informar' | 'anular'): string {
   if (e.status === 404) return 'La liquidación no existe.';
+  if (e.status === 409) return 'La liquidación fue modificada por otra operación. Recargá la página y volvé a intentar.';
   if (e.status === 422) {
     return accion === 'informar'
       ? 'No se puede informar la liquidación en su estado actual.'

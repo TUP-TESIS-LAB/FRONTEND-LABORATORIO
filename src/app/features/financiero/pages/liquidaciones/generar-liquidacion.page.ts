@@ -78,7 +78,7 @@ const STEPS: FormStep[] = [
           @if (preview().length) {
             <div class="liq-preview liq-preview--ok">
               <i class="pi pi-check-circle"></i>
-              <span><b>{{ preview().length }}</b> prestación{{ preview().length === 1 ? '' : 'es' }} pendiente{{ preview().length === 1 ? '' : 's' }} para liquidar.</span>
+              <span><b>{{ preview().length }}</b> {{ preview().length === 1 ? 'prestación' : 'prestaciones' }} pendiente{{ preview().length === 1 ? '' : 's' }} para liquidar.</span>
             </div>
           } @else {
             <div class="liq-preview liq-preview--empty">
