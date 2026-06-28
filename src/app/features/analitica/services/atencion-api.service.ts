@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -95,5 +95,27 @@ export class AtencionApiService {
 
   advanceUrgent(id: number): Observable<AttentionResponse> {
     return this.http.post<AttentionResponse>(`${this.base}/${id}/urgent/advance`, {});
+  }
+
+  // ── KAN-153: Bandeja urgentes pendientes (reconciliación) ──────────────────
+
+  /**
+   * Listado de atenciones urgentes con pendientes de reconciliación.
+   * Soporta If-None-Match → 304 (observe:'response' para acceder al ETag).
+   */
+  listUrgentPending(etag: string | null): Observable<HttpResponse<AttentionResponse[]>> {
+    let headers = new HttpHeaders();
+    if (etag) headers = headers.set('If-None-Match', etag);
+    return this.http.get<AttentionResponse[]>(`${this.base}/urgent-pending`, { headers, observe: 'response' });
+  }
+
+  /** Completa datos administrativos pendientes (médico / plan de obra social). */
+  completeAdminData(id: number, body: { doctorId?: number; insurancePlanId?: number }): Observable<AttentionResponse> {
+    return this.http.patch<AttentionResponse>(`${this.base}/${id}/complete-admin-data`, body);
+  }
+
+  /** Marca el cobro como regularizado (sin cuerpo). */
+  cobroRegularizado(id: number): Observable<AttentionResponse> {
+    return this.http.patch<AttentionResponse>(`${this.base}/${id}/cobro-regularizado`, {});
   }
 }

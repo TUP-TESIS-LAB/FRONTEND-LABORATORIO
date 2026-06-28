@@ -98,6 +98,10 @@ import { NOMENCLADOR_FEATURE_KEY } from '@features/analitica/store/nomenclador/n
 import { nomencladorReducer } from '@features/analitica/store/nomenclador/nomenclador.reducer';
 import { NomencladorEffects } from '@features/analitica/store/nomenclador/nomenclador.effects';
 
+import { URGENT_PENDING_FEATURE_KEY } from '@features/analitica/store/urgent-pending/urgent-pending.state';
+import { urgentPendingReducer } from '@features/analitica/store/urgent-pending/urgent-pending.reducer';
+import { UrgentPendingEffects } from '@features/analitica/store/urgent-pending/urgent-pending.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -157,6 +161,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(ValidacionDetalleEffects),
     provideState(NOMENCLADOR_FEATURE_KEY, nomencladorReducer),
     provideEffects(NomencladorEffects),
+    provideState(URGENT_PENDING_FEATURE_KEY, urgentPendingReducer),
+    provideEffects(UrgentPendingEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),
