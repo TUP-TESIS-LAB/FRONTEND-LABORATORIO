@@ -35,7 +35,7 @@ export interface ConfigResumen {
   hasCustomConfig: boolean;      // hay override y/o ref-values propios
 }
 
-/** Config de precio particular del laboratorio. MOCK — sin endpoint BE todavía (feature futura). */
+/** Config de precio particular del laboratorio (valor U.B. + overrides por análisis). */
 export interface ParticularPricing {
   valorUb: number;
   overrides: Record<number, number>; // analysisId -> precio manual
