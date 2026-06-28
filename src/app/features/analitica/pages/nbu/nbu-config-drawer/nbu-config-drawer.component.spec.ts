@@ -55,25 +55,32 @@ function open(fixture: ComponentFixture<NbuConfigDrawerComponent>, analysis = ca
 interface FlushOpts {
   override?: Partial<DeterminationOverride> | null;
   refValues?: unknown[];
+  prepItems?: unknown[];
+  prepTypes?: unknown[];
 }
 
 /**
- * Responde la carga inicial: catalog determinations (1 det con unidad), tenant-analyses,
- * y por determinación override + ref-values.
+ * Responde la carga inicial: catalog determinations (1 det), tenant-analyses,
+ * preparation-types; y por determinación: override + ref-values + preparation.
  */
 function flushLoad(http: HttpTestingController, opts: FlushOpts = {}, analysisId = 42, detId = 100, tenantRow?: Record<string, unknown>): void {
+  // Outer forkJoin: determinations + tenantRows + prepTypes (simultáneo)
   http.expectOne(`/api/v1/analitica/catalog/${analysisId}/determinations`).flush([
     { id: detId, name: 'Glucemia', unit: 'g/dL' },
   ]);
   http.expectOne('/api/v1/tenant-analyses').flush([
     tenantRow ?? { id: 7, catalogId: analysisId, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
   ]);
+  http.expectOne('/api/v1/analitica/preparation/types').flush(opts.prepTypes ?? []);
+
+  // Inner forkJoin por det: override + refValues + preparation
   const override = opts.override === undefined ? null : opts.override;
   http.expectOne(`/api/v1/analitica/determinations/${detId}/override`).flush({
     hasOverride: override != null,
     override: override == null ? null : { ...emptyOverride(), ...override },
   });
   http.expectOne(`/api/v1/analitica/determinations/${detId}/reference-values/override`).flush(opts.refValues ?? []);
+  http.expectOne(`/api/v1/analitica/determinations/${detId}/preparation`).flush({ items: opts.prepItems ?? [] });
 }
 
 describe('NbuConfigDrawerComponent', () => {
@@ -83,7 +90,7 @@ describe('NbuConfigDrawerComponent', () => {
     http.verify();
   });
 
-  it('al abrir dispara los GET de carga (catalog determinations, tenant-analyses, override, ref-values) y NO pide sections', () => {
+  it('al abrir dispara los GET de carga (catalog determinations, tenant-analyses, preparation-types, override, ref-values, preparation) y NO pide sections', () => {
     const { fixture, http } = setup();
     open(fixture);
 
@@ -93,8 +100,10 @@ describe('NbuConfigDrawerComponent', () => {
     http.expectOne('/api/v1/tenant-analyses').flush([
       { id: 7, catalogId: 42, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
     ]);
+    http.expectOne('/api/v1/analitica/preparation/types').flush([]);
     http.expectOne('/api/v1/analitica/determinations/100/override').flush({ hasOverride: false, override: null });
     http.expectOne('/api/v1/analitica/determinations/100/reference-values/override').flush([]);
+    http.expectOne('/api/v1/analitica/determinations/100/preparation').flush({ items: [] });
 
     // Ya no se piden las secciones (la sección se configura en otra pantalla).
     expect(http.match((r) => r.url === '/api/v1/sucursales/sections').length).toBe(0);
@@ -155,35 +164,30 @@ describe('NbuConfigDrawerComponent', () => {
     http.verify(); // sin mutaciones: la validación bloqueó
   });
 
-  it('precarga el ayuno desde el preIndications del override', () => {
+  it('precarga las observaciones del override en el DetForm (preObservations → observations)', () => {
     const { fixture, http } = setup();
     open(fixture);
-    flushLoad(http, { override: { preIndications: 'Ayuno de 8 horas.' } });
+    flushLoad(http, { override: { preObservations: 'Observación de prueba.' } });
     fixture.detectChanges();
 
-    const cmp = fixture.componentInstance as unknown as { ayuno(): string };
-    expect(cmp.ayuno()).toBe('Ayuno de 8 horas.');
+    const cmp = fixture.componentInstance as unknown as {
+      detForms: Array<{ observations: string }>;
+    };
+    expect(cmp.detForms[0].observations).toBe('Observación de prueba.');
   });
 
-  it('Guardar el ayuno dispara PUT mergeado (preserva campos técnicos del override)', () => {
+  it('precarga los tipos de preparación desde preparation items en el DetForm', () => {
     const { fixture, http } = setup();
     open(fixture);
-    flushLoad(http, { override: { requiresApproval: true, printOrder: 5 } });
+    flushLoad(http, { prepItems: [{ type: 'AYUNO', fastingHours: 8 }, { type: 'NO_FUMAR', fastingHours: null }] });
     fixture.detectChanges();
 
-    const cmp = fixture.componentInstance as unknown as { ayuno: { set(v: string): void }; onSave(): void };
-    cmp.ayuno.set('Ayuno de 8 horas.');
-    cmp.onSave();
-
-    const req = http.expectOne('/api/v1/analitica/determinations/100/override');
-    expect(req.request.method).toBe('PUT');
-    // Mergea: preserva requiresApproval/printOrder, solo cambia preIndications.
-    expect(req.request.body.requiresApproval).toBe(true);
-    expect(req.request.body.printOrder).toBe(5);
-    expect(req.request.body.preIndications).toBe('Ayuno de 8 horas.');
-    req.flush({});
-
-    http.verify();
+    const cmp = fixture.componentInstance as unknown as {
+      detForms: Array<{ prepTypes: Set<string>; fastingHours: number | null }>;
+    };
+    expect(cmp.detForms[0].prepTypes.has('AYUNO')).toBe(true);
+    expect(cmp.detForms[0].prepTypes.has('NO_FUMAR')).toBe(true);
+    expect(cmp.detForms[0].fastingHours).toBe(8);
   });
 
   it('Guardar sin cambios emite saved sin requests de mutación', () => {
@@ -259,5 +263,33 @@ describe('NbuConfigDrawerComponent', () => {
     component.onToggleActive(true);
 
     expect(setActivation).toHaveBeenCalledWith(100, true, 'GLU', null);
+  });
+
+  it('guarda la preparación estructurada cambiada vía upsertPreparation', () => {
+    const { fixture } = setup();
+    const api = TestBed.inject(NbuConfigApiService);
+    const upsert = vi.spyOn(api, 'upsertPreparation').mockReturnValue(of(undefined));
+    const component = fixture.componentInstance as unknown as {
+      detForms: unknown[];
+      analysis: CatalogRow | null;
+      generalForm: { controls: { shortCode: { setValue(v: string): void } } };
+      fb: import('@angular/forms').FormBuilder;
+      onSave(): void;
+    };
+    component['detForms'] = [{
+      detId: 7, detName: 'Glucemia', unit: 'mg/dL', existingOverride: null,
+      refValues: component['fb'].array([]), originalRefValues: '[]',
+      prepTypes: new Set(['AYUNO', 'NO_FUMAR']), fastingHours: 8, observations: '',
+      originalPrep: JSON.stringify({ types: [], hours: null, obs: '' }),
+    } as any];
+    component.analysis = { id: 100, name: 'Glucemia' } as any;
+    component['generalForm'].controls.shortCode.setValue('GLU');
+
+    component['onSave']();
+
+    expect(upsert).toHaveBeenCalledWith(7, [
+      { type: 'AYUNO', fastingHours: 8 },
+      { type: 'NO_FUMAR', fastingHours: null },
+    ]);
   });
 });

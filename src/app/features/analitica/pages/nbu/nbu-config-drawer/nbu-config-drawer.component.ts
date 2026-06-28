@@ -12,33 +12,42 @@ import { SelectModule } from 'primeng/select';
 import { AccordionModule } from 'primeng/accordion';
 import { ToastModule } from 'primeng/toast';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService } from 'primeng/api';
 import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 import {
-  DeterminationCatalogItem, DeterminationOverride, NbuConfigApiService, ReferenceValueItem,
-  TenantAnalysisRow,
+  DeterminationCatalogItem, DeterminationOverride, NbuConfigApiService,
+  PreparationTypeOption, ReferenceValueItem, TenantAnalysisRow,
 } from '../../../services/nbu-config-api.service';
 import { CatalogRow } from '../../../models/nomenclador.model';
 
 interface GenderOption { label: string; value: 'MALE' | 'FEMALE' | null; }
 
 /**
- * Modelo de trabajo del form por determinación: SOLO la tabla de valores de referencia
- * (editable) + el override existente intacto (para mergear el ayuno al guardar) + la unidad
- * de la determinación (read-only) + snapshot original para detectar cambios.
+ * Modelo de trabajo del form por determinación: tabla de valores de referencia (editable),
+ * preparación estructurada (tipos + horas ayuno + observaciones), el override existente
+ * intacto (para mergear al guardar), unidad read-only, y snapshots originales para diff.
  */
 interface DetForm {
   detId: number;
   detName: string;
   /** Unidad de medida de la determinación (read-only, contexto). */
   unit: string | null;
-  /** Override existente tal cual lo trajo el BE — base para mergear el ayuno (fix pérdida de datos). */
+  /** Override existente tal cual lo trajo el BE — base para mergear (fix pérdida de datos). */
   existingOverride: DeterminationOverride | null;
   refValues: FormArray;
   /** Snapshot serializado de los ref-values al cargar (para diff). */
   originalRefValues: string;
+  /** Codes de PreparationType seleccionados. */
+  prepTypes: Set<string>;
+  /** Horas de ayuno (solo si AYUNO seleccionado). */
+  fastingHours: number | null;
+  /** Observaciones libres (→ preObservations del override). */
+  observations: string;
+  /** Snapshot serializado de la preparación al cargar (para diff). */
+  originalPrep: string;
 }
 
 /** Edad en años → meses para la API (soporta decimales para pediatría). */
@@ -57,8 +66,8 @@ function monthsToYears(months: number | null): number | null {
  * Diseño orientado al admin de laboratorio (no volcado 1:1 del DTO):
  * - General: código interno (requerido) y nombre propio (opcional) editables, con estado
  *   y contexto NBU/familia read-only. La sección se configura en otra pantalla.
- * - Preparación del paciente / ayuno: UN solo campo a nivel análisis (se replica a todas
- *   las determinaciones, mergeando el override existente para no pisar config técnica).
+ * - Preparación del paciente: por determinación — checkboxes de tipos + horas de ayuno
+ *   (condicional) + observaciones libres.
  * - Valores de referencia: por determinación, en años (se convierten a meses para la API),
  *   con la unidad de la determinación como contexto read-only.
  *
@@ -74,7 +83,7 @@ function monthsToYears(months: number | null): number | null {
   providers: [MessageService],
   imports: [
     FormsModule, ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, InputNumberModule,
-    TextareaModule, SelectModule, AccordionModule, ToastModule, ToggleSwitchModule,
+    TextareaModule, SelectModule, AccordionModule, ToastModule, ToggleSwitchModule, CheckboxModule,
   ],
   template: `
     <p-drawer
@@ -124,21 +133,7 @@ function monthsToYears(months: number | null): number | null {
               </div>
             </section>
 
-            <!-- Preparación del paciente / ayuno — un solo campo a nivel análisis -->
-            <section class="pat-form__card">
-              <div class="pat-form__card-header"><span>Preparación del paciente</span></div>
-              <div class="pat-form__grid">
-                <div class="pat-form__field" style="grid-column: 1 / -1;">
-                  <label class="pat-form__label" for="nbu-ayuno">Preparación previa</label>
-                  <textarea id="nbu-ayuno" pTextarea rows="2" autocomplete="off"
-                            class="pat-form__input"
-                            [value]="ayuno()"
-                            (input)="onAyunoInput($event)"></textarea>
-                </div>
-              </div>
-            </section>
-
-            <!-- Valores de referencia — por determinación -->
+            <!-- Valores de referencia + preparación — por determinación -->
             <section class="pat-form__card">
               <div class="pat-form__card-header"><span>Valores de referencia</span></div>
               @if (detForms.length === 0) {
@@ -149,6 +144,36 @@ function monthsToYears(months: number | null): number | null {
                     <p-accordion-panel [value]="det.detId">
                       <p-accordion-header>{{ det.detName }}</p-accordion-header>
                       <p-accordion-content>
+                        <!-- Preparación del paciente — por determinación -->
+                        <div class="mb-3">
+                          <span class="text-xs font-medium text-[var(--ds-text-muted)] block mb-1">Preparación del paciente</span>
+                          <div class="flex flex-wrap gap-3">
+                            @for (opt of prepTypeOptions(); track opt.code) {
+                              <label class="flex items-center gap-1 text-xs">
+                                <p-checkbox [binary]="true"
+                                            [ngModel]="det.prepTypes.has(opt.code)"
+                                            [ngModelOptions]="{ standalone: true }"
+                                            (ngModelChange)="onPrepTypeToggle(det, opt.code, $event)" />
+                                {{ opt.label }}
+                              </label>
+                            }
+                          </div>
+                          @if (det.prepTypes.has('AYUNO')) {
+                            <div class="mt-2 flex items-center gap-2">
+                              <label class="text-xs">Horas de ayuno</label>
+                              <p-inputnumber [ngModel]="det.fastingHours" [ngModelOptions]="{ standalone: true }"
+                                             (ngModelChange)="det.fastingHours = $event" [min]="1" [useGrouping]="false"
+                                             inputStyleClass="pat-form__input w-20" />
+                            </div>
+                          }
+                          <div class="mt-2">
+                            <label class="text-xs block">Observaciones</label>
+                            <textarea pTextarea rows="2" autocomplete="off" class="pat-form__input"
+                                      [ngModel]="det.observations" [ngModelOptions]="{ standalone: true }"
+                                      (ngModelChange)="det.observations = $event"></textarea>
+                          </div>
+                        </div>
+
                         <div class="flex items-center justify-between mb-2">
                           <span class="text-xs text-[var(--ds-text-muted)]">
                             Unidad: {{ det.unit || '—' }}
@@ -249,7 +274,9 @@ export class NbuConfigDrawerComponent implements OnChanges {
   protected readonly loadError = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly active = signal(false);
-  protected readonly ayuno = signal('');
+
+  /** Opciones de tipos de preparación (catálogo fijo del BE, cargado una vez). */
+  protected readonly prepTypeOptions = signal<PreparationTypeOption[]>([]);
 
   /** Form de la sección General: código interno (requerido) y nombre propio (opcional). */
   protected readonly generalForm = this.fb.group({
@@ -263,11 +290,9 @@ export class NbuConfigDrawerComponent implements OnChanges {
     { label: 'Femenino', value: 'FEMALE' },
   ];
 
-  /** Forms por determinación (solo ref-values; el override existente se guarda aparte). */
+  /** Forms por determinación (ref-values + preparación + override existente). */
   protected detForms: DetForm[] = [];
 
-  /** Texto de ayuno original (para detectar cambios al guardar). */
-  private originalAyuno = '';
   private wasVisible = false;
 
   /** tenant_analysis.id de la fila (destino del PATCH de shortCode/customName). */
@@ -300,10 +325,6 @@ export class NbuConfigDrawerComponent implements OnChanges {
     this.cancel.emit();
   }
 
-  protected onAyunoInput(event: Event): void {
-    this.ayuno.set((event.target as HTMLTextAreaElement).value);
-  }
-
   protected onToggleActive(next: boolean): void {
     if (!this.analysis) return;
     const shortCode = (this.generalForm.controls.shortCode.value ?? '').trim();
@@ -332,6 +353,20 @@ export class NbuConfigDrawerComponent implements OnChanges {
     });
   }
 
+  protected onPrepTypeToggle(det: DetForm, code: string, checked: boolean): void {
+    if (checked) {
+      det.prepTypes.add(code);
+    } else {
+      det.prepTypes.delete(code);
+      if (code === 'AYUNO') det.fastingHours = null;
+    }
+  }
+
+  /** Serializa el estado de preparación para comparar cambios (diff). */
+  private snapshotPrep(types: Set<string>, hours: number | null, obs: string): string {
+    return JSON.stringify({ types: [...types].sort(), hours, obs });
+  }
+
   // ── Carga ────────────────────────────────────────────────────────────────────
 
   private loadConfig(analysis: CatalogRow): void {
@@ -339,8 +374,6 @@ export class NbuConfigDrawerComponent implements OnChanges {
     this.loadError.set(null);
     this.detForms = [];
     this.active.set(false);
-    this.ayuno.set('');
-    this.originalAyuno = '';
     this.tenantAnalysisId = null;
     this.originalShortCode = '';
     this.originalCustomName = null;
@@ -351,8 +384,11 @@ export class NbuConfigDrawerComponent implements OnChanges {
         catchError(() => of([] as DeterminationCatalogItem[])),
       ),
       tenantRows: this.nbuConfig.listTenantAnalyses().pipe(catchError(() => of([] as TenantAnalysisRow[]))),
+      prepTypes: this.nbuConfig.getPreparationTypes().pipe(catchError(() => of([] as PreparationTypeOption[]))),
     }).subscribe({
-      next: ({ determinations, tenantRows }) => {
+      next: ({ determinations, tenantRows, prepTypes }) => {
+        this.prepTypeOptions.set(prepTypes);
+
         const tenantRow = tenantRows.find((r) => r.catalogId === analysis.id) ?? null;
         this.active.set(tenantRow?.active ?? false);
 
@@ -388,20 +424,16 @@ export class NbuConfigDrawerComponent implements OnChanges {
           refValues: this.nbuConfig.getReferenceValues(det.id).pipe(
             catchError(() => of([] as ReferenceValueItem[])),
           ),
+          preparation: this.nbuConfig.getPreparation(det.id).pipe(
+            catchError(() => of({ items: [] })),
+          ),
         }).pipe(map((res) => ({ det, ...res }))),
       ),
     ).subscribe({
       next: (results) => {
-        this.detForms = results.map(({ det, override, refValues }) =>
-          this.buildDetForm(det, override, refValues),
+        this.detForms = results.map(({ det, override, refValues, preparation }) =>
+          this.buildDetForm(det, override, refValues, preparation.items),
         );
-
-        // Ayuno: el preIndications de la primera determinación que lo tenga cargado.
-        const withAyuno = results.find((r) => (r.override?.preIndications ?? '').trim().length > 0);
-        const ayunoInicial = withAyuno?.override?.preIndications ?? '';
-        this.ayuno.set(ayunoInicial);
-        this.originalAyuno = ayunoInicial;
-
         this.loading.set(false);
       },
       error: () => {
@@ -415,8 +447,12 @@ export class NbuConfigDrawerComponent implements OnChanges {
     det: DeterminationCatalogItem,
     override: DeterminationOverride | null,
     refValues: ReferenceValueItem[],
+    prepItems: Array<{ type: string; fastingHours: number | null }>,
   ): DetForm {
     const refArray = this.fb.array(refValues.map((rv) => this.buildRefValueGroup(rv)));
+    const prepTypes = new Set<string>(prepItems.map((i) => i.type));
+    const fastingHours = prepItems.find((i) => i.type === 'AYUNO')?.fastingHours ?? null;
+    const observations = override?.preObservations ?? '';
     return {
       detId: det.id,
       detName: det.name,
@@ -424,6 +460,10 @@ export class NbuConfigDrawerComponent implements OnChanges {
       existingOverride: override,
       refValues: refArray,
       originalRefValues: JSON.stringify(refArray.getRawValue()),
+      prepTypes,
+      fastingHours,
+      observations,
+      originalPrep: this.snapshotPrep(prepTypes, fastingHours, observations),
     };
   }
 
@@ -468,6 +508,12 @@ export class NbuConfigDrawerComponent implements OnChanges {
     );
   }
 
+  private hasInvalidFastingHours(): boolean {
+    return this.detForms.some(
+      (det) => det.prepTypes.has('AYUNO') && (det.fastingHours == null || det.fastingHours <= 0),
+    );
+  }
+
   // ── Guardado ───────────────────────────────────────────────────────────────────
 
   protected onSave(): void {
@@ -492,6 +538,15 @@ export class NbuConfigDrawerComponent implements OnChanges {
       return;
     }
 
+    if (this.hasInvalidFastingHours()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Horas de ayuno requeridas',
+        detail: 'Ingresá las horas de ayuno (mayor a 0).',
+      });
+      return;
+    }
+
     const calls: Array<Observable<unknown>> = [];
 
     // General: si cambió el código interno o el nombre propio, PATCH a tenant-analyses.
@@ -509,14 +564,20 @@ export class NbuConfigDrawerComponent implements OnChanges {
       }));
     }
 
-    // Ayuno: si cambió, mergear el override existente y solo pisar preIndications en TODAS.
-    const ayunoNuevo = this.ayuno().trim();
-    const ayunoChanged = ayunoNuevo !== (this.originalAyuno ?? '').trim();
-    if (ayunoChanged) {
-      for (const det of this.detForms) {
+    // Preparación estructurada + observaciones: por determinación cuya prep cambió.
+    for (const det of this.detForms) {
+      const currentPrepSnapshot = this.snapshotPrep(det.prepTypes, det.fastingHours, det.observations.trim());
+      if (currentPrepSnapshot !== det.originalPrep) {
+        const items = [...det.prepTypes].map((type) => ({
+          type,
+          fastingHours: type === 'AYUNO' ? det.fastingHours : null,
+        }));
+        calls.push(this.nbuConfig.upsertPreparation(det.detId, items));
+
+        // Observaciones → preObservations del override (merge sobre el existente).
         const body: Partial<DeterminationOverride> = {
           ...(det.existingOverride ?? {}),
-          preIndications: ayunoNuevo.length > 0 ? ayunoNuevo : null,
+          preObservations: det.observations.trim().length > 0 ? det.observations.trim() : null,
         };
         calls.push(this.nbuConfig.upsertOverride(det.detId, body));
       }
