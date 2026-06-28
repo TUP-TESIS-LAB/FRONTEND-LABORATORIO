@@ -44,12 +44,24 @@ describe('AtencionUrgentesDashboardComponent', () => {
     pollingStub.startPolling.mockClear();
   });
 
-  it('despacha loadUrgentPending en ngOnInit', () => {
+  it('inicia polling que dispara loadUrgentPending (via startWith(0))', () => {
     const fixture = setup();
     const store = TestBed.inject(MockStore);
-    const spy = vi.spyOn(store, 'dispatch');
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
     fixture.componentInstance.ngOnInit();
-    expect(spy).toHaveBeenCalledWith(loadUrgentPending());
+
+    // Verificamos que startPolling fue llamado con la config correcta
+    expect(pollingStub.startPolling).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'atencion-urgentes-dashboard', intervalMs: 5000 })
+    );
+
+    // Extraemos el callback del call y lo invocamos para simular startWith(0)
+    const calls = (pollingStub.startPolling as any).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    const pollCallback = calls[0][0].poll;
+    pollCallback();
+    expect(dispatchSpy).toHaveBeenCalledWith(loadUrgentPending());
   });
 
   it('inicia el polling en ngOnInit y lo detiene en ngOnDestroy', () => {

@@ -98,9 +98,9 @@ export class AtencionUrgentesDashboardComponent implements OnInit, OnDestroy {
   private pollingHandle: PollingHandle | null = null;
 
   ngOnInit(): void {
-    this.store.dispatch(loadUrgentPending());
-
     // Polling cada 5 s según regla #5 del CLAUDE.md.
+    // La llamada startPolling con interval().pipe(startWith(0)) dispara el poll callback
+    // inmediatamente en init, así que NO necesitamos pre-dispatch separado.
     // El store effect usa concatMap + ETag/304, así que si no hay datos nuevos
     // la acción loadUrgentPendingNotModified no toca la lista.
     // TODO(Task 9): pausar el polling mientras el drawer de resolución esté abierto
