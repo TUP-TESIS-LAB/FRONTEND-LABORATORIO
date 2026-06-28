@@ -68,6 +68,12 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/stock/stock.routes').then((m) => m.STOCK_ROUTES),
       },
+      {
+        path: 'domicilio',
+        canMatch: [moduleActiveGuard(ModuleKey.Domicilio), sectionGuard('DOMICILIO')],
+        loadChildren: () =>
+          import('./features/domicilio/domicilio.routes').then((m) => m.DOMICILIO_ROUTES),
+      },
 
       // NUEVAS RUTAS
       {

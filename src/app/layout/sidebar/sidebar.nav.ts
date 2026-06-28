@@ -63,6 +63,12 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    label: 'Domicilio',
+    items: [
+      { kind: 'link', label: 'Extracción a domicilio', icon: 'pi pi-home', path: '/domicilio/agenda', moduleKey: ModuleKey.Domicilio, sectionKey: 'DOMICILIO' },
+    ],
+  },
+  {
     label: 'Gestión',
     items: [
       { kind: 'link', label: 'Empresa',          icon: 'pi pi-building', path: '/empresa', sectionKey: 'EMPRESA' },

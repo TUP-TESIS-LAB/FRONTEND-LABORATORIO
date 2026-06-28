@@ -4,4 +4,5 @@ export enum ModuleKey {
   Financiero = 'financiero',
   Medicos    = 'medicos',
   Stock      = 'stock',
+  Domicilio  = 'domicilio',
 }
