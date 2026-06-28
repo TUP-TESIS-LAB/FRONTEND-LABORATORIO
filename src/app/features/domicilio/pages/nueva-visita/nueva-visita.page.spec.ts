@@ -1,11 +1,39 @@
 /**
  * Tests para NuevaVisitaPage.
  *
- * Diseñados para correr con "ng test" (AOT, @angular/build:unit-test) porque
- * el compilador AOT verifica los bindings del template al compilar — incluyendo
- * que "(finish)" de WizardShellComponent exista y esté correctamente cableado.
- * Si alguien desconecta "(finish)='onFinish()'" del template, el build AOT
- * produciría NG8002 (unknown event), rompiendo la CI.
+ * ── Cobertura del binding `(finish)="onFinish()"` ─────────────────────────────
+ *
+ * Se intentó agregar un test que montase `NuevaVisitaPage` SIN NO_ERRORS_SCHEMA
+ * (con el `WizardShellComponent` real) para verificar el wiring del template
+ * via `By.directive + shellInstance.finish.emit()`. Sin embargo, el entorno
+ * vitest/JIT no puede satisfacer los `input.required<>()` de `WizardShellComponent`
+ * cuando se propagan desde el template del padre (NuevaVisitaPage), produciendo:
+ *
+ *   - NG0303: Can't bind to 'steps' since it isn't a known property of 'ui-wizard-shell'
+ *   - NG0950: Input is required but no value is available yet (en heading, steps, etc.)
+ *
+ * Estos errores se deben a que en JIT las propiedades declaradas con la API
+ * `input()` / `input.required()` (signal inputs, Angular 17+) no son reconocidas
+ * como `@Input()` por el compilador JIT al momento de parsear el template del
+ * componente padre. Angular JIT no entiende los signal inputs declarados en
+ * componentes standalone con `input.required<>()` cuando el padre los bindea en
+ * su template.
+ *
+ * Por eso la protección del binding `(finish)` se delega a dos capas:
+ *
+ *   1. Build AOT (producción/CI): `ng build` compilará `NuevaVisitaPage` con AOT
+ *      y detectará automáticamente si `(finish)` deja de ser un output válido de
+ *      `WizardShellComponent`, produciendo NG8002 y fallando el build.
+ *      También detectaría si `(finish)="onFinish()"` se elimina del template y
+ *      `onFinish()` no existe (template expression check).
+ *
+ *   2. Tests directos de `onFinish()` (debajo): verifican que el método cableado
+ *      al output sí despacha `createHomeVisit` cuando es invocado correctamente.
+ *      Si alguien renombra el método o cambia la lógica, estos tests fallan.
+ *
+ * Nota: `ng test` (AOT, @angular/build:unit-test) está bloqueado por specs
+ * pre-existentes ajenos (`analitica/muestras`) que aún no compilan en AOT, así
+ * que la verificación AOT actual pasa por `npm run build`.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
