@@ -1,12 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { of } from 'rxjs';
 import { AtencionUrgentesDashboardComponent } from './atencion-urgentes-dashboard.component';
 import { URGENT_PENDING_FEATURE_KEY, initialUrgentPendingState } from '../../../store/urgent-pending/urgent-pending.state';
 import { selectUrgentPending } from '../../../store/urgent-pending/urgent-pending.selectors';
 import { loadUrgentPending, resolveAuth, resolveCobro } from '../../../store/urgent-pending/urgent-pending.actions';
 import { AttentionResponse, AttentionState } from '../../../models/atencion.model';
 import { PollingService } from '@core/refresh';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
+import { DoctorService } from '@features/medicos/services/doctor.service';
+import { EMPTY_CATALOG } from '@features/pacientes/models/coverage-catalog.model';
 
 /** Fila mínima para las pruebas de chips. */
 function rowOf(partial: Partial<AttentionResponse>): AttentionResponse {
@@ -27,13 +31,18 @@ const pollingStub = {
   startPolling: vi.fn(() => ({ stop: vi.fn(), pokeNow: vi.fn(), setActive: vi.fn() })),
 };
 
+const coverageCatalogStub = { getCatalog: () => of(EMPTY_CATALOG) };
+const doctorServiceStub   = { list: () => of([]) };
+
 function setup() {
   TestBed.configureTestingModule({
     imports: [AtencionUrgentesDashboardComponent],
     providers: [
       provideMockStore({ initialState: { [URGENT_PENDING_FEATURE_KEY]: initialUrgentPendingState } }),
       provideNoopAnimations(),
-      { provide: PollingService, useValue: pollingStub },
+      { provide: PollingService,         useValue: pollingStub },
+      { provide: CoverageCatalogService, useValue: coverageCatalogStub },
+      { provide: DoctorService,          useValue: doctorServiceStub },
     ],
   });
   return TestBed.createComponent(AtencionUrgentesDashboardComponent);
@@ -200,7 +209,7 @@ describe('AtencionUrgentesDashboardComponent', () => {
     expect(setActiveSpy).toHaveBeenCalledWith(true);
   });
 
-  it('fila solo con cobroPendiente=true: dispatchea resolveCobro y no las otras acciones', () => {
+  it('fila solo con cobroPendiente=true: muestra SOLO la acción de cobro y oculta auth/datos del DOM', () => {
     const fixture = setup();
     const comp = fixture.componentInstance;
     const store = TestBed.inject(MockStore);
@@ -210,11 +219,44 @@ describe('AtencionUrgentesDashboardComponent', () => {
     comp.openResolver(row);
     fixture.detectChanges();
 
-    comp.onConfirmCobro();
+    const el: HTMLElement = fixture.nativeElement;
 
+    // Sección de autorización ausente: ni el label ni el placeholder del input deben aparecer.
+    expect(el.textContent).not.toContain('Número de autorización');
+    expect(el.querySelector('#authorizationNumber')).toBeNull();
+
+    // Sección de datos administrativos ausente: el heading "Datos administrativos" no debe aparecer.
+    expect(el.textContent).not.toContain('Datos administrativos');
+
+    // El botón de cobro SÍ debe estar presente.
+    expect(el.textContent).toContain('Marcar cobro regularizado');
+
+    // Confirmamos que despacha resolveCobro con el id correcto.
+    comp.onConfirmCobro();
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({ type: '[UrgentPending] Resolve Cobro', id: 99 })
     );
+  });
+
+  it('fila solo con autorizacionPendiente=true: muestra el input de auth y oculta el botón de cobro', () => {
+    const fixture = setup();
+    const comp = fixture.componentInstance;
+
+    const row = rowOf({ id: 55, autorizacionPendiente: true, cobroPendiente: false, datosAdministrativosIncompletos: false });
+    comp.openResolver(row);
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+
+    // El input de autorización DEBE estar presente.
+    expect(el.textContent).toContain('Número de autorización');
+    expect(el.querySelector('#authorizationNumber')).not.toBeNull();
+
+    // El botón de cobro NO debe aparecer.
+    expect(el.textContent).not.toContain('Marcar cobro regularizado');
+
+    // La sección de datos administrativos tampoco debe aparecer.
+    expect(el.textContent).not.toContain('Datos administrativos');
   });
 
   it('fila con autorizacionPendiente=true: dispatchea resolveAuth con el número ingresado', () => {

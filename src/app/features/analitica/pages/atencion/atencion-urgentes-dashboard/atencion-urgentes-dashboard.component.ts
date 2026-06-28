@@ -103,7 +103,7 @@ import { DoctorService } from '@features/medicos/services/doctor.service';
 
     <!-- ── Drawer de resolución de pendientes (Task 9) ── -->
     <p-drawer
-      [(visible)]="drawerVisibleModel"
+      [visible]="drawerVisible()"
       position="left"
       [modal]="true"
       [dismissible]="true"
@@ -297,10 +297,6 @@ export class AtencionUrgentesDashboardComponent implements OnInit, OnDestroy {
   // ── Drawer state ────────────────────────────────────────────────────────────
   readonly drawerVisible  = signal(false);
   readonly selectedRow    = signal<AttentionResponse | null>(null);
-
-  /** Two-way binding bridge for p-drawer [(visible)] */
-  get drawerVisibleModel(): boolean { return this.drawerVisible(); }
-  set drawerVisibleModel(v: boolean) { if (!v) this.closeResolver(); }
 
   // ── Form: autorización ──────────────────────────────────────────────────────
   readonly authForm = this.fb.group({
