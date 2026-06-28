@@ -3,7 +3,7 @@
 > **Estado:** diseño aprobado · **Fecha:** 2026-06-28
 > **Branch:** `feat/nbu-precio-particular` (Backend + FRONTEND-LABORATORIO), apilada sobre `feat/nbu-preparacion-estructurada` (KAN-142).
 > **Flyway asignado:** lane NBU **V1031–V1039** (KAN-142 usó V1030). Esta tanda usa **V1031** y **V1032**.
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-154](https://exequielsantoro.atlassian.net/browse/KAN-154)
 
 ## Problema
 

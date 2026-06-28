@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **Spec:** `docs/superpowers/specs/2026-06-28-nbu-precio-particular-design.md`
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-154](https://exequielsantoro.atlassian.net/browse/KAN-154)
 
 **Goal:** Persistir el precio particular de NBU (valor U.B. + override de precio por análisis) en BE y hacer que el motor de precios de atención los use; + quitar el resumen "Preparación previa" desincronizado.
 
