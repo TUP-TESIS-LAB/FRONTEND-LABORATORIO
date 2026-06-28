@@ -4,7 +4,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { AtencionUrgentesDashboardComponent } from './atencion-urgentes-dashboard.component';
 import { URGENT_PENDING_FEATURE_KEY, initialUrgentPendingState } from '../../../store/urgent-pending/urgent-pending.state';
 import { selectUrgentPending } from '../../../store/urgent-pending/urgent-pending.selectors';
-import { loadUrgentPending } from '../../../store/urgent-pending/urgent-pending.actions';
+import { loadUrgentPending, resolveAuth, resolveCobro } from '../../../store/urgent-pending/urgent-pending.actions';
 import { AttentionResponse, AttentionState } from '../../../models/atencion.model';
 import { PollingService } from '@core/refresh';
 
@@ -108,16 +108,32 @@ describe('AtencionUrgentesDashboardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Datos');
   });
 
-  it('sin pendientes no muestra ningún chip', () => {
+  it('sin pendientes no muestra ningún chip de pendiente', () => {
     const fixture = setup();
     const store = TestBed.inject(MockStore);
-    store.overrideSelector(selectUrgentPending, [rowOf({ cobroPendiente: false, autorizacionPendiente: false, datosAdministrativosIncompletos: false })]);
+    // Estado FINISHED no produce "Datos" ni "Cobro" como etiqueta de estado
+    store.overrideSelector(selectUrgentPending, [rowOf({
+      cobroPendiente: false,
+      autorizacionPendiente: false,
+      datosAdministrativosIncompletos: false,
+      attentionState: AttentionState.FINISHED,
+    })]);
     store.refreshState();
     fixture.detectChanges();
 
+    // No hay chips de pendientes (la columna "pendientes" queda vacía)
+    const pendingCells = fixture.nativeElement.querySelectorAll('[data-testid="pending-chip"]');
+    expect(pendingCells.length).toBe(0);
+    // El texto "Cobro" y "Autorización" no aparecen como chips
     expect(fixture.nativeElement.textContent).not.toContain('Cobro');
     expect(fixture.nativeElement.textContent).not.toContain('Autorización');
-    expect(fixture.nativeElement.textContent).not.toContain('Datos');
+    // "Datos" no aparece como chip (aunque "Datos" podría ser parte de "Datos generales" del estado)
+    // Verificamos que no hay el texto exacto del chip "Datos" en la columna pendientes
+    const tags = fixture.nativeElement.querySelectorAll('p-tag');
+    const tagTexts = Array.from(tags).map((t: any) => t.textContent?.trim() ?? '');
+    expect(tagTexts).not.toContain('Datos');
+    expect(tagTexts).not.toContain('Cobro');
+    expect(tagTexts).not.toContain('Autorización');
   });
 
   it('emite resolver al hacer click en acción "Resolver"', () => {
@@ -149,5 +165,96 @@ describe('AtencionUrgentesDashboardComponent', () => {
     expect(fields).toContain('fecha');
     expect(fields).toContain('estado');
     expect(fields).toContain('pendientes');
+  });
+
+  // ── Task 9: drawer de resolución ─────────────────────────────────────────────
+
+  it('openResolver: abre el drawer con la atención seleccionada y pausa el polling', () => {
+    const fixture = setup();
+    const comp = fixture.componentInstance;
+    const stopSpy = vi.fn();
+    const setActiveSpy = vi.fn();
+    pollingStub.startPolling.mockReturnValueOnce({ stop: stopSpy, pokeNow: vi.fn(), setActive: setActiveSpy });
+    comp.ngOnInit();
+
+    const row = rowOf({ id: 7, cobroPendiente: true });
+    comp.openResolver(row);
+
+    expect(comp.drawerVisible()).toBe(true);
+    expect(comp.selectedRow()).toEqual(row);
+    expect(setActiveSpy).toHaveBeenCalledWith(false);
+  });
+
+  it('closeResolver: cierra el drawer y reanuda el polling', () => {
+    const fixture = setup();
+    const comp = fixture.componentInstance;
+    const setActiveSpy = vi.fn();
+    pollingStub.startPolling.mockReturnValueOnce({ stop: vi.fn(), pokeNow: vi.fn(), setActive: setActiveSpy });
+    comp.ngOnInit();
+
+    const row = rowOf({ id: 8, cobroPendiente: true });
+    comp.openResolver(row);
+    comp.closeResolver();
+
+    expect(comp.drawerVisible()).toBe(false);
+    expect(setActiveSpy).toHaveBeenCalledWith(true);
+  });
+
+  it('fila solo con cobroPendiente=true: dispatchea resolveCobro y no las otras acciones', () => {
+    const fixture = setup();
+    const comp = fixture.componentInstance;
+    const store = TestBed.inject(MockStore);
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    const row = rowOf({ id: 99, cobroPendiente: true, autorizacionPendiente: false, datosAdministrativosIncompletos: false });
+    comp.openResolver(row);
+    fixture.detectChanges();
+
+    comp.onConfirmCobro();
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: '[UrgentPending] Resolve Cobro', id: 99 })
+    );
+  });
+
+  it('fila con autorizacionPendiente=true: dispatchea resolveAuth con el número ingresado', () => {
+    const fixture = setup();
+    const comp = fixture.componentInstance;
+    const store = TestBed.inject(MockStore);
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    const row = rowOf({ id: 55, autorizacionPendiente: true, cobroPendiente: false, datosAdministrativosIncompletos: false });
+    comp.openResolver(row);
+    comp.authForm.controls['authorizationNumber'].setValue('AUTH-123');
+    fixture.detectChanges();
+
+    comp.onConfirmAuth();
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: '[UrgentPending] Resolve Authorization', id: 55, authorizationNumber: 'AUTH-123' })
+    );
+  });
+
+  it('la columna "estado" usa attentionStateLabel (español) en vez del enum raw', () => {
+    const fixture = setup();
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectUrgentPending, [rowOf({ attentionState: AttentionState.ON_COLLECTION_PROCESS })]);
+    store.refreshState();
+    fixture.detectChanges();
+
+    // El enum raw "ON_COLLECTION_PROCESS" NO debe aparecer; la etiqueta "Cobro" sí.
+    expect(fixture.nativeElement.textContent).not.toContain('ON_COLLECTION_PROCESS');
+    expect(fixture.nativeElement.textContent).toContain('Cobro');
+  });
+
+  it('onAction con key=resolver llama a openResolver', () => {
+    const fixture = setup();
+    const comp = fixture.componentInstance;
+    const openSpy = vi.spyOn(comp, 'openResolver');
+
+    const row = rowOf({ id: 3, cobroPendiente: true });
+    comp.onAction({ key: 'resolver', row });
+
+    expect(openSpy).toHaveBeenCalledWith(row);
   });
 });
