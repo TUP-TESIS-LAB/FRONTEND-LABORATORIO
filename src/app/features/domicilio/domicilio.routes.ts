@@ -21,6 +21,7 @@ export const DOMICILIO_ROUTES: Routes = [
       provideEffects(HomeVisitEffects),
     ],
     children: [
+      { path: '', canMatch: [hasRoleGuard(['EXTRACTOR'])], redirectTo: 'mi-ruta', pathMatch: 'full' },
       { path: '', redirectTo: 'agenda', pathMatch: 'full' },
       {
         path: 'agenda',
