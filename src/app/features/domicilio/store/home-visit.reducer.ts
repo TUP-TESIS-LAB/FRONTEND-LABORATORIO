@@ -69,6 +69,7 @@ export const homeVisitReducer = createReducer(
   on(loadMyRouteNotModified, (state): DomicilioState => ({
     ...state,
     myRoutePending: false,
+    routeError: null,
   })),
   on(loadMyRouteFailure, (state, { error }): DomicilioState => ({
     ...state,

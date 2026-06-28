@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { HomeVisit } from '../models/home-visit.model';
 
 export const DOMICILIO_FEATURE_KEY = 'domicilio';
@@ -11,8 +10,8 @@ export interface DomicilioState {
   myRoutePending: boolean;
   visitDetail: HomeVisit | null;
   detailPending: boolean;
-  routeError: HttpErrorResponse | null;
-  detailError: HttpErrorResponse | null;
+  routeError: string | null;
+  detailError: string | null;
 }
 
 export const initialDomicilioState: DomicilioState = {

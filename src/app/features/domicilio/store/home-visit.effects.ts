@@ -85,7 +85,7 @@ export class HomeVisitEffects {
           catchError((e: HttpErrorResponse) => {
             const mensaje = mapDomicilioError(e);
             this.notif.error(mensaje);
-            return of(loadMyRouteFailure({ error: e }));
+            return of(loadMyRouteFailure({ error: mensaje }));
           }),
         ),
       ),
@@ -102,7 +102,7 @@ export class HomeVisitEffects {
           catchError((e: HttpErrorResponse) => {
             const mensaje = mapDomicilioError(e);
             this.notif.error(mensaje);
-            return of(loadVisitDetailFailure({ error: e }));
+            return of(loadVisitDetailFailure({ error: mensaje }));
           }),
         ),
       ),

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { HttpErrorResponse } from '@angular/common/http';
 import { homeVisitReducer } from './home-visit.reducer';
 import { initialDomicilioState } from './home-visit.state';
 import {
@@ -134,22 +133,22 @@ describe('homeVisitReducer — loadMyRoute', () => {
     expect(state.routeError).toBeNull();
   });
 
-  it('loadMyRouteNotModified baja myRoutePending sin cambiar la lista', () => {
+  it('loadMyRouteNotModified baja myRoutePending y limpia routeError', () => {
     const withRoute = homeVisitReducer(
-      { ...initialDomicilioState, myRoute: [visit] },
+      { ...initialDomicilioState, myRoute: [visit], routeError: 'Ocurrió un error al procesar la operación. Intentá de nuevo.' },
       loadMyRoute({}),
     );
     const state = homeVisitReducer(withRoute, loadMyRouteNotModified());
     expect(state.myRoute).toBe(withRoute.myRoute);
     expect(state.myRoutePending).toBe(false);
+    expect(state.routeError).toBeNull();
   });
 
-  it('loadMyRouteFailure guarda routeError y baja myRoutePending', () => {
-    const error = new HttpErrorResponse({ status: 503 });
+  it('loadMyRouteFailure guarda el mensaje mapeado y baja myRoutePending', () => {
     const loading = homeVisitReducer(initialDomicilioState, loadMyRoute({}));
-    const state = homeVisitReducer(loading, loadMyRouteFailure({ error }));
+    const state = homeVisitReducer(loading, loadMyRouteFailure({ error: 'Ocurrió un error al procesar la operación. Intentá de nuevo.' }));
     expect(state.myRoutePending).toBe(false);
-    expect(state.routeError).toBe(error);
+    expect(state.routeError).toBe('Ocurrió un error al procesar la operación. Intentá de nuevo.');
     expect(state.myRoute).toEqual([]);
   });
 });
@@ -169,12 +168,11 @@ describe('homeVisitReducer — loadVisitDetail', () => {
     expect(state.detailError).toBeNull();
   });
 
-  it('loadVisitDetailFailure guarda detailError y baja detailPending', () => {
-    const error = new HttpErrorResponse({ status: 404 });
+  it('loadVisitDetailFailure guarda el mensaje mapeado y baja detailPending', () => {
     const loading = homeVisitReducer(initialDomicilioState, loadVisitDetail({ id: 99 }));
-    const state = homeVisitReducer(loading, loadVisitDetailFailure({ error }));
+    const state = homeVisitReducer(loading, loadVisitDetailFailure({ error: 'La visita solicitada no existe.' }));
     expect(state.detailPending).toBe(false);
-    expect(state.detailError).toBe(error);
+    expect(state.detailError).toBe('La visita solicitada no existe.');
     expect(state.visitDetail).toBeNull();
   });
 });

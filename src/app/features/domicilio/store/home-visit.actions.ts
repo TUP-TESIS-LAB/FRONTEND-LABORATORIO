@@ -1,5 +1,4 @@
 import { createAction, props } from '@ngrx/store';
-import { HttpErrorResponse } from '@angular/common/http';
 import { CreateHomeVisitPayload, HomeVisit } from '../models/home-visit.model';
 
 // ── Listar visitas ────────────────────────────────────────────────────────────
@@ -44,7 +43,7 @@ export const loadMyRouteNotModified = createAction(
 );
 export const loadMyRouteFailure = createAction(
   '[Domicilio API] Load My Route Failure',
-  props<{ error: HttpErrorResponse }>(),
+  props<{ error: string }>(),
 );
 
 // ── Detalle de visita ─────────────────────────────────────────────────────────
@@ -58,5 +57,5 @@ export const loadVisitDetailSuccess = createAction(
 );
 export const loadVisitDetailFailure = createAction(
   '[Domicilio API] Load Visit Detail Failure',
-  props<{ error: HttpErrorResponse }>(),
+  props<{ error: string }>(),
 );

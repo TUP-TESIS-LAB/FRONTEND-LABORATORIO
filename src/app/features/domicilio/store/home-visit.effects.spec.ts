@@ -208,7 +208,7 @@ describe('HomeVisitEffects', () => {
     actions$ = of(loadMyRoute({}));
     const effects = TestBed.inject(HomeVisitEffects);
     const action = await firstValueFrom(effects.loadMyRoute$);
-    expect((action as ReturnType<typeof loadMyRouteFailure>).error.status).toBe(404);
+    expect((action as ReturnType<typeof loadMyRouteFailure>).error).toBe('La visita solicitada no existe.');
     expect(notif.error).toHaveBeenCalledWith('La visita solicitada no existe.');
   });
 
