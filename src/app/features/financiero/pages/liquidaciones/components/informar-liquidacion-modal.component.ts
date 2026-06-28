@@ -14,11 +14,11 @@ import { InformSettlementBody } from '../../../models/liquidaciones.model';
               header="Informar liquidación" [style]="{ width: '420px' }" (onHide)="closed.emit()">
       <div class="liq-form">
         <label class="liq-field">
-          <span>Fecha informada <i class="liq-req">*</i></span>
+          <span>Fecha informada <span class="pat-form__req" aria-hidden="true">*</span></span>
           <input type="date" [ngModel]="fecha()" (ngModelChange)="fecha.set($event)" data-testid="inp-fecha" />
         </label>
         <label class="liq-field">
-          <span>Monto informado <i class="liq-req">*</i></span>
+          <span>Monto informado <span class="pat-form__req" aria-hidden="true">*</span></span>
           <input type="number" min="0" step="0.01" [ngModel]="monto()" (ngModelChange)="monto.set($event)" data-testid="inp-monto" />
         </label>
         <label class="liq-field">
@@ -36,7 +36,6 @@ import { InformSettlementBody } from '../../../models/liquidaciones.model';
     .liq-form { display: flex; flex-direction: column; gap: 12px; }
     .liq-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
     .liq-field input, .liq-field textarea { padding: 8px 10px; border: 1px solid #e8edf3; border-radius: 7px; font-size: 14px; }
-    .liq-req { color: #d83a3a; font-style: normal; }
   `],
 })
 export class InformarLiquidacionModalComponent {

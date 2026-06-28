@@ -8,6 +8,7 @@ import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
 
 import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { FormStep } from '@shared/ui/models/form-step';
@@ -22,15 +23,24 @@ import {
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 
 const STEPS: FormStep[] = [
-  { key: 'datos', title: 'Datos', subtitle: 'Obra social y período', required: true },
+  { key: 'datos', title: 'Datos', subtitle: 'Obra social y período' },
   { key: 'revisar', title: 'Revisar', subtitle: 'Prestaciones pendientes' },
 ];
+
+/** Serializa un Date local a 'YYYY-MM-DD' (lo que espera el backend, sin TZ shift). */
+function toIso(d: Date | null): string {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 @Component({
   selector: 'fin-generar-liquidacion-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SelectModule, WizardShellComponent],
+  imports: [DatePipe, FormsModule, SelectModule, DatePickerModule, WizardShellComponent],
   template: `
     <ui-wizard-shell
       heading="Generar liquidación"
@@ -47,34 +57,58 @@ const STEPS: FormStep[] = [
       (finish)="generar()">
 
       @if (step() === 0) {
-        <div class="liq-step">
-          <label class="liq-field">
-            <span>Obra Social <i class="liq-req">*</i></span>
-            <p-select [options]="insurers()" optionLabel="name" [filter]="true"
-                      placeholder="Elegí una obra social" [(ngModel)]="os"
-                      (onChange)="onOsChange()" data-testid="sel-os" />
-          </label>
-          <div class="liq-row">
-            <label class="liq-field">
-              <span>Desde <i class="liq-req">*</i></span>
-              <input type="date" [ngModel]="from()" (ngModelChange)="from.set($event)" data-testid="inp-from" />
-            </label>
-            <label class="liq-field">
-              <span>Hasta <i class="liq-req">*</i></span>
-              <input type="date" [ngModel]="to()" (ngModelChange)="to.set($event)" data-testid="inp-to" />
-            </label>
+        <div class="step">
+          <p class="muted">Elegí la obra social y el período a liquidar.</p>
+
+          <div class="form-field">
+            <label for="os">Obra Social <span class="pat-form__req" aria-hidden="true">*</span></label>
+            <p-select
+              inputId="os"
+              [options]="insurers()"
+              optionLabel="name"
+              [filter]="true"
+              appendTo="body"
+              [(ngModel)]="os"
+              (onChange)="onOsChange()"
+              data-testid="sel-os" />
           </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="from">Desde <span class="pat-form__req" aria-hidden="true">*</span></label>
+              <p-datePicker
+                inputId="from"
+                dateFormat="dd/mm/yy"
+                appendTo="body"
+                [ngModel]="from()"
+                (ngModelChange)="from.set($event)"
+                data-testid="inp-from" />
+            </div>
+            <div class="form-field">
+              <label for="to">Hasta <span class="pat-form__req" aria-hidden="true">*</span></label>
+              <p-datePicker
+                inputId="to"
+                dateFormat="dd/mm/yy"
+                appendTo="body"
+                [ngModel]="to()"
+                (ngModelChange)="to.set($event)"
+                data-testid="inp-to" />
+            </div>
+          </div>
+
           @if (rangoInvalido()) {
-            <p class="liq-error">La fecha "Desde" no puede ser posterior a "Hasta".</p>
+            <small class="field-error">La fecha "Desde" no puede ser posterior a "Hasta".</small>
           }
         </div>
       } @else {
-        <div class="liq-step">
-          <h3>Revisar antes de generar</h3>
+        <div class="step">
+          <p class="muted">Revisá la obra social y el período antes de generar.</p>
+
           <div class="liq-review">
             <span class="liq-review__os">{{ os()?.name }}</span>
             <span class="liq-review__period">{{ from() | date:'dd/MM/yyyy' }} – {{ to() | date:'dd/MM/yyyy' }}</span>
           </div>
+
           @if (preview().length) {
             <div class="liq-preview liq-preview--ok">
               <i class="pi pi-check-circle"></i>
@@ -91,13 +125,15 @@ const STEPS: FormStep[] = [
     </ui-wizard-shell>
   `,
   styles: [`
-    .liq-step { display: flex; flex-direction: column; gap: 14px; }
-    .liq-row { display: flex; gap: 12px; }
-    .liq-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; flex: 1; }
-    .liq-field input { padding: 8px 10px; border: 1px solid #e8edf3; border-radius: 7px; font-size: 14px; }
-    .liq-req { color: #d83a3a; font-style: normal; }
-    .liq-error { color: #d83a3a; font-size: 12.5px; margin: 0; }
-    .liq-review { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+    .step { display: flex; flex-direction: column; gap: 16px; }
+    .muted { color: var(--ds-text-muted, #64748b); font-size: 13px; margin: 0; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label { font-size: 13px; font-weight: 500; color: var(--ds-text, #1a1a2e); }
+    .form-field :is(p-select, p-datepicker) { display: block; }
+    .form-row { display: flex; gap: 14px; }
+    .form-row .form-field { flex: 1; }
+    .field-error { color: #d83a3a; font-size: 12.5px; }
+    .liq-review { display: flex; flex-direction: column; gap: 2px; }
     .liq-review__os { font-weight: 600; font-size: 15px; }
     .liq-review__period { font-size: 13px; color: #64748b; }
     .liq-preview { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 9px; font-size: 13.5px; }
@@ -117,8 +153,8 @@ export class GenerarLiquidacionPage implements OnInit {
 
   // form state
   os = signal<InsurerSummary | null>(null);
-  protected readonly from = signal<string>('');
-  protected readonly to = signal<string>('');
+  protected readonly from = signal<Date | null>(null);
+  protected readonly to = signal<Date | null>(null);
 
   protected readonly insurers = this.store.selectSignal(selectLiqInsurers);
   protected readonly pending = this.store.selectSignal(selectLiqPending);
@@ -127,7 +163,7 @@ export class GenerarLiquidacionPage implements OnInit {
 
   protected readonly rangoInvalido = computed(() => {
     const f = this.from(); const t = this.to();
-    return !!f && !!t && f > t;
+    return !!f && !!t && f.getTime() > t.getTime();
   });
 
   protected readonly paso1Valido = computed(() =>
@@ -136,7 +172,7 @@ export class GenerarLiquidacionPage implements OnInit {
   /** Preview: pendientes de la OS elegida (por planId) dentro del período. */
   protected readonly preview = computed(() => {
     const ids = new Set(this.planIds());
-    const f = this.from(); const t = this.to();
+    const f = toIso(this.from()); const t = toIso(this.to());
     if (!ids.size || !f || !t) return [];
     return this.pending().filter(p =>
       ids.has(p.planId) && p.serviceDate >= f && p.serviceDate <= t);
@@ -173,7 +209,7 @@ export class GenerarLiquidacionPage implements OnInit {
     this.store.dispatch(generateSettlement({
       body: {
         insurerId: insurer.id,
-        period: { from: this.from(), to: this.to() },
+        period: { from: toIso(this.from()), to: toIso(this.to()) },
         specialRules: [],
         excludedAnalysisIdsByPs: null,
       },
