@@ -31,7 +31,6 @@ export interface ConfigResumen {
   sectionId: number | null;
   sectionName: string | null;
   customName: string | null;     // nombre propio del tenant_analysis (alias del laboratorio)
-  ayuno: string | null;          // preIndications de la 1ª determinación con override
   active: boolean;
   hasCustomConfig: boolean;      // hay override y/o ref-values propios
 }
