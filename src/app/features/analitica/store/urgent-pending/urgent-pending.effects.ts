@@ -1,8 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { Store } from '@ngrx/store';
-import { catchError, concatMap, map, of, withLatestFrom } from 'rxjs';
+import { catchError, concatMap, map, of } from 'rxjs';
+import { isNotModified } from '@core/refresh';
 import { NotificationService } from '@core/services/notification.service';
 import { AtencionApiService } from '../../services/atencion-api.service';
 import {
@@ -20,7 +20,6 @@ import {
   resolveDatosFailure,
   resolveDatosSuccess,
 } from './urgent-pending.actions';
-import { selectUrgentPendingEtag } from './urgent-pending.selectors';
 
 /**
  * Política de operadores:
@@ -31,30 +30,20 @@ import { selectUrgentPendingEtag } from './urgent-pending.selectors';
 export class UrgentPendingEffects {
   private readonly actions$    = inject(Actions);
   private readonly api         = inject(AtencionApiService);
-  private readonly store       = inject(Store);
   private readonly notification = inject(NotificationService);
 
-  /** Carga la bandeja; usa ETag para evitar transferencia innecesaria (304 → NotModified). */
+  /** Carga la bandeja; el etagInterceptor maneja If-None-Match y convierte 304 en NotModified. */
   loadList$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadUrgentPending),
-      withLatestFrom(this.store.select(selectUrgentPendingEtag)),
-      concatMap(([, etag]) =>
-        this.api.listUrgentPending(etag).pipe(
-          map(res => {
-            if (res.status === 304) {
-              return loadUrgentPendingNotModified();
-            }
-            return loadUrgentPendingSuccess({
-              items: res.body ?? [],
-              etag: res.headers.get('ETag'),
-            });
-          }),
+      concatMap(() =>
+        this.api.listUrgentPending().pipe(
+          map(res =>
+            isNotModified(res)
+              ? loadUrgentPendingNotModified()
+              : loadUrgentPendingSuccess({ items: res }),
+          ),
           catchError((error: HttpErrorResponse) => {
-            // Un 304 que llega como error (algunos interceptores lo hacen)
-            if (error.status === 304) {
-              return of(loadUrgentPendingNotModified());
-            }
             this.notification.error('No se pudo cargar la bandeja de urgentes. Revisá la conexión e intentá de nuevo.');
             return of(loadUrgentPendingFailure({ error }));
           }),

@@ -5,6 +5,5 @@ export const selectUrgentPendingState = createFeatureSelector<UrgentPendingState
 
 export const selectUrgentPending  = createSelector(selectUrgentPendingState, s => s.items);
 export const selectUrgentPendingLoading = createSelector(selectUrgentPendingState, s => s.loading);
-export const selectUrgentPendingEtag    = createSelector(selectUrgentPendingState, s => s.etag);
 export const selectUrgentPendingError   = createSelector(selectUrgentPendingState, s => s.error);
 export const selectUrgentPendingResolving = createSelector(selectUrgentPendingState, s => s.resolving);

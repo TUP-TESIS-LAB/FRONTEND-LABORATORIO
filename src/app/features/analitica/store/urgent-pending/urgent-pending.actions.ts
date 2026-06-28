@@ -4,7 +4,7 @@ import { AttentionResponse } from '../../models/atencion.model';
 
 // Load bandeja polleable (ETag / If-None-Match) --------------------------------
 export const loadUrgentPending         = createAction('[UrgentPending Dashboard] Load');
-export const loadUrgentPendingSuccess  = createAction('[UrgentPending API] Load Success',      props<{ items: AttentionResponse[]; etag: string | null }>());
+export const loadUrgentPendingSuccess  = createAction('[UrgentPending API] Load Success',      props<{ items: AttentionResponse[] }>());
 export const loadUrgentPendingNotModified = createAction('[UrgentPending API] Load Not Modified');
 export const loadUrgentPendingFailure  = createAction('[UrgentPending API] Load Failure',      props<{ error: HttpErrorResponse }>());
 

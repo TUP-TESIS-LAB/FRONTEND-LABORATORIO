@@ -3,7 +3,6 @@ import { AttentionResponse } from '../../models/atencion.model';
 
 export interface UrgentPendingState {
   items: AttentionResponse[];
-  etag: string | null;
   loading: boolean;
   error: HttpErrorResponse | null;
   resolving: boolean;
@@ -12,7 +11,6 @@ export interface UrgentPendingState {
 
 export const initialUrgentPendingState: UrgentPendingState = {
   items: [],
-  etag: null,
   loading: false,
   error: null,
   resolving: false,

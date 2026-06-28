@@ -48,23 +48,21 @@ describe('urgentPendingReducer', () => {
     expect(next.error).toBeNull();
   });
 
-  it('loadUrgentPendingSuccess setea items y etag', () => {
+  it('loadUrgentPendingSuccess setea items', () => {
     const items = [row()];
     const s = urgentPendingReducer(
       { ...initialUrgentPendingState, loading: true },
-      A.loadUrgentPendingSuccess({ items, etag: 'W/"x"' }),
+      A.loadUrgentPendingSuccess({ items }),
     );
     expect(s.items.length).toBe(1);
-    expect(s.etag).toBe('W/"x"');
     expect(s.loading).toBe(false);
   });
 
-  it('loadUrgentPendingNotModified no toca items ni etag', () => {
+  it('loadUrgentPendingNotModified no toca items', () => {
     const items = [row()];
-    const start = { ...initialUrgentPendingState, items, etag: 'W/"abc"', loading: true };
+    const start = { ...initialUrgentPendingState, items, loading: true };
     const s = urgentPendingReducer(start, A.loadUrgentPendingNotModified());
     expect(s.items).toBe(items); // same reference
-    expect(s.etag).toBe('W/"abc"');
     expect(s.loading).toBe(false);
   });
 
@@ -183,6 +181,21 @@ describe('urgentPendingReducer', () => {
     );
     // si ya no tiene pendientes → fuera de la bandeja
     expect(s.items.length).toBe(0);
+  });
+
+  it('resolveCobroSuccess mantiene la fila cuando los 3 flags son undefined (guarda de undefined)', () => {
+    // Los 3 flags undefined NO equivalen a "sin pendientes" — la fila debe permanecer.
+    const itemWithUndefinedFlags = {
+      ...row(),
+      cobroPendiente: undefined as unknown as boolean,
+      autorizacionPendiente: undefined as unknown as boolean,
+      datosAdministrativosIncompletos: undefined as unknown as boolean,
+    };
+    const s = urgentPendingReducer(
+      { ...initialUrgentPendingState, items: [row()], resolving: true },
+      A.resolveCobroSuccess({ item: itemWithUndefinedFlags }),
+    );
+    expect(s.items.length).toBe(1);
   });
 
   it('resolveCobroFailure clears resolving', () => {

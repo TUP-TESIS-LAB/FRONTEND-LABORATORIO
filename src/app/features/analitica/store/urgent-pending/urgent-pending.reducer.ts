@@ -22,11 +22,10 @@ export const urgentPendingReducer = createReducer(
 
   on(loadUrgentPending, (s): UrgentPendingState => ({ ...s, loading: true, error: null })),
 
-  on(loadUrgentPendingSuccess, (s, { items, etag }): UrgentPendingState => ({
+  on(loadUrgentPendingSuccess, (s, { items }): UrgentPendingState => ({
     ...s,
     loading: false,
     items,
-    etag,
   })),
 
   on(loadUrgentPendingNotModified, (s): UrgentPendingState => ({ ...s, loading: false })),
@@ -83,10 +82,12 @@ export const urgentPendingReducer = createReducer(
  * todos falsy) la quita de la bandeja.
  */
 function replaceOrRemove(items: AttentionResponse[], item: AttentionResponse): AttentionResponse[] {
+  // Solo elimina la fila cuando los 3 flags son EXPLÍCITAMENTE false.
+  // Si alguno es undefined (el BE no lo incluyó), mantenemos la fila por seguridad.
   const hasPending =
-    item.cobroPendiente ||
-    item.autorizacionPendiente ||
-    item.datosAdministrativosIncompletos;
+    item.cobroPendiente !== false ||
+    item.autorizacionPendiente !== false ||
+    item.datosAdministrativosIncompletos !== false;
 
   if (!hasPending) {
     return items.filter(x => x.id !== item.id);

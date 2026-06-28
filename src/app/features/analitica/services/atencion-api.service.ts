@@ -1,6 +1,7 @@
-import { HttpClient, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { NotModified, withPolling } from '@core/refresh';
 import {
   AddAnalysisListRequest,
   AddObservationsRequest,
@@ -101,12 +102,11 @@ export class AtencionApiService {
 
   /**
    * Listado de atenciones urgentes con pendientes de reconciliación.
-   * Soporta If-None-Match → 304 (observe:'response' para acceder al ETag).
+   * El etagInterceptor maneja If-None-Match automáticamente y convierte 304 en
+   * el sentinel NotModified (estándar de polling, CLAUDE.md regla #5).
    */
-  listUrgentPending(etag: string | null): Observable<HttpResponse<AttentionResponse[]>> {
-    let headers = new HttpHeaders();
-    if (etag) headers = headers.set('If-None-Match', etag);
-    return this.http.get<AttentionResponse[]>(`${this.base}/urgent-pending`, { headers, observe: 'response' });
+  listUrgentPending(): Observable<AttentionResponse[] | NotModified> {
+    return this.http.get<AttentionResponse[] | NotModified>(`${this.base}/urgent-pending`, { context: withPolling() });
   }
 
   /** Completa datos administrativos pendientes (médico / plan de obra social). */
