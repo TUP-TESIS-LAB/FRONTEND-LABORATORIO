@@ -9,11 +9,13 @@ import {
 import { SettlementSummary, SettlementDetail } from '../models/liquidaciones.model';
 
 const summary: SettlementSummary = {
-  id: 1, insurerId: 7, settlementNumber: 100, status: 'PENDING', type: 'SIMPLE',
-  periodFrom: '2026-01-01', periodTo: '2026-01-31', createdAt: '2026-02-01T10:00:00',
+  settlementId: 1, insurerId: 7, settlementNumber: 100, status: 'PENDING', type: 'SIMPLE',
+  periodFrom: '2026-01-01', periodTo: '2026-01-31', totalAmount: 48000,
 };
 const detail: SettlementDetail = {
-  ...summary, informedDate: null, informedAmount: null, paymentId: null, plans: [],
+  id: 1, insurerId: 7, settlementNumber: 100, status: 'PENDING', type: 'SIMPLE',
+  periodFrom: '2026-01-01', periodTo: '2026-01-31',
+  informedDate: null, informedAmount: null, paymentId: null, plans: [], createdAt: '2026-02-01T10:00:00',
 };
 
 describe('financieroReducer — slice liquidaciones', () => {

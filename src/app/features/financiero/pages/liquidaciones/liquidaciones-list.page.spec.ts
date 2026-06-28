@@ -25,8 +25,8 @@ const minimalTemplate = `
         Generar liquidación
       </button>
     }
-    @for (item of filtered(); track item.id) {
-      <div [attr.data-testid]="'row-' + item.id">{{ item.settlementNumber }}</div>
+    @for (item of filtered(); track item.settlementId) {
+      <div [attr.data-testid]="'row-' + item.settlementId">{{ item.settlementNumber }}</div>
     }
   </div>
 `;
@@ -43,7 +43,7 @@ describe('LiquidacionesListPage — smoke', () => {
         provideMockStore({
           selectors: [
             { selector: selectLiqList, value: [
-              { id: 1, insurerId: 7, settlementNumber: 100, status: 'PENDING', type: 'SIMPLE', periodFrom: '2026-01-01', periodTo: '2026-01-31', createdAt: '2026-02-01T10:00:00' },
+              { settlementId: 1, insurerId: 7, settlementNumber: 100, status: 'PENDING', type: 'SIMPLE', periodFrom: '2026-01-01', periodTo: '2026-01-31', totalAmount: 48000 },
             ] },
             { selector: selectLiqListLoading, value: false },
             { selector: selectLiqListError, value: null },

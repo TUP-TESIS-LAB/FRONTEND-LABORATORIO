@@ -60,7 +60,7 @@ type Modal = 'informar' | 'anular' | null;
         <div class="fin-card liq-total">
           <span class="liq-total__label">Total liquidado</span>
           <span class="liq-total__value">{{ total() | currencyAr }}</span>
-          <span class="liq-total__sub">{{ prestacionesCount() }} {{ prestacionesCount() === 1 ? 'prestación' : 'prestaciones' }} en {{ l.plans.length }} convenio{{ l.plans.length === 1 ? '' : 's' }}</span>
+          <span class="liq-total__sub">{{ l.plans.length }} convenio{{ l.plans.length === 1 ? '' : 's' }}@if (prestacionesCount() > 0) { · {{ prestacionesCount() }} {{ prestacionesCount() === 1 ? 'prestación' : 'prestaciones' }}}</span>
         </div>
 
         <div class="fin-card liq-convenios">
@@ -69,7 +69,7 @@ type Modal = 'informar' | 'anular' | null;
             @for (ag of plan.agreements; track ag.agreementId) {
               <div class="liq-conv-row">
                 <span class="liq-conv-name">Convenio del plan</span>
-                <span class="liq-conv-count">{{ ag.providedServiceIds.length }} {{ ag.providedServiceIds.length === 1 ? 'prestación' : 'prestaciones' }}</span>
+                <span class="liq-conv-count">@if (ag.providedServiceIds.length > 0) {{{ ag.providedServiceIds.length }} {{ ag.providedServiceIds.length === 1 ? 'prestación' : 'prestaciones' }}}</span>
                 <span class="liq-conv-subtotal">{{ ag.agreementSubtotal | currencyAr }}</span>
               </div>
             }

@@ -3,16 +3,19 @@
 export type SettlementStatus = 'PENDING' | 'INFORMED' | 'BILLED' | 'CANCELLED';
 export type SettlementType = 'SIMPLE' | 'ESPECIAL';
 
-/** Fila del listado: GET /settlements. */
+/**
+ * Fila del listado: GET /settlements. OJO: el DTO de listado usa `settlementId`
+ * y trae `totalAmount` (no `createdAt`) — distinto del detalle, que usa `id`.
+ */
 export interface SettlementSummary {
-  id: number;
+  settlementId: number;
   insurerId: number;
   settlementNumber: number;
   status: SettlementStatus;
   type: SettlementType;
-  periodFrom: string; // 'YYYY-MM-DD'
-  periodTo: string;   // 'YYYY-MM-DD'
-  createdAt: string;  // ISO datetime
+  periodFrom: string;  // 'YYYY-MM-DD'
+  periodTo: string;    // 'YYYY-MM-DD'
+  totalAmount: number;
 }
 
 export interface SettlementAgreement {

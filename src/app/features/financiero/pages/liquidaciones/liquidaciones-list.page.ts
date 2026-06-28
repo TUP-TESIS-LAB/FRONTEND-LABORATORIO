@@ -14,6 +14,7 @@ import {
   FilterBarComponent, FilterBarConfig, FilterBarValue,
 } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { TableColumn } from '@shared/ui/models/table-column.model';
+import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { PollingService, PollingHandle } from '@core/refresh';
 import { TokenService } from '@core/auth/token.service';
 
@@ -29,7 +30,7 @@ import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidac
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DatePipe, PageHeaderComponent, DataTableComponent, UiCellDirective,
+    DatePipe, CurrencyArPipe, PageHeaderComponent, DataTableComponent, UiCellDirective,
     EmptyStateComponent, FilterBarComponent, EstadoLiquidacionPillComponent,
   ],
   template: `
@@ -58,6 +59,7 @@ import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidac
           [value]="filtered()"
           [columns]="columns"
           [loading]="loading()"
+          dataKey="settlementId"
           [showView]="true"
           emptyHeading="Todavía no hay liquidaciones"
           emptyIcon="pi-chart-line"
@@ -84,8 +86,8 @@ import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidac
             <fin-estado-liquidacion-pill [status]="row.status" />
           </ng-template>
 
-          <ng-template uiCell="createdAt" let-row>
-            {{ row.createdAt | date:'dd/MM/yy HH:mm' }}
+          <ng-template uiCell="totalAmount" let-row>
+            {{ row.totalAmount | currencyAr }}
           </ng-template>
         </ui-table>
       }
@@ -122,7 +124,7 @@ export class LiquidacionesListPage implements OnInit {
     { field: 'type', header: 'Tipo' },
     { field: 'periodFrom', header: 'Período' },
     { field: 'status', header: 'Estado' },
-    { field: 'createdAt', header: 'Creada', align: 'right' },
+    { field: 'totalAmount', header: 'Total', align: 'right' },
   ];
 
   protected readonly filterConfig = computed<FilterBarConfig>(() => ({
@@ -180,7 +182,7 @@ export class LiquidacionesListPage implements OnInit {
   }
 
   protected verDetalle(row: SettlementSummary): void {
-    this.router.navigate(['/financiero/liquidaciones', row.id]);
+    this.router.navigate(['/financiero/liquidaciones', row.settlementId]);
   }
 
   protected irAGenerar(): void {
