@@ -1,3 +1,4 @@
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { of, firstValueFrom } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
@@ -61,10 +62,36 @@ describe('NomencladorService', () => {
     expect(await promise).toEqual([]);
   });
 
-  it('getParticularPricing (MOCK) trae valorUb y overrides', async () => {
-    const p = await firstValueFrom(svc.getParticularPricing());
-    expect(p.valorUb).toBeGreaterThan(0);
-    expect(typeof p.overrides).toBe('object');
+  it('getParticularPricing compone valorUb (config) + overrides (lista)', () => {
+    let result: any;
+    svc.getParticularPricing().subscribe(r => (result = r));
+    httpMock.expectOne('/api/v1/analitica/config/particular-ub').flush({ valorUbParticular: 350 });
+    httpMock.expectOne('/api/v1/analitica/price-overrides').flush([{ analysisCatalogId: 7, overridePrice: 999 }]);
+    expect(result.valorUb).toBe(350);
+    expect(result.overrides).toEqual({ 7: 999 });
+  });
+
+  it('saveValorUb hace PUT a /config/particular-ub', () => {
+    svc.saveValorUb(400).subscribe();
+    const req = httpMock.expectOne('/api/v1/analitica/config/particular-ub');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ valorUbParticular: 400 });
+    req.flush(null);
+  });
+
+  it('setOverride con precio hace PUT', () => {
+    svc.setOverride(7, 999).subscribe();
+    const req = httpMock.expectOne('/api/v1/analitica/price-overrides/7');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ overridePrice: 999 });
+    req.flush(null);
+  });
+
+  it('setOverride con null hace DELETE (revert)', () => {
+    svc.setOverride(7, null).subscribe();
+    const req = httpMock.expectOne('/api/v1/analitica/price-overrides/7');
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null);
   });
 
   it('cantidadUbForVersion (passthrough hoy) devuelve la base sin escalar', () => {
