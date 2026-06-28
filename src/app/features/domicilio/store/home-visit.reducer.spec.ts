@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { HttpErrorResponse } from '@angular/common/http';
 import { homeVisitReducer } from './home-visit.reducer';
 import { initialDomicilioState } from './home-visit.state';
 import {
@@ -8,6 +9,13 @@ import {
   createHomeVisit,
   createHomeVisitSuccess,
   createHomeVisitFailure,
+  loadMyRoute,
+  loadMyRouteSuccess,
+  loadMyRouteNotModified,
+  loadMyRouteFailure,
+  loadVisitDetail,
+  loadVisitDetailSuccess,
+  loadVisitDetailFailure,
 } from './home-visit.actions';
 import { HomeVisit } from '../models/home-visit.model';
 
@@ -24,6 +32,10 @@ const visit: HomeVisit = {
   timeWindowStart: '08:00:00',
   timeWindowEnd: '10:00:00',
   status: 'PROGRAMADA',
+  scheduledAt: '2026-07-01T09:00:00',
+  patientName: 'Juan García',
+  patientDni: '30123456',
+  extractorName: 'Ana López',
 };
 
 describe('homeVisitReducer — estado inicial', () => {
@@ -103,5 +115,66 @@ describe('homeVisitReducer — createHomeVisit', () => {
     );
     const state = homeVisitReducer(withVisit, createHomeVisitSuccess({ id: 2 }));
     expect(state.visits).toBe(withVisit.visits);
+  });
+});
+
+describe('homeVisitReducer — loadMyRoute', () => {
+  it('loadMyRoute marca myRoutePending:true y limpia routeError', () => {
+    const state = homeVisitReducer(initialDomicilioState, loadMyRoute({}));
+    expect(state.myRoutePending).toBe(true);
+    expect(state.routeError).toBeNull();
+  });
+
+  it('loadMyRouteSuccess setea la lista y baja myRoutePending', () => {
+    const loading = homeVisitReducer(initialDomicilioState, loadMyRoute({}));
+    const state = homeVisitReducer(loading, loadMyRouteSuccess({ visits: [visit] }));
+    expect(state.myRoute).toHaveLength(1);
+    expect(state.myRoute[0].id).toBe(1);
+    expect(state.myRoutePending).toBe(false);
+    expect(state.routeError).toBeNull();
+  });
+
+  it('loadMyRouteNotModified baja myRoutePending sin cambiar la lista', () => {
+    const withRoute = homeVisitReducer(
+      { ...initialDomicilioState, myRoute: [visit] },
+      loadMyRoute({}),
+    );
+    const state = homeVisitReducer(withRoute, loadMyRouteNotModified());
+    expect(state.myRoute).toBe(withRoute.myRoute);
+    expect(state.myRoutePending).toBe(false);
+  });
+
+  it('loadMyRouteFailure guarda routeError y baja myRoutePending', () => {
+    const error = new HttpErrorResponse({ status: 503 });
+    const loading = homeVisitReducer(initialDomicilioState, loadMyRoute({}));
+    const state = homeVisitReducer(loading, loadMyRouteFailure({ error }));
+    expect(state.myRoutePending).toBe(false);
+    expect(state.routeError).toBe(error);
+    expect(state.myRoute).toEqual([]);
+  });
+});
+
+describe('homeVisitReducer — loadVisitDetail', () => {
+  it('loadVisitDetail marca detailPending:true y limpia detailError', () => {
+    const state = homeVisitReducer(initialDomicilioState, loadVisitDetail({ id: 1 }));
+    expect(state.detailPending).toBe(true);
+    expect(state.detailError).toBeNull();
+  });
+
+  it('loadVisitDetailSuccess setea visitDetail y baja detailPending', () => {
+    const loading = homeVisitReducer(initialDomicilioState, loadVisitDetail({ id: 1 }));
+    const state = homeVisitReducer(loading, loadVisitDetailSuccess({ visit }));
+    expect(state.visitDetail).toEqual(visit);
+    expect(state.detailPending).toBe(false);
+    expect(state.detailError).toBeNull();
+  });
+
+  it('loadVisitDetailFailure guarda detailError y baja detailPending', () => {
+    const error = new HttpErrorResponse({ status: 404 });
+    const loading = homeVisitReducer(initialDomicilioState, loadVisitDetail({ id: 99 }));
+    const state = homeVisitReducer(loading, loadVisitDetailFailure({ error }));
+    expect(state.detailPending).toBe(false);
+    expect(state.detailError).toBe(error);
+    expect(state.visitDetail).toBeNull();
   });
 });

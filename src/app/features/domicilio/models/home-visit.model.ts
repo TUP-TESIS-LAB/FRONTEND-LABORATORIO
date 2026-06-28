@@ -19,6 +19,10 @@ export interface HomeVisit {
   timeWindowStart: string; // 'HH:mm:ss'
   timeWindowEnd: string;
   status: HomeVisitStatus;
+  scheduledAt: string | null;    // ISO LocalDateTime
+  patientName: string | null;
+  patientDni: string | null;
+  extractorName: string | null;
 }
 
 export interface CreateHomeVisitPayload {

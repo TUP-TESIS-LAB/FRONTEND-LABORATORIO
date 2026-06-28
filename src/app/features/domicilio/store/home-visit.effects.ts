@@ -3,6 +3,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { catchError, concatMap, map, switchMap } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
+import { isNotModified } from '@core/refresh';
 import { HomeVisitService } from '../services/home-visit.service';
 import { NotificationService } from '@core/services/notification.service';
 import {
@@ -12,6 +13,13 @@ import {
   createHomeVisit,
   createHomeVisitSuccess,
   createHomeVisitFailure,
+  loadMyRoute,
+  loadMyRouteSuccess,
+  loadMyRouteNotModified,
+  loadMyRouteFailure,
+  loadVisitDetail,
+  loadVisitDetailSuccess,
+  loadVisitDetailFailure,
 } from './home-visit.actions';
 
 function mapDomicilioError(e: HttpErrorResponse): string {
@@ -57,6 +65,44 @@ export class HomeVisitEffects {
             const error = mapDomicilioError(e);
             this.notif.error(error);
             return of(createHomeVisitFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── Ruta del día ─────────────────────────────────────────────────────────────
+  loadMyRoute$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadMyRoute),
+      switchMap(({ date }) =>
+        this.homeVisitService.myRoute(date).pipe(
+          map(res =>
+            isNotModified(res)
+              ? loadMyRouteNotModified()
+              : loadMyRouteSuccess({ visits: res }),
+          ),
+          catchError((e: HttpErrorResponse) => {
+            const mensaje = mapDomicilioError(e);
+            this.notif.error(mensaje);
+            return of(loadMyRouteFailure({ error: e }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── Detalle de visita ─────────────────────────────────────────────────────────
+  loadVisitDetail$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadVisitDetail),
+      switchMap(({ id }) =>
+        this.homeVisitService.detail(id).pipe(
+          map(visit => loadVisitDetailSuccess({ visit })),
+          catchError((e: HttpErrorResponse) => {
+            const mensaje = mapDomicilioError(e);
+            this.notif.error(mensaje);
+            return of(loadVisitDetailFailure({ error: e }));
           }),
         ),
       ),

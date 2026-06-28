@@ -18,3 +18,33 @@ export const selectHomeVisitsError = createSelector(
   selectDomicilioState,
   state => state.error,
 );
+
+export const selectMyRoute = createSelector(
+  selectDomicilioState,
+  state => state.myRoute,
+);
+
+export const selectMyRoutePending = createSelector(
+  selectDomicilioState,
+  state => state.myRoutePending,
+);
+
+export const selectMyRouteError = createSelector(
+  selectDomicilioState,
+  state => state.routeError,
+);
+
+export const selectVisitDetail = createSelector(
+  selectDomicilioState,
+  state => state.visitDetail,
+);
+
+export const selectDetailPending = createSelector(
+  selectDomicilioState,
+  state => state.detailPending,
+);
+
+export const selectDetailError = createSelector(
+  selectDomicilioState,
+  state => state.detailError,
+);

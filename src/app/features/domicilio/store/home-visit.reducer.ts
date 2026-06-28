@@ -7,6 +7,13 @@ import {
   createHomeVisit,
   createHomeVisitSuccess,
   createHomeVisitFailure,
+  loadMyRoute,
+  loadMyRouteSuccess,
+  loadMyRouteNotModified,
+  loadMyRouteFailure,
+  loadVisitDetail,
+  loadVisitDetailSuccess,
+  loadVisitDetailFailure,
 } from './home-visit.actions';
 
 export const homeVisitReducer = createReducer(
@@ -45,5 +52,45 @@ export const homeVisitReducer = createReducer(
     ...state,
     pending: false,
     error,
+  })),
+
+  // ── Ruta del día ─────────────────────────────────────────────────────────────
+  on(loadMyRoute, (state): DomicilioState => ({
+    ...state,
+    myRoutePending: true,
+    routeError: null,
+  })),
+  on(loadMyRouteSuccess, (state, { visits }): DomicilioState => ({
+    ...state,
+    myRoute: visits,
+    myRoutePending: false,
+    routeError: null,
+  })),
+  on(loadMyRouteNotModified, (state): DomicilioState => ({
+    ...state,
+    myRoutePending: false,
+  })),
+  on(loadMyRouteFailure, (state, { error }): DomicilioState => ({
+    ...state,
+    myRoutePending: false,
+    routeError: error,
+  })),
+
+  // ── Detalle de visita ─────────────────────────────────────────────────────────
+  on(loadVisitDetail, (state): DomicilioState => ({
+    ...state,
+    detailPending: true,
+    detailError: null,
+  })),
+  on(loadVisitDetailSuccess, (state, { visit }): DomicilioState => ({
+    ...state,
+    visitDetail: visit,
+    detailPending: false,
+    detailError: null,
+  })),
+  on(loadVisitDetailFailure, (state, { error }): DomicilioState => ({
+    ...state,
+    detailPending: false,
+    detailError: error,
   })),
 );
