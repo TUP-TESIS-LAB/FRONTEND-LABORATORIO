@@ -92,4 +92,8 @@ export class AtencionApiService {
   setUrgentFlag(id: number, isUrgent: boolean): Observable<AttentionResponse> {
     return this.http.patch<AttentionResponse>(`${this.base}/${id}/urgent`, { isUrgent });
   }
+
+  advanceUrgent(id: number): Observable<AttentionResponse> {
+    return this.http.post<AttentionResponse>(`${this.base}/${id}/urgent/advance`, {});
+  }
 }

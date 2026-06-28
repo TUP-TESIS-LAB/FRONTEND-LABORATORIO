@@ -95,6 +95,11 @@ export const setUrgentFlag        = createAction('[Atencion Wizard] Set Urgent F
 export const setUrgentFlagSuccess = createAction('[Atencion API] Set Urgent Flag Success',   props<{ item: AttentionResponse }>());
 export const setUrgentFlagFailure = createAction('[Atencion API] Set Urgent Flag Failure',   props<{ error: HttpErrorResponse }>());
 
+// Advance urgent (KAN-140) — modo express: salta cobro/facturación/confirmación y manda a extracción -
+export const advanceUrgent        = createAction('[Atencion Wizard] Advance Urgent',         props<{ id: number }>());
+export const advanceUrgentSuccess = createAction('[Atencion API] Advance Urgent Success',    props<{ item: AttentionResponse }>());
+export const advanceUrgentFailure = createAction('[Atencion API] Advance Urgent Failure',    props<{ error: HttpErrorResponse }>());
+
 // Remove analysis from resumen (B3c) -------------------------------------------
 export const removeAnalysisFromResumen = createAction(
   '[Atencion Resumen] Remove Analysis',
