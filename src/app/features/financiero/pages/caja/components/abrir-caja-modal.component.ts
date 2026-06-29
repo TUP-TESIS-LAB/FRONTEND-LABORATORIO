@@ -1,11 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { Button } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { Store } from '@ngrx/store';
 import { openSession } from '../../../store/financiero.actions';
-import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 
 @Component({
@@ -106,18 +105,19 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
   `],
 })
 export class AbrirCajaModalComponent {
+  /** Subcaja sobre la que se abre la sesión (KAN-156). */
+  readonly cashRegisterId = input.required<number>();
   readonly closed = output<void>();
 
   private readonly store = inject(Store);
-  private readonly branchCtx = inject(OperatorBranchContextService);
 
   protected montoApertura = signal(0);
   protected readonly canConfirm = computed(() => this.montoApertura() > 0);
 
   protected confirm(): void {
-    const branchId = this.branchCtx.branchId();
-    if (!branchId || this.montoApertura() <= 0) return;
-    this.store.dispatch(openSession({ branchId, openingAmount: this.montoApertura() }));
+    const cashRegisterId = this.cashRegisterId();
+    if (!cashRegisterId || this.montoApertura() <= 0) return;
+    this.store.dispatch(openSession({ cashRegisterId, openingAmount: this.montoApertura() }));
     this.closed.emit();
   }
 }

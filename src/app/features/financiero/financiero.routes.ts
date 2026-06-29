@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { saasAdminGuard } from '@core/guards/saas-admin.guard';
+import { hasRoleGuard } from '@core/guards/has-role.guard';
 
 export const FINANCIERO_ROUTES: Routes = [
   {
@@ -32,6 +33,20 @@ export const FINANCIERO_ROUTES: Routes = [
         loadComponent: () =>
           import('./components/cobro-atencion/cobro-atencion.component').then(
             (m) => m.CobroAtencionComponent,
+          ),
+      },
+      {
+        path: 'subcajas',
+        canMatch: [hasRoleGuard(['ADMINISTRADOR'])],
+        loadComponent: () =>
+          import('./pages/subcajas/subcajas.page').then((m) => m.SubcajasPage),
+      },
+      {
+        path: 'cuentas-destino',
+        canMatch: [hasRoleGuard(['ADMINISTRADOR'])],
+        loadComponent: () =>
+          import('./pages/cuentas-destino/cuentas-destino.page').then(
+            (m) => m.CuentasDestinoPage,
           ),
       },
       {

@@ -18,6 +18,14 @@ import { PageHeaderComponent } from '@shared/ui/components/page-header/page-head
       <a routerLink="cobros" routerLinkActive="is-active" role="tab">
         <i class="pi pi-receipt"></i> Cobros
       </a>
+      <ng-template hasRole="ADMINISTRADOR">
+        <a routerLink="subcajas" routerLinkActive="is-active" role="tab">
+          <i class="pi pi-wallet"></i> Cajas
+        </a>
+        <a routerLink="cuentas-destino" routerLinkActive="is-active" role="tab">
+          <i class="pi pi-building-columns"></i> Cuentas destino
+        </a>
+      </ng-template>
       <ng-template hasRole="SAAS_ADMIN">
         <a routerLink="config-fiscal" routerLinkActive="is-active" role="tab">
           <i class="pi pi-verified"></i> Config fiscal
