@@ -2,6 +2,8 @@
 import {
   selectCajaSession, selectCajaActivity, selectCajaLoading,
   selectIsCajaOpen, selectCajaSaldo, selectCajaError,
+  selectCashRegisters, selectOtrosRows, selectOtrosTotal, selectOtrosCount,
+  selectBankAccounts, selectBankAccountsLoading,
   selectCobrosList, selectCobrosLoading, selectCobrosError, selectCobroSelected,
   selectCobroSubmitting, selectCobroResult, selectCobroError,
   selectFiscalConfig, selectFiscalSaving, selectFiscalConfigError,
@@ -70,6 +72,33 @@ describe('financiero selectors — caja', () => {
 
   it('selectCajaSaldo devuelve 0 cuando no hay sesión', () => {
     expect(selectCajaSaldo.projector(null)).toBe(0);
+  });
+});
+
+describe('financiero selectors — subcajas / otros / cuentas', () => {
+  it('selectCashRegisters proyecta el listado del slice caja', () => {
+    const regs = [{ id: 5, tenantId: 1, branchId: 3, name: 'Mostrador', active: true }];
+    const caja = { ...initialFinancieroState.caja, registers: regs };
+    expect(selectCashRegisters.projector(caja)).toEqual(regs);
+  });
+
+  it('selectOtrosRows/Total/Count caen a valores vacíos sin data', () => {
+    expect(selectOtrosRows.projector(null)).toEqual([]);
+    expect(selectOtrosTotal.projector(null)).toBe(0);
+    expect(selectOtrosCount.projector(null)).toBe(0);
+  });
+
+  it('selectOtrosTotal proyecta el total cuando hay data', () => {
+    const data = { rows: [], total: 1500, count: 2 };
+    expect(selectOtrosTotal.projector(data)).toBe(1500);
+    expect(selectOtrosCount.projector(data)).toBe(2);
+  });
+
+  it('selectBankAccounts proyecta el listado de cuentas', () => {
+    const accounts = [{ id: 1, tenantId: 1, label: 'Galicia', cbu: null, alias: null, banco: null, titular: null, cuit: null, active: true }];
+    const cuentas = { ...initialFinancieroState.cuentas, list: accounts };
+    expect(selectBankAccounts.projector(cuentas)).toEqual(accounts);
+    expect(selectBankAccountsLoading.projector(cuentas)).toBe(false);
   });
 });
 

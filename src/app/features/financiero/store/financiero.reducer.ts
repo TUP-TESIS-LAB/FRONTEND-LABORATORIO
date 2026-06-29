@@ -1,11 +1,20 @@
 ﻿import { createReducer, on } from '@ngrx/store';
 import { initialFinancieroState, FinancieroState } from './financiero.state';
 import {
+  loadCashRegisters, loadCashRegistersSuccess, loadCashRegistersFailure,
+  createCashRegisterSuccess, createCashRegisterFailure,
+  deactivateCashRegisterFailure,
   loadOpenSession, loadOpenSessionSuccess, sessionNotFound, loadOpenSessionFailure,
   loadActivitySuccess,
   openSessionSuccess, openSessionFailure,
   closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
+  loadBranchOtherMedia, loadBranchOtherMediaSuccess, loadBranchOtherMediaFailure,
+  registerBranchMovementSuccess, registerBranchMovementFailure,
+  loadBankAccounts, loadBankAccountsSuccess, loadBankAccountsFailure,
+  createBankAccount, createBankAccountSuccess, createBankAccountFailure,
+  updateBankAccount, updateBankAccountSuccess, updateBankAccountFailure,
+  deactivateBankAccountFailure,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
@@ -18,6 +27,28 @@ export const initialState = initialFinancieroState;
 
 export const financieroReducer = createReducer(
   initialState,
+
+  // ── subcajas ───────────────────────────────────────────────────────────────
+  on(loadCashRegisters, (state): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, registersLoading: true, error: null },
+  })),
+  on(loadCashRegistersSuccess, (state, { registers }): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, registers, registersLoading: false },
+  })),
+  on(loadCashRegistersFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, registersLoading: false, error },
+  })),
+  on(createCashRegisterSuccess, (state, { register }): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, registers: [...state.caja.registers, register], error: null },
+  })),
+  on(createCashRegisterFailure, deactivateCashRegisterFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, error },
+  })),
 
   // ── cargar sesión abierta ──────────────────────────────────────────────────
   on(loadOpenSession, (state): FinancieroState => ({
@@ -75,6 +106,70 @@ export const financieroReducer = createReducer(
   on(registerTransactionFailure, (state, { error }): FinancieroState => ({
     ...state,
     caja: { ...state.caja, error },
+  })),
+
+  // ── otros medios (sucursal + día) ──────────────────────────────────────────
+  on(loadBranchOtherMedia, (state): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, loading: true, error: null },
+  })),
+  on(loadBranchOtherMediaSuccess, (state, { data }): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, data, loading: false, error: null },
+  })),
+  on(loadBranchOtherMediaFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, loading: false, error },
+  })),
+  on(registerBranchMovementSuccess, (state): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, error: null },
+  })),
+  on(registerBranchMovementFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, error },
+  })),
+
+  // ── cuentas destino (bank-accounts) ────────────────────────────────────────
+  on(loadBankAccounts, (state): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, loading: true, error: null },
+  })),
+  on(loadBankAccountsSuccess, (state, { accounts }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, list: accounts, loading: false, error: null },
+  })),
+  on(loadBankAccountsFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, loading: false, error },
+  })),
+  on(createBankAccount, updateBankAccount, (state): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, saving: true, error: null },
+  })),
+  on(createBankAccountSuccess, (state, { account }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, list: [...state.cuentas.list, account], saving: false, error: null },
+  })),
+  on(updateBankAccountSuccess, (state, { account }): FinancieroState => ({
+    ...state,
+    cuentas: {
+      ...state.cuentas,
+      // si la cuenta quedó inactiva sale del listado de activas
+      list: account.active
+        ? state.cuentas.list.map(a => (a.id === account.id ? account : a))
+        : state.cuentas.list.filter(a => a.id !== account.id),
+      saving: false,
+      error: null,
+    },
+  })),
+  on(createBankAccountFailure, updateBankAccountFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, saving: false, error },
+  })),
+  on(deactivateBankAccountFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, error },
   })),
 
   // ── cobros: listar pagos ───────────────────────────────────────────────────
