@@ -35,6 +35,68 @@ export interface PaymentListItem {
 }
 export interface TenantFiscalConfig { id: number; targetTenantId: number; provider: FiscalProvider; invoicePointOfSale: string | null; active: boolean; }
 
+// ── Subcajas (multi-caja por sucursal) ────────────────────────────────────────
+export interface CashRegister {
+  id: number; tenantId: number; branchId: number;
+  name: string; active: boolean; deletedAt?: string | null;
+}
+
+// ── Cuentas destino del laboratorio (bank-accounts) ───────────────────────────
+export interface BankAccount {
+  id: number; tenantId: number; label: string;
+  cbu: string | null; alias: string | null; banco: string | null;
+  titular: string | null; cuit: string | null; active: boolean;
+}
+/** Body para crear/editar una cuenta destino. */
+export interface BankAccountInput {
+  label: string;
+  cbu?: string | null; alias?: string | null; banco?: string | null;
+  titular?: string | null; cuit?: string | null;
+}
+
+// ── Otros medios (sucursal + día) ─────────────────────────────────────────────
+export type OtherMediaSource = 'ATTENTION_COLLECTION' | 'MANUAL_MOVEMENT';
+export interface BranchOtherMediaRow {
+  source: OtherMediaSource;
+  type: TransactionType;
+  method: PaymentMethod;
+  amount: number;
+  description: string | null;
+  reference: string | null;
+  occurredAt: string;
+  esEfectivo: boolean;
+  destinationAccountId: number | null;
+  paymentId: number | null;
+  movementId: number | null;
+}
+export interface BranchOtherMedia {
+  rows: BranchOtherMediaRow[];
+  total: number;
+  count: number;
+}
+
+/**
+ * Body de POST /branch-movements — movimiento manual no-efectivo a nivel
+ * sucursal+día. method MUST ser ≠ CASH (el efectivo va por la caja).
+ */
+export interface RegisterBranchMovementInput {
+  branchId: number;
+  type: TransactionType;
+  method: PaymentMethod;
+  amount: number;
+  description?: string | null;
+  destinationAccountId?: number | null;
+  // detalle por método (baseline C14)
+  transactionId?: string | null;
+  senderName?: string | null;
+  senderCbuAlias?: string | null;
+  cardBrand?: string | null;
+  lastFourDigits?: string | null;
+  installments?: number | null;
+  terminalId?: string | null;
+  batchNumber?: string | null;
+}
+
 export interface MethodMeta { label: string; icon: string; color: string; esEfectivo: boolean; refLabel: string; }
 export const METHOD_META: Record<PaymentMethod, MethodMeta> = {
   CASH:        { label: 'Efectivo',           icon: 'pi-money-bill',             color: 'green',  esEfectivo: true,  refLabel: 'N° de recibo' },
@@ -75,6 +137,12 @@ export interface PaymentDetailItemInput {
 export interface CreatePaymentRequest {
   attentionId: number;
   branchId: number;
+  /**
+   * KAN-156: subcaja seleccionada sobre la que se imputa el efectivo del cobro.
+   * El backend resuelve la sesión OPEN por esta caja (multi-caja). Opcional para
+   * compatibilidad: si no se envía, el back cae al comportamiento por sucursal.
+   */
+  cashRegisterId?: number | null;
   totalAmount: number;
   copaymentAmount: number;
   collections: CollectionItemInput[];
