@@ -61,10 +61,10 @@ interface FlushOpts {
 
 /**
  * Responde la carga inicial: catalog determinations (1 det), tenant-analyses,
- * preparation-types; y por determinación: override + ref-values + preparation.
+ * preparation-types, qualitative-categories; y por determinación: override + ref-values + preparation.
  */
 function flushLoad(http: HttpTestingController, opts: FlushOpts = {}, analysisId = 42, detId = 100, tenantRow?: Record<string, unknown>): void {
-  // Outer forkJoin: determinations + tenantRows + prepTypes (simultáneo)
+  // Outer forkJoin: determinations + tenantRows + prepTypes + qualCategories (simultáneo)
   http.expectOne(`/api/v1/analitica/catalog/${analysisId}/determinations`).flush([
     { id: detId, name: 'Glucemia', unit: 'g/dL' },
   ]);
@@ -72,6 +72,7 @@ function flushLoad(http: HttpTestingController, opts: FlushOpts = {}, analysisId
     tenantRow ?? { id: 7, catalogId: analysisId, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
   ]);
   http.expectOne('/api/v1/analitica/preparation/types').flush(opts.prepTypes ?? []);
+  http.expectOne('/api/v1/analitica/qualitative-categories').flush([]);
 
   // Inner forkJoin por det: override + refValues + preparation
   const override = opts.override === undefined ? null : opts.override;
@@ -101,6 +102,7 @@ describe('NbuConfigDrawerComponent', () => {
       { id: 7, catalogId: 42, nbuCode: 'NBU-099', shortCode: 'GLUC', customName: null, active: true, defaultSectionId: 3 },
     ]);
     http.expectOne('/api/v1/analitica/preparation/types').flush([]);
+    http.expectOne('/api/v1/analitica/qualitative-categories').flush([]);
     http.expectOne('/api/v1/analitica/determinations/100/override').flush({ hasOverride: false, override: null });
     http.expectOne('/api/v1/analitica/determinations/100/reference-values/override').flush([]);
     http.expectOne('/api/v1/analitica/determinations/100/preparation').flush({ items: [] });
@@ -291,6 +293,59 @@ describe('NbuConfigDrawerComponent', () => {
       { type: 'AYUNO', fastingHours: 8 },
       { type: 'NO_FUMAR', fastingHours: null },
     ]);
+  });
+
+  it('en modo cualitativo guarda el valor esperado por fila y el tipo+categoría en el override', () => {
+    const { fixture } = setup();
+    const api = TestBed.inject(NbuConfigApiService);
+    const upsertRef = vi.spyOn(api, 'upsertReferenceValues').mockReturnValue(of([] as any));
+    const upsertOv = vi.spyOn(api, 'upsertOverride').mockReturnValue(of({} as any));
+    const component = fixture.componentInstance as unknown as {
+      detForms: unknown[];
+      analysis: CatalogRow | null;
+      generalForm: { controls: { shortCode: { setValue(v: string): void } } };
+      fb: import('@angular/forms').FormBuilder;
+      onSave(): void;
+    };
+    const fb = component['fb'];
+    // Fila: MALE, adultos, valor cualitativo id 99
+    const row = fb.group({
+      minValue: fb.control<number | null>(null),
+      maxValue: fb.control<number | null>(null),
+      criticalMinValue: fb.control<number | null>(null),
+      criticalMaxValue: fb.control<number | null>(null),
+      ageMinYears: fb.control<number | null>(null),
+      ageMaxYears: fb.control<number | null>(null),
+      gender: fb.control<'MALE' | 'FEMALE' | null>('MALE'),
+      qualitativeValue: fb.control<number | null>(99),
+    });
+    const refValues = fb.array([row]);
+    // originalRefValues distinto para forzar el upsert
+    const originalRefValues = '[]';
+    component['detForms'] = [{
+      detId: 100, detName: 'Glucemia', unit: 'g/dL',
+      existingOverride: null,
+      refValues,
+      originalRefValues,
+      prepTypes: new Set<string>(), fastingHours: null, observations: '',
+      originalPrep: JSON.stringify({ types: [], hours: null, obs: '' }),
+      valueType: 'QUALITATIVE',
+      qualitativeCategoryId: 5,
+    } as any];
+    component.analysis = { id: 42, name: 'Glucemia' } as any;
+    component['generalForm'].controls.shortCode.setValue('GLUC');
+
+    component['onSave']();
+
+    // Override debe incluir analyticalType y qualitativeCategoryId
+    expect(upsertOv).toHaveBeenCalledWith(100, expect.objectContaining({
+      analyticalType: 'QUALITATIVE',
+      qualitativeCategoryId: 5,
+    }));
+    // Ref-values deben llevar qualitativeValue, no min/max
+    expect(upsertRef).toHaveBeenCalledWith(100,
+      expect.arrayContaining([expect.objectContaining({ qualitativeValue: 99 })]),
+    );
   });
 
   it('bloquea guardar si hay segmentos (sexo+edad) solapados', () => {
