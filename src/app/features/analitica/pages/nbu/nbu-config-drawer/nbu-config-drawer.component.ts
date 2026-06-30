@@ -514,6 +514,45 @@ export class NbuConfigDrawerComponent implements OnChanges {
     );
   }
 
+  /**
+   * Detecta si alguna fila de ref-values de una determinación tiene un rango de edad inválido
+   * (ageMin > ageMax) o si dos filas se solapan por segmento (sexo + edad).
+   *
+   * Regla de solape (misma que el BE):
+   * - Sexo null = ambos → solapa con cualquier sexo concreto.
+   * - Dos sexos concretos distintos (MALE vs FEMALE) no solapan.
+   * - Edad: null en ageMinYears → 0 meses; null en ageMaxYears → +∞.
+   * - Solape inclusivo: lo1 ≤ hi2 && lo2 ≤ hi1.
+   */
+  private overlappingRefRows(det: DetForm): boolean {
+    const rows = det.refValues.getRawValue() as Array<{
+      gender: 'MALE' | 'FEMALE' | null;
+      ageMinYears: number | null;
+      ageMaxYears: number | null;
+    }>;
+    const segs = rows.map((r) => ({
+      gender: r.gender,
+      lo: r.ageMinYears == null ? 0 : Math.round(r.ageMinYears * 12),
+      hi: r.ageMaxYears == null ? Number.MAX_SAFE_INTEGER : Math.round(r.ageMaxYears * 12),
+    }));
+    for (let i = 0; i < segs.length; i++) {
+      if (segs[i].lo > segs[i].hi) return true; // ageMin > ageMax: fila inválida
+      for (let j = i + 1; j < segs.length; j++) {
+        // Sexos solapan si alguno es null (= ambos) o si son iguales
+        const genderOverlap =
+          segs[i].gender == null || segs[j].gender == null || segs[i].gender === segs[j].gender;
+        // Rangos de edad solapan en forma inclusiva
+        const ageOverlap = segs[i].lo <= segs[j].hi && segs[j].lo <= segs[i].hi;
+        if (genderOverlap && ageOverlap) return true;
+      }
+    }
+    return false;
+  }
+
+  private hasIncongruentRefValues(): boolean {
+    return this.detForms.some((d) => this.overlappingRefRows(d));
+  }
+
   // ── Guardado ───────────────────────────────────────────────────────────────────
 
   protected onSave(): void {
@@ -543,6 +582,15 @@ export class NbuConfigDrawerComponent implements OnChanges {
         severity: 'warn',
         summary: 'Horas de ayuno requeridas',
         detail: 'Ingresá las horas de ayuno (mayor a 0).',
+      });
+      return;
+    }
+
+    if (this.hasIncongruentRefValues()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Rangos superpuestos',
+        detail: 'Hay valores de referencia con sexo y edad superpuestos. Revisá que cada combinación de sexo y edad tenga un solo rango.',
       });
       return;
     }

@@ -292,4 +292,52 @@ describe('NbuConfigDrawerComponent', () => {
       { type: 'NO_FUMAR', fastingHours: null },
     ]);
   });
+
+  it('bloquea guardar si hay segmentos (sexo+edad) solapados', () => {
+    const { fixture } = setup();
+    const api = TestBed.inject(NbuConfigApiService);
+    const upsert = vi.spyOn(api, 'upsertReferenceValues').mockReturnValue(of([]));
+    const component = fixture.componentInstance as unknown as {
+      detForms: unknown[];
+      analysis: CatalogRow | null;
+      generalForm: { controls: { shortCode: { setValue(v: string): void } } };
+      fb: import('@angular/forms').FormBuilder;
+      onSave(): void;
+    };
+    // Dos filas: MALE 0-30 años y MALE 20-40 años → solape (20-30 en meses: 240-360 vs 0-360)
+    const fb = component['fb'];
+    const row1 = fb.group({
+      minValue: fb.control<number | null>(null),
+      maxValue: fb.control<number | null>(null),
+      criticalMinValue: fb.control<number | null>(null),
+      criticalMaxValue: fb.control<number | null>(null),
+      ageMinYears: fb.control<number | null>(0),
+      ageMaxYears: fb.control<number | null>(30),
+      gender: fb.control<'MALE' | 'FEMALE' | null>('MALE'),
+    });
+    const row2 = fb.group({
+      minValue: fb.control<number | null>(null),
+      maxValue: fb.control<number | null>(null),
+      criticalMinValue: fb.control<number | null>(null),
+      criticalMaxValue: fb.control<number | null>(null),
+      ageMinYears: fb.control<number | null>(20),
+      ageMaxYears: fb.control<number | null>(40),
+      gender: fb.control<'MALE' | 'FEMALE' | null>('MALE'),
+    });
+    const refValues = fb.array([row1, row2]);
+    const originalRefValues = '[]'; // distinto para que se intente guardar
+    component['detForms'] = [{
+      detId: 7, detName: 'Glucemia', unit: 'mg/dL', existingOverride: null,
+      refValues,
+      originalRefValues,
+      prepTypes: new Set<string>(), fastingHours: null, observations: '',
+      originalPrep: JSON.stringify({ types: [], hours: null, obs: '' }),
+    } as any];
+    component.analysis = { id: 100, name: 'Glucemia' } as any;
+    component['generalForm'].controls.shortCode.setValue('GLU');
+
+    component['onSave']();
+
+    expect(upsert).not.toHaveBeenCalled();
+  });
 });
