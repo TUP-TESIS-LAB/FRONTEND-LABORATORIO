@@ -23,6 +23,7 @@ export interface DeterminationOverride {
   canSelfApprove: boolean | null;
   handlingTimeValue: number | null;
   handlingTimeUnit: string | null;
+  qualitativeCategoryId: number | null;
 }
 
 /** Respuesta de GET /determinations/{id}/override. */
@@ -41,6 +42,23 @@ export interface ReferenceValueItem {
   ageMaxMonths: number | null;
   gender: 'MALE' | 'FEMALE' | null;
   unit: string | null;
+  qualitativeValue: number | null;
+}
+
+/** Valor individual dentro de una categoría cualitativa. */
+export interface QualitativeCategoryValue {
+  id: number;
+  label: string;
+  displayOrder: number;
+}
+
+/** Categoría cualitativa de resultado (p.ej. Color de orina). */
+export interface QualitativeCategory {
+  id: number;
+  name: string;
+  ordinal: boolean;
+  global: boolean;
+  values: QualitativeCategoryValue[];
 }
 
 /** Determinación del catálogo de un análisis (id + nombre + unidad de medida). */
@@ -87,6 +105,7 @@ export class NbuConfigApiService {
   private readonly catalogBase = '/api/v1/analitica/catalog';
   private readonly tenantAnalysesBase = '/api/v1/tenant-analyses';
   private readonly preparationBase = '/api/v1/analitica/preparation';
+  private readonly qualCategoriesUrl = '/api/v1/analitica/qualitative-categories';
 
   /**
    * Determinaciones del catálogo de un análisis (id + nombre + unidad). La unidad se
@@ -151,5 +170,13 @@ export class NbuConfigApiService {
     return this.http.put<void>(`${this.tenantAnalysesBase}/activation`, {
       catalogId, active, shortCode, customName,
     });
+  }
+
+  getQualitativeCategories(): Observable<QualitativeCategory[]> {
+    return this.http.get<QualitativeCategory[]>(this.qualCategoriesUrl);
+  }
+
+  createQualitativeCategory(name: string, ordinal: boolean, values: string[]): Observable<QualitativeCategory> {
+    return this.http.post<QualitativeCategory>(this.qualCategoriesUrl, { name, ordinal, values });
   }
 }

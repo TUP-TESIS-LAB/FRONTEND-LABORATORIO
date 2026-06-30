@@ -97,4 +97,19 @@ describe('NbuConfigApiService', () => {
     expect(req.request.body).toEqual({ catalogId: 100, active: true, shortCode: 'GLU', customName: 'Glucemia' });
     req.flush(null);
   });
+
+  it('getQualitativeCategories hace GET', () => {
+    svc.getQualitativeCategories().subscribe();
+    const r = http.expectOne('/api/v1/analitica/qualitative-categories');
+    expect(r.request.method).toBe('GET');
+    r.flush([]);
+  });
+
+  it('createQualitativeCategory hace POST con name/ordinal/values', () => {
+    svc.createQualitativeCategory('Color de orina', false, ['AMARILLO', 'ÁMBAR']).subscribe();
+    const r = http.expectOne('/api/v1/analitica/qualitative-categories');
+    expect(r.request.method).toBe('POST');
+    expect(r.request.body).toEqual({ name: 'Color de orina', ordinal: false, values: ['AMARILLO', 'ÁMBAR'] });
+    r.flush({});
+  });
 });
