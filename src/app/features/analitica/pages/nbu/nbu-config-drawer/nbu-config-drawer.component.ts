@@ -219,10 +219,10 @@ function monthsToYears(months: number | null): number | null {
                                 [text]="true"
                                 size="small"
                                 type="button"
-                                (onClick)="openNewCategoryForm()" />
+                                (onClick)="openNewCategoryForm(det)" />
                             </div>
 
-                            @if (showNewCategoryForm()) {
+                            @if (openCategoryFormDetId() === det.detId) {
                               <!-- Mini-form para crear una nueva categoría -->
                               <div class="mt-2 p-3 border border-[var(--ds-border)] rounded-lg bg-[var(--ds-surface-alt)]">
                                 <span class="text-xs font-medium block mb-2">Nueva categoría</span>
@@ -428,8 +428,11 @@ export class NbuConfigDrawerComponent implements OnChanges {
   /** Categorías cualitativas disponibles (globales + propias del tenant). */
   protected readonly qualitativeCategories = signal<QualitativeCategory[]>([]);
 
-  /** Si el mini-form de nueva categoría está abierto. */
-  protected readonly showNewCategoryForm = signal(false);
+  /**
+   * detId de la determinación que tiene el mini-form "+ Nueva categoría" abierto,
+   * o null si ninguna lo tiene. Un solo form abierto a la vez, aislado por determinación.
+   */
+  protected readonly openCategoryFormDetId = signal<number | null>(null);
   protected readonly newCategoryName = signal('');
   protected readonly newCategoryValues = signal('');
   protected readonly newCategoryOrdinal = signal(false);
@@ -543,15 +546,18 @@ export class NbuConfigDrawerComponent implements OnChanges {
     }
   }
 
-  protected openNewCategoryForm(): void {
+  protected openNewCategoryForm(det: DetForm): void {
     this.newCategoryName.set('');
     this.newCategoryValues.set('');
     this.newCategoryOrdinal.set(false);
-    this.showNewCategoryForm.set(true);
+    this.openCategoryFormDetId.set(det.detId);
   }
 
   protected closeNewCategoryForm(): void {
-    this.showNewCategoryForm.set(false);
+    this.newCategoryName.set('');
+    this.newCategoryValues.set('');
+    this.newCategoryOrdinal.set(false);
+    this.openCategoryFormDetId.set(null);
   }
 
   protected createNewCategory(det: DetForm): void {
@@ -577,7 +583,7 @@ export class NbuConfigDrawerComponent implements OnChanges {
         this.qualitativeCategories.update((list) => [...list, created]);
         det.qualitativeCategoryId = created.id;
         this.creatingCategory.set(false);
-        this.showNewCategoryForm.set(false);
+        this.openCategoryFormDetId.set(null);
         this.messageService.add({
           severity: 'success', summary: 'Categoría creada',
           detail: `La categoría "${created.name}" fue creada correctamente.`,
@@ -850,22 +856,20 @@ export class NbuConfigDrawerComponent implements OnChanges {
       }));
     }
 
-    // Preparación estructurada + observaciones: por determinación cuya prep cambió.
+    // Preparación estructurada + observaciones + override: por determinación.
     for (const det of this.detForms) {
       const currentPrepSnapshot = this.snapshotPrep(det.prepTypes, det.fastingHours, det.observations.trim());
-      if (currentPrepSnapshot !== det.originalPrep) {
+      const prepChanged = currentPrepSnapshot !== det.originalPrep;
+
+      if (prepChanged) {
         const items = [...det.prepTypes].map((type) => ({
           type,
           fastingHours: type === 'AYUNO' ? det.fastingHours : null,
         }));
         calls.push(this.nbuConfig.upsertPreparation(det.detId, items));
       }
-    }
 
-    // Override (tipo analítico + categoría cualitativa + observaciones): por determinación.
-    for (const det of this.detForms) {
-      const currentPrepSnapshot = this.snapshotPrep(det.prepTypes, det.fastingHours, det.observations.trim());
-      const prepChanged = currentPrepSnapshot !== det.originalPrep;
+      // Override (tipo analítico + categoría cualitativa + observaciones).
       const typeChanged = det.valueType !== ((det.existingOverride?.analyticalType ?? 'QUANTITATIVE') as AnalyticalType);
       const categoryChanged = det.qualitativeCategoryId !== (det.existingOverride?.qualitativeCategoryId ?? null);
 

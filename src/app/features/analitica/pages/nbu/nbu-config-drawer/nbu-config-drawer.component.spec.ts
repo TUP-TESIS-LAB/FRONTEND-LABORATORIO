@@ -395,4 +395,29 @@ describe('NbuConfigDrawerComponent', () => {
 
     expect(upsert).not.toHaveBeenCalled();
   });
+
+  it('openNewCategoryForm por determinación: abrirlo en una det NO lo muestra en otra', () => {
+    const { fixture } = setup();
+    const component = fixture.componentInstance as unknown as {
+      openCategoryFormDetId: { (): number | null };
+      openNewCategoryForm(det: { detId: number }): void;
+      closeNewCategoryForm(): void;
+    };
+
+    // Abrimos el form para la det 10
+    component.openNewCategoryForm({ detId: 10 });
+    expect(component.openCategoryFormDetId()).toBe(10);
+
+    // La det 20 NO debe tener el form abierto
+    expect(component.openCategoryFormDetId()).not.toBe(20);
+
+    // Al abrir para la det 20, cierra la 10 y abre la 20
+    component.openNewCategoryForm({ detId: 20 });
+    expect(component.openCategoryFormDetId()).toBe(20);
+    expect(component.openCategoryFormDetId()).not.toBe(10);
+
+    // Cerrar limpia el estado
+    component.closeNewCategoryForm();
+    expect(component.openCategoryFormDetId()).toBeNull();
+  });
 });
