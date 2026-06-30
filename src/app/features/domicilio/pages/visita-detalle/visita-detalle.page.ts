@@ -575,6 +575,8 @@ export class VisitaDetallePage implements OnInit {
   readonly dialogOutcomeVisible     = signal(false);
   readonly dialogReprogramarVisible = signal(false);
   readonly selectedReason           = signal<HomeVisitOutcomeReason | null>(null);
+  /** Código de barras escaneado antes de confirmar la extracción */
+  readonly scannedBarcode           = signal<string>('');
 
   /** ID de la visita en operación (guardado al abrir el diálogo) */
   private visitIdEnAccion: number | null = null;
@@ -636,7 +638,7 @@ export class VisitaDetallePage implements OnInit {
     const id = this.visitIdEnAccion;
     if (id == null) return;
     this.dialogExtraccionVisible.set(false);
-    this.store.dispatch(markExtracted({ id }));
+    this.store.dispatch(markExtracted({ id, scannedBarcode: this.scannedBarcode() }));
     this.actions$
       .pipe(
         ofType(markExtractedSuccess, markExtractedFailure),

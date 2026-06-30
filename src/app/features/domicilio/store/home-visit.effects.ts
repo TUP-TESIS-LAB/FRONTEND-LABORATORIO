@@ -20,6 +20,9 @@ import {
   loadVisitDetail,
   loadVisitDetailSuccess,
   loadVisitDetailFailure,
+  prepareLabels,
+  prepareLabelsSuccess,
+  prepareLabelsFailure,
   markExtracted,
   markExtractedSuccess,
   markExtractedFailure,
@@ -43,6 +46,27 @@ function mapExtractorActionError(e: HttpErrorResponse): string {
   if (e.status === 409) return 'La visita ya fue procesada y no admite esta acción.';
   if (e.status === 403) return 'No tenés permiso para realizar esta operación.';
   return 'Ocurrió un error al procesar la operación. Intentá de nuevo.';
+}
+
+function mapMarkExtractedError(e: HttpErrorResponse): string {
+  if (e.status === 404) return 'La visita solicitada no existe o no tenés permiso para operarla.';
+  if (e.status === 409) return 'La visita ya fue procesada y no admite esta acción.';
+  if (e.status === 403) return 'No tenés permiso para realizar esta operación.';
+  if (e.status === 422) {
+    const msg: string = (e.error as { message?: string } | null)?.message ?? '';
+    if (msg === 'La visita no tiene rótulos preparados.') return msg;
+    if (msg === 'El rótulo escaneado no corresponde al paciente de esta visita.') return msg;
+    return 'Los datos del escaneo son inválidos. Revisá el rótulo e intentá de nuevo.';
+  }
+  return 'Ocurrió un error al procesar la operación. Intentá de nuevo.';
+}
+
+function mapPrepareLabelsError(e: HttpErrorResponse): string {
+  if (e.status === 404) return 'La visita solicitada no existe.';
+  if (e.status === 409) return 'La visita ya fue procesada y no admite esta acción.';
+  if (e.status === 403) return 'No tenés permiso para realizar esta operación.';
+  if (e.status === 422) return 'No se pueden preparar los rótulos: la visita está en un estado inválido.';
+  return 'Ocurrió un error al preparar los rótulos. Intentá de nuevo.';
 }
 
 @Injectable()
@@ -125,18 +149,47 @@ export class HomeVisitEffects {
     ),
   );
 
+  // ── Preparar rótulos ──────────────────────────────────────────────────────────
+  prepareLabels$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(prepareLabels),
+      concatMap(({ id }) =>
+        this.homeVisitService.prepareLabels(id).pipe(
+          map(({ visit, labels }) => {
+            this.notif.success('Rótulos preparados');
+            return prepareLabelsSuccess({ visit, labels });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapPrepareLabelsError(e);
+            this.notif.error(error);
+            return of(prepareLabelsFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  prepareLabelsRefresh$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(prepareLabelsSuccess),
+      concatMap(({ visit }) => [
+        loadVisitDetail({ id: visit.id }),
+      ]),
+    ),
+  );
+
   // ── Acciones del extractor ────────────────────────────────────────────────────
   markExtracted$ = createEffect(() =>
     this.actions$.pipe(
       ofType(markExtracted),
-      concatMap(({ id }) =>
-        this.homeVisitService.markExtracted(id).pipe(
+      concatMap(({ id, scannedBarcode }) =>
+        this.homeVisitService.markExtracted(id, scannedBarcode).pipe(
           map(visit => {
             this.notif.success('Muestra extraída correctamente.');
             return markExtractedSuccess({ visit });
           }),
           catchError((e: HttpErrorResponse) => {
-            const error = mapExtractorActionError(e);
+            const error = mapMarkExtractedError(e);
             this.notif.error(error);
             return of(markExtractedFailure({ error }));
           }),

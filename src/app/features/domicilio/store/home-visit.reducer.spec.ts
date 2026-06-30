@@ -15,6 +15,9 @@ import {
   loadVisitDetail,
   loadVisitDetailSuccess,
   loadVisitDetailFailure,
+  prepareLabels,
+  prepareLabelsSuccess,
+  prepareLabelsFailure,
   markExtracted,
   markExtractedSuccess,
   markExtractedFailure,
@@ -25,7 +28,7 @@ import {
   rescheduleVisitSuccess,
   rescheduleVisitFailure,
 } from './home-visit.actions';
-import { HomeVisit } from '../models/home-visit.model';
+import { HomeVisit, PreparedLabel } from '../models/home-visit.model';
 
 const visit: HomeVisit = {
   id: 1,
@@ -186,15 +189,49 @@ describe('homeVisitReducer — loadVisitDetail', () => {
   });
 });
 
+describe('homeVisitReducer — prepareLabels', () => {
+  const labels: PreparedLabel[] = [
+    { labelId: 101, analysisId: 201 },
+    { labelId: 102, analysisId: 202 },
+  ];
+
+  it('prepareLabels sube actionPending', () => {
+    const state = homeVisitReducer(initialDomicilioState, prepareLabels({ id: 1 }));
+    expect(state.actionPending).toBe(true);
+  });
+
+  it('prepareLabelsSuccess baja actionPending, actualiza visitDetail y guarda lastPreparedLabels', () => {
+    const updatedVisit = { ...visit, status: 'PROGRAMADA' as const };
+    const loading = homeVisitReducer(initialDomicilioState, prepareLabels({ id: 1 }));
+    const state = homeVisitReducer(loading, prepareLabelsSuccess({ visit: updatedVisit, labels }));
+    expect(state.actionPending).toBe(false);
+    expect(state.visitDetail).toEqual(updatedVisit);
+    expect(state.lastPreparedLabels).toEqual(labels);
+  });
+
+  it('prepareLabelsFailure baja actionPending sin modificar visitDetail ni lastPreparedLabels', () => {
+    const withDetail = { ...initialDomicilioState, visitDetail: visit, actionPending: true, lastPreparedLabels: [] };
+    const state = homeVisitReducer(withDetail, prepareLabelsFailure({ error: 'No se pueden preparar los rótulos: la visita está en un estado inválido.' }));
+    expect(state.actionPending).toBe(false);
+    expect(state.visitDetail).toEqual(visit);
+    expect(state.lastPreparedLabels).toEqual([]);
+  });
+
+  it('estado inicial tiene lastPreparedLabels vacío', () => {
+    const state = homeVisitReducer(undefined, { type: '@@INIT' } as any);
+    expect(state.lastPreparedLabels).toEqual([]);
+  });
+});
+
 describe('homeVisitReducer — markExtracted', () => {
   it('markExtracted sube actionPending', () => {
-    const state = homeVisitReducer(initialDomicilioState, markExtracted({ id: 1 }));
+    const state = homeVisitReducer(initialDomicilioState, markExtracted({ id: 1, scannedBarcode: 'ABC123' }));
     expect(state.actionPending).toBe(true);
   });
 
   it('markExtractedSuccess baja actionPending y actualiza visitDetail', () => {
     const updatedVisit = { ...visit, status: 'EXTRAIDA' as const };
-    const loading = homeVisitReducer(initialDomicilioState, markExtracted({ id: 1 }));
+    const loading = homeVisitReducer(initialDomicilioState, markExtracted({ id: 1, scannedBarcode: 'ABC123' }));
     const state = homeVisitReducer(loading, markExtractedSuccess({ visit: updatedVisit }));
     expect(state.actionPending).toBe(false);
     expect(state.visitDetail).toEqual(updatedVisit);

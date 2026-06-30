@@ -1,4 +1,4 @@
-import { HomeVisit } from '../models/home-visit.model';
+import { HomeVisit, PreparedLabel } from '../models/home-visit.model';
 
 export const DOMICILIO_FEATURE_KEY = 'domicilio';
 
@@ -13,6 +13,7 @@ export interface DomicilioState {
   routeError: string | null;
   detailError: string | null;
   actionPending: boolean;
+  lastPreparedLabels: PreparedLabel[];
 }
 
 export const initialDomicilioState: DomicilioState = {
@@ -26,4 +27,5 @@ export const initialDomicilioState: DomicilioState = {
   routeError: null,
   detailError: null,
   actionPending: false,
+  lastPreparedLabels: [],
 };

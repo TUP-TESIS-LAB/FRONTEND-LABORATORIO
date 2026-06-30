@@ -14,6 +14,9 @@ import {
   loadVisitDetail,
   loadVisitDetailSuccess,
   loadVisitDetailFailure,
+  prepareLabels,
+  prepareLabelsSuccess,
+  prepareLabelsFailure,
   markExtracted,
   markExtractedSuccess,
   markExtractedFailure,
@@ -102,6 +105,22 @@ export const homeVisitReducer = createReducer(
     ...state,
     detailPending: false,
     detailError: error,
+  })),
+
+  // ── Preparar rótulos ──────────────────────────────────────────────────────────
+  on(prepareLabels, (state): DomicilioState => ({
+    ...state,
+    actionPending: true,
+  })),
+  on(prepareLabelsSuccess, (state, { visit, labels }): DomicilioState => ({
+    ...state,
+    actionPending: false,
+    visitDetail: visit,
+    lastPreparedLabels: labels,
+  })),
+  on(prepareLabelsFailure, (state): DomicilioState => ({
+    ...state,
+    actionPending: false,
   })),
 
   // ── Acciones del extractor ────────────────────────────────────────────────────

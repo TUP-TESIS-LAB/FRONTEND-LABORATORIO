@@ -169,14 +169,15 @@ describe('VisitaDetallePage (smoke)', () => {
 
   // ── confirmarExtraccion: dispatch + navegación ───────────────────────────────
 
-  it('confirmarExtraccion() despacha markExtracted con el id', () => {
+  it('confirmarExtraccion() despacha markExtracted con el id y el barcode escaneado', () => {
     const v = makeVisit(42, 'PROGRAMADA');
     const fixture = setup(v);
     const comp = fixture.componentInstance;
     const spy = vi.spyOn(store, 'dispatch');
     comp.abrirConfirmExtraccion(42);
+    comp.scannedBarcode.set('BARCODE-XYZ');
     comp.confirmarExtraccion();
-    expect(spy).toHaveBeenCalledWith(markExtracted({ id: 42 }));
+    expect(spy).toHaveBeenCalledWith(markExtracted({ id: 42, scannedBarcode: 'BARCODE-XYZ' }));
   });
 
   it('confirmarExtraccion() cierra el diálogo de extracción', () => {

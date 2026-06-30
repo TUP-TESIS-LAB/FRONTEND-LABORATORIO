@@ -1,5 +1,5 @@
 import { createAction, props } from '@ngrx/store';
-import { CreateHomeVisitPayload, HomeVisit, HomeVisitOutcomeReason } from '../models/home-visit.model';
+import { CreateHomeVisitPayload, HomeVisit, HomeVisitOutcomeReason, PreparedLabel } from '../models/home-visit.model';
 
 // ── Listar visitas ────────────────────────────────────────────────────────────
 export const loadHomeVisits = createAction(
@@ -60,10 +60,24 @@ export const loadVisitDetailFailure = createAction(
   props<{ error: string }>(),
 );
 
+// ── Preparar rótulos (secretaría) ─────────────────────────────────────────────
+export const prepareLabels = createAction(
+  '[Domicilio Secretaria] Prepare Labels',
+  props<{ id: number }>(),
+);
+export const prepareLabelsSuccess = createAction(
+  '[Domicilio API] Prepare Labels Success',
+  props<{ visit: HomeVisit; labels: PreparedLabel[] }>(),
+);
+export const prepareLabelsFailure = createAction(
+  '[Domicilio API] Prepare Labels Failure',
+  props<{ error: string }>(),
+);
+
 // ── Acciones del extractor ────────────────────────────────────────────────────
 export const markExtracted = createAction(
   '[Domicilio Extractor] Mark Extracted',
-  props<{ id: number }>(),
+  props<{ id: number; scannedBarcode: string }>(),
 );
 export const markExtractedSuccess = createAction(
   '[Domicilio API] Mark Extracted Success',

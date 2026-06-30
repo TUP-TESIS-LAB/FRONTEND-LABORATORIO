@@ -53,3 +53,8 @@ export const selectActionPending = createSelector(
   selectDomicilioState,
   state => state.actionPending,
 );
+
+export const selectLastPreparedLabels = createSelector(
+  selectDomicilioState,
+  state => state.lastPreparedLabels,
+);

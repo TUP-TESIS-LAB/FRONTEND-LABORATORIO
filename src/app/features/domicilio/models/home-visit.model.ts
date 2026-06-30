@@ -30,6 +30,11 @@ export interface HomeVisit {
   extractorName: string | null;
 }
 
+export interface PreparedLabel {
+  labelId: number;
+  analysisId: number;
+}
+
 export interface CreateHomeVisitPayload {
   patientId: number;
   branchId: number;

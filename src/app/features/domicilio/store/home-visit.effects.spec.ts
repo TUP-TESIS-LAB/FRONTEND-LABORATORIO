@@ -23,6 +23,9 @@ import {
   loadVisitDetail,
   loadVisitDetailSuccess,
   loadVisitDetailFailure,
+  prepareLabels,
+  prepareLabelsSuccess,
+  prepareLabelsFailure,
   markExtracted,
   markExtractedSuccess,
   markExtractedFailure,
@@ -33,7 +36,7 @@ import {
   rescheduleVisitSuccess,
   rescheduleVisitFailure,
 } from './home-visit.actions';
-import { HomeVisit, CreateHomeVisitPayload } from '../models/home-visit.model';
+import { HomeVisit, CreateHomeVisitPayload, PreparedLabel } from '../models/home-visit.model';
 
 const visit: HomeVisit = {
   id: 1,
@@ -71,6 +74,7 @@ describe('HomeVisitEffects', () => {
     create: ReturnType<typeof vi.fn>;
     myRoute: ReturnType<typeof vi.fn>;
     detail: ReturnType<typeof vi.fn>;
+    prepareLabels: ReturnType<typeof vi.fn>;
     markExtracted: ReturnType<typeof vi.fn>;
     markOutcome: ReturnType<typeof vi.fn>;
     reschedule: ReturnType<typeof vi.fn>;
@@ -83,6 +87,7 @@ describe('HomeVisitEffects', () => {
       create: vi.fn(),
       myRoute: vi.fn(),
       detail: vi.fn(),
+      prepareLabels: vi.fn(),
       markExtracted: vi.fn(),
       markOutcome: vi.fn(),
       reschedule: vi.fn(),
@@ -256,22 +261,94 @@ describe('HomeVisitEffects', () => {
     expect(notif.error).toHaveBeenCalledWith('Ocurrió un error al procesar la operación. Intentá de nuevo.');
   });
 
+  // ── prepareLabels$ ──────────────────────────────────────────────────────────
+
+  it('prepareLabels$ emite prepareLabelsSuccess, notif.success y guarda labels al éxito', async () => {
+    const labels: PreparedLabel[] = [{ labelId: 101, analysisId: 201 }];
+    service.prepareLabels.mockReturnValue(of({ visit, labels }));
+    actions$ = of(prepareLabels({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.prepareLabels$);
+    expect(service.prepareLabels).toHaveBeenCalledWith(1);
+    expect(notif.success).toHaveBeenCalledWith('Rótulos preparados');
+    expect(action).toEqual(prepareLabelsSuccess({ visit, labels }));
+  });
+
+  it('prepareLabels$ ante 422 mapea mensaje de estado inválido', async () => {
+    service.prepareLabels.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
+    actions$ = of(prepareLabels({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.prepareLabels$);
+    expect(action.type).toBe('[Domicilio API] Prepare Labels Failure');
+    expect((action as ReturnType<typeof prepareLabelsFailure>).error).toBe(
+      'No se pueden preparar los rótulos: la visita está en un estado inválido.',
+    );
+    expect(notif.error).toHaveBeenCalledWith('No se pueden preparar los rótulos: la visita está en un estado inválido.');
+  });
+
+  it('prepareLabels$ ante 404 mapea mensaje de visita no encontrada', async () => {
+    service.prepareLabels.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    actions$ = of(prepareLabels({ id: 99 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.prepareLabels$);
+    expect((action as ReturnType<typeof prepareLabelsFailure>).error).toBe('La visita solicitada no existe.');
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  it('prepareLabels$ ante 500 emite Failure con mensaje genérico', async () => {
+    service.prepareLabels.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    actions$ = of(prepareLabels({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.prepareLabels$);
+    expect(action.type).toBe('[Domicilio API] Prepare Labels Failure');
+    expect(notif.error).toHaveBeenCalledWith('Ocurrió un error al preparar los rótulos. Intentá de nuevo.');
+  });
+
   // ── markExtracted$ ──────────────────────────────────────────────────────────
 
-  it('markExtracted$ emite markExtractedSuccess y notif.success al éxito', async () => {
+  it('markExtracted$ pasa scannedBarcode al servicio y emite markExtractedSuccess', async () => {
     const updatedVisit = { ...visit, status: 'EXTRAIDA' as const };
     service.markExtracted.mockReturnValue(of(updatedVisit));
-    actions$ = of(markExtracted({ id: 1 }));
+    actions$ = of(markExtracted({ id: 1, scannedBarcode: 'BARCODE-001' }));
     const effects = TestBed.inject(HomeVisitEffects);
     const action = await firstValueFrom(effects.markExtracted$);
-    expect(service.markExtracted).toHaveBeenCalledWith(1);
+    expect(service.markExtracted).toHaveBeenCalledWith(1, 'BARCODE-001');
     expect(notif.success).toHaveBeenCalledWith('Muestra extraída correctamente.');
     expect(action).toEqual(markExtractedSuccess({ visit: updatedVisit }));
   });
 
+  it('markExtracted$ ante 422 rótulo incorrecto mapea mensaje de mismatch', async () => {
+    const errorBody = { message: 'El rótulo escaneado no corresponde al paciente de esta visita.' };
+    service.markExtracted.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 422, error: errorBody })),
+    );
+    actions$ = of(markExtracted({ id: 1, scannedBarcode: 'WRONG' }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markExtracted$);
+    expect(action.type).toBe('[Domicilio API] Mark Extracted Failure');
+    expect((action as ReturnType<typeof markExtractedFailure>).error).toBe(
+      'El rótulo escaneado no corresponde al paciente de esta visita.',
+    );
+    expect(notif.error).toHaveBeenCalledWith('El rótulo escaneado no corresponde al paciente de esta visita.');
+  });
+
+  it('markExtracted$ ante 422 no preparada mapea mensaje de rótulos no preparados', async () => {
+    const errorBody = { message: 'La visita no tiene rótulos preparados.' };
+    service.markExtracted.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 422, error: errorBody })),
+    );
+    actions$ = of(markExtracted({ id: 1, scannedBarcode: 'BARCODE-001' }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markExtracted$);
+    expect((action as ReturnType<typeof markExtractedFailure>).error).toBe(
+      'La visita no tiene rótulos preparados.',
+    );
+    expect(notif.error).toHaveBeenCalledWith('La visita no tiene rótulos preparados.');
+  });
+
   it('markExtracted$ ante 409 mapea mensaje de transición inválida y emite Failure', async () => {
     service.markExtracted.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
-    actions$ = of(markExtracted({ id: 1 }));
+    actions$ = of(markExtracted({ id: 1, scannedBarcode: 'BARCODE-001' }));
     const effects = TestBed.inject(HomeVisitEffects);
     const action = await firstValueFrom(effects.markExtracted$);
     expect(action.type).toBe('[Domicilio API] Mark Extracted Failure');
@@ -283,7 +360,7 @@ describe('HomeVisitEffects', () => {
 
   it('markExtracted$ ante 404 mapea mensaje de visita no encontrada', async () => {
     service.markExtracted.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
-    actions$ = of(markExtracted({ id: 99 }));
+    actions$ = of(markExtracted({ id: 99, scannedBarcode: 'BARCODE-001' }));
     const effects = TestBed.inject(HomeVisitEffects);
     const action = await firstValueFrom(effects.markExtracted$);
     expect((action as ReturnType<typeof markExtractedFailure>).error).toBe(
@@ -294,7 +371,7 @@ describe('HomeVisitEffects', () => {
 
   it('markExtracted$ ante 500 emite Failure con mensaje genérico', async () => {
     service.markExtracted.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-    actions$ = of(markExtracted({ id: 1 }));
+    actions$ = of(markExtracted({ id: 1, scannedBarcode: 'BARCODE-001' }));
     const effects = TestBed.inject(HomeVisitEffects);
     const action = await firstValueFrom(effects.markExtracted$);
     expect(action.type).toBe('[Domicilio API] Mark Extracted Failure');
