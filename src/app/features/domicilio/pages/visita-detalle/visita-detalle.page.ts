@@ -1,20 +1,37 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   inject,
+  signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
+import { take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
-import { HomeVisitStatus } from '../../models/home-visit.model';
-import { loadVisitDetail } from '../../store/home-visit.actions';
+import { HomeVisitOutcomeReason, HomeVisitStatus } from '../../models/home-visit.model';
+import {
+  loadVisitDetail,
+  markExtracted,
+  markExtractedSuccess,
+  markExtractedFailure,
+  markOutcome,
+  markOutcomeSuccess,
+  markOutcomeFailure,
+  rescheduleVisit,
+  rescheduleVisitSuccess,
+  rescheduleVisitFailure,
+} from '../../store/home-visit.actions';
 import {
   selectVisitDetail,
   selectDetailPending,
+  selectActionPending,
 } from '../../store/home-visit.selectors';
 
 // ── Helpers de estado ─────────────────────────────────────────────────────────
@@ -33,6 +50,18 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
   NO_REALIZADA: { label: 'No realizada', severity: 'danger',    icon: 'pi-times-circle' },
   REPROGRAMADA: { label: 'Reprogramada', severity: 'secondary', icon: 'pi-refresh' },
 };
+
+/** Opciones de motivo de no realización */
+interface OutcomeOption {
+  label: string;
+  value: HomeVisitOutcomeReason;
+}
+
+const OUTCOME_OPTIONS: OutcomeOption[] = [
+  { label: 'Paciente ausente',    value: 'PACIENTE_AUSENTE'   },
+  { label: 'No se pudo extraer',  value: 'NO_SE_PUDO_EXTRAER' },
+  { label: 'Rechazó',            value: 'RECHAZO_PACIENTE'   },
+];
 
 /** Convierte 'HH:mm:ss' → 'HH:mm' */
 function formatTime(time: string): string {
@@ -62,8 +91,8 @@ function formatScheduledAt(iso: string | null): string {
   imports: [
     PageHeaderComponent,
     ButtonModule,
+    DialogModule,
     TagModule,
-    TooltipModule,
   ],
   template: `
     <ui-page-header
@@ -175,51 +204,51 @@ function formatScheduledAt(iso: string | null): string {
             </div>
           </section>
 
-          <!-- Acciones (Fase 3) -->
-          <section class="vd-card vd-card--acciones" aria-labelledby="vd-sec-acciones">
-            <h2 class="vd-section-title" id="vd-sec-acciones">Acciones</h2>
-            <p class="vd-acciones-hint">
-              Las acciones estarán disponibles en la Fase 3 del proyecto.
-            </p>
-            <div class="vd-acciones">
-              <span
-                pTooltip="Disponible próximamente"
-                tooltipPosition="top"
-                class="vd-accion-wrapper">
+          <!-- Acciones (sólo para visitas PROGRAMADAS) -->
+          @if (v.status === 'PROGRAMADA') {
+            <section class="vd-card vd-card--acciones" aria-labelledby="vd-sec-acciones">
+              <h2 class="vd-section-title" id="vd-sec-acciones">Acciones</h2>
+              <div class="vd-acciones">
                 <p-button
                   label="Extraído"
                   icon="pi pi-check-circle"
                   severity="primary"
-                  [disabled]="true"
+                  [disabled]="actionPending()"
+                  [loading]="actionPending()"
                   class="vd-accion-btn"
-                  ariaLabel="Registrar extracción — disponible próximamente" />
-              </span>
-              <span
-                pTooltip="Disponible próximamente"
-                tooltipPosition="top"
-                class="vd-accion-wrapper">
+                  ariaLabel="Registrar extracción exitosa"
+                  (onClick)="abrirConfirmExtraccion(v.id)" />
                 <p-button
-                  label="No se pudo"
+                  label="No se realizó"
                   icon="pi pi-times-circle"
                   severity="danger"
-                  [disabled]="true"
+                  [disabled]="actionPending()"
+                  [loading]="actionPending()"
                   class="vd-accion-btn"
-                  ariaLabel="Registrar visita fallida — disponible próximamente" />
-              </span>
-              <span
-                pTooltip="Disponible próximamente"
-                tooltipPosition="top"
-                class="vd-accion-wrapper">
+                  ariaLabel="Registrar visita no realizada"
+                  (onClick)="abrirDialogOutcome(v.id)" />
                 <p-button
                   label="Reprogramar"
                   icon="pi pi-refresh"
                   severity="secondary"
-                  [disabled]="true"
+                  [disabled]="actionPending()"
+                  [loading]="actionPending()"
                   class="vd-accion-btn"
-                  ariaLabel="Reprogramar visita — disponible próximamente" />
-              </span>
-            </div>
-          </section>
+                  ariaLabel="Reprogramar visita"
+                  (onClick)="abrirConfirmReprogramar(v.id)" />
+              </div>
+            </section>
+          } @else {
+            <section class="vd-card vd-card--acciones" aria-labelledby="vd-sec-acciones-info">
+              <h2 class="vd-section-title" id="vd-sec-acciones-info">Acciones</h2>
+              <p class="vd-acciones-info">
+                <i class="pi pi-info-circle"></i>
+                Esta visita está en estado
+                <strong>{{ statusFor(v.status).label }}</strong>
+                y no admite acciones.
+              </p>
+            </section>
+          }
 
           <!-- Botón volver -->
           <p-button
@@ -234,6 +263,100 @@ function formatScheduledAt(iso: string | null): string {
         </aside>
       </div>
     }
+
+    <!-- ── Diálogo: confirmar extracción ────────────────────────────────────── -->
+    <p-dialog
+      [(visible)]="dialogExtraccionVisible"
+      [modal]="true"
+      [closable]="true"
+      [dismissableMask]="true"
+      header="Confirmar extracción"
+      [style]="{ width: '400px' }">
+      <p class="vd-dialog-body">
+        ¿Confirmás que la muestra fue extraída correctamente?
+      </p>
+      <ng-template pTemplate="footer">
+        <p-button
+          label="Cancelar"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="dialogExtraccionVisible.set(false)" />
+        <p-button
+          label="Confirmar extracción"
+          icon="pi pi-check"
+          severity="primary"
+          [disabled]="actionPending()"
+          [loading]="actionPending()"
+          (onClick)="confirmarExtraccion()" />
+      </ng-template>
+    </p-dialog>
+
+    <!-- ── Diálogo: motivo de no realización ────────────────────────────────── -->
+    <p-dialog
+      [(visible)]="dialogOutcomeVisible"
+      [modal]="true"
+      [closable]="true"
+      [dismissableMask]="true"
+      header="No se realizó — motivo"
+      [style]="{ width: '420px' }">
+      <div class="vd-dialog-body vd-dialog-outcome">
+        <p>Seleccioná el motivo por el cual no se realizó la visita:</p>
+        <div class="vd-outcome-options">
+          @for (opt of OUTCOME_OPTIONS; track opt.value) {
+            <button
+              type="button"
+              class="vd-outcome-option"
+              [class.vd-outcome-option--selected]="selectedReason() === opt.value"
+              (click)="selectedReason.set(opt.value)">
+              <i class="pi pi-circle{{ selectedReason() === opt.value ? '-fill' : '' }}"></i>
+              {{ opt.label }}
+            </button>
+          }
+        </div>
+      </div>
+      <ng-template pTemplate="footer">
+        <p-button
+          label="Cancelar"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="cerrarDialogOutcome()" />
+        <p-button
+          label="Registrar"
+          icon="pi pi-save"
+          severity="danger"
+          [disabled]="!selectedReason() || actionPending()"
+          [loading]="actionPending()"
+          (onClick)="confirmarOutcome()" />
+      </ng-template>
+    </p-dialog>
+
+    <!-- ── Diálogo: confirmar reprogramación ────────────────────────────────── -->
+    <p-dialog
+      [(visible)]="dialogReprogramarVisible"
+      [modal]="true"
+      [closable]="true"
+      [dismissableMask]="true"
+      header="Confirmar reprogramación"
+      [style]="{ width: '400px' }">
+      <p class="vd-dialog-body">
+        ¿Confirmás que la visita debe ser reprogramada?
+        El laboratorio coordinará una nueva fecha con el paciente.
+      </p>
+      <ng-template pTemplate="footer">
+        <p-button
+          label="Cancelar"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="dialogReprogramarVisible.set(false)" />
+        <p-button
+          label="Confirmar reprogramación"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [disabled]="actionPending()"
+          [loading]="actionPending()"
+          (onClick)="confirmarReprogramar()" />
+      </ng-template>
+    </p-dialog>
   `,
   styles: [`
     /* ── Carga / vacío ────────────────────────────────────────────────────── */
@@ -352,25 +475,24 @@ function formatScheduledAt(iso: string | null): string {
     }
 
     /* ── Acciones panel ───────────────────────────────────────────────────── */
-    .vd-acciones-hint {
-      font-size: 12px;
-      color: var(--ds-text-muted);
-      margin: 0 0 var(--space-4) 0;
-    }
-
     .vd-acciones {
       display: flex;
       flex-direction: column;
       gap: var(--space-3);
     }
 
-    .vd-accion-wrapper {
-      display: block;
+    .vd-accion-btn {
       width: 100%;
     }
 
-    .vd-accion-btn {
-      width: 100%;
+    .vd-acciones-info {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--ds-text-muted);
+      margin: 0;
+      line-height: 1.5;
     }
 
     /* ── Botón volver ─────────────────────────────────────────────────────── */
@@ -382,15 +504,83 @@ function formatScheduledAt(iso: string | null): string {
     @media (max-width: 767px) {
       .vd-card { padding: var(--space-6); border-radius: 16px; }
     }
+
+    /* ── Diálogos ─────────────────────────────────────────────────────────── */
+    .vd-dialog-body {
+      font-size: 14px;
+      color: var(--ds-text);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .vd-dialog-outcome {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    /* ── Selector de motivo (outcome) ─────────────────────────────────────── */
+    .vd-outcome-options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .vd-outcome-option {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--p-surface-border, #e5e7eb);
+      border-radius: 8px;
+      background: var(--p-surface-ground, #f9fafb);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ds-text);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 150ms ease, background 150ms ease;
+    }
+
+    .vd-outcome-option:hover {
+      border-color: var(--brand-primary, #2563EB);
+      background: var(--p-surface-card, #fff);
+    }
+
+    .vd-outcome-option--selected {
+      border-color: var(--brand-primary, #2563EB);
+      background: color-mix(in srgb, var(--brand-primary, #2563EB) 8%, transparent);
+      color: var(--brand-primary, #2563EB);
+    }
+
+    .vd-outcome-option i {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
   `],
 })
 export class VisitaDetallePage implements OnInit {
-  private readonly store  = inject(Store);
-  private readonly route  = inject(ActivatedRoute);
-  private readonly router = inject(Router);
+  private readonly store     = inject(Store);
+  private readonly route     = inject(ActivatedRoute);
+  private readonly router    = inject(Router);
+  private readonly actions$  = inject(Actions);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly visit   = this.store.selectSignal(selectVisitDetail);
-  readonly pending = this.store.selectSignal(selectDetailPending);
+  readonly visit          = this.store.selectSignal(selectVisitDetail);
+  readonly pending        = this.store.selectSignal(selectDetailPending);
+  readonly actionPending  = this.store.selectSignal(selectActionPending);
+
+  // ── Estado de diálogos ──────────────────────────────────────────────────────
+  readonly dialogExtraccionVisible  = signal(false);
+  readonly dialogOutcomeVisible     = signal(false);
+  readonly dialogReprogramarVisible = signal(false);
+  readonly selectedReason           = signal<HomeVisitOutcomeReason | null>(null);
+
+  /** ID de la visita en operación (guardado al abrir el diálogo) */
+  private visitIdEnAccion: number | null = null;
+
+  /** Expuesto al template */
+  readonly OUTCOME_OPTIONS = OUTCOME_OPTIONS;
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -415,5 +605,85 @@ export class VisitaDetallePage implements OnInit {
   /** Expuesto al template y a los tests */
   formatScheduledAt(iso: string | null): string {
     return formatScheduledAt(iso);
+  }
+
+  // ── Abrir diálogos ──────────────────────────────────────────────────────────
+
+  abrirConfirmExtraccion(id: number): void {
+    this.visitIdEnAccion = id;
+    this.dialogExtraccionVisible.set(true);
+  }
+
+  abrirDialogOutcome(id: number): void {
+    this.visitIdEnAccion = id;
+    this.selectedReason.set(null);
+    this.dialogOutcomeVisible.set(true);
+  }
+
+  abrirConfirmReprogramar(id: number): void {
+    this.visitIdEnAccion = id;
+    this.dialogReprogramarVisible.set(true);
+  }
+
+  cerrarDialogOutcome(): void {
+    this.selectedReason.set(null);
+    this.dialogOutcomeVisible.set(false);
+  }
+
+  // ── Confirmar acciones ──────────────────────────────────────────────────────
+
+  confirmarExtraccion(): void {
+    const id = this.visitIdEnAccion;
+    if (id == null) return;
+    this.dialogExtraccionVisible.set(false);
+    this.store.dispatch(markExtracted({ id }));
+    this.actions$
+      .pipe(
+        ofType(markExtractedSuccess, markExtractedFailure),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((action) => {
+        if (action.type === markExtractedSuccess.type) {
+          this.router.navigate(['/domicilio/mi-ruta']);
+        }
+      });
+  }
+
+  confirmarOutcome(): void {
+    const id     = this.visitIdEnAccion;
+    const reason = this.selectedReason();
+    if (id == null || !reason) return;
+    this.cerrarDialogOutcome();
+    this.store.dispatch(markOutcome({ id, reason }));
+    this.actions$
+      .pipe(
+        ofType(markOutcomeSuccess, markOutcomeFailure),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((action) => {
+        if (action.type === markOutcomeSuccess.type) {
+          this.router.navigate(['/domicilio/mi-ruta']);
+        }
+      });
+  }
+
+  confirmarReprogramar(): void {
+    const id = this.visitIdEnAccion;
+    if (id == null) return;
+    this.dialogReprogramarVisible.set(false);
+    this.store.dispatch(rescheduleVisit({ id }));
+    this.actions$
+      .pipe(
+        ofType(rescheduleVisitSuccess, rescheduleVisitFailure),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((action) => {
+        if (action.type === rescheduleVisitSuccess.type) {
+          this.router.navigate(['/domicilio/mi-ruta']);
+        }
+      });
   }
 }
