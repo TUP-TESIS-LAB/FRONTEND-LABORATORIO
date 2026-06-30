@@ -20,12 +20,28 @@ import {
   loadVisitDetail,
   loadVisitDetailSuccess,
   loadVisitDetailFailure,
+  markExtracted,
+  markExtractedSuccess,
+  markExtractedFailure,
+  markOutcome,
+  markOutcomeSuccess,
+  markOutcomeFailure,
+  rescheduleVisit,
+  rescheduleVisitSuccess,
+  rescheduleVisitFailure,
 } from './home-visit.actions';
 
 function mapDomicilioError(e: HttpErrorResponse): string {
   if (e.status === 404) return 'La visita solicitada no existe.';
   if (e.status === 409) return 'Ya existe una visita programada para ese turno.';
   if (e.status === 422) return 'Los datos de la visita son inválidos. Revisá los campos e intentá de nuevo.';
+  return 'Ocurrió un error al procesar la operación. Intentá de nuevo.';
+}
+
+function mapExtractorActionError(e: HttpErrorResponse): string {
+  if (e.status === 404) return 'La visita solicitada no existe o no tenés permiso para operarla.';
+  if (e.status === 409) return 'La visita ya fue procesada y no admite esta acción.';
+  if (e.status === 403) return 'No tenés permiso para realizar esta operación.';
   return 'Ocurrió un error al procesar la operación. Intentá de nuevo.';
 }
 
@@ -106,6 +122,94 @@ export class HomeVisitEffects {
           }),
         ),
       ),
+    ),
+  );
+
+  // ── Acciones del extractor ────────────────────────────────────────────────────
+  markExtracted$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(markExtracted),
+      concatMap(({ id }) =>
+        this.homeVisitService.markExtracted(id).pipe(
+          map(visit => {
+            this.notif.success('Muestra extraída correctamente.');
+            return markExtractedSuccess({ visit });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapExtractorActionError(e);
+            this.notif.error(error);
+            return of(markExtractedFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  markExtractedRefresh$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(markExtractedSuccess),
+      concatMap(({ visit }) => [
+        loadVisitDetail({ id: visit.id }),
+        loadMyRoute({}),
+      ]),
+    ),
+  );
+
+  markOutcome$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(markOutcome),
+      concatMap(({ id, reason }) =>
+        this.homeVisitService.markOutcome(id, reason).pipe(
+          map(visit => {
+            this.notif.success('Estado de la visita registrado correctamente.');
+            return markOutcomeSuccess({ visit });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapExtractorActionError(e);
+            this.notif.error(error);
+            return of(markOutcomeFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  markOutcomeRefresh$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(markOutcomeSuccess),
+      concatMap(({ visit }) => [
+        loadVisitDetail({ id: visit.id }),
+        loadMyRoute({}),
+      ]),
+    ),
+  );
+
+  rescheduleVisit$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(rescheduleVisit),
+      concatMap(({ id }) =>
+        this.homeVisitService.reschedule(id).pipe(
+          map(visit => {
+            this.notif.success('Visita reprogramada correctamente.');
+            return rescheduleVisitSuccess({ visit });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapExtractorActionError(e);
+            this.notif.error(error);
+            return of(rescheduleVisitFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  rescheduleVisitRefresh$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(rescheduleVisitSuccess),
+      concatMap(({ visit }) => [
+        loadVisitDetail({ id: visit.id }),
+        loadMyRoute({}),
+      ]),
     ),
   );
 }

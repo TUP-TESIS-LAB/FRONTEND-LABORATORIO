@@ -48,3 +48,8 @@ export const selectDetailError = createSelector(
   selectDomicilioState,
   state => state.detailError,
 );
+
+export const selectActionPending = createSelector(
+  selectDomicilioState,
+  state => state.actionPending,
+);

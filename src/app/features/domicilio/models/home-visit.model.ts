@@ -6,6 +6,11 @@ export type HomeVisitStatus =
   | 'NO_REALIZADA'
   | 'REPROGRAMADA';
 
+export type HomeVisitOutcomeReason =
+  | 'PACIENTE_AUSENTE'
+  | 'NO_SE_PUDO_EXTRAER'
+  | 'RECHAZO_PACIENTE';
+
 export interface HomeVisit {
   id: number;
   appointmentId: number;

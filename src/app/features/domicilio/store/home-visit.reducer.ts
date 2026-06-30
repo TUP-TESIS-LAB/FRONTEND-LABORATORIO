@@ -14,6 +14,15 @@ import {
   loadVisitDetail,
   loadVisitDetailSuccess,
   loadVisitDetailFailure,
+  markExtracted,
+  markExtractedSuccess,
+  markExtractedFailure,
+  markOutcome,
+  markOutcomeSuccess,
+  markOutcomeFailure,
+  rescheduleVisit,
+  rescheduleVisitSuccess,
+  rescheduleVisitFailure,
 } from './home-visit.actions';
 
 export const homeVisitReducer = createReducer(
@@ -93,5 +102,48 @@ export const homeVisitReducer = createReducer(
     ...state,
     detailPending: false,
     detailError: error,
+  })),
+
+  // ── Acciones del extractor ────────────────────────────────────────────────────
+  on(markExtracted, (state): DomicilioState => ({
+    ...state,
+    actionPending: true,
+  })),
+  on(markExtractedSuccess, (state, { visit }): DomicilioState => ({
+    ...state,
+    actionPending: false,
+    visitDetail: visit,
+  })),
+  on(markExtractedFailure, (state): DomicilioState => ({
+    ...state,
+    actionPending: false,
+  })),
+
+  on(markOutcome, (state): DomicilioState => ({
+    ...state,
+    actionPending: true,
+  })),
+  on(markOutcomeSuccess, (state, { visit }): DomicilioState => ({
+    ...state,
+    actionPending: false,
+    visitDetail: visit,
+  })),
+  on(markOutcomeFailure, (state): DomicilioState => ({
+    ...state,
+    actionPending: false,
+  })),
+
+  on(rescheduleVisit, (state): DomicilioState => ({
+    ...state,
+    actionPending: true,
+  })),
+  on(rescheduleVisitSuccess, (state, { visit }): DomicilioState => ({
+    ...state,
+    actionPending: false,
+    visitDetail: visit,
+  })),
+  on(rescheduleVisitFailure, (state): DomicilioState => ({
+    ...state,
+    actionPending: false,
   })),
 );

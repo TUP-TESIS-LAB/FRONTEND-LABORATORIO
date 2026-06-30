@@ -15,6 +15,15 @@ import {
   loadVisitDetail,
   loadVisitDetailSuccess,
   loadVisitDetailFailure,
+  markExtracted,
+  markExtractedSuccess,
+  markExtractedFailure,
+  markOutcome,
+  markOutcomeSuccess,
+  markOutcomeFailure,
+  rescheduleVisit,
+  rescheduleVisitSuccess,
+  rescheduleVisitFailure,
 } from './home-visit.actions';
 import { HomeVisit } from '../models/home-visit.model';
 
@@ -174,5 +183,71 @@ describe('homeVisitReducer — loadVisitDetail', () => {
     expect(state.detailPending).toBe(false);
     expect(state.detailError).toBe('La visita solicitada no existe.');
     expect(state.visitDetail).toBeNull();
+  });
+});
+
+describe('homeVisitReducer — markExtracted', () => {
+  it('markExtracted sube actionPending', () => {
+    const state = homeVisitReducer(initialDomicilioState, markExtracted({ id: 1 }));
+    expect(state.actionPending).toBe(true);
+  });
+
+  it('markExtractedSuccess baja actionPending y actualiza visitDetail', () => {
+    const updatedVisit = { ...visit, status: 'EXTRAIDA' as const };
+    const loading = homeVisitReducer(initialDomicilioState, markExtracted({ id: 1 }));
+    const state = homeVisitReducer(loading, markExtractedSuccess({ visit: updatedVisit }));
+    expect(state.actionPending).toBe(false);
+    expect(state.visitDetail).toEqual(updatedVisit);
+  });
+
+  it('markExtractedFailure baja actionPending sin modificar visitDetail', () => {
+    const withDetail = { ...initialDomicilioState, visitDetail: visit, actionPending: true };
+    const state = homeVisitReducer(withDetail, markExtractedFailure({ error: 'La visita ya fue procesada y no admite esta acción.' }));
+    expect(state.actionPending).toBe(false);
+    expect(state.visitDetail).toEqual(visit);
+  });
+});
+
+describe('homeVisitReducer — markOutcome', () => {
+  it('markOutcome sube actionPending', () => {
+    const state = homeVisitReducer(initialDomicilioState, markOutcome({ id: 1, reason: 'PACIENTE_AUSENTE' }));
+    expect(state.actionPending).toBe(true);
+  });
+
+  it('markOutcomeSuccess baja actionPending y actualiza visitDetail', () => {
+    const updatedVisit = { ...visit, status: 'NO_REALIZADA' as const };
+    const loading = homeVisitReducer(initialDomicilioState, markOutcome({ id: 1, reason: 'PACIENTE_AUSENTE' }));
+    const state = homeVisitReducer(loading, markOutcomeSuccess({ visit: updatedVisit }));
+    expect(state.actionPending).toBe(false);
+    expect(state.visitDetail).toEqual(updatedVisit);
+  });
+
+  it('markOutcomeFailure baja actionPending sin modificar visitDetail', () => {
+    const withDetail = { ...initialDomicilioState, visitDetail: visit, actionPending: true };
+    const state = homeVisitReducer(withDetail, markOutcomeFailure({ error: 'La visita ya fue procesada y no admite esta acción.' }));
+    expect(state.actionPending).toBe(false);
+    expect(state.visitDetail).toEqual(visit);
+  });
+});
+
+describe('homeVisitReducer — rescheduleVisit', () => {
+  it('rescheduleVisit sube actionPending', () => {
+    const state = homeVisitReducer(initialDomicilioState, rescheduleVisit({ id: 1 }));
+    expect(state.actionPending).toBe(true);
+  });
+
+  it('rescheduleVisitSuccess baja actionPending y actualiza visitDetail', () => {
+    const updatedVisit = { ...visit, status: 'REPROGRAMADA' as const };
+    const loading = homeVisitReducer(initialDomicilioState, rescheduleVisit({ id: 1 }));
+    const state = homeVisitReducer(loading, rescheduleVisitSuccess({ visit: updatedVisit }));
+    expect(state.actionPending).toBe(false);
+    expect(state.visitDetail).toEqual(updatedVisit);
+  });
+
+  it('rescheduleVisitFailure baja actionPending sin modificar visitDetail', () => {
+    const withDetail = { ...initialDomicilioState, visitDetail: visit, actionPending: true };
+    const state = homeVisitReducer(withDetail, rescheduleVisitFailure({ error: 'La visita ya fue procesada y no admite esta acción.' }));
+    expect(state.actionPending).toBe(false);
+    expect(state.visitDetail).toEqual(visit);
   });
 });

@@ -23,6 +23,15 @@ import {
   loadVisitDetail,
   loadVisitDetailSuccess,
   loadVisitDetailFailure,
+  markExtracted,
+  markExtractedSuccess,
+  markExtractedFailure,
+  markOutcome,
+  markOutcomeSuccess,
+  markOutcomeFailure,
+  rescheduleVisit,
+  rescheduleVisitSuccess,
+  rescheduleVisitFailure,
 } from './home-visit.actions';
 import { HomeVisit, CreateHomeVisitPayload } from '../models/home-visit.model';
 
@@ -62,6 +71,9 @@ describe('HomeVisitEffects', () => {
     create: ReturnType<typeof vi.fn>;
     myRoute: ReturnType<typeof vi.fn>;
     detail: ReturnType<typeof vi.fn>;
+    markExtracted: ReturnType<typeof vi.fn>;
+    markOutcome: ReturnType<typeof vi.fn>;
+    reschedule: ReturnType<typeof vi.fn>;
   };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
@@ -71,6 +83,9 @@ describe('HomeVisitEffects', () => {
       create: vi.fn(),
       myRoute: vi.fn(),
       detail: vi.fn(),
+      markExtracted: vi.fn(),
+      markOutcome: vi.fn(),
+      reschedule: vi.fn(),
     };
     notif = { success: vi.fn(), error: vi.fn() };
 
@@ -238,6 +253,132 @@ describe('HomeVisitEffects', () => {
     const effects = TestBed.inject(HomeVisitEffects);
     const action = await firstValueFrom(effects.loadVisitDetail$);
     expect(action.type).toBe('[Domicilio API] Load Visit Detail Failure');
+    expect(notif.error).toHaveBeenCalledWith('Ocurrió un error al procesar la operación. Intentá de nuevo.');
+  });
+
+  // ── markExtracted$ ──────────────────────────────────────────────────────────
+
+  it('markExtracted$ emite markExtractedSuccess y notif.success al éxito', async () => {
+    const updatedVisit = { ...visit, status: 'EXTRAIDA' as const };
+    service.markExtracted.mockReturnValue(of(updatedVisit));
+    actions$ = of(markExtracted({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markExtracted$);
+    expect(service.markExtracted).toHaveBeenCalledWith(1);
+    expect(notif.success).toHaveBeenCalledWith('Muestra extraída correctamente.');
+    expect(action).toEqual(markExtractedSuccess({ visit: updatedVisit }));
+  });
+
+  it('markExtracted$ ante 409 mapea mensaje de transición inválida y emite Failure', async () => {
+    service.markExtracted.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    actions$ = of(markExtracted({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markExtracted$);
+    expect(action.type).toBe('[Domicilio API] Mark Extracted Failure');
+    expect((action as ReturnType<typeof markExtractedFailure>).error).toBe(
+      'La visita ya fue procesada y no admite esta acción.',
+    );
+    expect(notif.error).toHaveBeenCalledWith('La visita ya fue procesada y no admite esta acción.');
+  });
+
+  it('markExtracted$ ante 404 mapea mensaje de visita no encontrada', async () => {
+    service.markExtracted.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    actions$ = of(markExtracted({ id: 99 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markExtracted$);
+    expect((action as ReturnType<typeof markExtractedFailure>).error).toBe(
+      'La visita solicitada no existe o no tenés permiso para operarla.',
+    );
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  it('markExtracted$ ante 500 emite Failure con mensaje genérico', async () => {
+    service.markExtracted.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    actions$ = of(markExtracted({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markExtracted$);
+    expect(action.type).toBe('[Domicilio API] Mark Extracted Failure');
+    expect(notif.error).toHaveBeenCalledWith('Ocurrió un error al procesar la operación. Intentá de nuevo.');
+  });
+
+  // ── markOutcome$ ────────────────────────────────────────────────────────────
+
+  it('markOutcome$ emite markOutcomeSuccess y notif.success al éxito', async () => {
+    const updatedVisit = { ...visit, status: 'NO_REALIZADA' as const };
+    service.markOutcome.mockReturnValue(of(updatedVisit));
+    actions$ = of(markOutcome({ id: 1, reason: 'PACIENTE_AUSENTE' }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markOutcome$);
+    expect(service.markOutcome).toHaveBeenCalledWith(1, 'PACIENTE_AUSENTE');
+    expect(notif.success).toHaveBeenCalledWith('Estado de la visita registrado correctamente.');
+    expect(action).toEqual(markOutcomeSuccess({ visit: updatedVisit }));
+  });
+
+  it('markOutcome$ ante 409 mapea mensaje de transición inválida', async () => {
+    service.markOutcome.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    actions$ = of(markOutcome({ id: 1, reason: 'RECHAZO_PACIENTE' }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markOutcome$);
+    expect(action.type).toBe('[Domicilio API] Mark Outcome Failure');
+    expect((action as ReturnType<typeof markOutcomeFailure>).error).toBe(
+      'La visita ya fue procesada y no admite esta acción.',
+    );
+    expect(notif.error).toHaveBeenCalledWith('La visita ya fue procesada y no admite esta acción.');
+  });
+
+  it('markOutcome$ ante 403 mapea mensaje de permisos', async () => {
+    service.markOutcome.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+    actions$ = of(markOutcome({ id: 1, reason: 'NO_SE_PUDO_EXTRAER' }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markOutcome$);
+    expect((action as ReturnType<typeof markOutcomeFailure>).error).toBe(
+      'No tenés permiso para realizar esta operación.',
+    );
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  // ── rescheduleVisit$ ────────────────────────────────────────────────────────
+
+  it('rescheduleVisit$ emite rescheduleVisitSuccess y notif.success al éxito', async () => {
+    const updatedVisit = { ...visit, status: 'REPROGRAMADA' as const };
+    service.reschedule.mockReturnValue(of(updatedVisit));
+    actions$ = of(rescheduleVisit({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.rescheduleVisit$);
+    expect(service.reschedule).toHaveBeenCalledWith(1);
+    expect(notif.success).toHaveBeenCalledWith('Visita reprogramada correctamente.');
+    expect(action).toEqual(rescheduleVisitSuccess({ visit: updatedVisit }));
+  });
+
+  it('rescheduleVisit$ ante 409 mapea mensaje de transición inválida', async () => {
+    service.reschedule.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    actions$ = of(rescheduleVisit({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.rescheduleVisit$);
+    expect(action.type).toBe('[Domicilio API] Reschedule Visit Failure');
+    expect((action as ReturnType<typeof rescheduleVisitFailure>).error).toBe(
+      'La visita ya fue procesada y no admite esta acción.',
+    );
+    expect(notif.error).toHaveBeenCalledWith('La visita ya fue procesada y no admite esta acción.');
+  });
+
+  it('rescheduleVisit$ ante 404 mapea mensaje de visita no encontrada', async () => {
+    service.reschedule.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    actions$ = of(rescheduleVisit({ id: 99 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.rescheduleVisit$);
+    expect((action as ReturnType<typeof rescheduleVisitFailure>).error).toBe(
+      'La visita solicitada no existe o no tenés permiso para operarla.',
+    );
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  it('rescheduleVisit$ ante 500 emite Failure con mensaje genérico', async () => {
+    service.reschedule.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    actions$ = of(rescheduleVisit({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.rescheduleVisit$);
+    expect(action.type).toBe('[Domicilio API] Reschedule Visit Failure');
     expect(notif.error).toHaveBeenCalledWith('Ocurrió un error al procesar la operación. Intentá de nuevo.');
   });
 });

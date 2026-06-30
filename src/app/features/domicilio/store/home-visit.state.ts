@@ -12,6 +12,7 @@ export interface DomicilioState {
   detailPending: boolean;
   routeError: string | null;
   detailError: string | null;
+  actionPending: boolean;
 }
 
 export const initialDomicilioState: DomicilioState = {
@@ -24,4 +25,5 @@ export const initialDomicilioState: DomicilioState = {
   detailPending: false,
   routeError: null,
   detailError: null,
+  actionPending: false,
 };

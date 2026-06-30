@@ -1,5 +1,5 @@
 import { createAction, props } from '@ngrx/store';
-import { CreateHomeVisitPayload, HomeVisit } from '../models/home-visit.model';
+import { CreateHomeVisitPayload, HomeVisit, HomeVisitOutcomeReason } from '../models/home-visit.model';
 
 // ── Listar visitas ────────────────────────────────────────────────────────────
 export const loadHomeVisits = createAction(
@@ -57,5 +57,45 @@ export const loadVisitDetailSuccess = createAction(
 );
 export const loadVisitDetailFailure = createAction(
   '[Domicilio API] Load Visit Detail Failure',
+  props<{ error: string }>(),
+);
+
+// ── Acciones del extractor ────────────────────────────────────────────────────
+export const markExtracted = createAction(
+  '[Domicilio Extractor] Mark Extracted',
+  props<{ id: number }>(),
+);
+export const markExtractedSuccess = createAction(
+  '[Domicilio API] Mark Extracted Success',
+  props<{ visit: HomeVisit }>(),
+);
+export const markExtractedFailure = createAction(
+  '[Domicilio API] Mark Extracted Failure',
+  props<{ error: string }>(),
+);
+
+export const markOutcome = createAction(
+  '[Domicilio Extractor] Mark Outcome',
+  props<{ id: number; reason: HomeVisitOutcomeReason }>(),
+);
+export const markOutcomeSuccess = createAction(
+  '[Domicilio API] Mark Outcome Success',
+  props<{ visit: HomeVisit }>(),
+);
+export const markOutcomeFailure = createAction(
+  '[Domicilio API] Mark Outcome Failure',
+  props<{ error: string }>(),
+);
+
+export const rescheduleVisit = createAction(
+  '[Domicilio Extractor] Reschedule Visit',
+  props<{ id: number }>(),
+);
+export const rescheduleVisitSuccess = createAction(
+  '[Domicilio API] Reschedule Visit Success',
+  props<{ visit: HomeVisit }>(),
+);
+export const rescheduleVisitFailure = createAction(
+  '[Domicilio API] Reschedule Visit Failure',
   props<{ error: string }>(),
 );

@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { withPolling, NotModified } from '@core/refresh';
-import { CreateHomeVisitPayload, HomeVisit } from '../models/home-visit.model';
+import { CreateHomeVisitPayload, HomeVisit, HomeVisitOutcomeReason } from '../models/home-visit.model';
 
 @Injectable({ providedIn: 'root' })
 export class HomeVisitService {
@@ -28,5 +28,17 @@ export class HomeVisitService {
 
   detail(id: number): Observable<HomeVisit> {
     return this.http.get<HomeVisit>(`${this.base}/${id}`);
+  }
+
+  markExtracted(id: number): Observable<HomeVisit> {
+    return this.http.patch<HomeVisit>(`${this.base}/${id}/extracted`, {});
+  }
+
+  markOutcome(id: number, reason: HomeVisitOutcomeReason): Observable<HomeVisit> {
+    return this.http.patch<HomeVisit>(`${this.base}/${id}/outcome`, { reason });
+  }
+
+  reschedule(id: number): Observable<HomeVisit> {
+    return this.http.patch<HomeVisit>(`${this.base}/${id}/reschedule`, {});
   }
 }
