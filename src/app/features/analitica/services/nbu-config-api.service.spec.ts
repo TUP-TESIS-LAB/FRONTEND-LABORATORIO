@@ -44,6 +44,7 @@ describe('NbuConfigApiService', () => {
     const items: ReferenceValueItem[] = [{
       minValue: 13, maxValue: 17, criticalMinValue: 7, criticalMaxValue: 20,
       ageMinMonths: null, ageMaxMonths: null, gender: 'MALE', unit: 'g/dL',
+      qualitativeValue: null,
     }];
     svc.upsertReferenceValues(7, items).subscribe();
     const req = http.expectOne('/api/v1/analitica/determinations/7/reference-values/override');

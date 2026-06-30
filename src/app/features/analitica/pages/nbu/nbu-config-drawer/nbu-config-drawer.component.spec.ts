@@ -27,7 +27,7 @@ function emptyOverride(): DeterminationOverride {
     analyticalType: null, canBringSample: null, measurementUnitId: null, isPrintable: null,
     printOrder: null, printGroup: null, specialPrintName: null, loadingResultOrder: null,
     requiresLoadValue: null, requiresApproval: null, canSelfApprove: null,
-    handlingTimeValue: null, handlingTimeUnit: null,
+    handlingTimeValue: null, handlingTimeUnit: null, qualitativeCategoryId: null,
   };
 }
 
