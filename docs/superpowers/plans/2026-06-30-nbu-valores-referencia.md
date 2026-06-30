@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) o superpowers:executing-plans para implementar task-by-task. Los steps usan checkbox (`- [ ]`).
 >
 > **Spec:** `docs/superpowers/specs/2026-06-30-nbu-valores-referencia-congruencia-cualitativos-design.md`
-> **Jira:** _(pendiente — se completa al crear el ticket)_
+> **Jira:** [KAN-158](https://exequielsantoro.atlassian.net/browse/KAN-158)
 
 **Goal:** Validar congruencia (no solapar sexo+edad) en los valores de referencia de NBU y soportar valores cualitativos/semicuantitativos por categorías configurables (globales + del tenant).
 
