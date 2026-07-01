@@ -95,7 +95,7 @@ const REQUIRED_FIELDS: Record<PaymentMethod, string[]> = {
           <div class="fin-big-input">
             <span class="fin-big-input__prefix">$</span>
             <p-inputNumber [ngModel]="monto()" (ngModelChange)="monto.set($event)"
-              [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2" placeholder="0,00" [autofocus]="true" />
+              [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2" placeholder="0,00" [autofocus]="true" data-testid="mov-monto" />
           </div>
         </div>
 
@@ -212,7 +212,8 @@ export class MovimientoModalComponent implements OnInit {
 
   protected metodo = signal<PaymentMethod>('CASH');
   protected tipo = signal<TransactionType>('INGRESS');
-  protected monto = signal(0);
+  // null = campo vacío (muestra placeholder), no "0,00" que haya que borrar para escribir.
+  protected monto = signal<number | null>(null);
   protected descripcion = signal('');
 
   /** Único detalle que se carga a mano: cuenta destino (obligatoria solo en TRANSFER). */
@@ -232,7 +233,7 @@ export class MovimientoModalComponent implements OnInit {
   }
 
   protected readonly canConfirm = computed(() => {
-    if (this.monto() <= 0 || this.descripcion().trim().length === 0) return false;
+    if ((this.monto() ?? 0) <= 0 || this.descripcion().trim().length === 0) return false;
     if (this.esEfectivo()) return this.cashRegisterId() != null;
     // no-efectivo: el único campo requerido es la cuenta destino, y solo en TRANSFER.
     return REQUIRED_FIELDS[this.metodo()].includes('destinationAccountId')
@@ -242,6 +243,7 @@ export class MovimientoModalComponent implements OnInit {
 
   protected confirm(): void {
     if (!this.canConfirm()) return;
+    const monto = this.monto() ?? 0; // canConfirm ya garantizó > 0
 
     if (this.esEfectivo()) {
       const cashRegisterId = this.cashRegisterId();
@@ -254,7 +256,7 @@ export class MovimientoModalComponent implements OnInit {
         body: {
           cashRegisterId,
           type: this.tipo(),
-          amount: this.monto(),
+          amount: monto,
           description: this.descripcion().trim(),
         },
       }));
@@ -269,7 +271,7 @@ export class MovimientoModalComponent implements OnInit {
         branchId: this.branchId(),
         type: this.tipo(),
         method: this.metodo(),
-        amount: this.monto(),
+        amount: monto,
         description: this.descripcion().trim() || null,
         destinationAccountId: this.destinationAccountId(),
       },

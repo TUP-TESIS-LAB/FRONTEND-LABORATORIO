@@ -60,7 +60,7 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
         <div class="fin-modal__footer">
           <p-button label="Cancelar" severity="secondary" (onClick)="closed.emit()" />
           <p-button
-            [label]="'Abrir caja con ' + (montoApertura() | currencyAr)"
+            [label]="'Abrir caja con ' + ((montoApertura() ?? 0) | currencyAr)"
             severity="success"
             icon="pi pi-lock-open"
             [disabled]="!canConfirm()"
@@ -111,13 +111,16 @@ export class AbrirCajaModalComponent {
 
   private readonly store = inject(Store);
 
-  protected montoApertura = signal(0);
-  protected readonly canConfirm = computed(() => this.montoApertura() > 0);
+  // null = campo vacío (muestra placeholder). Antes arrancaba en 0 → el input mostraba
+  // "0,00" como valor real y había que borrarlo para escribir.
+  protected montoApertura = signal<number | null>(null);
+  protected readonly canConfirm = computed(() => (this.montoApertura() ?? 0) > 0);
 
   protected confirm(): void {
     const cashRegisterId = this.cashRegisterId();
-    if (!cashRegisterId || this.montoApertura() <= 0) return;
-    this.store.dispatch(openSession({ cashRegisterId, openingAmount: this.montoApertura() }));
+    const monto = this.montoApertura();
+    if (!cashRegisterId || monto == null || monto <= 0) return;
+    this.store.dispatch(openSession({ cashRegisterId, openingAmount: monto }));
     this.closed.emit();
   }
 }
