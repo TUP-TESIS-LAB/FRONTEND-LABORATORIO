@@ -76,32 +76,39 @@ export interface BranchOtherMedia {
 }
 
 /**
- * Resumen operativo multi-sucursal (KAN-161) — GET /branches-summary?from&to.
- * "cobros" (origen atención) y "efectivo/otrosMedios" (por método) son ejes distintos;
- * totalIngresos = efectivo + otrosMedios.
+ * Feed de movimientos multi-sucursal (KAN-161) — GET /movements?from&to&branchId.
+ * Listado plano de movimientos (efectivo + otros medios), cada uno con su sucursal.
  */
-export interface BranchSummaryRow {
+export interface MovementRow {
+  occurredAt: string;
   branchId: number;
   branchCode: string;
   branchName: string;
-  cobrosCount: number;
-  cobrosAmount: number;
-  efectivo: number;
-  otrosMedios: number;
-  totalIngresos: number;
+  source: 'EFECTIVO' | 'OTROS';
+  type: TransactionType;
+  method: PaymentMethod;
+  amount: number;
+  description: string | null;
+  origin: 'COBRO' | 'MANUAL';
 }
-export interface BranchesSummaryTotals {
-  cobrosCount: number;
-  cobrosAmount: number;
-  efectivo: number;
-  otrosMedios: number;
-  totalIngresos: number;
+/** Sucursal para el selector de filtro. */
+export interface MovementsBranch {
+  id: number;
+  code: string;
+  name: string;
 }
-export interface BranchesSummary {
+export interface MovementsTotals {
+  count: number;
+  ingresos: number;
+  egresos: number;
+  neto: number;
+}
+export interface MovementsFeed {
   from: string;
   to: string;
-  branches: BranchSummaryRow[];
-  totals: BranchesSummaryTotals;
+  branches: MovementsBranch[];
+  movements: MovementRow[];
+  totals: MovementsTotals;
 }
 
 /**

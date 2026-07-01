@@ -1,5 +1,5 @@
 ﻿import { createAction, props } from '@ngrx/store';
-import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider, CreatePaymentRequest, RegisterPaymentResponse, CashRegister, BankAccount, BankAccountInput, BranchOtherMedia, RegisterBranchMovementInput, BranchesSummary } from '../models/financiero.model';
+import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider, CreatePaymentRequest, RegisterPaymentResponse, CashRegister, BankAccount, BankAccountInput, BranchOtherMedia, RegisterBranchMovementInput, MovementsFeed } from '../models/financiero.model';
 
 // ── Caja: listar subcajas de la sucursal ─────────────────────────────────────
 export const loadCashRegisters = createAction(
@@ -133,20 +133,20 @@ export const loadBranchOtherMediaFailure = createAction(
   props<{ error: string }>(),
 );
 
-// ── Resumen multi-sucursal (KAN-161) ─────────────────────────────────────────
-export const loadBranchesSummary = createAction(
-  '[Financiero Sucursales] Load Branches Summary',
-  props<{ from: string; to: string }>(),
+// ── Feed de movimientos multi-sucursal (KAN-161) ─────────────────────────────
+export const loadMovements = createAction(
+  '[Financiero Movimientos] Load Movements',
+  props<{ from: string; to: string; branchId: number | null }>(),
 );
-export const loadBranchesSummarySuccess = createAction(
-  '[Financiero Sucursales API] Load Branches Summary Success',
-  props<{ data: BranchesSummary }>(),
+export const loadMovementsSuccess = createAction(
+  '[Financiero Movimientos API] Load Movements Success',
+  props<{ data: MovementsFeed }>(),
 );
-export const loadBranchesSummaryNotModified = createAction(
-  '[Financiero Sucursales API] Load Branches Summary Not Modified',
+export const loadMovementsNotModified = createAction(
+  '[Financiero Movimientos API] Load Movements Not Modified',
 );
-export const loadBranchesSummaryFailure = createAction(
-  '[Financiero Sucursales API] Load Branches Summary Failure',
+export const loadMovementsFailure = createAction(
+  '[Financiero Movimientos API] Load Movements Failure',
   props<{ error: string }>(),
 );
 

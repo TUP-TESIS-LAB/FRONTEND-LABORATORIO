@@ -106,7 +106,7 @@ function todayIso(): string {
       <!-- ── Selector de subcaja ── -->
       <div class="fin-card fin-card--selector">
         <div class="fin-selector-left">
-          <label for="fin-register-sel"><i class="pi pi-wallet"></i> Subcaja</label>
+          <label for="fin-register-sel">Subcaja</label>
           @if (registers().length > 0) {
             <select
               id="fin-register-sel"
@@ -124,8 +124,8 @@ function todayIso(): string {
         </div>
         @if (isAdmin()) {
           <div class="fin-selector-actions">
-            <a class="fin-link" routerLink="/financiero/subcajas"><i class="pi pi-cog"></i> Administrar cajas</a>
-            <a class="fin-link" routerLink="/financiero/cuentas-destino"><i class="pi pi-building-columns"></i> Cuentas destino</a>
+            <a class="fin-link" routerLink="/financiero/subcajas">Administrar cajas</a>
+            <a class="fin-link" routerLink="/financiero/cuentas-destino">Cuentas destino</a>
           </div>
         }
       </div>
@@ -141,7 +141,7 @@ function todayIso(): string {
       @else if (error()) {
         <div class="fin-card">
           <ui-empty-state
-            icon="pi-exclamation-triangle"
+            icon=""
             heading="Error al cargar la caja"
             [description]="error() ?? ''"
             ctaLabel="Reintentar"
@@ -153,7 +153,7 @@ function todayIso(): string {
       @else if (selectedRegisterId() == null) {
         <div class="fin-card">
           <ui-empty-state
-            icon="pi-wallet"
+            icon=""
             heading="Seleccioná una subcaja"
             description="Elegí la caja sobre la que vas a operar. Si no hay ninguna, pedile a un administrador que cree una." />
         </div>
@@ -163,7 +163,6 @@ function todayIso(): string {
       @else if (!isCajaOpen()) {
         <div class="fin-card">
           <div class="fin-empty-center">
-            <i class="pi pi-lock fin-empty__icon"></i>
             <h3 data-testid="caja-cerrada-heading">La caja está cerrada</h3>
             <p>Esta subcaja no tiene una sesión abierta. Para cobrar atenciones en efectivo necesitás abrir la caja y declarar el efectivo inicial del turno.</p>
             <button
@@ -171,7 +170,7 @@ function todayIso(): string {
               data-testid="cta-abrir-caja"
               type="button"
               (click)="openModal('abrir')">
-              <i class="pi pi-lock-open"></i> Abrir caja
+              Abrir caja
             </button>
           </div>
         </div>
@@ -191,14 +190,14 @@ function todayIso(): string {
           </div>
           <div class="fin-actions-row">
             <button class="fin-btn fin-btn--ghost" type="button" (click)="openModal('movimiento')">
-              <i class="pi pi-dollar"></i> Registrar movimiento
+              Registrar movimiento
             </button>
             <button class="fin-btn fin-btn--primary" type="button" (click)="cobrarAtencion()">
-              <i class="pi pi-dollar"></i> Cobrar atención
+              Cobrar atención
             </button>
             @if (isAdmin()) {
               <button class="fin-btn fin-btn--danger" type="button" (click)="openModal('arqueo')">
-                <i class="pi pi-lock"></i> Cerrar caja
+                Cerrar caja
               </button>
             } @else {
               <div class="fin-cerrar-caja-wrap">
@@ -208,7 +207,7 @@ function todayIso(): string {
                   disabled
                   pTooltip="Solo un administrador puede cerrar la caja"
                   tooltipPosition="top">
-                  <i class="pi pi-lock"></i> Cerrar caja
+                  Cerrar caja
                 </button>
                 <span class="fin-cerrar-caja-note">
                   Cerrar caja es una acción de administrador. Pedile el arqueo a quien tenga ese rol.
@@ -223,7 +222,7 @@ function todayIso(): string {
           <!-- Efectivo hero -->
           <div class="fin-kpi-card fin-kpi-card--hero">
             <span class="fin-kpi-tag">ARQUEABLE</span>
-            <div class="fin-kpi-label"><i class="pi pi-money-bill"></i> Efectivo en caja</div>
+            <div class="fin-kpi-label">Efectivo en caja</div>
             <div class="fin-kpi-value">{{ saldo() | currencyAr }}</div>
             <div class="fin-kpi-meta">
               Apertura <b>{{ session()?.openingAmount | currencyAr }}</b> · es el monto que se cuenta al cerrar
@@ -232,14 +231,14 @@ function todayIso(): string {
 
           <!-- Otros medios (sucursal+día) -->
           <div class="fin-kpi-card">
-            <div class="fin-kpi-label"><i class="pi pi-credit-card"></i> Otros medios (sucursal · día)</div>
+            <div class="fin-kpi-label">Otros medios (sucursal · día)</div>
             <div class="fin-kpi-value fin-kpi-value--dark">{{ otrosTotal() | currencyAr }}</div>
             <div class="fin-kpi-note"><i class="pi pi-info-circle"></i> No suma al efectivo del cajón</div>
           </div>
 
           <!-- Cobros en efectivo del turno (transacciones de efectivo con pago asociado) -->
           <div class="fin-kpi-card">
-            <div class="fin-kpi-label"><i class="pi pi-receipt"></i> Cobros del turno</div>
+            <div class="fin-kpi-label">Cobros del turno</div>
             <div class="fin-kpi-value fin-kpi-value--dark">{{ cobrosCount() }}</div>
             <div class="fin-kpi-meta">cobros en efectivo de la sesión</div>
           </div>
@@ -258,7 +257,7 @@ function todayIso(): string {
             <div class="fin-skeleton fin-skeleton--tall" style="margin: 16px 18px"></div>
           } @else if (rows().length === 0) {
             <ui-empty-state
-              icon="pi-inbox"
+              icon=""
               heading="Caja abierta, sin movimientos de efectivo todavía"
               [description]="'La caja se abrió con ' + (session()?.openingAmount | currencyAr) + '. Apenas cobres en efectivo o registres un movimiento, aparecerá acá.'"
               ctaLabel="Cobrar una atención"
@@ -269,10 +268,10 @@ function todayIso(): string {
               [columns]="tableColumns"
               [loading]="loading()">
               <ng-template uiCell="tipo" let-row>
-                <span class="fin-tx-icon"
-                      [class.fin-tx-icon--in]="row.type === 'INGRESS'"
-                      [class.fin-tx-icon--out]="row.type === 'EGRESS'">
-                  <i [class]="'pi ' + (row.type === 'INGRESS' ? 'pi-arrow-down-left' : 'pi-arrow-up-right')"></i>
+                <span class="fin-tx-tipo"
+                      [class.fin-tx-amt--pos]="row.type === 'INGRESS'"
+                      [class.fin-tx-amt--neg]="row.type === 'EGRESS'">
+                  {{ row.type === 'INGRESS' ? 'Ingreso' : 'Egreso' }}
                 </span>
               </ng-template>
               <ng-template uiCell="detalle" let-row>
@@ -305,18 +304,14 @@ function todayIso(): string {
           <div class="fin-table-head">
             <div>
               <h3>Otros medios · sucursal</h3>
-              <span class="fin-muted">Transferencias, QR, tarjetas y posnet del día. No forman parte del arqueo.</span>
+              <span class="fin-muted">Transferencias, QR, tarjetas y posnet del día de hoy. No forman parte del arqueo.</span>
             </div>
-            <div class="fin-day-filter">
-              <i class="pi pi-calendar"></i>
-              <input type="date" class="fin-date" data-testid="otros-day"
-                     [ngModel]="selectedDay()" (ngModelChange)="setDay($event)" />
-            </div>
+            <span class="fin-day-label" data-testid="otros-day">Hoy · {{ selectedDay() | date:'dd/MM/yyyy' }}</span>
           </div>
 
           @if (otrosRows().length === 0) {
             <ui-empty-state
-              icon="pi-credit-card"
+              icon=""
               heading="Sin movimientos de otros medios este día"
               description="Los cobros con transferencia, QR, tarjeta o posnet de la sucursal aparecerán acá, agrupados por día." />
           } @else {
@@ -442,14 +437,9 @@ function todayIso(): string {
       padding: 14px 18px; border-bottom: 1px solid #e8e9f0; gap: 12px;
     }
     .fin-table-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: #22243a; }
-    .fin-day-filter { display: flex; align-items: center; gap: 6px; color: #7c8092; }
+    .fin-day-label { font-size: 12.5px; font-weight: 600; color: #4a4d63; white-space: nowrap; }
 
-    .fin-tx-icon {
-      width: 28px; height: 28px; border-radius: 50%;
-      display: inline-flex; align-items: center; justify-content: center; font-size: 13px;
-    }
-    .fin-tx-icon--in  { background: #e3f6ec; color: #0f8a55; }
-    .fin-tx-icon--out { background: #fdebeb; color: #d83a3a; }
+    .fin-tx-tipo { font-weight: 600; font-size: 12.5px; }
 
     .fin-tx-desc { display: flex; flex-direction: column; gap: 2px; }
     .fin-tx-medio { display: flex; align-items: center; gap: 8px; }
@@ -464,7 +454,6 @@ function todayIso(): string {
       display: flex; flex-direction: column; align-items: center;
       text-align: center; padding: 60px 24px;
     }
-    .fin-empty__icon { font-size: 52px; color: #7c8092; margin-bottom: 14px; }
     .fin-empty-center h3 { margin: 0 0 10px; font-size: 20px; font-weight: 700; color: #22243a; }
     .fin-empty-center p { margin: 0 0 0; color: #7c8092; max-width: 380px; font-size: 14px; }
 
@@ -512,7 +501,7 @@ export class CajaPage implements OnInit {
   readonly activityLoading = computed(() => this.isCajaOpen() && this.activity() == null);
 
   readonly tableColumns: TableColumn[] = [
-    { field: 'tipo',    header: '' },
+    { field: 'tipo',    header: 'Tipo' },
     { field: 'detalle', header: 'Detalle' },
     { field: 'medio',   header: 'Medio' },
     { field: 'hora',    header: 'Hora' },
@@ -589,11 +578,6 @@ export class CajaPage implements OnInit {
   protected selectRegister(id: number): void {
     if (id === this.selectedRegisterId()) return;
     this.applySelection(id);
-  }
-
-  protected setDay(day: string): void {
-    this.selectedDay.set(day);
-    this.pollingHandle?.pokeNow();
   }
 
   protected openModal(type: ModalType): void {

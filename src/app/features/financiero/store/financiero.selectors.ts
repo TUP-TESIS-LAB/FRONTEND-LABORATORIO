@@ -37,13 +37,14 @@ export const selectOtrosCount = createSelector(selectOtrosMedia, d => d?.count ?
 export const selectOtrosLoading = createSelector(selectOtrosSlice, o => o.loading);
 export const selectOtrosError = createSelector(selectOtrosSlice, o => o.error);
 
-// ── Resumen multi-sucursal (KAN-161) ────────────────────────────────────────
-export const selectSucursalesSlice = createSelector(selectFinancieroState, s => s.sucursales);
-export const selectSucursalesData = createSelector(selectSucursalesSlice, s => s.data);
-export const selectSucursalesRows = createSelector(selectSucursalesData, d => d?.branches ?? []);
-export const selectSucursalesTotals = createSelector(selectSucursalesData, d => d?.totals ?? null);
-export const selectSucursalesLoading = createSelector(selectSucursalesSlice, s => s.loading);
-export const selectSucursalesError = createSelector(selectSucursalesSlice, s => s.error);
+// ── Feed de movimientos multi-sucursal (KAN-161) ────────────────────────────
+export const selectMovimientosSlice = createSelector(selectFinancieroState, s => s.movimientos);
+export const selectMovimientosData = createSelector(selectMovimientosSlice, s => s.data);
+export const selectMovimientosRows = createSelector(selectMovimientosData, d => d?.movements ?? []);
+export const selectMovimientosBranches = createSelector(selectMovimientosData, d => d?.branches ?? []);
+export const selectMovimientosTotals = createSelector(selectMovimientosData, d => d?.totals ?? null);
+export const selectMovimientosLoading = createSelector(selectMovimientosSlice, s => s.loading);
+export const selectMovimientosError = createSelector(selectMovimientosSlice, s => s.error);
 
 // ── Cuentas destino (bank-accounts) ────────────────────────────────────────────
 export const selectCuentasSlice = createSelector(selectFinancieroState, s => s.cuentas);

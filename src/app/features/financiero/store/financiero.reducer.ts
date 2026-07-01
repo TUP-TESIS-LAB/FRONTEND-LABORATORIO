@@ -9,8 +9,8 @@ import {
   openSessionSuccess, openSessionFailure,
   closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
-  loadBranchOtherMedia, loadBranchOtherMediaSuccess, loadBranchOtherMediaFailure,
-  loadBranchesSummary, loadBranchesSummarySuccess, loadBranchesSummaryNotModified, loadBranchesSummaryFailure,
+  loadBranchOtherMedia, loadBranchOtherMediaSuccess, loadBranchOtherMediaNotModified, loadBranchOtherMediaFailure,
+  loadMovements, loadMovementsSuccess, loadMovementsNotModified, loadMovementsFailure,
   registerBranchMovementSuccess, registerBranchMovementFailure,
   loadBankAccounts, loadBankAccountsSuccess, loadBankAccountsFailure,
   createBankAccount, createBankAccountSuccess, createBankAccountFailure,
@@ -112,35 +112,48 @@ export const financieroReducer = createReducer(
   })),
 
   // ── otros medios (sucursal + día) ──────────────────────────────────────────
+  // `loading` sólo en la carga inicial (aún sin data); en los ticks de polling NO
+  // se toca, para no parpadear ni quedar cargando cuando el backend responde 304.
   on(loadBranchOtherMedia, (state): FinancieroState => ({
     ...state,
-    otros: { ...state.otros, loading: true, error: null },
+    otros: { ...state.otros, loading: state.otros.data === null, error: null },
   })),
   on(loadBranchOtherMediaSuccess, (state, { data }): FinancieroState => ({
     ...state,
     otros: { ...state.otros, data, loading: false, error: null },
+  })),
+  on(loadBranchOtherMediaNotModified, (state): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, loading: false },
   })),
   on(loadBranchOtherMediaFailure, (state, { error }): FinancieroState => ({
     ...state,
     otros: { ...state.otros, loading: false, error },
   })),
 
-  // ── Resumen multi-sucursal (KAN-161) ───────────────────────────────────────
-  on(loadBranchesSummary, (state): FinancieroState => ({
+  // ── Feed de movimientos multi-sucursal (KAN-161) ───────────────────────────
+  // `loading` sólo en la carga inicial (aún sin data). En los ticks de polling
+  // NO se toca para evitar el parpadeo de la tabla/contador cada 5s (el 304 ya
+  // deja la data intacta).
+  on(loadMovements, (state): FinancieroState => ({
     ...state,
-    sucursales: { ...state.sucursales, loading: true, error: null },
+    movimientos: {
+      ...state.movimientos,
+      loading: state.movimientos.data === null,
+      error: null,
+    },
   })),
-  on(loadBranchesSummarySuccess, (state, { data }): FinancieroState => ({
+  on(loadMovementsSuccess, (state, { data }): FinancieroState => ({
     ...state,
-    sucursales: { ...state.sucursales, data, loading: false, error: null },
+    movimientos: { ...state.movimientos, data, loading: false, error: null },
   })),
-  on(loadBranchesSummaryNotModified, (state): FinancieroState => ({
+  on(loadMovementsNotModified, (state): FinancieroState => ({
     ...state,
-    sucursales: { ...state.sucursales, loading: false },
+    movimientos: { ...state.movimientos, loading: false },
   })),
-  on(loadBranchesSummaryFailure, (state, { error }): FinancieroState => ({
+  on(loadMovementsFailure, (state, { error }): FinancieroState => ({
     ...state,
-    sucursales: { ...state.sucursales, loading: false, error },
+    movimientos: { ...state.movimientos, loading: false, error },
   })),
   on(registerBranchMovementSuccess, (state): FinancieroState => ({
     ...state,

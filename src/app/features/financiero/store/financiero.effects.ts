@@ -16,7 +16,7 @@ import {
   closeSession, closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
   loadBranchOtherMedia, loadBranchOtherMediaSuccess, loadBranchOtherMediaNotModified, loadBranchOtherMediaFailure,
-  loadBranchesSummary, loadBranchesSummarySuccess, loadBranchesSummaryNotModified, loadBranchesSummaryFailure,
+  loadMovements, loadMovementsSuccess, loadMovementsNotModified, loadMovementsFailure,
   registerBranchMovement, registerBranchMovementSuccess, registerBranchMovementFailure,
   loadBankAccounts, loadBankAccountsSuccess, loadBankAccountsFailure,
   createBankAccount, createBankAccountSuccess, createBankAccountFailure,
@@ -265,17 +265,17 @@ export class FinancieroEffects {
     ),
   );
 
-  // ── resumen multi-sucursal (KAN-161, polleable ETag/304) ───────────────────
-  loadBranchesSummary$ = createEffect(() =>
+  // ── feed de movimientos multi-sucursal (KAN-161, polleable ETag/304) ───────
+  loadMovements$ = createEffect(() =>
     this.actions$.pipe(
-      ofType(loadBranchesSummary),
-      switchMap(({ from, to }) =>
-        this.api.getBranchesSummary(from, to).pipe(
+      ofType(loadMovements),
+      switchMap(({ from, to, branchId }) =>
+        this.api.getMovements(from, to, branchId).pipe(
           map(res => isNotModified(res)
-            ? loadBranchesSummaryNotModified()
-            : loadBranchesSummarySuccess({ data: res })),
+            ? loadMovementsNotModified()
+            : loadMovementsSuccess({ data: res })),
           catchError((e: HttpErrorResponse) =>
-            of(loadBranchesSummaryFailure({ error: mapBranchMovementError(e) }))),
+            of(loadMovementsFailure({ error: mapBranchMovementError(e) }))),
         ),
       ),
     ),
