@@ -7,12 +7,14 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { HomeVisitOutcomeReason, HomeVisitStatus } from '../../models/home-visit.model';
@@ -92,6 +94,8 @@ function formatScheduledAt(iso: string | null): string {
     PageHeaderComponent,
     ButtonModule,
     DialogModule,
+    FormsModule,
+    InputTextModule,
     TagModule,
   ],
   template: `
@@ -209,15 +213,26 @@ function formatScheduledAt(iso: string | null): string {
             <section class="vd-card vd-card--acciones" aria-labelledby="vd-sec-acciones">
               <h2 class="vd-section-title" id="vd-sec-acciones">Acciones</h2>
               <div class="vd-acciones">
-                <p-button
-                  label="Extraído"
-                  icon="pi pi-check-circle"
-                  severity="primary"
-                  [disabled]="actionPending()"
-                  [loading]="actionPending()"
-                  class="vd-accion-btn"
-                  ariaLabel="Registrar extracción exitosa"
-                  (onClick)="abrirConfirmExtraccion(v.id)" />
+
+                <!-- Extraído: sólo si la visita está preparada (attentionId != null) -->
+                @if (v.attentionId != null) {
+                  <p-button
+                    label="Extraído"
+                    icon="pi pi-check-circle"
+                    severity="primary"
+                    [disabled]="actionPending()"
+                    [loading]="actionPending()"
+                    class="vd-accion-btn"
+                    ariaLabel="Registrar extracción exitosa"
+                    (onClick)="abrirConfirmExtraccion(v.id)" />
+                } @else {
+                  <!-- Visita no preparada: no se puede extraer -->
+                  <div class="vd-rotulos-pendientes" role="status">
+                    <i class="pi pi-tag"></i>
+                    <span>Rótulos pendientes de preparar (secretaría).</span>
+                  </div>
+                }
+
                 <p-button
                   label="No se realizó"
                   icon="pi pi-times-circle"
@@ -271,10 +286,24 @@ function formatScheduledAt(iso: string | null): string {
       [closable]="true"
       [dismissableMask]="true"
       header="Confirmar extracción"
-      [style]="{ width: '400px' }">
-      <p class="vd-dialog-body">
-        ¿Confirmás que la muestra fue extraída correctamente?
-      </p>
+      [style]="{ width: '420px' }">
+      <div class="vd-dialog-body vd-dialog-scan">
+        <p>Escaneá o ingresá el código del rótulo para confirmar la extracción.</p>
+        <div class="vd-scan-field">
+          <label for="vd-scan-input" class="vd-scan-label">Código de rótulo</label>
+          <input
+            id="vd-scan-input"
+            pInputText
+            type="text"
+            class="w-full"
+            placeholder="Escaneá o ingresá el código"
+            autocomplete="off"
+            [ngModel]="scannedBarcode()"
+            (ngModelChange)="scannedBarcode.set($event)"
+            (keydown.enter)="scannedBarcode() ? confirmarExtraccion() : null"
+            aria-label="Código de rótulo" />
+        </div>
+      </div>
       <ng-template pTemplate="footer">
         <p-button
           label="Cancelar"
@@ -285,7 +314,7 @@ function formatScheduledAt(iso: string | null): string {
           label="Confirmar extracción"
           icon="pi pi-check"
           severity="primary"
-          [disabled]="actionPending()"
+          [disabled]="actionPending() || !scannedBarcode()"
           [loading]="actionPending()"
           (onClick)="confirmarExtraccion()" />
       </ng-template>
@@ -495,6 +524,19 @@ function formatScheduledAt(iso: string | null): string {
       line-height: 1.5;
     }
 
+    /* ── Aviso rótulos pendientes ─────────────────────────────────────────── */
+    .vd-rotulos-pendientes {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--ds-text-muted);
+      padding: var(--space-3) var(--space-4);
+      border: 1px dashed var(--p-surface-border, #e5e7eb);
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+
     /* ── Botón volver ─────────────────────────────────────────────────────── */
     .vd-btn-volver {
       display: block;
@@ -517,6 +559,27 @@ function formatScheduledAt(iso: string | null): string {
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
+    }
+
+    .vd-dialog-scan {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    /* ── Scan input ──────────────────────────────────────────────────────── */
+    .vd-scan-field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .vd-scan-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ds-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     /* ── Selector de motivo (outcome) ─────────────────────────────────────── */
@@ -613,6 +676,7 @@ export class VisitaDetallePage implements OnInit {
 
   abrirConfirmExtraccion(id: number): void {
     this.visitIdEnAccion = id;
+    this.scannedBarcode.set('');
     this.dialogExtraccionVisible.set(true);
   }
 

@@ -44,6 +44,7 @@ const visit: HomeVisit = {
   patientId: 20,
   branchId: 1,
   assignedExtractorId: null,
+  attentionId: null,
   addressStreet: 'Av. Libertad',
   addressNumber: '123',
   addressCity: 'La Plata',

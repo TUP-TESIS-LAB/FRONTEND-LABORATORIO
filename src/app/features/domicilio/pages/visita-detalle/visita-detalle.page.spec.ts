@@ -26,7 +26,7 @@ import { DOMICILIO_FEATURE_KEY, initialDomicilioState } from '../../store/home-v
 import { HomeVisit } from '../../models/home-visit.model';
 
 /**
- * Smoke tests para VisitaDetallePage — Fase 3 (Task 6).
+ * Smoke tests para VisitaDetallePage — Fase 3 + Fase 4 (Task 6 + Task 8).
  *
  * Se usan con vitest (JIT). NO_ERRORS_SCHEMA evita errores de child components.
  * Se testea la lógica del componente: dispatch, señales, helpers y acciones.
@@ -143,11 +143,14 @@ describe('VisitaDetallePage (smoke)', () => {
     expect(comp.dialogReprogramarVisible()).toBe(false);
   });
 
-  it('abrirConfirmExtraccion() abre el diálogo de extracción', () => {
+  it('abrirConfirmExtraccion() abre el diálogo de extracción y resetea el barcode', () => {
     const v = makeVisit(42, 'PROGRAMADA');
     const fixture = setup(v);
-    fixture.componentInstance.abrirConfirmExtraccion(42);
-    expect(fixture.componentInstance.dialogExtraccionVisible()).toBe(true);
+    const comp = fixture.componentInstance;
+    comp.scannedBarcode.set('PREV');
+    comp.abrirConfirmExtraccion(42);
+    expect(comp.dialogExtraccionVisible()).toBe(true);
+    expect(comp.scannedBarcode()).toBe('');
   });
 
   it('abrirDialogOutcome() abre el diálogo de outcome y limpia el motivo', () => {
@@ -197,6 +200,33 @@ describe('VisitaDetallePage (smoke)', () => {
     comp.confirmarExtraccion();
     actions$.next(markExtractedSuccess({ visit: { ...v, status: 'EXTRAIDA' } }));
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/domicilio/mi-ruta']);
+  });
+
+  // ── Scan gate: visita sin preparar ──────────────────────────────────────────
+
+  it('scannedBarcode inicial es cadena vacía', () => {
+    const fixture = setup();
+    expect(fixture.componentInstance.scannedBarcode()).toBe('');
+  });
+
+  it('abrirConfirmExtraccion() resetea scannedBarcode a vacío', () => {
+    const v = makeVisit(42, 'PROGRAMADA', 999);
+    const fixture = setup(v);
+    const comp = fixture.componentInstance;
+    comp.scannedBarcode.set('PREVIO-123');
+    comp.abrirConfirmExtraccion(42);
+    expect(comp.scannedBarcode()).toBe('');
+  });
+
+  it('confirmarExtraccion() incluye el barcode actualizado en el dispatch', () => {
+    const v = makeVisit(42, 'PROGRAMADA', 999);
+    const fixture = setup(v);
+    const comp = fixture.componentInstance;
+    const spy = vi.spyOn(store, 'dispatch');
+    comp.abrirConfirmExtraccion(42);
+    comp.scannedBarcode.set('SCAN-ABC');
+    comp.confirmarExtraccion();
+    expect(spy).toHaveBeenCalledWith(markExtracted({ id: 42, scannedBarcode: 'SCAN-ABC' }));
   });
 
   // ── confirmarOutcome: dispatch + navegación ──────────────────────────────────
@@ -370,13 +400,18 @@ describe('VisitaDetallePage (smoke)', () => {
 
 // ── Factory ───────────────────────────────────────────────────────────────────
 
-function makeVisit(id: number, status: HomeVisit['status'] = 'PROGRAMADA'): HomeVisit {
+function makeVisit(
+  id: number,
+  status: HomeVisit['status'] = 'PROGRAMADA',
+  attentionId: number | null = null,
+): HomeVisit {
   return {
     id,
     appointmentId: 100 + id,
     patientId: 200 + id,
     branchId: 1,
     assignedExtractorId: 5,
+    attentionId,
     addressStreet: 'Av. Siempre Viva',
     addressNumber: `${id * 100}`,
     addressCity: 'Springfield',

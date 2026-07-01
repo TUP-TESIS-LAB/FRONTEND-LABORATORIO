@@ -17,6 +17,7 @@ export interface HomeVisit {
   patientId: number;
   branchId: number;
   assignedExtractorId: number | null;
+  attentionId: number | null;
   addressStreet: string;
   addressNumber: string | null;
   addressCity: string;

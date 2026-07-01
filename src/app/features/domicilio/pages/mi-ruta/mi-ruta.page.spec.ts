@@ -213,6 +213,7 @@ function makeVisit(id: number, start: string, end: string): HomeVisit {
     patientId: 200 + id,
     branchId: 1,
     assignedExtractorId: 5,
+    attentionId: null,
     addressStreet: 'Av. Siempre Viva',
     addressNumber: `${id * 100}`,
     addressCity: 'Springfield',

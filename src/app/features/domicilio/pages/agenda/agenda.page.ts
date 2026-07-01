@@ -1,11 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
+import { take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
@@ -13,12 +17,19 @@ import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.direct
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { TableColumn } from '@shared/ui/models/table-column.model';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
-import { loadHomeVisits } from '../../store/home-visit.actions';
+import {
+  loadHomeVisits,
+  prepareLabels,
+  prepareLabelsSuccess,
+  prepareLabelsFailure,
+} from '../../store/home-visit.actions';
 import {
   selectHomeVisits,
   selectHomeVisitsPending,
+  selectActionPending,
 } from '../../store/home-visit.selectors';
-import { HomeVisitStatus } from '../../models/home-visit.model';
+import { HomeVisit, HomeVisitStatus } from '../../models/home-visit.model';
+import { LabelPdfService } from '../../services/label-pdf.service';
 
 interface StatusDisplay {
   label: string;
@@ -64,10 +75,14 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
       emptyCtaLabel="Nueva visita"
       (emptyCtaClick)="router.navigate(['/domicilio/nueva'])">
 
-      <!-- Paciente: el backend devuelve patientId (Fase 1); mostramos el ID de forma legible -->
+      <!-- Paciente -->
       <ng-template uiCell="paciente" let-row>
-        <span class="text-surface-500 text-xs">Paciente #{{ $any(row).patientId }}</span>
-        <!-- CONCERN (Fase 2): se resolverá el nombre del paciente cuando el BE lo incluya en el response -->
+        @if ($any(row).patientName) {
+          <span class="font-medium">{{ $any(row).patientName }}</span>
+          <div class="text-xs text-surface-500">DNI {{ $any(row).patientDni }}</div>
+        } @else {
+          <span class="text-surface-500 text-xs">Paciente #{{ $any(row).patientId }}</span>
+        }
       </ng-template>
 
       <!-- Dirección compuesta -->
@@ -90,9 +105,10 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
 
       <!-- Extractor asignado -->
       <ng-template uiCell="extractor" let-row>
-        @if ($any(row).assignedExtractorId) {
+        @if ($any(row).extractorName) {
+          <span class="text-sm">{{ $any(row).extractorName }}</span>
+        } @else if ($any(row).assignedExtractorId) {
           <span class="text-surface-500 text-xs">Empleado #{{ $any(row).assignedExtractorId }}</span>
-          <!-- CONCERN (Fase 2): se resolverá el nombre del extractor cuando el BE lo incluya -->
         } @else {
           <span class="text-surface-400 text-xs">Sin asignar</span>
         }
@@ -105,6 +121,35 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
         }
       </ng-template>
 
+      <!-- Acciones: Preparar rótulos -->
+      <ng-template uiCell="acciones" let-row>
+        @if ($any(row).status === 'PROGRAMADA') {
+          @if ($any(row).attentionId != null) {
+            <!-- Ya preparada: indicador + botón deshabilitado -->
+            <div class="flex flex-col gap-1 items-start">
+              <p-tag severity="success" value="Preparada" icon="pi pi-check" />
+              <p-button
+                label="Reimprimir"
+                icon="pi pi-print"
+                size="small"
+                severity="secondary"
+                [outlined]="true"
+                [disabled]="actionPending()"
+                (onClick)="prepararRotulos($any(row))" />
+            </div>
+          } @else {
+            <p-button
+              label="Preparar rótulos"
+              icon="pi pi-tag"
+              size="small"
+              severity="primary"
+              [disabled]="actionPending()"
+              [loading]="actionPending()"
+              (onClick)="prepararRotulos($any(row))" />
+          }
+        }
+      </ng-template>
+
     </ui-table>
   `,
 })
@@ -112,9 +157,13 @@ export class AgendaPage implements OnInit {
   protected readonly router = inject(Router);
   private readonly store = inject(Store);
   private readonly branchCtx = inject(OperatorBranchContextService);
+  private readonly actions$ = inject(Actions);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly labelPdf = inject(LabelPdfService);
 
   readonly visits = this.store.selectSignal(selectHomeVisits);
   readonly pending = this.store.selectSignal(selectHomeVisitsPending);
+  readonly actionPending = this.store.selectSignal(selectActionPending);
 
   readonly columns: readonly TableColumn[] = [
     { field: 'paciente',  header: 'Paciente' },
@@ -122,10 +171,15 @@ export class AgendaPage implements OnInit {
     { field: 'ventana',   header: 'Ventana horaria' },
     { field: 'extractor', header: 'Extractor' },
     { field: 'estado',    header: 'Estado', align: 'center' },
+    { field: 'acciones',  header: 'Acciones', align: 'center' },
   ];
+
+  /** Guarda el branchId para poder recargar la lista tras preparar. */
+  private currentBranchId = 1;
 
   ngOnInit(): void {
     const branchId = this.branchCtx.branchId() ?? 1;
+    this.currentBranchId = branchId;
     this.store.dispatch(loadHomeVisits({ branchId }));
   }
 
@@ -137,5 +191,23 @@ export class AgendaPage implements OnInit {
   formatTime(time: string): string {
     if (!time) return '—';
     return time.substring(0, 5);
+  }
+
+  prepararRotulos(row: HomeVisit): void {
+    this.store.dispatch(prepareLabels({ id: row.id }));
+    this.actions$
+      .pipe(
+        ofType(prepareLabelsSuccess, prepareLabelsFailure),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((action) => {
+        if (action.type === prepareLabelsSuccess.type) {
+          // Generar PDF con los labels recibidos en el payload
+          void this.labelPdf.generate(action.visit, action.labels);
+          // Recargar la lista para reflejar attentionId != null
+          this.store.dispatch(loadHomeVisits({ branchId: this.currentBranchId }));
+        }
+      });
   }
 }
