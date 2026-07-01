@@ -515,17 +515,25 @@ export class SidebarComponent implements OnInit {
     if (id != null) this.store.dispatch(loadBranchTotemConfig({ branchId: id }));
   }
 
-  /** Para expandables: filtra hijos por sectionKey. Para links: devuelve el item igual. */
+  /** Para expandables: filtra hijos por sectionKey + roleKey. Para links: devuelve el item igual. */
   private applyChildVisibility(item: NavItem): NavItem {
     if (item.kind !== 'expandable') return item;
     return {
       ...item,
-      children: item.children.filter((c) => !c.sectionKey || this.access.has(c.sectionKey)),
+      children: item.children.filter((c) =>
+        (!c.sectionKey || this.access.has(c.sectionKey)) &&
+        (!c.roleKey || this.token.getRoles().includes(c.roleKey)),
+      ),
     };
   }
 
   protected isItemVisible(item: NavItem): boolean {
-    if (item.kind === 'expandable') return item.children.length > 0;
+    if (item.kind === 'expandable') {
+      // El grupo entero se gatea por módulo/sección; luego debe quedar al menos un hijo visible.
+      if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
+      if (item.sectionKey && !this.access.has(item.sectionKey)) return false;
+      return item.children.length > 0;
+    }
     if (item.kind === 'external') return true;
     if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
     if (item.roleKey && !this.token.getRoles().includes(item.roleKey)) return false;

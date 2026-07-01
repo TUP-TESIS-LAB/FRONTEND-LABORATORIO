@@ -27,9 +27,12 @@ export type NavItem =
       kind: 'expandable';
       label: string;
       icon: string;
+      moduleKey?: ModuleKey;   // gate del grupo entero por módulo activable
+      sectionKey?: AccessSection; // gate del grupo entero por sección de acceso
       // `external: true` → el hijo abre en pestaña nueva (href = path), como los items
       // `kind: 'external'`. Permite agrupar pantallas externas dentro de un desplegable.
-      children: { label: string; path: string; icon?: string; sectionKey?: AccessSection; external?: boolean }[];
+      // `roleKey` gatea el hijo por rol (p. ej. config solo para ADMINISTRADOR).
+      children: { label: string; path: string; icon?: string; sectionKey?: AccessSection; roleKey?: string; external?: boolean }[];
     };
 
 export interface NavSection { label: string; items: NavItem[]; }
@@ -68,7 +71,19 @@ export const NAV_SECTIONS: NavSection[] = [
       { kind: 'link', label: 'Empresa',          icon: 'pi pi-building', path: '/empresa', sectionKey: 'EMPRESA' },
       { kind: 'link', label: 'Sucursales',       icon: 'pi pi-building', path: '/sucursales', sectionKey: 'SUCURSALES' },
       { kind: 'link', label: 'Obras sociales',   icon: 'pi pi-id-card',  path: '/obras-sociales', sectionKey: 'OBRAS_SOCIALES' },
-      { kind: 'link', label: 'Financiero',       icon: 'pi pi-wallet',   path: '/financiero', moduleKey: ModuleKey.Financiero, sectionKey: 'FINANCIERO' },
+      {
+        kind: 'expandable', label: 'Financiero', icon: 'pi pi-wallet',
+        moduleKey: ModuleKey.Financiero, sectionKey: 'FINANCIERO',
+        children: [
+          // Operativo / diario
+          { label: 'Caja',            path: '/financiero/caja',            icon: 'pi pi-wallet' },
+          { label: 'Cobros',          path: '/financiero/cobros',          icon: 'pi pi-receipt' },
+          // Configuración (roles altos)
+          { label: 'Cajas',           path: '/financiero/subcajas',        icon: 'pi pi-database',         roleKey: 'ADMINISTRADOR' },
+          { label: 'Cuentas destino', path: '/financiero/cuentas-destino', icon: 'pi pi-building-columns', roleKey: 'ADMINISTRADOR' },
+          { label: 'Config fiscal',   path: '/financiero/config-fiscal',   icon: 'pi pi-verified',         roleKey: 'SAAS_ADMIN' },
+        ],
+      },
       { kind: 'link', label: 'Stock e insumos',  icon: 'pi pi-box',      path: '/stock', moduleKey: ModuleKey.Stock, sectionKey: 'STOCK' },
     ],
   },
