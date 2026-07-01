@@ -11,14 +11,21 @@ import {
 import { registerTransaction, registerBranchMovement, loadBankAccounts } from '../../../store/financiero.actions';
 import { selectBankAccounts, selectCajaSession } from '../../../store/financiero.selectors';
 
-/** Campos de detalle requeridos por método (espejo de BranchMovement.validate() del backend). */
+/**
+ * Campos de detalle requeridos por método (espejo de BranchMovement.validate() del backend).
+ *
+ * KAN-156 (refinamiento UX 2026-06-30): el detalle por método (ID de operación, CBU/alias,
+ * marca/últimos 4 de tarjeta, cuotas, terminal, lote) NO se carga a mano en un movimiento manual
+ * — lo aporta el equipo (postnet) o el comprobante. Lo único que se pide es la cuenta destino en
+ * TRANSFER, para no perder la traza de a qué cuenta propia entró/salió la plata.
+ */
 const REQUIRED_FIELDS: Record<PaymentMethod, string[]> = {
   CASH: [],
-  TRANSFER: ['transactionId', 'senderName', 'senderCbuAlias', 'destinationAccountId'],
-  QR: ['transactionId'],
-  POSNET: ['terminalId'],
-  CREDIT_CARD: ['transactionId', 'cardBrand', 'lastFourDigits'],
-  DEBIT_CARD: ['transactionId', 'cardBrand', 'lastFourDigits'],
+  TRANSFER: ['destinationAccountId'],
+  QR: [],
+  POSNET: [],
+  CREDIT_CARD: [],
+  DEBIT_CARD: [],
 };
 
 @Component({
@@ -99,17 +106,14 @@ const REQUIRED_FIELDS: Record<PaymentMethod, string[]> = {
             rows="2" style="width:100%" placeholder="Ej.: aporte de cambio / retiro para insumos"></textarea>
         </div>
 
-        <!-- Campos por método (no-efectivo) -->
-        @if (!esEfectivo()) {
+        <!-- Cuenta destino: solo TRANSFER, obligatoria (KAN-156). El resto de medios
+             no-efectivo (QR, tarjetas, posnet) no pide detalle: el equipo lo aporta. -->
+        @if (metodo() === 'TRANSFER') {
           <div class="fin-method-fields">
-            <!-- Cuenta destino -->
             <div class="fin-form-field">
-              <label>
-                Cuenta destino
-                @if (req('destinationAccountId')) { <span class="fin-req">obligatorio</span> }
-              </label>
+              <label>Cuenta destino <span class="fin-req">obligatorio</span></label>
               <select class="fin-select" [ngModel]="destinationAccountId()" (ngModelChange)="setDestino($event)" data-testid="mov-cuenta">
-                <option [ngValue]="null">— Sin cuenta destino —</option>
+                <option [ngValue]="null">— Elegí una cuenta —</option>
                 @for (a of cuentas(); track a.id) {
                   <option [ngValue]="a.id">{{ a.label }}{{ a.banco ? ' · ' + a.banco : '' }}</option>
                 }
@@ -118,55 +122,6 @@ const REQUIRED_FIELDS: Record<PaymentMethod, string[]> = {
                 <small class="fin-hint">No hay cuentas destino activas. Un administrador puede crearlas en "Cuentas destino".</small>
               }
             </div>
-
-            @if (showField('transactionId')) {
-              <div class="fin-form-field">
-                <label>ID de operación @if (req('transactionId')) { <span class="fin-req">obligatorio</span> }</label>
-                <input class="fin-input" [ngModel]="transactionId()" (ngModelChange)="transactionId.set($event)" maxlength="120" />
-              </div>
-            }
-            @if (showField('senderName')) {
-              <div class="fin-form-field">
-                <label>Titular que transfiere @if (req('senderName')) { <span class="fin-req">obligatorio</span> }</label>
-                <input class="fin-input" [ngModel]="senderName()" (ngModelChange)="senderName.set($event)" maxlength="160" />
-              </div>
-            }
-            @if (showField('senderCbuAlias')) {
-              <div class="fin-form-field">
-                <label>CBU / alias de origen @if (req('senderCbuAlias')) { <span class="fin-req">obligatorio</span> }</label>
-                <input class="fin-input" [ngModel]="senderCbuAlias()" (ngModelChange)="senderCbuAlias.set($event)" maxlength="120" />
-              </div>
-            }
-            @if (showField('cardBrand')) {
-              <div class="fin-form-field">
-                <label>Marca de tarjeta @if (req('cardBrand')) { <span class="fin-req">obligatorio</span> }</label>
-                <input class="fin-input" [ngModel]="cardBrand()" (ngModelChange)="cardBrand.set($event)" maxlength="40" placeholder="Visa, Mastercard…" />
-              </div>
-            }
-            @if (showField('lastFourDigits')) {
-              <div class="fin-form-field">
-                <label>Últimos 4 dígitos @if (req('lastFourDigits')) { <span class="fin-req">obligatorio</span> }</label>
-                <input class="fin-input" [ngModel]="lastFourDigits()" (ngModelChange)="lastFourDigits.set($event)" maxlength="4" inputmode="numeric" />
-              </div>
-            }
-            @if (showField('installments')) {
-              <div class="fin-form-field">
-                <label>Cuotas</label>
-                <input class="fin-input" type="number" min="1" [ngModel]="installments()" (ngModelChange)="installments.set($event)" />
-              </div>
-            }
-            @if (showField('terminalId')) {
-              <div class="fin-form-field">
-                <label>Terminal / Posnet @if (req('terminalId')) { <span class="fin-req">obligatorio</span> }</label>
-                <input class="fin-input" [ngModel]="terminalId()" (ngModelChange)="terminalId.set($event)" maxlength="60" />
-              </div>
-            }
-            @if (showField('batchNumber')) {
-              <div class="fin-form-field">
-                <label>N° de lote</label>
-                <input class="fin-input" [ngModel]="batchNumber()" (ngModelChange)="batchNumber.set($event)" maxlength="60" />
-              </div>
-            }
           </div>
         }
       </div>
@@ -260,41 +215,13 @@ export class MovimientoModalComponent implements OnInit {
   protected monto = signal(0);
   protected descripcion = signal('');
 
-  // detalle no-efectivo
+  /** Único detalle que se carga a mano: cuenta destino (obligatoria solo en TRANSFER). */
   protected destinationAccountId = signal<number | null>(null);
-  protected transactionId = signal('');
-  protected senderName = signal('');
-  protected senderCbuAlias = signal('');
-  protected cardBrand = signal('');
-  protected lastFourDigits = signal('');
-  protected installments = signal<number | null>(null);
-  protected terminalId = signal('');
-  protected batchNumber = signal('');
 
   protected readonly esEfectivo = computed(() => this.metodo() === 'CASH');
 
   ngOnInit(): void {
     this.store.dispatch(loadBankAccounts());
-  }
-
-  protected req(field: string): boolean {
-    return REQUIRED_FIELDS[this.metodo()].includes(field);
-  }
-
-  /** Qué campos mostrar por método (incluye opcionales). */
-  protected showField(field: string): boolean {
-    const m = this.metodo();
-    const optional: Record<string, PaymentMethod[]> = {
-      transactionId: ['TRANSFER', 'QR', 'CREDIT_CARD', 'DEBIT_CARD'],
-      senderName: ['TRANSFER'],
-      senderCbuAlias: ['TRANSFER'],
-      cardBrand: ['CREDIT_CARD', 'DEBIT_CARD'],
-      lastFourDigits: ['CREDIT_CARD', 'DEBIT_CARD'],
-      installments: ['CREDIT_CARD'],
-      terminalId: ['POSNET'],
-      batchNumber: ['POSNET'],
-    };
-    return (optional[field] ?? []).includes(m);
   }
 
   protected setMetodo(m: PaymentMethod): void {
@@ -307,20 +234,10 @@ export class MovimientoModalComponent implements OnInit {
   protected readonly canConfirm = computed(() => {
     if (this.monto() <= 0 || this.descripcion().trim().length === 0) return false;
     if (this.esEfectivo()) return this.cashRegisterId() != null;
-    // no-efectivo: validar campos requeridos del método
-    const values: Record<string, string | number | null> = {
-      destinationAccountId: this.destinationAccountId(),
-      transactionId: this.transactionId().trim(),
-      senderName: this.senderName().trim(),
-      senderCbuAlias: this.senderCbuAlias().trim(),
-      cardBrand: this.cardBrand().trim(),
-      lastFourDigits: this.lastFourDigits().trim(),
-      terminalId: this.terminalId().trim(),
-    };
-    return REQUIRED_FIELDS[this.metodo()].every(f => {
-      const v = values[f];
-      return v !== null && v !== undefined && v !== '';
-    });
+    // no-efectivo: el único campo requerido es la cuenta destino, y solo en TRANSFER.
+    return REQUIRED_FIELDS[this.metodo()].includes('destinationAccountId')
+      ? this.destinationAccountId() != null
+      : true;
   });
 
   protected confirm(): void {
@@ -345,7 +262,8 @@ export class MovimientoModalComponent implements OnInit {
       return;
     }
 
-    // no-efectivo → branch movement
+    // no-efectivo → branch movement. Solo monto + descripción (+ cuenta destino en TRANSFER);
+    // el detalle por método (KAN-156) ya no se carga a mano.
     this.store.dispatch(registerBranchMovement({
       body: {
         branchId: this.branchId(),
@@ -354,21 +272,8 @@ export class MovimientoModalComponent implements OnInit {
         amount: this.monto(),
         description: this.descripcion().trim() || null,
         destinationAccountId: this.destinationAccountId(),
-        transactionId: this.nullable(this.transactionId()),
-        senderName: this.nullable(this.senderName()),
-        senderCbuAlias: this.nullable(this.senderCbuAlias()),
-        cardBrand: this.nullable(this.cardBrand()),
-        lastFourDigits: this.nullable(this.lastFourDigits()),
-        installments: this.installments(),
-        terminalId: this.nullable(this.terminalId()),
-        batchNumber: this.nullable(this.batchNumber()),
       },
     }));
     this.closed.emit();
-  }
-
-  private nullable(v: string): string | null {
-    const t = v.trim();
-    return t.length ? t : null;
   }
 }
