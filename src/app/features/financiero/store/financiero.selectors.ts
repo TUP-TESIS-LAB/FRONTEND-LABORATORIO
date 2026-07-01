@@ -37,6 +37,14 @@ export const selectOtrosCount = createSelector(selectOtrosMedia, d => d?.count ?
 export const selectOtrosLoading = createSelector(selectOtrosSlice, o => o.loading);
 export const selectOtrosError = createSelector(selectOtrosSlice, o => o.error);
 
+// ── Resumen multi-sucursal (KAN-161) ────────────────────────────────────────
+export const selectSucursalesSlice = createSelector(selectFinancieroState, s => s.sucursales);
+export const selectSucursalesData = createSelector(selectSucursalesSlice, s => s.data);
+export const selectSucursalesRows = createSelector(selectSucursalesData, d => d?.branches ?? []);
+export const selectSucursalesTotals = createSelector(selectSucursalesData, d => d?.totals ?? null);
+export const selectSucursalesLoading = createSelector(selectSucursalesSlice, s => s.loading);
+export const selectSucursalesError = createSelector(selectSucursalesSlice, s => s.error);
+
 // ── Cuentas destino (bank-accounts) ────────────────────────────────────────────
 export const selectCuentasSlice = createSelector(selectFinancieroState, s => s.cuentas);
 export const selectBankAccounts = createSelector(selectCuentasSlice, c => c.list);

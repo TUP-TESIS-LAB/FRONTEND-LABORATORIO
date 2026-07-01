@@ -39,6 +39,14 @@ export const FINANCIERO_ROUTES: Routes = [
           ),
       },
       {
+        path: 'sucursales',
+        data: { breadcrumb: 'Sucursales' },
+        loadComponent: () =>
+          import('./pages/sucursales/sucursales-resumen.page').then(
+            (m) => m.SucursalesResumenPage,
+          ),
+      },
+      {
         path: 'subcajas',
         canMatch: [hasRoleGuard(['ADMINISTRADOR'])],
         data: { breadcrumb: 'Cajas' },

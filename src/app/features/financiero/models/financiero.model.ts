@@ -76,6 +76,35 @@ export interface BranchOtherMedia {
 }
 
 /**
+ * Resumen operativo multi-sucursal (KAN-161) — GET /branches-summary?from&to.
+ * "cobros" (origen atención) y "efectivo/otrosMedios" (por método) son ejes distintos;
+ * totalIngresos = efectivo + otrosMedios.
+ */
+export interface BranchSummaryRow {
+  branchId: number;
+  branchCode: string;
+  branchName: string;
+  cobrosCount: number;
+  cobrosAmount: number;
+  efectivo: number;
+  otrosMedios: number;
+  totalIngresos: number;
+}
+export interface BranchesSummaryTotals {
+  cobrosCount: number;
+  cobrosAmount: number;
+  efectivo: number;
+  otrosMedios: number;
+  totalIngresos: number;
+}
+export interface BranchesSummary {
+  from: string;
+  to: string;
+  branches: BranchSummaryRow[];
+  totals: BranchesSummaryTotals;
+}
+
+/**
  * Body de POST /branch-movements — movimiento manual no-efectivo a nivel
  * sucursal+día. method MUST ser ≠ CASH (el efectivo va por la caja).
  */

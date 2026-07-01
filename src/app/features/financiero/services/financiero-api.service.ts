@@ -8,6 +8,7 @@ import {
   CreatePaymentRequest, RegisterPaymentResponse,
   CashRegister, BankAccount, BankAccountInput,
   BranchOtherMedia, RegisterBranchMovementInput,
+  BranchesSummary,
 } from '../models/financiero.model';
 
 @Injectable({ providedIn: 'root' })
@@ -82,6 +83,14 @@ export class FinancieroApiService {
   getBranchOtherMedia(branchId: number, from: string, to: string): Observable<BranchOtherMedia | NotModified> {
     return this.http.get<BranchOtherMedia | NotModified>(`${this.base}/branch-movements`, {
       params: new HttpParams().set('branchId', branchId).set('from', from).set('to', to),
+      context: withPolling(),
+    });
+  }
+
+  // ── Resumen multi-sucursal (KAN-161) ───────────────────────────────────────
+  getBranchesSummary(from: string, to: string): Observable<BranchesSummary | NotModified> {
+    return this.http.get<BranchesSummary | NotModified>(`${this.base}/branches-summary`, {
+      params: new HttpParams().set('from', from).set('to', to),
       context: withPolling(),
     });
   }

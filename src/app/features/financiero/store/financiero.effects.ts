@@ -16,6 +16,7 @@ import {
   closeSession, closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
   loadBranchOtherMedia, loadBranchOtherMediaSuccess, loadBranchOtherMediaNotModified, loadBranchOtherMediaFailure,
+  loadBranchesSummary, loadBranchesSummarySuccess, loadBranchesSummaryNotModified, loadBranchesSummaryFailure,
   registerBranchMovement, registerBranchMovementSuccess, registerBranchMovementFailure,
   loadBankAccounts, loadBankAccountsSuccess, loadBankAccountsFailure,
   createBankAccount, createBankAccountSuccess, createBankAccountFailure,
@@ -259,6 +260,22 @@ export class FinancieroEffects {
             : loadBranchOtherMediaSuccess({ data: res })),
           catchError((e: HttpErrorResponse) =>
             of(loadBranchOtherMediaFailure({ error: mapBranchMovementError(e) }))),
+        ),
+      ),
+    ),
+  );
+
+  // ── resumen multi-sucursal (KAN-161, polleable ETag/304) ───────────────────
+  loadBranchesSummary$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadBranchesSummary),
+      switchMap(({ from, to }) =>
+        this.api.getBranchesSummary(from, to).pipe(
+          map(res => isNotModified(res)
+            ? loadBranchesSummaryNotModified()
+            : loadBranchesSummarySuccess({ data: res })),
+          catchError((e: HttpErrorResponse) =>
+            of(loadBranchesSummaryFailure({ error: mapBranchMovementError(e) }))),
         ),
       ),
     ),

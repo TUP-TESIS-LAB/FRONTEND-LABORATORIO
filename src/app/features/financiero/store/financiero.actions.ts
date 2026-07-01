@@ -1,5 +1,5 @@
 ﻿import { createAction, props } from '@ngrx/store';
-import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider, CreatePaymentRequest, RegisterPaymentResponse, CashRegister, BankAccount, BankAccountInput, BranchOtherMedia, RegisterBranchMovementInput } from '../models/financiero.model';
+import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider, CreatePaymentRequest, RegisterPaymentResponse, CashRegister, BankAccount, BankAccountInput, BranchOtherMedia, RegisterBranchMovementInput, BranchesSummary } from '../models/financiero.model';
 
 // ── Caja: listar subcajas de la sucursal ─────────────────────────────────────
 export const loadCashRegisters = createAction(
@@ -130,6 +130,23 @@ export const loadBranchOtherMediaNotModified = createAction(
 );
 export const loadBranchOtherMediaFailure = createAction(
   '[Financiero Otros API] Load Branch Other Media Failure',
+  props<{ error: string }>(),
+);
+
+// ── Resumen multi-sucursal (KAN-161) ─────────────────────────────────────────
+export const loadBranchesSummary = createAction(
+  '[Financiero Sucursales] Load Branches Summary',
+  props<{ from: string; to: string }>(),
+);
+export const loadBranchesSummarySuccess = createAction(
+  '[Financiero Sucursales API] Load Branches Summary Success',
+  props<{ data: BranchesSummary }>(),
+);
+export const loadBranchesSummaryNotModified = createAction(
+  '[Financiero Sucursales API] Load Branches Summary Not Modified',
+);
+export const loadBranchesSummaryFailure = createAction(
+  '[Financiero Sucursales API] Load Branches Summary Failure',
   props<{ error: string }>(),
 );
 

@@ -10,6 +10,7 @@ import {
   closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
   loadBranchOtherMedia, loadBranchOtherMediaSuccess, loadBranchOtherMediaFailure,
+  loadBranchesSummary, loadBranchesSummarySuccess, loadBranchesSummaryNotModified, loadBranchesSummaryFailure,
   registerBranchMovementSuccess, registerBranchMovementFailure,
   loadBankAccounts, loadBankAccountsSuccess, loadBankAccountsFailure,
   createBankAccount, createBankAccountSuccess, createBankAccountFailure,
@@ -122,6 +123,24 @@ export const financieroReducer = createReducer(
   on(loadBranchOtherMediaFailure, (state, { error }): FinancieroState => ({
     ...state,
     otros: { ...state.otros, loading: false, error },
+  })),
+
+  // ── Resumen multi-sucursal (KAN-161) ───────────────────────────────────────
+  on(loadBranchesSummary, (state): FinancieroState => ({
+    ...state,
+    sucursales: { ...state.sucursales, loading: true, error: null },
+  })),
+  on(loadBranchesSummarySuccess, (state, { data }): FinancieroState => ({
+    ...state,
+    sucursales: { ...state.sucursales, data, loading: false, error: null },
+  })),
+  on(loadBranchesSummaryNotModified, (state): FinancieroState => ({
+    ...state,
+    sucursales: { ...state.sucursales, loading: false },
+  })),
+  on(loadBranchesSummaryFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    sucursales: { ...state.sucursales, loading: false, error },
   })),
   on(registerBranchMovementSuccess, (state): FinancieroState => ({
     ...state,
