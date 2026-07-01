@@ -53,7 +53,9 @@ export const financieroReducer = createReducer(
   // ── cargar sesión abierta ──────────────────────────────────────────────────
   on(loadOpenSession, (state): FinancieroState => ({
     ...state,
-    caja: { ...state.caja, loading: true, error: null },
+    // Limpiar activity: al cambiar de subcaja no queremos mostrar los movimientos/cobros
+    // de la caja anterior mientras carga la nueva (evita conteo de cobros stale).
+    caja: { ...state.caja, loading: true, activity: null, error: null },
   })),
   on(loadOpenSessionSuccess, (state, { session }): FinancieroState => ({
     ...state,

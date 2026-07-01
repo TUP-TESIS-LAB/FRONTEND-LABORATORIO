@@ -237,11 +237,11 @@ function todayIso(): string {
             <div class="fin-kpi-note"><i class="pi pi-info-circle"></i> No suma al efectivo del cajón</div>
           </div>
 
-          <!-- Cobros del turno -->
+          <!-- Cobros en efectivo del turno (transacciones de efectivo con pago asociado) -->
           <div class="fin-kpi-card">
             <div class="fin-kpi-label"><i class="pi pi-receipt"></i> Cobros del turno</div>
             <div class="fin-kpi-value fin-kpi-value--dark">{{ cobrosCount() }}</div>
-            <div class="fin-kpi-meta">atenciones cobradas hoy</div>
+            <div class="fin-kpi-meta">cobros en efectivo de la sesión</div>
           </div>
         </div>
 
@@ -249,10 +249,14 @@ function todayIso(): string {
         <div class="fin-card fin-card--table">
           <div class="fin-table-head">
             <h3>Efectivo de la sesión</h3>
-            <span class="fin-muted">{{ rows().length }} movimiento{{ rows().length === 1 ? '' : 's' }}</span>
+            @if (!activityLoading()) {
+              <span class="fin-muted">{{ rows().length }} movimiento{{ rows().length === 1 ? '' : 's' }}</span>
+            }
           </div>
 
-          @if (rows().length === 0) {
+          @if (activityLoading()) {
+            <div class="fin-skeleton fin-skeleton--tall" style="margin: 16px 18px"></div>
+          } @else if (rows().length === 0) {
             <ui-empty-state
               icon="pi-inbox"
               heading="Caja abierta, sin movimientos de efectivo todavía"
@@ -503,6 +507,9 @@ export class CajaPage implements OnInit {
   // Derived
   readonly rows = computed<SessionActivityRow[]>(() => this.activity()?.rows ?? []);
   readonly cobrosCount = computed(() => this.activity()?.cobrosCount ?? 0);
+  /** Caja abierta pero la actividad todavía no llegó: mostrar skeleton, no el empty-state
+   *  ni datos stale de la subcaja anterior (activity se limpia al cambiar de sesión). */
+  readonly activityLoading = computed(() => this.isCajaOpen() && this.activity() == null);
 
   readonly tableColumns: TableColumn[] = [
     { field: 'tipo',    header: '' },
@@ -574,12 +581,14 @@ export class CajaPage implements OnInit {
     } else {
       this.store.dispatch(sessionNotFound());
     }
+    // Traer otros-medios (sucursal+día) ya mismo, sin esperar el tick de 5s. La actividad
+    // de la sesión la dispara el effect al resolverse la sesión (loadActivityOnSession$).
+    this.pollingHandle?.pokeNow();
   }
 
   protected selectRegister(id: number): void {
     if (id === this.selectedRegisterId()) return;
     this.applySelection(id);
-    this.pollingHandle?.pokeNow();
   }
 
   protected setDay(day: string): void {

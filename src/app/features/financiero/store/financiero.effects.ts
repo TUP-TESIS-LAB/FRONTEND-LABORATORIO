@@ -1,7 +1,7 @@
 ﻿import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
-import { catchError, concatMap, map, switchMap } from 'rxjs/operators';
+import { catchError, concatMap, filter, map, switchMap } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { isNotModified } from '@core/refresh';
 import { FinancieroApiService } from '../services/financiero-api.service';
@@ -173,6 +173,18 @@ export class FinancieroEffects {
           }),
         ),
       ),
+    ),
+  );
+
+  // Apenas se resuelve la sesión (selección de subcaja o apertura), traer su
+  // actividad SIN esperar el tick de polling de 5s. Evita el estado incoherente
+  // "saldo con 0 movimientos" en la carga y el conteo de cobros stale al cambiar
+  // de subcaja (el poll leía this.session(), que llega tarde).
+  loadActivityOnSession$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadOpenSessionSuccess, openSessionSuccess),
+      filter(({ session }) => session?.status === 'OPEN'),
+      map(({ session }) => loadActivity({ sessionId: session.id })),
     ),
   );
 
