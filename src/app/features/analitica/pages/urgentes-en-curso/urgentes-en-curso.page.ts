@@ -1,14 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnDestroy,
   OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
-import { EMPTY } from 'rxjs';
+import { EMPTY, interval } from 'rxjs';
 import { TagModule } from 'primeng/tag';
 import { PollingHandle, PollingService } from '@core/refresh';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
@@ -104,7 +106,7 @@ export function slaSeverity(status: SlaStatus): 'success' | 'warn' | 'danger' {
           </ng-template>
 
           <ng-template uiCell="sla" let-row>
-            <p-tag [value]="slaLabel($any(row).slaStatus)" [severity]="slaSeverityOf($any(row).slaStatus)" />
+            <p-tag [value]="slaLabel($any(row).slaStatus)" [severity]="slaSeverity($any(row).slaStatus)" />
           </ng-template>
 
         </ui-table>
@@ -115,12 +117,18 @@ export function slaSeverity(status: SlaStatus): 'success' | 'warn' | 'danger' {
 export class UrgentesEnCursoPage implements OnInit, OnDestroy {
   private readonly store = inject(Store);
   private readonly polling = inject(PollingService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly board = this.store.selectSignal(selectUrgentInProgressBoard);
   readonly loading = signal(false);
 
   /** Ticker de antigüedad: se actualiza cada 30s para recalcular elapsedMinutes/slaStatus. */
   private readonly nowMs = signal(Date.now());
+
+  constructor() {
+    interval(30000).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.nowMs.set(Date.now()));
+  }
 
   /** Filas derivadas: antigüedad + color de SLA, ordenadas vencidos-primero. */
   readonly rows = computed<UrgentesEnCursoRow[]>(() => {
@@ -147,7 +155,6 @@ export class UrgentesEnCursoPage implements OnInit, OnDestroy {
   ];
 
   private pollingHandle: PollingHandle | null = null;
-  private tickerId: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     this.pollingHandle = this.polling.startPolling({
@@ -158,25 +165,19 @@ export class UrgentesEnCursoPage implements OnInit, OnDestroy {
         return EMPTY;
       },
     });
-
-    this.tickerId = setInterval(() => this.nowMs.set(Date.now()), 30000);
   }
 
   ngOnDestroy(): void {
     this.pollingHandle?.stop();
-    if (this.tickerId !== null) clearInterval(this.tickerId);
   }
 
   // ── Helpers de presentación (read-only, español, sin IDs) ───────────────────
   readonly stageLabel = (state: AttentionState | null | undefined): string => urgentStageLabel(state);
+  protected readonly slaSeverity = slaSeverity;
 
   slaLabel(status: SlaStatus): string {
     if (status === 'rojo') return 'Vencido';
     if (status === 'amarillo') return 'Por vencer';
     return 'En término';
-  }
-
-  slaSeverityOf(status: SlaStatus): 'success' | 'warn' | 'danger' {
-    return slaSeverity(status);
   }
 }
