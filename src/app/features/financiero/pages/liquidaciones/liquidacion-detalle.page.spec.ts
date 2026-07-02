@@ -72,4 +72,17 @@ describe('LiquidacionDetallePage — smoke', () => {
     expect(fixture.debugElement.query(By.css('[data-testid="btn-informar"]'))).toBeNull();
     expect(fixture.debugElement.query(By.css('[data-testid="btn-anular"]'))).toBeNull();
   });
+
+  it('muestra Exportar a Excel salvo cuando está ANULADA', async () => {
+    await setup('PENDING', ['ADMINISTRADOR']);
+    let fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="btn-exportar"]'))).toBeTruthy();
+
+    TestBed.resetTestingModule();
+    await setup('CANCELLED', ['ADMINISTRADOR']);
+    fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="btn-exportar"]'))).toBeNull();
+  });
 });

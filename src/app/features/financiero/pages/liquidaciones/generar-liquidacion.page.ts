@@ -111,7 +111,7 @@ function toIso(d: Date | null): string {
               <div class="liq-summary__totals">
                 <div class="liq-summary__row"><span>Neto</span><span data-testid="preview-net">{{ pv.netAmount | currencyAr }}</span></div>
                 <div class="liq-summary__row"><span>IVA</span><span data-testid="preview-iva">{{ pv.ivaAmount | currencyAr }}</span></div>
-                <div class="liq-summary__row liq-summary__row--gross"><span>Total a liquidar</span><span data-testid="preview-gross">{{ pv.grossAmount | currencyAr }}</span></div>
+                <div class="liq-summary__row liq-summary__row--gross"><span>Total con IVA</span><span data-testid="preview-gross">{{ pv.grossAmount | currencyAr }}</span></div>
               </div>
             </div>
 

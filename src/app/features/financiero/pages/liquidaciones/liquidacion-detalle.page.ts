@@ -36,12 +36,14 @@ type Modal = 'informar' | 'anular' | null;
         <button class="fin-btn fin-btn--ghost" type="button" (click)="volver()">
           <i class="pi pi-arrow-left"></i> Volver
         </button>
-        @if (liq()) {
-          <button class="fin-btn fin-btn--secondary" type="button" data-testid="btn-exportar"
-                  [disabled]="exporting()" (click)="exportar()">
-            <i class="pi" [class.pi-file-excel]="!exporting()" [class.pi-spin]="exporting()" [class.pi-spinner]="exporting()"></i>
-            Exportar a Excel
-          </button>
+        @if (liq(); as lh) {
+          @if (lh.status !== 'CANCELLED') {
+            <button class="fin-btn fin-btn--secondary" type="button" data-testid="btn-exportar"
+                    [disabled]="exporting()" (click)="exportar()">
+              <i class="pi" [class.pi-file-excel]="!exporting()" [class.pi-spin]="exporting()" [class.pi-spinner]="exporting()"></i>
+              Exportar a Excel
+            </button>
+          }
         }
       </ui-page-header>
 
@@ -65,7 +67,7 @@ type Modal = 'informar' | 'anular' | null;
         </div>
 
         <div class="fin-card liq-total">
-          <span class="liq-total__label">Total liquidado</span>
+          <span class="liq-total__label">Total liquidado (neto)</span>
           <span class="liq-total__value">{{ total() | currencyAr }}</span>
           <span class="liq-total__sub">{{ l.plans.length }} convenio{{ l.plans.length === 1 ? '' : 's' }}@if (prestacionesCount() > 0) { · {{ prestacionesCount() }} {{ prestacionesCount() === 1 ? 'prestación' : 'prestaciones' }}}</span>
         </div>
