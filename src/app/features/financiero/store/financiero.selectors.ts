@@ -91,6 +91,8 @@ export const selectLiqGenerateError = createSelector(selectLiqSlice, l => l.gene
 export const selectLiqLifecycleInProgress = createSelector(selectLiqSlice, l => l.lifecycleInProgress);
 export const selectLiqLifecycleError = createSelector(selectLiqSlice, l => l.lifecycleError);
 
+export const selectLiqExporting = createSelector(selectLiqSlice, l => l.exporting);
+
 export const selectLiqPending = createSelector(selectLiqSlice, l => l.pending);
 export const selectLiqPendingLoading = createSelector(selectLiqSlice, l => l.pendingLoading);
 

@@ -12,9 +12,9 @@ import { TokenService } from '@core/auth/token.service';
 
 import {
   selectLiqSelected, selectLiqDetailLoading, selectLiqDetailError,
-  selectLiqLifecycleInProgress, selectLiqInsurersIndex,
+  selectLiqLifecycleInProgress, selectLiqInsurersIndex, selectLiqExporting,
 } from '../../store/financiero.selectors';
-import { loadSettlement, informSettlement, cancelSettlement, loadInsurersIndex } from '../../store/financiero.actions';
+import { loadSettlement, informSettlement, cancelSettlement, loadInsurersIndex, exportSettlement } from '../../store/financiero.actions';
 import { InformSettlementBody, CancelSettlementBody } from '../../models/liquidaciones.model';
 import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidacion-pill.component';
 import { InformarLiquidacionModalComponent } from './components/informar-liquidacion-modal.component';
@@ -36,6 +36,13 @@ type Modal = 'informar' | 'anular' | null;
         <button class="fin-btn fin-btn--ghost" type="button" (click)="volver()">
           <i class="pi pi-arrow-left"></i> Volver
         </button>
+        @if (liq()) {
+          <button class="fin-btn fin-btn--secondary" type="button" data-testid="btn-exportar"
+                  [disabled]="exporting()" (click)="exportar()">
+            <i class="pi" [class.pi-file-excel]="!exporting()" [class.pi-spin]="exporting()" [class.pi-spinner]="exporting()"></i>
+            Exportar a Excel
+          </button>
+        }
       </ui-page-header>
 
       @if (detailError()) {
@@ -125,6 +132,8 @@ type Modal = 'informar' | 'anular' | null;
     .liq-actions { display: flex; gap: 8px; }
     .fin-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; font-size: 13.5px; font-weight: 500; cursor: pointer; }
     .fin-btn--ghost { background: #fff; color: #4a4d63; border: 1.5px solid #e8e9f0; }
+    .fin-btn--secondary { background: #fff; color: #0f6b44; border: 1.5px solid #cbe6d7; }
+    .fin-btn--secondary:disabled { opacity: .6; cursor: default; }
     .fin-btn--success { background: #0f8a55; color: #fff; }
     .fin-btn--danger { background: #d83a3a; color: #fff; }
     .liq-loading { color: #7c8092; }
@@ -143,6 +152,7 @@ export class LiquidacionDetallePage implements OnInit {
   protected readonly detailLoading = this.store.selectSignal(selectLiqDetailLoading);
   protected readonly detailError = this.store.selectSignal(selectLiqDetailError);
   protected readonly lifecycleInProgress = this.store.selectSignal(selectLiqLifecycleInProgress);
+  protected readonly exporting = this.store.selectSignal(selectLiqExporting);
   protected readonly insurers = this.store.selectSignal(selectLiqInsurersIndex);
 
   protected readonly total = computed(() =>
@@ -173,6 +183,12 @@ export class LiquidacionDetallePage implements OnInit {
   protected onAnular(body: CancelSettlementBody): void {
     this.store.dispatch(cancelSettlement({ id: this.id, body }));
     this.modal.set(null);
+  }
+
+  protected exportar(): void {
+    const l = this.liq();
+    if (!l) return;
+    this.store.dispatch(exportSettlement({ id: l.id, settlementNumber: l.settlementNumber }));
   }
 
   protected volver(): void {

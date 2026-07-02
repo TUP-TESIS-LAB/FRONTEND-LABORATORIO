@@ -27,6 +27,7 @@ import {
   generateSettlement, generateSettlementSuccess, generateSettlementFailure,
   informSettlement, informSettlementSuccess, informSettlementFailure,
   cancelSettlement, cancelSettlementSuccess, cancelSettlementFailure,
+  exportSettlement, exportSettlementSuccess, exportSettlementFailure,
   loadPendingServices, loadPendingServicesSuccess, loadPendingServicesFailure,
   loadInsurersIndexSuccess, loadInsurerPlansSuccess,
   loadPreviewDetail, loadPreviewDetailSuccess, loadPreviewDetailFailure, resetPreviewDetail,
@@ -368,6 +369,13 @@ export const financieroReducer = createReducer(
   })),
 
   // ── liquidaciones: preview detallado ───────────────────────────────────────
+  on(exportSettlement, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, exporting: true },
+  })),
+  on(exportSettlementSuccess, exportSettlementFailure, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, exporting: false },
+  })),
+
   on(loadPreviewDetail, (state): FinancieroState => ({
     ...state, liquidaciones: { ...state.liquidaciones, previewLoading: true, previewError: null },
   })),

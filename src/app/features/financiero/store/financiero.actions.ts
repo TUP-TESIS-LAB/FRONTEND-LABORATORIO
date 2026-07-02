@@ -335,6 +335,14 @@ export const cancelSettlementSuccess = createAction(
 export const cancelSettlementFailure = createAction(
   '[Liquidaciones API] Cancel Settlement Failure', props<{ error: string }>());
 
+// ── Liquidaciones: exportar a Excel ──────────────────────────────────────────
+export const exportSettlement = createAction(
+  '[Liquidaciones] Export Settlement', props<{ id: number; settlementNumber: number }>());
+export const exportSettlementSuccess = createAction(
+  '[Liquidaciones API] Export Settlement Success');
+export const exportSettlementFailure = createAction(
+  '[Liquidaciones API] Export Settlement Failure', props<{ error: string }>());
+
 // ── Liquidaciones: prestaciones pendientes (polleable ETag/304) ──────────────
 export const loadPendingServices = createAction('[Liquidaciones] Load Pending Services');
 export const loadPendingServicesSuccess = createAction(

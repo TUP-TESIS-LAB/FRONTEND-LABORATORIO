@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { withPolling, NotModified } from '@core/refresh';
 import {
@@ -36,6 +36,13 @@ export class LiquidacionesApiService {
   /** Preview detallado (prestaciones + análisis + montos), recalcula con exclusiones. */
   previewDetail(body: PreviewDetailBody): Observable<SettlementPreviewDetail> {
     return this.http.post<SettlementPreviewDetail>(`${this.base}/settlements/preview/detail`, body);
+  }
+
+  /** Exporta la liquidación a Excel (.xlsx). Devuelve la respuesta completa para leer Content-Disposition. */
+  exportSettlement(id: number): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.base}/settlements/${id}/export`, {
+      responseType: 'blob', observe: 'response',
+    });
   }
 
   informSettlement(id: number, body: InformSettlementBody): Observable<SettlementDetail> {

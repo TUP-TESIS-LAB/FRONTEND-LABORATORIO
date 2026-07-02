@@ -7,7 +7,7 @@ import { provideMockStore } from '@ngrx/store/testing';
 import { LiquidacionDetallePage } from './liquidacion-detalle.page';
 import {
   selectLiqSelected, selectLiqDetailLoading, selectLiqDetailError,
-  selectLiqLifecycleInProgress, selectLiqInsurersIndex,
+  selectLiqLifecycleInProgress, selectLiqInsurersIndex, selectLiqExporting,
 } from '../../store/financiero.selectors';
 import { TokenService } from '@core/auth/token.service';
 import { SettlementDetail } from '../../models/liquidaciones.model';
@@ -35,6 +35,7 @@ function setup(status: SettlementDetail['status'], roles: string[]) {
           { selector: selectLiqDetailLoading, value: false },
           { selector: selectLiqDetailError, value: null },
           { selector: selectLiqLifecycleInProgress, value: false },
+          { selector: selectLiqExporting, value: false },
           { selector: selectLiqInsurersIndex, value: new Map([[7, 'IOMA']]) },
         ],
       }),

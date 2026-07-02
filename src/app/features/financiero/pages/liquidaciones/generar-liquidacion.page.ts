@@ -13,6 +13,10 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { FormStep } from '@shared/ui/models/form-step';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
 
 import {
   selectLiqInsurers, selectLiqGenerating,
@@ -42,7 +46,10 @@ function toIso(d: Date | null): string {
   selector: 'fin-generar-liquidacion-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, CurrencyArPipe, FormsModule, SelectModule, DatePickerModule, WizardShellComponent],
+  imports: [
+    DatePipe, CurrencyArPipe, FormsModule, SelectModule, DatePickerModule, WizardShellComponent,
+    DataTableComponent, UiCellDirective, UiRowExpansionDirective,
+  ],
   template: `
     <ui-wizard-shell
       heading="Generar liquidación"
@@ -88,7 +95,7 @@ function toIso(d: Date | null): string {
         </div>
       } @else {
         <div class="step">
-          <p class="muted">Revisá las prestaciones y elegí cuáles incluir. Podés excluir prestaciones enteras o análisis individuales; el total se recalcula solo.</p>
+          <p class="muted">Revisá las prestaciones agrupadas por plan y elegí cuáles incluir. Podés excluir prestaciones enteras o análisis individuales; los montos se recalculan solos.</p>
 
           @if (preview(); as pv) {
             @if (pv.previewWarning) {
@@ -99,53 +106,94 @@ function toIso(d: Date | null): string {
               <div class="liq-summary__os">
                 <span class="liq-summary__name">{{ os()?.name }}</span>
                 <span class="liq-summary__period">{{ from() | date:'dd/MM/yyyy' }} – {{ to() | date:'dd/MM/yyyy' }}</span>
+                <span class="liq-summary__count">{{ incluidas() }} de {{ totalPrestaciones() }} prestaciones incluidas</span>
               </div>
-              <div class="liq-summary__total">
-                <span class="liq-summary__total-label">Total a liquidar</span>
-                <span class="liq-summary__total-value" data-testid="preview-total">{{ pv.totalAmount | currencyAr }}</span>
-                <span class="liq-summary__count">{{ incluidas() }} de {{ pv.items.length }} prestaciones incluidas</span>
+              <div class="liq-summary__totals">
+                <div class="liq-summary__row"><span>Neto</span><span data-testid="preview-net">{{ pv.netAmount | currencyAr }}</span></div>
+                <div class="liq-summary__row"><span>IVA</span><span data-testid="preview-iva">{{ pv.ivaAmount | currencyAr }}</span></div>
+                <div class="liq-summary__row liq-summary__row--gross"><span>Total a liquidar</span><span data-testid="preview-gross">{{ pv.grossAmount | currencyAr }}</span></div>
               </div>
             </div>
 
-            @if (!pv.items.length) {
+            @if (!totalPrestaciones()) {
               <div class="liq-empty"><i class="pi pi-info-circle"></i><span>No hay prestaciones pendientes para esa obra social y período. No se puede generar la liquidación.</span></div>
             } @else {
-              <div class="liq-items">
-                @for (it of pv.items; track it.providedServiceId) {
-                  <div class="liq-item" [class.liq-item--excluded]="it.fullyExcluded">
-                    <div class="liq-item__head">
-                      <input type="checkbox" class="liq-check" [checked]="!it.fullyExcluded"
-                             (change)="togglePs(it)" [attr.data-testid]="'ps-' + it.providedServiceId"
-                             [attr.aria-label]="'Incluir prestación de ' + it.patientName" />
-                      <button type="button" class="liq-expand" (click)="toggleExpand(it.providedServiceId)"
-                              [attr.aria-label]="isExpanded(it.providedServiceId) ? 'Contraer análisis' : 'Ver análisis'">
-                        <i class="pi" [class.pi-chevron-right]="!isExpanded(it.providedServiceId)" [class.pi-chevron-down]="isExpanded(it.providedServiceId)"></i>
-                      </button>
-                      <div class="liq-item__info">
-                        <span class="liq-item__patient">{{ it.patientName }}</span>
-                        <span class="liq-item__meta">DNI {{ it.patientDni ?? '—' }} · {{ it.serviceDate | date:'dd/MM/yy' }} · {{ it.analyses.length }} análisis</span>
-                      </div>
-                      <div class="liq-item__amounts">
-                        <span class="liq-item__covered">{{ it.coveredAmount | currencyAr }}</span>
-                        <span class="liq-item__copay">copago {{ it.copaymentAmount | currencyAr }}</span>
-                      </div>
+              @for (g of pv.groups; track g.planId) {
+                <div class="liq-group" [attr.data-testid]="'group-' + g.planId">
+                  <div class="liq-group__head">
+                    <div class="liq-group__title">
+                      <span class="liq-group__name">{{ g.planName }}</span>
+                      <span class="liq-group__iva">{{ g.ivaPercentage > 0 ? ('IVA ' + g.ivaPercentage + '%') : 'IVA exento' }}</span>
                     </div>
-                    @if (isExpanded(it.providedServiceId)) {
+                    <div class="liq-group__totals">
+                      <span>Neto {{ g.netAmount | currencyAr }}</span>
+                      <span>IVA {{ g.ivaAmount | currencyAr }}</span>
+                      <span class="liq-group__gross">Bruto {{ g.grossAmount | currencyAr }}</span>
+                    </div>
+                  </div>
+
+                  <ui-table
+                    [value]="g.items"
+                    [columns]="itemColumns"
+                    dataKey="providedServiceId"
+                    [expandable]="true"
+                    [paginator]="g.items.length > rowsPerPage"
+                    [rows]="rowsPerPage"
+                    entityLabel="prestaciones"
+                    emptyHeading="Sin prestaciones en este plan"
+                    emptyIcon="pi-inbox">
+
+                    <ng-template uiCell="include" let-it>
+                      <input type="checkbox" class="liq-check" [checked]="!it.fullyExcluded"
+                             (click)="$event.stopPropagation()" (change)="togglePs(it)"
+                             [attr.data-testid]="'ps-' + it.providedServiceId"
+                             [attr.aria-label]="'Incluir prestación de ' + it.patientName" />
+                    </ng-template>
+
+                    <ng-template uiCell="patientName" let-it>
+                      <div class="liq-cell-patient" [class.liq-cell--excluded]="it.fullyExcluded">
+                        <span class="liq-cell-patient__name">{{ it.patientName }}</span>
+                        <span class="liq-cell-patient__meta">DNI {{ it.patientDni ?? '—' }} · {{ it.analyses.length }} análisis</span>
+                      </div>
+                    </ng-template>
+
+                    <ng-template uiCell="serviceDate" let-it>
+                      {{ it.serviceDate | date:'dd/MM/yy' }}
+                    </ng-template>
+
+                    <ng-template uiCell="copaymentAmount" let-it>
+                      {{ it.copaymentAmount | currencyAr }}
+                    </ng-template>
+
+                    <ng-template uiCell="coveredAmount" let-it>
+                      <span class="liq-cell-covered" [class.liq-cell--excluded]="it.fullyExcluded">{{ it.coveredAmount | currencyAr }}</span>
+                    </ng-template>
+
+                    <ng-template uiRowExpansion let-it>
                       <div class="liq-analyses">
                         @for (a of it.analyses; track a.analysisId) {
-                          <label class="liq-analysis" [class.liq-analysis--excluded]="a.excluded">
-                            <input type="checkbox" [checked]="!a.excluded" (change)="toggleAnalysis(it.providedServiceId, a.analysisId)" />
+                          <label class="liq-analysis"
+                                 [class.liq-analysis--excluded]="a.excluded"
+                                 [class.liq-analysis--unauth]="!a.authorized">
+                            <input type="checkbox" [checked]="!a.excluded" [disabled]="!a.authorized"
+                                   (change)="toggleAnalysis(it.providedServiceId, a.analysisId)"
+                                   [attr.aria-label]="'Incluir análisis ' + a.name" />
                             <span class="liq-analysis__code">{{ a.code }}</span>
-                            <span class="liq-analysis__name">{{ a.name }}</span>
+                            <span class="liq-analysis__name">
+                              {{ a.name }}
+                              @if (!a.authorized) {
+                                <span class="liq-tag-unauth">No cubierto por OS</span>
+                              }
+                            </span>
                             <span class="liq-analysis__ub">{{ a.ubUnits }} UB</span>
                             <span class="liq-analysis__amount">{{ a.amount | currencyAr }}</span>
                           </label>
                         }
                       </div>
-                    }
-                  </div>
-                }
-              </div>
+                    </ng-template>
+                  </ui-table>
+                </div>
+              }
             }
           } @else if (previewLoading()) {
             <div class="liq-loading"><i class="pi pi-spin pi-spinner"></i> Calculando prestaciones…</div>
@@ -172,37 +220,42 @@ function toIso(d: Date | null): string {
     .liq-summary__os { display: flex; flex-direction: column; gap: 2px; }
     .liq-summary__name { font-weight: 600; font-size: 15px; }
     .liq-summary__period { font-size: 12.5px; color: #64748b; }
-    .liq-summary__total { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-    .liq-summary__total-label { font-size: 11.5px; color: #7c8092; text-transform: uppercase; letter-spacing: .04em; }
-    .liq-summary__total-value { font-size: 22px; font-weight: 700; color: #0f6b44; }
     .liq-summary__count { font-size: 12px; color: #7c8092; }
+    .liq-summary__totals { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 180px; }
+    .liq-summary__row { display: flex; justify-content: space-between; gap: 18px; width: 100%; font-size: 13px; color: #4a4d63; }
+    .liq-summary__row span:last-child { font-variant-numeric: tabular-nums; }
+    .liq-summary__row--gross { font-weight: 700; font-size: 16px; color: #0f6b44; padding-top: 3px; border-top: 1px solid #e2e8f0; margin-top: 2px; }
 
     .liq-empty { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 12px 14px; border-radius: 9px; font-size: 13.5px; }
     .liq-loading { color: #7c8092; font-size: 13.5px; display: flex; align-items: center; gap: 8px; padding: 12px; }
 
-    .liq-items { display: flex; flex-direction: column; gap: 8px; }
-    .liq-item { border: 1px solid #e8edf3; border-radius: 10px; overflow: hidden; }
-    .liq-item--excluded { opacity: 0.55; }
-    .liq-item__head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
-    .liq-check { width: 17px; height: 17px; cursor: pointer; accent-color: #0f8a55; }
-    .liq-expand { border: none; background: transparent; color: #7c8092; cursor: pointer; padding: 2px; display: inline-flex; }
-    .liq-item__info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
-    .liq-item__patient { font-weight: 600; font-size: 13.5px; }
-    .liq-item__meta { font-size: 12px; color: #7c8092; }
-    .liq-item__amounts { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-    .liq-item__covered { font-weight: 600; font-size: 13.5px; }
-    .liq-item--excluded .liq-item__covered { text-decoration: line-through; }
-    .liq-item__copay { font-size: 11.5px; color: #7c8092; }
+    .liq-group { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .liq-group__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .liq-group__title { display: flex; align-items: baseline; gap: 10px; }
+    .liq-group__name { font-weight: 600; font-size: 14.5px; }
+    .liq-group__iva { font-size: 12px; color: #64748b; background: #eef2f7; padding: 2px 8px; border-radius: 20px; }
+    .liq-group__totals { display: flex; gap: 14px; font-size: 12.5px; color: #64748b; }
+    .liq-group__gross { font-weight: 700; color: #0f6b44; }
 
-    .liq-analyses { display: flex; flex-direction: column; border-top: 1px solid #f1f5f9; background: #fafbfc; }
-    .liq-analysis { display: grid; grid-template-columns: 22px 70px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 14px 7px 38px; font-size: 12.5px; cursor: pointer; }
-    .liq-analysis + .liq-analysis { border-top: 1px solid #f1f5f9; }
+    .liq-check { width: 17px; height: 17px; cursor: pointer; accent-color: #0f8a55; }
+    .liq-cell-patient { display: flex; flex-direction: column; gap: 1px; }
+    .liq-cell-patient__name { font-weight: 600; font-size: 13px; }
+    .liq-cell-patient__meta { font-size: 11.5px; color: #7c8092; }
+    .liq-cell-covered { font-weight: 600; }
+    .liq-cell--excluded { opacity: .55; text-decoration: line-through; }
+
+    .liq-analyses { display: flex; flex-direction: column; }
+    .liq-analysis { display: grid; grid-template-columns: 22px 70px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 4px; font-size: 12.5px; cursor: pointer; }
+    .liq-analysis + .liq-analysis { border-top: 1px solid #eef2f7; }
     .liq-analysis input { accent-color: #0f8a55; }
     .liq-analysis--excluded { color: #94a3b8; }
     .liq-analysis--excluded .liq-analysis__amount { text-decoration: line-through; }
+    .liq-analysis--unauth { color: #94a3b8; cursor: not-allowed; }
     .liq-analysis__code { font-family: 'Roboto Mono', monospace; color: #64748b; }
+    .liq-analysis__name { display: flex; align-items: center; gap: 8px; }
     .liq-analysis__ub { color: #94a3b8; font-size: 11.5px; }
     .liq-analysis__amount { font-weight: 500; }
+    .liq-tag-unauth { font-size: 10.5px; background: #fbeaea; color: #b5740c; padding: 1px 7px; border-radius: 20px; white-space: nowrap; }
   `],
 })
 export class GenerarLiquidacionPage implements OnInit, OnDestroy {
@@ -220,9 +273,17 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   protected readonly from = signal<Date | null>(null);
   protected readonly to = signal<Date | null>(null);
 
-  // selección de exclusiones { providedServiceId: [analysisId,...] } + filas expandidas
+  // selección de exclusiones { providedServiceId: [analysisId,...] }
   private readonly excluded = signal<ExcludedAnalysisIdsByPs>({});
-  protected readonly expanded = signal<ReadonlySet<number>>(new Set());
+
+  protected readonly rowsPerPage = 10;
+  protected readonly itemColumns: readonly TableColumn[] = [
+    { field: 'include', header: '' },
+    { field: 'patientName', header: 'Paciente' },
+    { field: 'serviceDate', header: 'Fecha' },
+    { field: 'copaymentAmount', header: 'Copago', align: 'right' },
+    { field: 'coveredAmount', header: 'Cubierto', align: 'right' },
+  ];
 
   protected readonly insurers = this.store.selectSignal(selectLiqInsurers);
   protected readonly generating = this.store.selectSignal(selectLiqGenerating);
@@ -236,8 +297,12 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   protected readonly paso1Valido = computed(() =>
     !!this.os() && !!this.from() && !!this.to() && !this.rangoInvalido());
 
+  /** Todas las prestaciones de todos los grupos, aplanadas. */
+  private readonly allItems = computed(() =>
+    (this.preview()?.groups ?? []).flatMap(g => g.items));
+  protected readonly totalPrestaciones = computed(() => this.allItems().length);
   protected readonly incluidas = computed(() =>
-    (this.preview()?.items ?? []).filter(i => !i.fullyExcluded).length);
+    this.allItems().filter(i => !i.fullyExcluded).length);
   protected readonly canGenerate = computed(() => this.incluidas() > 0);
 
   ngOnInit(): void {
@@ -248,16 +313,6 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.store.dispatch(resetPreviewDetail());
-  }
-
-  protected isExpanded(psId: number): boolean {
-    return this.expanded().has(psId);
-  }
-
-  protected toggleExpand(psId: number): void {
-    const set = new Set(this.expanded());
-    set.has(psId) ? set.delete(psId) : set.add(psId);
-    this.expanded.set(set);
   }
 
   protected toggleAnalysis(psId: number, analysisId: number): void {

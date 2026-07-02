@@ -102,6 +102,8 @@ export interface PreviewAnalysis {
   ubUnits: number;
   amount: number;
   excluded: boolean;
+  /** false = el análisis no está cubierto por la OS (no suma al monto cubierto). */
+  authorized: boolean;
 }
 
 export interface PreviewItem {
@@ -120,13 +122,26 @@ export interface PreviewItem {
   analyses: PreviewAnalysis[];
 }
 
-/** Respuesta de POST /settlements/preview/detail. */
+/** Grupo por plan (estilo OSSACRA): subtotales neto/IVA/bruto + sus prestaciones. */
+export interface PreviewGroup {
+  planId: number;
+  planName: string;
+  ivaPercentage: number; // 0 = exento
+  netAmount: number;
+  ivaAmount: number;
+  grossAmount: number;
+  items: PreviewItem[];
+}
+
+/** Respuesta de POST /settlements/preview/detail (contrato KAN-172, agrupado por plan). */
 export interface SettlementPreviewDetail {
   insurerId: number;
   proposedNumber: number;
-  totalAmount: number;
   previewWarning: string | null;
-  items: PreviewItem[];
+  netAmount: number;
+  ivaAmount: number;
+  grossAmount: number;
+  groups: PreviewGroup[];
 }
 
 /** Etiquetas en español para los estados. */

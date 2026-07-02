@@ -10,12 +10,18 @@ import { NotificationService } from '@core/services/notification.service';
 import {
   loadSettlements, loadSettlementsSuccess, loadSettlementsNotModified,
   generateSettlement, generateSettlementSuccess, generateSettlementFailure,
+  exportSettlement, exportSettlementSuccess, exportSettlementFailure,
 } from './financiero.actions';
+import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import { NOT_MODIFIED } from '@core/refresh';
 
 describe('LiquidacionesEffects', () => {
   let actions$: Observable<unknown>;
-  let api: { listSettlements: ReturnType<typeof vi.fn>; generateSettlement: ReturnType<typeof vi.fn> };
+  let api: {
+    listSettlements: ReturnType<typeof vi.fn>;
+    generateSettlement: ReturnType<typeof vi.fn>;
+    exportSettlement: ReturnType<typeof vi.fn>;
+  };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   function make(action: unknown) {
@@ -33,7 +39,7 @@ describe('LiquidacionesEffects', () => {
   }
 
   beforeEach(() => {
-    api = { listSettlements: vi.fn(), generateSettlement: vi.fn() };
+    api = { listSettlements: vi.fn(), generateSettlement: vi.fn(), exportSettlement: vi.fn() };
     notif = { success: vi.fn(), error: vi.fn() };
   });
 
@@ -68,5 +74,40 @@ describe('LiquidacionesEffects', () => {
     const out = await new Promise(r => eff.generateSettlement$.subscribe(r));
     expect(out).toEqual(generateSettlementSuccess({ settlement: { id: 9 } as never }));
     expect(notif.success).toHaveBeenCalled();
+  });
+
+  it('exportSettlement$ dispara la descarga y emite Success', async () => {
+    const createUrl = vi.fn(() => 'blob:url');
+    const revokeUrl = vi.fn();
+    (globalThis as unknown as { URL: { createObjectURL: unknown; revokeObjectURL: unknown } }).URL.createObjectURL = createUrl;
+    (globalThis as unknown as { URL: { createObjectURL: unknown; revokeObjectURL: unknown } }).URL.revokeObjectURL = revokeUrl;
+    const click = vi.fn();
+    const anchor = { href: '', download: '', click, remove: vi.fn() } as unknown as HTMLAnchorElement;
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((n) => n);
+
+    const res = new HttpResponse<Blob>({
+      body: new Blob(['x']),
+      headers: new HttpHeaders({ 'Content-Disposition': 'attachment; filename="liquidacion-100.xlsx"' }),
+    });
+    api.exportSettlement.mockReturnValue(of(res));
+    const eff = make(exportSettlement({ id: 5, settlementNumber: 100 }));
+    const out = await new Promise(r => eff.exportSettlement$.subscribe(r));
+
+    expect(out).toEqual(exportSettlementSuccess());
+    expect(click).toHaveBeenCalled();
+    expect(anchor.download).toBe('liquidacion-100.xlsx');
+    vi.restoreAllMocks();
+  });
+
+  it('exportSettlement$ con error emite Failure y toast en español', async () => {
+    api.exportSettlement.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    const eff = make(exportSettlement({ id: 5, settlementNumber: 100 }));
+    const out = await new Promise<ReturnType<typeof exportSettlementFailure>>(
+      r => eff.exportSettlement$.subscribe(a => r(a as ReturnType<typeof exportSettlementFailure>)),
+    );
+    expect(out.type).toBe(exportSettlementFailure.type);
+    expect(out.error).toContain('No se pudo exportar');
+    expect(notif.error).toHaveBeenCalled();
   });
 });

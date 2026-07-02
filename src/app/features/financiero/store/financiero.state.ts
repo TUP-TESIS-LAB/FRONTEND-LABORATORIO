@@ -20,6 +20,7 @@ export interface FinancieroState {
     selected: SettlementDetail | null; detailLoading: boolean; detailError: string | null;
     generating: boolean; generateError: string | null;
     lifecycleInProgress: boolean; lifecycleError: string | null;
+    exporting: boolean;
     pending: PendingService[]; pendingLoading: boolean;
     insurers: InsurerSummary[];
     selectedInsurerPlanIds: number[];
@@ -40,6 +41,7 @@ export const initialFinancieroState: FinancieroState = {
     selected: null, detailLoading: false, detailError: null,
     generating: false, generateError: null,
     lifecycleInProgress: false, lifecycleError: null,
+    exporting: false,
     pending: [], pendingLoading: false,
     insurers: [],
     selectedInsurerPlanIds: [],

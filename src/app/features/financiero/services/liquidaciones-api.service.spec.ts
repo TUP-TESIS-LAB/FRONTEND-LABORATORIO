@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -50,6 +50,14 @@ describe('LiquidacionesApiService', () => {
     expect(req.request.method).toBe('PATCH');
     expect(req.request.body).toEqual({ cancellationReason: 'error de carga' });
     req.flush(null);
+  });
+
+  it('exportSettlement hace GET a /settlements/{id}/export como blob', () => {
+    api.exportSettlement(5).subscribe();
+    const req = httpMock.expectOne('/api/v1/financiero/settlements/5/export');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['x']));
   });
 
   it('listPendingServices pega a /provided-services/pending', () => {
