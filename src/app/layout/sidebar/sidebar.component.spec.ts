@@ -109,6 +109,30 @@ describe('SidebarComponent visibility', () => {
       expect(muestras.children.map((c) => c.label)).toEqual(['Descarte']);
     }
   });
+
+  function financiero(sections: string[], roles: string[]) {
+    const fin = setup(sections, roles).visibleSections()
+      .flatMap((s) => s.items)
+      .find((i) => i.label === 'Financiero');
+    return fin?.kind === 'expandable' ? fin.children.map((c) => c.label) : null;
+  }
+
+  it('Financiero (secretaria): solo Caja y Cobros, sin las pantallas de configuración', () => {
+    expect(financiero(['FINANCIERO'], ['SECRETARIA'])).toEqual(['Caja', 'Cobros']);
+  });
+
+  it('Financiero (administrador): suma Cajas y Cuentas destino, pero no Config fiscal', () => {
+    expect(financiero(['FINANCIERO'], ['ADMINISTRADOR']))
+      .toEqual(['Caja', 'Cobros', 'Cajas', 'Cuentas destino']);
+  });
+
+  it('Financiero (saas-admin): ve Config fiscal', () => {
+    expect(financiero(['FINANCIERO'], ['SAAS_ADMIN'])).toContain('Config fiscal');
+  });
+
+  it('Financiero oculto si no se concede la sección FINANCIERO', () => {
+    expect(financiero([], ['ADMINISTRADOR'])).toBeNull();
+  });
 });
 
 describe('SidebarComponent — links de pantallas (gating dinámico)', () => {

@@ -8,7 +8,9 @@ import { Button } from 'primeng/button';
   imports: [Button],
   template: `
     <div class="ui-empty-state">
-      <i [class]="'pi ' + icon()" class="ui-empty-state__icon"></i>
+      @if (icon()) {
+        <i [class]="'pi ' + icon()" class="ui-empty-state__icon"></i>
+      }
       <h4>{{ heading() }}</h4>
       @if (description()) {
         <p>{{ description() }}</p>

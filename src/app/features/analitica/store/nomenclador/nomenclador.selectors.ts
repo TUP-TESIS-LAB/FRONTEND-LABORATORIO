@@ -42,6 +42,19 @@ export function selectDeterminations(analysisId: number) {
   );
 }
 
+// ── Resumen de config (lazy, por analysisId) ──────────────────────────────────
+
+/**
+ * Factory — devuelve un selector para el resumen de config de un analysisId.
+ * Retorna null mientras no se haya cargado.
+ */
+export function selectConfigResumen(analysisId: number) {
+  return createSelector(
+    selectNomencladorState,
+    s => s.configByAnalysis[analysisId] ?? null,
+  );
+}
+
 // ── Precio particular — colección ─────────────────────────────────────────────
 
 /**
