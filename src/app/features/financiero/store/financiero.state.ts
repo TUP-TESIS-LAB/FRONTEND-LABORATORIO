@@ -2,6 +2,8 @@ import {
   CashSession, SessionActivity, PaymentListItem, Payment, TenantFiscalConfig,
   RegisterPaymentResponse, CashRegister, BankAccount, BranchOtherMedia, MovementsFeed,
 } from '../models/financiero.model';
+import { SettlementSummary, SettlementDetail, PendingService, SettlementPreviewDetail } from '../models/liquidaciones.model';
+import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 
 export const FINANCIERO_FEATURE_KEY = 'financiero';
 
@@ -13,6 +15,17 @@ export interface FinancieroState {
   cobros:  { list: PaymentListItem[]; selected: Payment | null; loading: boolean; error: string | null };
   cobro:   { submitting: boolean; result: RegisterPaymentResponse | null; error: string | null };
   config:  { current: TenantFiscalConfig | null; saving: boolean; error: string | null };
+  liquidaciones: {
+    list: SettlementSummary[]; listLoading: boolean; listError: string | null;
+    selected: SettlementDetail | null; detailLoading: boolean; detailError: string | null;
+    generating: boolean; generateError: string | null;
+    lifecycleInProgress: boolean; lifecycleError: string | null;
+    exporting: boolean;
+    pending: PendingService[]; pendingLoading: boolean;
+    insurers: InsurerSummary[];
+    selectedInsurerPlanIds: number[];
+    previewDetail: SettlementPreviewDetail | null; previewLoading: boolean; previewError: string | null;
+  };
 }
 
 export const initialFinancieroState: FinancieroState = {
@@ -23,4 +36,15 @@ export const initialFinancieroState: FinancieroState = {
   cobros:  { list: [], selected: null, loading: false, error: null },
   cobro:   { submitting: false, result: null, error: null },
   config:  { current: null, saving: false, error: null },
+  liquidaciones: {
+    list: [], listLoading: false, listError: null,
+    selected: null, detailLoading: false, detailError: null,
+    generating: false, generateError: null,
+    lifecycleInProgress: false, lifecycleError: null,
+    exporting: false,
+    pending: [], pendingLoading: false,
+    insurers: [],
+    selectedInsurerPlanIds: [],
+    previewDetail: null, previewLoading: false, previewError: null,
+  },
 };

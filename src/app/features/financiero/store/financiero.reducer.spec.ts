@@ -305,3 +305,12 @@ describe('financiero reducer — cobro (slice registrar pago)', () => {
     expect(s.cobro).toEqual(initialState.cobro);
   });
 });
+
+describe('financiero reducer — liquidaciones pendientes', () => {
+  it('loadPendingServicesNotModified (304) baja pendingLoading (no queda colgado)', () => {
+    const loading = financieroReducer(initialState, A.loadPendingServices());
+    expect(loading.liquidaciones.pendingLoading).toBe(true);
+    const s = financieroReducer(loading, A.loadPendingServicesNotModified());
+    expect(s.liquidaciones.pendingLoading).toBe(false);
+  });
+});

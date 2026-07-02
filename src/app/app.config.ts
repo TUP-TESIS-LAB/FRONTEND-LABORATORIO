@@ -53,6 +53,7 @@ import { BranchTotemConfigEffects } from '@features/turnos/store/branch-totem-co
 import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.state';
 import { financieroReducer } from '@features/financiero/store/financiero.reducer';
 import { FinancieroEffects } from '@features/financiero/store/financiero.effects';
+import { LiquidacionesEffects } from '@features/financiero/store/liquidaciones.effects';
 
 import { PATIENT_FEATURE_KEY } from '@features/pacientes/store/patient.state';
 import { patientReducer } from '@features/pacientes/store/patient.reducer';
@@ -135,6 +136,7 @@ export const appConfig: ApplicationConfig = {
     provideEffects(AtencionEffects),
     provideState(FINANCIERO_FEATURE_KEY, financieroReducer),
     provideEffects(FinancieroEffects),
+    provideEffects(LiquidacionesEffects),
     provideState(PATIENT_FEATURE_KEY, patientReducer),
     provideEffects(PatientEffects),
     provideState(SAAS_ADMIN_FEATURE_KEY, saasAdminReducer),

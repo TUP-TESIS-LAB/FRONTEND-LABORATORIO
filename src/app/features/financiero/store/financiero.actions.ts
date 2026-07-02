@@ -1,5 +1,11 @@
 ﻿import { createAction, props } from '@ngrx/store';
 import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider, CreatePaymentRequest, RegisterPaymentResponse, CashRegister, BankAccount, BankAccountInput, BranchOtherMedia, RegisterBranchMovementInput, MovementsFeed } from '../models/financiero.model';
+import {
+  SettlementSummary, SettlementDetail, SettlementFilters, PendingService,
+  GenerateSettlementBody, InformSettlementBody, CancelSettlementBody,
+  PreviewDetailBody, SettlementPreviewDetail,
+} from '../models/liquidaciones.model';
+import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 
 // ── Caja: listar subcajas de la sucursal ─────────────────────────────────────
 export const loadCashRegisters = createAction(
@@ -286,3 +292,86 @@ export const saveFiscalConfigFailure = createAction(
   '[Financiero Config API] Save Fiscal Config Failure',
   props<{ error: string }>(),
 );
+
+// ── Liquidaciones: listar (polleable ETag/304) ───────────────────────────────
+export const loadSettlements = createAction(
+  '[Liquidaciones] Load Settlements', props<{ filters: SettlementFilters }>());
+export const loadSettlementsSuccess = createAction(
+  '[Liquidaciones API] Load Settlements Success', props<{ items: SettlementSummary[] }>());
+export const loadSettlementsNotModified = createAction(
+  '[Liquidaciones API] Load Settlements Not Modified');
+export const loadSettlementsFailure = createAction(
+  '[Liquidaciones API] Load Settlements Failure', props<{ error: string }>());
+
+// ── Liquidaciones: detalle ───────────────────────────────────────────────────
+export const loadSettlement = createAction(
+  '[Liquidaciones] Load Settlement', props<{ id: number }>());
+export const loadSettlementSuccess = createAction(
+  '[Liquidaciones API] Load Settlement Success', props<{ settlement: SettlementDetail }>());
+export const loadSettlementFailure = createAction(
+  '[Liquidaciones API] Load Settlement Failure', props<{ error: string }>());
+
+// ── Liquidaciones: generar (SIMPLE) ──────────────────────────────────────────
+export const generateSettlement = createAction(
+  '[Liquidaciones] Generate Settlement', props<{ body: GenerateSettlementBody }>());
+export const generateSettlementSuccess = createAction(
+  '[Liquidaciones API] Generate Settlement Success', props<{ settlement: SettlementDetail }>());
+export const generateSettlementFailure = createAction(
+  '[Liquidaciones API] Generate Settlement Failure', props<{ error: string }>());
+
+// ── Liquidaciones: informar ──────────────────────────────────────────────────
+export const informSettlement = createAction(
+  '[Liquidaciones] Inform Settlement', props<{ id: number; body: InformSettlementBody }>());
+export const informSettlementSuccess = createAction(
+  '[Liquidaciones API] Inform Settlement Success', props<{ settlement: SettlementDetail }>());
+export const informSettlementFailure = createAction(
+  '[Liquidaciones API] Inform Settlement Failure', props<{ error: string }>());
+
+// ── Liquidaciones: anular ────────────────────────────────────────────────────
+export const cancelSettlement = createAction(
+  '[Liquidaciones] Cancel Settlement', props<{ id: number; body: CancelSettlementBody }>());
+export const cancelSettlementSuccess = createAction(
+  '[Liquidaciones API] Cancel Settlement Success', props<{ id: number }>());
+export const cancelSettlementFailure = createAction(
+  '[Liquidaciones API] Cancel Settlement Failure', props<{ error: string }>());
+
+// ── Liquidaciones: exportar a Excel ──────────────────────────────────────────
+export const exportSettlement = createAction(
+  '[Liquidaciones] Export Settlement', props<{ id: number; settlementNumber: number }>());
+export const exportSettlementSuccess = createAction(
+  '[Liquidaciones API] Export Settlement Success');
+export const exportSettlementFailure = createAction(
+  '[Liquidaciones API] Export Settlement Failure', props<{ error: string }>());
+
+// ── Liquidaciones: prestaciones pendientes (polleable ETag/304) ──────────────
+export const loadPendingServices = createAction('[Liquidaciones] Load Pending Services');
+export const loadPendingServicesSuccess = createAction(
+  '[Liquidaciones API] Load Pending Services Success', props<{ items: PendingService[] }>());
+export const loadPendingServicesNotModified = createAction(
+  '[Liquidaciones API] Load Pending Services Not Modified');
+export const loadPendingServicesFailure = createAction(
+  '[Liquidaciones API] Load Pending Services Failure', props<{ error: string }>());
+
+// ── Liquidaciones: índice de OS (id→nombre) ──────────────────────────────────
+export const loadInsurersIndex = createAction('[Liquidaciones] Load Insurers Index');
+export const loadInsurersIndexSuccess = createAction(
+  '[Liquidaciones API] Load Insurers Index Success', props<{ insurers: InsurerSummary[] }>());
+export const loadInsurersIndexFailure = createAction(
+  '[Liquidaciones API] Load Insurers Index Failure', props<{ error: string }>());
+
+// ── Liquidaciones: planes de la OS elegida (para preview de pendientes) ───────
+export const loadInsurerPlans = createAction(
+  '[Liquidaciones] Load Insurer Plans', props<{ insurerId: number }>());
+export const loadInsurerPlansSuccess = createAction(
+  '[Liquidaciones API] Load Insurer Plans Success', props<{ planIds: number[] }>());
+export const loadInsurerPlansFailure = createAction(
+  '[Liquidaciones API] Load Insurer Plans Failure', props<{ error: string }>());
+
+// ── Liquidaciones: preview detallado (prestaciones + análisis + montos) ───────
+export const loadPreviewDetail = createAction(
+  '[Liquidaciones] Load Preview Detail', props<{ body: PreviewDetailBody }>());
+export const loadPreviewDetailSuccess = createAction(
+  '[Liquidaciones API] Load Preview Detail Success', props<{ preview: SettlementPreviewDetail }>());
+export const loadPreviewDetailFailure = createAction(
+  '[Liquidaciones API] Load Preview Detail Failure', props<{ error: string }>());
+export const resetPreviewDetail = createAction('[Liquidaciones] Reset Preview Detail');

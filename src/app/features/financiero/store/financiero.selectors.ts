@@ -73,3 +73,39 @@ export const selectConfigSlice = createSelector(selectFinancieroState, s => s.co
 export const selectFiscalConfig = createSelector(selectConfigSlice, c => c.current);
 export const selectFiscalSaving = createSelector(selectConfigSlice, c => c.saving);
 export const selectFiscalConfigError = createSelector(selectConfigSlice, c => c.error);
+
+// ── Liquidaciones ─────────────────────────────────────────────────────────────
+export const selectLiqSlice = createSelector(selectFinancieroState, s => s.liquidaciones);
+
+export const selectLiqList = createSelector(selectLiqSlice, l => l.list);
+export const selectLiqListLoading = createSelector(selectLiqSlice, l => l.listLoading);
+export const selectLiqListError = createSelector(selectLiqSlice, l => l.listError);
+
+export const selectLiqSelected = createSelector(selectLiqSlice, l => l.selected);
+export const selectLiqDetailLoading = createSelector(selectLiqSlice, l => l.detailLoading);
+export const selectLiqDetailError = createSelector(selectLiqSlice, l => l.detailError);
+
+export const selectLiqGenerating = createSelector(selectLiqSlice, l => l.generating);
+export const selectLiqGenerateError = createSelector(selectLiqSlice, l => l.generateError);
+
+export const selectLiqLifecycleInProgress = createSelector(selectLiqSlice, l => l.lifecycleInProgress);
+export const selectLiqLifecycleError = createSelector(selectLiqSlice, l => l.lifecycleError);
+
+export const selectLiqExporting = createSelector(selectLiqSlice, l => l.exporting);
+
+export const selectLiqPending = createSelector(selectLiqSlice, l => l.pending);
+export const selectLiqPendingLoading = createSelector(selectLiqSlice, l => l.pendingLoading);
+
+export const selectLiqInsurers = createSelector(selectLiqSlice, l => l.insurers);
+
+/** Map insurerId → nombre, para resolver nombres sin exponer IDs. */
+export const selectLiqInsurersIndex = createSelector(
+  selectLiqInsurers,
+  insurers => new Map<number, string>(insurers.map(i => [i.id, i.name])),
+);
+
+export const selectLiqInsurerPlanIds = createSelector(selectLiqSlice, l => l.selectedInsurerPlanIds);
+
+export const selectLiqPreviewDetail = createSelector(selectLiqSlice, l => l.previewDetail);
+export const selectLiqPreviewLoading = createSelector(selectLiqSlice, l => l.previewLoading);
+export const selectLiqPreviewError = createSelector(selectLiqSlice, l => l.previewError);
