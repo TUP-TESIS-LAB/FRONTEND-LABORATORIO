@@ -28,7 +28,7 @@ import {
   informSettlement, informSettlementSuccess, informSettlementFailure,
   cancelSettlement, cancelSettlementSuccess, cancelSettlementFailure,
   exportSettlement, exportSettlementSuccess, exportSettlementFailure,
-  loadPendingServices, loadPendingServicesSuccess, loadPendingServicesFailure,
+  loadPendingServices, loadPendingServicesSuccess, loadPendingServicesNotModified, loadPendingServicesFailure,
   loadInsurersIndexSuccess, loadInsurerPlansSuccess,
   loadPreviewDetail, loadPreviewDetailSuccess, loadPreviewDetailFailure, resetPreviewDetail,
 } from './financiero.actions';
@@ -355,6 +355,9 @@ export const financieroReducer = createReducer(
   })),
   on(loadPendingServicesSuccess, (state, { items }): FinancieroState => ({
     ...state, liquidaciones: { ...state.liquidaciones, pending: items, pendingLoading: false },
+  })),
+  on(loadPendingServicesNotModified, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, pendingLoading: false },
   })),
   on(loadPendingServicesFailure, (state): FinancieroState => ({
     ...state, liquidaciones: { ...state.liquidaciones, pendingLoading: false },

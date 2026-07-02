@@ -42,7 +42,7 @@ Base: `/api/v1/financiero`.
 
 | Acción | Verbo + path | Request | Respuesta (campos relevantes) | Roles |
 |---|---|---|---|---|
-| Listar | `GET /settlements?insurerId&from&to&status` (ETag/304) | — (`If-None-Match`) | `SettlementSummaryResponse[]`: `id, insurerId, settlementNumber, status, type, periodFrom, periodTo, createdAt` | ADMIN/SECRE/RESP |
+| Listar | `GET /settlements?insurerId&from&to&status` (ETag/304) | — (`If-None-Match`) | `SettlementSummaryResponse[]`: `settlementId, insurerId, settlementNumber, status, type, periodFrom, periodTo, totalAmount` (modelado en el FE como `SettlementSummary`) | ADMIN/SECRE/RESP |
 | Detalle | `GET /settlements/{id}` | — | `SettlementResponse`: `id, insurerId, settlementNumber, status, type, periodFrom, periodTo, informedDate?, informedAmount?, paymentId?, plans[], createdAt`. `plans[]` → `{ planId, agreements[] }`; `agreements[]` → `{ agreementId, agreementSubtotal, providedServiceIds[], rules[] }` | ADMIN/SECRE/RESP |
 | Generar | `POST /settlements` | `{ insurerId, period:{from,to}, specialRules:[], excludedAnalysisIdsByPs:null }` | `SettlementResponse` (201). 409 = duplicada, 422 = sin pendientes | ADMINISTRADOR |
 | Informar | `PATCH /settlements/{id}/inform` | `{ informedDate, informedAmount, observations? }` | `SettlementResponse`. 422 = transición inválida | ADMINISTRADOR |
@@ -55,7 +55,7 @@ Errores: `ApiErrorResponse { status, message, error, path, timestamp }` con `mes
 ### Resolución de IDs → nombres (regla "sin IDs")
 
 - `insurerId → nombre OS`: se carga el listado de OS activas vía
-  `ObraSocialService.search({ state:'ACTIVE', page:0, size: grande })` (devuelve
+  `ObraSocialService.search({ state:'active', page:0, size: grande })` (devuelve
   `InsurerSummary { id, name, ... }`) y se arma un índice `Map<insurerId, name>`.
 - **Preview de pendientes por OS+período** (el endpoint no filtra): se obtiene
   `ObraSocialService.getCompleteById(insurerId)` → `plans[].id` (los `planId` de esa OS) y

@@ -73,7 +73,7 @@ function toIso(d: Date | null): string {
           <div class="form-field">
             <label for="os">Obra Social <span class="pat-form__req" aria-hidden="true">*</span></label>
             <p-select inputId="os" [options]="insurers()" optionLabel="name" [filter]="true"
-                      appendTo="body" [(ngModel)]="os" data-testid="sel-os" />
+                      appendTo="body" [ngModel]="os()" (ngModelChange)="os.set($event)" data-testid="sel-os" />
           </div>
 
           <div class="form-row">
