@@ -361,7 +361,10 @@ export class EmpleadoFormPage implements OnDestroy {
     if (!this.canSubmit()) return;
     const d = this.datosGroup.getRawValue() as DatosValue;
     const address = this.buildAddress();
-    // La firma solo viaja para bioquímicos; en no-bioquímicos se manda null.
+    // La firma solo viaja para bioquímicos, y solo si la cargó él mismo (dibujada, subida o
+    // texto elegido por él). NO se genera ninguna firma automática: una firma es un acto que el
+    // empleado debe realizar. Sin firma cargada, el back rechaza el intento de firmar un estudio
+    // ("El empleado no tiene firma electrónica registrada").
     const signature = d.isBiochemist ? (this.firmaGroup.get('signature')!.value as string | null) : null;
     const req: CreateEmployeeRequest = {
       firstName: d.firstName, lastName: d.lastName, document: d.document,

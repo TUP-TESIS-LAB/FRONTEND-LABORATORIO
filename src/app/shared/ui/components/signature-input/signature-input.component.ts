@@ -5,6 +5,7 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
 import { ButtonModule } from 'primeng/button';
 import { SignaturePadComponent } from '@shared/ui/components/signature-pad/signature-pad.component';
 import { NotificationService } from '@core/services/notification.service';
+import { rasterizeSignatureText } from '@shared/utils/rasterize-signature-text';
 
 type SignatureMode = 'draw' | 'upload' | 'text';
 
@@ -153,28 +154,13 @@ export class SignatureInputComponent implements ControlValueAccessor {
     this.textValue.set(text);
     const trimmed = text.trim();
     if (!trimmed) { this.setValue(null); return; }
-    const dataUrl = this.rasterizeText(trimmed);
+    const dataUrl = rasterizeSignatureText(trimmed);
     if (dataUrl) this.setValue(dataUrl);
   }
 
   clear(): void {
     this.textValue.set('');
     this.setValue(null);
-  }
-
-  /** Rasteriza el texto a un canvas con fuente tipo firma → PNG dataURL. */
-  private rasterizeText(text: string): string | null {
-    const canvas = document.createElement('canvas');
-    canvas.width = 500;
-    canvas.height = 180;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-    ctx.fillStyle = '#1f2937';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = "italic 48px 'Brush Script MT', 'Segoe Script', cursive";
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2, canvas.width - 20);
-    return canvas.toDataURL('image/png');
   }
 
   private setValue(value: string | null): void {
