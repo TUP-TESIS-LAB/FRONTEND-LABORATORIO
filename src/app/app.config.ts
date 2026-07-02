@@ -102,6 +102,10 @@ import { URGENT_PENDING_FEATURE_KEY } from '@features/analitica/store/urgent-pen
 import { urgentPendingReducer } from '@features/analitica/store/urgent-pending/urgent-pending.reducer';
 import { UrgentPendingEffects } from '@features/analitica/store/urgent-pending/urgent-pending.effects';
 
+import { URGENT_IN_PROGRESS_FEATURE_KEY } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.state';
+import { urgentInProgressReducer } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.reducer';
+import { UrgentInProgressEffects } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -163,6 +167,8 @@ export const appConfig: ApplicationConfig = {
     provideEffects(NomencladorEffects),
     provideState(URGENT_PENDING_FEATURE_KEY, urgentPendingReducer),
     provideEffects(UrgentPendingEffects),
+    provideState(URGENT_IN_PROGRESS_FEATURE_KEY, urgentInProgressReducer),
+    provideEffects(UrgentInProgressEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),

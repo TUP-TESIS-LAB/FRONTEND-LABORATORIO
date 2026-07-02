@@ -16,6 +16,7 @@ import {
   SetCopaymentRequest,
 } from '../models/atencion.model';
 import { AttentionPricing } from '../models/pricing.model';
+import { UrgentInProgressBoard } from '../models/urgent-in-progress.model';
 
 @Injectable({ providedIn: 'root' })
 export class AtencionApiService {
@@ -107,6 +108,15 @@ export class AtencionApiService {
    */
   listUrgentPending(): Observable<AttentionResponse[] | NotModified> {
     return this.http.get<AttentionResponse[] | NotModified>(`${this.base}/urgent-pending`, { context: withPolling() });
+  }
+
+  /**
+   * Tablero de atenciones urgentes en curso (aún no finalizadas).
+   * El etagInterceptor maneja If-None-Match automáticamente y convierte 304 en
+   * el sentinel NotModified (estándar de polling, CLAUDE.md regla #5).
+   */
+  listUrgentInProgress(): Observable<UrgentInProgressBoard | NotModified> {
+    return this.http.get<UrgentInProgressBoard | NotModified>(`${this.base}/urgent-in-progress`, { context: withPolling() });
   }
 
   /** Completa datos administrativos pendientes (médico / plan de obra social). */
