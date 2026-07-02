@@ -20,28 +20,37 @@ import { AttentionState } from '../../models/atencion.model';
 import { urgentStageLabel } from '../../models/atencion-state-label';
 import { UrgentInProgressItem } from '../../models/urgent-in-progress.model';
 import { loadUrgentInProgress } from '../../store/urgent-in-progress/urgent-in-progress.actions';
-import { selectUrgentInProgressBoard } from '../../store/urgent-in-progress/urgent-in-progress.selectors';
+import {
+  selectUrgentInProgressBoard,
+  selectUrgentInProgressLoading,
+} from '../../store/urgent-in-progress/urgent-in-progress.selectors';
 
 /** Umbral de "amarillo": a partir de qué % del SLA target se considera advertencia. */
 const WARN_THRESHOLD_RATIO = 0.8;
 
-export type SlaStatus = 'verde' | 'amarillo' | 'rojo';
+/** `desconocido`: `urgentSince` ausente o no parseable — nunca cuenta como vencido. */
+export type SlaStatus = 'verde' | 'amarillo' | 'rojo' | 'desconocido';
 
 /** Fila derivada de un `UrgentInProgressItem` con antigüedad y color de SLA calculados client-side. */
 export interface UrgentesEnCursoRow extends UrgentInProgressItem {
-  elapsedMinutes: number;
+  elapsedMinutes: number | null;
   slaStatus: SlaStatus;
 }
 
 const SLA_STATUS_RANK: Record<SlaStatus, number> = {
-  rojo: 2,
-  amarillo: 1,
-  verde: 0,
+  rojo: 3,
+  amarillo: 2,
+  verde: 1,
+  desconocido: 0,
 };
 
 /** Deriva `elapsedMinutes` + `slaStatus` para un item dado `nowMs` y el target del tenant. */
 function toRow(item: UrgentInProgressItem, nowMs: number, slaTargetMinutes: number): UrgentesEnCursoRow {
-  const elapsedMinutes = Math.floor((nowMs - Date.parse(item.urgentSince)) / 60000);
+  const parsed = item.urgentSince ? Date.parse(item.urgentSince) : NaN;
+  if (Number.isNaN(parsed)) {
+    return { ...item, elapsedMinutes: null, slaStatus: 'desconocido' };
+  }
+  const elapsedMinutes = Math.floor((nowMs - parsed) / 60000);
   const slaStatus: SlaStatus =
     elapsedMinutes >= slaTargetMinutes
       ? 'rojo'
@@ -52,9 +61,10 @@ function toRow(item: UrgentInProgressItem, nowMs: number, slaTargetMinutes: numb
 }
 
 /** Severidad de `p-tag` por estado de SLA. */
-export function slaSeverity(status: SlaStatus): 'success' | 'warn' | 'danger' {
+export function slaSeverity(status: SlaStatus): 'success' | 'warn' | 'danger' | 'secondary' {
   if (status === 'rojo') return 'danger';
   if (status === 'amarillo') return 'warn';
+  if (status === 'desconocido') return 'secondary';
   return 'success';
 }
 
@@ -102,7 +112,7 @@ export function slaSeverity(status: SlaStatus): 'success' | 'warn' | 'danger' {
           </ng-template>
 
           <ng-template uiCell="antiguedad" let-row>
-            {{ $any(row).elapsedMinutes }} min
+            {{ $any(row).elapsedMinutes === null ? '—' : $any(row).elapsedMinutes + ' min' }}
           </ng-template>
 
           <ng-template uiCell="sla" let-row>
@@ -120,7 +130,7 @@ export class UrgentesEnCursoPage implements OnInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly board = this.store.selectSignal(selectUrgentInProgressBoard);
-  readonly loading = signal(false);
+  protected readonly loading = this.store.selectSignal(selectUrgentInProgressLoading);
 
   /** Ticker de antigüedad: se actualiza cada 30s para recalcular elapsedMinutes/slaStatus. */
   private readonly nowMs = signal(Date.now());
@@ -139,7 +149,7 @@ export class UrgentesEnCursoPage implements OnInit, OnDestroy {
     return [...derived].sort((a, b) => {
       const rankDiff = SLA_STATUS_RANK[b.slaStatus] - SLA_STATUS_RANK[a.slaStatus];
       if (rankDiff !== 0) return rankDiff;
-      return b.elapsedMinutes - a.elapsedMinutes;
+      return (b.elapsedMinutes ?? 0) - (a.elapsedMinutes ?? 0);
     });
   });
 
@@ -178,6 +188,7 @@ export class UrgentesEnCursoPage implements OnInit, OnDestroy {
   slaLabel(status: SlaStatus): string {
     if (status === 'rojo') return 'Vencido';
     if (status === 'amarillo') return 'Por vencer';
+    if (status === 'desconocido') return 'Sin datos';
     return 'En término';
   }
 }

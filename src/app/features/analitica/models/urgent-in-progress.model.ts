@@ -6,7 +6,7 @@ export interface UrgentInProgressItem {
   patientFullName: string | null;
   patientDni: string | null;
   attentionState: AttentionState;
-  urgentSince: string; // ISO
+  urgentSince: string | null; // ISO
 }
 
 export interface UrgentInProgressBoard {

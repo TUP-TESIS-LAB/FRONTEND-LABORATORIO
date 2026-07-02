@@ -141,6 +141,35 @@ describe('UrgentesEnCursoPage', () => {
     expect(fields).toEqual(['paciente', 'numero', 'etapa', 'antiguedad', 'sla']);
   });
 
+  it('urgentSince null/no parseable no rompe: elapsedMinutes null, sla desconocido, no cuenta como vencido', () => {
+    const slaTargetMinutes = 60;
+    const now = Date.now();
+    const sinDatos = itemOf({
+      attentionId: 4,
+      attentionNumber: 'A-SIN-DATOS',
+      urgentSince: null,
+    });
+    const rojo = itemOf({
+      attentionId: 5,
+      attentionNumber: 'A-ROJO',
+      urgentSince: new Date(now - 61 * 60000).toISOString(),
+    });
+
+    const { fixture } = setup({ slaTargetMinutes, items: [sinDatos, rojo] });
+    fixture.detectChanges();
+
+    const rows = fixture.componentInstance.rows();
+    const sinDatosRow = rows.find(r => r.attentionNumber === 'A-SIN-DATOS');
+    expect(sinDatosRow?.elapsedMinutes).toBeNull();
+    expect(sinDatosRow?.slaStatus).toBe('desconocido');
+
+    // Solo el rojo cuenta como vencido; el de urgentSince null no.
+    expect(fixture.componentInstance.overdueCount()).toBe(1);
+
+    expect(fixture.nativeElement.textContent).not.toContain('NaN');
+    expect(fixture.nativeElement.textContent).toContain('—');
+  });
+
   it('no renderiza el enum crudo del estado en el DOM (solo la etiqueta en español)', () => {
     const slaTargetMinutes = 60;
     const item = itemOf({ attentionState: AttentionState.ON_COLLECTION_PROCESS });
