@@ -6,7 +6,6 @@ export type InsurerTypeCode = 'SOCIAL' | 'PRIVATE';
 export interface SpecificData {
   socialHealth?: { cuit: string } | null;
   privateHealth?: { cuit: string; copayPolicy: string } | null;
-  selfPay?: { acceptedPaymentMethods: string } | null;
 }
 
 export interface InsurerSummary {

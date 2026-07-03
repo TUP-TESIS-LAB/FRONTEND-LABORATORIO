@@ -119,7 +119,7 @@ export class ObraSocialService {
         authorizationUrl: payload.insurer.authorizationUrl ?? null,
         cuit: sd?.socialHealth?.cuit ?? sd?.privateHealth?.cuit ?? null,
         copayPolicy: sd?.privateHealth?.copayPolicy ?? null,
-        acceptedPaymentMethods: sd?.selfPay?.acceptedPaymentMethods ?? null,
+        acceptedPaymentMethods: null,
       },
       contacts: payload.contacts.map((c) => ({ contact: c.contact, contactType: c.contactType })),
       plans: payload.plans.map((pw) => ({
