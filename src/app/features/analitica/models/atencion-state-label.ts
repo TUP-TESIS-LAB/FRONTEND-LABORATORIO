@@ -156,3 +156,28 @@ export function buildAttentionStateGroups(financieroActive: boolean): AttentionS
  * Para respetar la config del tenant en el filtro, usar `buildAttentionStateGroups(...)`.
  */
 export const ATTENTION_STATE_GROUPS: readonly AttentionStateGroup[] = buildAttentionStateGroups(true);
+
+// ── Etiquetas de etapa para el tablero "Urgentes en curso" ──────────────────
+//
+// El tablero SLA de urgencias muestra la etapa fina en la que está la atención
+// (no el grupo colapsado del listado de Recepción). Las etiquetas son más cortas
+// que `ATTENTION_STATE_LABELS` porque conviven en una columna angosta de tabla.
+
+const URGENT_STAGE_LABELS: Record<AttentionState, string> = {
+  [AttentionState.REGISTERING_GENERAL_DATA]: 'Recepción',
+  [AttentionState.REGISTERING_ANALYSES]:     'Análisis',
+  [AttentionState.ON_COLLECTION_PROCESS]:    'Cobro',
+  [AttentionState.ON_BILLING_PROCESS]:       'Facturación',
+  [AttentionState.AWAITING_CONFIRMATION]:    'Confirmación',
+  [AttentionState.AWAITING_EXTRACTION]:      'Esperando extracción',
+  [AttentionState.IN_EXTRACTION]:            'En extracción',
+  [AttentionState.FINISHED]:                 'Finalizada',
+  [AttentionState.CANCELED]:                 'Cancelada',
+  [AttentionState.FAILED]:                   'Fallida',
+};
+
+/** Etiqueta de etapa en español para el tablero "Urgentes en curso" (KAN-169). */
+export function urgentStageLabel(state: AttentionState | null | undefined): string {
+  if (!state) return '—';
+  return URGENT_STAGE_LABELS[state] ?? state;
+}

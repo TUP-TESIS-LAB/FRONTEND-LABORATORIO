@@ -23,6 +23,7 @@ import { NotificationService } from '@core/services/notification.service';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { PatientService } from '@features/pacientes/services/patient.service';
+import { setUrgentFlag } from '../../../../../store/atencion/atencion.actions';
 
 const STUB_CATALOG = {
   insurers: [
@@ -53,9 +54,13 @@ const defaultRouteStub = {
   snapshot: { queryParamMap: { get: () => null } },
 };
 
-/** ModuleRegistry stub: por defecto PORTAL activo (para no romper tests L2 existentes). */
-const makeModuleRegistryStub = (portalActive = true) => ({
-  isActive: (key: ModuleKey) => key === ModuleKey.Portal ? portalActive : false,
+/** ModuleRegistry stub: por defecto PORTAL activo, URGENCIAS inactivo (para no romper tests L2 existentes). */
+const makeModuleRegistryStub = (portalActive = true, urgenciasActive = false) => ({
+  isActive: (key: ModuleKey) => {
+    if (key === ModuleKey.Portal) return portalActive;
+    if (key === ModuleKey.Urgencias) return urgenciasActive;
+    return false;
+  },
 });
 
 /** PatientService stub: requerido por PortalAccessDialogComponent (importado en el componente). */
@@ -1168,5 +1173,96 @@ describe('DatosGeneralesStepComponent — B2: banner relacion gateado por PORTAL
     fixture.detectChanges();
     const btn = fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]');
     expect(btn).toBeNull();
+  });
+});
+
+// ── KAN-140: toggle urgente gateado por ModuleKey.Urgencias ─────────────────
+
+describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS inactivo)', () => {
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DatosGeneralesStepComponent],
+      providers: [
+        provideMockStore({ initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState } }),
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
+        { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: NotificationService, useValue: notificationStub },
+        { provide: ActivatedRoute, useValue: defaultRouteStub },
+        { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true, false) },
+        { provide: PatientService, useValue: patientServiceStub },
+      ],
+    }).compileComponents();
+    store = TestBed.inject(MockStore);
+  });
+
+  it('toggle urgente NO se renderiza cuando URGENCIAS está inactivo', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    const container = fixture.nativeElement.querySelector('[data-testid="urgente-toggle-container"]');
+    expect(container).toBeNull();
+  });
+
+});
+
+describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS activo)', () => {
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DatosGeneralesStepComponent],
+      providers: [
+        provideMockStore({ initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState } }),
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
+        { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: NotificationService, useValue: notificationStub },
+        { provide: ActivatedRoute, useValue: defaultRouteStub },
+        { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true, true) },
+        { provide: PatientService, useValue: patientServiceStub },
+      ],
+    }).compileComponents();
+    store = TestBed.inject(MockStore);
+  });
+
+  it('toggle urgente SE renderiza cuando URGENCIAS activo y readOnly=false (default)', () => {
+    // readOnly defaults to false — no setInput needed
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    const container = fixture.nativeElement.querySelector('[data-testid="urgente-toggle-container"]');
+    expect(container).toBeTruthy();
+  });
+
+  it('urgenciasActive() retorna true cuando el módulo URGENCIAS está activo', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    expect((fixture.componentInstance as any).urgenciasActive()).toBe(true);
+  });
+
+  it('onUrgentChange() despacha setUrgentFlag cuando atencionId está disponible', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    // Parchear el signal atencionId para que devuelva 7 (simula atención ya creada)
+    const cmp = fixture.componentInstance as any;
+    vi.spyOn(cmp, 'atencionId').mockReturnValue(7);
+    const spy = vi.spyOn(store, 'dispatch');
+    spy.mockClear();
+    cmp.isUrgentValue = true;
+    cmp.onUrgentChange();
+    expect(spy).toHaveBeenCalledWith(setUrgentFlag({ id: 7, isUrgent: true }));
+  });
+
+  it('onUrgentChange() es no-op si atencionId() retorna null (atención aún no creada)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    // Por defecto atencionId es null (input no recibió valor)
+    const spy = vi.spyOn(store, 'dispatch');
+    spy.mockClear();
+    cmp.isUrgentValue = true;
+    cmp.onUrgentChange();
+    expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: '[Atencion Wizard] Set Urgent Flag' }));
   });
 });

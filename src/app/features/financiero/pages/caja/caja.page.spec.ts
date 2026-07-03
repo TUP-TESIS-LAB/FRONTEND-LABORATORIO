@@ -12,6 +12,10 @@ import {
   selectCajaLoading,
   selectCajaSaldo,
   selectCajaError,
+  selectCashRegisters,
+  selectOtrosRows,
+  selectOtrosTotal,
+  selectOtrosLoading,
 } from '../../store/financiero.selectors';
 import { PollingService } from '@core/refresh';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
@@ -81,6 +85,10 @@ describe('CajaPage — smoke (caja cerrada)', () => {
             { selector: selectCajaLoading,   value: false },
             { selector: selectCajaSaldo,     value: 0 },
             { selector: selectCajaError,     value: null },
+            { selector: selectCashRegisters, value: [] },
+            { selector: selectOtrosRows,     value: [] },
+            { selector: selectOtrosTotal,    value: 0 },
+            { selector: selectOtrosLoading,  value: false },
           ],
         }),
         { provide: PollingService, useValue: pollingMock },

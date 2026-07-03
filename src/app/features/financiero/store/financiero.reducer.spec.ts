@@ -12,7 +12,7 @@ describe('financiero reducer — caja', () => {
   });
 
   it('loadOpenSession marca loading', () => {
-    const s = financieroReducer(initialState, A.loadOpenSession({ branchId: 5 }));
+    const s = financieroReducer(initialState, A.loadOpenSession({ cashRegisterId: 5 }));
     expect(s.caja.loading).toBe(true);
     expect(s.caja.error).toBeNull();
   });
@@ -97,6 +97,57 @@ describe('financiero reducer — caja', () => {
   it('no muta el slice config al operar sobre caja', () => {
     const s = financieroReducer(initialState, A.loadOpenSessionSuccess({ session }));
     expect(s.config).toBe(initialState.config);
+  });
+});
+
+describe('financiero reducer — subcajas / otros / cuentas', () => {
+  it('loadCashRegisters marca registersLoading', () => {
+    const s = financieroReducer(initialState, A.loadCashRegisters({ branchId: 3 }));
+    expect(s.caja.registersLoading).toBe(true);
+    expect(s.caja.error).toBeNull();
+  });
+
+  it('loadCashRegistersSuccess guarda el listado y baja loading', () => {
+    const registers = [{ id: 5, tenantId: 1, branchId: 3, name: 'Mostrador', active: true }];
+    const s = financieroReducer(initialState, A.loadCashRegistersSuccess({ registers }));
+    expect(s.caja.registers.length).toBe(1);
+    expect(s.caja.registersLoading).toBe(false);
+  });
+
+  it('createCashRegisterSuccess agrega la caja al listado', () => {
+    const reg = { id: 9, tenantId: 1, branchId: 3, name: 'Extracciones', active: true };
+    const s = financieroReducer(initialState, A.createCashRegisterSuccess({ register: reg }));
+    expect(s.caja.registers.map(r => r.id)).toEqual([9]);
+  });
+
+  it('loadBranchOtherMediaSuccess guarda data y baja loading', () => {
+    const data = { rows: [], total: 1500, count: 2 };
+    const s = financieroReducer(initialState, A.loadBranchOtherMediaSuccess({ data }));
+    expect(s.otros.data?.total).toBe(1500);
+    expect(s.otros.loading).toBe(false);
+  });
+
+  it('loadBankAccountsSuccess guarda el listado', () => {
+    const accounts = [{ id: 1, tenantId: 1, label: 'Galicia', cbu: null, alias: null, banco: null, titular: null, cuit: null, active: true }];
+    const s = financieroReducer(initialState, A.loadBankAccountsSuccess({ accounts }));
+    expect(s.cuentas.list.length).toBe(1);
+    expect(s.cuentas.loading).toBe(false);
+  });
+
+  it('createBankAccountSuccess agrega la cuenta y baja saving', () => {
+    const acc = { id: 2, tenantId: 1, label: 'Santander', cbu: null, alias: null, banco: null, titular: null, cuit: null, active: true };
+    const saving = financieroReducer(initialState, A.createBankAccount({ body: { label: 'Santander' } }));
+    expect(saving.cuentas.saving).toBe(true);
+    const s = financieroReducer(saving, A.createBankAccountSuccess({ account: acc }));
+    expect(s.cuentas.list.map(a => a.id)).toEqual([2]);
+    expect(s.cuentas.saving).toBe(false);
+  });
+
+  it('updateBankAccountSuccess inactiva → saca la cuenta del listado de activas', () => {
+    const acc = { id: 2, tenantId: 1, label: 'Santander', cbu: null, alias: null, banco: null, titular: null, cuit: null, active: true };
+    const withAcc = financieroReducer(initialState, A.createBankAccountSuccess({ account: acc }));
+    const s = financieroReducer(withAcc, A.updateBankAccountSuccess({ account: { ...acc, active: false } }));
+    expect(s.cuentas.list.length).toBe(0);
   });
 });
 
@@ -252,5 +303,14 @@ describe('financiero reducer — cobro (slice registrar pago)', () => {
     const dirty = financieroReducer(initialState, A.registerPaymentFailure({ error: 'X' }));
     const s = financieroReducer(dirty, A.resetCobro());
     expect(s.cobro).toEqual(initialState.cobro);
+  });
+});
+
+describe('financiero reducer — liquidaciones pendientes', () => {
+  it('loadPendingServicesNotModified (304) baja pendingLoading (no queda colgado)', () => {
+    const loading = financieroReducer(initialState, A.loadPendingServices());
+    expect(loading.liquidaciones.pendingLoading).toBe(true);
+    const s = financieroReducer(loading, A.loadPendingServicesNotModified());
+    expect(s.liquidaciones.pendingLoading).toBe(false);
   });
 });

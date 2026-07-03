@@ -1,17 +1,36 @@
 ﻿import { createReducer, on } from '@ngrx/store';
 import { initialFinancieroState, FinancieroState } from './financiero.state';
 import {
+  loadCashRegisters, loadCashRegistersSuccess, loadCashRegistersFailure,
+  createCashRegisterSuccess, createCashRegisterFailure,
+  deactivateCashRegisterFailure,
   loadOpenSession, loadOpenSessionSuccess, sessionNotFound, loadOpenSessionFailure,
   loadActivitySuccess,
   openSessionSuccess, openSessionFailure,
   closeSessionSuccess, closeSessionFailure,
   registerTransaction, registerTransactionSuccess, registerTransactionFailure,
+  loadBranchOtherMedia, loadBranchOtherMediaSuccess, loadBranchOtherMediaNotModified, loadBranchOtherMediaFailure,
+  loadMovements, loadMovementsSuccess, loadMovementsNotModified, loadMovementsFailure,
+  registerBranchMovementSuccess, registerBranchMovementFailure,
+  loadBankAccounts, loadBankAccountsSuccess, loadBankAccountsFailure,
+  createBankAccount, createBankAccountSuccess, createBankAccountFailure,
+  updateBankAccount, updateBankAccountSuccess, updateBankAccountFailure,
+  deactivateBankAccountFailure,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure, resetCobro,
   loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
   saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
+  loadSettlements, loadSettlementsSuccess, loadSettlementsNotModified, loadSettlementsFailure,
+  loadSettlement, loadSettlementSuccess, loadSettlementFailure,
+  generateSettlement, generateSettlementSuccess, generateSettlementFailure,
+  informSettlement, informSettlementSuccess, informSettlementFailure,
+  cancelSettlement, cancelSettlementSuccess, cancelSettlementFailure,
+  exportSettlement, exportSettlementSuccess, exportSettlementFailure,
+  loadPendingServices, loadPendingServicesSuccess, loadPendingServicesNotModified, loadPendingServicesFailure,
+  loadInsurersIndexSuccess, loadInsurerPlansSuccess,
+  loadPreviewDetail, loadPreviewDetailSuccess, loadPreviewDetailFailure, resetPreviewDetail,
 } from './financiero.actions';
 
 export const initialState = initialFinancieroState;
@@ -19,10 +38,34 @@ export const initialState = initialFinancieroState;
 export const financieroReducer = createReducer(
   initialState,
 
+  // ── subcajas ───────────────────────────────────────────────────────────────
+  on(loadCashRegisters, (state): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, registersLoading: true, error: null },
+  })),
+  on(loadCashRegistersSuccess, (state, { registers }): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, registers, registersLoading: false },
+  })),
+  on(loadCashRegistersFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, registersLoading: false, error },
+  })),
+  on(createCashRegisterSuccess, (state, { register }): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, registers: [...state.caja.registers, register], error: null },
+  })),
+  on(createCashRegisterFailure, deactivateCashRegisterFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    caja: { ...state.caja, error },
+  })),
+
   // ── cargar sesión abierta ──────────────────────────────────────────────────
   on(loadOpenSession, (state): FinancieroState => ({
     ...state,
-    caja: { ...state.caja, loading: true, error: null },
+    // Limpiar activity: al cambiar de subcaja no queremos mostrar los movimientos/cobros
+    // de la caja anterior mientras carga la nueva (evita conteo de cobros stale).
+    caja: { ...state.caja, loading: true, activity: null, error: null },
   })),
   on(loadOpenSessionSuccess, (state, { session }): FinancieroState => ({
     ...state,
@@ -75,6 +118,101 @@ export const financieroReducer = createReducer(
   on(registerTransactionFailure, (state, { error }): FinancieroState => ({
     ...state,
     caja: { ...state.caja, error },
+  })),
+
+  // ── otros medios (sucursal + día) ──────────────────────────────────────────
+  // `loading` sólo en la carga inicial (aún sin data); en los ticks de polling NO
+  // se toca, para no parpadear ni quedar cargando cuando el backend responde 304.
+  on(loadBranchOtherMedia, (state): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, loading: state.otros.data === null, error: null },
+  })),
+  on(loadBranchOtherMediaSuccess, (state, { data }): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, data, loading: false, error: null },
+  })),
+  on(loadBranchOtherMediaNotModified, (state): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, loading: false },
+  })),
+  on(loadBranchOtherMediaFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, loading: false, error },
+  })),
+
+  // ── Feed de movimientos multi-sucursal (KAN-161) ───────────────────────────
+  // `loading` sólo en la carga inicial (aún sin data). En los ticks de polling
+  // NO se toca para evitar el parpadeo de la tabla/contador cada 5s (el 304 ya
+  // deja la data intacta).
+  on(loadMovements, (state): FinancieroState => ({
+    ...state,
+    movimientos: {
+      ...state.movimientos,
+      loading: state.movimientos.data === null,
+      error: null,
+    },
+  })),
+  on(loadMovementsSuccess, (state, { data }): FinancieroState => ({
+    ...state,
+    movimientos: { ...state.movimientos, data, loading: false, error: null },
+  })),
+  on(loadMovementsNotModified, (state): FinancieroState => ({
+    ...state,
+    movimientos: { ...state.movimientos, loading: false },
+  })),
+  on(loadMovementsFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    movimientos: { ...state.movimientos, loading: false, error },
+  })),
+  on(registerBranchMovementSuccess, (state): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, error: null },
+  })),
+  on(registerBranchMovementFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    otros: { ...state.otros, error },
+  })),
+
+  // ── cuentas destino (bank-accounts) ────────────────────────────────────────
+  on(loadBankAccounts, (state): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, loading: true, error: null },
+  })),
+  on(loadBankAccountsSuccess, (state, { accounts }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, list: accounts, loading: false, error: null },
+  })),
+  on(loadBankAccountsFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, loading: false, error },
+  })),
+  on(createBankAccount, updateBankAccount, (state): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, saving: true, error: null },
+  })),
+  on(createBankAccountSuccess, (state, { account }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, list: [...state.cuentas.list, account], saving: false, error: null },
+  })),
+  on(updateBankAccountSuccess, (state, { account }): FinancieroState => ({
+    ...state,
+    cuentas: {
+      ...state.cuentas,
+      // si la cuenta quedó inactiva sale del listado de activas
+      list: account.active
+        ? state.cuentas.list.map(a => (a.id === account.id ? account : a))
+        : state.cuentas.list.filter(a => a.id !== account.id),
+      saving: false,
+      error: null,
+    },
+  })),
+  on(createBankAccountFailure, updateBankAccountFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, saving: false, error },
+  })),
+  on(deactivateBankAccountFailure, (state, { error }): FinancieroState => ({
+    ...state,
+    cuentas: { ...state.cuentas, error },
   })),
 
   // ── cobros: listar pagos ───────────────────────────────────────────────────
@@ -159,5 +297,98 @@ export const financieroReducer = createReducer(
   on(saveFiscalConfigFailure, (state, { error }): FinancieroState => ({
     ...state,
     config: { ...state.config, saving: false, error },
+  })),
+
+  // ── liquidaciones: listar ──────────────────────────────────────────────────
+  on(loadSettlements, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, listLoading: true, listError: null },
+  })),
+  on(loadSettlementsSuccess, (state, { items }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, list: items, listLoading: false, listError: null },
+  })),
+  on(loadSettlementsNotModified, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, listLoading: false },
+  })),
+  on(loadSettlementsFailure, (state, { error }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, listLoading: false, listError: error },
+  })),
+
+  // ── liquidaciones: detalle ─────────────────────────────────────────────────
+  on(loadSettlement, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, detailLoading: true, detailError: null },
+  })),
+  on(loadSettlementSuccess, (state, { settlement }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, selected: settlement, detailLoading: false, detailError: null },
+  })),
+  on(loadSettlementFailure, (state, { error }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, detailLoading: false, detailError: error },
+  })),
+
+  // ── liquidaciones: generar ─────────────────────────────────────────────────
+  on(generateSettlement, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, generating: true, generateError: null },
+  })),
+  on(generateSettlementSuccess, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, generating: false, generateError: null },
+  })),
+  on(generateSettlementFailure, (state, { error }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, generating: false, generateError: error },
+  })),
+
+  // ── liquidaciones: informar / anular (lifecycle) ───────────────────────────
+  on(informSettlement, cancelSettlement, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, lifecycleInProgress: true, lifecycleError: null },
+  })),
+  on(informSettlementSuccess, (state, { settlement }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, selected: settlement, lifecycleInProgress: false, lifecycleError: null },
+  })),
+  on(cancelSettlementSuccess, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, lifecycleInProgress: false, lifecycleError: null },
+  })),
+  on(informSettlementFailure, cancelSettlementFailure, (state, { error }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, lifecycleInProgress: false, lifecycleError: error },
+  })),
+
+  // ── liquidaciones: pendientes ──────────────────────────────────────────────
+  on(loadPendingServices, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, pendingLoading: true },
+  })),
+  on(loadPendingServicesSuccess, (state, { items }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, pending: items, pendingLoading: false },
+  })),
+  on(loadPendingServicesNotModified, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, pendingLoading: false },
+  })),
+  on(loadPendingServicesFailure, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, pendingLoading: false },
+  })),
+
+  // ── liquidaciones: índice de OS + planes de la OS elegida ──────────────────
+  on(loadInsurersIndexSuccess, (state, { insurers }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, insurers },
+  })),
+  on(loadInsurerPlansSuccess, (state, { planIds }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, selectedInsurerPlanIds: planIds },
+  })),
+
+  // ── liquidaciones: preview detallado ───────────────────────────────────────
+  on(exportSettlement, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, exporting: true },
+  })),
+  on(exportSettlementSuccess, exportSettlementFailure, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, exporting: false },
+  })),
+
+  on(loadPreviewDetail, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, previewLoading: true, previewError: null },
+  })),
+  on(loadPreviewDetailSuccess, (state, { preview }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, previewDetail: preview, previewLoading: false, previewError: null },
+  })),
+  on(loadPreviewDetailFailure, (state, { error }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, previewLoading: false, previewError: error },
+  })),
+  on(resetPreviewDetail, (state): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, previewDetail: null, previewLoading: false, previewError: null },
   })),
 );

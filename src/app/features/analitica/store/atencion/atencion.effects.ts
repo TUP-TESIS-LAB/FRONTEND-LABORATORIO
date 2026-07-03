@@ -68,6 +68,12 @@ import {
   registerGuardian,
   registerGuardianSuccess,
   registerGuardianFailure,
+  setUrgentFlag,
+  setUrgentFlagSuccess,
+  setUrgentFlagFailure,
+  advanceUrgent,
+  advanceUrgentSuccess,
+  advanceUrgentFailure,
 } from './atencion.actions';
 
 /**
@@ -524,5 +530,46 @@ export class AtencionEffects {
         )
       )
     )
+  );
+
+  /** Marcar/desmarcar urgente desde recepción (KAN-140, gateado por módulo URGENCIAS en el BE). */
+  setUrgentFlag$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(setUrgentFlag),
+      concatMap(({ id, isUrgent }) =>
+        this.api.setUrgentFlag(id, isUrgent).pipe(
+          map(item => setUrgentFlagSuccess({ item })),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo actualizar la marca de urgente. Revisá la conexión y volvé a intentarlo.');
+            return of(setUrgentFlagFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
+
+  /** Modo express urgente (KAN-140): salta cobro/facturación/confirmación y manda a extracción. */
+  advanceUrgent$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(advanceUrgent),
+      concatMap(({ id }) =>
+        this.api.advanceUrgent(id).pipe(
+          map(item => advanceUrgentSuccess({ item })),
+          catchError((error: HttpErrorResponse) => {
+            this.notification.error('No se pudo avanzar la atención urgente. Revisá la conexión y volvé a intentarlo.');
+            return of(advanceUrgentFailure({ error }));
+          }),
+        )
+      )
+    )
+  );
+
+  /** Al avanzar urgente con éxito, navega a la cola de extracción. */
+  advanceUrgentNavigate$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(advanceUrgentSuccess),
+      tap(() => this.router.navigate(['/analitica/extraccion'])),
+    ),
+    { dispatch: false }
   );
 }

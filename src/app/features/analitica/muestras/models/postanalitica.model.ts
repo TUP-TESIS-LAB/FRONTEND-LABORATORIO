@@ -29,6 +29,7 @@ export interface StudyListItemResponse {
   analysisCount: number;
   determinationCount: number;
   signedAnalysisCount: number;
+  isUrgent: boolean;
 }
 
 /** Page<T> de Spring Data (solo lo que consumimos). */
@@ -50,6 +51,7 @@ export interface ValidationListRow {
   analysisCount: number;
   determinationCount: number;
   signedAnalysisCount: number;
+  isUrgent: boolean;
 }
 
 /** Estado de firma derivado de currentStatus, para badge y filtro. */
@@ -126,6 +128,7 @@ export function toValidationListRow(r: StudyListItemResponse): ValidationListRow
     analysisCount: r.analysisCount,
     determinationCount: r.determinationCount,
     signedAnalysisCount: r.signedAnalysisCount,
+    isUrgent: r.isUrgent ?? false,
   };
 }
 

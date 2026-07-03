@@ -47,7 +47,12 @@
               <i class="pi pi-chevron-down"></i>
             </button>
             <div class="cell-mx">
-              <div class="mx-top"><span class="mx-code">{{ r.protocolCode }}</span></div>
+              <div class="mx-top">
+                <span class="mx-code">{{ r.protocolCode }}</span>
+                @if (r.isUrgent) {
+                  <p-tag value="URGENTE" severity="danger" />
+                }
+              </div>
               <div class="mx-pac">
                 {{ r.patientName }}
               </div>

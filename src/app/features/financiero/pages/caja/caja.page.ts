@@ -4,11 +4,14 @@ import {
   DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { TooltipModule } from 'primeng/tooltip';
@@ -24,6 +27,7 @@ import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { PollingService, PollingHandle } from '@core/refresh';
 
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
+import { CajaContextService } from '../../services/caja-context.service';
 
 import {
   selectIsCajaOpen,
@@ -32,10 +36,17 @@ import {
   selectCajaLoading,
   selectCajaSaldo,
   selectCajaError,
+  selectCashRegisters,
+  selectOtrosRows,
+  selectOtrosTotal,
+  selectOtrosLoading,
 } from '../../store/financiero.selectors';
 import {
   loadOpenSession,
   loadActivity,
+  loadCashRegisters,
+  loadBranchOtherMedia,
+  sessionNotFound,
 } from '../../store/financiero.actions';
 
 import { MetodoChipComponent } from '../../components/metodo-chip.component';
@@ -48,12 +59,27 @@ import { TableColumn } from '@shared/ui/models/table-column.model';
 
 type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
 
+function dayBounds(isoDate: string): { from: string; to: string } {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const from = new Date(y, m - 1, d, 0, 0, 0, 0).toISOString();
+  const to = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
+  return { from, to };
+}
+
+function todayIso(): string {
+  const now = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
+}
+
 @Component({
   selector: 'fin-caja-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
+    FormsModule,
+    RouterLink,
     TooltipModule,
     PageHeaderComponent,
     EmptyStateComponent,
@@ -71,11 +97,38 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
     <div class="fin-caja">
       <ui-page-header
         heading="Caja"
-        subtitle="Estado de la caja. Cobros, movimientos y arqueo del turno.">
+        subtitle="Efectivo de la subcaja (arqueo) y otros medios de la sucursal.">
         @if (isCajaOpen()) {
           <ui-refresh-indicator [lastRefreshAt]="lastRefreshAt()" />
         }
       </ui-page-header>
+
+      <!-- ── Selector de subcaja ── -->
+      <div class="fin-card fin-card--selector">
+        <div class="fin-selector-left">
+          <label for="fin-register-sel">Subcaja</label>
+          @if (registers().length > 0) {
+            <select
+              id="fin-register-sel"
+              class="fin-select"
+              data-testid="register-selector"
+              [ngModel]="selectedRegisterId()"
+              (ngModelChange)="selectRegister($event)">
+              @for (r of registers(); track r.id) {
+                <option [ngValue]="r.id">{{ r.name }}</option>
+              }
+            </select>
+          } @else {
+            <span class="fin-muted" data-testid="no-registers">No hay cajas configuradas en esta sucursal.</span>
+          }
+        </div>
+        @if (isAdmin()) {
+          <div class="fin-selector-actions">
+            <a class="fin-link" routerLink="/financiero/subcajas">Administrar cajas</a>
+            <a class="fin-link" routerLink="/financiero/cuentas-destino">Cuentas destino</a>
+          </div>
+        }
+      </div>
 
       <!-- ── LOADING ── -->
       @if (loading()) {
@@ -88,7 +141,7 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
       @else if (error()) {
         <div class="fin-card">
           <ui-empty-state
-            icon="pi-exclamation-triangle"
+            icon=""
             heading="Error al cargar la caja"
             [description]="error() ?? ''"
             ctaLabel="Reintentar"
@@ -96,19 +149,28 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
         </div>
       }
 
+      <!-- ── SIN SUBCAJA SELECCIONADA ── -->
+      @else if (selectedRegisterId() == null) {
+        <div class="fin-card">
+          <ui-empty-state
+            icon=""
+            heading="Seleccioná una subcaja"
+            description="Elegí la caja sobre la que vas a operar. Si no hay ninguna, pedile a un administrador que cree una." />
+        </div>
+      }
+
       <!-- ── CAJA CERRADA ── -->
       @else if (!isCajaOpen()) {
         <div class="fin-card">
           <div class="fin-empty-center">
-            <i class="pi pi-lock fin-empty__icon"></i>
             <h3 data-testid="caja-cerrada-heading">La caja está cerrada</h3>
-            <p>No hay una caja abierta en esta sucursal. Para cobrar atenciones necesitás abrir la caja y declarar el efectivo inicial del turno.</p>
+            <p>Esta subcaja no tiene una sesión abierta. Para cobrar atenciones en efectivo necesitás abrir la caja y declarar el efectivo inicial del turno.</p>
             <button
               class="fin-btn fin-btn--success"
               data-testid="cta-abrir-caja"
               type="button"
               (click)="openModal('abrir')">
-              <i class="pi pi-lock-open"></i> Abrir caja
+              Abrir caja
             </button>
           </div>
         </div>
@@ -128,14 +190,14 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
           </div>
           <div class="fin-actions-row">
             <button class="fin-btn fin-btn--ghost" type="button" (click)="openModal('movimiento')">
-              <i class="pi pi-dollar"></i> Registrar movimiento
+              Registrar movimiento
             </button>
             <button class="fin-btn fin-btn--primary" type="button" (click)="cobrarAtencion()">
-              <i class="pi pi-dollar"></i> Cobrar atención
+              Cobrar atención
             </button>
             @if (isAdmin()) {
               <button class="fin-btn fin-btn--danger" type="button" (click)="openModal('arqueo')">
-                <i class="pi pi-lock"></i> Cerrar caja
+                Cerrar caja
               </button>
             } @else {
               <div class="fin-cerrar-caja-wrap">
@@ -145,7 +207,7 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
                   disabled
                   pTooltip="Solo un administrador puede cerrar la caja"
                   tooltipPosition="top">
-                  <i class="pi pi-lock"></i> Cerrar caja
+                  Cerrar caja
                 </button>
                 <span class="fin-cerrar-caja-note">
                   Cerrar caja es una acción de administrador. Pedile el arqueo a quien tenga ese rol.
@@ -160,40 +222,44 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
           <!-- Efectivo hero -->
           <div class="fin-kpi-card fin-kpi-card--hero">
             <span class="fin-kpi-tag">ARQUEABLE</span>
-            <div class="fin-kpi-label"><i class="pi pi-money-bill"></i> Efectivo en caja</div>
+            <div class="fin-kpi-label">Efectivo en caja</div>
             <div class="fin-kpi-value">{{ saldo() | currencyAr }}</div>
             <div class="fin-kpi-meta">
               Apertura <b>{{ session()?.openingAmount | currencyAr }}</b> · es el monto que se cuenta al cerrar
             </div>
           </div>
 
-          <!-- Otros medios -->
+          <!-- Otros medios (sucursal+día) -->
           <div class="fin-kpi-card">
-            <div class="fin-kpi-label"><i class="pi pi-credit-card"></i> Otros medios de pago</div>
-            <div class="fin-kpi-value fin-kpi-value--dark">{{ otrosMediosTotal() | currencyAr }}</div>
+            <div class="fin-kpi-label">Otros medios (sucursal · día)</div>
+            <div class="fin-kpi-value fin-kpi-value--dark">{{ otrosTotal() | currencyAr }}</div>
             <div class="fin-kpi-note"><i class="pi pi-info-circle"></i> No suma al efectivo del cajón</div>
           </div>
 
-          <!-- Cobros del turno -->
+          <!-- Cobros en efectivo del turno (transacciones de efectivo con pago asociado) -->
           <div class="fin-kpi-card">
-            <div class="fin-kpi-label"><i class="pi pi-receipt"></i> Cobros del turno</div>
+            <div class="fin-kpi-label">Cobros del turno</div>
             <div class="fin-kpi-value fin-kpi-value--dark">{{ cobrosCount() }}</div>
-            <div class="fin-kpi-meta">atenciones cobradas hoy</div>
+            <div class="fin-kpi-meta">cobros en efectivo de la sesión</div>
           </div>
         </div>
 
-        <!-- Tabla de movimientos -->
+        <!-- Tabla de movimientos de efectivo -->
         <div class="fin-card fin-card--table">
           <div class="fin-table-head">
-            <h3>Movimientos de la sesión</h3>
-            <span class="fin-muted">{{ rows().length }} movimiento{{ rows().length === 1 ? '' : 's' }}</span>
+            <h3>Efectivo de la sesión</h3>
+            @if (!activityLoading()) {
+              <span class="fin-muted">{{ rows().length }} movimiento{{ rows().length === 1 ? '' : 's' }}</span>
+            }
           </div>
 
-          @if (rows().length === 0) {
+          @if (activityLoading()) {
+            <div class="fin-skeleton fin-skeleton--tall" style="margin: 16px 18px"></div>
+          } @else if (rows().length === 0) {
             <ui-empty-state
-              icon="pi-inbox"
-              heading="Caja abierta, sin movimientos todavía"
-              [description]="'La caja se abrió con ' + (session()?.openingAmount | currencyAr) + '. Apenas cobres o registres un movimiento, aparecerá acá.'"
+              icon=""
+              heading="Caja abierta, sin movimientos de efectivo todavía"
+              [description]="'La caja se abrió con ' + (session()?.openingAmount | currencyAr) + '. Apenas cobres en efectivo o registres un movimiento, aparecerá acá.'"
               ctaLabel="Cobrar una atención"
               (ctaClick)="cobrarAtencion()" />
           } @else {
@@ -201,45 +267,73 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
               [value]="rows()"
               [columns]="tableColumns"
               [loading]="loading()">
-              <!-- Tipo: ícono ingreso/egreso -->
               <ng-template uiCell="tipo" let-row>
-                <span class="fin-tx-icon"
-                      [class.fin-tx-icon--in]="row.type === 'INGRESS'"
-                      [class.fin-tx-icon--out]="row.type === 'EGRESS'">
-                  <i [class]="'pi ' + (row.type === 'INGRESS' ? 'pi-arrow-down-left' : 'pi-arrow-up-right')"></i>
+                <span class="fin-tx-tipo"
+                      [class.fin-tx-amt--pos]="row.type === 'INGRESS'"
+                      [class.fin-tx-amt--neg]="row.type === 'EGRESS'">
+                  {{ row.type === 'INGRESS' ? 'Ingreso' : 'Egreso' }}
                 </span>
               </ng-template>
-
-              <!-- Detalle -->
               <ng-template uiCell="detalle" let-row>
                 <div class="fin-tx-desc">
                   <span>{{ row.description }}</span>
-                  @if (row.reference) {
-                    <small class="fin-muted">{{ row.reference }}</small>
-                  }
+                  @if (row.reference) { <small class="fin-muted">{{ row.reference }}</small> }
                 </div>
               </ng-template>
-
-              <!-- Medio -->
               <ng-template uiCell="medio" let-row>
                 <div class="fin-tx-medio">
                   <fin-metodo-chip [metodo]="row.method" />
-                  <span class="fin-cash-flag" [class.fin-cash-flag--efectivo]="row.esEfectivo" [class.fin-cash-flag--otro]="!row.esEfectivo">
-                    {{ row.esEfectivo ? 'efectivo' : 'otro medio' }}
-                  </span>
                 </div>
               </ng-template>
-
-              <!-- Hora -->
-              <ng-template uiCell="hora" let-row>
-                {{ row.occurredAt | date:'HH:mm' }}
-              </ng-template>
-
-              <!-- Monto -->
+              <ng-template uiCell="hora" let-row>{{ row.occurredAt | date:'HH:mm' }}</ng-template>
               <ng-template uiCell="monto" let-row>
                 <span class="fin-tx-amt"
-                      [class.fin-tx-amt--pos]="row.type === 'INGRESS' && row.esEfectivo"
-                      [class.fin-tx-amt--muted]="row.type === 'INGRESS' && !row.esEfectivo"
+                      [class.fin-tx-amt--pos]="row.type === 'INGRESS'"
+                      [class.fin-tx-amt--neg]="row.type === 'EGRESS'">
+                  {{ row.type === 'INGRESS' ? '+' : '−' }} {{ row.amount | currencyAr }}
+                </span>
+              </ng-template>
+            </ui-table>
+          }
+        </div>
+      }
+
+      <!-- ── PANEL OTROS MEDIOS (sucursal + día) ── -->
+      @if (selectedRegisterId() != null) {
+        <div class="fin-card fin-card--table">
+          <div class="fin-table-head">
+            <div>
+              <h3>Otros medios · sucursal</h3>
+              <span class="fin-muted">Transferencias, QR, tarjetas y posnet del día de hoy. No forman parte del arqueo.</span>
+            </div>
+            <span class="fin-day-label" data-testid="otros-day">Hoy · {{ selectedDay() | date:'dd/MM/yyyy' }}</span>
+          </div>
+
+          @if (otrosRows().length === 0) {
+            <ui-empty-state
+              icon=""
+              heading="Sin movimientos de otros medios este día"
+              description="Los cobros con transferencia, QR, tarjeta o posnet de la sucursal aparecerán acá, agrupados por día." />
+          } @else {
+            <ui-table [value]="otrosRows()" [columns]="otrosColumns" [loading]="otrosLoading()">
+              <ng-template uiCell="origen" let-row>
+                <span class="fin-cash-flag fin-cash-flag--otro">
+                  {{ row.source === 'ATTENTION_COLLECTION' ? 'cobro' : 'manual' }}
+                </span>
+              </ng-template>
+              <ng-template uiCell="detalle" let-row>
+                <div class="fin-tx-desc">
+                  <span>{{ row.description || '—' }}</span>
+                  @if (row.reference) { <small class="fin-muted">{{ row.reference }}</small> }
+                </div>
+              </ng-template>
+              <ng-template uiCell="medio" let-row>
+                <fin-metodo-chip [metodo]="row.method" />
+              </ng-template>
+              <ng-template uiCell="hora" let-row>{{ row.occurredAt | date:'HH:mm' }}</ng-template>
+              <ng-template uiCell="monto" let-row>
+                <span class="fin-tx-amt"
+                      [class.fin-tx-amt--pos]="row.type === 'INGRESS'"
                       [class.fin-tx-amt--neg]="row.type === 'EGRESS'">
                   {{ row.type === 'INGRESS' ? '+' : '−' }} {{ row.amount | currencyAr }}
                 </span>
@@ -250,11 +344,14 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
       }
 
       <!-- ── MODALES ── -->
-      @if (activeModal() === 'abrir') {
-        <fin-abrir-caja-modal (closed)="closeModal()" />
+      @if (activeModal() === 'abrir' && selectedRegisterId() != null) {
+        <fin-abrir-caja-modal [cashRegisterId]="selectedRegisterId()!" (closed)="closeModal()" />
       }
-      @if (activeModal() === 'movimiento') {
-        <fin-movimiento-modal (closed)="closeModal()" />
+      @if (activeModal() === 'movimiento' && branchId() != null) {
+        <fin-movimiento-modal
+          [cashRegisterId]="selectedRegisterId()"
+          [branchId]="branchId()!"
+          (closed)="closeModal()" />
       }
       @if (activeModal() === 'arqueo') {
         <fin-arqueo-modal [esperado]="saldo()" (closed)="closeModal()" />
@@ -264,23 +361,32 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
   styles: [`
     .fin-caja { display: flex; flex-direction: column; gap: 18px; }
 
-    /* ── Cards ── */
     .fin-card {
       background: white; border-radius: 12px;
       box-shadow: 0 1px 2px rgba(28,30,55,.06), 0 1px 1px rgba(28,30,55,.04);
       border: 1px solid #e8e9f0;
     }
+    .fin-card--selector { padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     .fin-card--status { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     .fin-card--table { overflow: hidden; }
     .fin-card--loading { padding: 24px; }
 
-    /* ── Status bar ── */
+    .fin-selector-left { display: flex; align-items: center; gap: 10px; }
+    .fin-selector-left label { font-size: 13.5px; font-weight: 600; color: #22243a; display: flex; align-items: center; gap: 6px; }
+    .fin-selector-actions { display: flex; align-items: center; gap: 14px; }
+    .fin-link { font-size: 13px; color: #4b4ddb; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+    .fin-link:hover { text-decoration: underline; }
+
+    .fin-select, .fin-date {
+      border: 1.5px solid #e8e9f0; border-radius: 8px; padding: 7px 11px;
+      font-size: 14px; color: #22243a; background: white;
+    }
+
     .fin-status-bar { display: flex; align-items: center; gap: 14px; }
     .fin-status-info { font-size: 12.5px; color: #7c8092; }
     .fin-status-info b { color: #4a4d63; }
     .fin-actions-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-    /* ── Buttons ── */
     .fin-btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 14px; border-radius: 8px; border: none;
@@ -294,7 +400,6 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
     .fin-btn--disabled { opacity: 0.5; cursor: not-allowed; }
     .fin-btn--disabled:hover { background: white; }
 
-    /* ── Cerrar caja no-admin ── */
     .fin-cerrar-caja-wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
     .fin-cerrar-caja-note { font-size: 11.5px; color: #7c8092; max-width: 280px; line-height: 1.4; }
     .fin-btn--success { background: #0f8a55; color: white; margin-top: 18px; }
@@ -302,7 +407,6 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
     .fin-btn--danger { background: #d83a3a; color: white; }
     .fin-btn--danger:hover { background: #b83232; }
 
-    /* ── KPIs ── */
     .fin-kpi-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; }
     @media (max-width: 800px) { .fin-kpi-grid { grid-template-columns: 1fr; } }
 
@@ -328,40 +432,28 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
     .fin-kpi-card:not(.fin-kpi-card--hero) .fin-kpi-meta { color: #7c8092; }
     .fin-kpi-note { font-size: 12px; color: #7c8092; display: flex; align-items: center; gap: 5px; margin-top: 6px; }
 
-    /* ── Tabla movimientos ── */
     .fin-table-head {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 14px 18px; border-bottom: 1px solid #e8e9f0;
+      padding: 14px 18px; border-bottom: 1px solid #e8e9f0; gap: 12px;
     }
     .fin-table-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: #22243a; }
+    .fin-day-label { font-size: 12.5px; font-weight: 600; color: #4a4d63; white-space: nowrap; }
 
-    .fin-tx-icon {
-      width: 28px; height: 28px; border-radius: 50%;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 13px;
-    }
-    .fin-tx-icon--in  { background: #e3f6ec; color: #0f8a55; }
-    .fin-tx-icon--out { background: #fdebeb; color: #d83a3a; }
+    .fin-tx-tipo { font-weight: 600; font-size: 12.5px; }
 
     .fin-tx-desc { display: flex; flex-direction: column; gap: 2px; }
     .fin-tx-medio { display: flex; align-items: center; gap: 8px; }
-    .fin-cash-flag {
-      font-size: 11px; padding: 1px 6px; border-radius: 4px;
-    }
-    .fin-cash-flag--efectivo { background: #e3f6ec; color: #0f8a55; }
-    .fin-cash-flag--otro     { background: #f5f6f9; color: #7c8092; }
+    .fin-cash-flag { font-size: 11px; padding: 1px 6px; border-radius: 4px; }
+    .fin-cash-flag--otro { background: #f5f6f9; color: #7c8092; }
 
     .fin-tx-amt { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13.5px; }
     .fin-tx-amt--pos   { color: #0f8a55; }
-    .fin-tx-amt--muted { color: #7c8092; }
     .fin-tx-amt--neg   { color: #d83a3a; }
 
-    /* ── Empty / loading ── */
     .fin-empty-center {
       display: flex; flex-direction: column; align-items: center;
       text-align: center; padding: 60px 24px;
     }
-    .fin-empty__icon { font-size: 52px; color: #7c8092; margin-bottom: 14px; }
     .fin-empty-center h3 { margin: 0 0 10px; font-size: 20px; font-weight: 700; color: #22243a; }
     .fin-empty-center p { margin: 0 0 0; color: #7c8092; max-width: 380px; font-size: 14px; }
 
@@ -372,14 +464,14 @@ type ModalType = 'abrir' | 'movimiento' | 'arqueo' | null;
   `],
 })
 export class CajaPage implements OnInit {
-  private readonly store   = inject(Store);
-  private readonly router  = inject(Router);
-  private readonly polling = inject(PollingService);
-  private readonly destroy = inject(DestroyRef);
+  private readonly store     = inject(Store);
+  private readonly router    = inject(Router);
+  private readonly polling   = inject(PollingService);
+  private readonly destroy   = inject(DestroyRef);
   private readonly branchCtx = inject(OperatorBranchContextService);
+  private readonly cajaCtx   = inject(CajaContextService);
   private readonly tokens    = inject(TokenService);
 
-  // Role check
   readonly isAdmin = signal(this.tokens.getRoles().includes('ADMINISTRADOR'));
 
   // Selectors
@@ -389,33 +481,65 @@ export class CajaPage implements OnInit {
   readonly loading    = this.store.selectSignal(selectCajaLoading);
   readonly saldo      = this.store.selectSignal(selectCajaSaldo);
   readonly error      = this.store.selectSignal(selectCajaError);
+  readonly registers  = this.store.selectSignal(selectCashRegisters);
+  readonly otrosRows    = this.store.selectSignal(selectOtrosRows);
+  readonly otrosTotal   = this.store.selectSignal(selectOtrosTotal);
+  readonly otrosLoading = this.store.selectSignal(selectOtrosLoading);
 
   // UI state
   readonly activeModal   = signal<ModalType>(null);
   readonly lastRefreshAt = signal<Date | null>(null);
+  readonly selectedRegisterId = signal<number | null>(null);
+  readonly selectedDay = signal<string>(todayIso());
+  readonly branchId = computed(() => this.branchCtx.branchId());
 
   // Derived
   readonly rows = computed<SessionActivityRow[]>(() => this.activity()?.rows ?? []);
-  readonly otrosMediosTotal = computed(() => this.activity()?.otrosMediosTotal ?? 0);
   readonly cobrosCount = computed(() => this.activity()?.cobrosCount ?? 0);
+  /** Caja abierta pero la actividad todavía no llegó: mostrar skeleton, no el empty-state
+   *  ni datos stale de la subcaja anterior (activity se limpia al cambiar de sesión). */
+  readonly activityLoading = computed(() => this.isCajaOpen() && this.activity() == null);
 
   readonly tableColumns: TableColumn[] = [
-    { field: 'tipo',   header: '' },
+    { field: 'tipo',    header: 'Tipo' },
     { field: 'detalle', header: 'Detalle' },
-    { field: 'medio',  header: 'Medio' },
-    { field: 'hora',   header: 'Hora' },
-    { field: 'monto',  header: 'Monto', align: 'right' },
+    { field: 'medio',   header: 'Medio' },
+    { field: 'hora',    header: 'Hora' },
+    { field: 'monto',   header: 'Monto', align: 'right' },
+  ];
+  readonly otrosColumns: TableColumn[] = [
+    { field: 'origen',  header: 'Origen' },
+    { field: 'detalle', header: 'Detalle' },
+    { field: 'medio',   header: 'Medio' },
+    { field: 'hora',    header: 'Hora' },
+    { field: 'monto',   header: 'Monto', align: 'right' },
   ];
 
   private pollingHandle: PollingHandle | null = null;
 
+  constructor() {
+    // Auto-selección de subcaja cuando llega el listado (persistida o primera activa).
+    effect(() => {
+      const regs = this.registers();
+      if (regs.length === 0) return;
+      const current = untracked(() => this.selectedRegisterId());
+      const valid = current != null && regs.some(r => r.id === current && r.active);
+      if (valid) return;
+      const branchId = this.branchCtx.branchId();
+      const persisted = branchId != null ? this.cajaCtx.selectedFor(branchId) : null;
+      const pick = (persisted != null && regs.some(r => r.id === persisted && r.active))
+        ? persisted
+        : (regs.find(r => r.active)?.id ?? null);
+      if (pick !== current) this.applySelection(pick);
+    });
+  }
+
   ngOnInit(): void {
     const branchId = this.branchCtx.branchId();
-    if (branchId) {
-      this.store.dispatch(loadOpenSession({ branchId }));
+    if (branchId != null) {
+      this.store.dispatch(loadCashRegisters({ branchId }));
     }
 
-    // Start polling once session is open. We watch via effect-like polling callback.
     this.pollingHandle = this.polling.startPolling({
       key: 'financiero-caja',
       intervalMs: 5000,
@@ -423,13 +547,37 @@ export class CajaPage implements OnInit {
         const sess = this.session();
         if (sess?.status === 'OPEN') {
           this.store.dispatch(loadActivity({ sessionId: sess.id }));
-          this.lastRefreshAt.set(new Date());
         }
+        const b = this.branchCtx.branchId();
+        if (b != null && this.selectedRegisterId() != null) {
+          const { from, to } = dayBounds(this.selectedDay());
+          this.store.dispatch(loadBranchOtherMedia({ branchId: b, from, to }));
+        }
+        this.lastRefreshAt.set(new Date());
         return of(null);
       },
     });
 
     this.destroy.onDestroy(() => this.pollingHandle?.stop());
+  }
+
+  private applySelection(id: number | null): void {
+    this.selectedRegisterId.set(id);
+    const branchId = this.branchCtx.branchId();
+    if (id != null) {
+      if (branchId != null) this.cajaCtx.select(branchId, id);
+      this.store.dispatch(loadOpenSession({ cashRegisterId: id }));
+    } else {
+      this.store.dispatch(sessionNotFound());
+    }
+    // Traer otros-medios (sucursal+día) ya mismo, sin esperar el tick de 5s. La actividad
+    // de la sesión la dispara el effect al resolverse la sesión (loadActivityOnSession$).
+    this.pollingHandle?.pokeNow();
+  }
+
+  protected selectRegister(id: number): void {
+    if (id === this.selectedRegisterId()) return;
+    this.applySelection(id);
   }
 
   protected openModal(type: ModalType): void {
@@ -438,7 +586,6 @@ export class CajaPage implements OnInit {
 
   protected closeModal(): void {
     this.activeModal.set(null);
-    // Poke polling so the feed updates immediately after a transaction
     this.pollingHandle?.pokeNow();
   }
 
@@ -447,7 +594,9 @@ export class CajaPage implements OnInit {
   }
 
   protected retry(): void {
+    const id = this.selectedRegisterId();
     const branchId = this.branchCtx.branchId();
-    if (branchId) this.store.dispatch(loadOpenSession({ branchId }));
+    if (branchId != null) this.store.dispatch(loadCashRegisters({ branchId }));
+    if (id != null) this.store.dispatch(loadOpenSession({ cashRegisterId: id }));
   }
 }
