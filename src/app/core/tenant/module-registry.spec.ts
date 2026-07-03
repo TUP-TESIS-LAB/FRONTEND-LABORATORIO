@@ -15,6 +15,12 @@ const MOCK_CONFIG: TenantConfig = {
   modules: [ModuleKey.Turnos],
 };
 
+describe('ModuleKey', () => {
+  it('expone Urgencias mapeado al code lowercase del backend', () => {
+    expect(ModuleKey.Urgencias).toBe('urgencias');
+  });
+});
+
 describe('ModuleRegistry', () => {
   let registry: ModuleRegistry;
 

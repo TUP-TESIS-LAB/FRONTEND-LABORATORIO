@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
@@ -34,6 +35,7 @@ import {
   loadAttentionPatient,
   loadPatientGuardians,
   resolvePatientByDni,
+  setUrgentFlag,
   startAttentionForPatient,
   updatePatientInline,
   validateBond,
@@ -67,7 +69,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   selector: 'lab-datos-generales-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule, PortalAccessDialogComponent],
+  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule, PortalAccessDialogComponent],
   template: `
     <div class="flex flex-col h-full min-h-0">
       <!-- T8: contenido scrolleable interno; el footer queda abajo y la página no crece. -->
@@ -435,6 +437,16 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
         }
       </div>
 
+      <!-- Toggle urgente — visible solo si módulo URGENCIAS activo y no readOnly (KAN-140) -->
+      @if (urgenciasActive() && !readOnly()) {
+        <div data-testid="urgente-toggle-container">
+          <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none w-fit">
+            <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle-recepcion" />
+            <span class="text-sm font-semibold">Atención urgente</span>
+          </label>
+        </div>
+      }
+
       <!-- Indicaciones + confirmar -->
       <div>
         <label class="block text-sm font-medium mb-1">Indicaciones</label>
@@ -511,6 +523,12 @@ export class DatosGeneralesStepComponent implements OnInit {
   /** Módulo PORTAL activo para el tenant: gatea el banner de relación familiar pendiente. */
   protected readonly portalActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Portal));
 
+  /** Módulo URGENCIAS activo: gatea el toggle de "Atención urgente" en recepción. */
+  protected readonly urgenciasActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Urgencias));
+
+  /** Estado local del toggle urgente. Se hidrata desde el input initialIsUrgent en ngOnInit. */
+  isUrgentValue = false;
+
   /** Búsqueda automática del DNI: se dispara con debounce al tipear y al blur. */
   private readonly dniSearch$ = new Subject<string>();
   /** Evita re-buscar el mismo DNI en cada blur/keystroke. */
@@ -531,6 +549,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   readonly initialDoctorId = input<number | null>(null);
   /** Cobertura (plan) ya asociada a la atención (al retomar) — pre-selecciona el chip. */
   readonly initialInsurancePlanId = input<number | null>(null);
+  /** Flag urgente ya persistido (al retomar). Se hidrata en ngOnInit para que el toggle muestre el estado real. */
+  readonly initialIsUrgent = input<boolean | null>(null);
 
   /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
   readonly readOnly = input<boolean>(false);
@@ -750,10 +770,12 @@ export class DatosGeneralesStepComponent implements OnInit {
       catchError(() => EMPTY),
     ).subscribe(list => this.doctors.set(list.filter(d => d.active)));
 
-    // Hidratar lo ya persistido al retomar la atención. (003 / 007)
+    // Hidratar lo ya persistido al retomar la atención. (003 / 007 / urgente)
     const ind = this.initialIndications();
     if (ind != null) this.indications = ind;
     this.selectedDoctorId.set(this.initialDoctorId());
+    const isUrgent = this.initialIsUrgent();
+    if (isUrgent != null) this.isUrgentValue = isUrgent;
 
     const dni = this.initialDni();
     if (dni) {
@@ -946,6 +968,13 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   protected rechazarRelacion(g: PatientGuardian): void {
     this.store.dispatch(validateBond({ userPatientId: g.userPatientId, status: 'REJECTED' }));
+  }
+
+  /** Cambio del toggle urgente: persiste inmediatamente vía endpoint dedicado (KAN-140). */
+  onUrgentChange(): void {
+    const id = this.atencionId();
+    if (id == null) return;
+    this.store.dispatch(setUrgentFlag({ id, isUrgent: this.isUrgentValue }));
   }
 
   onConfirm(): void {

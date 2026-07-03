@@ -68,6 +68,15 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/stock/stock.routes').then((m) => m.STOCK_ROUTES),
       },
+      {
+        path: 'urgencias/en-curso',
+        canMatch: [moduleActiveGuard(ModuleKey.Urgencias)],
+        loadComponent: () =>
+          import('./features/analitica/pages/urgentes-en-curso/urgentes-en-curso.page').then(
+            (m) => m.UrgentesEnCursoPage,
+          ),
+        title: 'Urgentes en curso',
+      },
 
       // NUEVAS RUTAS
       {
