@@ -110,7 +110,6 @@ export class NomencladorEffects {
               sectionId,
               sectionName,
               customName: ta?.customName ?? null,
-              ayuno: null,
               active: ta?.active ?? false,
               hasCustomConfig: false,
             };
@@ -125,7 +124,6 @@ export class NomencladorEffects {
                   analysisId,
                   resumen: {
                     ...base,
-                    ayuno: resp.override?.preIndications ?? null,
                     hasCustomConfig: resp.hasOverride,
                   },
                 }),
