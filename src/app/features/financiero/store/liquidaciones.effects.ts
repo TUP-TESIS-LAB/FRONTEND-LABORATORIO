@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { of } from 'rxjs';
+import { Action } from '@ngrx/store';
+import { from, of } from 'rxjs';
 import { catchError, concatMap, map, switchMap } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { isNotModified } from '@core/refresh';
@@ -108,7 +109,10 @@ export class LiquidacionesEffects {
           catchError((e: HttpErrorResponse) => {
             const error = mapLifecycleError(e, 'informar');
             this.notif.error(error);
-            return of(informSettlementFailure({ error }));
+            // 409 = conflicto de versión: recargamos el detalle para traer la versión fresca.
+            const out: Action[] = [informSettlementFailure({ error })];
+            if (e.status === 409) out.push(loadSettlement({ id }));
+            return from(out);
           }),
         ),
       ),
@@ -127,7 +131,10 @@ export class LiquidacionesEffects {
           catchError((e: HttpErrorResponse) => {
             const error = mapLifecycleError(e, 'anular');
             this.notif.error(error);
-            return of(cancelSettlementFailure({ error }));
+            // 409 = conflicto de versión: recargamos el detalle para traer la versión fresca.
+            const out: Action[] = [cancelSettlementFailure({ error })];
+            if (e.status === 409) out.push(loadSettlement({ id }));
+            return from(out);
           }),
         ),
       ),
@@ -175,7 +182,9 @@ export class LiquidacionesEffects {
       ofType(loadInsurerPlans),
       switchMap(({ insurerId }) =>
         this.os.getCompleteById(insurerId).pipe(
-          map(complete => loadInsurerPlansSuccess({ planIds: complete.plans.map(p => p.id) })),
+          map(complete => loadInsurerPlansSuccess({
+            plans: complete.plans.map(p => ({ id: p.id, name: p.name, iva: p.iva })),
+          })),
           catchError(() => of(loadInsurerPlansFailure({ error: 'No se pudieron cargar los planes de la obra social.' }))),
         ),
       ),

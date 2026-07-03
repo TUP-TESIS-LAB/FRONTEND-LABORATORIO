@@ -3,7 +3,7 @@ import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment
 import {
   SettlementSummary, SettlementDetail, SettlementFilters, PendingService,
   GenerateSettlementBody, InformSettlementBody, CancelSettlementBody,
-  PreviewDetailBody, SettlementPreviewDetail,
+  PreviewDetailBody, SettlementPreviewDetail, InsurerPlanOption,
 } from '../models/liquidaciones.model';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 
@@ -359,11 +359,11 @@ export const loadInsurersIndexSuccess = createAction(
 export const loadInsurersIndexFailure = createAction(
   '[Liquidaciones API] Load Insurers Index Failure', props<{ error: string }>());
 
-// ── Liquidaciones: planes de la OS elegida (para preview de pendientes) ───────
+// ── Liquidaciones: planes de la OS elegida (multiselect del paso Datos) ───────
 export const loadInsurerPlans = createAction(
   '[Liquidaciones] Load Insurer Plans', props<{ insurerId: number }>());
 export const loadInsurerPlansSuccess = createAction(
-  '[Liquidaciones API] Load Insurer Plans Success', props<{ planIds: number[] }>());
+  '[Liquidaciones API] Load Insurer Plans Success', props<{ plans: InsurerPlanOption[] }>());
 export const loadInsurerPlansFailure = createAction(
   '[Liquidaciones API] Load Insurer Plans Failure', props<{ error: string }>());
 

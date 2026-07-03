@@ -2,7 +2,7 @@ import {
   CashSession, SessionActivity, PaymentListItem, Payment, TenantFiscalConfig,
   RegisterPaymentResponse, CashRegister, BankAccount, BranchOtherMedia, MovementsFeed,
 } from '../models/financiero.model';
-import { SettlementSummary, SettlementDetail, PendingService, SettlementPreviewDetail } from '../models/liquidaciones.model';
+import { SettlementSummary, SettlementDetail, PendingService, SettlementPreviewDetail, InsurerPlanOption } from '../models/liquidaciones.model';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 
 export const FINANCIERO_FEATURE_KEY = 'financiero';
@@ -23,7 +23,7 @@ export interface FinancieroState {
     exporting: boolean;
     pending: PendingService[]; pendingLoading: boolean;
     insurers: InsurerSummary[];
-    selectedInsurerPlanIds: number[];
+    insurerPlans: InsurerPlanOption[];
     previewDetail: SettlementPreviewDetail | null; previewLoading: boolean; previewError: string | null;
   };
 }
@@ -44,7 +44,7 @@ export const initialFinancieroState: FinancieroState = {
     exporting: false,
     pending: [], pendingLoading: false,
     insurers: [],
-    selectedInsurerPlanIds: [],
+    insurerPlans: [],
     previewDetail: null, previewLoading: false, previewError: null,
   },
 };

@@ -53,12 +53,24 @@ export interface SettlementFilters {
   status?: SettlementStatus;
 }
 
+/**
+ * Plan de una OS elegible para liquidar (id + nombre + IVA), para el multiselect
+ * del paso Datos. Nunca se expone el id en la UI: se muestra el nombre.
+ */
+export interface InsurerPlanOption {
+  id: number;
+  name: string;
+  iva: number;
+}
+
 /** Body de POST /settlements (solo SIMPLE en v1). */
 export interface GenerateSettlementBody {
   insurerId: number;
   period: { from: string; to: string };
   specialRules: [];
   excludedAnalysisIdsByPs: Record<number, number[]> | null;
+  /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
+  planIds?: number[] | null;
 }
 
 export interface InformSettlementBody {
@@ -93,6 +105,8 @@ export interface PreviewDetailBody {
   insurerId: number;
   period: { from: string; to: string };
   excludedAnalysisIdsByPs?: ExcludedAnalysisIdsByPs | null;
+  /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
+  planIds?: number[] | null;
 }
 
 export interface PreviewAnalysis {

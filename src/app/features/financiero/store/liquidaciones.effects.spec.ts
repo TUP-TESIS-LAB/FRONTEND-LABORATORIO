@@ -11,6 +11,8 @@ import {
   loadSettlements, loadSettlementsSuccess, loadSettlementsNotModified,
   generateSettlement, generateSettlementSuccess, generateSettlementFailure,
   exportSettlement, exportSettlementSuccess, exportSettlementFailure,
+  informSettlement, informSettlementFailure, loadSettlement,
+  loadInsurerPlans, loadInsurerPlansSuccess,
 } from './financiero.actions';
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import { NOT_MODIFIED } from '@core/refresh';
@@ -21,7 +23,9 @@ describe('LiquidacionesEffects', () => {
     listSettlements: ReturnType<typeof vi.fn>;
     generateSettlement: ReturnType<typeof vi.fn>;
     exportSettlement: ReturnType<typeof vi.fn>;
+    informSettlement: ReturnType<typeof vi.fn>;
   };
+  let os: { search: ReturnType<typeof vi.fn>; getCompleteById: ReturnType<typeof vi.fn> };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   function make(action: unknown) {
@@ -31,7 +35,7 @@ describe('LiquidacionesEffects', () => {
         LiquidacionesEffects,
         provideMockActions(() => actions$),
         { provide: LiquidacionesApiService, useValue: api },
-        { provide: ObraSocialService, useValue: { search: vi.fn(), getCompleteById: vi.fn() } },
+        { provide: ObraSocialService, useValue: os },
         { provide: NotificationService, useValue: notif },
       ],
     });
@@ -39,7 +43,8 @@ describe('LiquidacionesEffects', () => {
   }
 
   beforeEach(() => {
-    api = { listSettlements: vi.fn(), generateSettlement: vi.fn(), exportSettlement: vi.fn() };
+    api = { listSettlements: vi.fn(), generateSettlement: vi.fn(), exportSettlement: vi.fn(), informSettlement: vi.fn() };
+    os = { search: vi.fn(), getCompleteById: vi.fn() };
     notif = { success: vi.fn(), error: vi.fn() };
   });
 
@@ -109,5 +114,29 @@ describe('LiquidacionesEffects', () => {
     expect(out.type).toBe(exportSettlementFailure.type);
     expect(out.error).toContain('No se pudo exportar');
     expect(notif.error).toHaveBeenCalled();
+  });
+
+  it('informSettlement$ con 409 emite Failure y además recarga el detalle (loadSettlement)', async () => {
+    api.informSettlement.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    const eff = make(informSettlement({ id: 5, body: { informedDate: '2026-02-01', informedAmount: 1000 } }));
+    const emitted: Array<{ type: string }> = [];
+    await new Promise<void>(r => eff.informSettlement$.subscribe({ next: a => emitted.push(a as { type: string }), complete: r }));
+    expect(emitted.map(a => a.type)).toEqual([informSettlementFailure.type, loadSettlement.type]);
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  it('informSettlement$ con 422 NO recarga el detalle (solo Failure)', async () => {
+    api.informSettlement.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
+    const eff = make(informSettlement({ id: 5, body: { informedDate: '2026-02-01', informedAmount: 1000 } }));
+    const emitted: Array<{ type: string }> = [];
+    await new Promise<void>(r => eff.informSettlement$.subscribe({ next: a => emitted.push(a as { type: string }), complete: r }));
+    expect(emitted.map(a => a.type)).toEqual([informSettlementFailure.type]);
+  });
+
+  it('loadInsurerPlans$ mapea los planes a { id, name, iva }', async () => {
+    os.getCompleteById.mockReturnValue(of({ plans: [{ id: 3, name: 'Plan A', iva: 21 }, { id: 4, name: 'Plan B', iva: 0 }] }));
+    const eff = make(loadInsurerPlans({ insurerId: 7 }));
+    const out = await new Promise(r => eff.loadInsurerPlans$.subscribe(r));
+    expect(out).toEqual(loadInsurerPlansSuccess({ plans: [{ id: 3, name: 'Plan A', iva: 21 }, { id: 4, name: 'Plan B', iva: 0 }] }));
   });
 });

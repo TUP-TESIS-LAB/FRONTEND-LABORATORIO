@@ -104,7 +104,7 @@ export const selectLiqInsurersIndex = createSelector(
   insurers => new Map<number, string>(insurers.map(i => [i.id, i.name])),
 );
 
-export const selectLiqInsurerPlanIds = createSelector(selectLiqSlice, l => l.selectedInsurerPlanIds);
+export const selectLiqInsurerPlans = createSelector(selectLiqSlice, l => l.insurerPlans);
 
 export const selectLiqPreviewDetail = createSelector(selectLiqSlice, l => l.previewDetail);
 export const selectLiqPreviewLoading = createSelector(selectLiqSlice, l => l.previewLoading);

@@ -2,24 +2,36 @@ import { ChangeDetectionStrategy, Component, computed, output, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { InformSettlementBody } from '../../../models/liquidaciones.model';
+
+function toIso(d: Date | null): string {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 @Component({
   selector: 'fin-informar-liquidacion-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DialogModule, ButtonModule],
+  imports: [FormsModule, DialogModule, ButtonModule, DatePickerModule, InputNumberModule],
   template: `
     <p-dialog [visible]="true" [modal]="true" [draggable]="false" [resizable]="false"
               header="Informar liquidación" [style]="{ width: '420px' }" (onHide)="closed.emit()">
       <div class="liq-form">
         <label class="liq-field">
           <span>Fecha informada <span class="pat-form__req" aria-hidden="true">*</span></span>
-          <input type="date" [ngModel]="fecha()" (ngModelChange)="fecha.set($event)" data-testid="inp-fecha" />
+          <p-datePicker dateFormat="dd/mm/yy" appendTo="body" [showIcon]="true"
+                        [ngModel]="fecha()" (ngModelChange)="fecha.set($event)" data-testid="inp-fecha" />
         </label>
         <label class="liq-field">
           <span>Monto informado <span class="pat-form__req" aria-hidden="true">*</span></span>
-          <input type="number" min="0" step="0.01" [ngModel]="monto()" (ngModelChange)="monto.set($event)" data-testid="inp-monto" />
+          <p-inputNumber mode="currency" currency="ARS" locale="es-AR" [min]="0"
+                         [ngModel]="monto()" (ngModelChange)="monto.set($event)" data-testid="inp-monto" />
         </label>
         <label class="liq-field">
           <span>Observaciones</span>
@@ -35,7 +47,11 @@ import { InformSettlementBody } from '../../../models/liquidaciones.model';
   styles: [`
     .liq-form { display: flex; flex-direction: column; gap: 12px; }
     .liq-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
-    .liq-field input, .liq-field textarea { padding: 8px 10px; border: 1px solid #e8edf3; border-radius: 7px; font-size: 14px; }
+    .liq-field textarea { padding: 8px 10px; border: 1px solid #e8edf3; border-radius: 7px; font-size: 14px; }
+    :host ::ng-deep .liq-field .p-datepicker,
+    :host ::ng-deep .liq-field .p-inputnumber { width: 100%; }
+    :host ::ng-deep .liq-field .p-datepicker .p-inputtext,
+    :host ::ng-deep .liq-field .p-inputnumber .p-inputtext { width: 100%; }
   `],
 })
 export class InformarLiquidacionModalComponent {
@@ -43,7 +59,7 @@ export class InformarLiquidacionModalComponent {
   readonly confirm = output<InformSettlementBody>();
   readonly closed = output<void>();
 
-  protected readonly fecha = signal<string>('');
+  protected readonly fecha = signal<Date | null>(null);
   protected readonly monto = signal<number | null>(null);
   protected readonly obs = signal<string>('');
 
@@ -53,7 +69,7 @@ export class InformarLiquidacionModalComponent {
     if (!this.valido()) return;
     this.loading.set(true);
     const body: InformSettlementBody = {
-      informedDate: this.fecha(),
+      informedDate: toIso(this.fecha()),
       informedAmount: this.monto() as number,
     };
     const obs = this.obs().trim();
