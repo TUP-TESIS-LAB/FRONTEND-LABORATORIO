@@ -240,7 +240,7 @@ function norm(s: string | null | undefined): string {
                     <ng-template uiCell="patientName" let-it>
                       <div class="liq-cell-patient" [class.liq-cell--excluded]="it.fullyExcluded">
                         <span class="liq-cell-patient__name">{{ it.patientName }}</span>
-                        <span class="liq-cell-patient__meta">DNI {{ it.patientDni ?? '—' }} · {{ it.analyses.length }} análisis</span>
+                        <span class="liq-cell-patient__meta">DNI {{ it.patientDni ?? '—' }}@if (it.protocolNumber) { · Prot. {{ it.protocolNumber }}} · {{ it.analyses.length }} análisis</span>
                       </div>
                     </ng-template>
 
@@ -465,7 +465,7 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   /** Texto de búsqueda del paso Revisar (filtra prestaciones visibles). */
   protected readonly reviewSearch = signal('');
   protected readonly reviewFilterConfig: FilterBarConfig = {
-    searchPlaceholder: 'Buscar por paciente, DNI, N° de autorización o análisis…',
+    searchPlaceholder: 'Buscar por paciente, DNI, N° de protocolo, N° de autorización o análisis…',
   };
 
   // selección de exclusiones { providedServiceId: [analysisId,...] }
@@ -553,15 +553,15 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   }
 
   /**
-   * ¿La prestación matchea la búsqueda? Cubre paciente, DNI, N° de autorización y
+   * ¿La prestación matchea la búsqueda? Cubre paciente, DNI, N° de autorización, N° de protocolo y
    * nombre/código de análisis. `q` viene ya normalizado (minúsculas, sin acentos).
-   * TODO(BE): el preview no trae N° de protocolo — cubrirlo cuando el contrato lo exponga.
    */
   private matchesSearch(it: PreviewItem, q: string): boolean {
     if (!q) return true;
     if (norm(it.patientName).includes(q)) return true;
     if (norm(it.patientDni).includes(q)) return true;
     if (norm(it.authorizationNumber).includes(q)) return true;
+    if (norm(it.protocolNumber).includes(q)) return true;
     return it.analyses.some(a => norm(a.name).includes(q) || norm(a.code).includes(q));
   }
 

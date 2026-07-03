@@ -27,7 +27,7 @@ const PREVIEW: SettlementPreviewDetail = {
     planId: 3, planName: 'Plan A', ivaPercentage: 21, netAmount: 1000, ivaAmount: 210, grossAmount: 1210,
     items: [{
       providedServiceId: 11, patientId: 1, patientName: 'Ana', patientDni: '123', serviceDate: '2026-01-10',
-      authorizationNumber: null, planId: 3, agreementId: null, ubValue: null, copaymentAmount: 0, coveredAmount: 1000,
+      authorizationNumber: null, protocolNumber: 'PROT-11', planId: 3, agreementId: null, ubValue: null, copaymentAmount: 0, coveredAmount: 1000,
       fullyExcluded: false, analyses: [{ analysisId: 100, code: 'X', name: 'Hemograma', ubUnits: 5, amount: 1000, excluded: false, authorized: true }],
     }],
   }],
@@ -43,12 +43,12 @@ const PREVIEW_MULTI: SettlementPreviewDetail = {
       items: [
         {
           providedServiceId: 11, patientId: 1, patientName: 'Ana Gómez', patientDni: '111', serviceDate: '2026-01-10',
-          authorizationNumber: 'AUT-900', planId: 3, agreementId: null, ubValue: null, copaymentAmount: 0, coveredAmount: 1000,
+          authorizationNumber: 'AUT-900', protocolNumber: 'PROT-A11', planId: 3, agreementId: null, ubValue: null, copaymentAmount: 0, coveredAmount: 1000,
           fullyExcluded: false, analyses: [{ analysisId: 100, code: 'HEM', name: 'Hemograma', ubUnits: 5, amount: 1000, excluded: false, authorized: true }],
         },
         {
           providedServiceId: 12, patientId: 2, patientName: 'Beto Ruiz', patientDni: '222', serviceDate: '2026-01-11',
-          authorizationNumber: 'AUT-901', planId: 3, agreementId: null, ubValue: null, copaymentAmount: 0, coveredAmount: 1000,
+          authorizationNumber: 'AUT-901', protocolNumber: 'PROT-A12', planId: 3, agreementId: null, ubValue: null, copaymentAmount: 0, coveredAmount: 1000,
           fullyExcluded: false, analyses: [{ analysisId: 101, code: 'GLU', name: 'Glucemia', ubUnits: 5, amount: 1000, excluded: false, authorized: true }],
         },
       ],
@@ -58,7 +58,7 @@ const PREVIEW_MULTI: SettlementPreviewDetail = {
       items: [
         {
           providedServiceId: 21, patientId: 3, patientName: 'Caro Díaz', patientDni: '333', serviceDate: '2026-01-12',
-          authorizationNumber: 'AUT-902', planId: 4, agreementId: null, ubValue: null, copaymentAmount: 0, coveredAmount: 1000,
+          authorizationNumber: 'AUT-902', protocolNumber: 'PROT-B21', planId: 4, agreementId: null, ubValue: null, copaymentAmount: 0, coveredAmount: 1000,
           fullyExcluded: false, analyses: [{ analysisId: 102, code: 'TSH', name: 'Tirotrofina', ubUnits: 5, amount: 1000, excluded: false, authorized: true }],
         },
       ],
@@ -302,6 +302,11 @@ describe('GenerarLiquidacionPage — smoke', () => {
 
     // por N° de autorización
     cmp.reviewSearch.set('AUT-901');
+    vis = cmp.visibleGroups();
+    expect((vis[0].items as Array<{ providedServiceId: number }>).map(i => i.providedServiceId)).toEqual([12]);
+
+    // por N° de protocolo
+    cmp.reviewSearch.set('prot-a12');
     vis = cmp.visibleGroups();
     expect((vis[0].items as Array<{ providedServiceId: number }>).map(i => i.providedServiceId)).toEqual([12]);
 

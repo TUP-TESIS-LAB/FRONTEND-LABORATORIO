@@ -143,6 +143,7 @@ export interface PreviewItem {
   patientDni: string | null;
   serviceDate: string;
   authorizationNumber: string | null;
+  protocolNumber: string | null;   // N° de protocolo (attention_number)
   planId: number;
   agreementId: number | null;
   ubValue: number | null;

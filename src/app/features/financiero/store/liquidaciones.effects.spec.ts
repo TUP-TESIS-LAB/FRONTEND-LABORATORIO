@@ -13,6 +13,7 @@ import {
   exportSettlement, exportSettlementSuccess, exportSettlementFailure,
   informSettlement, informSettlementFailure, loadSettlement,
   loadInsurerPlans, loadInsurerPlansSuccess,
+  loadInsurersIndex, loadInsurersIndexSuccess,
 } from './financiero.actions';
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import { NOT_MODIFIED } from '@core/refresh';
@@ -146,5 +147,18 @@ describe('LiquidacionesEffects', () => {
       { id: 4, name: 'Plan B', iva: 0, arancel: 0, hasActiveAgreement: false },
     ] }));
     expect(api.listSettlementPlans).toHaveBeenCalledWith(7);
+  });
+
+  it('loadInsurersIndex$ excluye las OS Particular (SELF_PAY)', async () => {
+    os.search.mockReturnValue(of({ content: [
+      { id: 1, name: 'IOMA', insurerType: 'SOCIAL' },
+      { id: 2, name: 'Prepaga X', insurerType: 'PRIVATE' },
+      { id: 3, name: 'Particular', insurerType: 'SELF_PAY' },
+    ] }));
+    const eff = make(loadInsurersIndex());
+    const emitted: Array<{ type: string; insurers?: Array<{ insurerType: string }> }> = [];
+    await new Promise<void>(r => eff.loadInsurersIndex$.subscribe({ next: a => emitted.push(a as never), complete: r }));
+    const success = emitted.find(a => a.type === loadInsurersIndexSuccess.type);
+    expect(success?.insurers?.map(i => i.insurerType)).toEqual(['SOCIAL', 'PRIVATE']);
   });
 });
