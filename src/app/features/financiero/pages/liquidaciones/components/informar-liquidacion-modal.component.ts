@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
@@ -25,7 +25,7 @@ function toIso(d: Date | null): string {
       <div class="liq-form">
         <label class="liq-field">
           <span>Fecha informada <span class="pat-form__req" aria-hidden="true">*</span></span>
-          <p-datePicker dateFormat="dd/mm/yy" appendTo="body" [showIcon]="true"
+          <p-datePicker dateFormat="dd/mm/yy" appendTo="body" [showIcon]="true" [maxDate]="hoy"
                         [ngModel]="fecha()" (ngModelChange)="fecha.set($event)" data-testid="inp-fecha" />
         </label>
         <label class="liq-field">
@@ -56,12 +56,24 @@ function toIso(d: Date | null): string {
 })
 export class InformarLiquidacionModalComponent {
   readonly loading = signal(false);
+  /** Total liquidado (neto) — precarga el monto informado; el usuario puede editarlo. */
+  readonly total = input<number | null>(null);
   readonly confirm = output<InformSettlementBody>();
   readonly closed = output<void>();
 
-  protected readonly fecha = signal<Date | null>(null);
+  /** Tope de fecha: hoy — no se puede informar en el futuro. */
+  protected readonly hoy = new Date();
+  protected readonly fecha = signal<Date | null>(new Date());   // precarga: hoy
   protected readonly monto = signal<number | null>(null);
   protected readonly obs = signal<string>('');
+
+  constructor() {
+    // Precarga el monto con el total de la liquidación cuando llega el input.
+    effect(() => {
+      const t = this.total();
+      if (t != null) this.monto.set(t);
+    });
+  }
 
   protected readonly valido = computed(() => !!this.fecha() && this.monto() != null && (this.monto() ?? 0) >= 0);
 

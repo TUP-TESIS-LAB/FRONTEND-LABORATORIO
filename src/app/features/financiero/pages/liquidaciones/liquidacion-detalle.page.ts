@@ -108,7 +108,7 @@ type Modal = 'informar' | 'anular' | null;
       }
 
       @if (modal() === 'informar') {
-        <fin-informar-liquidacion-modal (confirm)="onInformar($event)" (closed)="modal.set(null)" />
+        <fin-informar-liquidacion-modal [total]="total()" (confirm)="onInformar($event)" (closed)="modal.set(null)" />
       }
       @if (modal() === 'anular') {
         <fin-anular-liquidacion-modal (confirm)="onAnular($event)" (closed)="modal.set(null)" />

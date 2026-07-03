@@ -81,12 +81,12 @@ function toIso(d: Date | null): string {
           <div class="form-row">
             <div class="form-field">
               <label for="from">Desde <span class="pat-form__req" aria-hidden="true">*</span></label>
-              <p-datePicker inputId="from" dateFormat="dd/mm/yy" appendTo="body"
+              <p-datePicker inputId="from" dateFormat="dd/mm/yy" appendTo="body" [maxDate]="hoy"
                             [ngModel]="from()" (ngModelChange)="from.set($event)" data-testid="inp-from" />
             </div>
             <div class="form-field">
               <label for="to">Hasta <span class="pat-form__req" aria-hidden="true">*</span></label>
-              <p-datePicker inputId="to" dateFormat="dd/mm/yy" appendTo="body"
+              <p-datePicker inputId="to" dateFormat="dd/mm/yy" appendTo="body" [maxDate]="hoy"
                             [ngModel]="to()" (ngModelChange)="to.set($event)" data-testid="inp-to" />
             </div>
           </div>
@@ -282,13 +282,17 @@ function toIso(d: Date | null): string {
     .muted { color: var(--ds-text-muted, #64748b); font-size: 13px; margin: 0; }
     .form-field { display: flex; flex-direction: column; gap: 6px; }
     .form-field label { font-size: 13px; font-weight: 500; color: var(--ds-text, #1a1a2e); }
-    .form-field p-select, .form-field p-datepicker, .form-field p-multiselect { display: block; width: 100%; }
+    .form-field p-datepicker { display: block; width: 100%; }
+    /* flex (no block): PrimeNG usa flex interno; block recorta el label del select a ~1 carácter. */
+    .form-field p-select, .form-field p-multiselect { display: flex; width: 100%; }
     .form-row { display: flex; gap: 14px; }
     .form-row .form-field { flex: 1; min-width: 0; }
     :host ::ng-deep .form-field .p-datepicker { width: 100%; }
     :host ::ng-deep .form-field .p-datepicker .p-inputtext { width: 100%; }
-    :host ::ng-deep .form-field .p-select { width: 100%; }
-    :host ::ng-deep .form-field .p-multiselect { width: 100%; }
+    /* display:flex (no block): block rompe el flex interno de PrimeNG y el label se recorta a ~1 carácter. */
+    :host ::ng-deep .form-field .p-select { display: flex; width: 100%; }
+    :host ::ng-deep .form-field .p-multiselect { display: flex; width: 100%; }
+    :host ::ng-deep .form-field .p-select .p-select-label { flex: 1 1 auto; min-width: 0; text-overflow: ellipsis; }
     .field-error { color: #d83a3a; font-size: 12.5px; }
 
     .liq-warn { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 10px 14px; border-radius: 9px; font-size: 13px; }
@@ -367,6 +371,8 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   private readonly destroy = inject(DestroyRef);
 
   protected readonly steps = STEPS;
+  /** Tope de fecha: hoy — no se pueden liquidar períodos futuros. */
+  protected readonly hoy = new Date();
   protected readonly step = signal(0);
   protected readonly visited = signal<ReadonlySet<number>>(new Set([0]));
 
