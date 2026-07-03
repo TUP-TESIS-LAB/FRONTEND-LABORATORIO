@@ -70,9 +70,9 @@ type Cmp = InstanceType<typeof GenerarLiquidacionPage> & {
   onOsChange: (i: unknown) => void;
   next: () => void;
   generar: () => void;
-  excluirSeleccionadas: (planId: number) => void;
-  onGroupSelectionChange: (planId: number, rows: unknown[]) => void;
-  selectedCountFor: (planId: number) => number;
+  onGroupSelectionChange: (group: unknown, rows: unknown[]) => void;
+  excluirTodasGrupo: (group: unknown) => void;
+  incluirTodasGrupo: (group: unknown) => void;
 };
 
 describe('GenerarLiquidacionPage — smoke', () => {
@@ -163,7 +163,7 @@ describe('GenerarLiquidacionPage — smoke', () => {
     expect(navigate).toHaveBeenCalledWith(['/financiero/liquidaciones']);
   });
 
-  it('excluirSeleccionadas marca las prestaciones seleccionadas como excluidas y recalcula', async () => {
+  it('destildar una prestación (sale de la selección) la excluye y recalcula', async () => {
     await setup(PREVIEW);
     const fixture = TestBed.createComponent(GenerarLiquidacionPage);
     const cmp = fixture.componentInstance as unknown as Cmp;
@@ -174,10 +174,24 @@ describe('GenerarLiquidacionPage — smoke', () => {
     cmp.from.set(new Date(2026, 0, 1));
     cmp.to.set(new Date(2026, 0, 31));
     cmp.selectedPlanIds.set([3]);
-    cmp.onGroupSelectionChange(3, [PREVIEW.groups[0].items[0]]);
-    expect(cmp.selectedCountFor(3)).toBe(1);
-    cmp.excluirSeleccionadas(3);
-    // recalcula el preview con la prestación excluida
+    // La selección arranca con todas incluidas; el usuario destilda la única fila → selección vacía.
+    cmp.onGroupSelectionChange(PREVIEW.groups[0], []);
+    const last = dispatch.mock.calls.at(-1)?.[0] as { body?: { excludedAnalysisIdsByPs?: unknown } };
+    expect(last.body?.excludedAnalysisIdsByPs).toEqual({ 11: [100] });
+  });
+
+  it('excluirTodasGrupo excluye todas las prestaciones del plan y recalcula', async () => {
+    await setup(PREVIEW);
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    const dispatch = vi.spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    cmp.os.set(OS);
+    cmp.from.set(new Date(2026, 0, 1));
+    cmp.to.set(new Date(2026, 0, 31));
+    cmp.selectedPlanIds.set([3]);
+    cmp.excluirTodasGrupo(PREVIEW.groups[0]);
     const last = dispatch.mock.calls.at(-1)?.[0] as { body?: { excludedAnalysisIdsByPs?: unknown } };
     expect(last.body?.excludedAnalysisIdsByPs).toEqual({ 11: [100] });
   });

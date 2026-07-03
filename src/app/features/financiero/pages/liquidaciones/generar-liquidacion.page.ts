@@ -28,7 +28,7 @@ import {
   generateSettlement, generateSettlementSuccess,
 } from '../../store/financiero.actions';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
-import { PreviewItem, ExcludedAnalysisIdsByPs } from '../../models/liquidaciones.model';
+import { PreviewItem, PreviewGroup, ExcludedAnalysisIdsByPs } from '../../models/liquidaciones.model';
 
 const STEPS: FormStep[] = [
   { key: 'datos', title: 'Datos', subtitle: 'Obra social, período y planes' },
@@ -114,7 +114,15 @@ function toIso(d: Date | null): string {
         <div class="step">
           <p class="muted">Revisá las prestaciones agrupadas por plan y elegí cuáles incluir. Podés excluir prestaciones enteras, análisis individuales, o usar la selección múltiple para excluir/incluir en lote; los montos se recalculan solos.</p>
 
-          @if (preview(); as pv) {
+          @if (previewLoading() && !preview()) {
+            <div class="liq-loading liq-loading--full">
+              <i class="pi pi-spin pi-spinner"></i>
+              <span>Buscando prestaciones pendientes…</span>
+            </div>
+          } @else if (preview(); as pv) {
+            @if (previewLoading()) {
+              <div class="liq-recalc"><i class="pi pi-spin pi-spinner"></i> Recalculando montos…</div>
+            }
             @if (pv.previewWarning) {
               <div class="liq-warn"><i class="pi pi-exclamation-triangle"></i> {{ pv.previewWarning }}</div>
             }
@@ -149,46 +157,35 @@ function toIso(d: Date | null): string {
                     </div>
                   </div>
 
-                  @if (selectedCountFor(g.planId); as n) {
-                    <div class="liq-bulk" [attr.data-testid]="'bulk-' + g.planId">
-                      <span class="liq-bulk__count">{{ n }} seleccionada{{ n === 1 ? '' : 's' }}</span>
-                      <div class="liq-bulk__actions">
-                        <button type="button" class="liq-bulk__btn liq-bulk__btn--danger"
-                                data-testid="bulk-excluir" (click)="excluirSeleccionadas(g.planId)">
-                          <i class="pi pi-times-circle"></i> Excluir seleccionadas
-                        </button>
-                        <button type="button" class="liq-bulk__btn liq-bulk__btn--ok"
-                                data-testid="bulk-incluir" (click)="incluirSeleccionadas(g.planId)">
-                          <i class="pi pi-check-circle"></i> Incluir seleccionadas
-                        </button>
-                        <button type="button" class="liq-bulk__btn"
-                                data-testid="bulk-limpiar" (click)="limpiarSeleccion(g.planId)">
-                          Limpiar selección
-                        </button>
-                      </div>
+                  <div class="liq-bulk" [attr.data-testid]="'bulk-' + g.planId">
+                    <span class="liq-bulk__count">{{ incluidasEnGrupo(g.planId) }} de {{ g.items.length }} incluidas</span>
+                    <div class="liq-bulk__actions">
+                      <button type="button" class="liq-bulk__btn liq-bulk__btn--ok"
+                              data-testid="bulk-incluir" (click)="incluirTodasGrupo(g)">
+                        <i class="pi pi-check-circle"></i> Incluir todas
+                      </button>
+                      <button type="button" class="liq-bulk__btn liq-bulk__btn--danger"
+                              data-testid="bulk-excluir" (click)="excluirTodasGrupo(g)">
+                        <i class="pi pi-times-circle"></i> Excluir todas
+                      </button>
                     </div>
-                  }
+                  </div>
 
                   <ui-table
                     [value]="g.items"
                     [columns]="itemColumns"
                     dataKey="providedServiceId"
                     [selectable]="true"
-                    [selection]="selectionFor(g.planId)"
-                    (selectionChange)="onGroupSelectionChange(g.planId, $any($event))"
+                    [selection]="selectionFor(g)"
+                    (selectionChange)="onGroupSelectionChange(g, $any($event))"
                     [expandable]="true"
-                    [paginator]="g.items.length > rowsPerPage"
+                    [paginator]="true"
                     [rows]="rowsPerPage"
+                    [rowsPerPageOptions]="[10, 20, 50, 100]"
+                    scrollHeight="46vh"
                     entityLabel="prestaciones"
                     emptyHeading="Sin prestaciones en este plan"
                     emptyIcon="pi-inbox">
-
-                    <ng-template uiCell="include" let-it>
-                      <input type="checkbox" class="liq-check" [checked]="!it.fullyExcluded"
-                             (click)="$event.stopPropagation()" (change)="togglePs(it)"
-                             [attr.data-testid]="'ps-' + it.providedServiceId"
-                             [attr.aria-label]="'Incluir prestación de ' + it.patientName" />
-                    </ng-template>
 
                     <ng-template uiCell="patientName" let-it>
                       <div class="liq-cell-patient" [class.liq-cell--excluded]="it.fullyExcluded">
@@ -235,8 +232,6 @@ function toIso(d: Date | null): string {
                 </div>
               }
             }
-          } @else if (previewLoading()) {
-            <div class="liq-loading"><i class="pi pi-spin pi-spinner"></i> Calculando prestaciones…</div>
           }
         </div>
       } @else {
@@ -321,6 +316,14 @@ function toIso(d: Date | null): string {
 
     .liq-empty { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 12px 14px; border-radius: 9px; font-size: 13.5px; }
     .liq-loading { color: #7c8092; font-size: 13.5px; display: flex; align-items: center; gap: 8px; padding: 12px; }
+    /* Loading grande centrado mientras se buscan las prestaciones (antes de renderizar el paso). */
+    .liq-loading--full { flex-direction: column; justify-content: center; align-items: center; gap: 12px;
+                         min-height: 260px; color: #64748b; font-size: 14px; }
+    .liq-loading--full .pi-spinner { font-size: 30px; color: #0f8a55; }
+    /* Indicador sutil de recálculo (los datos ya están; se están recalculando montos). */
+    .liq-recalc { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+                  background: #eef4ff; color: #26457a; border: 1px solid #d3e0fb; border-radius: 20px;
+                  padding: 4px 12px; font-size: 12.5px; }
 
     .liq-group { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
     .liq-group__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -386,12 +389,8 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   // selección de exclusiones { providedServiceId: [analysisId,...] }
   private readonly excluded = signal<ExcludedAnalysisIdsByPs>({});
 
-  /** Selección múltiple por plan (para la acción masiva del paso Revisar). */
-  private readonly selectionByPlan = signal<Record<number, PreviewItem[]>>({});
-
   protected readonly rowsPerPage = 10;
   protected readonly itemColumns: readonly TableColumn[] = [
-    { field: 'include', header: '' },
     { field: 'patientName', header: 'Paciente' },
     { field: 'serviceDate', header: 'Fecha' },
     { field: 'copaymentAmount', header: 'Copago', align: 'right' },
@@ -466,45 +465,46 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     this.reloadPreview();
   }
 
-  protected togglePs(item: PreviewItem): void {
+  // ── Inclusión por checkbox (paso Revisar) ─────────────────────────────────
+  // El checkbox de cada fila = "incluida". La selección de la tabla ES el conjunto de incluidas;
+  // el header "seleccionar todo" incluye/excluye la página. Un solo checkbox por fila (sin duplicar).
+
+  /** Prestaciones incluidas del grupo = las que NO están totalmente excluidas. */
+  protected selectionFor(group: PreviewGroup): readonly PreviewItem[] {
+    return group.items.filter(i => !i.fullyExcluded);
+  }
+
+  /** Cambió el tildado: las que salieron de la selección se excluyen; las que entraron se incluyen. */
+  protected onGroupSelectionChange(group: PreviewGroup, rows: PreviewItem[]): void {
+    const nowIncluded = new Set((rows ?? []).map(r => r.providedServiceId));
     const cur = { ...this.excluded() };
-    if (item.fullyExcluded) {
-      delete cur[item.providedServiceId];               // incluir toda la prestación
-    } else {
-      cur[item.providedServiceId] = item.analyses.map(a => a.analysisId); // excluir toda la prestación
+    let changed = false;
+    for (const it of group.items) {
+      const wasIncluded = !it.fullyExcluded;
+      const isIncluded = nowIncluded.has(it.providedServiceId);
+      if (wasIncluded && !isIncluded) {
+        cur[it.providedServiceId] = it.analyses.map(a => a.analysisId); // excluir toda la prestación
+        changed = true;
+      } else if (!wasIncluded && isIncluded) {
+        delete cur[it.providedServiceId];                               // incluir toda la prestación
+        changed = true;
+      }
     }
+    if (changed) { this.excluded.set(cur); this.reloadPreview(); }
+  }
+
+  /** Incluir todas las prestaciones del plan (quita sus exclusiones). */
+  protected incluirTodasGrupo(group: PreviewGroup): void {
+    const cur = { ...this.excluded() };
+    for (const it of group.items) delete cur[it.providedServiceId];
     this.excluded.set(cur);
     this.reloadPreview();
   }
 
-  // ── Selección múltiple (paso Revisar) ─────────────────────────────────────
-  protected selectionFor(planId: number): readonly PreviewItem[] {
-    return this.selectionByPlan()[planId] ?? [];
-  }
-  protected selectedCountFor(planId: number): number {
-    return this.selectionByPlan()[planId]?.length ?? 0;
-  }
-  protected onGroupSelectionChange(planId: number, rows: PreviewItem[]): void {
-    this.selectionByPlan.update(s => ({ ...s, [planId]: rows ?? [] }));
-  }
-  protected limpiarSeleccion(planId: number): void {
-    this.selectionByPlan.update(s => ({ ...s, [planId]: [] }));
-  }
-  /** Marca todas las prestaciones seleccionadas del plan como excluidas (todas sus análisis). */
-  protected excluirSeleccionadas(planId: number): void {
-    const rows = this.selectionByPlan()[planId] ?? [];
-    if (!rows.length) return;
+  /** Excluir todas las prestaciones del plan (todas sus análisis). */
+  protected excluirTodasGrupo(group: PreviewGroup): void {
     const cur = { ...this.excluded() };
-    for (const it of rows) cur[it.providedServiceId] = it.analyses.map(a => a.analysisId);
-    this.excluded.set(cur);
-    this.reloadPreview();
-  }
-  /** Reincluye (quita de exclusiones) las prestaciones seleccionadas del plan. */
-  protected incluirSeleccionadas(planId: number): void {
-    const rows = this.selectionByPlan()[planId] ?? [];
-    if (!rows.length) return;
-    const cur = { ...this.excluded() };
-    for (const it of rows) delete cur[it.providedServiceId];
+    for (const it of group.items) cur[it.providedServiceId] = it.analyses.map(a => a.analysisId);
     this.excluded.set(cur);
     this.reloadPreview();
   }
@@ -518,8 +518,6 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   private reloadPreview(): void {
     const insurer = this.os();
     if (!insurer) return;
-    // Al recalcular, las filas cambian de referencia → limpiamos la selección múltiple.
-    this.selectionByPlan.set({});
     const excl = this.excluded();
     this.store.dispatch(loadPreviewDetail({
       body: {
