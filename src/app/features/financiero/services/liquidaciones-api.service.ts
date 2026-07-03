@@ -5,7 +5,7 @@ import { withPolling, NotModified } from '@core/refresh';
 import {
   SettlementSummary, SettlementDetail, SettlementFilters,
   GenerateSettlementBody, InformSettlementBody, CancelSettlementBody, PendingService,
-  PreviewDetailBody, SettlementPreviewDetail,
+  PreviewDetailBody, SettlementPreviewDetail, SettlementPlanResponse,
 } from '../models/liquidaciones.model';
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +27,12 @@ export class LiquidacionesApiService {
 
   getSettlement(id: number): Observable<SettlementDetail> {
     return this.http.get<SettlementDetail>(`${this.base}/settlements/${id}`);
+  }
+
+  /** Planes de la OS elegibles para liquidar (arancel + IVA + convenio vigente), paso Datos. */
+  listSettlementPlans(insurerId: number): Observable<SettlementPlanResponse[]> {
+    const params = new HttpParams().set('insurerId', insurerId);
+    return this.http.get<SettlementPlanResponse[]>(`${this.base}/settlements/plans`, { params });
   }
 
   generateSettlement(body: GenerateSettlementBody): Observable<SettlementDetail> {

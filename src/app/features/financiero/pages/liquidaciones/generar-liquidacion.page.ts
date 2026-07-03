@@ -18,6 +18,7 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
 import { TableColumn } from '@shared/ui/models/table-column.model';
+import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 
 import {
   selectLiqInsurers, selectLiqGenerating, selectLiqInsurerPlans,
@@ -44,13 +45,19 @@ function toIso(d: Date | null): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Normaliza para búsqueda client-side: minúsculas + sin acentos. */
+function norm(s: string | null | undefined): string {
+  // ̀-ͯ = marcas diacríticas combinantes (acentos) que deja NFD.
+  return (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 @Component({
   selector: 'fin-generar-liquidacion-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe, CurrencyArPipe, FormsModule, SelectModule, MultiSelectModule, DatePickerModule,
-    WizardShellComponent, DataTableComponent, UiCellDirective, UiRowExpansionDirective,
+    WizardShellComponent, DataTableComponent, UiCellDirective, UiRowExpansionDirective, FilterBarComponent,
   ],
   template: `
     <ui-wizard-shell
@@ -108,6 +115,31 @@ function toIso(d: Date | null): string {
                 <small class="field-error">Elegí al menos un plan para liquidar.</small>
               }
             </div>
+
+            @if (selectedPlans().length) {
+              <div class="liq-plans-detail" data-testid="planes-convenio">
+                <span class="liq-plans-detail__title">Convenios de los planes tildados</span>
+                @for (p of selectedPlans(); track p.id) {
+                  <div class="liq-plan-conv" [class.liq-plan-conv--noagr]="!p.hasActiveAgreement"
+                       [attr.data-testid]="'plan-conv-' + p.id">
+                    <span class="liq-plan-conv__name">{{ p.name }}</span>
+                    @if (p.hasActiveAgreement) {
+                      <span class="liq-plan-conv__arancel">Arancel {{ p.arancel | currencyAr }}</span>
+                      <span class="liq-plan-conv__iva">{{ p.iva > 0 ? ('IVA ' + p.iva + '%') : 'IVA exento' }}</span>
+                    } @else {
+                      <span class="liq-plan-conv__warn">
+                        <i class="pi pi-exclamation-triangle"></i> Sin convenio vigente
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
+              @if (noPlanConvenio()) {
+                <small class="field-error" data-testid="sin-convenio-error">
+                  Ningún plan tildado tiene convenio vigente. No se puede generar la liquidación.
+                </small>
+              }
+            }
           }
         </div>
       } @else if (step() === 1) {
@@ -143,7 +175,25 @@ function toIso(d: Date | null): string {
             @if (!totalPrestaciones()) {
               <div class="liq-empty"><i class="pi pi-info-circle"></i><span>No hay prestaciones pendientes para esa obra social y período. No se puede generar la liquidación.</span></div>
             } @else {
-              @for (g of pv.groups; track g.planId) {
+              @if (pv.groups.length > 1) {
+                <div class="liq-tabs" role="tablist" data-testid="plan-tabs">
+                  <button type="button" class="liq-tab" [class.liq-tab--active]="activePlanTab() === null"
+                          (click)="activePlanTab.set(null)" data-testid="tab-todos">Todos</button>
+                  @for (g of pv.groups; track g.planId) {
+                    <button type="button" class="liq-tab" [class.liq-tab--active]="activePlanTab() === g.planId"
+                            (click)="activePlanTab.set(g.planId)" [attr.data-testid]="'tab-' + g.planId">{{ g.planName }}</button>
+                  }
+                </div>
+              }
+
+              <ui-filter-bar [config]="reviewFilterConfig" (valueChange)="onReviewSearch($event)" />
+
+              @if (!visibleGroups().length) {
+                <div class="liq-empty" data-testid="sin-resultados-busqueda">
+                  <i class="pi pi-search"></i><span>No hay prestaciones que coincidan con la búsqueda.</span>
+                </div>
+              }
+              @for (g of visibleGroups(); track g.planId) {
                 <div class="liq-group" [attr.data-testid]="'group-' + g.planId">
                   <div class="liq-group__head">
                     <div class="liq-group__title">
@@ -158,7 +208,7 @@ function toIso(d: Date | null): string {
                   </div>
 
                   <div class="liq-bulk" [attr.data-testid]="'bulk-' + g.planId">
-                    <span class="liq-bulk__count">{{ incluidasEnGrupo(g.planId) }} de {{ g.items.length }} incluidas</span>
+                    <span class="liq-bulk__count">{{ incluidasEnItems(g.items) }} de {{ g.items.length }} incluidas</span>
                     <div class="liq-bulk__actions">
                       <button type="button" class="liq-bulk__btn liq-bulk__btn--ok"
                               data-testid="bulk-incluir" (click)="incluirTodasGrupo(g)">
@@ -333,6 +383,29 @@ function toIso(d: Date | null): string {
     .liq-group__totals { display: flex; gap: 14px; font-size: 12.5px; color: #64748b; }
     .liq-group__gross { font-weight: 700; color: #0f6b44; }
 
+    /* Lista de convenios de los planes tildados (paso Datos). */
+    .liq-plans-detail { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;
+                        background: #f8fafc; border: 1px solid #e8edf3; border-radius: 10px; }
+    .liq-plans-detail__title { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+                               color: #7c8092; font-weight: 700; margin-bottom: 2px; }
+    .liq-plan-conv { display: flex; align-items: center; gap: 12px; padding: 5px 8px; border-radius: 7px; font-size: 13px; }
+    .liq-plan-conv + .liq-plan-conv { border-top: 1px solid #eef2f7; }
+    .liq-plan-conv__name { font-weight: 600; flex: 1; min-width: 0; }
+    .liq-plan-conv__arancel { color: #4a4d63; font-variant-numeric: tabular-nums; }
+    .liq-plan-conv__iva { font-size: 12px; color: #64748b; background: #eef2f7; padding: 2px 8px; border-radius: 20px; }
+    .liq-plan-conv--noagr { background: #fdecea; }
+    .liq-plan-conv--noagr .liq-plan-conv__name { color: #c0392b; }
+    .liq-plan-conv__warn { display: inline-flex; align-items: center; gap: 5px; color: #c0392b;
+                           font-size: 12px; font-weight: 600; }
+
+    /* Tabs por plan (paso Revisar). */
+    .liq-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #e8edf3; padding-bottom: 2px; }
+    .liq-tab { padding: 7px 14px; border: none; background: transparent; color: #64748b; font-size: 13px;
+               font-weight: 500; cursor: pointer; border-radius: 7px 7px 0 0; border-bottom: 2px solid transparent;
+               margin-bottom: -2px; }
+    .liq-tab:hover { color: #1a1a2e; background: #f4f7fb; }
+    .liq-tab--active { color: #0f6b44; border-bottom-color: #0f8a55; font-weight: 600; }
+
     /* Barra de acción masiva (aparece cuando hay prestaciones tildadas en el grupo). */
     .liq-bulk { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
                 padding: 8px 12px; background: #eef4ff; border: 1px solid #d3e0fb; border-radius: 9px; }
@@ -386,6 +459,15 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   /** Planes tildados de la OS (ids). Por defecto todos; se re-tildan al cambiar de OS. */
   protected readonly selectedPlanIds = signal<number[]>([]);
 
+  // ── Paso Revisar: tab de plan activo + búsqueda client-side ──
+  /** Plan activo del tab en el paso Revisar; null = "Todos". */
+  protected readonly activePlanTab = signal<number | null>(null);
+  /** Texto de búsqueda del paso Revisar (filtra prestaciones visibles). */
+  protected readonly reviewSearch = signal('');
+  protected readonly reviewFilterConfig: FilterBarConfig = {
+    searchPlaceholder: 'Buscar por paciente, DNI, N° de autorización o análisis…',
+  };
+
   // selección de exclusiones { providedServiceId: [analysisId,...] }
   private readonly excluded = signal<ExcludedAnalysisIdsByPs>({});
 
@@ -407,8 +489,20 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     const f = this.from(); const t = this.to();
     return !!f && !!t && f.getTime() > t.getTime();
   });
+  /** Planes tildados, resueltos a su detalle (nombre + arancel + convenio). */
+  protected readonly selectedPlans = computed(() => {
+    const ids = new Set(this.selectedPlanIds());
+    return this.insurerPlans().filter(p => ids.has(p.id));
+  });
+  /** true si hay planes tildados y NINGUNO tiene convenio vigente → no se puede liquidar. */
+  protected readonly noPlanConvenio = computed(() => {
+    const sel = this.selectedPlans();
+    return sel.length > 0 && sel.every(p => !p.hasActiveAgreement);
+  });
+
   protected readonly paso1Valido = computed(() =>
-    !!this.os() && !!this.from() && !!this.to() && !this.rangoInvalido() && this.selectedPlanIds().length > 0);
+    !!this.os() && !!this.from() && !!this.to() && !this.rangoInvalido()
+    && this.selectedPlanIds().length > 0 && !this.noPlanConvenio());
 
   /** Todas las prestaciones de todos los grupos, aplanadas. */
   private readonly allItems = computed(() =>
@@ -430,12 +524,54 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     return names.length ? names.join(', ') : '—';
   });
 
+  /**
+   * Grupos visibles en el paso Revisar según el tab de plan activo y la búsqueda.
+   * - tab null = todos los grupos; tab con planId = solo ese grupo.
+   * - búsqueda: filtra las prestaciones (por paciente/DNI/N° auth/análisis) dentro de
+   *   los grupos visibles; los grupos que quedan sin prestaciones se ocultan.
+   * Se mantienen los objetos de grupo (con items filtrados) para que selección/bulk/
+   * paginado operen sobre lo visible.
+   */
+  protected readonly visibleGroups = computed<PreviewGroup[]>(() => {
+    const pv = this.preview();
+    if (!pv) return [];
+    const tab = this.activePlanTab();
+    const q = norm(this.reviewSearch().trim());
+    let groups = tab === null ? pv.groups : pv.groups.filter(g => g.planId === tab);
+    if (!q) return [...groups];
+    return groups
+      .map(g => ({ ...g, items: g.items.filter(it => this.matchesSearch(it, q)) }))
+      .filter(g => g.items.length > 0);
+  });
+
   constructor() {
     // Al (re)cargar los planes de la OS elegida, tildar todos por defecto.
     effect(() => {
       const plans = this.insurerPlans();
       this.selectedPlanIds.set(plans.map(p => p.id));
     });
+  }
+
+  /**
+   * ¿La prestación matchea la búsqueda? Cubre paciente, DNI, N° de autorización y
+   * nombre/código de análisis. `q` viene ya normalizado (minúsculas, sin acentos).
+   * TODO(BE): el preview no trae N° de protocolo — cubrirlo cuando el contrato lo exponga.
+   */
+  private matchesSearch(it: PreviewItem, q: string): boolean {
+    if (!q) return true;
+    if (norm(it.patientName).includes(q)) return true;
+    if (norm(it.patientDni).includes(q)) return true;
+    if (norm(it.authorizationNumber).includes(q)) return true;
+    return it.analyses.some(a => norm(a.name).includes(q) || norm(a.code).includes(q));
+  }
+
+  protected onReviewSearch(value: FilterBarValue): void {
+    this.reviewSearch.set(value.search ?? '');
+  }
+
+  /** Incluidas dentro de un conjunto de items (para la barra bulk sobre items filtrados). */
+  protected incluidasEnItems(items: readonly PreviewItem[]): number {
+    return items.filter(i => !i.fullyExcluded).length;
   }
 
   ngOnInit(): void {
@@ -533,6 +669,8 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     if (this.step() === 0) {
       if (!this.paso1Valido()) return;
       this.excluded.set({});
+      this.activePlanTab.set(null);
+      this.reviewSearch.set('');
       this.step.set(1);
       this.visited.update(s => new Set(s).add(1));
       this.reloadPreview();

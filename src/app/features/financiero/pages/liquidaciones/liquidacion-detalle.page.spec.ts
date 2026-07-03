@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideMockStore } from '@ngrx/store/testing';
+import { provideMockActions } from '@ngrx/effects/testing';
+import { Subject } from 'rxjs';
+import type { Action } from '@ngrx/store';
+import { vi } from 'vitest';
+import { informSettlementSuccess, cancelSettlementSuccess } from '../../store/financiero.actions';
 import { LiquidacionDetallePage } from './liquidacion-detalle.page';
 import {
   selectLiqSelected, selectLiqDetailLoading, selectLiqDetailError,
@@ -21,12 +26,16 @@ const detail: SettlementDetail = {
   plans: [{ planId: 3, agreements: [{ agreementId: 9, agreementSubtotal: 1500, providedServiceIds: [1, 2], rules: [] }] }],
 };
 
+let actions$: Subject<Action>;
+
 function setup(status: SettlementDetail['status'], roles: string[]) {
+  actions$ = new Subject<Action>();
   return TestBed.configureTestingModule({
     imports: [LiquidacionDetallePage],
     providers: [
       provideNoopAnimations(),
       provideRouter([]),
+      provideMockActions(() => actions$),
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => '1' } } } },
       { provide: TokenService, useValue: { getRoles: () => roles } },
       provideMockStore({
@@ -84,5 +93,20 @@ describe('LiquidacionDetallePage — smoke', () => {
     fixture = TestBed.createComponent(LiquidacionDetallePage);
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('[data-testid="btn-exportar"]'))).toBeNull();
+  });
+
+  it('tras informar/anular con éxito navega al listado', async () => {
+    await setup('PENDING', ['ADMINISTRADOR']);
+    const fixture = TestBed.createComponent(LiquidacionDetallePage);
+    const router = TestBed.inject(Router);
+    const nav = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    fixture.detectChanges();
+
+    actions$.next(informSettlementSuccess({ settlement: { id: 1 } as never }));
+    expect(nav).toHaveBeenCalledWith(['/financiero/liquidaciones']);
+
+    nav.mockClear();
+    actions$.next(cancelSettlementSuccess({ id: 1 }));
+    expect(nav).toHaveBeenCalledWith(['/financiero/liquidaciones']);
   });
 });

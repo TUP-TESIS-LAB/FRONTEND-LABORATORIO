@@ -25,7 +25,7 @@ describe('selectors de liquidaciones', () => {
   });
 
   it('selectLiqInsurerPlans devuelve los planes de la OS elegida', () => {
-    const plans = [{ id: 3, name: 'Plan A', iva: 21 }];
+    const plans = [{ id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true }];
     expect(selectLiqInsurerPlans(root({ insurerPlans: plans }))).toEqual(plans);
   });
 });

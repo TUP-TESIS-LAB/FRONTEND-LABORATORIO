@@ -177,13 +177,18 @@ export class LiquidacionesEffects {
     ),
   );
 
+  // Planes de la OS con arancel + convenio vigente (endpoint dedicado de settlements).
+  // Puebla el multiselect Y la lista de convenios del paso Datos.
   loadInsurerPlans$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadInsurerPlans),
       switchMap(({ insurerId }) =>
-        this.os.getCompleteById(insurerId).pipe(
-          map(complete => loadInsurerPlansSuccess({
-            plans: complete.plans.map(p => ({ id: p.id, name: p.name, iva: p.iva })),
+        this.api.listSettlementPlans(insurerId).pipe(
+          map(plans => loadInsurerPlansSuccess({
+            plans: plans.map(p => ({
+              id: p.planId, name: p.planName, iva: p.iva ?? 0,
+              arancel: p.arancel, hasActiveAgreement: p.hasActiveAgreement,
+            })),
           })),
           catchError(() => of(loadInsurerPlansFailure({ error: 'No se pudieron cargar los planes de la obra social.' }))),
         ),

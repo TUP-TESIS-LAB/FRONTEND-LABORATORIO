@@ -1,9 +1,12 @@
 import {
-  ChangeDetectionStrategy, Component, OnInit, computed, inject, signal,
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
+import { merge } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
@@ -14,7 +17,10 @@ import {
   selectLiqSelected, selectLiqDetailLoading, selectLiqDetailError,
   selectLiqLifecycleInProgress, selectLiqInsurersIndex, selectLiqExporting,
 } from '../../store/financiero.selectors';
-import { loadSettlement, informSettlement, cancelSettlement, loadInsurersIndex, exportSettlement } from '../../store/financiero.actions';
+import {
+  loadSettlement, informSettlement, cancelSettlement, loadInsurersIndex, exportSettlement,
+  informSettlementSuccess, cancelSettlementSuccess,
+} from '../../store/financiero.actions';
 import { InformSettlementBody, CancelSettlementBody } from '../../models/liquidaciones.model';
 import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidacion-pill.component';
 import { InformarLiquidacionModalComponent } from './components/informar-liquidacion-modal.component';
@@ -166,11 +172,21 @@ export class LiquidacionDetallePage implements OnInit {
     return Number(this.route.snapshot.paramMap.get('id'));
   }
 
+  private readonly actions$ = inject(Actions);
+  private readonly destroy = inject(DestroyRef);
+
   ngOnInit(): void {
     // El nombre de la OS se resuelve del índice insurerId→nombre; al entrar por
     // deep-link/recarga directa al detalle hay que cargarlo (no solo desde el listado).
     this.store.dispatch(loadInsurersIndex());
     this.recargar();
+
+    // Tras informar/anular con éxito → volver al listado (el toast lo emite el effect). KAN-175.
+    merge(
+      this.actions$.pipe(ofType(informSettlementSuccess)),
+      this.actions$.pipe(ofType(cancelSettlementSuccess)),
+    ).pipe(takeUntilDestroyed(this.destroy))
+      .subscribe(() => this.router.navigate(['/financiero/liquidaciones']));
   }
 
   protected recargar(): void {

@@ -24,6 +24,7 @@ describe('LiquidacionesEffects', () => {
     generateSettlement: ReturnType<typeof vi.fn>;
     exportSettlement: ReturnType<typeof vi.fn>;
     informSettlement: ReturnType<typeof vi.fn>;
+    listSettlementPlans: ReturnType<typeof vi.fn>;
   };
   let os: { search: ReturnType<typeof vi.fn>; getCompleteById: ReturnType<typeof vi.fn> };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
@@ -43,7 +44,7 @@ describe('LiquidacionesEffects', () => {
   }
 
   beforeEach(() => {
-    api = { listSettlements: vi.fn(), generateSettlement: vi.fn(), exportSettlement: vi.fn(), informSettlement: vi.fn() };
+    api = { listSettlements: vi.fn(), generateSettlement: vi.fn(), exportSettlement: vi.fn(), informSettlement: vi.fn(), listSettlementPlans: vi.fn() };
     os = { search: vi.fn(), getCompleteById: vi.fn() };
     notif = { success: vi.fn(), error: vi.fn() };
   });
@@ -133,10 +134,17 @@ describe('LiquidacionesEffects', () => {
     expect(emitted.map(a => a.type)).toEqual([informSettlementFailure.type]);
   });
 
-  it('loadInsurerPlans$ mapea los planes a { id, name, iva }', async () => {
-    os.getCompleteById.mockReturnValue(of({ plans: [{ id: 3, name: 'Plan A', iva: 21 }, { id: 4, name: 'Plan B', iva: 0 }] }));
+  it('loadInsurerPlans$ mapea la respuesta del endpoint de settlements (planId/planName/arancel/convenio)', async () => {
+    api.listSettlementPlans.mockReturnValue(of([
+      { planId: 3, planName: 'Plan A', iva: 21, arancel: 1500, nbuVersionId: 2, hasActiveAgreement: true },
+      { planId: 4, planName: 'Plan B', iva: null, arancel: 0, nbuVersionId: null, hasActiveAgreement: false },
+    ]));
     const eff = make(loadInsurerPlans({ insurerId: 7 }));
     const out = await new Promise(r => eff.loadInsurerPlans$.subscribe(r));
-    expect(out).toEqual(loadInsurerPlansSuccess({ plans: [{ id: 3, name: 'Plan A', iva: 21 }, { id: 4, name: 'Plan B', iva: 0 }] }));
+    expect(out).toEqual(loadInsurerPlansSuccess({ plans: [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 0, hasActiveAgreement: false },
+    ] }));
+    expect(api.listSettlementPlans).toHaveBeenCalledWith(7);
   });
 });

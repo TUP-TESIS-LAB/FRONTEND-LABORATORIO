@@ -54,13 +54,29 @@ export interface SettlementFilters {
 }
 
 /**
- * Plan de una OS elegible para liquidar (id + nombre + IVA), para el multiselect
- * del paso Datos. Nunca se expone el id en la UI: se muestra el nombre.
+ * Plan de una OS elegible para liquidar, para el multiselect del paso Datos y la
+ * lista de convenios debajo. Nunca se expone el id en la UI: se muestra el nombre.
+ * Trae el arancel (valor U.B. del convenio vigente) y si tiene convenio vigente.
  */
 export interface InsurerPlanOption {
   id: number;
   name: string;
-  iva: number;
+  iva: number;                 // 0 = exento
+  arancel: number;             // valor U.B. del convenio vigente
+  hasActiveAgreement: boolean; // false → no se puede liquidar contra este plan
+}
+
+/**
+ * Respuesta cruda de GET /settlements/plans?insurerId — plan + convenio de la OS.
+ * Se mapea a `InsurerPlanOption` (planId→id, planName→name, iva null→0).
+ */
+export interface SettlementPlanResponse {
+  planId: number;
+  planName: string;
+  iva: number | null;          // null = exento
+  arancel: number;
+  nbuVersionId: number | null;
+  hasActiveAgreement: boolean;
 }
 
 /** Body de POST /settlements (solo SIMPLE en v1). */

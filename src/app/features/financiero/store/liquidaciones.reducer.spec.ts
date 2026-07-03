@@ -64,8 +64,11 @@ describe('financieroReducer — slice liquidaciones', () => {
     expect(s.liquidaciones.lifecycleInProgress).toBe(false);
   });
 
-  it('loadInsurerPlansSuccess guarda los planes (id + nombre + iva) de la OS elegida', () => {
-    const plans = [{ id: 3, name: 'Plan A', iva: 21 }, { id: 4, name: 'Plan B', iva: 0 }];
+  it('loadInsurerPlansSuccess guarda los planes (id + nombre + iva + arancel + convenio) de la OS elegida', () => {
+    const plans = [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 0, hasActiveAgreement: false },
+    ];
     const s = financieroReducer(initialFinancieroState, loadInsurerPlansSuccess({ plans }));
     expect(s.liquidaciones.insurerPlans).toEqual(plans);
   });
