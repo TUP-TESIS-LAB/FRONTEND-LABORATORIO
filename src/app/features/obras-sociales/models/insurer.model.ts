@@ -1,7 +1,7 @@
 import { PlanComplete } from './plan.model';
 import { InsurerContactInfo } from './contact-info.model';
 
-export type InsurerTypeCode = 'SOCIAL' | 'PRIVATE' | 'SELF_PAY';
+export type InsurerTypeCode = 'SOCIAL' | 'PRIVATE';
 
 export interface SpecificData {
   socialHealth?: { cuit: string } | null;
@@ -37,7 +37,6 @@ export interface InsurerComplete {
 export const INSURER_TYPE_LABELS: Record<InsurerTypeCode, string> = {
   SOCIAL: 'Obra Social',
   PRIVATE: 'Prepaga',
-  SELF_PAY: 'Particular',
 };
 
 export function humanizeInsurerType(code: InsurerTypeCode): string {

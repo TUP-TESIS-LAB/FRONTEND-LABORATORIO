@@ -109,7 +109,6 @@ export class ObraSocialService {
    */
   createFromWizard(payload: WizardCreate): Observable<InsurerComplete> {
     const sd = payload.insurer.specificData;
-    const isSelfPay = payload.insurer.insurerType === 'SELF_PAY';
     const body = {
       insurer: {
         code: payload.insurer.code,
@@ -129,7 +128,7 @@ export class ObraSocialService {
         name: pw.plan.name,
         description: pw.plan.description ?? null,
         iva: pw.plan.iva,
-        particular: isSelfPay,
+        particular: false,
         versionNbu: pw.agreement.versionNbu,
         ubValue: pw.agreement.ubValue,
         validFromDate: pw.agreement.validFromDate,
@@ -162,7 +161,6 @@ export class ObraSocialService {
     switch (r.insurerType) {
       case 'SOCIAL':   return { socialHealth: { cuit: r.cuit ?? '' } };
       case 'PRIVATE':  return { privateHealth: { cuit: r.cuit ?? '', copayPolicy: r.copayPolicy ?? '' } };
-      case 'SELF_PAY': return { selfPay: { acceptedPaymentMethods: r.acceptedPaymentMethods ?? '' } };
       default:         return null;
     }
   }

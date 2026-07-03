@@ -170,9 +170,9 @@ export class LiquidacionesEffects {
       ofType(loadInsurersIndex),
       switchMap(() =>
         this.os.search({ state: 'active', page: 0, size: 500 }).pipe(
-          // Se excluyen los 'Particular' (SELF_PAY): no son obras sociales a liquidar (se cobran por caja). KAN-175.
+          // Ya no existen aseguradoras 'Particular' (SELF_PAY eliminado, KAN-177): el índice trae todas las OS.
           map(res => loadInsurersIndexSuccess({
-            insurers: res.content.filter(i => i.insurerType !== 'SELF_PAY'),
+            insurers: res.content,
           })),
           catchError(() => of(loadInsurersIndexFailure({ error: 'No se pudieron cargar las obras sociales.' }))),
         ),

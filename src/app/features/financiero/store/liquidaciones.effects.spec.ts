@@ -149,11 +149,10 @@ describe('LiquidacionesEffects', () => {
     expect(api.listSettlementPlans).toHaveBeenCalledWith(7);
   });
 
-  it('loadInsurersIndex$ excluye las OS Particular (SELF_PAY)', async () => {
+  it('loadInsurersIndex$ trae todas las OS activas (SELF_PAY ya no existe, KAN-177)', async () => {
     os.search.mockReturnValue(of({ content: [
       { id: 1, name: 'IOMA', insurerType: 'SOCIAL' },
       { id: 2, name: 'Prepaga X', insurerType: 'PRIVATE' },
-      { id: 3, name: 'Particular', insurerType: 'SELF_PAY' },
     ] }));
     const eff = make(loadInsurersIndex());
     const emitted: Array<{ type: string; insurers?: Array<{ insurerType: string }> }> = [];
