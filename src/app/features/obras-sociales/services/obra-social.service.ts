@@ -30,7 +30,7 @@ interface AgreementResponse {
 }
 interface PlanResponse {
   id: number; insurerId: number; code: string; acronym: string | null; name: string;
-  description: string | null; iva: number | null; particular: boolean; active: boolean;
+  description: string | null; iva: number | null; active: boolean;
   currentAgreement: AgreementResponse | null;
 }
 interface ContactResponse {
@@ -128,7 +128,6 @@ export class ObraSocialService {
         name: pw.plan.name,
         description: pw.plan.description ?? null,
         iva: pw.plan.iva,
-        particular: false,
         versionNbu: pw.agreement.versionNbu,
         ubValue: pw.agreement.ubValue,
         validFromDate: pw.agreement.validFromDate,

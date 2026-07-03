@@ -6,7 +6,7 @@ import { CoverageCatalog, InsurerOption, InsurerType, PlanOption } from '../mode
 
 interface PagedResponse<T> { content: T[]; }
 interface InsurerResponse { id: number; name: string; insurerType: InsurerType; active: boolean; }
-interface PlanResponse { id: number; insurerId: number; name: string; particular: boolean; active: boolean; }
+interface PlanResponse { id: number; insurerId: number; name: string; active: boolean; }
 
 /**
  * Catálogo de coberturas (obras sociales + planes) para la cascada del Paso 2.
@@ -26,7 +26,7 @@ export class CoverageCatalogService {
     const plans$ = this.http
       .get<PagedResponse<PlanResponse>>('/api/v1/coverages/plans', { params: { state: 'active', size: '200' } })
       .pipe(map((res): PlanOption[] =>
-        res.content.map((p) => ({ planId: p.id, insurerId: p.insurerId, name: p.name, particular: p.particular })),
+        res.content.map((p) => ({ planId: p.id, insurerId: p.insurerId, name: p.name })),
       ));
 
     return forkJoin({ insurers: insurers$, plans: plans$ });

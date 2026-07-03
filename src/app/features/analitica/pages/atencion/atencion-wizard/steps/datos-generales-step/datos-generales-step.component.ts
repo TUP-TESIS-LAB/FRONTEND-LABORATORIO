@@ -356,7 +356,8 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                         [options]="insurerOptions()"
                         optionLabel="name"
                         optionValue="id"
-                        placeholder="— Seleccioná —"
+                        placeholder="Particular (sin obra social)"
+                        [showClear]="true"
                         appendTo="body"
                         class="w-full" />
                     </div>
@@ -574,12 +575,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected readonly formInsurerId = signal<number | null>(null);
   /** Obras sociales seleccionables (incluye Particular para pago directo). */
   protected readonly insurerOptions = computed<InsurerOption[]>(() => {
-    // Particular (SELF_PAY) siempre fija como primera opción; el resto alfabético.
-    return [...this.catalog().insurers].sort((a, b) => {
-      if (a.insurerType === 'SELF_PAY') return -1;
-      if (b.insurerType === 'SELF_PAY') return 1;
-      return a.name.localeCompare(b.name);
-    });
+    // Solo obras sociales reales, alfabético. "Particular" = dejar la OS vacía (sin cobertura).
+    return [...this.catalog().insurers].sort((a, b) => a.name.localeCompare(b.name));
   });
   /** Planes de la obra social elegida en el form. */
   protected readonly formPlanOptions = computed<PlanOption[]>(() => plansForInsurer(this.catalog(), this.formInsurerId()));
@@ -597,10 +594,8 @@ export class DatosGeneralesStepComponent implements OnInit {
     const p = this.resolved();
     const cat = this.catalog();
     const chips: { planId: number | null; label: string }[] = [{ planId: null, label: 'Particular' }];
-    // Excluimos las coberturas a un plan "particular" (self-pay): ya están
-    // representadas por el chip "Particular" de arriba; mostrarlas además como
-    // cobertura duplicaba "Particular" (se veían dos opciones Particular).
-    for (const c of (p?.coverages ?? []).filter((x) => x.active && !planById(cat, x.planId)?.particular)) {
+    // El chip "Particular" (sin cobertura) va fijo arriba; debajo, las coberturas activas del paciente.
+    for (const c of (p?.coverages ?? []).filter((x) => x.active)) {
       const member = c.memberNumber ? ` · N° ${c.memberNumber}` : '';
       chips.push({ planId: c.planId, label: `${insurerNameForPlan(cat, c.planId)} ${planName(cat, c.planId)}${member}` });
     }
@@ -660,10 +655,9 @@ export class DatosGeneralesStepComponent implements OnInit {
     return b > this.todayStr;                         // futura
   }
 
-  /** Obra social Particular (SELF_PAY) elegida → plan y N° de afiliado no son obligatorios. */
+  /** Sin obra social (Particular) → plan y N° de afiliado no son obligatorios. */
   protected isParticularSelected(): boolean {
-    const id = this.formInsurerId();
-    return this.catalog().insurers.find(i => i.id === id)?.insurerType === 'SELF_PAY';
+    return this.formInsurerId() == null;
   }
 
   // ── 3-state badge ──────────────────────────────────────────────────────────
@@ -856,17 +850,9 @@ export class DatosGeneralesStepComponent implements OnInit {
     this.form.planId = plans.length === 1 ? plans[0].planId : null;
   }
 
-  /** Default del form: si no hay plan elegido, preselecciona Particular (obra social + plan). */
+  /** Default del form: sincroniza la OS con el plan elegido; sin plan = Particular (sin OS). */
   private defaultFormCobertura(): void {
-    if (this.form.planId != null) {
-      this.formInsurerId.set(planById(this.catalog(), this.form.planId)?.insurerId ?? null);
-      return;
-    }
-    const particular = this.catalog().plans.find(p => p.particular);
-    if (particular) {
-      this.formInsurerId.set(particular.insurerId);
-      this.form.planId = particular.planId;
-    }
+    this.formInsurerId.set(planById(this.catalog(), this.form.planId)?.insurerId ?? null);
   }
 
   startEdit(): void {
@@ -920,8 +906,8 @@ export class DatosGeneralesStepComponent implements OnInit {
     // Identidad + nacimiento + género/sexo + cobertura son obligatorios.
     if (!f.dni || !f.firstName || !f.lastName || !f.birthDate) return false;
     if (f.gender == null || f.sexAtBirth == null) return false;
-    if (this.formInsurerId() == null || f.planId == null) return false;
-    // N° de afiliado obligatorio salvo Particular (pago directo, sin obra social).
+    // Cobertura opcional: sin OS = Particular. Si se eligió OS, el plan y el N° de afiliado son obligatorios.
+    if (this.formInsurerId() != null && f.planId == null) return false;
     if (!this.isParticularSelected() && !f.memberNumber.trim()) return false;
     return !this.birthDateInvalid();
   }

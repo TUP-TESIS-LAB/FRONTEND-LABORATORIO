@@ -27,12 +27,10 @@ import { setUrgentFlag } from '../../../../../store/atencion/atencion.actions';
 
 const STUB_CATALOG = {
   insurers: [
-    { id: 96001, name: 'Particular', insurerType: 'SELF_PAY' as const },
     { id: 96002, name: 'OSDE', insurerType: 'PRIVATE' as const },
   ],
   plans: [
-    { planId: 96001, insurerId: 96001, name: 'Plan Particular', particular: true },
-    { planId: 96002, insurerId: 96002, name: '210', particular: false },
+    { planId: 96002, insurerId: 96002, name: '210' },
   ],
 };
 
@@ -254,7 +252,7 @@ describe('DatosGeneralesStepComponent', () => {
   it('crearPaciente() con todos los campos despacha createPatientInline (cobertura Particular)', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
-    fixture.detectChanges(); // default: Particular (96001)
+    fixture.detectChanges(); // default: Particular (sin obra social)
     store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState } });
     store.refreshState();
     fixture.detectChanges();
@@ -266,10 +264,10 @@ describe('DatosGeneralesStepComponent', () => {
       birthDate: '1990-01-01',
       gender: 'MALE',
       sexAtBirth: 'MALE',
-      planId: 96001,
+      planId: null,
       memberNumber: '',
     };
-    cmp.formInsurerId.set(96001);
+    cmp.formInsurerId.set(null);
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.crearPaciente();
     expect(spy).toHaveBeenCalledWith(
@@ -283,7 +281,7 @@ describe('DatosGeneralesStepComponent', () => {
           sexAtBirth: 'MALE',
           contacts: [],
           addresses: [],
-          coverages: [{ planId: 96001, memberNumber: '', isPrimary: true, active: true }],
+          coverages: [],
         },
       }),
     );
@@ -574,17 +572,17 @@ describe('DatosGeneralesStepComponent', () => {
     return {
       dni: '99887766', firstName: 'Ana', lastName: 'Gomez',
       birthDate: '1990-05-01', gender: 'FEMALE', sexAtBirth: 'FEMALE',
-      planId: 96001, memberNumber: '', ...over,
+      planId: null, memberNumber: '', ...over,
     };
   }
 
   it('altaValida() true con todos los campos; Particular no exige N° de afiliado', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
-    fixture.detectChanges(); // default: Particular (96001) + Plan Particular
+    fixture.detectChanges(); // default: Particular (sin obra social)
     const cmp = fixture.componentInstance as any;
     cmp.form = fullAltaForm();
-    cmp.formInsurerId.set(96001); // Particular
+    cmp.formInsurerId.set(null); // Particular
     expect(cmp.altaValida()).toBe(true);
   });
 
@@ -593,15 +591,20 @@ describe('DatosGeneralesStepComponent', () => {
     fixture.componentRef.setInput('atencionId', null);
     fixture.detectChanges();
     const cmp = fixture.componentInstance as any;
-    cmp.formInsurerId.set(96001);
+    cmp.formInsurerId.set(null); // Particular (cobertura es opcional)
     cmp.form = fullAltaForm({ birthDate: '' });
     expect(cmp.altaValida()).toBe(false);
     cmp.form = fullAltaForm({ gender: null });
     expect(cmp.altaValida()).toBe(false);
     cmp.form = fullAltaForm({ sexAtBirth: null });
     expect(cmp.altaValida()).toBe(false);
+    // Cobertura opcional: sin obra social (Particular) SÍ es válido con el resto completo.
     cmp.form = fullAltaForm();
-    cmp.formInsurerId.set(null); // sin obra social
+    cmp.formInsurerId.set(null);
+    expect(cmp.altaValida()).toBe(true);
+    // Pero si se elige una obra social, el plan pasa a ser obligatorio.
+    cmp.form = fullAltaForm({ planId: null });
+    cmp.formInsurerId.set(96002); // OSDE elegida, sin plan
     expect(cmp.altaValida()).toBe(false);
   });
 
@@ -636,11 +639,12 @@ describe('DatosGeneralesStepComponent', () => {
     fixture.componentRef.setInput('atencionId', null);
     fixture.detectChanges();
     const cmp = fixture.componentInstance as any;
-    // El dropdown de obra social ofrece todas las del catálogo (incluye Particular)
-    expect(cmp.insurerOptions().map((i: any) => i.name)).toEqual(['Particular', 'OSDE']);
-    // Default: Particular preseleccionada (obra social + plan)
-    expect(cmp.formInsurerId()).toBe(96001);
-    expect(cmp.form.planId).toBe(96001);
+    // El dropdown de obra social ofrece todas las obras sociales reales del catálogo
+    // (Particular ya no es una fila del catálogo: es dejar la obra social vacía).
+    expect(cmp.insurerOptions().map((i: any) => i.name)).toEqual(['OSDE']);
+    // Default: Particular (sin obra social, sin plan).
+    expect(cmp.formInsurerId()).toBeNull();
+    expect(cmp.form.planId).toBeNull();
   });
 
   it('cascada cobertura: al elegir una obra social filtra sus planes y resetea el plan', () => {

@@ -2,7 +2,6 @@
 export interface CoveragePlanOption {
   planId: number;
   label: string;
-  particular?: boolean;
 }
 
 /**

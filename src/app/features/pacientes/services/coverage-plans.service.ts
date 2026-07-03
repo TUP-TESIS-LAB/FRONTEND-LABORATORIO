@@ -11,7 +11,6 @@ interface PagedPlanResponse {
 interface PlanResponse {
   id: number;
   name: string;
-  particular: boolean;
   active: boolean;
 }
 
@@ -22,6 +21,6 @@ export class CoveragePlansService {
   getActivePlans(): Observable<CoveragePlanOption[]> {
     return this.http
       .get<PagedPlanResponse>('/api/v1/coverages/plans', { params: { state: 'active', size: '100' } })
-      .pipe(map((res) => res.content.map((p) => ({ planId: p.id, label: p.name, particular: p.particular }))));
+      .pipe(map((res) => res.content.map((p) => ({ planId: p.id, label: p.name }))));
   }
 }
