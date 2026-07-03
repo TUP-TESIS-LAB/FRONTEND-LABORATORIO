@@ -40,6 +40,8 @@ import {
   setCopayment,
   setCopaymentFailure,
   setCopaymentSuccess,
+  setUrgentFlagSuccess,
+  advanceUrgentSuccess,
   startAttentionForPatient,
   updatePatientInline,
   removeAnalysisFromResumen,
@@ -137,6 +139,18 @@ export const atencionReducer = createReducer(
     };
   }),
   on(setAuthorizationNumberFailure, (s): AtencionFeatureState => ({ ...s, authorizationMutating: false })),
+
+  on(setUrgentFlagSuccess, (s, { item }): AtencionFeatureState => ({
+    ...s,
+    detail: item,
+    list: replaceInList(s.list, item),
+  })),
+
+  on(advanceUrgentSuccess, (s, { item }): AtencionFeatureState => ({
+    ...s,
+    detail: item,
+    list: replaceInList(s.list, item),
+  })),
 
   on(removeAnalysisFromResumen, (s): AtencionFeatureState => ({ ...s, removingAnalysis: true })),
   on(removeAnalysisFromResumenSuccess, (s, { item }): AtencionFeatureState => ({

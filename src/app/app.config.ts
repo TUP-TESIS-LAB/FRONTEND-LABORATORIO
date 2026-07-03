@@ -99,6 +99,14 @@ import { NOMENCLADOR_FEATURE_KEY } from '@features/analitica/store/nomenclador/n
 import { nomencladorReducer } from '@features/analitica/store/nomenclador/nomenclador.reducer';
 import { NomencladorEffects } from '@features/analitica/store/nomenclador/nomenclador.effects';
 
+import { URGENT_PENDING_FEATURE_KEY } from '@features/analitica/store/urgent-pending/urgent-pending.state';
+import { urgentPendingReducer } from '@features/analitica/store/urgent-pending/urgent-pending.reducer';
+import { UrgentPendingEffects } from '@features/analitica/store/urgent-pending/urgent-pending.effects';
+
+import { URGENT_IN_PROGRESS_FEATURE_KEY } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.state';
+import { urgentInProgressReducer } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.reducer';
+import { UrgentInProgressEffects } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -159,6 +167,10 @@ export const appConfig: ApplicationConfig = {
     provideEffects(ValidacionDetalleEffects),
     provideState(NOMENCLADOR_FEATURE_KEY, nomencladorReducer),
     provideEffects(NomencladorEffects),
+    provideState(URGENT_PENDING_FEATURE_KEY, urgentPendingReducer),
+    provideEffects(UrgentPendingEffects),
+    provideState(URGENT_IN_PROGRESS_FEATURE_KEY, urgentInProgressReducer),
+    provideEffects(UrgentInProgressEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),

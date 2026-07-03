@@ -24,7 +24,7 @@ function makeTube(
     sampleId,
     protocolId: 0,
     labelIds: labels.map(l => l.labelId),
-    analyses: labels,
+    analyses: labels as any,
     barcode: labels.map(l => l.barcode).join(' '),
     study: labels.length === 1 ? labels[0].name : `${labels.length} análisis`,
     patient: 'García, M.',

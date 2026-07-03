@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { AnalysisService } from './analysis.service';
 import { NbuVersion, CatalogRow, Determination, ParticularPricing } from '../models/nomenclador.model';
@@ -14,21 +14,19 @@ interface NbuVersionResponse {
 }
 
 /**
- * Fachada del Nomenclador NBU. Aísla qué está conectado al backend y qué sigue mock:
+ * Fachada del Nomenclador NBU. Aísla qué está conectado al backend:
  *  - REAL: catálogo de análisis + determinaciones (AnalysisService → /api/v1/analitica/analysis)
  *          y versiones NBU (GET /api/v1/analitica/nbu-versions, PR #97).
- *  - MOCK (sin endpoint en el BE todavía): precio particular del laboratorio (valor U.B. + overrides).
- *    El modelo de "precio particular en config del tenant" es feature futura — ver follow-up.
+ *  - REAL: valor U.B. particular (GET/PUT /api/v1/analitica/config/particular-ub)
+ *          y overrides de precio (GET/PUT/DELETE /api/v1/analitica/price-overrides).
  */
 @Injectable({ providedIn: 'root' })
 export class NomencladorService {
   private readonly http = inject(HttpClient);
   private readonly analysis = inject(AnalysisService);
 
-  // ── MOCK — sin endpoint BE: valor U.B. particular + overrides por estudio ─────
-  // El BE solo tiene un ParticularPricingPort interno (lee del plan "particular" de OS),
-  // no expuesto en REST. Cuando exista el endpoint de precio particular por tenant, conectar acá.
-  private mockPricing: ParticularPricing = { valorUb: 350, overrides: { } };
+  private readonly particularUbUrl = '/api/v1/analitica/config/particular-ub';
+  private readonly priceOverridesUrl = '/api/v1/analitica/price-overrides';
 
   /** REAL: análisis del catálogo del tenant mapeados a CatalogRow. */
   getCatalog(): Observable<CatalogRow[]> {
@@ -79,18 +77,28 @@ export class NomencladorService {
   }
 
   getParticularPricing(): Observable<ParticularPricing> {
-    return of({ valorUb: this.mockPricing.valorUb, overrides: { ...this.mockPricing.overrides } }); // MOCK — sin endpoint BE
+    return forkJoin({
+      config: this.http.get<{ valorUbParticular: number | null }>(this.particularUbUrl),
+      overrides: this.http.get<{ analysisCatalogId: number; overridePrice: number }[]>(this.priceOverridesUrl),
+    }).pipe(
+      map(({ config, overrides }) => ({
+        valorUb: config.valorUbParticular ?? 0,
+        overrides: overrides.reduce<Record<number, number>>((acc, o) => {
+          acc[o.analysisCatalogId] = o.overridePrice;
+          return acc;
+        }, {}),
+      })),
+    );
   }
 
   saveValorUb(valor: number): Observable<number> {
-    this.mockPricing = { ...this.mockPricing, valorUb: valor }; // MOCK — sin endpoint BE (persiste en sesión)
-    return of(valor);
+    return this.http.put<void>(this.particularUbUrl, { valorUbParticular: valor }).pipe(map(() => valor));
   }
 
   setOverride(analysisId: number, precio: number | null): Observable<{ analysisId: number; precio: number | null }> {
-    const overrides = { ...this.mockPricing.overrides };
-    if (precio == null) delete overrides[analysisId]; else overrides[analysisId] = precio;
-    this.mockPricing = { ...this.mockPricing, overrides }; // MOCK — sin endpoint BE
-    return of({ analysisId, precio });
+    const req$ = precio == null
+      ? this.http.delete<void>(`${this.priceOverridesUrl}/${analysisId}`)
+      : this.http.put<void>(`${this.priceOverridesUrl}/${analysisId}`, { overridePrice: precio });
+    return req$.pipe(map(() => ({ analysisId, precio })));
   }
 }
