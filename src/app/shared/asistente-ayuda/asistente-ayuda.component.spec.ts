@@ -10,7 +10,12 @@ class StubAsistenteService {
   readonly messages = signal<ChatMessage[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly open = signal(false);
   readonly sentQuestions: string[] = [];
+
+  toggle(): void {
+    this.open.update((v) => !v);
+  }
 
   send(question: string): void {
     this.sentQuestions.push(question);
@@ -35,21 +40,22 @@ describe('AsistenteAyudaComponent', () => {
     return fixture;
   }
 
-  it('arranca colapsado mostrando el botón flotante, sin panel', () => {
+  it('arranca cerrado: sin panel y sin botón flotante', () => {
     const fixture = setup();
-    const fab = fixture.nativeElement.querySelector('.aa-fab') as HTMLButtonElement;
-    expect(fab).not.toBeNull();
-    expect(fab.getAttribute('aria-label')).toContain('asistente de ayuda');
     expect(fixture.nativeElement.querySelector('.aa-panel')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.aa-fab')).toBeNull();
   });
 
-  it('al abrir muestra el panel con el estado vacío', () => {
+  it('al abrir (open del servicio) muestra el panel con la bienvenida y la imagen', () => {
     const fixture = setup();
-    (fixture.nativeElement.querySelector('.aa-fab') as HTMLButtonElement).click();
+    stub.open.set(true);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.aa-panel')).not.toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Preguntame');
+    expect(fixture.nativeElement.textContent).toContain('¿En qué te puedo ayudar?');
+    const img = fixture.nativeElement.querySelector('.aa-welcome__img') as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.getAttribute('src')).toContain('info.png');
   });
 
   it('submit() delega la pregunta al servicio y limpia el input', () => {

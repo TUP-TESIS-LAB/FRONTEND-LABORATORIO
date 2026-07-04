@@ -47,18 +47,39 @@ import { TokenService } from '@core/auth/token.service';
     </div>
   `,
   styles: [`
-    :host { display: block; min-height: 100vh; background: linear-gradient(135deg, #0f0c29 0%, #1e1b4b 60%, #3b2f00 100%); }
+    /* Consola de plataforma: login claro con acento índigo (fuera del saas-shell,
+       así que los tokens se declaran acá). */
+    :host {
+      display: block; min-height: 100vh;
+      --saas-accent: #6366f1;
+      --saas-accent-strong: #4f46e5;
+      --brand-primary: #6366f1;
+      --p-primary-color: #6366f1;
+      --p-primary-contrast-color: #ffffff;
+      --p-button-primary-background: #4f46e5;
+      --p-button-primary-border-color: #4f46e5;
+      --p-button-primary-color: #ffffff;
+      --p-button-primary-hover-background: #4338ca;
+      --p-button-primary-hover-border-color: #4338ca;
+      --p-button-primary-active-background: #3730a3;
+      --p-button-primary-active-border-color: #3730a3;
+      background: linear-gradient(135deg, #eef2ff 0%, #f7f8fa 55%, #faf5ff 100%);
+    }
     .saas-login { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-    .saas-login__card { background: #1a1b3a; color: #e2e8f0; border-radius: 12px; padding: 32px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.4); }
+    .saas-login__card {
+      background: #fff; color: #1a1a2e; border: 1px solid #e6e8ef; border-radius: 14px;
+      padding: 32px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px;
+      box-shadow: 0 20px 50px rgba(30,27,75,.10);
+    }
     .saas-login__brand { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .saas-login__brand img { width: 36px; height: 36px; }
-    .saas-login__brand h1 { margin: 4px 0 0; font-size: 18px; color: #fde68a; }
-    .saas-login__brand p { margin: 0; font-size: 12px; color: #a5b4fc; }
-    .saas-login__field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #c7d2fe; }
+    .saas-login__brand img { width: 40px; height: 40px; padding: 6px; border-radius: 10px; background: rgba(99,102,241,.10); }
+    .saas-login__brand h1 { margin: 6px 0 0; font-size: 18px; font-weight: 700; color: #1a1a2e; }
+    .saas-login__brand p { margin: 0; font-size: 12px; color: #6b7280; }
+    .saas-login__field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 500; color: #6b7280; }
     .saas-login__field input { width: 100%; }
-    .saas-login__error { background: rgba(239,68,68,.12); color: #fca5a5; padding: 8px 12px; border-radius: 6px; font-size: 12px; }
-    .saas-login__footer { font-size: 11px; color: #94a3b8; text-align: center; margin: 4px 0 0; }
-    .saas-login__footer a { color: #fde68a; }
+    .saas-login__error { background: #fdecee; color: #b42318; padding: 8px 12px; border-radius: 6px; font-size: 12px; }
+    .saas-login__footer { font-size: 12px; color: #6b7280; text-align: center; margin: 4px 0 0; }
+    .saas-login__footer a { color: #4f46e5; font-weight: 600; }
   `],
 })
 export class SaasLoginPage {
