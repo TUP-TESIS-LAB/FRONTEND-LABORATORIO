@@ -139,14 +139,15 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
             </div>
             <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-sm mb-1">Obra social <span class="text-red-500">*</span></label>
+                <label class="block text-sm mb-1">Obra social</label>
                 <p-select
                   [ngModel]="formInsurerId()"
                   (ngModelChange)="onFormInsurerChange($event)"
                   [options]="insurerOptions()"
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="— Seleccioná —"
+                  placeholder="Particular (sin obra social)"
+                  [showClear]="true"
                   appendTo="body"
                   class="w-full" />
               </div>
