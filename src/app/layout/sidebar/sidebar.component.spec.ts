@@ -72,7 +72,7 @@ describe('SidebarComponent visibility', () => {
     expect(brand).not.toBeNull();
     const logo = brand?.querySelector('.ui-sidebar__logo') as HTMLImageElement | null;
     expect(logo).not.toBeNull();
-    expect(logo?.getAttribute('src')).toBe('logo.svg');
+    expect(logo?.getAttribute('src')).toBe('logo.png');
     expect(brand?.querySelector('.ui-sidebar__brand-name')?.textContent?.trim()).toBe('LabCore');
   });
 

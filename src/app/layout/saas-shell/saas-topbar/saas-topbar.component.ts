@@ -11,7 +11,7 @@ import { ButtonModule } from 'primeng/button';
   template: `
     <header class="saas-topbar">
       <div class="saas-topbar__brand">
-        <img src="logo.svg" alt="" class="saas-topbar__logo" />
+        <img src="logo.png" alt="" class="saas-topbar__logo" />
         <span class="saas-topbar__title">Platform Admin</span>
         <span class="saas-topbar__badge">SaaS</span>
       </div>

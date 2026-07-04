@@ -19,7 +19,7 @@ import { TokenService } from '@core/auth/token.service';
     <div class="saas-login">
       <form [formGroup]="form" (ngSubmit)="submit()" class="saas-login__card">
         <div class="saas-login__brand">
-          <img src="logo.svg" alt="" />
+          <img src="logo.png" alt="" />
           <h1>Platform Admin</h1>
           <p>Acceso para administradores de plataforma</p>
         </div>
