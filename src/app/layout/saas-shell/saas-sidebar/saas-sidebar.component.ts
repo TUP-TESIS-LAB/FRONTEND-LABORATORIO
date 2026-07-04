@@ -21,21 +21,25 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styles: [`
     :host { display: block; flex-shrink: 0; }
     .saas-sidebar {
-      width: 220px; min-height: calc(100vh - 48px);
-      background: #0f0c29; padding: 16px 0; color: #c7d2fe;
+      width: 220px; min-height: 100%;
+      background: var(--saas-surface, #fff);
+      border-right: 1px solid var(--saas-border, #e6e8ef);
+      padding: var(--space-3, 12px) var(--space-2, 8px);
     }
-    nav { display: flex; flex-direction: column; gap: 4px; }
+    nav { display: flex; flex-direction: column; gap: 2px; }
     .saas-sidebar__item {
       display: flex; align-items: center; gap: 10px;
-      padding: 8px 16px; color: #c7d2fe; text-decoration: none;
-      font-size: 13px; border-left: 2px solid transparent;
+      padding: 9px 12px; color: var(--saas-text-muted, #6b7280); text-decoration: none;
+      font-size: 13px; font-weight: 500; border-radius: 8px;
+      transition: background 120ms ease, color 120ms ease;
     }
-    .saas-sidebar__item:hover { background: rgba(255,255,255,.04); }
+    .saas-sidebar__item:hover { background: var(--saas-surface-alt, #f3f4f6); color: var(--saas-text, #1a1a2e); }
     .saas-sidebar__item.active {
-      background: rgba(251,191,36,.12); color: #fde68a;
-      border-left-color: #fbbf24;
+      background: var(--saas-accent-tint, rgba(99,102,241,.10));
+      color: var(--saas-accent-strong, #4f46e5);
+      font-weight: 600;
     }
-    .saas-sidebar__item i { width: 16px; font-size: 14px; }
+    .saas-sidebar__item i { width: 18px; font-size: 15px; }
   `],
 })
 export class SaasSidebarComponent {}

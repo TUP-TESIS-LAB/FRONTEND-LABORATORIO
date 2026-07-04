@@ -62,13 +62,13 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
     }
   `,
   styles: [`
-    :host { display: block; color: #e2e8f0; }
-    .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    :host { display: block; color: var(--saas-text, #1a1a2e); }
+    .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: var(--space-4, 16px); flex-wrap: wrap; }
     .detail-header a { text-decoration: none; }
     .detail-header__title { display: flex; align-items: center; gap: 8px; }
-    .detail-header h1 { margin: 0; color: #fde68a; font-size: 20px; }
-    .detail-header code { color: #94a3b8; font-size: 12px; }
-    .muted { color: #94a3b8; font-size: 13px; }
+    .detail-header h1 { margin: 0; color: var(--saas-text, #1a1a2e); font-size: 20px; font-weight: 700; }
+    .detail-header code { color: var(--saas-text-muted, #6b7280); font-size: 12px; }
+    .muted { color: var(--saas-text-muted, #6b7280); font-size: 13px; }
   `],
 })
 export class TenantDetailPage implements OnInit, OnDestroy {

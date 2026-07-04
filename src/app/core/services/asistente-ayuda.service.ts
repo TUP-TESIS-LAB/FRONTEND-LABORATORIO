@@ -31,6 +31,17 @@ export class AsistenteAyudaService {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
+  /**
+   * Apertura del panel de ayuda. Es estado de UI compartido: lo dispara el botón
+   * del topbar y lo consume el widget (que se monta una vez en el `admin-shell`).
+   */
+  readonly open = signal(false);
+
+  /** Abre o cierra el panel de ayuda (lo usa el botón del topbar). */
+  toggle(): void {
+    this.open.update((v) => !v);
+  }
+
   /** Envía la pregunta; agrega el turno del usuario y, al responder, el del asistente. */
   send(question: string): void {
     const q = question.trim();

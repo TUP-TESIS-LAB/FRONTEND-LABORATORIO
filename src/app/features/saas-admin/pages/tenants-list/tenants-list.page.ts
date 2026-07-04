@@ -92,13 +92,13 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
     <p-confirmDialog styleClass="saas-themed" />
   `,
   styles: [`
-    :host { display: block; color: #e2e8f0; }
+    :host { display: block; color: var(--saas-text, #1a1a2e); }
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .toolbar__search input { min-width: 280px; }
-    .row-deleted td { text-decoration: line-through; color: #94a3b8; }
+    .row-deleted td { text-decoration: line-through; color: var(--saas-text-muted, #6b7280); }
     .text-right { text-align: right; }
     .text-right a { text-decoration: none; }
-    .empty { text-align: center; color: #94a3b8; padding: 24px; font-style: italic; }
+    .empty { text-align: center; color: var(--saas-text-muted, #6b7280); padding: 24px; font-style: italic; }
   `],
 })
 export class TenantsListPage implements OnInit {

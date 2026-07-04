@@ -13,10 +13,10 @@ import { FormsModule } from '@angular/forms';
 import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 
 /**
- * Widget flotante de ayuda para el staff del laboratorio. Botón colapsado (con la
- * mascota "tubo de ensayo") en la esquina inferior derecha que despliega un panel
- * de chat. La conversación y su persistencia viven en {@link AsistenteAyudaService};
- * este componente es solo UI.
+ * Panel de ayuda para el staff del laboratorio. Se abre desde el botón de ayuda
+ * del topbar (no hay botón flotante propio) y despliega un chat anclado abajo a
+ * la derecha. El estado de apertura y la conversación viven en
+ * {@link AsistenteAyudaService}; este componente es solo UI.
  *
  * Se monta una vez en el shell autenticado (`admin-shell`).
  */
@@ -41,11 +41,7 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
       </svg>
     </ng-template>
 
-    @if (!open() && !closing()) {
-      <button type="button" class="aa-fab" (click)="toggle()" aria-label="Abrir asistente de ayuda">
-        <img class="aa-fab__img" src="/info.png" alt="" />
-      </button>
-    } @else {
+    @if (open() || closing()) {
       <section class="aa-panel" [class.aa-panel--closing]="closing()"
                role="dialog" aria-label="Asistente de ayuda">
         <header class="aa-panel__head">
@@ -63,10 +59,15 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 
         <div class="aa-panel__body" #scrollBox>
           @if (messages().length === 0) {
-            <p class="aa-empty">
-              Preguntame cómo usar el sistema. Por ejemplo:
-              "¿cómo doy de alta un paciente?".
-            </p>
+            <div class="aa-welcome">
+              <img class="aa-welcome__img" src="/info.png" alt="" aria-hidden="true" />
+              <p class="aa-welcome__title">¿En qué te puedo ayudar?</p>
+              <p class="aa-welcome__text">
+                Soy el asistente de ayuda del sistema. Preguntame por cualquier
+                función: cómo dar de alta un paciente, sacar un turno, cargar
+                resultados, y lo que necesites.
+              </p>
+            </div>
           }
           @for (m of messages(); track $index) {
             <div
@@ -118,27 +119,7 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 
     .aa-mascot { width: 100%; height: 100%; display: block; }
 
-    .aa-fab {
-      width: 92px;
-      height: 92px;
-      padding: 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      transition: transform .15s ease, filter .15s ease;
-      animation: aa-fab-in .22s cubic-bezier(.34, 1.56, .64, 1) both;
-    }
-    .aa-fab:hover { filter: brightness(1.04); transform: translateY(-2px); }
-    .aa-fab:active { transform: translateY(0); }
-    .aa-fab__img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .3));
-    }
-
-    /* Aparición/cierre naturales del panel (origen en la esquina del FAB). */
+    /* Aparición/cierre naturales del panel (anclado abajo a la derecha). */
     @keyframes aa-panel-in {
       from { opacity: 0; transform: translateY(12px) scale(.9); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -146,10 +127,6 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
     @keyframes aa-panel-out {
       from { opacity: 1; transform: translateY(0) scale(1); }
       to   { opacity: 0; transform: translateY(12px) scale(.92); }
-    }
-    @keyframes aa-fab-in {
-      from { opacity: 0; transform: scale(.6); }
-      to   { opacity: 1; transform: scale(1); }
     }
 
     .aa-panel {
@@ -168,7 +145,7 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
     .aa-panel--closing { animation: aa-panel-out .16s ease-in both; }
 
     @media (prefers-reduced-motion: reduce) {
-      .aa-fab, .aa-panel, .aa-panel--closing { animation: none; }
+      .aa-panel, .aa-panel--closing { animation: none; }
     }
     .aa-panel__head {
       display: flex;
@@ -206,10 +183,33 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
       background: var(--ds-bg, #f7f8fa);
       scroll-behavior: auto;
     }
-    .aa-empty {
+    /* Estado vacío: mascota + explicación de qué es el asistente. */
+    .aa-welcome {
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: .5rem;
+      padding: 1rem .5rem;
+    }
+    .aa-welcome__img {
+      width: 104px;
+      height: 104px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .18));
+    }
+    .aa-welcome__title {
+      margin: .25rem 0 0;
+      font-weight: 600;
+      color: var(--ds-text, #101828);
+    }
+    .aa-welcome__text {
+      margin: 0;
+      max-width: 30ch;
       color: var(--ds-text-muted, #667085);
       font-size: .9rem;
-      margin: .25rem 0;
+      line-height: 1.4;
     }
     .aa-msg { display: flex; }
     .aa-msg--user { justify-content: flex-end; }
@@ -288,7 +288,8 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 export class AsistenteAyudaComponent {
   private readonly service = inject(AsistenteAyudaService);
 
-  readonly open = signal(false);
+  /** Apertura compartida con el botón del topbar (vive en el servicio). */
+  readonly open = this.service.open;
   readonly closing = signal(false);
   readonly draft = signal('');
 
@@ -317,15 +318,16 @@ export class AsistenteAyudaComponent {
         });
       }
     });
-  }
 
-  toggle(): void {
-    if (this.closeTimer !== null) {
-      clearTimeout(this.closeTimer);
-      this.closeTimer = null;
-      this.closing.set(false);
-    }
-    this.open.update((v) => !v);
+    // Si se reabre desde el topbar mientras corre la animación de cierre,
+    // cancelamos el desmontaje pendiente para que el panel quede abierto.
+    effect(() => {
+      if (this.open() && this.closeTimer !== null) {
+        clearTimeout(this.closeTimer);
+        this.closeTimer = null;
+        this.closing.set(false);
+      }
+    });
   }
 
   /** Reproduce la animación de salida y recién ahí desmonta el panel. */
@@ -333,9 +335,9 @@ export class AsistenteAyudaComponent {
     if (this.closing()) {
       return;
     }
+    this.open.set(false);
     this.closing.set(true);
     this.closeTimer = setTimeout(() => {
-      this.open.set(false);
       this.closing.set(false);
       this.closeTimer = null;
     }, AsistenteAyudaComponent.CLOSE_ANIM_MS);

@@ -23,17 +23,23 @@ import { ButtonModule } from 'primeng/button';
   styles: [`
     :host { display: block; flex-shrink: 0; }
     .saas-topbar {
-      display: flex; align-items: center; gap: 12px;
-      height: 48px; padding: 0 16px;
-      background: #1e1b4b; color: #fde68a;
-      box-shadow: 0 1px 3px rgba(0,0,0,.35);
+      display: flex; align-items: center; gap: 10px;
+      height: 56px; padding: 0 var(--space-4, 16px);
+      background: var(--saas-surface, #fff);
+      color: var(--saas-text, #1a1a2e);
+      border-bottom: 1px solid var(--saas-border, #e6e8ef);
     }
-    .saas-topbar__brand { display: flex; align-items: center; gap: 8px; }
-    .saas-topbar__logo { width: 24px; height: 24px; border-radius: 4px; background: rgba(251,191,36,.12); }
-    .saas-topbar__title { font-weight: 600; font-size: 14px; color: #fde68a; }
-    .saas-topbar__badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(251,191,36,.18); color: #fbbf24; }
+    .saas-topbar__brand { display: flex; align-items: center; gap: 10px; }
+    .saas-topbar__logo {
+      width: 30px; height: 30px; border-radius: 8px; object-fit: contain;
+      background: var(--saas-accent-tint, rgba(99,102,241,.10)); padding: 4px;
+    }
+    .saas-topbar__title { font-weight: 700; font-size: 15px; color: var(--saas-text, #1a1a2e); }
+    .saas-topbar__badge {
+      font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 3px 7px; border-radius: 999px;
+      background: var(--saas-accent-tint, rgba(99,102,241,.10)); color: var(--saas-accent-strong, #4f46e5);
+    }
     .saas-topbar__actions { margin-left: auto; }
-    :host ::ng-deep .saas-topbar__actions .p-button { color: #fde68a; }
   `],
 })
 export class SaasTopbarComponent {

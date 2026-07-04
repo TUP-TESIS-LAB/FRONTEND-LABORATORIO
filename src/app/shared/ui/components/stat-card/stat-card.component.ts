@@ -6,6 +6,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="ui-stat-card" [style.border-left-color]="accentColor()">
+      @if (icon()) {
+        <span class="ui-stat-card__icon"><i class="pi {{ icon() }}" [style.color]="accentColor()"></i></span>
+      }
       <div class="ui-stat-card__label">{{ label() }}</div>
       <div class="ui-stat-card__value">{{ value() }}</div>
       @if (sub()) {
@@ -16,6 +19,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   styles: [`
     :host { display: flex; }
     .ui-stat-card {
+      position: relative;
       background: white;
       border-radius: 10px;
       padding: var(--space-4) var(--space-5);
@@ -24,6 +28,19 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       flex: 1;
       display: flex;
       flex-direction: column;
+    }
+    /* Ícono opcional (PrimeIcon) en la esquina superior derecha, en el color del acento. */
+    .ui-stat-card__icon {
+      position: absolute;
+      top: var(--space-4);
+      right: var(--space-4);
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: rgba(15, 23, 42, .05);
+      font-size: 17px;
     }
     /* El value crece para empujar el sub al pie y todas las cards quedan
        de la misma altura aunque algunas no tengan sub. */
@@ -38,4 +55,6 @@ export class StatCardComponent {
   readonly value       = input.required<string | number>();
   readonly sub         = input<string | null>(null);
   readonly accentColor = input<string>('var(--brand-secondary)');
+  /** PrimeIcon opcional (ej. 'pi-building') mostrado como badge del acento. */
+  readonly icon        = input<string | null>(null);
 }

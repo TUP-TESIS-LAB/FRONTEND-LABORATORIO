@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { Popover } from 'primeng/popover';
+import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuComponent } from '@features/profile/components/profile-menu/profile-menu.component';
@@ -38,8 +39,14 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
           aria-label="Notificaciones">
           <i class="pi pi-bell"></i>
         </button>
-        <button type="button" class="ui-topbar__icon-btn" aria-label="Ayuda">
-          <i class="pi pi-question-circle"></i>
+        <button
+          type="button"
+          class="ui-topbar__icon-btn"
+          [class.ui-topbar__icon-btn--active]="assistant.open()"
+          aria-label="Asistente de ayuda"
+          [attr.aria-pressed]="assistant.open()"
+          (click)="assistant.toggle()">
+          <i class="pi pi-comments"></i>
         </button>
         <button
           type="button"
@@ -135,6 +142,12 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
       background: rgba(15,23,42,.08);
       color: #1e293b;
     }
+    .ui-topbar__icon-btn--active,
+    .ui-topbar__icon-btn--active:hover {
+      background: var(--brand-primary);
+      border-color: var(--brand-primary);
+      color: #fff;
+    }
     .ui-topbar__icon-btn--notif::after {
       content: '3';
       position: absolute;
@@ -198,6 +211,7 @@ export class TopbarComponent {
 
   private readonly userSession = inject(UserSessionService);
   private readonly tokens = inject(TokenService);
+  protected readonly assistant = inject(AsistenteAyudaService);
 
   protected readonly userInitials = computed(() => {
     const u = this.userSession.currentUser();
