@@ -107,6 +107,10 @@ import { URGENT_IN_PROGRESS_FEATURE_KEY } from '@features/analitica/store/urgent
 import { urgentInProgressReducer } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.reducer';
 import { UrgentInProgressEffects } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.effects';
 
+import { NOTIFICATIONS_FEATURE_KEY } from '@features/notifications/store/notifications.state';
+import { notificationsReducer } from '@features/notifications/store/notifications.reducer';
+import { NotificationsEffects } from '@features/notifications/store/notifications.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -171,6 +175,9 @@ export const appConfig: ApplicationConfig = {
     provideEffects(UrgentPendingEffects),
     provideState(URGENT_IN_PROGRESS_FEATURE_KEY, urgentInProgressReducer),
     provideEffects(UrgentInProgressEffects),
+    // Slice global: la campana de notificaciones está siempre montada (layout).
+    provideState(NOTIFICATIONS_FEATURE_KEY, notificationsReducer),
+    provideEffects(NotificationsEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),
