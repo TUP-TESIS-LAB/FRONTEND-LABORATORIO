@@ -33,11 +33,13 @@ export const SUCURSALES_ROUTES: Routes = [
       },
       {
         path: 'areas',
+        data: { breadcrumb: 'Áreas' },
         loadComponent: () => import('./pages/areas/areas.component').then((m) => m.AreasComponent),
       },
       {
         path: 'catalogo',
         canMatch: [roleGuard('ADMINISTRADOR')],
+        data: { breadcrumb: 'Catálogo' },
         loadComponent: () =>
           import('./pages/catalogo/sucursales-catalogo.page')
             .then(m => m.SucursalesCatalogoPage),
@@ -75,6 +77,7 @@ export const SUCURSALES_ROUTES: Routes = [
       {
         path: 'configuracion/:id',
         canMatch: [roleGuard('ADMINISTRADOR')],
+        data: { breadcrumb: 'Detalle' },
         loadComponent: () =>
           import('./pages/configuracion/sucursal-detalle/sucursal-detalle.page')
             .then(m => m.SucursalDetallePage),
@@ -94,6 +97,7 @@ export const SUCURSALES_ROUTES: Routes = [
           {
             path: 'configuracion',
             canMatch: [roleGuard('ADMINISTRADOR')],
+            data: { breadcrumb: 'Configuración' },
             loadComponent: () =>
               import('./pages/configuracion/sucursales-configuracion.component')
                 .then((m) => m.SucursalesConfiguracionComponent),
@@ -107,6 +111,7 @@ export const SUCURSALES_ROUTES: Routes = [
           {
             path: 'empleados',
             canMatch: [roleGuard('ADMINISTRADOR')],
+            data: { breadcrumb: 'Empleados' },
             loadComponent: () =>
               import('./pages/empleados-list/empleados-list.page').then((m) => m.EmpleadosListPage),
           },

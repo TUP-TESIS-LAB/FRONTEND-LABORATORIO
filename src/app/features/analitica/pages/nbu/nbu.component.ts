@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { NbuCatalogoTabComponent } from './nbu-catalogo-tab/nbu-catalogo-tab.component';
 import { NbuParticularTabComponent } from './nbu-particular-tab.component';
 import { loadNomenclador, selectNbuVersion } from '../../store/nomenclador/nomenclador.actions';
@@ -23,16 +24,10 @@ type NbuTab = 'catalogo' | 'particular';
   selector: 'app-nbu',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NbuCatalogoTabComponent, NbuParticularTabComponent, FilterBarComponent],
+  imports: [NbuCatalogoTabComponent, NbuParticularTabComponent, FilterBarComponent, PageHeaderComponent],
   template: `
     <div class="p-4">
-      <!-- Header -->
-      <div class="flex items-start justify-between mb-4">
-        <div>
-          <p class="text-xs font-medium text-[var(--ds-text-muted,#71717a)] uppercase tracking-wide">Clínico</p>
-          <h1 class="text-xl font-semibold text-[var(--ds-text,#18181b)]">Nomenclador NBU</h1>
-        </div>
-
+      <ui-page-header heading="Nomenclador NBU">
         <!-- Selector de versión NBU (caja visible) -->
         <div class="flex items-center gap-2 border border-[var(--ds-border,#e4e4e7)] rounded-lg bg-white px-3 py-2 shadow-sm">
           <span class="text-[11px] font-semibold uppercase tracking-wide text-[var(--ds-text-muted,#71717a)]">Versión</span>
@@ -48,7 +43,7 @@ type NbuTab = 'catalogo' | 'particular';
             }
           </select>
         </div>
-      </div>
+      </ui-page-header>
 
       <!-- Tabs -->
       <div class="flex gap-1 mb-4 border-b border-[var(--ds-border,#e4e4e7)]">

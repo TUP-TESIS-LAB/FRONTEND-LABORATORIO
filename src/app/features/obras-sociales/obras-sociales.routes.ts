@@ -25,6 +25,7 @@ export const OBRAS_SOCIALES_ROUTES: Routes = [
       },
       {
         path: ':id',
+        data: { breadcrumb: 'Detalle' },
         loadComponent: () =>
           import('./pages/obra-social-detail/obra-social-detail.page').then((m) => m.ObraSocialDetailPage),
       },

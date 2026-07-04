@@ -35,7 +35,7 @@ export const TURNOS_ROUTES: Routes = [
     ],
     children: [
       { path: '', redirectTo: 'agenda', pathMatch: 'full' },
-      { path: 'agenda',         loadComponent: () => import('./pages/agenda/agenda.component').then(m => m.AgendaComponent) },
+      { path: 'agenda',         data: { breadcrumb: 'Agenda de turnos' }, loadComponent: () => import('./pages/agenda/agenda.component').then(m => m.AgendaComponent) },
       {
         // Sacar turno en nombre del paciente (secretaria). Gateado por módulo
         // Turnos vía el canMatch del padre en app.routes. Store propia scopeada.
@@ -50,6 +50,7 @@ export const TURNOS_ROUTES: Routes = [
       },
       {
         path: 'configuracion',
+        data: { breadcrumb: 'Configuración de agendas' },
         children: [
           {
             path: '',
@@ -73,7 +74,7 @@ export const TURNOS_ROUTES: Routes = [
           },
         ],
       },
-      { path: 'atencion-turno', loadComponent: () => import('./pages/atencion-turno/atencion-turno.component').then(m => m.AtencionTurnoComponent) },
+      { path: 'atencion-turno', data: { breadcrumb: 'Atención de turno' }, loadComponent: () => import('./pages/atencion-turno/atencion-turno.component').then(m => m.AtencionTurnoComponent) },
       {
         path: 'recepcion',
         canActivate: [recepcionAccessGuard],

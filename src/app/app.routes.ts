@@ -24,6 +24,7 @@ export const routes: Routes = [
       {
         path: 'sucursales',
         canMatch: [sectionGuard('SUCURSALES')],
+        data: { breadcrumb: 'Sucursales' },
         loadChildren: () =>
           import('./features/sucursales/sucursales.routes').then((m) => m.SUCURSALES_ROUTES),
       },
@@ -35,6 +36,7 @@ export const routes: Routes = [
       {
         path: 'pacientes',
         canMatch: [sectionGuard('PACIENTES')],
+        data: { breadcrumb: 'Pacientes' },
         loadChildren: () =>
           import('./features/pacientes/pacientes.routes').then((m) => m.PACIENTES_ROUTES),
       },
@@ -59,12 +61,14 @@ export const routes: Routes = [
       {
         path: 'medicos',
         canMatch: [moduleActiveGuard(ModuleKey.Medicos)],
+        data: { breadcrumb: 'Médicos derivantes' },
         loadChildren: () =>
           import('./features/medicos/medicos.routes').then((m) => m.MEDICOS_ROUTES),
       },
       {
         path: 'stock',
         canMatch: [moduleActiveGuard(ModuleKey.Stock)],
+        data: { breadcrumb: 'Stock' },
         loadChildren: () =>
           import('./features/stock/stock.routes').then((m) => m.STOCK_ROUTES),
       },
@@ -76,6 +80,7 @@ export const routes: Routes = [
             (m) => m.UrgentesEnCursoPage,
           ),
         title: 'Urgentes en curso',
+        data: { breadcrumb: 'Urgentes en curso' },
       },
 
       // NUEVAS RUTAS
@@ -86,11 +91,13 @@ export const routes: Routes = [
         // Ahora siempre renderiza el home (página neutra); el usuario navega desde
         // el sidebar, que ya filtra sus items por las secciones concedidas.
         path: 'home',
+        data: { breadcrumb: 'Inicio' },
         loadChildren: () =>
           import('./features/home/home.routes').then((m) => m.HOME_ROUTES),
       },
       {
         path: 'obras-sociales',
+        data: { breadcrumb: 'Obras sociales' },
         loadChildren: () =>
           import('./features/obras-sociales/obras-sociales.routes').then((m) => m.OBRAS_SOCIALES_ROUTES),
       },
