@@ -47,13 +47,13 @@ import { selectSaasAdminPending, selectSelectedTenantModules } from '../../../st
   `,
   styles: [`
     .modules { margin-bottom: 24px; }
-    .modules h3 { color: #fde68a; font-size: 14px; margin: 0 0 4px; text-transform: uppercase; letter-spacing: .04em; }
-    .muted { color: #94a3b8; font-size: 12px; }
-    .module-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,.03); margin-top: 8px; }
-    .module-row--core { opacity: 0.85; }
-    .module-row i { font-size: 18px; color: #fbbf24; width: 20px; text-align: center; }
+    .modules h3 { color: var(--saas-text, #1a1a2e); font-size: 12px; margin: 0 0 4px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+    .muted { color: var(--saas-text-muted, #6b7280); font-size: 12px; }
+    .module-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: var(--saas-surface, #fff); border: 1px solid var(--saas-border, #e6e8ef); margin-top: 8px; }
+    .module-row--core { background: var(--saas-surface-alt, #f9fafb); }
+    .module-row i { font-size: 18px; color: var(--saas-accent, #6366f1); width: 20px; text-align: center; }
     .module-row__text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-    .module-row__text strong { color: #e2e8f0; font-size: 14px; }
+    .module-row__text strong { color: var(--saas-text, #1a1a2e); font-size: 14px; }
   `],
 })
 export class TenantModulesTabComponent {

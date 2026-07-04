@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { CatalogRow, Determination, NbuVersion, ParticularPricing } from '../../models/nomenclador.model';
+import { CatalogRow, ConfigResumen, Determination, NbuVersion, ParticularPricing } from '../../models/nomenclador.model';
 
 export interface NomencladorFeatureState {
   /** Versiones NBU disponibles. */
@@ -12,6 +12,8 @@ export interface NomencladorFeatureState {
   particular: ParticularPricing;
   /** Determinaciones por análisisId (lazy: se carga al expandir la fila del tab Catálogo). */
   determinationsByAnalysis: Record<number, Determination[]>;
+  /** Resumen de config por análisisId (lazy: se carga al expandir la fila del tab Catálogo). */
+  configByAnalysis: Record<number, ConfigResumen>;
   /** true mientras la carga inicial (loadNomenclador) está en curso. */
   pending: boolean;
   /** Error de la carga inicial, si la hubo. */
@@ -24,6 +26,7 @@ export const initialNomencladorState: NomencladorFeatureState = {
   catalog: [],
   particular: { valorUb: 0, overrides: {} },
   determinationsByAnalysis: {},
+  configByAnalysis: {},
   pending: false,
   error: null,
 };

@@ -72,6 +72,10 @@ export interface AttentionResponse {
   mostAdvancedState: AttentionState;
   analysisAuthorizations: AnalysisAuthorizationResponse[];
   copaymentAmount: number | null;
+  // --- Flags de pendientes (KAN-140): presentes en AttentionResponse luego del advance urgent. ---
+  cobroPendiente?: boolean;
+  autorizacionPendiente?: boolean;
+  datosAdministrativosIncompletos?: boolean;
   // --- Campos opcionales: presentes según el endpoint (el listado los completa todos). ---
   // Motivo registrado cuando el extractor marca "no se presentó" (cancelación de extracción,
   // distinto de cancellationReason que es la cancelación terminal de la atención).
@@ -151,6 +155,7 @@ export interface Analysis {
   familyName: string | null;
   ubCount: number | null; // unidades bioquímicas; null si no configurado
   cantidadUb?: number | null; // campo real del backend (AnalysisResponse.cantidadUb)
+  nbuCode?: string | null; // código NBU nacional (AnalysisResponse.nbuCode)
 }
 
 export interface AnalysisDetail extends Analysis {

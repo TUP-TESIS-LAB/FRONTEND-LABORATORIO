@@ -74,15 +74,21 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
     </div>
   `,
   styles: [`
-    .saas-card { background: var(--saas-bg-card, #232447); padding: 16px; border-radius: 8px; border: 1px solid var(--saas-border, rgba(255,255,255,.08)); }
+    .saas-card {
+      background: var(--saas-surface, #fff);
+      padding: var(--space-5, 20px);
+      border-radius: 10px;
+      border: 1px solid var(--saas-border, #e6e8ef);
+      box-shadow: 0 1px 2px rgba(15,23,42,.04);
+    }
     .wl-form { display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start; }
     .wl-grid { display: grid; gap: 12px; }
-    .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #c7d2fe; }
+    .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 500; color: var(--saas-text-muted, #6b7280); }
     .color-input { display: flex; gap: 8px; align-items: center; }
-    .color-native { width: 40px; height: 36px; padding: 2px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: transparent; cursor: pointer; }
-    .preview { background: var(--saas-bg-card-alt, #2a2c52); padding: 12px; border-radius: 8px; }
-    .preview h3 { color: #fde68a; font-size: 12px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
-    .preview__name { font-weight: 600; color: #e2e8f0; }
+    .color-native { width: 40px; height: 36px; padding: 2px; border: 1px solid var(--saas-border, #e6e8ef); border-radius: 6px; background: transparent; cursor: pointer; }
+    .preview { background: var(--saas-surface-alt, #f9fafb); border: 1px solid var(--saas-border, #e6e8ef); padding: 12px; border-radius: 8px; }
+    .preview h3 { color: var(--saas-text, #1a1a2e); font-size: 12px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+    .preview__name { font-weight: 600; color: var(--saas-text, #1a1a2e); }
     .preview__colors { display: flex; gap: 6px; margin-top: 8px; }
     .swatch { padding: 16px 8px; border-radius: 6px; color: white; font-size: 10px; text-align: center; flex: 1; }
     .preview__logos { display: flex; gap: 6px; margin-top: 8px; }

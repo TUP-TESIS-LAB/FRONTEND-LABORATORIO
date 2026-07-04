@@ -5,6 +5,7 @@ import { Action } from '@ngrx/store';
 import { ReplaySubject, of } from 'rxjs';
 import { AnalisisStepComponent } from './analisis-step.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import { clearAnalisisDraft, writeAnalisisDraft } from '../../../../../utils/analisis-draft-store';
 import * as A from '../../../../../store/atencion/atencion.actions';
 import { selectMutating } from '../../../../../store/atencion/atencion.selectors';
@@ -219,5 +220,54 @@ describe('AnalisisStepComponent', () => {
       { analysisId: 3, isAuthorized: true },
       { analysisId: 4, isAuthorized: false },
     ]);
+  });
+
+  // ── KAN-140: modo urgente express ─────────────────────────────────────────
+
+  function setDetailUrgent(isUrgent: boolean): void {
+    const store = (fixture.componentInstance as any)['store'];
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        detail: { id: 42, insurancePlanId: null, isUrgent, analysisAuthorizations: [] } as any,
+      },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+  }
+
+  it('KAN-140: en modo urgente con Urgencias activo, onIniciarUrgente despacha advanceUrgent', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(true);
+    fixture.componentInstance.onAnalysisAdded(makeRow());
+    fixture.componentInstance.onIniciarUrgente();
+    expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeTruthy();
+    expect(dispatched.find((a) => a.type === A.addAnalysisList.type)).toBeUndefined();
+  });
+
+  it('KAN-140: en modo normal (no urgente), onIniciarUrgente NO existe y onContinue despacha addAnalysisList', () => {
+    registry.isActive.mockReturnValue(false);
+    setDetailUrgent(false);
+    fixture.componentInstance.onAnalysisAdded(makeRow());
+    fixture.componentInstance.onContinue();
+    expect(dispatched.find((a) => a.type === A.addAnalysisList.type)).toBeTruthy();
+  });
+
+  it('KAN-140: en modo urgente con Urgencias activo, modoExpress() devuelve true', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(true);
+    expect((fixture.componentInstance as any).modoExpress()).toBe(true);
+  });
+
+  it('KAN-140: con urgente=false, modoExpress() devuelve false aunque Urgencias esté activo', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(false);
+    expect((fixture.componentInstance as any).modoExpress()).toBe(false);
+  });
+
+  it('KAN-140: con urgente=true pero Urgencias inactivo, modoExpress() devuelve false', () => {
+    registry.isActive.mockReturnValue(false);
+    setDetailUrgent(true);
+    expect((fixture.componentInstance as any).modoExpress()).toBe(false);
   });
 });

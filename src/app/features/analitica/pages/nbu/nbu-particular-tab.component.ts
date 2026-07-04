@@ -9,8 +9,6 @@ import { saveValorUb, setOverride } from '../../store/nomenclador/nomenclador.ac
 import { selectParticularRows, selectValorUb } from '../../store/nomenclador/nomenclador.selectors';
 import { matchesFilter } from './nbu-filter';
 
-// MOCK — el precio particular se persistirá vía coverages; hoy NomencladorService lo guarda en memoria.
-
 /**
  * Tab "Precio particular" de la pantalla NBU (KAN-118).
  *

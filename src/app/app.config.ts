@@ -53,6 +53,7 @@ import { BranchTotemConfigEffects } from '@features/turnos/store/branch-totem-co
 import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.state';
 import { financieroReducer } from '@features/financiero/store/financiero.reducer';
 import { FinancieroEffects } from '@features/financiero/store/financiero.effects';
+import { LiquidacionesEffects } from '@features/financiero/store/liquidaciones.effects';
 
 import { PATIENT_FEATURE_KEY } from '@features/pacientes/store/patient.state';
 import { patientReducer } from '@features/pacientes/store/patient.reducer';
@@ -98,6 +99,18 @@ import { NOMENCLADOR_FEATURE_KEY } from '@features/analitica/store/nomenclador/n
 import { nomencladorReducer } from '@features/analitica/store/nomenclador/nomenclador.reducer';
 import { NomencladorEffects } from '@features/analitica/store/nomenclador/nomenclador.effects';
 
+import { URGENT_PENDING_FEATURE_KEY } from '@features/analitica/store/urgent-pending/urgent-pending.state';
+import { urgentPendingReducer } from '@features/analitica/store/urgent-pending/urgent-pending.reducer';
+import { UrgentPendingEffects } from '@features/analitica/store/urgent-pending/urgent-pending.effects';
+
+import { URGENT_IN_PROGRESS_FEATURE_KEY } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.state';
+import { urgentInProgressReducer } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.reducer';
+import { UrgentInProgressEffects } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.effects';
+
+import { NOTIFICATIONS_FEATURE_KEY } from '@features/notifications/store/notifications.state';
+import { notificationsReducer } from '@features/notifications/store/notifications.reducer';
+import { NotificationsEffects } from '@features/notifications/store/notifications.effects';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -135,6 +148,7 @@ export const appConfig: ApplicationConfig = {
     provideEffects(AtencionEffects),
     provideState(FINANCIERO_FEATURE_KEY, financieroReducer),
     provideEffects(FinancieroEffects),
+    provideEffects(LiquidacionesEffects),
     provideState(PATIENT_FEATURE_KEY, patientReducer),
     provideEffects(PatientEffects),
     provideState(SAAS_ADMIN_FEATURE_KEY, saasAdminReducer),
@@ -157,10 +171,32 @@ export const appConfig: ApplicationConfig = {
     provideEffects(ValidacionDetalleEffects),
     provideState(NOMENCLADOR_FEATURE_KEY, nomencladorReducer),
     provideEffects(NomencladorEffects),
+    provideState(URGENT_PENDING_FEATURE_KEY, urgentPendingReducer),
+    provideEffects(UrgentPendingEffects),
+    provideState(URGENT_IN_PROGRESS_FEATURE_KEY, urgentInProgressReducer),
+    provideEffects(UrgentInProgressEffects),
+    // Slice global: la campana de notificaciones está siempre montada (layout).
+    provideState(NOTIFICATIONS_FEATURE_KEY, notificationsReducer),
+    provideEffects(NotificationsEffects),
     // Slice de turnos registrada en root a propósito (ver comentario arriba).
     provideState('branchTotemConfig', branchTotemConfigReducer),
     provideEffects(BranchTotemConfigEffects),
     providePrimeNG({
+      // Locale es-AR para todos los overlays de PrimeNG (datepicker, etc.).
+      // Sin esto el calendario sale en inglés. La semana arranca en lunes.
+      translation: {
+        dayNames: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'],
+        dayNamesShort: ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'],
+        dayNamesMin: ['D', 'L', 'M', 'X', 'J', 'V', 'S'],
+        monthNames: [
+          'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+          'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+        ],
+        monthNamesShort: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+        today: 'Hoy',
+        clear: 'Limpiar',
+        firstDayOfWeek: 1,
+      },
       theme: {
         preset: Aura,
         options: {

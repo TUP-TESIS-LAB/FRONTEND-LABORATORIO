@@ -56,9 +56,15 @@ import {
     }
   `,
   styles: [`
-    .saas-card { background: var(--saas-bg-card, #232447); padding: 16px; border-radius: 8px; border: 1px solid var(--saas-border, rgba(255,255,255,.08)); }
+    .saas-card {
+      background: var(--saas-surface, #fff);
+      padding: var(--space-5, 20px);
+      border-radius: 10px;
+      border: 1px solid var(--saas-border, #e6e8ef);
+      box-shadow: 0 1px 2px rgba(15,23,42,.04);
+    }
     .info-form { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
-    .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #c7d2fe; }
+    .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 500; color: var(--saas-text-muted, #6b7280); }
     .info-form__status { display: flex; gap: 6px; }
     .info-form__actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   `],

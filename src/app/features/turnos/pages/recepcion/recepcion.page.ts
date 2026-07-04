@@ -8,6 +8,8 @@ import { Router } from '@angular/router';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { TokenService } from '@core/auth/token.service';
 import { SucursalService } from '@features/sucursales/services/sucursal.service';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import { loadBranchTotemConfig } from '../../store/branch-totem-config/branch-totem-config.actions';
 import { selectBranchTotemLoading } from '../../store/branch-totem-config/branch-totem-config.selectors';
 import { loadBoxOccupations } from '../../box-occupation/store/box-occupation.actions';
@@ -18,6 +20,7 @@ import { RecepcionConTotemComponent } from './recepcion-con-totem.component';
 import { ScheduledAppointmentsDrawerComponent } from '../../components/scheduled-appointments-drawer.component';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
 import { AtencionDashboardComponent } from '@features/analitica/pages/atencion/atencion-dashboard/atencion-dashboard.component';
+import { AtencionUrgentesDashboardComponent } from '@features/analitica/pages/atencion/atencion-urgentes-dashboard/atencion-urgentes-dashboard.component';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 
 @Component({
@@ -31,6 +34,7 @@ import { PageHeaderComponent } from '@shared/ui/components/page-header/page-head
     BoxOccupationWidgetComponent,
     BoxSelectorModalComponent,
     AtencionDashboardComponent,
+    AtencionUrgentesDashboardComponent,
     ButtonModule,
     ScheduledAppointmentsDrawerComponent,
     PageHeaderComponent,
@@ -46,6 +50,8 @@ export class RecepcionPage implements OnInit {
   private sucursalService = inject(SucursalService);
   protected readonly branchContext = inject(OperatorBranchContextService);
   private readonly router = inject(Router);
+  protected readonly moduleRegistry = inject(ModuleRegistry);
+  protected readonly ModuleKey = ModuleKey;
 
   /** Drawer de "Turnos del día" — controlado por el botón global del header. */
   protected readonly drawerOpen = signal(false);

@@ -62,7 +62,7 @@ describe('ObraSocialService (backend)', () => {
       contacts: [{ id: 1, contactType: 'PHONE', contact: '0810', active: true }],
       plans: [{
         id: 96002, insurerId: 96002, code: 'OSDE-210', acronym: '210', name: '210',
-        description: null, iva: 21, particular: false, active: true,
+        description: null, iva: 21, active: true,
         currentAgreement: { id: 5, insurerPlanId: 96002, versionNbu: null, ubValue: 1500, validFromDate: '2025-01-01', validToDate: null, active: true },
       }],
     });
@@ -86,7 +86,7 @@ describe('ObraSocialService (backend)', () => {
       contacts: [],
       plans: [{
         id: 96003, insurerId: 96003, code: 'IOMA-PMO', acronym: 'PMO', name: 'Plan PMO',
-        description: null, iva: 21, particular: false, active: true, currentAgreement: null,
+        description: null, iva: 21, active: true, currentAgreement: null,
       }],
     });
     const os = await p;

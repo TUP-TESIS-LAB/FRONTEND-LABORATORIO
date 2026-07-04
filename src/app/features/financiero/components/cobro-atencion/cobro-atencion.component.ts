@@ -6,6 +6,7 @@ import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
+import { CajaContextService } from '../../services/caja-context.service';
 import { MetodoChipComponent } from '../metodo-chip.component';
 import { ComprobanteCardComponent } from '../comprobante-card.component';
 import { METHOD_META, PaymentMethod } from '../../models/financiero.model';
@@ -52,11 +53,15 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
         </div>
       } @else {
         <!-- BLOQUEO SIN CAJA -->
-        @if (!cajaAbierta()) {
+        @if (!cajaAbierta() || cashRegisterId() == null) {
           <div class="fin-cobro__sin-caja" data-testid="cobro-sin-caja">
             <i class="pi pi-lock"></i>
-            <p>No se puede cobrar: no hay una caja abierta.</p>
-            <p-button label="Abrir caja" icon="pi pi-unlock" (onClick)="irACaja()" />
+            @if (cashRegisterId() == null) {
+              <p>Elegí y abrí una caja antes de cobrar.</p>
+            } @else {
+              <p>No se puede cobrar: la caja seleccionada está cerrada.</p>
+            }
+            <p-button label="Ir a Caja" icon="pi pi-unlock" (onClick)="irACaja()" />
           </div>
         } @else {
           <!-- DESGLOSE -->
@@ -142,6 +147,7 @@ export class CobroAtencionComponent {
   private readonly store = inject(Store);
   private readonly router = inject(Router);
   private readonly branchCtx = inject(OperatorBranchContextService);
+  private readonly cajaCtx = inject(CajaContextService);
 
   // NOTE: Degraded from input.required<number>() / input<boolean>(false) to classic @Input()
   // decorators to work around the known vitest NG0950 bug: input.required() fires effects in
@@ -168,6 +174,16 @@ export class CobroAtencionComponent {
 
   protected readonly branchId = computed(() => this.detail()?.branchId ?? this.branchCtx.branchId());
 
+  /**
+   * KAN-156: subcaja seleccionada para imputar el efectivo del cobro. Se resuelve
+   * de la selección persistida por sucursal (la pantalla de Caja la fija). Si no
+   * hay caja seleccionada, el cobro queda bloqueado (no sabemos a qué caja imputar).
+   */
+  protected readonly cashRegisterId = computed(() => {
+    const b = this.branchId();
+    return b != null ? this.cajaCtx.selectedFor(b) : null;
+  });
+
   private nextId = 1;
   protected readonly lineas = signal<LineaCobro[]>([
     { id: 0, method: 'CASH', amount: 0, reference: '' },
@@ -178,7 +194,8 @@ export class CobroAtencionComponent {
     this.lineas().reduce((sum, l) => sum + (Number(l.amount) || 0), 0));
   protected readonly restante = computed(() => round2(this.aCobrar() - this.asignado()));
   protected readonly puedeConfirmar = computed(() =>
-    this.cajaAbierta() && this.aCobrar() > 0 && this.restante() === 0 && !this.submitting());
+    this.cajaAbierta() && this.cashRegisterId() != null
+    && this.aCobrar() > 0 && this.restante() === 0 && !this.submitting());
 
   constructor() {
     // Prefill: la primera línea arranca con el monto a cobrar (efectivo por default).
@@ -190,8 +207,8 @@ export class CobroAtencionComponent {
       }
     });
     effect(() => {
-      const b = this.branchId();
-      if (b != null) this.store.dispatch(loadOpenSession({ branchId: b }));
+      const reg = this.cashRegisterId();
+      if (reg != null) this.store.dispatch(loadOpenSession({ cashRegisterId: reg }));
     });
   }
 
@@ -246,6 +263,7 @@ export class CobroAtencionComponent {
       body: {
         attentionId: this.attentionId,
         branchId: branch,
+        cashRegisterId: this.cashRegisterId(),
         totalAmount: round2(this.asignado()),
         copaymentAmount: d?.copaymentAmount ?? p.copayment,
         collections,

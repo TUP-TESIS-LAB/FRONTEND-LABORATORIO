@@ -10,6 +10,7 @@ import { DoctorService } from '@features/medicos/services/doctor.service';
 import { CoveragePlansService } from '@features/pacientes/services/coverage-plans.service';
 import { NotificationService } from '@core/services/notification.service';
 import { AttentionResponse, AttentionState } from '../../../models/atencion.model';
+import { ModuleKey } from '@core/models/module-key.enum';
 import {
   selectDetail, selectDetailLoading, selectMutating,
   selectResolvedPatient, selectPatientResolving, selectPatientNotFoundDni,
@@ -285,5 +286,71 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     (fixture.componentInstance as any).goToStep(2);
     fixture.detectChanges();
     expect((fixture.componentInstance as any).uiStep().key).toBe('confirmar');
+  });
+
+  // ── KAN-140: modo express urgente ─────────────────────────────────────────
+
+  it('KAN-140: con urgente + Urgencias activo, visibleSteps excluye cobro/facturacion/confirmar', () => {
+    // Urgencias activo, Financiero inactivo
+    setup(AttentionState.REGISTERING_ANALYSES);
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.REGISTERING_ANALYSES), isUrgent: true } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    const keys = (fixture.componentInstance as any).visibleSteps().map((s: any) => s.key);
+    expect(keys).toEqual(['datos', 'analisis']);
+  });
+
+  it('KAN-140: sin urgente (isUrgent=false) NO filtra pasos extra aunque Urgencias esté activo', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.REGISTERING_ANALYSES), isUrgent: false } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    const keys = (fixture.componentInstance as any).visibleSteps().map((s: any) => s.key);
+    // Sin Financiero y sin modo express: [datos, analisis, confirmar]
+    expect(keys).toEqual(['datos', 'analisis', 'confirmar']);
+  });
+
+  // ── KAN-140: badges de pendientes ─────────────────────────────────────────
+
+  it('KAN-140: badge "Cobro pendiente" se muestra cuando cobroPendiente=true', () => {
+    setup(AttentionState.AWAITING_EXTRACTION);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.AWAITING_EXTRACTION), isUrgent: true, cobroPendiente: true } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Cobro pendiente');
+  });
+
+  it('KAN-140: badge "Autorización pendiente" se muestra cuando autorizacionPendiente=true', () => {
+    setup(AttentionState.AWAITING_EXTRACTION);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.AWAITING_EXTRACTION), isUrgent: true, autorizacionPendiente: true } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Autorización pendiente');
+  });
+
+  it('KAN-140: badge "Datos incompletos" se muestra cuando datosAdministrativosIncompletos=true', () => {
+    setup(AttentionState.AWAITING_EXTRACTION);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.AWAITING_EXTRACTION), isUrgent: true, datosAdministrativosIncompletos: true } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Datos incompletos');
+  });
+
+  it('KAN-140: badges NO se muestran cuando los flags son false o ausentes', () => {
+    setup(AttentionState.REGISTERING_ANALYSES);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).not.toContain('Cobro pendiente');
+    expect(text).not.toContain('Autorización pendiente');
+    expect(text).not.toContain('Datos incompletos');
   });
 });

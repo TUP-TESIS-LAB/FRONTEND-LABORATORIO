@@ -9,6 +9,7 @@ import { selectIsCajaOpen, selectCobroSubmitting, selectCobroResult } from '../.
 import { selectDetail, selectPricing } from '@features/analitica/store/atencion/atencion.selectors';
 import { registerPayment } from '../../store/financiero.actions';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
+import { CajaContextService } from '../../services/caja-context.service';
 
 // Minimal template for tests that need to render the form UI (caja abierta).
 // Used to avoid NG0950 thrown by MetodoChipComponent.metodo (input.required()) being
@@ -54,6 +55,15 @@ function setupWithTemplate(
         useValue: {
           branchId: signal<number | null>(3),
           branchName: signal<string | null>('Sucursal Test'),
+        },
+      },
+      {
+        provide: CajaContextService,
+        useValue: {
+          selectedRegisterId: signal<number | null>(5),
+          selectedFor: (_b: number) => 5,
+          select: () => {},
+          clear: () => {},
         },
       },
       provideMockStore({

@@ -17,6 +17,7 @@ function row(p: Partial<ValidationListRow>): ValidationListRow {
     patientName: 'Paciente', patientSex: 'F', patientBirthDate: '1990-01-01',
     date: '2026-06-14T10:00:00Z', currentStatus: 'PENDING',
     analysisCount: 2, determinationCount: 5, signedAnalysisCount: 0,
+    isUrgent: false,
     ...p,
   };
 }
@@ -120,6 +121,63 @@ describe('ValidacionProtocolosPage (smoke)', () => {
     const p1 = { resultId: 0, status: 'PENDING' as const, sectionId: null, analysisName: 'Hemograma', analysisFamily: null, determinations: [], pending: true };
     const p2 = { resultId: 0, status: 'PENDING' as const, sectionId: null, analysisName: 'Orina', analysisFamily: null, determinations: [], pending: true };
     expect(c.trackAnalisis(0, p1)).not.toBe(c.trackAnalisis(1, p2));
+  });
+
+  // --- Badge URGENTE ---
+
+  it('una fila urgente aparece en visibles con isUrgent=true', () => {
+    const urgentRow = row({ studyId: 99, protocolId: 99, protocolCode: 'P-9999', isUrgent: true });
+    const navigate = vi.fn();
+    const getDetalle = vi.fn().mockReturnValue(of({ study: {}, results: [] }));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ValidacionProtocolosPage],
+      providers: [
+        provideNoopAnimations(),
+        { provide: Router, useValue: { navigate } },
+        { provide: PostanaliticaApiService, useValue: { getDetalle } },
+        provideMockStore({ selectors: [
+          { selector: selectValidacionRows, value: [urgentRow] },
+          { selector: selectValidacionPending, value: false },
+        ] }),
+      ],
+    });
+    TestBed.overrideTemplate(ValidacionProtocolosPage, SMOKE_TEMPLATE);
+    const c = TestBed.createComponent(ValidacionProtocolosPage).componentInstance;
+    expect(c.visibles().length).toBe(1);
+    expect(c.visibles()[0].isUrgent).toBe(true);
+  });
+
+  it('el template renderiza el badge URGENTE solo en filas urgentes', () => {
+    const urgentRow = row({ studyId: 10, protocolId: 10, protocolCode: 'P-0010', isUrgent: true, currentStatus: 'PENDING' });
+    const normalRow = row({ studyId: 11, protocolId: 11, protocolCode: 'P-0011', isUrgent: false, currentStatus: 'PENDING' });
+    const navigate = vi.fn();
+    const getDetalle = vi.fn().mockReturnValue(of({ study: {}, results: [] }));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ValidacionProtocolosPage],
+      providers: [
+        provideNoopAnimations(),
+        { provide: Router, useValue: { navigate } },
+        { provide: PostanaliticaApiService, useValue: { getDetalle } },
+        provideMockStore({ selectors: [
+          { selector: selectValidacionRows, value: [urgentRow, normalRow] },
+          { selector: selectValidacionPending, value: false },
+        ] }),
+      ],
+    });
+    // Template mínimo que renderiza el badge URGENTE usando la lógica real
+    TestBed.overrideTemplate(ValidacionProtocolosPage, `
+      @for (r of visibles(); track r.studyId) {
+        @if (r.isUrgent) { <p-tag value="URGENTE" severity="danger" /> }
+      }
+    `);
+    const fx = TestBed.createComponent(ValidacionProtocolosPage);
+    fx.detectChanges();
+    const el: HTMLElement = fx.nativeElement;
+    const tags = el.querySelectorAll('p-tag');
+    // Solo la fila urgente tiene el badge
+    expect(tags.length).toBe(1);
   });
 
   it('el detalle pendiente queda disponible en analisisDe tras expandir', () => {

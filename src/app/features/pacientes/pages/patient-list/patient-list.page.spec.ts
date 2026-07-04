@@ -17,7 +17,7 @@ import { Patient } from '../../models/patient.model';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 
 const mockPlansService = {
-  getActivePlans: () => of([{ planId: 1, label: 'Particular', particular: true }]),
+  getActivePlans: () => of([{ planId: 1, label: 'Particular' }]),
 };
 
 // Default mock: PORTAL active (preserves existing test expectations for portalActions)

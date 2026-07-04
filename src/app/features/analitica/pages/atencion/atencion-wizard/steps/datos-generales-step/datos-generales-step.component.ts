@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
@@ -34,6 +35,7 @@ import {
   loadAttentionPatient,
   loadPatientGuardians,
   resolvePatientByDni,
+  setUrgentFlag,
   startAttentionForPatient,
   updatePatientInline,
   validateBond,
@@ -67,7 +69,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   selector: 'lab-datos-generales-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule, PortalAccessDialogComponent],
+  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule, PortalAccessDialogComponent],
   template: `
     <div class="flex flex-col h-full min-h-0">
       <!-- T8: contenido scrolleable interno; el footer queda abajo y la página no crece. -->
@@ -137,14 +139,15 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
             </div>
             <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-sm mb-1">Obra social <span class="text-red-500">*</span></label>
+                <label class="block text-sm mb-1">Obra social</label>
                 <p-select
                   [ngModel]="formInsurerId()"
                   (ngModelChange)="onFormInsurerChange($event)"
                   [options]="insurerOptions()"
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="— Seleccioná —"
+                  placeholder="Particular (sin obra social)"
+                  [showClear]="true"
                   appendTo="body"
                   class="w-full" />
               </div>
@@ -354,7 +357,8 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                         [options]="insurerOptions()"
                         optionLabel="name"
                         optionValue="id"
-                        placeholder="— Seleccioná —"
+                        placeholder="Particular (sin obra social)"
+                        [showClear]="true"
                         appendTo="body"
                         class="w-full" />
                     </div>
@@ -435,6 +439,16 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
         }
       </div>
 
+      <!-- Toggle urgente — visible solo si módulo URGENCIAS activo y no readOnly (KAN-140) -->
+      @if (urgenciasActive() && !readOnly()) {
+        <div data-testid="urgente-toggle-container">
+          <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none w-fit">
+            <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle-recepcion" />
+            <span class="text-sm font-semibold">Atención urgente</span>
+          </label>
+        </div>
+      }
+
       <!-- Indicaciones + confirmar -->
       <div>
         <label class="block text-sm font-medium mb-1">Indicaciones</label>
@@ -511,6 +525,12 @@ export class DatosGeneralesStepComponent implements OnInit {
   /** Módulo PORTAL activo para el tenant: gatea el banner de relación familiar pendiente. */
   protected readonly portalActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Portal));
 
+  /** Módulo URGENCIAS activo: gatea el toggle de "Atención urgente" en recepción. */
+  protected readonly urgenciasActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Urgencias));
+
+  /** Estado local del toggle urgente. Se hidrata desde el input initialIsUrgent en ngOnInit. */
+  isUrgentValue = false;
+
   /** Búsqueda automática del DNI: se dispara con debounce al tipear y al blur. */
   private readonly dniSearch$ = new Subject<string>();
   /** Evita re-buscar el mismo DNI en cada blur/keystroke. */
@@ -531,6 +551,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   readonly initialDoctorId = input<number | null>(null);
   /** Cobertura (plan) ya asociada a la atención (al retomar) — pre-selecciona el chip. */
   readonly initialInsurancePlanId = input<number | null>(null);
+  /** Flag urgente ya persistido (al retomar). Se hidrata en ngOnInit para que el toggle muestre el estado real. */
+  readonly initialIsUrgent = input<boolean | null>(null);
 
   /** Modo solo-lectura (atención terminal / post-secretaría): oculta toda acción mutadora. */
   readonly readOnly = input<boolean>(false);
@@ -554,12 +576,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   protected readonly formInsurerId = signal<number | null>(null);
   /** Obras sociales seleccionables (incluye Particular para pago directo). */
   protected readonly insurerOptions = computed<InsurerOption[]>(() => {
-    // Particular (SELF_PAY) siempre fija como primera opción; el resto alfabético.
-    return [...this.catalog().insurers].sort((a, b) => {
-      if (a.insurerType === 'SELF_PAY') return -1;
-      if (b.insurerType === 'SELF_PAY') return 1;
-      return a.name.localeCompare(b.name);
-    });
+    // Solo obras sociales reales, alfabético. "Particular" = dejar la OS vacía (sin cobertura).
+    return [...this.catalog().insurers].sort((a, b) => a.name.localeCompare(b.name));
   });
   /** Planes de la obra social elegida en el form. */
   protected readonly formPlanOptions = computed<PlanOption[]>(() => plansForInsurer(this.catalog(), this.formInsurerId()));
@@ -577,10 +595,8 @@ export class DatosGeneralesStepComponent implements OnInit {
     const p = this.resolved();
     const cat = this.catalog();
     const chips: { planId: number | null; label: string }[] = [{ planId: null, label: 'Particular' }];
-    // Excluimos las coberturas a un plan "particular" (self-pay): ya están
-    // representadas por el chip "Particular" de arriba; mostrarlas además como
-    // cobertura duplicaba "Particular" (se veían dos opciones Particular).
-    for (const c of (p?.coverages ?? []).filter((x) => x.active && !planById(cat, x.planId)?.particular)) {
+    // El chip "Particular" (sin cobertura) va fijo arriba; debajo, las coberturas activas del paciente.
+    for (const c of (p?.coverages ?? []).filter((x) => x.active)) {
       const member = c.memberNumber ? ` · N° ${c.memberNumber}` : '';
       chips.push({ planId: c.planId, label: `${insurerNameForPlan(cat, c.planId)} ${planName(cat, c.planId)}${member}` });
     }
@@ -640,10 +656,9 @@ export class DatosGeneralesStepComponent implements OnInit {
     return b > this.todayStr;                         // futura
   }
 
-  /** Obra social Particular (SELF_PAY) elegida → plan y N° de afiliado no son obligatorios. */
+  /** Sin obra social (Particular) → plan y N° de afiliado no son obligatorios. */
   protected isParticularSelected(): boolean {
-    const id = this.formInsurerId();
-    return this.catalog().insurers.find(i => i.id === id)?.insurerType === 'SELF_PAY';
+    return this.formInsurerId() == null;
   }
 
   // ── 3-state badge ──────────────────────────────────────────────────────────
@@ -750,10 +765,12 @@ export class DatosGeneralesStepComponent implements OnInit {
       catchError(() => EMPTY),
     ).subscribe(list => this.doctors.set(list.filter(d => d.active)));
 
-    // Hidratar lo ya persistido al retomar la atención. (003 / 007)
+    // Hidratar lo ya persistido al retomar la atención. (003 / 007 / urgente)
     const ind = this.initialIndications();
     if (ind != null) this.indications = ind;
     this.selectedDoctorId.set(this.initialDoctorId());
+    const isUrgent = this.initialIsUrgent();
+    if (isUrgent != null) this.isUrgentValue = isUrgent;
 
     const dni = this.initialDni();
     if (dni) {
@@ -834,17 +851,9 @@ export class DatosGeneralesStepComponent implements OnInit {
     this.form.planId = plans.length === 1 ? plans[0].planId : null;
   }
 
-  /** Default del form: si no hay plan elegido, preselecciona Particular (obra social + plan). */
+  /** Default del form: sincroniza la OS con el plan elegido; sin plan = Particular (sin OS). */
   private defaultFormCobertura(): void {
-    if (this.form.planId != null) {
-      this.formInsurerId.set(planById(this.catalog(), this.form.planId)?.insurerId ?? null);
-      return;
-    }
-    const particular = this.catalog().plans.find(p => p.particular);
-    if (particular) {
-      this.formInsurerId.set(particular.insurerId);
-      this.form.planId = particular.planId;
-    }
+    this.formInsurerId.set(planById(this.catalog(), this.form.planId)?.insurerId ?? null);
   }
 
   startEdit(): void {
@@ -898,8 +907,8 @@ export class DatosGeneralesStepComponent implements OnInit {
     // Identidad + nacimiento + género/sexo + cobertura son obligatorios.
     if (!f.dni || !f.firstName || !f.lastName || !f.birthDate) return false;
     if (f.gender == null || f.sexAtBirth == null) return false;
-    if (this.formInsurerId() == null || f.planId == null) return false;
-    // N° de afiliado obligatorio salvo Particular (pago directo, sin obra social).
+    // Cobertura opcional: sin OS = Particular. Si se eligió OS, el plan y el N° de afiliado son obligatorios.
+    if (this.formInsurerId() != null && f.planId == null) return false;
     if (!this.isParticularSelected() && !f.memberNumber.trim()) return false;
     return !this.birthDateInvalid();
   }
@@ -946,6 +955,13 @@ export class DatosGeneralesStepComponent implements OnInit {
 
   protected rechazarRelacion(g: PatientGuardian): void {
     this.store.dispatch(validateBond({ userPatientId: g.userPatientId, status: 'REJECTED' }));
+  }
+
+  /** Cambio del toggle urgente: persiste inmediatamente vía endpoint dedicado (KAN-140). */
+  onUrgentChange(): void {
+    const id = this.atencionId();
+    if (id == null) return;
+    this.store.dispatch(setUrgentFlag({ id, isUrgent: this.isUrgentValue }));
   }
 
   onConfirm(): void {

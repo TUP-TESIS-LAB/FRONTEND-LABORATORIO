@@ -10,12 +10,12 @@ import { CoverageCatalog } from '../../models/coverage-catalog.model';
 
 const CATALOG: CoverageCatalog = {
   insurers: [
-    { id: 1, name: 'Particular', insurerType: 'SELF_PAY' },
     { id: 2, name: 'OSDE', insurerType: 'PRIVATE' },
+    { id: 3, name: 'PAMI', insurerType: 'SOCIAL' },
   ],
   plans: [
-    { planId: 10, insurerId: 1, name: 'Particular', particular: true },
-    { planId: 20, insurerId: 2, name: '210', particular: false },
+    { planId: 20, insurerId: 2, name: '210' },
+    { planId: 30, insurerId: 3, name: 'Plan Único' },
   ],
 };
 
@@ -49,9 +49,9 @@ describe('CoverageSectionComponent (Diseño B)', () => {
     expect(html).toContain('Agregar');
   });
 
-  it('osOptions excluye Particular (SELF_PAY) y planOptions cascadea por obra social', () => {
+  it('osOptions lista todas las obras sociales del catálogo y planOptions cascadea por obra social', () => {
     const { section } = setup();
-    expect(section.osOptions().map((o) => o.name)).toEqual(['OSDE']);
+    expect(section.osOptions().map((o) => o.name)).toEqual(['OSDE', 'PAMI']);
     expect(section.planOptions()).toEqual([]); // sin OS elegida
     section.selInsurer.set(2);
     expect(section.planOptions().map((p) => p.name)).toEqual(['210']);

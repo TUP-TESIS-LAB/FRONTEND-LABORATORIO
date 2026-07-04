@@ -30,7 +30,7 @@ interface AgreementResponse {
 }
 interface PlanResponse {
   id: number; insurerId: number; code: string; acronym: string | null; name: string;
-  description: string | null; iva: number | null; particular: boolean; active: boolean;
+  description: string | null; iva: number | null; active: boolean;
   currentAgreement: AgreementResponse | null;
 }
 interface ContactResponse {
@@ -109,7 +109,6 @@ export class ObraSocialService {
    */
   createFromWizard(payload: WizardCreate): Observable<InsurerComplete> {
     const sd = payload.insurer.specificData;
-    const isSelfPay = payload.insurer.insurerType === 'SELF_PAY';
     const body = {
       insurer: {
         code: payload.insurer.code,
@@ -120,7 +119,7 @@ export class ObraSocialService {
         authorizationUrl: payload.insurer.authorizationUrl ?? null,
         cuit: sd?.socialHealth?.cuit ?? sd?.privateHealth?.cuit ?? null,
         copayPolicy: sd?.privateHealth?.copayPolicy ?? null,
-        acceptedPaymentMethods: sd?.selfPay?.acceptedPaymentMethods ?? null,
+        acceptedPaymentMethods: null,
       },
       contacts: payload.contacts.map((c) => ({ contact: c.contact, contactType: c.contactType })),
       plans: payload.plans.map((pw) => ({
@@ -129,7 +128,6 @@ export class ObraSocialService {
         name: pw.plan.name,
         description: pw.plan.description ?? null,
         iva: pw.plan.iva,
-        particular: isSelfPay,
         versionNbu: pw.agreement.versionNbu,
         ubValue: pw.agreement.ubValue,
         validFromDate: pw.agreement.validFromDate,
@@ -162,7 +160,6 @@ export class ObraSocialService {
     switch (r.insurerType) {
       case 'SOCIAL':   return { socialHealth: { cuit: r.cuit ?? '' } };
       case 'PRIVATE':  return { privateHealth: { cuit: r.cuit ?? '', copayPolicy: r.copayPolicy ?? '' } };
-      case 'SELF_PAY': return { selfPay: { acceptedPaymentMethods: r.acceptedPaymentMethods ?? '' } };
       default:         return null;
     }
   }

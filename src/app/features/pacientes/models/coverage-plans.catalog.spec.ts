@@ -2,8 +2,8 @@
 import { getCoveragePlanLabel, CoveragePlanOption } from './coverage-plans.catalog';
 
 const SAMPLE_PLANS: readonly CoveragePlanOption[] = [
-  { planId: 1, label: 'Particular', particular: true },
-  { planId: 2, label: 'OSDE 210', particular: false },
+  { planId: 1, label: 'Particular' },
+  { planId: 2, label: 'OSDE 210' },
 ];
 
 describe('getCoveragePlanLabel', () => {
