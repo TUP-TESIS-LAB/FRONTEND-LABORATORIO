@@ -420,7 +420,7 @@ export class SidebarComponent implements OnInit {
   private readonly tenantConfig = this.store.selectSignal(selectTenantConfig);
   protected readonly tenantName = computed(() => this.tenantConfig()?.name ?? 'LabCore');
 
-  private readonly defaultLogo = 'logo.svg';
+  private readonly defaultLogo = 'logo.png';
   private readonly logoFallback = signal(false);
   protected readonly logoSrc = computed(() => {
     if (this.logoFallback()) return this.defaultLogo;
