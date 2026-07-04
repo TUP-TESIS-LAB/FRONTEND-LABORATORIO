@@ -73,6 +73,19 @@ export const routes: Routes = [
           import('./features/stock/stock.routes').then((m) => m.STOCK_ROUTES),
       },
       {
+        // El módulo Domicilio tiene dos perfiles de usuario con secciones distintas:
+        // - Secretaría → sección 'DOMICILIO' (agenda de visitas)
+        // - Extractor  → sección 'DOMICILIO_RUTA' (mi ruta del día)
+        // Si se pusiera sectionGuard('DOMICILIO') aquí en el padre, el extractor
+        // quedaría bloqueado aunque tenga acceso legítimo a DOMICILIO_RUTA.
+        // Solución: el padre solo gatéa por módulo activo; cada ruta hija declara
+        // su propio sectionGuard para que cada perfil llegue solo a sus pantallas.
+        path: 'domicilio',
+        canMatch: [moduleActiveGuard(ModuleKey.Domicilio)],
+        loadChildren: () =>
+          import('./features/domicilio/domicilio.routes').then((m) => m.DOMICILIO_ROUTES),
+      },
+      {
         path: 'urgencias/en-curso',
         canMatch: [moduleActiveGuard(ModuleKey.Urgencias)],
         loadComponent: () =>

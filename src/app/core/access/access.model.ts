@@ -11,7 +11,9 @@ export type AccessSection =
   | 'SUCURSALES'
   | 'OBRAS_SOCIALES'
   | 'FINANCIERO'
-  | 'STOCK';
+  | 'STOCK'
+  | 'DOMICILIO'
+  | 'DOMICILIO_RUTA';
 
 export interface SectionResponse {
   code: AccessSection;
