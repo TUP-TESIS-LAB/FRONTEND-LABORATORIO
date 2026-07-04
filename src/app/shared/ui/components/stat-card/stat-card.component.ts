@@ -29,19 +29,24 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       display: flex;
       flex-direction: column;
     }
-    /* Ícono opcional (PrimeIcon) en la esquina superior derecha, en el color del acento. */
+    /* Ícono opcional (PrimeIcon) centrado vertical sobre el borde derecho, en el
+       color del acento. Centrado (no top-right) para que quede a la altura del
+       número y las 4 cards se vean parejas. */
     .ui-stat-card__icon {
       position: absolute;
-      top: var(--space-4);
-      right: var(--space-4);
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
+      top: 50%;
+      right: var(--space-5);
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
       display: grid;
       place-items: center;
       background: rgba(15, 23, 42, .05);
-      font-size: 17px;
+      font-size: 18px;
+      line-height: 1;
     }
+    .ui-stat-card__icon i { line-height: 1; display: block; }
     /* El value crece para empujar el sub al pie y todas las cards quedan
        de la misma altura aunque algunas no tengan sub. */
     .ui-stat-card__value { flex: 1; }
