@@ -134,6 +134,33 @@ import { SaasTopbarComponent } from './saas-topbar/saas-topbar.component';
     :host ::ng-deep .p-button-outlined.p-button-danger:not(:disabled):hover {
       background: #fef2f2 !important;
     }
+
+    /*
+     * Tabs del detalle de tenant (p-tabs). Por defecto se leían como texto
+     * plano: indicador de 1px y color azul #2563eb (brand del lab) filtrándose,
+     * sin baseline. Los convertimos en un tab bar claro: baseline completo +
+     * indicador índigo grueso + texto activo índigo bold.
+     */
+    :host ::ng-deep .p-tablist {
+      border-bottom: 1px solid var(--saas-border) !important;
+    }
+    :host ::ng-deep .p-tab {
+      color: var(--saas-text-muted) !important;
+      border-bottom-color: transparent !important;
+      font-weight: 600 !important;
+    }
+    :host ::ng-deep .p-tab:not(.p-tab-active):hover {
+      color: var(--saas-text) !important;
+    }
+    :host ::ng-deep .p-tab-active {
+      color: var(--saas-accent-strong) !important;
+      border-bottom-color: transparent !important;
+    }
+    :host ::ng-deep .p-tablist-active-bar {
+      background: var(--saas-accent) !important;
+      height: 3px !important;
+      border-radius: 3px 3px 0 0 !important;
+    }
   `],
 })
 export class SaasShellComponent {}
