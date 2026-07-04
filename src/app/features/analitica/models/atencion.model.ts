@@ -72,6 +72,10 @@ export interface AttentionResponse {
   mostAdvancedState: AttentionState;
   analysisAuthorizations: AnalysisAuthorizationResponse[];
   copaymentAmount: number | null;
+  // --- Flags de pendientes (KAN-140): presentes en AttentionResponse luego del advance urgent. ---
+  cobroPendiente?: boolean;
+  autorizacionPendiente?: boolean;
+  datosAdministrativosIncompletos?: boolean;
   // --- Campos opcionales: presentes según el endpoint (el listado los completa todos). ---
   // Motivo registrado cuando el extractor marca "no se presentó" (cancelación de extracción,
   // distinto de cancellationReason que es la cancelación terminal de la atención).

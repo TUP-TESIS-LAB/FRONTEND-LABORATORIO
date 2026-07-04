@@ -10,7 +10,7 @@ import { PATIENT_FEATURE_KEY, initialPatientState } from '../../store/patient.st
 import { CoveragePlansService } from '../../services/coverage-plans.service';
 
 const mockPlansService = {
-  getActivePlans: () => of([{ planId: 1, label: 'Particular', particular: true }]),
+  getActivePlans: () => of([{ planId: 1, label: 'Particular' }]),
 };
 
 describe('PatientFormPage', () => {

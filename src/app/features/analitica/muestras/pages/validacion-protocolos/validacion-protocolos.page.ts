@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { TagModule } from 'primeng/tag';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import {
   estadoFirmaListado, badgeFirmaListado, badgeResultado, esPendiente,
@@ -25,7 +26,7 @@ const FILTROS: ReadonlyArray<{ id: 'todos' | EstadoFirmaListado; label: string }
   selector: 'app-validacion-protocolos',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeaderComponent, DateEsPipe],
+  imports: [PageHeaderComponent, DateEsPipe, TagModule],
   templateUrl: './validacion-protocolos.page.html',
   styleUrl: './validacion-protocolos.page.scss',
 })

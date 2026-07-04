@@ -30,21 +30,21 @@ describe('CoveragePlansService', () => {
     req.flush({ content: [] });
   });
 
-  it('maps content[] → { planId, label, particular }', () => {
+  it('maps content[] → { planId, label }', () => {
     let result: CoveragePlanOption[] | undefined;
     service.getActivePlans().subscribe((plans) => (result = plans));
 
     const req = httpMock.expectOne((r) => r.url === '/api/v1/coverages/plans');
     req.flush({
       content: [
-        { id: 1, name: 'Particular', particular: true, active: true },
-        { id: 2, name: 'OSDE 210', particular: false, active: true },
+        { id: 1, name: 'Particular', active: true },
+        { id: 2, name: 'OSDE 210', active: true },
       ],
     });
 
     expect(result).toEqual<CoveragePlanOption[]>([
-      { planId: 1, label: 'Particular', particular: true },
-      { planId: 2, label: 'OSDE 210', particular: false },
+      { planId: 1, label: 'Particular' },
+      { planId: 2, label: 'OSDE 210' },
     ]);
   });
 

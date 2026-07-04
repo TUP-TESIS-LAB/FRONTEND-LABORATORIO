@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { NotModified, withPolling } from '@core/refresh';
 import {
   AddAnalysisListRequest,
   AddObservationsRequest,
@@ -15,6 +16,7 @@ import {
   SetCopaymentRequest,
 } from '../models/atencion.model';
 import { AttentionPricing } from '../models/pricing.model';
+import { UrgentInProgressBoard } from '../models/urgent-in-progress.model';
 
 @Injectable({ providedIn: 'root' })
 export class AtencionApiService {
@@ -87,5 +89,43 @@ export class AtencionApiService {
 
   setAuthorizationNumber(id: number, body: SetAuthorizationNumberRequest): Observable<AttentionResponse> {
     return this.http.patch<AttentionResponse>(`${this.base}/${id}/authorization-number`, body);
+  }
+
+  setUrgentFlag(id: number, isUrgent: boolean): Observable<AttentionResponse> {
+    return this.http.patch<AttentionResponse>(`${this.base}/${id}/urgent`, { isUrgent });
+  }
+
+  advanceUrgent(id: number): Observable<AttentionResponse> {
+    return this.http.post<AttentionResponse>(`${this.base}/${id}/urgent/advance`, {});
+  }
+
+  // ── KAN-153: Bandeja urgentes pendientes (reconciliación) ──────────────────
+
+  /**
+   * Listado de atenciones urgentes con pendientes de reconciliación.
+   * El etagInterceptor maneja If-None-Match automáticamente y convierte 304 en
+   * el sentinel NotModified (estándar de polling, CLAUDE.md regla #5).
+   */
+  listUrgentPending(): Observable<AttentionResponse[] | NotModified> {
+    return this.http.get<AttentionResponse[] | NotModified>(`${this.base}/urgent-pending`, { context: withPolling() });
+  }
+
+  /**
+   * Tablero de atenciones urgentes en curso (aún no finalizadas).
+   * El etagInterceptor maneja If-None-Match automáticamente y convierte 304 en
+   * el sentinel NotModified (estándar de polling, CLAUDE.md regla #5).
+   */
+  listUrgentInProgress(): Observable<UrgentInProgressBoard | NotModified> {
+    return this.http.get<UrgentInProgressBoard | NotModified>(`${this.base}/urgent-in-progress`, { context: withPolling() });
+  }
+
+  /** Completa datos administrativos pendientes (médico / plan de obra social). */
+  completeAdminData(id: number, body: { doctorId?: number; insurancePlanId?: number }): Observable<AttentionResponse> {
+    return this.http.patch<AttentionResponse>(`${this.base}/${id}/complete-admin-data`, body);
+  }
+
+  /** Marca el cobro como regularizado (sin cuerpo). */
+  cobroRegularizado(id: number): Observable<AttentionResponse> {
+    return this.http.patch<AttentionResponse>(`${this.base}/${id}/cobro-regularizado`, {});
   }
 }

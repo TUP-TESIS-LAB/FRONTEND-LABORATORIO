@@ -7,11 +7,14 @@ import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { race, take } from 'rxjs';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import { Analysis } from '../../../../../models/atencion.model';
 import { AnalysisDetailModalComponent } from '../../../../../components/analysis-detail-modal/analysis-detail-modal.component';
 import { AnalysisPickerComponent, PickerRow } from '../../../../../components/analysis-picker/analysis-picker.component';
 import {
   addAnalysisList,
+  advanceUrgent,
   atencionMutationFailure,
   atencionMutationSuccess,
   loadAttentionAnalyses,
@@ -64,6 +67,7 @@ export class AnalisisStepComponent implements OnInit {
   private readonly store      = inject(Store);
   private readonly actions$   = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly registry   = inject(ModuleRegistry);
 
   readonly atencionId   = input.required<number>();
   readonly stepAdvanced = output<void>();
@@ -93,6 +97,16 @@ export class AnalisisStepComponent implements OnInit {
    * Items 2 y 3: gatea la columna "Autorizado" y el default de autorización del picker.
    */
   readonly isParticular = computed(() => this.detail()?.insurancePlanId == null);
+
+  /**
+   * Modo express urgente (KAN-140): la atención es urgente Y el módulo URGENCIAS está activo.
+   * En este modo se salta cobro/facturación/confirmación y se manda directo a extracción.
+   * El wizard lee este signal para cambiar el botón "Continuar" a "Iniciar urgente" y
+   * filtrar los pasos administrativos de la lista visible.
+   */
+  readonly modoExpress = computed(
+    () => !!(this.detail()?.isUrgent) && this.registry.isActive(ModuleKey.Urgencias)
+  );
 
   /** Filas con las que arranca el picker: backend si hay, si no el borrador local. */
   private readonly draftRows = signal<AnalisisDraftRow[]>([]);
@@ -226,6 +240,17 @@ export class AnalisisStepComponent implements OnInit {
         this.stepAdvanced.emit();
       }
     });
+  }
+
+  /**
+   * Modo express urgente (KAN-140): salta directamente a extracción sin pasar por
+   * cobro/facturación/confirmación. Despacha `advanceUrgent` con el id de la atención.
+   * Solo se llama cuando `modoExpress()` es true.
+   */
+  onIniciarUrgente(): void {
+    const id = this.atencionId();
+    if (!id || !this.modoExpress()) return;
+    this.store.dispatch(advanceUrgent({ id }));
   }
 
   /**

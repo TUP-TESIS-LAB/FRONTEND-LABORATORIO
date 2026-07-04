@@ -31,12 +31,11 @@ export interface ConfigResumen {
   sectionId: number | null;
   sectionName: string | null;
   customName: string | null;     // nombre propio del tenant_analysis (alias del laboratorio)
-  ayuno: string | null;          // preIndications de la 1ª determinación con override
   active: boolean;
   hasCustomConfig: boolean;      // hay override y/o ref-values propios
 }
 
-/** Config de precio particular del laboratorio. MOCK — sin endpoint BE todavía (feature futura). */
+/** Config de precio particular del laboratorio (valor U.B. + overrides por análisis). */
 export interface ParticularPricing {
   valorUb: number;
   overrides: Record<number, number>; // analysisId -> precio manual

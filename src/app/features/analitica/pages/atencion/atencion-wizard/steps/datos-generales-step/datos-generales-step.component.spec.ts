@@ -23,15 +23,14 @@ import { NotificationService } from '@core/services/notification.service';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
 import { PatientService } from '@features/pacientes/services/patient.service';
+import { setUrgentFlag } from '../../../../../store/atencion/atencion.actions';
 
 const STUB_CATALOG = {
   insurers: [
-    { id: 96001, name: 'Particular', insurerType: 'SELF_PAY' as const },
     { id: 96002, name: 'OSDE', insurerType: 'PRIVATE' as const },
   ],
   plans: [
-    { planId: 96001, insurerId: 96001, name: 'Plan Particular', particular: true },
-    { planId: 96002, insurerId: 96002, name: '210', particular: false },
+    { planId: 96002, insurerId: 96002, name: '210' },
   ],
 };
 
@@ -53,9 +52,13 @@ const defaultRouteStub = {
   snapshot: { queryParamMap: { get: () => null } },
 };
 
-/** ModuleRegistry stub: por defecto PORTAL activo (para no romper tests L2 existentes). */
-const makeModuleRegistryStub = (portalActive = true) => ({
-  isActive: (key: ModuleKey) => key === ModuleKey.Portal ? portalActive : false,
+/** ModuleRegistry stub: por defecto PORTAL activo, URGENCIAS inactivo (para no romper tests L2 existentes). */
+const makeModuleRegistryStub = (portalActive = true, urgenciasActive = false) => ({
+  isActive: (key: ModuleKey) => {
+    if (key === ModuleKey.Portal) return portalActive;
+    if (key === ModuleKey.Urgencias) return urgenciasActive;
+    return false;
+  },
 });
 
 /** PatientService stub: requerido por PortalAccessDialogComponent (importado en el componente). */
@@ -249,7 +252,7 @@ describe('DatosGeneralesStepComponent', () => {
   it('crearPaciente() con todos los campos despacha createPatientInline (cobertura Particular)', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
-    fixture.detectChanges(); // default: Particular (96001)
+    fixture.detectChanges(); // default: Particular (sin obra social)
     store.setState({ [ATENCION_FEATURE_KEY]: { ...initialAtencionState } });
     store.refreshState();
     fixture.detectChanges();
@@ -261,10 +264,10 @@ describe('DatosGeneralesStepComponent', () => {
       birthDate: '1990-01-01',
       gender: 'MALE',
       sexAtBirth: 'MALE',
-      planId: 96001,
+      planId: null,
       memberNumber: '',
     };
-    cmp.formInsurerId.set(96001);
+    cmp.formInsurerId.set(null);
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.crearPaciente();
     expect(spy).toHaveBeenCalledWith(
@@ -278,7 +281,7 @@ describe('DatosGeneralesStepComponent', () => {
           sexAtBirth: 'MALE',
           contacts: [],
           addresses: [],
-          coverages: [{ planId: 96001, memberNumber: '', isPrimary: true, active: true }],
+          coverages: [],
         },
       }),
     );
@@ -569,17 +572,17 @@ describe('DatosGeneralesStepComponent', () => {
     return {
       dni: '99887766', firstName: 'Ana', lastName: 'Gomez',
       birthDate: '1990-05-01', gender: 'FEMALE', sexAtBirth: 'FEMALE',
-      planId: 96001, memberNumber: '', ...over,
+      planId: null, memberNumber: '', ...over,
     };
   }
 
   it('altaValida() true con todos los campos; Particular no exige N° de afiliado', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
-    fixture.detectChanges(); // default: Particular (96001) + Plan Particular
+    fixture.detectChanges(); // default: Particular (sin obra social)
     const cmp = fixture.componentInstance as any;
     cmp.form = fullAltaForm();
-    cmp.formInsurerId.set(96001); // Particular
+    cmp.formInsurerId.set(null); // Particular
     expect(cmp.altaValida()).toBe(true);
   });
 
@@ -588,15 +591,20 @@ describe('DatosGeneralesStepComponent', () => {
     fixture.componentRef.setInput('atencionId', null);
     fixture.detectChanges();
     const cmp = fixture.componentInstance as any;
-    cmp.formInsurerId.set(96001);
+    cmp.formInsurerId.set(null); // Particular (cobertura es opcional)
     cmp.form = fullAltaForm({ birthDate: '' });
     expect(cmp.altaValida()).toBe(false);
     cmp.form = fullAltaForm({ gender: null });
     expect(cmp.altaValida()).toBe(false);
     cmp.form = fullAltaForm({ sexAtBirth: null });
     expect(cmp.altaValida()).toBe(false);
+    // Cobertura opcional: sin obra social (Particular) SÍ es válido con el resto completo.
     cmp.form = fullAltaForm();
-    cmp.formInsurerId.set(null); // sin obra social
+    cmp.formInsurerId.set(null);
+    expect(cmp.altaValida()).toBe(true);
+    // Pero si se elige una obra social, el plan pasa a ser obligatorio.
+    cmp.form = fullAltaForm({ planId: null });
+    cmp.formInsurerId.set(96002); // OSDE elegida, sin plan
     expect(cmp.altaValida()).toBe(false);
   });
 
@@ -631,11 +639,12 @@ describe('DatosGeneralesStepComponent', () => {
     fixture.componentRef.setInput('atencionId', null);
     fixture.detectChanges();
     const cmp = fixture.componentInstance as any;
-    // El dropdown de obra social ofrece todas las del catálogo (incluye Particular)
-    expect(cmp.insurerOptions().map((i: any) => i.name)).toEqual(['Particular', 'OSDE']);
-    // Default: Particular preseleccionada (obra social + plan)
-    expect(cmp.formInsurerId()).toBe(96001);
-    expect(cmp.form.planId).toBe(96001);
+    // El dropdown de obra social ofrece todas las obras sociales reales del catálogo
+    // (Particular ya no es una fila del catálogo: es dejar la obra social vacía).
+    expect(cmp.insurerOptions().map((i: any) => i.name)).toEqual(['OSDE']);
+    // Default: Particular (sin obra social, sin plan).
+    expect(cmp.formInsurerId()).toBeNull();
+    expect(cmp.form.planId).toBeNull();
   });
 
   it('cascada cobertura: al elegir una obra social filtra sus planes y resetea el plan', () => {
@@ -1168,5 +1177,96 @@ describe('DatosGeneralesStepComponent — B2: banner relacion gateado por PORTAL
     fixture.detectChanges();
     const btn = fixture.nativeElement.querySelector('[data-testid="btn-crear-acceso"]');
     expect(btn).toBeNull();
+  });
+});
+
+// ── KAN-140: toggle urgente gateado por ModuleKey.Urgencias ─────────────────
+
+describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS inactivo)', () => {
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DatosGeneralesStepComponent],
+      providers: [
+        provideMockStore({ initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState } }),
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
+        { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: NotificationService, useValue: notificationStub },
+        { provide: ActivatedRoute, useValue: defaultRouteStub },
+        { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true, false) },
+        { provide: PatientService, useValue: patientServiceStub },
+      ],
+    }).compileComponents();
+    store = TestBed.inject(MockStore);
+  });
+
+  it('toggle urgente NO se renderiza cuando URGENCIAS está inactivo', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', 7);
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    const container = fixture.nativeElement.querySelector('[data-testid="urgente-toggle-container"]');
+    expect(container).toBeNull();
+  });
+
+});
+
+describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS activo)', () => {
+  let store: MockStore;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [DatosGeneralesStepComponent],
+      providers: [
+        provideMockStore({ initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState } }),
+        { provide: CoverageCatalogService, useValue: coverageCatalogStub },
+        { provide: DoctorService, useValue: doctorServiceStub },
+        { provide: NotificationService, useValue: notificationStub },
+        { provide: ActivatedRoute, useValue: defaultRouteStub },
+        { provide: ModuleRegistry, useValue: makeModuleRegistryStub(true, true) },
+        { provide: PatientService, useValue: patientServiceStub },
+      ],
+    }).compileComponents();
+    store = TestBed.inject(MockStore);
+  });
+
+  it('toggle urgente SE renderiza cuando URGENCIAS activo y readOnly=false (default)', () => {
+    // readOnly defaults to false — no setInput needed
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    const container = fixture.nativeElement.querySelector('[data-testid="urgente-toggle-container"]');
+    expect(container).toBeTruthy();
+  });
+
+  it('urgenciasActive() retorna true cuando el módulo URGENCIAS está activo', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    expect((fixture.componentInstance as any).urgenciasActive()).toBe(true);
+  });
+
+  it('onUrgentChange() despacha setUrgentFlag cuando atencionId está disponible', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    // Parchear el signal atencionId para que devuelva 7 (simula atención ya creada)
+    const cmp = fixture.componentInstance as any;
+    vi.spyOn(cmp, 'atencionId').mockReturnValue(7);
+    const spy = vi.spyOn(store, 'dispatch');
+    spy.mockClear();
+    cmp.isUrgentValue = true;
+    cmp.onUrgentChange();
+    expect(spy).toHaveBeenCalledWith(setUrgentFlag({ id: 7, isUrgent: true }));
+  });
+
+  it('onUrgentChange() es no-op si atencionId() retorna null (atención aún no creada)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    // Por defecto atencionId es null (input no recibió valor)
+    const spy = vi.spyOn(store, 'dispatch');
+    spy.mockClear();
+    cmp.isUrgentValue = true;
+    cmp.onUrgentChange();
+    expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: '[Atencion Wizard] Set Urgent Flag' }));
   });
 });

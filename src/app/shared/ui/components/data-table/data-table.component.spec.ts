@@ -74,6 +74,26 @@ class ActionsHostComponent {
   ];
 }
 
+// ── Host con selección múltiple ────────────────────────────────────────────────
+@Component({
+  standalone: true,
+  imports: [DataTableComponent],
+  template: `
+    <ui-table
+      [columns]="cols"
+      [value]="rows()"
+      dataKey="id"
+      [selectable]="true"
+      [selection]="sel"
+      (selectionChange)="sel = $any($event)" />
+  `,
+})
+class SelectableHostComponent {
+  cols = COLS;
+  rows = signal<unknown[]>(ROWS);
+  sel: unknown[] = [];
+}
+
 // ── Host con lista vacía ───────────────────────────────────────────────────────
 @Component({
   standalone: true,
@@ -181,6 +201,29 @@ describe('DataTableComponent', () => {
       btn.click();
       fixture.detectChanges();
       expect((host as ActionsHostComponent).lastAction).toEqual({ key: 'pdf', row: ROWS[0] });
+    });
+  });
+
+  describe('selección múltiple (selectable)', () => {
+    it('renderiza la columna de checkbox de header y una por fila cuando selectable=true', () => {
+      const { el } = setup(SelectableHostComponent);
+      expect(el.querySelector('thead th.ut-select-th')).toBeTruthy();
+      expect(el.querySelectorAll('tbody td.ut-select-td').length).toBe(ROWS.length);
+    });
+
+    it('NO renderiza columna de selección por defecto (selectable=false)', () => {
+      const { el } = setup(BasicHostComponent);
+      expect(el.querySelector('th.ut-select-th')).toBeNull();
+      expect(el.querySelector('td.ut-select-td')).toBeNull();
+    });
+
+    it('al tildar el checkbox de una fila emite selectionChange con esa fila', () => {
+      const { el, host, fixture } = setup(SelectableHostComponent);
+      const box = el.querySelector<HTMLElement>('tbody td.ut-select-td .p-checkbox-input')
+        ?? el.querySelector<HTMLElement>('tbody td.ut-select-td input');
+      box?.click();
+      fixture.detectChanges();
+      expect((host as SelectableHostComponent).sel).toEqual([ROWS[0]]);
     });
   });
 

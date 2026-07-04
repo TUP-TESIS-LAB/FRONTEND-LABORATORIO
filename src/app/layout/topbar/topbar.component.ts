@@ -4,6 +4,7 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuComponent } from '@features/profile/components/profile-menu/profile-menu.component';
+import { NotificationBellComponent } from '@features/notifications/components/notification-bell/notification-bell.component';
 import { BranchBadgeComponent } from './branch-badge.component';
 import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb.component';
 
@@ -11,7 +12,7 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
   selector: 'ui-topbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Popover, ProfileMenuComponent, BranchBadgeComponent, BreadcrumbComponent],
+  imports: [Popover, ProfileMenuComponent, BranchBadgeComponent, BreadcrumbComponent, NotificationBellComponent],
   template: `
     <header class="ui-topbar">
       <button
@@ -32,13 +33,7 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
 
       <div class="ui-topbar__actions">
         <ui-branch-badge />
-        <!-- TODO: badge dinámico de notificaciones -->
-        <button
-          type="button"
-          class="ui-topbar__icon-btn ui-topbar__icon-btn--notif"
-          aria-label="Notificaciones">
-          <i class="pi pi-bell"></i>
-        </button>
+        <notif-bell />
         <button
           type="button"
           class="ui-topbar__icon-btn"
@@ -147,22 +142,6 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
       background: var(--brand-primary);
       border-color: var(--brand-primary);
       color: #fff;
-    }
-    .ui-topbar__icon-btn--notif::after {
-      content: '3';
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      background: var(--ds-danger);
-      color: #fff;
-      font-size: 9px;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
     }
 
     .ui-topbar__avatar {

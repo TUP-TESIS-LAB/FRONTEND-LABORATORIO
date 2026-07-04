@@ -63,6 +63,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       { kind: 'link', label: 'Cola de extracción', icon: 'pi pi-bolt', path: '/analitica/extraccion', sectionKey: 'EXTRACCIONES' },
       { kind: 'link', label: 'Nomenclador NBU', icon: 'pi pi-book', path: '/analitica/nbu', sectionKey: 'ANALITICA' },
+      { kind: 'link', label: 'Urgentes en curso', icon: 'pi pi-clock', path: '/urgencias/en-curso', moduleKey: ModuleKey.Urgencias },
     ],
   },
   {
@@ -78,6 +79,7 @@ export const NAV_SECTIONS: NavSection[] = [
           // Operativo / diario
           { label: 'Caja',            path: '/financiero/caja',            icon: 'pi pi-wallet' },
           { label: 'Cobros',          path: '/financiero/cobros',          icon: 'pi pi-receipt' },
+          { label: 'Liquidaciones',   path: '/financiero/liquidaciones',   icon: 'pi pi-chart-line' },
           { label: 'Sucursales',      path: '/financiero/sucursales',      icon: 'pi pi-sitemap' },
           // Configuración (roles altos)
           { label: 'Cajas',           path: '/financiero/subcajas',        icon: 'pi pi-database',         roleKey: 'ADMINISTRADOR' },

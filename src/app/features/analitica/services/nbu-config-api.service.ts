@@ -23,6 +23,7 @@ export interface DeterminationOverride {
   canSelfApprove: boolean | null;
   handlingTimeValue: number | null;
   handlingTimeUnit: string | null;
+  qualitativeCategoryId: number | null;
 }
 
 /** Respuesta de GET /determinations/{id}/override. */
@@ -41,6 +42,23 @@ export interface ReferenceValueItem {
   ageMaxMonths: number | null;
   gender: 'MALE' | 'FEMALE' | null;
   unit: string | null;
+  qualitativeValue: number | null;
+}
+
+/** Valor individual dentro de una categoría cualitativa. */
+export interface QualitativeCategoryValue {
+  id: number;
+  label: string;
+  displayOrder: number;
+}
+
+/** Categoría cualitativa de resultado (p.ej. Color de orina). */
+export interface QualitativeCategory {
+  id: number;
+  name: string;
+  ordinal: boolean;
+  global: boolean;
+  values: QualitativeCategoryValue[];
 }
 
 /** Determinación del catálogo de un análisis (id + nombre + unidad de medida). */
@@ -48,6 +66,20 @@ export interface DeterminationCatalogItem {
   id: number;
   name: string;
   unit: string | null;
+}
+
+/** Opción de tipo de preparación (catálogo fijo del BE). */
+export interface PreparationTypeOption {
+  code: string;
+  label: string;
+  requiresHours: boolean;
+}
+
+/** Item de preparación estructurada de una determinación. */
+export interface PreparationItem {
+  type: string;
+  label?: string;       // presente en lectura, opcional en escritura
+  fastingHours: number | null;
 }
 
 /** Fila de tenant_analysis (activación + alias + sección del laboratorio). */
@@ -72,6 +104,8 @@ export class NbuConfigApiService {
   private readonly detBase = '/api/v1/analitica/determinations';
   private readonly catalogBase = '/api/v1/analitica/catalog';
   private readonly tenantAnalysesBase = '/api/v1/tenant-analyses';
+  private readonly preparationBase = '/api/v1/analitica/preparation';
+  private readonly qualCategoriesUrl = '/api/v1/analitica/qualitative-categories';
 
   /**
    * Determinaciones del catálogo de un análisis (id + nombre + unidad). La unidad se
@@ -110,5 +144,39 @@ export class NbuConfigApiService {
     body: { shortCode?: string; customName?: string | null },
   ): Observable<unknown> {
     return this.http.patch(`${this.tenantAnalysesBase}/${tenantAnalysisId}`, body);
+  }
+
+  getPreparationTypes(): Observable<PreparationTypeOption[]> {
+    return this.http.get<PreparationTypeOption[]>(`${this.preparationBase}/types`);
+  }
+
+  getPreparation(determinationId: number): Observable<{ items: PreparationItem[] }> {
+    return this.http.get<{ items: PreparationItem[] }>(`${this.detBase}/${determinationId}/preparation`);
+  }
+
+  upsertPreparation(
+    determinationId: number,
+    items: { type: string; fastingHours: number | null }[],
+  ): Observable<void> {
+    return this.http.put<void>(`${this.detBase}/${determinationId}/preparation`, { items });
+  }
+
+  setActivation(
+    catalogId: number,
+    active: boolean,
+    shortCode: string,
+    customName: string | null,
+  ): Observable<void> {
+    return this.http.put<void>(`${this.tenantAnalysesBase}/activation`, {
+      catalogId, active, shortCode, customName,
+    });
+  }
+
+  getQualitativeCategories(): Observable<QualitativeCategory[]> {
+    return this.http.get<QualitativeCategory[]>(this.qualCategoriesUrl);
+  }
+
+  createQualitativeCategory(name: string, ordinal: boolean, values: string[]): Observable<QualitativeCategory> {
+    return this.http.post<QualitativeCategory>(this.qualCategoriesUrl, { name, ordinal, values });
   }
 }

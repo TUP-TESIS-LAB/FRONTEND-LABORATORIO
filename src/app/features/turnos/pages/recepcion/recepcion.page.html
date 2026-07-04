@@ -37,6 +37,9 @@
     <p-tablist>
       <p-tab value="cola">Cola de espera</p-tab>
       <p-tab value="atenciones">Atenciones</p-tab>
+      @if (moduleRegistry.isActive(ModuleKey.Urgencias)) {
+        <p-tab value="urgentes">Urgentes</p-tab>
+      }
     </p-tablist>
     <p-tabpanels>
       <p-tabpanel value="cola">
@@ -45,6 +48,11 @@
       <p-tabpanel value="atenciones">
         <lab-atencion-dashboard />
       </p-tabpanel>
+      @if (moduleRegistry.isActive(ModuleKey.Urgencias)) {
+        <p-tabpanel value="urgentes">
+          <lab-atencion-urgentes-dashboard />
+        </p-tabpanel>
+      }
     </p-tabpanels>
   </p-tabs>
 

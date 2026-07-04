@@ -17,6 +17,7 @@ import { AttentionState, isTerminal } from '../../../models/atencion.model';
 import { attentionStateLabel } from '../../../models/atencion-state-label';
 import {
   addPayment,
+  advanceUrgent,
   atencionMutationFailure,
   atencionMutationSuccess,
   cancelAtencion,
@@ -144,6 +145,30 @@ const ALL_STEPS: WizardStepDef[] = [
             }
           </div>
 
+          <!-- KAN-140: badges de pendientes (cobro/autorización/datos) cuando la atención
+               fue avanzada en modo express urgente y hay tareas administrativas por completar. -->
+          @if (detail()!.cobroPendiente || detail()!.autorizacionPendiente || detail()!.datosAdministrativosIncompletos) {
+            <div wizardBanner class="mx-8 mt-4 rounded-md border border-orange-300 bg-orange-50 px-4 py-2 text-sm text-orange-800 flex flex-wrap items-center gap-2">
+              <i class="pi pi-exclamation-circle"></i>
+              <span class="font-semibold">Pendientes:</span>
+              @if (detail()!.cobroPendiente) {
+                <span class="inline-flex items-center gap-1 rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 border border-orange-300">
+                  <i class="pi pi-credit-card text-[10px]"></i> Cobro pendiente
+                </span>
+              }
+              @if (detail()!.autorizacionPendiente) {
+                <span class="inline-flex items-center gap-1 rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 border border-orange-300">
+                  <i class="pi pi-file-check text-[10px]"></i> Autorización pendiente
+                </span>
+              }
+              @if (detail()!.datosAdministrativosIncompletos) {
+                <span class="inline-flex items-center gap-1 rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 border border-orange-300">
+                  <i class="pi pi-user-edit text-[10px]"></i> Datos incompletos
+                </span>
+              }
+            </div>
+          }
+
           @if (readOnly()) {
             <div wizardBanner class="mx-8 mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800 flex items-center gap-2">
               <i class="pi pi-eye"></i>
@@ -165,6 +190,7 @@ const ALL_STEPS: WizardStepDef[] = [
                                         [initialIndications]="detail()!.indications"
                                         [initialDoctorId]="detail()!.doctorId"
                                         [initialInsurancePlanId]="detail()!.insurancePlanId"
+                                        [initialIsUrgent]="detail()!.isUrgent"
                                         [readOnly]="readOnly()" />
             }
             @case ('analisis') {
@@ -198,6 +224,17 @@ const ALL_STEPS: WizardStepDef[] = [
                 }
                 @case ('facturacion') {
                   <!-- El botón "Confirmar cobro" lo provee fin-cobro-atencion. Sin botón en el footer. -->
+                }
+                @case ('analisis') {
+                  @if (modoExpress()) {
+                    <!-- KAN-140: modo express urgente — salta cobro/facturación/confirmación. -->
+                    <p-button label="Iniciar urgente" severity="danger"
+                              [loading]="mutating()" [disabled]="analysisCount() === 0 || mutating()"
+                              (onClick)="onIniciarUrgente()" />
+                  } @else {
+                    <p-button label="Continuar" [loading]="mutating()" [disabled]="continueDisabled()"
+                              (onClick)="advanceCurrent()" />
+                  }
                 }
                 @default {
                   <p-button label="Continuar" [loading]="mutating()" [disabled]="continueDisabled()"
@@ -272,6 +309,11 @@ export class AtencionWizardComponent {
     }
   }
 
+  /** Modo express urgente (KAN-140): despacha advanceUrgent desde el footer del paso analisis. */
+  protected onIniciarUrgente(): void {
+    this.analisisRef()?.onIniciarUrgente();
+  }
+
   /** Dispara la acción de avance del paso actual desde el footer del shell. */
   protected advanceCurrent(): void {
     switch (this.uiStep()?.key) {
@@ -339,9 +381,22 @@ export class AtencionWizardComponent {
     if (step) this.uiStepOverride.set(step.key);
   }
 
-  protected readonly visibleSteps = computed<WizardStepDef[]>(() =>
-    ALL_STEPS.filter((s) => !s.requires || this.registry.isActive(s.requires))
+  /** Pasos del modo express urgente (KAN-140): se excluyen cobro, facturación y confirmar. */
+  private static readonly EXPRESS_EXCLUDED: ReadonlySet<StepKey> = new Set<StepKey>(['cobro', 'facturacion', 'confirmar']);
+
+  /** ¿Estamos en modo express urgente? = la atención es urgente y URGENCIAS está activo. */
+  protected readonly modoExpress = computed<boolean>(
+    () => !!(this.detail()?.isUrgent) && this.registry.isActive(ModuleKey.Urgencias)
   );
+
+  protected readonly visibleSteps = computed<WizardStepDef[]>(() => {
+    const express = this.modoExpress();
+    return ALL_STEPS.filter((s) => {
+      if (s.requires && !this.registry.isActive(s.requires)) return false;
+      if (express && AtencionWizardComponent.EXPRESS_EXCLUDED.has(s.key)) return false;
+      return true;
+    });
+  });
   protected readonly stepFromState = computed<WizardStepDef | null>(() => {
     const d = this.detail();
     if (!d) return null;
