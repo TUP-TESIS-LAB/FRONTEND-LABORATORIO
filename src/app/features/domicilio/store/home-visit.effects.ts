@@ -32,6 +32,22 @@ import {
   rescheduleVisit,
   rescheduleVisitSuccess,
   rescheduleVisitFailure,
+  markInTransit,
+  markInTransitSuccess,
+  markInTransitFailure,
+  markBroken,
+  markBrokenSuccess,
+  markBrokenFailure,
+  receiveVisit,
+  receiveVisitSuccess,
+  receiveVisitFailure,
+  reExtractVisit,
+  reExtractVisitSuccess,
+  reExtractVisitFailure,
+  loadCustody,
+  loadCustodySuccess,
+  loadCustodyNotModified,
+  loadCustodyFailure,
 } from './home-visit.actions';
 
 function mapDomicilioError(e: HttpErrorResponse): string {
@@ -263,6 +279,128 @@ export class HomeVisitEffects {
         loadVisitDetail({ id: visit.id }),
         loadMyRoute({}),
       ]),
+    ),
+  );
+
+  // ── En tránsito ────────────────────────────────────────────────────────────────
+  markInTransit$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(markInTransit),
+      concatMap(({ id }) =>
+        this.homeVisitService.markInTransit(id).pipe(
+          map(visit => {
+            this.notif.success('Muestra en tránsito hacia el laboratorio.');
+            return markInTransitSuccess({ visit });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapExtractorActionError(e);
+            this.notif.error(error);
+            return of(markInTransitFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── Reportar rotura ─────────────────────────────────────────────────────────────
+  markBroken$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(markBroken),
+      concatMap(({ id, reason }) =>
+        this.homeVisitService.markBroken(id, reason).pipe(
+          map(visit => {
+            this.notif.success('Rotura/pérdida registrada.');
+            return markBrokenSuccess({ visit });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapExtractorActionError(e);
+            this.notif.error(error);
+            return of(markBrokenFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── Recepcionar ──────────────────────────────────────────────────────────────────
+  receiveVisit$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(receiveVisit),
+      concatMap(({ id }) =>
+        this.homeVisitService.receiveVisit(id).pipe(
+          map(visit => {
+            this.notif.success('Muestra recibida e ingresada a preanalítica.');
+            return receiveVisitSuccess({ visit });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapExtractorActionError(e);
+            this.notif.error(error);
+            return of(receiveVisitFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── Re-extraer ────────────────────────────────────────────────────────────────────
+  reExtractVisit$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(reExtractVisit),
+      concatMap(({ id }) =>
+        this.homeVisitService.reExtract(id).pipe(
+          map(visit => {
+            this.notif.success('Re-extracción programada (sin recobro).');
+            return reExtractVisitSuccess({ visit });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapExtractorActionError(e);
+            this.notif.error(error);
+            return of(reExtractVisitFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  transitionRefresh$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(markInTransitSuccess, markBrokenSuccess, receiveVisitSuccess),
+      concatMap(({ visit }) => [
+        loadVisitDetail({ id: visit.id }),
+        loadCustody({ id: visit.id }),
+        loadMyRoute({}),
+      ]),
+    ),
+  );
+
+  // La re-extracción devuelve la NUEVA visita (sucesora): refrescamos su detalle + la ruta.
+  reExtractRefresh$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(reExtractVisitSuccess),
+      concatMap(({ visit }) => [
+        loadVisitDetail({ id: visit.id }),
+        loadMyRoute({}),
+      ]),
+    ),
+  );
+
+  // ── Cadena de custodia (polleada ETag/304) ──────────────────────────────────────
+  loadCustody$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadCustody),
+      switchMap(({ id }) =>
+        this.homeVisitService.loadCustody(id).pipe(
+          map(res =>
+            isNotModified(res)
+              ? loadCustodyNotModified()
+              : loadCustodySuccess({ events: res }),
+          ),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapExtractorActionError(e);
+            return of(loadCustodyFailure({ error }));
+          }),
+        ),
+      ),
     ),
   );
 }

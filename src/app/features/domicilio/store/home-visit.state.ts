@@ -1,4 +1,4 @@
-import { HomeVisit, PreparedLabel } from '../models/home-visit.model';
+import { CustodyEvent, HomeVisit, PreparedLabel } from '../models/home-visit.model';
 
 export const DOMICILIO_FEATURE_KEY = 'domicilio';
 
@@ -14,6 +14,8 @@ export interface DomicilioState {
   detailError: string | null;
   actionPending: boolean;
   lastPreparedLabels: PreparedLabel[];
+  custody: CustodyEvent[];
+  custodyPending: boolean;
 }
 
 export const initialDomicilioState: DomicilioState = {
@@ -28,4 +30,6 @@ export const initialDomicilioState: DomicilioState = {
   detailError: null,
   actionPending: false,
   lastPreparedLabels: [],
+  custody: [],
+  custodyPending: false,
 };

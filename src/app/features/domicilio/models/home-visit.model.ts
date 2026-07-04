@@ -3,6 +3,7 @@ export type HomeVisitStatus =
   | 'EXTRAIDA'
   | 'EN_TRANSITO'
   | 'RECEPCIONADA'
+  | 'ROTA'
   | 'NO_REALIZADA'
   | 'REPROGRAMADA';
 
@@ -10,6 +11,20 @@ export type HomeVisitOutcomeReason =
   | 'PACIENTE_AUSENTE'
   | 'NO_SE_PUDO_EXTRAER'
   | 'RECHAZO_PACIENTE';
+
+export type BreakageReason =
+  | 'ROTURA_TRANSPORTE'
+  | 'MUESTRA_INSUFICIENTE'
+  | 'PERDIDA'
+  | 'CONSERVACION_INADECUADA';
+
+/** Un evento del timeline de cadena de custodia de la visita (GET /visits/{id}/custody). */
+export interface CustodyEvent {
+  action: string;
+  actorRole: string;
+  occurredAt: string; // ISO Instant
+  note: string | null;
+}
 
 export interface HomeVisit {
   id: number;
@@ -25,6 +40,8 @@ export interface HomeVisit {
   timeWindowStart: string; // 'HH:mm:ss'
   timeWindowEnd: string;
   status: HomeVisitStatus;
+  breakageReason?: BreakageReason | null;
+  rescheduledToVisitId?: number | null;
   scheduledAt: string | null;    // ISO LocalDateTime
   patientName: string | null;
   patientDni: string | null;

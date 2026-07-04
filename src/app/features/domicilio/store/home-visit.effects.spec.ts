@@ -35,8 +35,21 @@ import {
   rescheduleVisit,
   rescheduleVisitSuccess,
   rescheduleVisitFailure,
+  markInTransit,
+  markInTransitSuccess,
+  markInTransitFailure,
+  markBroken,
+  markBrokenSuccess,
+  markBrokenFailure,
+  receiveVisit,
+  receiveVisitSuccess,
+  reExtractVisit,
+  reExtractVisitSuccess,
+  loadCustody,
+  loadCustodySuccess,
+  loadCustodyNotModified,
 } from './home-visit.actions';
-import { HomeVisit, CreateHomeVisitPayload, PreparedLabel } from '../models/home-visit.model';
+import { CustodyEvent, HomeVisit, CreateHomeVisitPayload, PreparedLabel } from '../models/home-visit.model';
 
 const visit: HomeVisit = {
   id: 1,
@@ -79,6 +92,11 @@ describe('HomeVisitEffects', () => {
     markExtracted: ReturnType<typeof vi.fn>;
     markOutcome: ReturnType<typeof vi.fn>;
     reschedule: ReturnType<typeof vi.fn>;
+    markInTransit: ReturnType<typeof vi.fn>;
+    markBroken: ReturnType<typeof vi.fn>;
+    receiveVisit: ReturnType<typeof vi.fn>;
+    reExtract: ReturnType<typeof vi.fn>;
+    loadCustody: ReturnType<typeof vi.fn>;
   };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
@@ -92,6 +110,11 @@ describe('HomeVisitEffects', () => {
       markExtracted: vi.fn(),
       markOutcome: vi.fn(),
       reschedule: vi.fn(),
+      markInTransit: vi.fn(),
+      markBroken: vi.fn(),
+      receiveVisit: vi.fn(),
+      reExtract: vi.fn(),
+      loadCustody: vi.fn(),
     };
     notif = { success: vi.fn(), error: vi.fn() };
 
@@ -458,5 +481,77 @@ describe('HomeVisitEffects', () => {
     const action = await firstValueFrom(effects.rescheduleVisit$);
     expect(action.type).toBe('[Domicilio API] Reschedule Visit Failure');
     expect(notif.error).toHaveBeenCalledWith('Ocurrió un error al procesar la operación. Intentá de nuevo.');
+  });
+
+  // ── Fase 5+6: transporte / rotura / recepción / re-extracción / custodia ────────
+
+  it('markInTransit$ éxito emite markInTransitSuccess y notifica', async () => {
+    const enTransito = { ...visit, status: 'EN_TRANSITO' as const };
+    service.markInTransit.mockReturnValue(of(enTransito));
+    actions$ = of(markInTransit({ id: 10 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markInTransit$);
+    expect(service.markInTransit).toHaveBeenCalledWith(10);
+    expect(action).toEqual(markInTransitSuccess({ visit: enTransito }));
+    expect(notif.success).toHaveBeenCalled();
+  });
+
+  it('markBroken$ éxito manda el motivo y emite markBrokenSuccess', async () => {
+    const rota = { ...visit, status: 'ROTA' as const, breakageReason: 'PERDIDA' as const };
+    service.markBroken.mockReturnValue(of(rota));
+    actions$ = of(markBroken({ id: 10, reason: 'PERDIDA' }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markBroken$);
+    expect(service.markBroken).toHaveBeenCalledWith(10, 'PERDIDA');
+    expect(action).toEqual(markBrokenSuccess({ visit: rota }));
+  });
+
+  it('markBroken$ ante 409 mapea a string español (no admite)', async () => {
+    service.markBroken.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    actions$ = of(markBroken({ id: 10, reason: 'PERDIDA' }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.markBroken$);
+    expect(action.type).toBe(markBrokenFailure.type);
+    expect((action as ReturnType<typeof markBrokenFailure>).error).toContain('no admite');
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  it('receiveVisit$ éxito emite receiveVisitSuccess con feedback de preanalítica', async () => {
+    const recep = { ...visit, status: 'RECEPCIONADA' as const };
+    service.receiveVisit.mockReturnValue(of(recep));
+    actions$ = of(receiveVisit({ id: 10 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.receiveVisit$);
+    expect(action).toEqual(receiveVisitSuccess({ visit: recep }));
+    expect(notif.success).toHaveBeenCalledWith('Muestra recibida e ingresada a preanalítica.');
+  });
+
+  it('reExtractVisit$ éxito emite reExtractVisitSuccess con la nueva visita', async () => {
+    const successor = { ...visit, id: 99, status: 'PROGRAMADA' as const };
+    service.reExtract.mockReturnValue(of(successor));
+    actions$ = of(reExtractVisit({ id: 10 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.reExtractVisit$);
+    expect(service.reExtract).toHaveBeenCalledWith(10);
+    expect(action).toEqual(reExtractVisitSuccess({ visit: successor }));
+  });
+
+  it('loadCustody$ éxito emite loadCustodySuccess con los eventos', async () => {
+    const events: CustodyEvent[] = [
+      { action: 'EXTRAIDO', actorRole: 'EXTRACTOR', occurredAt: '2026-07-01T09:00:00Z', note: null },
+    ];
+    service.loadCustody.mockReturnValue(of(events));
+    actions$ = of(loadCustody({ id: 10 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.loadCustody$);
+    expect(action).toEqual(loadCustodySuccess({ events }));
+  });
+
+  it('loadCustody$ ante 304 emite loadCustodyNotModified', async () => {
+    service.loadCustody.mockReturnValue(of(NOT_MODIFIED));
+    actions$ = of(loadCustody({ id: 10 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.loadCustody$);
+    expect(action).toEqual(loadCustodyNotModified());
   });
 });

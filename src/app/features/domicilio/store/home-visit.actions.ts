@@ -1,5 +1,12 @@
 import { createAction, props } from '@ngrx/store';
-import { CreateHomeVisitPayload, HomeVisit, HomeVisitOutcomeReason, PreparedLabel } from '../models/home-visit.model';
+import {
+  BreakageReason,
+  CreateHomeVisitPayload,
+  CustodyEvent,
+  HomeVisit,
+  HomeVisitOutcomeReason,
+  PreparedLabel,
+} from '../models/home-visit.model';
 
 // ── Listar visitas ────────────────────────────────────────────────────────────
 export const loadHomeVisits = createAction(
@@ -111,5 +118,78 @@ export const rescheduleVisitSuccess = createAction(
 );
 export const rescheduleVisitFailure = createAction(
   '[Domicilio API] Reschedule Visit Failure',
+  props<{ error: string }>(),
+);
+
+// ── En tránsito (extractor) ────────────────────────────────────────────────────
+export const markInTransit = createAction(
+  '[Domicilio Extractor] Mark In Transit',
+  props<{ id: number }>(),
+);
+export const markInTransitSuccess = createAction(
+  '[Domicilio API] Mark In Transit Success',
+  props<{ visit: HomeVisit }>(),
+);
+export const markInTransitFailure = createAction(
+  '[Domicilio API] Mark In Transit Failure',
+  props<{ error: string }>(),
+);
+
+// ── Reportar rotura (extractor / secretaría) ────────────────────────────────────
+export const markBroken = createAction(
+  '[Domicilio Rotura] Mark Broken',
+  props<{ id: number; reason: BreakageReason }>(),
+);
+export const markBrokenSuccess = createAction(
+  '[Domicilio API] Mark Broken Success',
+  props<{ visit: HomeVisit }>(),
+);
+export const markBrokenFailure = createAction(
+  '[Domicilio API] Mark Broken Failure',
+  props<{ error: string }>(),
+);
+
+// ── Recepcionar (secretaría) ────────────────────────────────────────────────────
+export const receiveVisit = createAction(
+  '[Domicilio Recepción] Receive Visit',
+  props<{ id: number }>(),
+);
+export const receiveVisitSuccess = createAction(
+  '[Domicilio API] Receive Visit Success',
+  props<{ visit: HomeVisit }>(),
+);
+export const receiveVisitFailure = createAction(
+  '[Domicilio API] Receive Visit Failure',
+  props<{ error: string }>(),
+);
+
+// ── Re-extraer (secretaría) ─────────────────────────────────────────────────────
+export const reExtractVisit = createAction(
+  '[Domicilio Recepción] Re-Extract Visit',
+  props<{ id: number }>(),
+);
+export const reExtractVisitSuccess = createAction(
+  '[Domicilio API] Re-Extract Visit Success',
+  props<{ visit: HomeVisit }>(),
+);
+export const reExtractVisitFailure = createAction(
+  '[Domicilio API] Re-Extract Visit Failure',
+  props<{ error: string }>(),
+);
+
+// ── Cadena de custodia (timeline, polleada ETag/304) ────────────────────────────
+export const loadCustody = createAction(
+  '[Domicilio Custodia] Load Custody',
+  props<{ id: number }>(),
+);
+export const loadCustodySuccess = createAction(
+  '[Domicilio API] Load Custody Success',
+  props<{ events: CustodyEvent[] }>(),
+);
+export const loadCustodyNotModified = createAction(
+  '[Domicilio API] Load Custody Not Modified',
+);
+export const loadCustodyFailure = createAction(
+  '[Domicilio API] Load Custody Failure',
   props<{ error: string }>(),
 );

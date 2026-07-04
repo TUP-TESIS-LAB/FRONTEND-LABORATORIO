@@ -26,6 +26,22 @@ import {
   rescheduleVisit,
   rescheduleVisitSuccess,
   rescheduleVisitFailure,
+  markInTransit,
+  markInTransitSuccess,
+  markInTransitFailure,
+  markBroken,
+  markBrokenSuccess,
+  markBrokenFailure,
+  receiveVisit,
+  receiveVisitSuccess,
+  receiveVisitFailure,
+  reExtractVisit,
+  reExtractVisitSuccess,
+  reExtractVisitFailure,
+  loadCustody,
+  loadCustodySuccess,
+  loadCustodyNotModified,
+  loadCustodyFailure,
 } from './home-visit.actions';
 
 export const homeVisitReducer = createReducer(
@@ -164,5 +180,51 @@ export const homeVisitReducer = createReducer(
   on(rescheduleVisitFailure, (state): DomicilioState => ({
     ...state,
     actionPending: false,
+  })),
+
+  // ── Transporte / recepción / rotura / re-extracción ───────────────────────────
+  on(markInTransit, markBroken, receiveVisit, reExtractVisit, (state): DomicilioState => ({
+    ...state,
+    actionPending: true,
+  })),
+  on(
+    markInTransitSuccess,
+    markBrokenSuccess,
+    receiveVisitSuccess,
+    reExtractVisitSuccess,
+    (state, { visit }): DomicilioState => ({
+      ...state,
+      actionPending: false,
+      visitDetail: visit,
+    }),
+  ),
+  on(
+    markInTransitFailure,
+    markBrokenFailure,
+    receiveVisitFailure,
+    reExtractVisitFailure,
+    (state): DomicilioState => ({
+      ...state,
+      actionPending: false,
+    }),
+  ),
+
+  // ── Cadena de custodia ────────────────────────────────────────────────────────
+  on(loadCustody, (state): DomicilioState => ({
+    ...state,
+    custodyPending: true,
+  })),
+  on(loadCustodySuccess, (state, { events }): DomicilioState => ({
+    ...state,
+    custody: events,
+    custodyPending: false,
+  })),
+  on(loadCustodyNotModified, (state): DomicilioState => ({
+    ...state,
+    custodyPending: false,
+  })),
+  on(loadCustodyFailure, (state): DomicilioState => ({
+    ...state,
+    custodyPending: false,
   })),
 );

@@ -2,7 +2,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { withPolling, NotModified } from '@core/refresh';
-import { CreateHomeVisitPayload, HomeVisit, HomeVisitOutcomeReason, PreparedLabel } from '../models/home-visit.model';
+import {
+  BreakageReason,
+  CreateHomeVisitPayload,
+  CustodyEvent,
+  HomeVisit,
+  HomeVisitOutcomeReason,
+  PreparedLabel,
+} from '../models/home-visit.model';
 
 @Injectable({ providedIn: 'root' })
 export class HomeVisitService {
@@ -47,5 +54,27 @@ export class HomeVisitService {
 
   reschedule(id: number): Observable<HomeVisit> {
     return this.http.patch<HomeVisit>(`${this.base}/${id}/reschedule`, {});
+  }
+
+  markInTransit(id: number): Observable<HomeVisit> {
+    return this.http.patch<HomeVisit>(`${this.base}/${id}/in-transit`, {});
+  }
+
+  receiveVisit(id: number): Observable<HomeVisit> {
+    return this.http.patch<HomeVisit>(`${this.base}/${id}/received`, {});
+  }
+
+  markBroken(id: number, reason: BreakageReason): Observable<HomeVisit> {
+    return this.http.patch<HomeVisit>(`${this.base}/${id}/broken`, { reason });
+  }
+
+  reExtract(id: number): Observable<HomeVisit> {
+    return this.http.post<HomeVisit>(`${this.base}/${id}/re-extract`, {});
+  }
+
+  loadCustody(id: number): Observable<CustodyEvent[] | NotModified> {
+    return this.http.get<CustodyEvent[] | NotModified>(`${this.base}/${id}/custody`, {
+      context: withPolling(),
+    });
   }
 }

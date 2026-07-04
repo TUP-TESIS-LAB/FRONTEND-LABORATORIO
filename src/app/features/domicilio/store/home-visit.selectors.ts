@@ -58,3 +58,13 @@ export const selectLastPreparedLabels = createSelector(
   selectDomicilioState,
   state => state.lastPreparedLabels,
 );
+
+export const selectCustody = createSelector(
+  selectDomicilioState,
+  state => state.custody,
+);
+
+export const selectCustodyPending = createSelector(
+  selectDomicilioState,
+  state => state.custodyPending,
+);
