@@ -23,6 +23,7 @@ import { UsuariosCreateBus } from '../pages/usuarios/usuarios-create.bus';
       <a routerLink="white-label" routerLinkActive="is-active" role="tab">White-label</a>
       <a routerLink="fiscal" routerLinkActive="is-active" role="tab">Fiscal</a>
       <a routerLink="email" routerLinkActive="is-active" role="tab">Email</a>
+      <a routerLink="notificaciones" routerLinkActive="is-active" role="tab">Notificaciones</a>
     </nav>
 
     <section class="emp-dashboard__body">
