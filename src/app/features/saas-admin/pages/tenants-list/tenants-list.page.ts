@@ -70,9 +70,6 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
             <a [routerLink]="['/saas/tenants', t.id]">
               <p-button [text]="true" icon="pi pi-eye" pTooltip="Ver detalle" ariaLabel="Ver detalle" />
             </a>
-            <a [routerLink]="['/saas/tenants', t.id, 'editar']">
-              <p-button [text]="true" icon="pi pi-pencil" pTooltip="Editar" ariaLabel="Editar" />
-            </a>
             @if (t.status === 'ACTIVE') {
               <p-button [text]="true" icon="pi pi-pause" pTooltip="Desactivar" (onClick)="confirmDeactivate(t)" />
             } @else if (!t.deletedAt) {

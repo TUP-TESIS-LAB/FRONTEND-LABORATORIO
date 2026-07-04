@@ -35,9 +35,6 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
       } @else {
         <span class="muted">Tenant no encontrado.</span>
       }
-      <a [routerLink]="['/saas/tenants', numericId(), 'editar']" style="margin-left: auto;">
-        <p-button label="Editar" [outlined]="true" />
-      </a>
     </header>
 
     @if (tenant()) {
