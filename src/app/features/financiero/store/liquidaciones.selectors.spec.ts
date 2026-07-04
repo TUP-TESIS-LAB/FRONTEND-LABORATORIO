@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { initialFinancieroState } from './financiero.state';
 import { FINANCIERO_FEATURE_KEY } from './financiero.state';
 import {
-  selectLiqList, selectLiqInsurersIndex, selectLiqInsurerPlanIds,
+  selectLiqList, selectLiqInsurersIndex, selectLiqInsurerPlans,
 } from './financiero.selectors';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 
@@ -24,7 +24,8 @@ describe('selectors de liquidaciones', () => {
     expect(map.get(7)).toBe('IOMA');
   });
 
-  it('selectLiqInsurerPlanIds devuelve los planIds de la OS elegida', () => {
-    expect(selectLiqInsurerPlanIds(root({ selectedInsurerPlanIds: [3, 4] }))).toEqual([3, 4]);
+  it('selectLiqInsurerPlans devuelve los planes de la OS elegida', () => {
+    const plans = [{ id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true }];
+    expect(selectLiqInsurerPlans(root({ insurerPlans: plans }))).toEqual(plans);
   });
 });

@@ -57,9 +57,6 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
                 @if (o.specificData?.privateHealth?.copayPolicy) {
                   <div class="col-span-2"><div class="text-xs text-surface-500">Política de copago</div><div>{{ o.specificData?.privateHealth?.copayPolicy }}</div></div>
                 }
-                @if (o.specificData?.selfPay?.acceptedPaymentMethods) {
-                  <div class="col-span-3"><div class="text-xs text-surface-500">Medios de pago aceptados</div><div>{{ o.specificData?.selfPay?.acceptedPaymentMethods }}</div></div>
-                }
                 @if (o.authorizationUrl) {
                   <div class="col-span-3"><div class="text-xs text-surface-500">URL de autorización</div><div>{{ o.authorizationUrl }}</div></div>
                 }
@@ -69,8 +66,7 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
               </div>
 
               <!-- Contactos (movido desde su antigua pestaña) -->
-              @if (o.insurerType !== 'SELF_PAY') {
-                <div class="mt-5">
+              <div class="mt-5">
                   <div class="text-xs text-surface-500 mb-2">Contactos</div>
                   @if (o.contacts.length === 0) {
                     <ui-empty-state heading="Sin contactos" icon="pi-phone" />
@@ -86,7 +82,6 @@ import { selectSelectedObraSocial, selectObraSocialPending, selectNbuOptions } f
                     </ul>
                   }
                 </div>
-              }
             </p-tabpanel>
 
             <!-- PLANES Y CONVENIOS -->

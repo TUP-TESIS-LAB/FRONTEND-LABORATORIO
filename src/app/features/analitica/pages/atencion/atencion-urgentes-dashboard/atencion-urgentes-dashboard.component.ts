@@ -302,11 +302,7 @@ export class AtencionUrgentesDashboardComponent implements OnInit, OnDestroy {
   protected readonly datosDoctorId  = signal<number | null>(null);
 
   protected readonly insurerOptions = computed<InsurerOption[]>(() =>
-    [...this.catalog().insurers].sort((a, b) => {
-      if (a.insurerType === 'SELF_PAY') return -1;
-      if (b.insurerType === 'SELF_PAY') return 1;
-      return a.name.localeCompare(b.name);
-    }),
+    [...this.catalog().insurers].sort((a, b) => a.name.localeCompare(b.name)),
   );
 
   protected readonly datosPlanOptions = computed<PlanOption[]>(() =>

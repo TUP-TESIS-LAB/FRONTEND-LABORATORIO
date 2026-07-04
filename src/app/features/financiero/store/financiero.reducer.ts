@@ -367,8 +367,8 @@ export const financieroReducer = createReducer(
   on(loadInsurersIndexSuccess, (state, { insurers }): FinancieroState => ({
     ...state, liquidaciones: { ...state.liquidaciones, insurers },
   })),
-  on(loadInsurerPlansSuccess, (state, { planIds }): FinancieroState => ({
-    ...state, liquidaciones: { ...state.liquidaciones, selectedInsurerPlanIds: planIds },
+  on(loadInsurerPlansSuccess, (state, { plans }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, insurerPlans: plans },
   })),
 
   // ── liquidaciones: preview detallado ───────────────────────────────────────

@@ -7,6 +7,7 @@ import {
   contentChild,
   contentChildren,
   input,
+  model,
   output,
   signal,
 } from '@angular/core';
@@ -55,11 +56,16 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           [paginatorDropdownAppendTo]="'body'"
           [scrollable]="scrollHeight() !== null"
           [scrollHeight]="scrollHeight() ?? undefined"
+          [selection]="$any(selectable() ? selection() : null)"
+          (selectionChange)="onSelectionChange($any($event))"
           (onLazyLoad)="lazyLoad.emit($event)"
           (onRowExpand)="rowExpand.emit($event.data)">
 
           <ng-template pTemplate="header">
             <tr>
+              @if (selectable()) {
+                <th class="ut-select-th"><p-tableHeaderCheckbox /></th>
+              }
               @if (expandable()) {
                 <th class="ut-expander-th"></th>
               }
@@ -83,6 +89,11 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           <ng-template pTemplate="body" let-row let-expanded="expanded">
             <tr [pRowToggler]="row" [pRowTogglerDisabled]="!expandable()"
                 [class.ut-row-clickable]="expandable()">
+              @if (selectable()) {
+                <td class="ut-select-td" (click)="$event.stopPropagation()">
+                  <p-tableCheckbox [value]="row" />
+                </td>
+              }
               @if (expandable()) {
                 <td class="ut-expander-td">
                   <button class="ut-ibtn" type="button"
@@ -306,6 +317,10 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
     :host ::ng-deep th.ut-actions-th { width: 1%; white-space: nowrap; }
     :host ::ng-deep td.ut-actions-td { width: 1%; white-space: nowrap; }
 
+    /* ── Selección (checkbox) ── */
+    :host ::ng-deep th.ut-select-th { width: 1%; white-space: nowrap; }
+    :host ::ng-deep td.ut-select-td { width: 1%; white-space: nowrap; }
+
     /* ── Row expansion ── */
     /* Fila clickeable completa para expandir (no solo el chevron). */
     :host ::ng-deep tr.ut-row-clickable { cursor: pointer; }
@@ -387,6 +402,13 @@ export class DataTableComponent {
   // expandirse mostrando el template marcado con [uiRowExpansion]. Requiere dataKey único.
   readonly expandable = input<boolean>(false);
 
+  // ── Selección múltiple (checkbox por fila + "seleccionar todo") ──
+  // Cuando es true, se agrega una columna de checkbox al inicio y un checkbox de
+  // "seleccionar todo" en el header. La selección es un array de filas (two-way vía
+  // [(selection)] o (selectionChange)). Requiere dataKey único. Default: false.
+  readonly selectable = input<boolean>(false);
+  readonly selection = model<readonly unknown[]>([]);
+
   // ── Built-in actions ──
   readonly showView   = input<boolean>(false);
   readonly showEdit   = input<boolean>(false);
@@ -420,10 +442,14 @@ export class DataTableComponent {
   );
   protected readonly activeMenuItems = signal<MenuItem[]>([]);
 
-  /** Colspan total de la fila de expansión = expander + columnas + acciones. */
+  /** Colspan total de la fila de expansión = checkbox + expander + columnas + acciones. */
   protected readonly totalColspan = computed(() =>
-    (this.expandable() ? 1 : 0) + this.columns().length + (this.hasActions() ? 1 : 0),
+    (this.selectable() ? 1 : 0) + (this.expandable() ? 1 : 0) + this.columns().length + (this.hasActions() ? 1 : 0),
   );
+
+  protected onSelectionChange(rows: unknown[]): void {
+    this.selection.set(rows ?? []);
+  }
 
   @ViewChild('actionMenu') private actionMenuRef?: Menu;
 

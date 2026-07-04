@@ -53,12 +53,40 @@ export interface SettlementFilters {
   status?: SettlementStatus;
 }
 
+/**
+ * Plan de una OS elegible para liquidar, para el multiselect del paso Datos y la
+ * lista de convenios debajo. Nunca se expone el id en la UI: se muestra el nombre.
+ * Trae el arancel (valor U.B. del convenio vigente) y si tiene convenio vigente.
+ */
+export interface InsurerPlanOption {
+  id: number;
+  name: string;
+  iva: number;                 // 0 = exento
+  arancel: number;             // valor U.B. del convenio vigente
+  hasActiveAgreement: boolean; // false → no se puede liquidar contra este plan
+}
+
+/**
+ * Respuesta cruda de GET /settlements/plans?insurerId — plan + convenio de la OS.
+ * Se mapea a `InsurerPlanOption` (planId→id, planName→name, iva null→0).
+ */
+export interface SettlementPlanResponse {
+  planId: number;
+  planName: string;
+  iva: number | null;          // null = exento
+  arancel: number;
+  nbuVersionId: number | null;
+  hasActiveAgreement: boolean;
+}
+
 /** Body de POST /settlements (solo SIMPLE en v1). */
 export interface GenerateSettlementBody {
   insurerId: number;
   period: { from: string; to: string };
   specialRules: [];
   excludedAnalysisIdsByPs: Record<number, number[]> | null;
+  /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
+  planIds?: number[] | null;
 }
 
 export interface InformSettlementBody {
@@ -93,6 +121,8 @@ export interface PreviewDetailBody {
   insurerId: number;
   period: { from: string; to: string };
   excludedAnalysisIdsByPs?: ExcludedAnalysisIdsByPs | null;
+  /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
+  planIds?: number[] | null;
 }
 
 export interface PreviewAnalysis {
@@ -113,6 +143,7 @@ export interface PreviewItem {
   patientDni: string | null;
   serviceDate: string;
   authorizationNumber: string | null;
+  protocolNumber: string | null;   // N° de protocolo (attention_number)
   planId: number;
   agreementId: number | null;
   ubValue: number | null;

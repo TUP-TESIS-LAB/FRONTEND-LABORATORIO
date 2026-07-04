@@ -1,7 +1,7 @@
 // Catálogo de coberturas para la cascada Obra Social → Plan (Diseño B del Paso 2).
-// "Particular" = insurer SELF_PAY; se trata aparte (fila fija, no es una OS seleccionable).
+// "Particular" = sin obra social (planId nulo): no es una fila del catálogo, se ofrece aparte.
 
-export type InsurerType = 'SOCIAL' | 'PRIVATE' | 'SELF_PAY';
+export type InsurerType = 'SOCIAL' | 'PRIVATE';
 
 export interface InsurerOption {
   id: number;
@@ -13,7 +13,6 @@ export interface PlanOption {
   planId: number;
   insurerId: number;
   name: string;
-  particular: boolean;
 }
 
 export interface CoverageCatalog {
@@ -23,9 +22,9 @@ export interface CoverageCatalog {
 
 export const EMPTY_CATALOG: CoverageCatalog = { insurers: [], plans: [] };
 
-/** Obras sociales seleccionables en la cascada: todo lo que NO es Particular (SELF_PAY). */
+/** Obras sociales seleccionables en la cascada (todas; "Particular" = sin OS, se ofrece aparte). */
 export function selectableInsurers(cat: CoverageCatalog): InsurerOption[] {
-  return cat.insurers.filter((i) => i.insurerType !== 'SELF_PAY');
+  return [...cat.insurers];
 }
 
 /** Planes activos de una obra social. */
@@ -47,10 +46,9 @@ export function planName(cat: CoverageCatalog, planId: number | null | undefined
   return p.name;
 }
 
-/** Nombre de la obra social a la que pertenece un plan (Particular si es SELF_PAY). */
+/** Nombre de la obra social a la que pertenece un plan ("—" si el plan no existe). */
 export function insurerNameForPlan(cat: CoverageCatalog, planId: number | null | undefined): string {
   const p = planById(cat, planId);
   if (!p) return '—';
-  if (p.particular) return 'Particular';
   return cat.insurers.find((i) => i.id === p.insurerId)?.name ?? '—';
 }

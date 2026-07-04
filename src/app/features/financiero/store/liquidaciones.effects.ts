@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { of } from 'rxjs';
+import { Action } from '@ngrx/store';
+import { from, of } from 'rxjs';
 import { catchError, concatMap, map, switchMap } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { isNotModified } from '@core/refresh';
@@ -108,7 +109,10 @@ export class LiquidacionesEffects {
           catchError((e: HttpErrorResponse) => {
             const error = mapLifecycleError(e, 'informar');
             this.notif.error(error);
-            return of(informSettlementFailure({ error }));
+            // 409 = conflicto de versión: recargamos el detalle para traer la versión fresca.
+            const out: Action[] = [informSettlementFailure({ error })];
+            if (e.status === 409) out.push(loadSettlement({ id }));
+            return from(out);
           }),
         ),
       ),
@@ -127,7 +131,10 @@ export class LiquidacionesEffects {
           catchError((e: HttpErrorResponse) => {
             const error = mapLifecycleError(e, 'anular');
             this.notif.error(error);
-            return of(cancelSettlementFailure({ error }));
+            // 409 = conflicto de versión: recargamos el detalle para traer la versión fresca.
+            const out: Action[] = [cancelSettlementFailure({ error })];
+            if (e.status === 409) out.push(loadSettlement({ id }));
+            return from(out);
           }),
         ),
       ),
@@ -163,19 +170,29 @@ export class LiquidacionesEffects {
       ofType(loadInsurersIndex),
       switchMap(() =>
         this.os.search({ state: 'active', page: 0, size: 500 }).pipe(
-          map(res => loadInsurersIndexSuccess({ insurers: res.content })),
+          // Ya no existen aseguradoras 'Particular' (SELF_PAY eliminado, KAN-177): el índice trae todas las OS.
+          map(res => loadInsurersIndexSuccess({
+            insurers: res.content,
+          })),
           catchError(() => of(loadInsurersIndexFailure({ error: 'No se pudieron cargar las obras sociales.' }))),
         ),
       ),
     ),
   );
 
+  // Planes de la OS con arancel + convenio vigente (endpoint dedicado de settlements).
+  // Puebla el multiselect Y la lista de convenios del paso Datos.
   loadInsurerPlans$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadInsurerPlans),
       switchMap(({ insurerId }) =>
-        this.os.getCompleteById(insurerId).pipe(
-          map(complete => loadInsurerPlansSuccess({ planIds: complete.plans.map(p => p.id) })),
+        this.api.listSettlementPlans(insurerId).pipe(
+          map(plans => loadInsurerPlansSuccess({
+            plans: plans.map(p => ({
+              id: p.planId, name: p.planName, iva: p.iva ?? 0,
+              arancel: p.arancel, hasActiveAgreement: p.hasActiveAgreement,
+            })),
+          })),
           catchError(() => of(loadInsurerPlansFailure({ error: 'No se pudieron cargar los planes de la obra social.' }))),
         ),
       ),
