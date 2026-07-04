@@ -10,20 +10,26 @@ import { Subject } from 'rxjs';
 import { VisitaDetallePage } from './visita-detalle.page';
 import {
   loadVisitDetail,
+  loadCustody,
   markExtracted,
   markExtractedSuccess,
   markOutcome,
   markOutcomeSuccess,
   rescheduleVisit,
   rescheduleVisitSuccess,
+  markInTransit,
+  markBroken,
+  reExtractVisit,
 } from '../../store/home-visit.actions';
 import {
   selectVisitDetail,
   selectDetailPending,
   selectActionPending,
+  selectCustody,
+  selectCustodyPending,
 } from '../../store/home-visit.selectors';
 import { DOMICILIO_FEATURE_KEY, initialDomicilioState } from '../../store/home-visit.state';
-import { HomeVisit } from '../../models/home-visit.model';
+import { CustodyEvent, HomeVisit } from '../../models/home-visit.model';
 
 /**
  * Smoke tests para VisitaDetallePage — Fase 3 + Fase 4 (Task 6 + Task 8).
@@ -46,7 +52,13 @@ describe('VisitaDetallePage (smoke)', () => {
     };
   }
 
-  function setup(visit: HomeVisit | null = null, pending = false, actionPending = false, id = '42') {
+  function setup(
+    visit: HomeVisit | null = null,
+    pending = false,
+    actionPending = false,
+    id = '42',
+    custody: CustodyEvent[] = [],
+  ) {
     actions$ = new Subject();
     TestBed.configureTestingModule({
       imports: [VisitaDetallePage],
@@ -59,6 +71,8 @@ describe('VisitaDetallePage (smoke)', () => {
             { selector: selectVisitDetail,   value: visit },
             { selector: selectDetailPending,  value: pending },
             { selector: selectActionPending,  value: actionPending },
+            { selector: selectCustody,        value: custody },
+            { selector: selectCustodyPending, value: false },
           ],
         }),
         provideMockActions(() => actions$),
@@ -395,6 +409,149 @@ describe('VisitaDetallePage (smoke)', () => {
     comp.cerrarDialogOutcome();
     expect(comp.dialogOutcomeVisible()).toBe(false);
     expect(comp.selectedReason()).toBeNull();
+  });
+
+  // ── Cadena de custodia (Task 15) ─────────────────────────────────────────────
+
+  it('en ngOnInit dispara loadCustody con el id de la ruta', () => {
+    const fixture = setup(null, false, false, '7');
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.ngOnInit();
+    expect(spy).toHaveBeenCalledWith(loadCustody({ id: 7 }));
+  });
+
+  it('custodyActionLabel traduce las acciones al español', () => {
+    const comp = setup().componentInstance;
+    expect(comp.custodyActionLabel('EXTRAIDO')).toBe('Extraído');
+    expect(comp.custodyActionLabel('EN_TRANSITO')).toBe('En tránsito');
+    expect(comp.custodyActionLabel('RECEPCIONADO')).toBe('Recepcionado');
+    expect(comp.custodyActionLabel('ROTA')).toBe('Rotura');
+    expect(comp.custodyActionLabel('RE_EXTRACCION')).toBe('Re-extracción');
+    expect(comp.custodyActionLabel('REPROGRAMADA')).toBe('Reprogramada');
+  });
+
+  it('custodyActionLabel devuelve la acción cruda si no la conoce', () => {
+    const comp = setup().componentInstance;
+    expect(comp.custodyActionLabel('DESCONOCIDA')).toBe('DESCONOCIDA');
+  });
+
+  it('formatOccurredAt formatea un Instant ISO a DD/MM/YYYY HH:mm', () => {
+    const comp = setup().componentInstance;
+    expect(comp.formatOccurredAt('2026-07-15T10:30:00')).toBe('15/07/2026 10:30');
+  });
+
+  it('formatOccurredAt devuelve — para cadena vacía', () => {
+    const comp = setup().componentInstance;
+    expect(comp.formatOccurredAt('')).toBe('—');
+  });
+
+  it('custody() expone los eventos del store', () => {
+    const eventos: CustodyEvent[] = [
+      { action: 'EXTRAIDO', actorRole: 'EXTRACTOR', occurredAt: '2026-07-15T09:00:00', note: null },
+      { action: 'EN_TRANSITO', actorRole: 'EXTRACTOR', occurredAt: '2026-07-15T10:00:00', note: 'Salida' },
+    ];
+    const fixture = setup(makeVisit(42, 'EXTRAIDA'), false, false, '42', eventos);
+    expect(fixture.componentInstance.custody()).toEqual(eventos);
+  });
+
+  // ── hasAcciones ──────────────────────────────────────────────────────────────
+
+  it('hasAcciones es true para estados operables', () => {
+    const comp = setup().componentInstance;
+    expect(comp.hasAcciones('PROGRAMADA')).toBe(true);
+    expect(comp.hasAcciones('EXTRAIDA')).toBe(true);
+    expect(comp.hasAcciones('EN_TRANSITO')).toBe(true);
+    expect(comp.hasAcciones('ROTA')).toBe(true);
+  });
+
+  it('hasAcciones es false para estados terminales', () => {
+    const comp = setup().componentInstance;
+    expect(comp.hasAcciones('RECEPCIONADA')).toBe(false);
+    expect(comp.hasAcciones('NO_REALIZADA')).toBe(false);
+    expect(comp.hasAcciones('REPROGRAMADA')).toBe(false);
+  });
+
+  it('statusFor devuelve label y severity para ROTA', () => {
+    const s = setup().componentInstance.statusFor('ROTA');
+    expect(s.label).toBe('Rota');
+    expect(s.severity).toBe('danger');
+  });
+
+  // ── En tránsito (Task 15) ────────────────────────────────────────────────────
+
+  it('marcarEnTransito() despacha markInTransit con el id', () => {
+    const v = makeVisit(42, 'EXTRAIDA');
+    const fixture = setup(v);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.marcarEnTransito(42);
+    expect(spy).toHaveBeenCalledWith(markInTransit({ id: 42 }));
+  });
+
+  // ── Rotura (Task 15) ─────────────────────────────────────────────────────────
+
+  it('abrirDialogRotura() abre el diálogo y limpia el motivo', () => {
+    const v = makeVisit(42, 'EXTRAIDA');
+    const comp = setup(v).componentInstance;
+    comp.selectedBreakageReason.set('PERDIDA');
+    comp.abrirDialogRotura(42);
+    expect(comp.dialogRoturaVisible()).toBe(true);
+    expect(comp.selectedBreakageReason()).toBeNull();
+  });
+
+  it('cerrarDialogRotura() cierra el diálogo y limpia el motivo', () => {
+    const v = makeVisit(42, 'EXTRAIDA');
+    const comp = setup(v).componentInstance;
+    comp.abrirDialogRotura(42);
+    comp.selectedBreakageReason.set('ROTURA_TRANSPORTE');
+    comp.cerrarDialogRotura();
+    expect(comp.dialogRoturaVisible()).toBe(false);
+    expect(comp.selectedBreakageReason()).toBeNull();
+  });
+
+  it('confirmarRotura() despacha markBroken con id y reason', () => {
+    const v = makeVisit(42, 'EN_TRANSITO');
+    const fixture = setup(v);
+    const comp = fixture.componentInstance;
+    const spy = vi.spyOn(store, 'dispatch');
+    comp.abrirDialogRotura(42);
+    comp.selectedBreakageReason.set('CONSERVACION_INADECUADA');
+    comp.confirmarRotura();
+    expect(spy).toHaveBeenCalledWith(markBroken({ id: 42, reason: 'CONSERVACION_INADECUADA' }));
+  });
+
+  it('confirmarRotura() cierra el diálogo de rotura', () => {
+    const v = makeVisit(42, 'EN_TRANSITO');
+    const comp = setup(v).componentInstance;
+    comp.abrirDialogRotura(42);
+    comp.selectedBreakageReason.set('PERDIDA');
+    comp.confirmarRotura();
+    expect(comp.dialogRoturaVisible()).toBe(false);
+  });
+
+  it('confirmarRotura() NO despacha si no hay motivo seleccionado', () => {
+    const v = makeVisit(42, 'EN_TRANSITO');
+    const fixture = setup(v);
+    const comp = fixture.componentInstance;
+    const spy = vi.spyOn(store, 'dispatch');
+    comp.abrirDialogRotura(42);
+    comp.confirmarRotura();
+    expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: markBroken.type }));
+  });
+
+  // ── Re-extracción y sucesora (Task 16) ───────────────────────────────────────
+
+  it('reExtraer() despacha reExtractVisit con el id', () => {
+    const v = makeVisit(42, 'ROTA');
+    const fixture = setup(v);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.reExtraer(42);
+    expect(spy).toHaveBeenCalledWith(reExtractVisit({ id: 42 }));
+  });
+
+  it('verSucesora() navega a la ficha de la visita sucesora', () => {
+    const fixture = setup(makeVisit(42, 'ROTA'));
+    fixture.componentInstance.verSucesora(99);
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/domicilio/mi-ruta', 99]);
   });
 });
 

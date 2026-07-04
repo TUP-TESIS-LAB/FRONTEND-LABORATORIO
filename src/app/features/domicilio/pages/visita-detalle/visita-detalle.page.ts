@@ -17,9 +17,14 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
-import { HomeVisitOutcomeReason, HomeVisitStatus } from '../../models/home-visit.model';
+import {
+  BreakageReason,
+  HomeVisitOutcomeReason,
+  HomeVisitStatus,
+} from '../../models/home-visit.model';
 import {
   loadVisitDetail,
+  loadCustody,
   markExtracted,
   markExtractedSuccess,
   markExtractedFailure,
@@ -29,11 +34,16 @@ import {
   rescheduleVisit,
   rescheduleVisitSuccess,
   rescheduleVisitFailure,
+  markInTransit,
+  markBroken,
+  reExtractVisit,
 } from '../../store/home-visit.actions';
 import {
   selectVisitDetail,
   selectDetailPending,
   selectActionPending,
+  selectCustody,
+  selectCustodyPending,
 } from '../../store/home-visit.selectors';
 
 // ── Helpers de estado ─────────────────────────────────────────────────────────
@@ -49,6 +59,7 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
   EXTRAIDA:     { label: 'Extraída',     severity: 'success',   icon: 'pi-check-circle' },
   EN_TRANSITO:  { label: 'En tránsito',  severity: 'warn',      icon: 'pi-truck' },
   RECEPCIONADA: { label: 'Recepcionada', severity: 'success',   icon: 'pi-inbox' },
+  ROTA:         { label: 'Rota',         severity: 'danger',    icon: 'pi-exclamation-triangle' },
   NO_REALIZADA: { label: 'No realizada', severity: 'danger',    icon: 'pi-times-circle' },
   REPROGRAMADA: { label: 'Reprogramada', severity: 'secondary', icon: 'pi-refresh' },
 };
@@ -65,6 +76,37 @@ const OUTCOME_OPTIONS: OutcomeOption[] = [
   { label: 'Rechazó',            value: 'RECHAZO_PACIENTE'   },
 ];
 
+/** Opciones de motivo de rotura/pérdida */
+interface BreakageOption {
+  label: string;
+  value: BreakageReason;
+}
+
+const BREAKAGE_OPTIONS: BreakageOption[] = [
+  { label: 'Rotura en transporte',    value: 'ROTURA_TRANSPORTE'      },
+  { label: 'Muestra insuficiente',    value: 'MUESTRA_INSUFICIENTE'   },
+  { label: 'Pérdida',                 value: 'PERDIDA'                },
+  { label: 'Conservación inadecuada', value: 'CONSERVACION_INADECUADA' },
+];
+
+/** Traducción de las acciones de la cadena de custodia a español */
+const CUSTODY_ACTION_MAP: Record<string, string> = {
+  EXTRAIDO:      'Extraído',
+  EN_TRANSITO:   'En tránsito',
+  RECEPCIONADO:  'Recepcionado',
+  ROTA:          'Rotura',
+  RE_EXTRACCION: 'Re-extracción',
+  REPROGRAMADA:  'Reprogramada',
+};
+
+/** Estados que admiten alguna acción del extractor en la ficha */
+const ACTIONABLE_STATUSES: HomeVisitStatus[] = [
+  'PROGRAMADA',
+  'EXTRAIDA',
+  'EN_TRANSITO',
+  'ROTA',
+];
+
 /** Convierte 'HH:mm:ss' → 'HH:mm' */
 function formatTime(time: string): string {
   if (!time) return '—';
@@ -73,6 +115,19 @@ function formatTime(time: string): string {
 
 /** Formatea 'YYYY-MM-DDTHH:mm:ss' → 'DD/MM/YYYY HH:mm' */
 function formatScheduledAt(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const day  = String(d.getDate()).padStart(2, '0');
+  const mon  = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hh   = String(d.getHours()).padStart(2, '0');
+  const mm   = String(d.getMinutes()).padStart(2, '0');
+  return `${day}/${mon}/${year} ${hh}:${mm}`;
+}
+
+/** Formatea un Instant ISO de custodia → 'DD/MM/YYYY HH:mm' (— si inválido) */
+function formatOccurredAt(iso: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '—';
@@ -192,6 +247,41 @@ function formatScheduledAt(iso: string | null): string {
             </dl>
           </section>
 
+          <!-- Cadena de custodia -->
+          <section class="vd-card" aria-labelledby="vd-sec-custodia">
+            <h2 class="vd-section-title" id="vd-sec-custodia">
+              <i class="pi pi-history"></i> Cadena de custodia
+            </h2>
+
+            @if (custodyPending() && custody().length === 0) {
+              <div class="vd-custody-loading" aria-live="polite" aria-busy="true">
+                <i class="pi pi-spin pi-spinner"></i>
+                <span>Cargando cadena de custodia...</span>
+              </div>
+            } @else if (custody().length === 0) {
+              <p class="vd-empty-msg vd-custody-empty">
+                Sin eventos de custodia registrados.
+              </p>
+            } @else {
+              <ol class="vd-timeline">
+                @for (ev of custody(); track $index) {
+                  <li class="vd-timeline__item">
+                    <span class="vd-timeline__dot" aria-hidden="true"></span>
+                    <div class="vd-timeline__body">
+                      <div class="vd-timeline__head">
+                        <span class="vd-timeline__action">{{ custodyActionLabel(ev.action) }}</span>
+                        <span class="vd-timeline__time">{{ formatOccurredAt(ev.occurredAt) }}</span>
+                      </div>
+                      @if (ev.note) {
+                        <span class="vd-timeline__note">{{ ev.note }}</span>
+                      }
+                    </div>
+                  </li>
+                }
+              </ol>
+            }
+          </section>
+
         </div>
 
         <!-- ── Panel lateral: estado + acciones ──────────────────────────── -->
@@ -208,49 +298,92 @@ function formatScheduledAt(iso: string | null): string {
             </div>
           </section>
 
-          <!-- Acciones (sólo para visitas PROGRAMADAS) -->
-          @if (v.status === 'PROGRAMADA') {
+          <!-- Acciones -->
+          @if (hasAcciones(v.status)) {
             <section class="vd-card vd-card--acciones" aria-labelledby="vd-sec-acciones">
               <h2 class="vd-section-title" id="vd-sec-acciones">Acciones</h2>
               <div class="vd-acciones">
 
-                <!-- Extraído: sólo si la visita está preparada (attentionId != null) -->
-                @if (v.attentionId != null) {
+                <!-- ── PROGRAMADA: extraer / no realizó / reprogramar ── -->
+                @if (v.status === 'PROGRAMADA') {
+                  <!-- Extraído: sólo si la visita está preparada (attentionId != null) -->
+                  @if (v.attentionId != null) {
+                    <p-button
+                      label="Extraído"
+                      icon="pi pi-check-circle"
+                      severity="primary"
+                      [disabled]="actionPending()"
+                      [loading]="actionPending()"
+                      class="vd-accion-btn"
+                      ariaLabel="Registrar extracción exitosa"
+                      (onClick)="abrirConfirmExtraccion(v.id)" />
+                  } @else {
+                    <!-- Visita no preparada: no se puede extraer -->
+                    <div class="vd-rotulos-pendientes" role="status">
+                      <i class="pi pi-tag"></i>
+                      <span>Rótulos pendientes de preparar (secretaría).</span>
+                    </div>
+                  }
+
                   <p-button
-                    label="Extraído"
-                    icon="pi pi-check-circle"
+                    label="No se realizó"
+                    icon="pi pi-times-circle"
+                    severity="danger"
+                    [disabled]="actionPending()"
+                    [loading]="actionPending()"
+                    class="vd-accion-btn"
+                    ariaLabel="Registrar visita no realizada"
+                    (onClick)="abrirDialogOutcome(v.id)" />
+                  <p-button
+                    label="Reprogramar"
+                    icon="pi pi-refresh"
+                    severity="secondary"
+                    [disabled]="actionPending()"
+                    [loading]="actionPending()"
+                    class="vd-accion-btn"
+                    ariaLabel="Reprogramar visita"
+                    (onClick)="abrirConfirmReprogramar(v.id)" />
+                }
+
+                <!-- ── EXTRAIDA: marcar en tránsito ── -->
+                @if (v.status === 'EXTRAIDA') {
+                  <p-button
+                    label="En tránsito"
+                    icon="pi pi-truck"
                     severity="primary"
                     [disabled]="actionPending()"
                     [loading]="actionPending()"
                     class="vd-accion-btn"
-                    ariaLabel="Registrar extracción exitosa"
-                    (onClick)="abrirConfirmExtraccion(v.id)" />
-                } @else {
-                  <!-- Visita no preparada: no se puede extraer -->
-                  <div class="vd-rotulos-pendientes" role="status">
-                    <i class="pi pi-tag"></i>
-                    <span>Rótulos pendientes de preparar (secretaría).</span>
-                  </div>
+                    ariaLabel="Marcar la muestra en tránsito hacia el laboratorio"
+                    (onClick)="marcarEnTransito(v.id)" />
                 }
 
-                <p-button
-                  label="No se realizó"
-                  icon="pi pi-times-circle"
-                  severity="danger"
-                  [disabled]="actionPending()"
-                  [loading]="actionPending()"
-                  class="vd-accion-btn"
-                  ariaLabel="Registrar visita no realizada"
-                  (onClick)="abrirDialogOutcome(v.id)" />
-                <p-button
-                  label="Reprogramar"
-                  icon="pi pi-refresh"
-                  severity="secondary"
-                  [disabled]="actionPending()"
-                  [loading]="actionPending()"
-                  class="vd-accion-btn"
-                  ariaLabel="Reprogramar visita"
-                  (onClick)="abrirConfirmReprogramar(v.id)" />
+                <!-- ── EXTRAIDA o EN_TRANSITO: reportar rotura/pérdida ── -->
+                @if (v.status === 'EXTRAIDA' || v.status === 'EN_TRANSITO') {
+                  <p-button
+                    label="Reportar rotura/pérdida"
+                    icon="pi pi-exclamation-triangle"
+                    severity="danger"
+                    [outlined]="true"
+                    [disabled]="actionPending()"
+                    [loading]="actionPending()"
+                    class="vd-accion-btn"
+                    ariaLabel="Reportar rotura o pérdida de la muestra"
+                    (onClick)="abrirDialogRotura(v.id)" />
+                }
+
+                <!-- ── ROTA: re-extraer sin recobro ── -->
+                @if (v.status === 'ROTA') {
+                  <p-button
+                    label="Re-extraer (sin recobro)"
+                    icon="pi pi-replay"
+                    severity="primary"
+                    [disabled]="actionPending()"
+                    [loading]="actionPending()"
+                    class="vd-accion-btn"
+                    ariaLabel="Programar una re-extracción sin recobro"
+                    (onClick)="reExtraer(v.id)" />
+                }
               </div>
             </section>
           } @else {
@@ -262,6 +395,21 @@ function formatScheduledAt(iso: string | null): string {
                 <strong>{{ statusFor(v.status).label }}</strong>
                 y no admite acciones.
               </p>
+            </section>
+          }
+
+          <!-- Visita sucesora (tras rotura → re-extracción) -->
+          @if (v.rescheduledToVisitId != null) {
+            <section class="vd-card vd-card--sucesora" aria-labelledby="vd-sec-sucesora">
+              <h2 class="vd-section-title" id="vd-sec-sucesora">Re-extracción</h2>
+              <button
+                type="button"
+                class="vd-sucesora-link"
+                (click)="verSucesora(v.rescheduledToVisitId)"
+                aria-label="Ver la visita sucesora generada por la re-extracción">
+                <i class="pi pi-arrow-right"></i>
+                <span>Ver visita sucesora</span>
+              </button>
             </section>
           }
 
@@ -384,6 +532,45 @@ function formatScheduledAt(iso: string | null): string {
           [disabled]="actionPending()"
           [loading]="actionPending()"
           (onClick)="confirmarReprogramar()" />
+      </ng-template>
+    </p-dialog>
+
+    <!-- ── Diálogo: reportar rotura / pérdida ────────────────────────────────── -->
+    <p-dialog
+      [(visible)]="dialogRoturaVisible"
+      [modal]="true"
+      [closable]="true"
+      [dismissableMask]="true"
+      header="Reportar rotura / pérdida"
+      [style]="{ width: '420px' }">
+      <div class="vd-dialog-body vd-dialog-outcome">
+        <p>Seleccioná el motivo de la rotura o pérdida de la muestra:</p>
+        <div class="vd-outcome-options">
+          @for (opt of BREAKAGE_OPTIONS; track opt.value) {
+            <button
+              type="button"
+              class="vd-outcome-option"
+              [class.vd-outcome-option--selected]="selectedBreakageReason() === opt.value"
+              (click)="selectedBreakageReason.set(opt.value)">
+              <i class="pi pi-circle{{ selectedBreakageReason() === opt.value ? '-fill' : '' }}"></i>
+              {{ opt.label }}
+            </button>
+          }
+        </div>
+      </div>
+      <ng-template pTemplate="footer">
+        <p-button
+          label="Cancelar"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="cerrarDialogRotura()" />
+        <p-button
+          label="Registrar rotura"
+          icon="pi pi-exclamation-triangle"
+          severity="danger"
+          [disabled]="!selectedBreakageReason() || actionPending()"
+          [loading]="actionPending()"
+          (onClick)="confirmarRotura()" />
       </ng-template>
     </p-dialog>
   `,
@@ -620,6 +807,117 @@ function formatScheduledAt(iso: string | null): string {
       font-size: 16px;
       flex-shrink: 0;
     }
+
+    /* ── Cadena de custodia (timeline) ────────────────────────────────────── */
+    .vd-custody-loading {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--ds-text-muted);
+    }
+
+    .vd-custody-empty {
+      margin: 0;
+      text-align: left;
+    }
+
+    .vd-timeline {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .vd-timeline__item {
+      position: relative;
+      display: flex;
+      gap: var(--space-3);
+      padding-bottom: var(--space-4);
+    }
+
+    .vd-timeline__item:last-child {
+      padding-bottom: 0;
+    }
+
+    /* Línea vertical que conecta los puntos */
+    .vd-timeline__item:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 14px;
+      bottom: 0;
+      width: 2px;
+      background: var(--p-surface-border, #e5e7eb);
+    }
+
+    .vd-timeline__dot {
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+      width: 12px;
+      height: 12px;
+      margin-top: 3px;
+      border-radius: 50%;
+      background: var(--brand-primary, #2563EB);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary, #2563EB) 15%, transparent);
+    }
+
+    .vd-timeline__body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .vd-timeline__head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--space-2);
+    }
+
+    .vd-timeline__action {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ds-text);
+    }
+
+    .vd-timeline__time {
+      font-size: 12px;
+      color: var(--ds-text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .vd-timeline__note {
+      font-size: 13px;
+      color: var(--ds-text-muted);
+      line-height: 1.4;
+    }
+
+    /* ── Visita sucesora ──────────────────────────────────────────────────── */
+    .vd-sucesora-link {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--p-surface-border, #e5e7eb);
+      border-radius: 8px;
+      background: var(--p-surface-ground, #f9fafb);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--brand-primary, #2563EB);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 150ms ease, background 150ms ease;
+    }
+
+    .vd-sucesora-link:hover {
+      border-color: var(--brand-primary, #2563EB);
+      background: var(--p-surface-card, #fff);
+    }
   `],
 })
 export class VisitaDetallePage implements OnInit {
@@ -632,12 +930,16 @@ export class VisitaDetallePage implements OnInit {
   readonly visit          = this.store.selectSignal(selectVisitDetail);
   readonly pending        = this.store.selectSignal(selectDetailPending);
   readonly actionPending  = this.store.selectSignal(selectActionPending);
+  readonly custody        = this.store.selectSignal(selectCustody);
+  readonly custodyPending  = this.store.selectSignal(selectCustodyPending);
 
   // ── Estado de diálogos ──────────────────────────────────────────────────────
   readonly dialogExtraccionVisible  = signal(false);
   readonly dialogOutcomeVisible     = signal(false);
   readonly dialogReprogramarVisible = signal(false);
+  readonly dialogRoturaVisible      = signal(false);
   readonly selectedReason           = signal<HomeVisitOutcomeReason | null>(null);
+  readonly selectedBreakageReason   = signal<BreakageReason | null>(null);
   /** Código de barras escaneado antes de confirmar la extracción */
   readonly scannedBarcode           = signal<string>('');
 
@@ -646,11 +948,14 @@ export class VisitaDetallePage implements OnInit {
 
   /** Expuesto al template */
   readonly OUTCOME_OPTIONS = OUTCOME_OPTIONS;
+  readonly BREAKAGE_OPTIONS = BREAKAGE_OPTIONS;
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
-      this.store.dispatch(loadVisitDetail({ id: +idParam }));
+      const id = +idParam;
+      this.store.dispatch(loadVisitDetail({ id }));
+      this.store.dispatch(loadCustody({ id }));
     }
   }
 
@@ -658,8 +963,23 @@ export class VisitaDetallePage implements OnInit {
     this.router.navigate(['/domicilio/mi-ruta']);
   }
 
+  /** Navega a la ficha de la visita sucesora (generada por la re-extracción). */
+  verSucesora(id: number): void {
+    this.router.navigate(['/domicilio/mi-ruta', id]);
+  }
+
   statusFor(status: HomeVisitStatus): StatusDisplay {
     return STATUS_MAP[status] ?? { label: status, severity: 'secondary', icon: 'pi-circle' };
+  }
+
+  /** ¿El estado admite alguna acción del extractor? */
+  hasAcciones(status: HomeVisitStatus): boolean {
+    return ACTIONABLE_STATUSES.includes(status);
+  }
+
+  /** Traduce la acción de un evento de custodia a español. */
+  custodyActionLabel(action: string): string {
+    return CUSTODY_ACTION_MAP[action] ?? action;
   }
 
   /** Expuesto al template y a los tests */
@@ -670,6 +990,11 @@ export class VisitaDetallePage implements OnInit {
   /** Expuesto al template y a los tests */
   formatScheduledAt(iso: string | null): string {
     return formatScheduledAt(iso);
+  }
+
+  /** Expuesto al template y a los tests */
+  formatOccurredAt(iso: string): string {
+    return formatOccurredAt(iso);
   }
 
   // ── Abrir diálogos ──────────────────────────────────────────────────────────
@@ -691,9 +1016,20 @@ export class VisitaDetallePage implements OnInit {
     this.dialogReprogramarVisible.set(true);
   }
 
+  abrirDialogRotura(id: number): void {
+    this.visitIdEnAccion = id;
+    this.selectedBreakageReason.set(null);
+    this.dialogRoturaVisible.set(true);
+  }
+
   cerrarDialogOutcome(): void {
     this.selectedReason.set(null);
     this.dialogOutcomeVisible.set(false);
+  }
+
+  cerrarDialogRotura(): void {
+    this.selectedBreakageReason.set(null);
+    this.dialogRoturaVisible.set(false);
   }
 
   // ── Confirmar acciones ──────────────────────────────────────────────────────
@@ -751,5 +1087,24 @@ export class VisitaDetallePage implements OnInit {
           this.router.navigate(['/domicilio/mi-ruta']);
         }
       });
+  }
+
+  /** Marca la muestra en tránsito. El store refresca detalle + custodia + ruta. */
+  marcarEnTransito(id: number): void {
+    this.store.dispatch(markInTransit({ id }));
+  }
+
+  /** Confirma la rotura/pérdida con el motivo seleccionado. */
+  confirmarRotura(): void {
+    const id     = this.visitIdEnAccion;
+    const reason = this.selectedBreakageReason();
+    if (id == null || !reason) return;
+    this.cerrarDialogRotura();
+    this.store.dispatch(markBroken({ id, reason }));
+  }
+
+  /** Programa una re-extracción (sin recobro). El store refresca hacia la sucesora. */
+  reExtraer(id: number): void {
+    this.store.dispatch(reExtractVisit({ id }));
   }
 }

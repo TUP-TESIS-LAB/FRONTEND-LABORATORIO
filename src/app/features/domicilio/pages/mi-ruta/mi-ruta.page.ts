@@ -35,6 +35,7 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
   EXTRAIDA:     { label: 'Extraída',     severity: 'success',   icon: 'pi-check-circle' },
   EN_TRANSITO:  { label: 'En tránsito',  severity: 'warn',      icon: 'pi-truck' },
   RECEPCIONADA: { label: 'Recepcionada', severity: 'success',   icon: 'pi-inbox' },
+  ROTA:         { label: 'Rota',         severity: 'danger',    icon: 'pi-exclamation-triangle' },
   NO_REALIZADA: { label: 'No realizada', severity: 'danger',    icon: 'pi-times-circle' },
   REPROGRAMADA: { label: 'Reprogramada', severity: 'secondary', icon: 'pi-refresh' },
 };

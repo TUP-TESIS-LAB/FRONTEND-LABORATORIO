@@ -12,6 +12,8 @@ import {
   loadHomeVisits,
   prepareLabels,
   prepareLabelsSuccess,
+  receiveVisit,
+  receiveVisitSuccess,
 } from '../../store/home-visit.actions';
 import {
   selectHomeVisits,
@@ -37,7 +39,7 @@ describe('AgendaPage (smoke)', () => {
   const mockRouter = { navigate: vi.fn() };
   const mockLabelPdf = { generate: vi.fn().mockResolvedValue(undefined) };
 
-  function setup(branchId: number | null = 1) {
+  function setup(branchId: number | null = 1, visits: HomeVisit[] = []) {
     actions$ = new Subject();
     TestBed.configureTestingModule({
       imports: [AgendaPage],
@@ -49,7 +51,7 @@ describe('AgendaPage (smoke)', () => {
             [DOMICILIO_FEATURE_KEY]: initialDomicilioState,
           },
           selectors: [
-            { selector: selectHomeVisits,        value: [] },
+            { selector: selectHomeVisits,        value: visits },
             { selector: selectHomeVisitsPending,  value: false },
             { selector: selectActionPending,      value: false },
           ],
@@ -185,11 +187,71 @@ describe('AgendaPage (smoke)', () => {
     // Debe recargar la lista con el branchId actual
     expect(spy).toHaveBeenCalledWith(loadHomeVisits({ branchId: 5 }));
   });
+
+  // ── Estado ROTA (Task 16) ────────────────────────────────────────────────────
+
+  it('statusDisplay devuelve label "Rota" y severity danger para ROTA', () => {
+    const d = setup().componentInstance.statusDisplay('ROTA');
+    expect(d.label).toBe('Rota');
+    expect(d.severity).toBe('danger');
+  });
+
+  // ── Recepcionar (Task 16) ────────────────────────────────────────────────────
+
+  it('recepcionar() despacha receiveVisit con el id de la visita', () => {
+    const fixture = setup(1);
+    fixture.componentInstance.ngOnInit();
+    const spy = vi.spyOn(store, 'dispatch');
+    const row = makeVisit(10, null, 'EN_TRANSITO');
+    fixture.componentInstance.recepcionar(row);
+    expect(spy).toHaveBeenCalledWith(receiveVisit({ id: 10 }));
+  });
+
+  it('al recibir receiveVisitSuccess recarga la lista con el branchId actual', () => {
+    const fixture = setup(7);
+    fixture.componentInstance.ngOnInit();
+    const spy = vi.spyOn(store, 'dispatch');
+    const row = makeVisit(10, null, 'EN_TRANSITO');
+    fixture.componentInstance.recepcionar(row);
+    actions$.next(receiveVisitSuccess({ visit: { ...row, status: 'RECEPCIONADA' } }));
+    expect(spy).toHaveBeenCalledWith(loadHomeVisits({ branchId: 7 }));
+  });
+
+  // ── Filtro "Por recepcionar" (Task 16) ───────────────────────────────────────
+
+  it('el filtro por defecto es TODAS y muestra todas las visitas', () => {
+    const visitas = [
+      makeVisit(1, null, 'PROGRAMADA'),
+      makeVisit(2, null, 'EN_TRANSITO'),
+    ];
+    const fixture = setup(1, visitas);
+    const comp = fixture.componentInstance;
+    expect(comp.activeFilter()).toBe('TODAS');
+    expect(comp.filteredVisits()).toEqual(visitas);
+  });
+
+  it('el filtro POR_RECEPCIONAR deja solo las visitas EN_TRANSITO', () => {
+    const visitas = [
+      makeVisit(1, null, 'PROGRAMADA'),
+      makeVisit(2, null, 'EN_TRANSITO'),
+      makeVisit(3, null, 'RECEPCIONADA'),
+      makeVisit(4, null, 'EN_TRANSITO'),
+    ];
+    const fixture = setup(1, visitas);
+    const comp = fixture.componentInstance;
+    comp.activeFilter.set('POR_RECEPCIONAR');
+    const ids = comp.filteredVisits().map((v) => v.id);
+    expect(ids).toEqual([2, 4]);
+  });
 });
 
 // ── Factory ───────────────────────────────────────────────────────────────────
 
-function makeVisit(id: number, attentionId: number | null = null): HomeVisit {
+function makeVisit(
+  id: number,
+  attentionId: number | null = null,
+  status: HomeVisit['status'] = 'PROGRAMADA',
+): HomeVisit {
   return {
     id,
     appointmentId: 100 + id,
@@ -203,7 +265,7 @@ function makeVisit(id: number, attentionId: number | null = null): HomeVisit {
     addressReferences: 'Portón verde',
     timeWindowStart: '08:00:00',
     timeWindowEnd: '10:00:00',
-    status: 'PROGRAMADA',
+    status,
     scheduledAt: '2026-07-15T09:00:00',
     patientName: `Paciente ${id}`,
     patientDni: `3000000${id}`,

@@ -3,7 +3,9 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   inject,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -11,7 +13,9 @@ import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
+import { FormsModule } from '@angular/forms';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
@@ -22,6 +26,9 @@ import {
   prepareLabels,
   prepareLabelsSuccess,
   prepareLabelsFailure,
+  receiveVisit,
+  receiveVisitSuccess,
+  receiveVisitFailure,
 } from '../../store/home-visit.actions';
 import {
   selectHomeVisits,
@@ -41,9 +48,17 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
   EXTRAIDA:     { label: 'Extraída',     severity: 'success' },
   EN_TRANSITO:  { label: 'En tránsito',  severity: 'warn' },
   RECEPCIONADA: { label: 'Recepcionada', severity: 'success' },
+  ROTA:         { label: 'Rota',         severity: 'danger' },
   NO_REALIZADA: { label: 'No realizada', severity: 'danger' },
   REPROGRAMADA: { label: 'Reprogramada', severity: 'secondary' },
 };
+
+type AgendaFilter = 'TODAS' | 'POR_RECEPCIONAR';
+
+interface FilterOption {
+  label: string;
+  value: AgendaFilter;
+}
 
 @Component({
   selector: 'dom-agenda-page',
@@ -54,7 +69,9 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
     DataTableComponent,
     UiCellDirective,
     ButtonModule,
+    SelectButtonModule,
     TagModule,
+    FormsModule,
   ],
   template: `
     <ui-page-header heading="Visitas a domicilio" subtitle="Listado de visitas programadas para la sucursal.">
@@ -64,8 +81,19 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
         (onClick)="router.navigate(['/domicilio/nueva'])" />
     </ui-page-header>
 
+    <!-- Filtro por estado -->
+    <div class="dom-agenda-filtros">
+      <p-selectButton
+        [options]="filterOptions"
+        [ngModel]="activeFilter()"
+        (ngModelChange)="activeFilter.set($event ?? 'TODAS')"
+        optionLabel="label"
+        optionValue="value"
+        aria-label="Filtrar visitas por estado" />
+    </div>
+
     <ui-table
-      [value]="visits()"
+      [value]="filteredVisits()"
       [loading]="pending()"
       [columns]="columns"
       dataKey="id"
@@ -121,7 +149,7 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
         }
       </ng-template>
 
-      <!-- Acciones: Preparar rótulos -->
+      <!-- Acciones: Preparar rótulos / Recepcionar -->
       <ng-template uiCell="acciones" let-row>
         @if ($any(row).status === 'PROGRAMADA') {
           @if ($any(row).attentionId != null) {
@@ -147,11 +175,27 @@ const STATUS_MAP: Record<HomeVisitStatus, StatusDisplay> = {
               [loading]="actionPending()"
               (onClick)="prepararRotulos($any(row))" />
           }
+        } @else if ($any(row).status === 'EN_TRANSITO') {
+          <p-button
+            label="Recepcionar"
+            icon="pi pi-inbox"
+            size="small"
+            severity="primary"
+            [disabled]="actionPending()"
+            [loading]="actionPending()"
+            (onClick)="recepcionar($any(row))" />
         }
       </ng-template>
 
     </ui-table>
   `,
+  styles: [`
+    .dom-agenda-filtros {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: var(--space-3, 0.75rem);
+    }
+  `],
 })
 export class AgendaPage implements OnInit {
   protected readonly router = inject(Router);
@@ -164,6 +208,23 @@ export class AgendaPage implements OnInit {
   readonly visits = this.store.selectSignal(selectHomeVisits);
   readonly pending = this.store.selectSignal(selectHomeVisitsPending);
   readonly actionPending = this.store.selectSignal(selectActionPending);
+
+  // ── Filtro por estado ────────────────────────────────────────────────────────
+  readonly activeFilter = signal<AgendaFilter>('TODAS');
+
+  readonly filterOptions: FilterOption[] = [
+    { label: 'Todas',           value: 'TODAS' },
+    { label: 'Por recepcionar', value: 'POR_RECEPCIONAR' },
+  ];
+
+  /** Visitas visibles según el filtro activo. */
+  readonly filteredVisits = computed(() => {
+    const all = this.visits();
+    if (this.activeFilter() === 'POR_RECEPCIONAR') {
+      return all.filter((v) => v.status === 'EN_TRANSITO');
+    }
+    return all;
+  });
 
   readonly columns: readonly TableColumn[] = [
     { field: 'paciente',  header: 'Paciente' },
@@ -206,6 +267,22 @@ export class AgendaPage implements OnInit {
           // Generar PDF con los labels recibidos en el payload
           void this.labelPdf.generate(action.visit, action.labels);
           // Recargar la lista para reflejar attentionId != null
+          this.store.dispatch(loadHomeVisits({ branchId: this.currentBranchId }));
+        }
+      });
+  }
+
+  /** Recepciona una muestra EN_TRANSITO (secretaría) y recarga la lista en éxito. */
+  recepcionar(row: HomeVisit): void {
+    this.store.dispatch(receiveVisit({ id: row.id }));
+    this.actions$
+      .pipe(
+        ofType(receiveVisitSuccess, receiveVisitFailure),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((action) => {
+        if (action.type === receiveVisitSuccess.type) {
           this.store.dispatch(loadHomeVisits({ branchId: this.currentBranchId }));
         }
       });
