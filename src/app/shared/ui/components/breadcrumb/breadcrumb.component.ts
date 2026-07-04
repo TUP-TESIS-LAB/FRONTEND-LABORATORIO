@@ -79,7 +79,13 @@ export class BreadcrumbComponent {
       }
       const label = route.snapshot?.data?.['breadcrumb'];
       if (typeof label === 'string' && label) {
-        out.push({ label, url });
+        // Dedup de migas consecutivas con el mismo label: Angular hereda `data`
+        // a los hijos de path vacío (paramsInheritanceStrategy 'emptyOnly'), así
+        // que un nodo de módulo con breadcrumb + su hijo index ('') repetirían la
+        // misma miga. Colapsamos para no mostrarla dos veces.
+        if (out[out.length - 1]?.label !== label) {
+          out.push({ label, url });
+        }
       }
       route = route.firstChild;
     }

@@ -26,6 +26,7 @@ export const FINANCIERO_ROUTES: Routes = [
       },
       {
         path: 'cobros/:id',
+        data: { breadcrumb: 'Detalle' },
         loadComponent: () =>
           import('./pages/cobros/cobro-detalle.page').then(
             (m) => m.CobroDetallePage,
@@ -33,6 +34,7 @@ export const FINANCIERO_ROUTES: Routes = [
       },
       {
         path: 'cobrar/:attentionId',
+        data: { breadcrumb: 'Cobrar' },
         loadComponent: () =>
           import('./components/cobro-atencion/cobro-atencion.component').then(
             (m) => m.CobroAtencionComponent,
@@ -77,10 +79,11 @@ export const FINANCIERO_ROUTES: Routes = [
           import('./pages/placeholder/modulo-no-disponible.component').then(
             (m) => m.ModuloNoDisponibleComponent,
           ),
-        data: { kind: 'coberturas' },
+        data: { kind: 'coberturas', breadcrumb: 'Coberturas' },
       },
       {
         path: 'liquidaciones',
+        data: { breadcrumb: 'Liquidaciones' },
         loadComponent: () =>
           import('./pages/liquidaciones/liquidaciones-list.page').then(
             (m) => m.LiquidacionesListPage,
@@ -88,6 +91,7 @@ export const FINANCIERO_ROUTES: Routes = [
       },
       {
         path: 'liquidaciones/nueva',
+        data: { breadcrumb: 'Nueva' },
         loadComponent: () =>
           import('./pages/liquidaciones/generar-liquidacion.page').then(
             (m) => m.GenerarLiquidacionPage,
@@ -95,6 +99,7 @@ export const FINANCIERO_ROUTES: Routes = [
       },
       {
         path: 'liquidaciones/:id',
+        data: { breadcrumb: 'Detalle' },
         loadComponent: () =>
           import('./pages/liquidaciones/liquidacion-detalle.page').then(
             (m) => m.LiquidacionDetallePage,

@@ -15,6 +15,7 @@ import { TagModule } from 'primeng/tag';
 import { PollingHandle, PollingService } from '@core/refresh';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { TableColumn } from '@shared/ui/models/table-column.model';
 import { AttentionState } from '../../models/atencion.model';
 import { urgentStageLabel } from '../../models/atencion-state-label';
@@ -80,17 +81,15 @@ export function slaSeverity(status: SlaStatus): 'success' | 'warn' | 'danger' | 
   selector: 'lab-urgentes-en-curso',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TagModule, DataTableComponent, UiCellDirective],
+  imports: [TagModule, DataTableComponent, UiCellDirective, PageHeaderComponent],
   template: `
+    <ui-page-header heading="Urgentes en curso">
+      @if (overdueCount() > 0) {
+        <p-tag [value]="overdueCount() + ' vencidos'" severity="danger" />
+      }
+    </ui-page-header>
     <div class="py-2">
       <section class="bg-white rounded-lg shadow-sm p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold m-0">Urgentes en curso</h2>
-          @if (overdueCount() > 0) {
-            <p-tag [value]="overdueCount() + ' vencidos'" severity="danger" />
-          }
-        </div>
-
         <ui-table
           [value]="rows()"
           [loading]="loading()"

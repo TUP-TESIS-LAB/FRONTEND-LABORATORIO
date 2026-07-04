@@ -18,6 +18,7 @@ export const PACIENTES_ROUTES: Routes = [
   },
   {
     path: ':id',
+    data: { breadcrumb: 'Detalle' },
     loadComponent: () =>
       import('./pages/patient-detail/patient-detail.page').then((m) => m.PatientDetailPage),
   },

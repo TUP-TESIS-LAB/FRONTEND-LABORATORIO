@@ -9,16 +9,18 @@ import { NOTIF_CONFIG_FEATURE_KEY } from './store/notificaciones-config/notifica
 export const EMPRESA_ROUTES: Routes = [
   {
     path: '',
+    data: { breadcrumb: 'Empresa' },
     loadComponent: () =>
       import('./empresa-dashboard/empresa-dashboard.component').then(m => m.EmpresaDashboardComponent),
     children: [
       { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
-      { path: 'usuarios',    loadComponent: () => import('./pages/usuarios/usuarios.page').then(m => m.UsuariosPage) },
-      { path: 'white-label', loadComponent: () => import('./pages/white-label/white-label.page').then(m => m.WhiteLabelPage) },
-      { path: 'fiscal',      loadComponent: () => import('./pages/fiscal/fiscal.page').then(m => m.FiscalPage) },
-      { path: 'email',       loadComponent: () => import('./pages/email/email.page').then(m => m.EmailPage) },
+      { path: 'usuarios',    data: { breadcrumb: 'Usuarios' },     loadComponent: () => import('./pages/usuarios/usuarios.page').then(m => m.UsuariosPage) },
+      { path: 'white-label', data: { breadcrumb: 'White label' },  loadComponent: () => import('./pages/white-label/white-label.page').then(m => m.WhiteLabelPage) },
+      { path: 'fiscal',      data: { breadcrumb: 'Facturación' },  loadComponent: () => import('./pages/fiscal/fiscal.page').then(m => m.FiscalPage) },
+      { path: 'email',       data: { breadcrumb: 'Email' },        loadComponent: () => import('./pages/email/email.page').then(m => m.EmailPage) },
       {
         path: 'notificaciones',
+        data: { breadcrumb: 'Notificaciones' },
         loadComponent: () =>
           import('./pages/notificaciones/notificaciones-config.page').then(m => m.NotificacionesConfigPage),
         providers: [
