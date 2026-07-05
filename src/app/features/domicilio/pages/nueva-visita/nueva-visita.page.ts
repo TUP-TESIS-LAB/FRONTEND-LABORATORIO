@@ -26,6 +26,9 @@ import { Patient } from '@features/pacientes/models/patient.model';
 import { AnalysisPickerComponent, PickerRow } from '@features/analitica/components/analysis-picker/analysis-picker.component';
 import { EmployeeService } from '@features/sucursales/services/employee.service';
 import { Employee } from '@features/sucursales/models/employee.model';
+
+/** Empleado + etiqueta lista para mostrar en el autocomplete (optionLabel). */
+type ExtractorOption = Employee & { displayName: string };
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 
 import { createHomeVisit, createHomeVisitSuccess, createHomeVisitFailure } from '../../store/home-visit.actions';
@@ -309,11 +312,11 @@ export class NuevaVisitaPage implements OnInit {
 
   // ── State ──────────────────────────────────────────────────────────────────
   readonly selectedPatient  = signal<Patient | null>(null);
-  readonly selectedExtractor = signal<Employee | null>(null);
-  readonly extractorSuggestions = signal<Employee[]>([]);
+  readonly selectedExtractor = signal<ExtractorOption | null>(null);
+  readonly extractorSuggestions = signal<ExtractorOption[]>([]);
   readonly step0Touched = signal(false);
 
-  private allEmployees: Employee[] = [];
+  private allEmployees: ExtractorOption[] = [];
   private selectedAnalyses: PickerRow[] = [];
 
   readonly today = new Date();
@@ -348,7 +351,9 @@ export class NuevaVisitaPage implements OnInit {
       .list()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((list) => {
-        this.allEmployees = list.filter((e) => e.active);
+        this.allEmployees = list
+          .filter((e) => e.active)
+          .map((e) => ({ ...e, displayName: `${e.lastName}, ${e.firstName}` }));
       });
   }
 
@@ -395,7 +400,7 @@ export class NuevaVisitaPage implements OnInit {
   }
 
   onExtractorSelect(e: AutoCompleteSelectEvent): void {
-    this.selectedExtractor.set(e.value as Employee);
+    this.selectedExtractor.set(e.value as ExtractorOption);
   }
 
   onExtractorClear(): void {
