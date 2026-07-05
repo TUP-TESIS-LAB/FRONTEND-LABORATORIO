@@ -1,4 +1,4 @@
-import { By } from '@angular/platform-browser';
+import { WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideMockActions } from '@ngrx/effects/testing';
@@ -11,9 +11,14 @@ import {
   loadConfigs, loadEligible, updateConfig,
 } from '../../store/notificaciones-config/notificaciones-config.actions';
 import { NOTIF_CONFIG_FEATURE_KEY, initialNotifConfigState } from '../../store/notificaciones-config/notificaciones-config.state';
-import { EventConfigRowComponent } from './components/event-config-row/event-config-row.component';
 import { NotificacionesConfigPage } from './notificaciones-config.page';
+import { StatusFilter } from './notificaciones-filter.logic';
 
+/**
+ * Nota: bajo Vitest (JIT) el template con `ui-table` (signal inputs) no bindea, así que estos
+ * tests no usan `detectChanges()` — ejercen los métodos de dispatch y los computed de filtro
+ * directamente sobre la instancia. El rendering se cubre con `ng test`.
+ */
 function eventConfig(over: Partial<EventConfig> = {}): EventConfig {
   return {
     eventType: 'RESULT_READY',
@@ -21,14 +26,27 @@ function eventConfig(over: Partial<EventConfig> = {}): EventConfig {
     enabled: true,
     hasTrigger: true,
     recipients: [],
+    section: 'EXTRACCIONES',
     ...over,
   };
+}
+
+interface PageInternals {
+  search: WritableSignal<string>;
+  moduleFilter: WritableSignal<string>;
+  statusFilter: WritableSignal<StatusFilter>;
+  visible(): EventConfig[];
+  activeCount(): number;
+  moduleOptions(): { label: string; value: string }[];
+  onRowExpand(row: EventConfig): void;
+  onToggle(row: EventConfig, enabled: boolean): void;
+  onRecipients(row: EventConfig, recipients: EventConfig['recipients']): void;
 }
 
 describe('NotificacionesConfigPage', () => {
   let store: MockStore;
 
-  function configure(eventConfigs: EventConfig[] = []): void {
+  function create(eventConfigs: EventConfig[] = []) {
     TestBed.configureTestingModule({
       providers: [
         provideNoopAnimations(),
@@ -41,62 +59,87 @@ describe('NotificacionesConfigPage', () => {
       ],
     });
     store = TestBed.inject(Store) as MockStore;
+    const fixture = TestBed.createComponent(NotificacionesConfigPage);
+    const comp = fixture.componentInstance as unknown as PageInternals;
+    return { fixture, comp };
   }
 
   it('despacha loadConfigs en ngOnInit', () => {
-    configure([]);
+    const { fixture } = create([]);
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-    const fixture = TestBed.createComponent(NotificacionesConfigPage);
-    fixture.detectChanges();
-
+    fixture.componentInstance.ngOnInit();
     expect(dispatchSpy).toHaveBeenCalledWith(loadConfigs());
   });
 
-  it('renderiza una fila por cada evento de selectEventConfigs', () => {
-    configure([
-      eventConfig({ eventType: 'RESULT_READY', title: 'Resultado listo' }),
-      eventConfig({ eventType: 'CASH_BOX_CLOSED', title: 'Cierre de caja', hasTrigger: false }),
+  it('el filtro "Solo activos" oculta los eventos deshabilitados', () => {
+    const { comp } = create([
+      eventConfig({ eventType: 'A', enabled: true }),
+      eventConfig({ eventType: 'B', enabled: false }),
     ]);
-    const fixture = TestBed.createComponent(NotificacionesConfigPage);
-    fixture.detectChanges();
-
-    const rows = fixture.debugElement.queryAll(By.directive(EventConfigRowComponent));
-    expect(rows.length).toBe(2);
-    expect(rows[0].componentInstance.config().eventType).toBe('RESULT_READY');
-    expect(rows[1].componentInstance.config().eventType).toBe('CASH_BOX_CLOSED');
+    comp.statusFilter.set('active');
+    expect(comp.visible().map((c) => c.eventType)).toEqual(['A']);
   });
 
-  it('al (update) de una fila despacha updateConfig con el payload recibido', () => {
-    configure([eventConfig({ eventType: 'RESULT_READY' })]);
-    const fixture = TestBed.createComponent(NotificacionesConfigPage);
-    fixture.detectChanges();
+  it('la búsqueda filtra por título (case-insensitive)', () => {
+    const { comp } = create([
+      eventConfig({ eventType: 'A', title: 'Cierre de caja' }),
+      eventConfig({ eventType: 'B', title: 'Resultado listo' }),
+    ]);
+    comp.search.set('caja');
+    expect(comp.visible().map((c) => c.eventType)).toEqual(['A']);
+  });
+
+  it('el filtro Módulo filtra por section', () => {
+    const { comp } = create([
+      eventConfig({ eventType: 'A', section: 'FINANCIERO' }),
+      eventConfig({ eventType: 'B', section: 'EXTRACCIONES' }),
+    ]);
+    comp.moduleFilter.set('FINANCIERO');
+    expect(comp.visible().map((c) => c.eventType)).toEqual(['A']);
+  });
+
+  it('activeCount cuenta los eventos habilitados visibles', () => {
+    const { comp } = create([
+      eventConfig({ eventType: 'A', enabled: true }),
+      eventConfig({ eventType: 'B', enabled: false }),
+    ]);
+    expect(comp.activeCount()).toBe(1);
+  });
+
+  it('moduleOptions incluye "Todos" y las secciones presentes', () => {
+    const { comp } = create([
+      eventConfig({ eventType: 'A', section: 'FINANCIERO' }),
+      eventConfig({ eventType: 'B', section: 'FINANCIERO' }),
+    ]);
+    const values = comp.moduleOptions().map((o) => o.value);
+    expect(values).toContain('all');
+    expect(values).toContain('FINANCIERO');
+  });
+
+  it('expandir una fila despacha loadEligible para ese eventType', () => {
+    const { comp } = create([eventConfig({ eventType: 'CASH_BOX_CLOSED' })]);
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    const row = fixture.debugElement.query(By.directive(EventConfigRowComponent));
-    const payload = { eventType: 'RESULT_READY', enabled: false, recipients: [{ type: 'USER' as const, ref: '1' }] };
-    row.componentInstance.update.emit(payload);
-
-    expect(dispatchSpy).toHaveBeenCalledWith(updateConfig(payload));
+    comp.onRowExpand(eventConfig({ eventType: 'CASH_BOX_CLOSED' }));
+    expect(dispatchSpy).toHaveBeenCalledWith(loadEligible({ eventType: 'CASH_BOX_CLOSED' }));
   });
 
-  it('al (pickerOpen) de una fila despacha loadEligible para ese eventType', () => {
-    configure([eventConfig({ eventType: 'RESULT_READY' })]);
-    const fixture = TestBed.createComponent(NotificacionesConfigPage);
-    fixture.detectChanges();
+  it('el toggle inline despacha updateConfig con el enabled nuevo, preservando recipients', () => {
+    const row = eventConfig({ eventType: 'RESULT_READY', enabled: false, recipients: [{ type: 'ROLE', ref: 'ADMIN' }] });
+    const { comp } = create([row]);
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    const row = fixture.debugElement.query(By.directive(EventConfigRowComponent));
-    row.componentInstance.pickerOpen.emit();
-
-    expect(dispatchSpy).toHaveBeenCalledWith(loadEligible({ eventType: 'RESULT_READY' }));
+    comp.onToggle(row, true);
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      updateConfig({ eventType: 'RESULT_READY', enabled: true, recipients: [{ type: 'ROLE', ref: 'ADMIN' }] }),
+    );
   });
 
-  it('muestra un estado vacío cuando no hay eventos configurados', () => {
-    configure([]);
-    const fixture = TestBed.createComponent(NotificacionesConfigPage);
-    fixture.detectChanges();
-
-    const rows = fixture.debugElement.queryAll(By.directive(EventConfigRowComponent));
-    expect(rows.length).toBe(0);
+  it('editar destinatarios despacha updateConfig preservando enabled', () => {
+    const row = eventConfig({ eventType: 'RESULT_READY', enabled: true });
+    const { comp } = create([row]);
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+    comp.onRecipients(row, [{ type: 'USER', ref: '7' }]);
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      updateConfig({ eventType: 'RESULT_READY', enabled: true, recipients: [{ type: 'USER', ref: '7' }] }),
+    );
   });
 });
