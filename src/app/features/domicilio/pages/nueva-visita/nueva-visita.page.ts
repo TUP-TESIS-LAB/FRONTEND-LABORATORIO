@@ -96,6 +96,24 @@ const STEPS: readonly FormStep[] = [
       letter-spacing: 0.02em;
     }
     .nv-sum-row .nv-hint { color: var(--ds-text-muted); font-size: 13px; }
+    .nv-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .nv-banner i { margin-top: 1px; }
+    .nv-banner--info {
+      background: var(--ds-info-bg, #eff6ff);
+      color: var(--ds-info, #2563eb);
+    }
+    .nv-banner--warn {
+      background: var(--ds-warning-bg, #fffbeb);
+      color: var(--ds-warning-strong, #b45309);
+    }
   `],
   template: `
     <ui-wizard-shell
@@ -195,6 +213,19 @@ const STEPS: readonly FormStep[] = [
       <!-- ─── Paso 1: Dirección + Extractor ─── -->
       @if (currentIndex() === 1) {
         <div class="nv-section">
+          <!-- Banner de origen de la dirección (Task 3) -->
+          @if (addressSource() === 'prefilled') {
+            <div class="nv-banner nv-banner--info">
+              <i class="pi pi-info-circle"></i>
+              <span>Estás usando la dirección registrada de <strong>{{ prefillPatientName() }}</strong>. Podés modificarla para esta visita.</span>
+            </div>
+          } @else if (addressSource() === 'edited') {
+            <div class="nv-banner nv-banner--warn">
+              <i class="pi pi-exclamation-triangle"></i>
+              <span>Modificaste la dirección registrada — se usará solo para esta visita.</span>
+            </div>
+          }
+
           <!-- Dirección -->
           <div class="nv-grid-3">
             <div class="nv-field">
@@ -309,6 +340,11 @@ const STEPS: readonly FormStep[] = [
             <strong>{{ form.controls.addressStreet.value }} {{ form.controls.addressNumber.value }}</strong>
             <span>{{ form.controls.addressCity.value }}</span>
             @if (form.controls.addressReferences.value) { <span class="nv-hint">{{ form.controls.addressReferences.value }}</span> }
+            @if (addressSource() === 'prefilled') {
+              <span class="nv-hint">Dirección registrada del paciente</span>
+            } @else if (addressSource() === 'edited') {
+              <span class="nv-hint">Modificada para esta visita</span>
+            }
           </div>
           <div class="nv-sum-row"><span>Extractor</span>
             <strong>{{ selectedExtractor() ? (selectedExtractor()!.lastName + ', ' + selectedExtractor()!.firstName) : 'Sin asignar' }}</strong>
@@ -410,6 +446,25 @@ export class NuevaVisitaPage implements OnInit {
 
   /** Paso 2 (análisis + comentarios): todo opcional. */
   readonly step2Valid = computed(() => true);
+
+  /**
+   * Origen de la dirección actual del form respecto de la precarga (Task 3):
+   * - 'none': no hubo precarga (paciente sin dirección o aún no seleccionado).
+   * - 'prefilled': la dirección coincide con la precargada del paciente.
+   * - 'edited': el usuario modificó algún campo respecto de la precarga.
+   */
+  readonly addressSource = computed<'none' | 'prefilled' | 'edited'>(() => {
+    this.formValue(); // dependencia reactiva del form
+    const snap = this.prefilledSnapshot();
+    if (!snap) return 'none';
+    const f = this.form.controls;
+    const same =
+      f.addressStreet.value === snap.street &&
+      f.addressNumber.value === snap.number &&
+      f.addressCity.value === snap.city &&
+      f.addressReferences.value === snap.references;
+    return same ? 'prefilled' : 'edited';
+  });
 
   /** `continueDisabled` del wizard-shell según el paso actual. */
   readonly continueDisabledForStep = computed(() => {

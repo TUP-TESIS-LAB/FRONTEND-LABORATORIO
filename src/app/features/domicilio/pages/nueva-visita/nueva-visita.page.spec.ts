@@ -317,6 +317,19 @@ describe('NuevaVisitaPage', () => {
     expect(component.prefillPatientName()).toBeNull();
   });
 
+  it('addressSource: none sin precarga; prefilled tras precargar; edited al modificar', () => {
+    const { component } = setup();
+    expect(component.addressSource()).toBe('none');
+    mockPatientService.getById.mockReturnValue(of({
+      ...MOCK_PATIENT,
+      addresses: [{ street: 'Calle 50', streetNumber: '1234', city: 'La Plata', isPrimary: true, active: true }],
+    }));
+    component.onPatientSelected(MOCK_PATIENT);
+    expect(component.addressSource()).toBe('prefilled');
+    component.form.controls.addressStreet.setValue('Otra calle');
+    expect(component.addressSource()).toBe('edited');
+  });
+
   // ── [CRITICAL] Wiring del (finish) → dispatch createHomeVisit ──────────────
   //
   // Estos tests verifican que onFinish() — el método cableado via
