@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { DatePipe } from '@angular/common';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Actions, ofType } from '@ngrx/effects';
@@ -48,7 +49,9 @@ function toLocalDateTimeString(d: Date): string {
 
 const STEPS: readonly FormStep[] = [
   { key: 'paciente', title: 'Paciente y horario', subtitle: 'Identificación del paciente, fecha y ventana horaria' },
-  { key: 'direccion', title: 'Domicilio y análisis', subtitle: 'Dirección de la visita, extractor y análisis' },
+  { key: 'direccion', title: 'Dirección y extractor', subtitle: 'Dirección de la visita y extractor asignado' },
+  { key: 'analisis', title: 'Análisis y comentarios', subtitle: 'Determinaciones a realizar y comentarios' },
+  { key: 'resumen', title: 'Confirmación', subtitle: 'Revisá los datos antes de agendar' },
 ];
 
 @Component({
@@ -56,6 +59,7 @@ const STEPS: readonly FormStep[] = [
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DatePipe,
     ReactiveFormsModule,
     WizardShellComponent,
     PatientSearchAutocompleteComponent,
@@ -74,6 +78,23 @@ const STEPS: readonly FormStep[] = [
     .nv-grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-4); }
     .nv-section { display: flex; flex-direction: column; gap: var(--space-4); }
     .nv-req { color: var(--color-danger, #ef4444); margin-left: 2px; }
+    .nv-summary { gap: var(--space-3); }
+    .nv-sum-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-block: var(--space-3);
+      border-bottom: 1px solid var(--ds-border, #e5e7eb);
+    }
+    .nv-sum-row:last-child { border-bottom: none; }
+    .nv-sum-row > span:first-child {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ds-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .nv-sum-row .nv-hint { color: var(--ds-text-muted); font-size: 13px; }
   `],
   template: `
     <ui-wizard-shell
@@ -84,9 +105,9 @@ const STEPS: readonly FormStep[] = [
       [clickable]="true"
       continueLabel="Continuar"
       finishLabel="Agendar visita"
-      [finishDisabled]="!step1Valid() || pending()"
+      [finishDisabled]="!(step0Valid() && step1Valid()) || pending()"
       [finishLoading]="pending()"
-      [continueDisabled]="!step0Valid()"
+      [continueDisabled]="continueDisabledForStep()"
       (stepSelected)="goTo($event)"
       (next)="next()"
       (back)="prev()"
@@ -170,7 +191,7 @@ const STEPS: readonly FormStep[] = [
         </div>
       }
 
-      <!-- ─── Paso 1: Dirección + Extractor + Análisis + Comentarios ─── -->
+      <!-- ─── Paso 1: Dirección + Extractor ─── -->
       @if (currentIndex() === 1) {
         <div class="nv-section">
           <!-- Dirección -->
@@ -244,7 +265,12 @@ const STEPS: readonly FormStep[] = [
               </div>
             }
           </div>
+        </div>
+      }
 
+      <!-- ─── Paso 2: Análisis + Comentarios ─── -->
+      @if (currentIndex() === 2) {
+        <div class="nv-section">
           <!-- Análisis / determinaciones -->
           <div class="nv-field">
             <label>Análisis / determinaciones (opcional)</label>
@@ -264,6 +290,34 @@ const STEPS: readonly FormStep[] = [
               [formControl]="form.controls.comments">
             </textarea>
           </div>
+        </div>
+      }
+
+      <!-- ─── Paso 3: Confirmación / resumen ─── -->
+      @if (currentIndex() === 3) {
+        <div class="nv-section nv-summary">
+          <div class="nv-sum-row"><span>Paciente</span>
+            <strong>{{ selectedPatient()?.lastName }}, {{ selectedPatient()?.firstName }}</strong>
+            <span class="nv-hint">DNI {{ selectedPatient()?.dni }}</span>
+          </div>
+          <div class="nv-sum-row"><span>Fecha y horario</span>
+            <strong>{{ form.controls.scheduledAt.value | date:'dd/MM/yyyy' }}</strong>
+            <span>{{ form.controls.timeWindowStart.value }} – {{ form.controls.timeWindowEnd.value }}</span>
+          </div>
+          <div class="nv-sum-row"><span>Dirección</span>
+            <strong>{{ form.controls.addressStreet.value }} {{ form.controls.addressNumber.value }}</strong>
+            <span>{{ form.controls.addressCity.value }}</span>
+            @if (form.controls.addressReferences.value) { <span class="nv-hint">{{ form.controls.addressReferences.value }}</span> }
+          </div>
+          <div class="nv-sum-row"><span>Extractor</span>
+            <strong>{{ selectedExtractor() ? (selectedExtractor()!.lastName + ', ' + selectedExtractor()!.firstName) : 'Sin asignar' }}</strong>
+          </div>
+          <div class="nv-sum-row"><span>Análisis</span>
+            <strong>{{ analysesCount() > 0 ? (analysesCount() + ' determinación(es)') : 'Ninguno' }}</strong>
+          </div>
+          @if (form.controls.comments.value) {
+            <div class="nv-sum-row"><span>Comentarios</span><span>{{ form.controls.comments.value }}</span></div>
+          }
         </div>
       }
 
@@ -315,6 +369,8 @@ export class NuevaVisitaPage implements OnInit {
   readonly selectedExtractor = signal<ExtractorOption | null>(null);
   readonly extractorSuggestions = signal<ExtractorOption[]>([]);
   readonly step0Touched = signal(false);
+  /** Cantidad de análisis seleccionados, para mostrar en el resumen (paso 3). */
+  readonly analysesCount = signal(0);
 
   private allEmployees: ExtractorOption[] = [];
   private selectedAnalyses: PickerRow[] = [];
@@ -345,6 +401,18 @@ export class NuevaVisitaPage implements OnInit {
     );
   });
 
+  /** Paso 2 (análisis + comentarios): todo opcional. */
+  readonly step2Valid = computed(() => true);
+
+  /** `continueDisabled` del wizard-shell según el paso actual. */
+  readonly continueDisabledForStep = computed(() => {
+    switch (this.currentIndex()) {
+      case 0: return !this.step0Valid();
+      case 1: return !this.step1Valid();
+      default: return false; // paso 2 (análisis) siempre permite avanzar al resumen
+    }
+  });
+
   ngOnInit(): void {
     // Precargamos la lista de empleados para el autocomplete de extractor.
     this.employeeService
@@ -365,8 +433,8 @@ export class NuevaVisitaPage implements OnInit {
 
   next(): void {
     this.step0Touched.set(true);
-    if (!this.step0Valid()) return;
-    const next = 1;
+    if (this.continueDisabledForStep()) return;
+    const next = Math.min(this.currentIndex() + 1, STEPS.length - 1);
     this.visited.update((s) => new Set([...s, next]));
     this.currentIndex.set(next);
   }
@@ -410,10 +478,12 @@ export class NuevaVisitaPage implements OnInit {
   // ── Analysis picker ────────────────────────────────────────────────────────
   onAnalysisAdded(row: PickerRow): void {
     this.selectedAnalyses = [...this.selectedAnalyses, row];
+    this.analysesCount.set(this.selectedAnalyses.length);
   }
 
   onAnalysisRemoved(id: number): void {
     this.selectedAnalyses = this.selectedAnalyses.filter((r) => r.id !== id);
+    this.analysesCount.set(this.selectedAnalyses.length);
   }
 
   // ── Submit ─────────────────────────────────────────────────────────────────

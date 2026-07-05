@@ -141,13 +141,15 @@ describe('NuevaVisitaPage', () => {
     expect(form.contains('comments')).toBe(true);
   });
 
-  it('STEPS tiene 2 pasos con las claves correctas', () => {
-    // STEPS es protected; lo accedemos con cast any para el test.
+  it('STEPS tiene 4 pasos con las claves correctas', () => {
     const { component } = setup();
     const steps = (component as any).STEPS as readonly { key: string }[];
-    expect(steps.length).toBe(2);
-    expect(steps[0].key).toBe('paciente');
-    expect(steps[1].key).toBe('direccion');
+    expect(steps.map((s) => s.key)).toEqual(['paciente', 'direccion', 'analisis', 'resumen']);
+  });
+
+  it('step2Valid es siempre true (análisis y comentarios opcionales)', () => {
+    const { component } = setup();
+    expect(component.step2Valid()).toBe(true);
   });
 
   // ── Validez por paso ────────────────────────────────────────────────────────
@@ -232,6 +234,21 @@ describe('NuevaVisitaPage', () => {
     component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00' });
     component.next();
     expect(component.visited().has(1)).toBe(true);
+  });
+
+  it('next() avanza de a un paso solo si el paso actual es válido', () => {
+    const { component } = setup();
+    component.next();                       // paso 0 inválido (sin paciente) -> no avanza
+    expect(component.currentIndex()).toBe(0);
+    component.onPatientSelected(MOCK_PATIENT);
+    component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00' });
+    component.next();                       // paso 0 válido -> avanza a 1
+    expect(component.currentIndex()).toBe(1);
+    component.form.patchValue({ addressStreet: 'Av 7', addressCity: 'La Plata' });
+    component.next();                       // paso 1 válido -> 2
+    expect(component.currentIndex()).toBe(2);
+    component.next();                       // paso 2 siempre válido -> 3 (resumen)
+    expect(component.currentIndex()).toBe(3);
   });
 
   it('prev() retrocede al paso 0 desde el paso 1', () => {
