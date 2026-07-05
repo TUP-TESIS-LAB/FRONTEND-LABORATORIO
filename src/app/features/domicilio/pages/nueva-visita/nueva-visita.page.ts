@@ -23,7 +23,8 @@ import { take } from 'rxjs';
 import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
 import { FormStep } from '@shared/ui/models/form-step';
 import { PatientSearchAutocompleteComponent } from '@features/pacientes/components/patient-search-autocomplete/patient-search-autocomplete.component';
-import { Patient } from '@features/pacientes/models/patient.model';
+import { Patient, Address } from '@features/pacientes/models/patient.model';
+import { PatientService } from '@features/pacientes/services/patient.service';
 import { AnalysisPickerComponent, PickerRow } from '@features/analitica/components/analysis-picker/analysis-picker.component';
 import { EmployeeService } from '@features/sucursales/services/employee.service';
 import { Employee } from '@features/sucursales/models/employee.model';
@@ -333,6 +334,7 @@ export class NuevaVisitaPage implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly employeeService = inject(EmployeeService);
+  private readonly patientService = inject(PatientService);
   private readonly branchCtx = inject(OperatorBranchContextService);
 
   readonly pending = this.store.selectSignal(selectHomeVisitsPending);
@@ -371,6 +373,11 @@ export class NuevaVisitaPage implements OnInit {
   readonly step0Touched = signal(false);
   /** Cantidad de análisis seleccionados, para mostrar en el resumen (paso 3). */
   readonly analysesCount = signal(0);
+
+  /** Nombre del paciente cuya dirección se precargó (para el banner del paso 1, Task 3). */
+  readonly prefillPatientName = signal<string | null>(null);
+  /** Snapshot de la dirección precargada, para detectar si el usuario la editó (Task 3/4). */
+  private readonly prefilledSnapshot = signal<{ street: string; number: string; city: string; references: string } | null>(null);
 
   private allEmployees: ExtractorOption[] = [];
   private selectedAnalyses: PickerRow[] = [];
@@ -450,6 +457,39 @@ export class NuevaVisitaPage implements OnInit {
   // ── Patient search ─────────────────────────────────────────────────────────
   onPatientSelected(p: Patient): void {
     this.selectedPatient.set(p);
+    this.patientService.getById(p.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (full) => this.applyPatientAddress(full),
+        error: () => this.clearPrefill(), // sin dirección; el error de red no debe romper el wizard
+      });
+  }
+
+  /** Precarga la dirección primaria (o activa, o la primera) del paciente en el paso 1. */
+  private applyPatientAddress(p: Patient): void {
+    const addr: Address | undefined =
+      p.addresses?.find((a) => a.isPrimary && a.active) ??
+      p.addresses?.find((a) => a.active) ??
+      p.addresses?.[0];
+    if (!addr || !(addr.street || addr.city)) { this.clearPrefill(); return; }
+    const references = [addr.apartment, addr.neighborhood].filter(Boolean).join(' · ');
+    const snap = {
+      street: addr.street ?? '', number: addr.streetNumber ?? '',
+      city: addr.city ?? '', references,
+    };
+    this.form.patchValue({
+      addressStreet: snap.street, addressNumber: snap.number,
+      addressCity: snap.city, addressReferences: snap.references,
+    });
+    this.prefilledSnapshot.set(snap);
+    this.prefillPatientName.set(`${p.lastName}, ${p.firstName}`);
+  }
+
+  /** Limpia la precarga de dirección (paciente sin dirección o error al obtenerlo). */
+  private clearPrefill(): void {
+    this.form.patchValue({ addressStreet: '', addressNumber: '', addressCity: '', addressReferences: '' });
+    this.prefilledSnapshot.set(null);
+    this.prefillPatientName.set(null);
   }
 
   // ── Extractor autocomplete ─────────────────────────────────────────────────

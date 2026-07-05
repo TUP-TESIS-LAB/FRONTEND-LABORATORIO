@@ -67,6 +67,7 @@ const mockBranchCtx = { branchId: () => 1, branchName: () => 'Sucursal Demo' };
 const mockEmployeeService = { list: () => of([]) };
 const mockPatientService = {
   search: () => of({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 10 }),
+  getById: vi.fn().mockReturnValue(of(MOCK_PATIENT)),
 };
 const mockAnalysisService = {
   searchByName: () => of([]),
@@ -291,6 +292,29 @@ describe('NuevaVisitaPage', () => {
     const { component } = setup();
     component.onPatientSelected({ ...MOCK_PATIENT, id: 42 });
     expect(component.selectedPatient()?.id).toBe(42);
+  });
+
+  it('al seleccionar un paciente con dirección primaria, precarga calle/número/ciudad', () => {
+    const { component } = setup();
+    mockPatientService.getById.mockReturnValue(of({
+      ...MOCK_PATIENT,
+      addresses: [{ street: 'Calle 50', streetNumber: '1234', city: 'La Plata', isPrimary: true, active: true }],
+    }));
+    component.onPatientSelected(MOCK_PATIENT);
+    expect(mockPatientService.getById).toHaveBeenCalledWith(MOCK_PATIENT.id);
+    expect(component.form.controls.addressStreet.value).toBe('Calle 50');
+    expect(component.form.controls.addressNumber.value).toBe('1234');
+    expect(component.form.controls.addressCity.value).toBe('La Plata');
+    expect(component.prefillPatientName()).toContain('García'); // apellido del MOCK_PATIENT
+  });
+
+  it('paciente sin dirección primaria: no precarga y limpia la dirección previa', () => {
+    const { component } = setup();
+    component.form.patchValue({ addressStreet: 'vieja', addressCity: 'vieja' });
+    mockPatientService.getById.mockReturnValue(of({ ...MOCK_PATIENT, addresses: [] }));
+    component.onPatientSelected(MOCK_PATIENT);
+    expect(component.form.controls.addressStreet.value).toBe('');
+    expect(component.prefillPatientName()).toBeNull();
   });
 
   // ── [CRITICAL] Wiring del (finish) → dispatch createHomeVisit ──────────────
