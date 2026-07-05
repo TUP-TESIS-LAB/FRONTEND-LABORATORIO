@@ -1,6 +1,14 @@
-/** Destinatario de un evento — matchea `RecipientDto` del backend. */
+/**
+ * Destinatario de un evento — matchea `RecipientDto` del backend.
+ *
+ * - `ROLE` (ref = code del rol): destinatario aditivo/dinámico; le llega a todos los que
+ *   tengan el rol, incluidos los usuarios nuevos.
+ * - `USER` (ref = userId): destinatario puntual, por fuera de cualquier rol.
+ * - `EXCLUDED_USER` (ref = userId): excepción; excluye a esa persona del fan-out aunque
+ *   entre por un `ROLE`. La exclusión gana incluso sobre un `USER` explícito del mismo id.
+ */
 export interface Recipient {
-  type: 'USER' | 'ROLE';
+  type: 'USER' | 'ROLE' | 'EXCLUDED_USER';
   ref: string;
 }
 
@@ -14,6 +22,8 @@ export interface EventConfig {
   enabled: boolean;
   hasTrigger: boolean;
   recipients: Recipient[];
+  /** Módulo/sección del evento (`requiredSection` del backend) — para la columna/filtro Módulo. */
+  section: string;
 }
 
 /** Usuario candidato a destinatario — matchea `EligibleUserDto` del backend. */

@@ -20,6 +20,7 @@ const eventConfig = (over: Partial<EventConfig> = {}): EventConfig => ({
   enabled: false,
   hasTrigger: false,
   recipients: [],
+  section: 'DOMICILIO',
   ...over,
 });
 
@@ -32,6 +33,21 @@ describe('notifConfigReducer', () => {
     );
     expect(state.eventConfigs).toEqual(configs);
     expect(state.error).toBeNull();
+  });
+
+  it('loadConfigsSuccess preserva section y recipients EXCLUDED_USER del response', () => {
+    const configs = [
+      eventConfig({
+        section: 'FINANCIERO',
+        recipients: [
+          { type: 'ROLE', ref: 'EXTRACTOR' },
+          { type: 'EXCLUDED_USER', ref: '11' },
+        ],
+      }),
+    ];
+    const state = notifConfigReducer(initialNotifConfigState, loadConfigsSuccess({ eventConfigs: configs }));
+    expect(state.eventConfigs[0].section).toBe('FINANCIERO');
+    expect(state.eventConfigs[0].recipients).toContainEqual({ type: 'EXCLUDED_USER', ref: '11' });
   });
 
   it('loadConfigsFailure guarda el error', () => {
