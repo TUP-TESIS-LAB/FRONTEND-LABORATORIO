@@ -446,4 +446,29 @@ describe('NuevaVisitaPage', () => {
     // La fecha local debe preservarse — empieza con '2025-06-27'
     expect(scheduledAt.startsWith('2025-06-27')).toBe(true);
   });
+
+  it('onFinish() arma scheduledAt con la hora de inicio de la ventana, no la del datepicker (fix hallazgo #5)', () => {
+    const { component } = setup();
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    // El datepicker trae la hora del instante en que se abrió (00:30); el scheduledAt
+    // debe usar la hora de la ventana (09:15) para no quedar en el pasado (@Future).
+    component.onPatientSelected(MOCK_PATIENT);
+    component.form.patchValue({
+      scheduledAt:     new Date(2025, 5, 27, 0, 30, 0),
+      timeWindowStart: '09:15',
+      timeWindowEnd:   '10:00',
+      addressStreet:   'Av. 7',
+      addressCity:     'La Plata',
+    });
+    selectExtractor(component);
+    addAnalysis(component);
+
+    (component as any).onFinish();
+
+    const calls = dispatchSpy.mock.calls as unknown as Array<[any]>;
+    const matchingCall = calls.find(([a]) => a?.type === createHomeVisit.type);
+    const scheduledAt: string = matchingCall![0]?.payload?.scheduledAt ?? '';
+    expect(scheduledAt).toBe('2025-06-27T09:15:00');
+  });
 });

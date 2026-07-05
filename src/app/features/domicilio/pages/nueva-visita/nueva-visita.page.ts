@@ -50,6 +50,19 @@ function toLocalDateTimeString(d: Date): string {
   );
 }
 
+/**
+ * Combina la fecha elegida (día) con la hora de inicio de la ventana (`HH:mm`).
+ * El `scheduledAt` se arma con la hora de la ventana, NO con la hora del instante
+ * en que se abrió el datepicker: agendar hoy con esa hora ya pasada rompía la
+ * validación `@Future` del backend (400 "scheduledAt debe ser una fecha futura").
+ */
+function combineDateAndTime(date: Date, timeHHmm: string): Date {
+  const [h, m] = timeHHmm.split(':').map((n) => Number(n));
+  const d = new Date(date);
+  d.setHours(Number.isFinite(h) ? h : 0, Number.isFinite(m) ? m : 0, 0, 0);
+  return d;
+}
+
 const STEPS: readonly FormStep[] = [
   { key: 'paciente', title: 'Paciente y horario', subtitle: 'Identificación del paciente, fecha y ventana horaria' },
   { key: 'direccion', title: 'Dirección y extractor', subtitle: 'Dirección de la visita y extractor asignado' },
@@ -656,10 +669,12 @@ export class NuevaVisitaPage implements OnInit {
     const branchId = this.branchCtx.branchId() ?? 1;
 
     const scheduledAtDate = f.scheduledAt as Date;
-    // Construcción local-aware: evita el desfase UTC que produce toISOString()
-    // en zonas horarias negativas (ej. GMT-3 puede retroceder la fecha un día).
+    // scheduledAt = día elegido + hora de inicio de la ventana. Antes usaba la hora
+    // del instante en que se abrió el datepicker, y agendar hoy con esa hora ya
+    // pasada rompía la validación @Future del backend. Construcción local-aware:
+    // evita el desfase UTC de toISOString() en GMT-3 (puede retroceder un día).
     const scheduledAt = scheduledAtDate
-      ? toLocalDateTimeString(scheduledAtDate)
+      ? toLocalDateTimeString(combineDateAndTime(scheduledAtDate, f.timeWindowStart))
       : '';
 
     this.store.dispatch(
