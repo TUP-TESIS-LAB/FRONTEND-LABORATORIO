@@ -85,7 +85,7 @@ let store: MockStore;
  * dependencias de componentes hijos (WizardShell, DatePicker, AutoComplete).
  * Los tests de lógica no renderizan el DOM, así que el schema no oculta bugs.
  */
-function setup() {
+function setup(inputs?: { patientId?: string }) {
   actions$ = new ReplaySubject<Action>(1);
   TestBed.configureTestingModule({
     imports: [NuevaVisitaPage],
@@ -106,6 +106,11 @@ function setup() {
   });
   store = TestBed.inject(MockStore);
   const fixture = TestBed.createComponent(NuevaVisitaPage);
+  if (inputs?.patientId !== undefined) {
+    // El input patientId requiere flush del `effect` (Task 4) — detectChanges lo dispara.
+    fixture.componentRef.setInput('patientId', inputs.patientId);
+    fixture.detectChanges();
+  }
   return { fixture, component: fixture.componentInstance };
 }
 
@@ -315,6 +320,17 @@ describe('NuevaVisitaPage', () => {
     component.onPatientSelected(MOCK_PATIENT);
     expect(component.form.controls.addressStreet.value).toBe('');
     expect(component.prefillPatientName()).toBeNull();
+  });
+
+  it('con patientId en la ruta, preselecciona el paciente y precarga su dirección', () => {
+    mockPatientService.getById.mockReturnValue(of({
+      ...MOCK_PATIENT, id: 77,
+      addresses: [{ street: 'Calle 50', city: 'La Plata', isPrimary: true, active: true }],
+    }));
+    const { component } = setup({ patientId: '77' });
+    expect(mockPatientService.getById).toHaveBeenCalledWith(77);
+    expect(component.selectedPatient()?.id).toBe(77);
+    expect(component.form.controls.addressStreet.value).toBe('Calle 50');
   });
 
   it('addressSource: none sin precarga; prefilled tras precargar; edited al modificar', () => {

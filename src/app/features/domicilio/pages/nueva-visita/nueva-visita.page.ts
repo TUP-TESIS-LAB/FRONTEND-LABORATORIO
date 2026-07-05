@@ -4,7 +4,9 @@ import {
   DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -114,6 +116,12 @@ const STEPS: readonly FormStep[] = [
       background: var(--ds-warning-bg, #fffbeb);
       color: var(--ds-warning-strong, #b45309);
     }
+    .nv-link {
+      color: var(--brand-primary);
+      cursor: pointer;
+      font-size: 13px;
+      width: fit-content;
+    }
   `],
   template: `
     <ui-wizard-shell
@@ -142,6 +150,9 @@ const STEPS: readonly FormStep[] = [
               Paciente<span class="nv-req" aria-hidden="true">*</span>
             </label>
             <pat-search-autocomplete (selected)="onPatientSelected($event)" />
+            <a class="nv-link" (click)="goToAltaPaciente()" role="button" tabindex="0">
+              ¿No está registrado? Darlo de alta
+            </a>
             @if (selectedPatient()) {
               <div class="nv-hint">
                 Seleccionado: <strong>{{ selectedPatient()!.lastName }}, {{ selectedPatient()!.firstName }}</strong>
@@ -365,6 +376,10 @@ export class NuevaVisitaPage implements OnInit {
   protected readonly STEPS = STEPS;
   protected readonly router = inject(Router);
 
+  // Query param (bound automáticamente por withComponentInputBinding) usado cuando
+  // volvemos del alta de paciente (Task 4): preselecciona el paciente recién creado.
+  readonly patientId = input<string | undefined>(undefined);
+
   private readonly store = inject(Store);
   private readonly actions$ = inject(Actions);
   private readonly fb = inject(NonNullableFormBuilder);
@@ -475,6 +490,20 @@ export class NuevaVisitaPage implements OnInit {
     }
   });
 
+  constructor() {
+    // Preselección al volver del alta de paciente (Task 4): con patientId en la ruta,
+    // trae el paciente y reusa onPatientSelected (fetch + precarga de dirección, Task 2/3).
+    effect(() => {
+      const id = this.patientId();
+      if (!id) return;
+      const numeric = Number(id);
+      if (Number.isNaN(numeric)) return;
+      this.patientService.getById(numeric)
+        .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+        .subscribe((p) => this.onPatientSelected(p));
+    });
+  }
+
   ngOnInit(): void {
     // Precargamos la lista de empleados para el autocomplete de extractor.
     this.employeeService
@@ -507,6 +536,11 @@ export class NuevaVisitaPage implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/domicilio/agenda']);
+  }
+
+  /** Redirige al alta de paciente (Task 4); vuelve acá con `patientId` para preseleccionarlo. */
+  goToAltaPaciente(): void {
+    this.router.navigate(['/pacientes/nuevo'], { queryParams: { returnTo: '/domicilio/nueva' } });
   }
 
   // ── Patient search ─────────────────────────────────────────────────────────

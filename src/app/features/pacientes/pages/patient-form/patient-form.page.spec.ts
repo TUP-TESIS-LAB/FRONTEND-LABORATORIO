@@ -122,6 +122,24 @@ describe('PatientFormPage', () => {
     expect(navSpy).toHaveBeenCalledWith('/pacientes');
   });
 
+  it('navigates to returnTo with patientId after addPatientSuccess when returnTo is set', async () => {
+    const { addPatientSuccess } = await import('../../store/patient.actions');
+    const { Router } = await import('@angular/router');
+    const fixture = TestBed.createComponent(PatientFormPage);
+    fixture.componentRef.setInput('id', undefined);
+    fixture.componentRef.setInput('returnTo', '/domicilio/nueva');
+    fixture.detectChanges();
+    const router = TestBed.inject(Router);
+    const navSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const patient = {
+      id: 77, dni: '32456789', firstName: 'María', lastName: 'García',
+      birthDate: '1991-03-15', gender: 'FEMALE' as const, sexAtBirth: 'FEMALE' as const,
+      status: 'COMPLETE' as const, source: 'STAFF' as const, verifiedAt: null, contacts: [], addresses: [], coverages: [], active: true, accountStatus: 'NONE' as const,
+    };
+    actions$.next(addPatientSuccess({ patient }));
+    expect(navSpy).toHaveBeenCalledWith(['/domicilio/nueva'], { queryParams: { patientId: 77 } });
+  });
+
   it('navigates back without confirmation when the form is pristine', async () => {
     const fixture = TestBed.createComponent(PatientFormPage);
     fixture.componentRef.setInput('id', undefined);
