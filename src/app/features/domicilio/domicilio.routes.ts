@@ -1,3 +1,4 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 import { provideState } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
@@ -6,6 +7,7 @@ import { homeVisitReducer } from './store/home-visit.reducer';
 import { HomeVisitEffects } from './store/home-visit.effects';
 import { sectionGuard } from '@core/guards/section.guard';
 import { hasRoleGuard } from '@core/guards/has-role.guard';
+import { TokenService } from '@core/auth/token.service';
 
 // Nota de gating:
 // El padre (/domicilio) solo gatéa por módulo activo (ver app.routes.ts).
@@ -21,8 +23,16 @@ export const DOMICILIO_ROUTES: Routes = [
       provideEffects(HomeVisitEffects),
     ],
     children: [
-      { path: '', canMatch: [hasRoleGuard(['EXTRACTOR'])], redirectTo: 'mi-ruta', pathMatch: 'full' },
-      { path: '', redirectTo: 'agenda', pathMatch: 'full' },
+      // Redirect por defecto según rol. Angular 21 NO permite `canMatch` + `redirectTo`
+      // en la misma ruta (NG04014: los redirects ocurren antes que los guards), así que
+      // usamos un redirectTo FUNCIONAL (corre en contexto de inyección): el extractor
+      // arranca en su ruta, el resto (secretaría/admin) en la agenda.
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: () =>
+          inject(TokenService).getRoles().includes('EXTRACTOR') ? 'mi-ruta' : 'agenda',
+      },
       {
         path: 'agenda',
         canMatch: [sectionGuard('DOMICILIO')],
