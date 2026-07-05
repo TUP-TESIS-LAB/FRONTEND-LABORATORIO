@@ -81,7 +81,16 @@ function mapPrepareLabelsError(e: HttpErrorResponse): string {
   if (e.status === 404) return 'La visita solicitada no existe.';
   if (e.status === 409) return 'La visita ya fue procesada y no admite esta acción.';
   if (e.status === 403) return 'No tenés permiso para realizar esta operación.';
-  if (e.status === 422) return 'No se pueden preparar los rótulos: la visita está en un estado inválido.';
+  if (e.status === 422) {
+    // El back rechaza preparar rótulos si la visita no tiene análisis cargados
+    // (mensaje raw en inglés: "Protocol must have at least one analysis order").
+    // No lo mostramos verbatim (regla #4): mapeamos a un mensaje de dominio claro.
+    const raw: string = (e.error as { message?: string } | null)?.message ?? '';
+    if (/analysis|análisis|determinaci/i.test(raw)) {
+      return 'La visita no tiene análisis cargados; no se pueden preparar los rótulos. Cargá al menos un análisis antes de continuar.';
+    }
+    return 'No se pueden preparar los rótulos: la visita está en un estado inválido.';
+  }
   return 'Ocurrió un error al preparar los rótulos. Intentá de nuevo.';
 }
 

@@ -310,6 +310,25 @@ describe('HomeVisitEffects', () => {
     expect(notif.error).toHaveBeenCalledWith('No se pueden preparar los rótulos: la visita está en un estado inválido.');
   });
 
+  it('prepareLabels$ ante 422 por falta de análisis mapea a un mensaje de dominio (sin leak del raw en inglés)', async () => {
+    service.prepareLabels.mockReturnValue(
+      throwError(() => new HttpErrorResponse({
+        status: 422,
+        error: { message: 'Protocol must have at least one analysis order' },
+      })),
+    );
+    actions$ = of(prepareLabels({ id: 1 }));
+    const effects = TestBed.inject(HomeVisitEffects);
+    const action = await firstValueFrom(effects.prepareLabels$);
+    const error = (action as ReturnType<typeof prepareLabelsFailure>).error;
+    expect(error).toBe(
+      'La visita no tiene análisis cargados; no se pueden preparar los rótulos. Cargá al menos un análisis antes de continuar.',
+    );
+    // No debe filtrar el mensaje crudo en inglés (regla #4).
+    expect(error).not.toContain('Protocol');
+    expect(notif.error).toHaveBeenCalledWith(error);
+  });
+
   it('prepareLabels$ ante 404 mapea mensaje de visita no encontrada', async () => {
     service.prepareLabels.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
     actions$ = of(prepareLabels({ id: 99 }));

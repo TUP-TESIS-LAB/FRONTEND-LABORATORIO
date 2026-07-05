@@ -75,6 +75,18 @@ const mockAnalysisService = {
   findByShortCode: () => of(null),
 };
 
+/** Asigna un extractor (obligatorio) reusando el handler del autocomplete. */
+function selectExtractor(component: any): void {
+  component.onExtractorSelect({
+    value: { id: 5, firstName: 'Lucas', lastName: 'Martínez', displayName: 'Martínez, Lucas', active: true },
+  });
+}
+
+/** Agrega un análisis (obligatorio) reusando el handler del picker. */
+function addAnalysis(component: any, id = 1): void {
+  component.onAnalysisAdded({ id, shortCode: 'HEM', name: 'Hemograma' });
+}
+
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
 let actions$: ReplaySubject<Action>;
@@ -153,8 +165,10 @@ describe('NuevaVisitaPage', () => {
     expect(steps.map((s) => s.key)).toEqual(['paciente', 'direccion', 'analisis', 'resumen']);
   });
 
-  it('step2Valid es siempre true (análisis y comentarios opcionales)', () => {
+  it('step2Valid es false sin análisis y true con al menos uno (rótulos requieren determinaciones)', () => {
     const { component } = setup();
+    expect(component.step2Valid()).toBe(false);
+    addAnalysis(component);
     expect(component.step2Valid()).toBe(true);
   });
 
@@ -205,10 +219,18 @@ describe('NuevaVisitaPage', () => {
     expect(component.step1Valid()).toBe(false);
   });
 
-  it('step1Valid es true cuando todos los campos obligatorios están completos', () => {
+  it('step1Valid es false cuando falta el extractor asignado aunque la dirección esté completa', () => {
     const { component } = setup();
     component.onPatientSelected(MOCK_PATIENT);
     component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00', addressStreet: 'Av. 7', addressCity: 'La Plata' });
+    expect(component.step1Valid()).toBe(false);
+  });
+
+  it('step1Valid es true cuando la dirección está completa y hay extractor asignado', () => {
+    const { component } = setup();
+    component.onPatientSelected(MOCK_PATIENT);
+    component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00', addressStreet: 'Av. 7', addressCity: 'La Plata' });
+    selectExtractor(component);
     expect(component.step1Valid()).toBe(true);
   });
 
@@ -251,9 +273,15 @@ describe('NuevaVisitaPage', () => {
     component.next();                       // paso 0 válido -> avanza a 1
     expect(component.currentIndex()).toBe(1);
     component.form.patchValue({ addressStreet: 'Av 7', addressCity: 'La Plata' });
+    component.next();                       // paso 1 sin extractor -> no avanza
+    expect(component.currentIndex()).toBe(1);
+    selectExtractor(component);
     component.next();                       // paso 1 válido -> 2
     expect(component.currentIndex()).toBe(2);
-    component.next();                       // paso 2 siempre válido -> 3 (resumen)
+    component.next();                       // paso 2 sin análisis -> no avanza
+    expect(component.currentIndex()).toBe(2);
+    addAnalysis(component);
+    component.next();                       // paso 2 válido -> 3 (resumen)
     expect(component.currentIndex()).toBe(3);
   });
 
@@ -367,6 +395,8 @@ describe('NuevaVisitaPage', () => {
       addressStreet:   'Av. 7',
       addressCity:     'La Plata',
     });
+    selectExtractor(component);
+    addAnalysis(component);
 
     // onFinish es protected; lo accedemos con cast any para el test.
     (component as any).onFinish();
@@ -403,6 +433,8 @@ describe('NuevaVisitaPage', () => {
       addressStreet:   'Av. 7',
       addressCity:     'La Plata',
     });
+    selectExtractor(component);
+    addAnalysis(component);
 
     (component as any).onFinish();
 

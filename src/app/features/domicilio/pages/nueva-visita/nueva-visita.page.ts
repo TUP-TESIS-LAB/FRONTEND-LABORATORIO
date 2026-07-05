@@ -132,7 +132,7 @@ const STEPS: readonly FormStep[] = [
       [clickable]="true"
       continueLabel="Continuar"
       finishLabel="Agendar visita"
-      [finishDisabled]="!(step0Valid() && step1Valid()) || pending()"
+      [finishDisabled]="!(step0Valid() && step1Valid() && step2Valid()) || pending()"
       [finishLoading]="pending()"
       [continueDisabled]="continueDisabledForStep()"
       (stepSelected)="goTo($event)"
@@ -285,9 +285,11 @@ const STEPS: readonly FormStep[] = [
               [formControl]="form.controls.addressReferences" />
           </div>
 
-          <!-- Extractor asignado (opcional, autocomplete por nombre) -->
+          <!-- Extractor asignado (obligatorio: sin extractor la visita no aparece en ninguna ruta) -->
           <div class="nv-field">
-            <label for="extractorSearch">Extractor asignado (opcional)</label>
+            <label for="extractorSearch">
+              Extractor asignado<span class="nv-req" aria-hidden="true">*</span>
+            </label>
             <p-autocomplete
               inputId="extractorSearch"
               [suggestions]="extractorSuggestions()"
@@ -307,6 +309,11 @@ const STEPS: readonly FormStep[] = [
                 Asignado: <strong>{{ selectedExtractor()!.lastName }}, {{ selectedExtractor()!.firstName }}</strong>
               </div>
             }
+            @if (step1Touched() && !selectedExtractor()) {
+              <div class="text-xs" style="color: var(--color-danger, #ef4444);">
+                Asigná un extractor para esta visita.
+              </div>
+            }
           </div>
         </div>
       }
@@ -314,13 +321,20 @@ const STEPS: readonly FormStep[] = [
       <!-- ─── Paso 2: Análisis + Comentarios ─── -->
       @if (currentIndex() === 2) {
         <div class="nv-section">
-          <!-- Análisis / determinaciones -->
+          <!-- Análisis / determinaciones (obligatorio: sin análisis no se pueden preparar los rótulos) -->
           <div class="nv-field">
-            <label>Análisis / determinaciones (opcional)</label>
+            <label>
+              Análisis / determinaciones<span class="nv-req" aria-hidden="true">*</span>
+            </label>
             <lab-analysis-picker
               (analysisAdded)="onAnalysisAdded($event)"
               (analysisRemoved)="onAnalysisRemoved($event)"
               [isParticular]="true" />
+            @if (step2Touched() && analysesCount() === 0) {
+              <div class="text-xs" style="color: var(--color-danger, #ef4444);">
+                Agregá al menos un análisis; sin determinaciones no se pueden preparar los rótulos.
+              </div>
+            }
           </div>
 
           <!-- Comentarios -->
@@ -422,7 +436,9 @@ export class NuevaVisitaPage implements OnInit {
   readonly selectedExtractor = signal<ExtractorOption | null>(null);
   readonly extractorSuggestions = signal<ExtractorOption[]>([]);
   readonly step0Touched = signal(false);
-  /** Cantidad de análisis seleccionados, para mostrar en el resumen (paso 3). */
+  readonly step1Touched = signal(false);
+  readonly step2Touched = signal(false);
+  /** Cantidad de análisis seleccionados, para el resumen (paso 3) y la validez del paso 2. */
   readonly analysesCount = signal(0);
 
   /** Nombre del paciente cuya dirección se precargó (para el banner del paso 1, Task 3). */
@@ -448,19 +464,20 @@ export class NuevaVisitaPage implements OnInit {
     );
   });
 
-  /** Paso 1 válido: dirección obligatoria (calle + ciudad). */
+  /** Paso 1 válido: dirección obligatoria (calle + ciudad) + extractor asignado. */
   readonly step1Valid = computed(() => {
     this.formValue(); // dependencia reactiva (ver step0Valid)
     const f = this.form.controls;
     return (
       this.step0Valid() &&
       f.addressStreet.value.trim().length > 0 &&
-      f.addressCity.value.trim().length > 0
+      f.addressCity.value.trim().length > 0 &&
+      !!this.selectedExtractor()
     );
   });
 
-  /** Paso 2 (análisis + comentarios): todo opcional. */
-  readonly step2Valid = computed(() => true);
+  /** Paso 2 válido: al menos un análisis (sin determinaciones no hay rótulos). */
+  readonly step2Valid = computed(() => this.analysesCount() > 0);
 
   /**
    * Origen de la dirección actual del form respecto de la precarga (Task 3):
@@ -486,7 +503,8 @@ export class NuevaVisitaPage implements OnInit {
     switch (this.currentIndex()) {
       case 0: return !this.step0Valid();
       case 1: return !this.step1Valid();
-      default: return false; // paso 2 (análisis) siempre permite avanzar al resumen
+      case 2: return !this.step2Valid(); // no se avanza al resumen sin análisis
+      default: return false;
     }
   });
 
@@ -523,9 +541,12 @@ export class NuevaVisitaPage implements OnInit {
   }
 
   next(): void {
-    this.step0Touched.set(true);
+    const idx = this.currentIndex();
+    if (idx === 0) this.step0Touched.set(true);
+    if (idx === 1) { this.step1Touched.set(true); this.form.markAllAsTouched(); }
+    if (idx === 2) this.step2Touched.set(true);
     if (this.continueDisabledForStep()) return;
-    const next = Math.min(this.currentIndex() + 1, STEPS.length - 1);
+    const next = Math.min(idx + 1, STEPS.length - 1);
     this.visited.update((s) => new Set([...s, next]));
     this.currentIndex.set(next);
   }
@@ -622,7 +643,10 @@ export class NuevaVisitaPage implements OnInit {
   }
 
   private submit(): void {
-    if (!this.step1Valid()) {
+    if (!this.step1Valid() || !this.step2Valid()) {
+      this.step0Touched.set(true);
+      this.step1Touched.set(true);
+      this.step2Touched.set(true);
       this.form.markAllAsTouched();
       return;
     }
