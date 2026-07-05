@@ -27,6 +27,7 @@ describe('NotificacionesConfigApiService', () => {
         enabled: false,
         hasTrigger: false,
         recipients: [],
+        section: 'DOMICILIO',
       },
     ];
 

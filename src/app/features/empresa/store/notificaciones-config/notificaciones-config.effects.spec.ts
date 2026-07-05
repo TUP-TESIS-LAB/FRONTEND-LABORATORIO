@@ -41,7 +41,7 @@ describe('NotifConfigEffects', () => {
 
   it('loadConfigs$ dispatches success', async () => {
     const eventConfigs: EventConfig[] = [
-      { eventType: 'HOME_VISIT_ASSIGNED', title: 't', enabled: false, hasTrigger: false, recipients: [] },
+      { eventType: 'HOME_VISIT_ASSIGNED', title: 't', enabled: false, hasTrigger: false, recipients: [], section: 'DOMICILIO' },
     ];
     api.getConfigs.mockReturnValue(of(eventConfigs));
     actions$ = of(loadConfigs());
