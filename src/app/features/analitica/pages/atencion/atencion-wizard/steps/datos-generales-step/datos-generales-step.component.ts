@@ -661,6 +661,14 @@ export class DatosGeneralesStepComponent implements OnInit {
     return this.formInsurerId() == null;
   }
 
+  /** Plan de la cobertura principal activa del paciente resuelto; null = Particular. */
+  private primaryCoveragePlanId(): number | null {
+    const p = this.resolved();
+    const primary = p?.coverages?.find((c) => c.isPrimary && c.active)
+      ?? p?.coverages?.find((c) => c.active) ?? null;
+    return primary?.planId ?? null;
+  }
+
   // ── 3-state badge ──────────────────────────────────────────────────────────
   protected readonly estado = computed<'rojo' | 'naranja' | 'verde'>(() => {
     if (this.notFoundDni()) return 'rojo';
@@ -726,6 +734,8 @@ export class DatosGeneralesStepComponent implements OnInit {
     // Default de la cobertura a usar cuando (re)aparece el paciente: el plan ya asociado a la
     // atención (al retomar) → la cobertura principal activa → Particular (null). Se setea una vez
     // por paciente para no pisar un cambio manual del operador.
+    // GAP B (KAN-188): en recepción express con el toggle urgente ON diferimos la obra social →
+    // default a Particular (sin cobertura); se reconcilia después. Solo en el alta nueva.
     effect(() => {
       const p = this.resolved();
       if (!p) { this.lastDefaultedPatientId = null; return; }
@@ -733,9 +743,7 @@ export class DatosGeneralesStepComponent implements OnInit {
       this.lastDefaultedPatientId = p.id;
       const initial = this.initialInsurancePlanId();
       if (initial != null) { this.selectedInsurancePlanId.set(initial); return; }
-      const primary = p.coverages?.find((c) => c.isPrimary && c.active)
-        ?? p.coverages?.find((c) => c.active) ?? null;
-      this.selectedInsurancePlanId.set(primary?.planId ?? null);
+      this.selectedInsurancePlanId.set(this.isUrgentValue ? null : this.primaryCoveragePlanId());
     });
 
     // Carga los guardians (relaciones familiares) cuando aparece un nuevo paciente resuelto.
@@ -960,7 +968,13 @@ export class DatosGeneralesStepComponent implements OnInit {
   /** Cambio del toggle urgente: persiste inmediatamente vía endpoint dedicado (KAN-140). */
   onUrgentChange(): void {
     const id = this.atencionId();
-    if (id == null) return;
+    // GAP B (KAN-188): recepción express difiere la obra social. Al marcar urgente en un alta
+    // nueva, default a Particular (sin cobertura); al desmarcar, volvemos a la cobertura principal.
+    // El operador siempre puede re-elegir el chip después. Al retomar (id≠null) no tocamos la OS.
+    if (id == null) {
+      this.selectedInsurancePlanId.set(this.isUrgentValue ? null : this.primaryCoveragePlanId());
+      return;
+    }
     this.store.dispatch(setUrgentFlag({ id, isUrgent: this.isUrgentValue }));
   }
 

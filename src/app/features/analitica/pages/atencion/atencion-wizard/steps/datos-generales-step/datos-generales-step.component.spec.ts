@@ -1270,6 +1270,30 @@ describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS activo)', ()
     expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: '[Atencion Wizard] Set Urgent Flag' }));
   });
 
+  it('GAP B (KAN-188): marcar urgente en alta nueva difiere la OS → Particular; desmarcar vuelve a la principal', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: {
+        id: 5, coverages: [{ planId: 20, memberNumber: '6012345', isPrimary: true, active: true }],
+      } as any },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    // Default para no-urgente = cobertura principal (20).
+    expect(cmp.selectedInsurancePlanId()).toBe(20);
+    // Marcar urgente → Particular (null).
+    cmp.isUrgentValue = true;
+    cmp.onUrgentChange();
+    expect(cmp.selectedInsurancePlanId()).toBeNull();
+    // Desmarcar → vuelve a la principal (20).
+    cmp.isUrgentValue = false;
+    cmp.onUrgentChange();
+    expect(cmp.selectedInsurancePlanId()).toBe(20);
+  });
+
   it('GAP A (KAN-188): onConfirm en atención nueva con el toggle urgente ON manda isUrgent:true', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.componentRef.setInput('atencionId', null);
