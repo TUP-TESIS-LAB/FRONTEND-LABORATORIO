@@ -170,6 +170,19 @@ describe('NuevaVisitaPage', () => {
     expect(component.step0Valid()).toBe(true);
   });
 
+  it('step0Valid recomputa al cargar fecha/horas DESPUÉS del paciente (regresión: no se podía pasar del paso 1)', () => {
+    // Reproduce el orden real del usuario: primero el paciente, luego el resto.
+    // El template lee step0Valid() en cada change detection, así que se lo lee acá
+    // en el medio para cachear el `false` — como hacía la app. Sin la dependencia
+    // reactiva al form, el computed quedaba stale en false y "Continuar" nunca se
+    // habilitaba.
+    const { component } = setup();
+    component.onPatientSelected(MOCK_PATIENT);
+    expect(component.step0Valid()).toBe(false); // se cachea con el form aún vacío
+    component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00' });
+    expect(component.step0Valid()).toBe(true);  // debe reaccionar al cambio del form
+  });
+
   it('step1Valid es false cuando falta la calle de la dirección', () => {
     const { component } = setup();
     component.onPatientSelected(MOCK_PATIENT);

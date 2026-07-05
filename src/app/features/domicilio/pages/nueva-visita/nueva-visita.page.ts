@@ -7,7 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Actions, ofType } from '@ngrx/effects';
@@ -296,6 +296,17 @@ export class NuevaVisitaPage implements OnInit {
     comments:           this.fb.control(''),
   });
 
+  /**
+   * Espejo del valor del form como signal. Los `computed` de validez (step0Valid /
+   * step1Valid) leen `form.controls.X.value`, que NO son signals: sin esto el computed
+   * solo se re-evaluaba al cambiar `selectedPatient()` y quedaba stale cuando se
+   * completaban fecha/horas/dirección después del paciente -> "Continuar" no se
+   * habilitaba nunca (no se podía pasar del primer paso).
+   */
+  private readonly formValue = toSignal(this.form.valueChanges, {
+    initialValue: this.form.getRawValue(),
+  });
+
   // ── State ──────────────────────────────────────────────────────────────────
   readonly selectedPatient  = signal<Patient | null>(null);
   readonly selectedExtractor = signal<Employee | null>(null);
@@ -310,6 +321,7 @@ export class NuevaVisitaPage implements OnInit {
   // ── Computed validity ──────────────────────────────────────────────────────
   /** Paso 0 válido: paciente seleccionado + fecha + ventana horaria. */
   readonly step0Valid = computed(() => {
+    this.formValue(); // dependencia reactiva: recomputar cuando cambia cualquier control del form
     const f = this.form.controls;
     return (
       !!this.selectedPatient() &&
@@ -321,6 +333,7 @@ export class NuevaVisitaPage implements OnInit {
 
   /** Paso 1 válido: dirección obligatoria (calle + ciudad). */
   readonly step1Valid = computed(() => {
+    this.formValue(); // dependencia reactiva (ver step0Valid)
     const f = this.form.controls;
     return (
       this.step0Valid() &&
