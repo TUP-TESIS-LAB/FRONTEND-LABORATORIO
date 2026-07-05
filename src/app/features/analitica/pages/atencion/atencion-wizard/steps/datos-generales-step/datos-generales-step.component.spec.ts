@@ -132,7 +132,7 @@ describe('DatosGeneralesStepComponent', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null, isUrgent: false }),
     );
   });
 
@@ -164,7 +164,7 @@ describe('DatosGeneralesStepComponent', () => {
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: 21, indications: null, queueEntryId: null }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: 21, indications: null, queueEntryId: null, isUrgent: false }),
     );
   });
 
@@ -1071,7 +1071,7 @@ describe('DatosGeneralesStepComponent — queueEntryId from route', () => {
     const spy = vi.spyOn(store, 'dispatch');
     fixture.componentInstance.onConfirm();
     expect(spy).toHaveBeenCalledWith(
-      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: 99 }),
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: 99, isUrgent: false }),
     );
   });
 });
@@ -1268,5 +1268,23 @@ describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS activo)', ()
     cmp.isUrgentValue = true;
     cmp.onUrgentChange();
     expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: '[Atencion Wizard] Set Urgent Flag' }));
+  });
+
+  it('GAP A (KAN-188): onConfirm en atención nueva con el toggle urgente ON manda isUrgent:true', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.componentRef.setInput('atencionId', null);
+    fixture.detectChanges();
+    store.setState({
+      [ATENCION_FEATURE_KEY]: { ...initialAtencionState, resolvedPatient: { id: 5 } as any },
+    });
+    store.refreshState();
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    cmp.isUrgentValue = true;
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onConfirm();
+    expect(spy).toHaveBeenCalledWith(
+      startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null, isUrgent: true }),
+    );
   });
 });

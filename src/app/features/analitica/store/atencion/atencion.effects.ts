@@ -289,7 +289,7 @@ export class AtencionEffects {
   startAttentionForPatient$ = createEffect(() =>
     this.actions$.pipe(
       ofType(startAttentionForPatient),
-      exhaustMap(({ patientId, doctorId, insurancePlanId, indications, queueEntryId }) => {
+      exhaustMap(({ patientId, doctorId, insurancePlanId, indications, queueEntryId, isUrgent }) => {
         // branchId real: la sucursal seleccionada del operador (no hardcodeado).
         const branchId = this.branchCtx.branchId();
         if (branchId == null) {
@@ -297,7 +297,7 @@ export class AtencionEffects {
           return EMPTY;
         }
         // TODO(KAN-77): attentionNumber sin colisión (hoy basado en timestamp).
-        return this.api.createBlank({ branchId, patientId, attentionNumber: `A-${Date.now().toString().slice(-6)}`, deskAttentionBox: null, queueEntryId }).pipe(
+        return this.api.createBlank({ branchId, patientId, attentionNumber: `A-${Date.now().toString().slice(-6)}`, deskAttentionBox: null, queueEntryId, isUrgent }).pipe(
           concatMap(created =>
             this.api.assignGeneralData(created.id, { patientId, doctorId, insurancePlanId, indications }).pipe(
               tap(item => this.router.navigate(['/analitica/atencion', item.id])),

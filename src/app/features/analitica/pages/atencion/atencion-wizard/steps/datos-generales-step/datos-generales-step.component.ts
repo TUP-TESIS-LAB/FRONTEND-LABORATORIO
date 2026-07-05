@@ -980,6 +980,7 @@ export class DatosGeneralesStepComponent implements OnInit {
           insurancePlanId,
           indications: this.indications || null,
           queueEntryId,
+          isUrgent:    this.isUrgentValue,
         }),
       );
       return;
