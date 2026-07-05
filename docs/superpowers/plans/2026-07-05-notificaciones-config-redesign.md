@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) o superpowers:executing-plans para implementar task-by-task. Los pasos usan checkboxes (`- [ ]`).
 >
-> **Jira:** _pendiente — crear con jira-workflow antes de implementar (follow-up de KAN-176)._
+> **Jira:** [KAN-185](https://exequielsantoro.atlassian.net/browse/KAN-185) (follow-up de KAN-176).
 
 **Goal:** Rediseñar la tab "Notificaciones" de Empresa a una `ui-table` con filas expandibles + toolbar (buscar/módulo/solo-activos) y un editor de destinatarios rol-primero aditivo con exclusiones por usuario; escala con la cantidad de eventos y de usuarios.
 

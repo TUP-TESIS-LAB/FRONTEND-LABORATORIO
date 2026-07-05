@@ -1,6 +1,6 @@
 # Rediseño visual — Config de Notificaciones (tab Empresa) — Design
 
-> Follow-up de KAN-176 ([[2026-07-03-notificaciones-in-app-design]]). Ticket: _pendiente (crear con jira-workflow)_.
+> Follow-up de KAN-176 ([[2026-07-03-notificaciones-in-app-design]]). Ticket: [KAN-185](https://exequielsantoro.atlassian.net/browse/KAN-185).
 
 ## Problema
 
