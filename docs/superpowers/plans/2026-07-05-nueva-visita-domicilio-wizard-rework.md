@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 > **Spec:** `docs/superpowers/specs/2026-07-05-nueva-visita-domicilio-wizard-rework-design.md`
-> **Jira:** _(pendiente — crear en jira-workflow antes de implementar)_
+> **Jira:** [KAN-186](https://exequielsantoro.atlassian.net/browse/KAN-186)
 
 **Goal:** Reestructurar el alta de visita domiciliaria en un wizard de 4 pasos, con precarga de la dirección registrada del paciente (banner prefilled→edited) y alta de paciente desde el wizard (redirect + volver preseleccionado).
 
