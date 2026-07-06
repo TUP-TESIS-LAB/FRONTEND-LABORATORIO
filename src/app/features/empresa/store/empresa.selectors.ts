@@ -61,6 +61,20 @@ export const selectAllModulos = createSelector(
   (state) => state.modulos,
 );
 
+// Report template
+export const selectReportTemplate = createSelector(
+  selectEmpresaState,
+  (state) => state.reportTemplate,
+);
+export const selectReportTemplatePending = createSelector(
+  selectEmpresaState,
+  (state) => state.pending,
+);
+export const selectAuthorizerCandidates = createSelector(
+  selectEmpresaState,
+  (state) => state.authorizerCandidates,
+);
+
 // SMTP
 export const selectSmtpConfig = createSelector(
   selectEmpresaState, s => s.smtpConfig,

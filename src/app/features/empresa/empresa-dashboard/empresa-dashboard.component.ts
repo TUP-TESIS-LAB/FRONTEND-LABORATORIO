@@ -5,6 +5,7 @@ import { filter, map } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { UsuariosCreateBus } from '../pages/usuarios/usuarios-create.bus';
+import { InformePdfSaveBus } from '../pages/informe-pdf/informe-pdf-save.bus';
 
 @Component({
   selector: 'emp-empresa-dashboard',
@@ -16,6 +17,13 @@ import { UsuariosCreateBus } from '../pages/usuarios/usuarios-create.bus';
       @if (onUsuarios()) {
         <p-button label="Nuevo usuario" severity="primary" (onClick)="bus.requestCreate()" />
       }
+      @if (onInformePdf()) {
+        @if (reportBus.dirty()) {
+          <span class="emp-dashboard__save-hint"><span class="dot"></span>Cambios sin guardar</span>
+        }
+        <p-button label="Guardar cambios" severity="primary"
+                  [disabled]="!reportBus.dirty()" (onClick)="reportBus.save()" />
+      }
     </ui-page-header>
 
     <nav class="emp-dashboard__tabs" role="tablist">
@@ -23,6 +31,7 @@ import { UsuariosCreateBus } from '../pages/usuarios/usuarios-create.bus';
       <a routerLink="white-label" routerLinkActive="is-active" role="tab">White-label</a>
       <a routerLink="fiscal" routerLinkActive="is-active" role="tab">Fiscal</a>
       <a routerLink="email" routerLinkActive="is-active" role="tab">Email</a>
+      <a routerLink="informe-pdf" routerLinkActive="is-active" role="tab">Informe PDF</a>
       <a routerLink="notificaciones" routerLinkActive="is-active" role="tab">Notificaciones</a>
     </nav>
 
@@ -48,10 +57,18 @@ import { UsuariosCreateBus } from '../pages/usuarios/usuarios-create.bus';
       color: var(--brand-primary); border-bottom-color: var(--brand-primary); font-weight: 600;
     }
     .emp-dashboard__body { display: block; }
+    .emp-dashboard__save-hint {
+      display: inline-flex; align-items: center; gap: var(--space-2);
+      font-size: 13px; color: var(--ds-warning); font-weight: 500;
+    }
+    .emp-dashboard__save-hint .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--ds-warning);
+    }
   `],
 })
 export class EmpresaDashboardComponent {
   protected readonly bus = inject(UsuariosCreateBus);
+  protected readonly reportBus = inject(InformePdfSaveBus);
   private readonly router = inject(Router);
 
   // El botón de acción del header depende de la tab activa; se actualiza con cada
@@ -64,4 +81,5 @@ export class EmpresaDashboardComponent {
     { initialValue: this.router.url },
   );
   protected readonly onUsuarios = computed(() => this.url().includes('/usuarios'));
+  protected readonly onInformePdf = computed(() => this.url().includes('/informe-pdf'));
 }

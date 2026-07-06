@@ -31,4 +31,7 @@ export class ResultadosApiService {
   markReady(resultId: number): Observable<AnalyticalResult> {
     return this.http.post<AnalyticalResult>(`${this.base}/${resultId}/mark-ready`, null);
   }
+  markReadyBatch(resultIds: number[]): Observable<AnalyticalResult[]> {
+    return this.http.post<AnalyticalResult[]>(`${this.base}/mark-ready`, { resultIds });
+  }
 }

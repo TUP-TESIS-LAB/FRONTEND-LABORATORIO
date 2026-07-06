@@ -13,6 +13,9 @@ import { PaginatedResponse } from '../models/paginated.model';
 import { WhiteLabel, GuardarWhiteLabelPayload } from '../models/white-label.model';
 import { ModuloTenant, ModuleCode } from '../models/modulo.model';
 import { SmtpConfig, GuardarSmtpConfigPayload, EnviarTestEmailPayload, TestEmailResult } from '../models/smtp-config.model';
+import {
+  ReportTemplate, GuardarReportTemplateTextPayload, AuthorizerCandidate,
+} from '../models/report-template.model';
 
 // =========================
 // Usuarios — search/list
@@ -238,3 +241,66 @@ export const sendTestEmailFailure = createAction(
 );
 
 export const clearTestEmailResult = createAction('[Empresa Email Page] Clear Test Result');
+
+// =========================
+// Report template — load / save text / upload image / delete image
+// =========================
+export const loadReportTemplate = createAction('[Empresa ReportTemplate Page] Load ReportTemplate');
+export const loadReportTemplateSuccess = createAction(
+  '[Empresa API] Load ReportTemplate Success',
+  props<{ reportTemplate: ReportTemplate }>(),
+);
+export const loadReportTemplateFailure = createAction(
+  '[Empresa API] Load ReportTemplate Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+export const saveReportTemplateText = createAction(
+  '[Empresa ReportTemplate Form] Save ReportTemplate Text',
+  props<{ payload: GuardarReportTemplateTextPayload }>(),
+);
+export const saveReportTemplateTextSuccess = createAction(
+  '[Empresa API] Save ReportTemplate Text Success',
+  props<{ reportTemplate: ReportTemplate }>(),
+);
+export const saveReportTemplateTextFailure = createAction(
+  '[Empresa API] Save ReportTemplate Text Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+export const uploadReportImage = createAction(
+  '[Empresa ReportTemplate Page] Upload Report Image',
+  props<{ target: 'header' | 'watermark'; file: File }>(),
+);
+export const uploadReportImageSuccess = createAction(
+  '[Empresa API] Upload Report Image Success',
+);
+export const uploadReportImageFailure = createAction(
+  '[Empresa API] Upload Report Image Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+export const deleteReportImage = createAction(
+  '[Empresa ReportTemplate Page] Delete Report Image',
+  props<{ target: 'header' | 'watermark' }>(),
+);
+export const deleteReportImageSuccess = createAction(
+  '[Empresa API] Delete Report Image Success',
+);
+export const deleteReportImageFailure = createAction(
+  '[Empresa API] Delete Report Image Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+// Candidatos a firmante autorizante (admins del tenant) — read para poblar el select.
+export const loadAuthorizerCandidates = createAction(
+  '[Empresa ReportTemplate Page] Load Authorizer Candidates',
+);
+export const loadAuthorizerCandidatesSuccess = createAction(
+  '[Empresa API] Load Authorizer Candidates Success',
+  props<{ candidates: AuthorizerCandidate[] }>(),
+);
+export const loadAuthorizerCandidatesFailure = createAction(
+  '[Empresa API] Load Authorizer Candidates Failure',
+  props<{ error: HttpErrorResponse }>(),
+);

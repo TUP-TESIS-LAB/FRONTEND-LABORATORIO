@@ -17,6 +17,7 @@ import { AuthAdminApiService } from '../services/auth-admin-api.service';
 import { WhiteLabelApiService } from '../services/white-label-api.service';
 import { ModulosApiService } from '../services/modulos-api.service';
 import { SmtpConfigApiService } from '../services/smtp-config-api.service';
+import { ReportTemplateApiService } from '../services/report-template-api.service';
 
 import {
   loadUsuarios, loadUsuariosSuccess, loadUsuariosFailure,
@@ -35,6 +36,11 @@ import {
   loadSmtpConfig, loadSmtpConfigSuccess, loadSmtpConfigFailure,
   saveSmtpConfig, saveSmtpConfigSuccess, saveSmtpConfigFailure,
   sendTestEmail, sendTestEmailSuccess, sendTestEmailFailure,
+  loadReportTemplate, loadReportTemplateSuccess, loadReportTemplateFailure,
+  saveReportTemplateText, saveReportTemplateTextSuccess, saveReportTemplateTextFailure,
+  uploadReportImage, uploadReportImageSuccess, uploadReportImageFailure,
+  deleteReportImage, deleteReportImageSuccess, deleteReportImageFailure,
+  loadAuthorizerCandidates, loadAuthorizerCandidatesSuccess, loadAuthorizerCandidatesFailure,
 } from './empresa.actions';
 
 @Injectable()
@@ -50,6 +56,7 @@ export class EmpresaEffects {
   private readonly whiteLabelApi = inject(WhiteLabelApiService);
   private readonly modulosApi = inject(ModulosApiService);
   private readonly smtpApi = inject(SmtpConfigApiService);
+  private readonly reportTemplateApi = inject(ReportTemplateApiService);
 
   // ---- Usuarios ----
   loadUsuarios$ = createEffect(() =>
@@ -302,6 +309,81 @@ export class EmpresaEffects {
     )),
   ));
 
+  // ---- Report template ----
+  loadReportTemplate$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadReportTemplate),
+      switchMap(() =>
+        this.reportTemplateApi.get().pipe(
+          map((reportTemplate) => loadReportTemplateSuccess({ reportTemplate })),
+          catchError((error: HttpErrorResponse) => of(loadReportTemplateFailure({ error }))),
+        ),
+      ),
+    ),
+  );
+
+  saveReportTemplateText$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(saveReportTemplateText),
+      exhaustMap(({ payload }) =>
+        this.reportTemplateApi.saveText(payload).pipe(
+          map((reportTemplate) => saveReportTemplateTextSuccess({ reportTemplate })),
+          catchError((error: HttpErrorResponse) => of(saveReportTemplateTextFailure({ error }))),
+        ),
+      ),
+    ),
+  );
+
+  uploadReportImage$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(uploadReportImage),
+      exhaustMap(({ target, file }) => {
+        const upload$ = target === 'header'
+          ? this.reportTemplateApi.uploadHeaderLogo(file)
+          : this.reportTemplateApi.uploadWatermark(file);
+        return upload$.pipe(
+          map(() => uploadReportImageSuccess()),
+          catchError((error: HttpErrorResponse) => of(uploadReportImageFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  deleteReportImage$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(deleteReportImage),
+      exhaustMap(({ target }) => {
+        const delete$ = target === 'header'
+          ? this.reportTemplateApi.deleteHeaderLogo()
+          : this.reportTemplateApi.deleteWatermark();
+        return delete$.pipe(
+          map(() => deleteReportImageSuccess()),
+          catchError((error: HttpErrorResponse) => of(deleteReportImageFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  loadAuthorizerCandidates$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadAuthorizerCandidates),
+      switchMap(() =>
+        this.reportTemplateApi.getAuthorizerCandidates().pipe(
+          map((candidates) => loadAuthorizerCandidatesSuccess({ candidates })),
+          catchError((error: HttpErrorResponse) => of(loadAuthorizerCandidatesFailure({ error }))),
+        ),
+      ),
+    ),
+  );
+
+  /** Tras subir/borrar una imagen, recargar para reflejar hasHeaderLogo/hasWatermark del server. */
+  reloadReportTemplateAfterImage$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(uploadReportImageSuccess, deleteReportImageSuccess),
+      map(() => loadReportTemplate()),
+    ),
+  );
+
   // ---- Global error toast ----
   /** Cualquier *Failure del feature dispara un toast con el mensaje del back. */
   globalFailureToast$ = createEffect(
@@ -315,6 +397,9 @@ export class EmpresaEffects {
           loadWhiteLabelFailure, saveWhiteLabelFailure,
           loadModulosFailure, toggleModuloFailure,
           loadSmtpConfigFailure, saveSmtpConfigFailure, sendTestEmailFailure,
+          loadReportTemplateFailure, saveReportTemplateTextFailure,
+          uploadReportImageFailure, deleteReportImageFailure,
+          loadAuthorizerCandidatesFailure,
         ),
         map(({ error }) => {
           const detail =

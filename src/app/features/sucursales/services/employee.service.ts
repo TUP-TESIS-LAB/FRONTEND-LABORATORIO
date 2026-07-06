@@ -2,7 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  CreateEmployeeRequest, Employee, EmployeeContact, EmployeeContactInput, UpdateEmployeeRequest,
+  CreateEmployeeRequest, Employee, EmployeeContact, EmployeeContactInput,
+  EmployeeSignature, UpdateEmployeeRequest,
 } from '../models/employee.model';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +16,13 @@ export class EmployeeService {
   }
   getById(id: number): Observable<Employee> {
     return this.http.get<Employee>(`${this.baseUrl}/${id}`);
+  }
+  /**
+   * Firma (base64 PNG dataURL) de un empleado. Endpoint admin-only: el base64 NO viaja en
+   * el listado/get general por seguridad. Devuelve `{ signature: null }` si no tiene firma.
+   */
+  getSignature(id: number): Observable<EmployeeSignature> {
+    return this.http.get<EmployeeSignature>(`${this.baseUrl}/${id}/signature`);
   }
   create(req: CreateEmployeeRequest): Observable<Employee> {
     return this.http.post<Employee>(this.baseUrl, req);

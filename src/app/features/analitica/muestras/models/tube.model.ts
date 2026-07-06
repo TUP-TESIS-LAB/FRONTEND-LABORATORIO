@@ -15,6 +15,10 @@ export interface Tube extends Sample {
   rejectionReason?: string | null;
   /** Agregación del estado de carga de las labels del tubo. undefined si el back no lo trae. */
   cargaStatus?: CargaStatus;
+  /** Destino pre-calculado por la mochila (del worklist). Solo IN_TRANSIT.
+   *  destinationBranchId != null → viaje inter-sucursal; null → destino local. */
+  sectionId?: number | null;
+  destinationBranchId?: number | null;
 }
 
 /**
@@ -53,6 +57,8 @@ export function groupTubes(items: LabelWorklistItem[], branchName: string): Tube
       state: BACKEND_TO_SAMPLE_STATE[first.status] ?? 'collected',
       rejectionReason: first.rejectionReason ?? null,
       cargaStatus: aggregateCargaStatus(labels),
+      sectionId: first.sectionId ?? null,
+      destinationBranchId: first.destinationBranchId ?? null,
     };
   });
 }

@@ -101,15 +101,16 @@ export class CargarResultadosPage {
   onMarkCompleted(resultIds: number[]): void {
     this.resumenOpen.set(false);
     if (resultIds.length === 0) { this.goToProcesamiento(); return; }
-    forkJoin(resultIds.map(id =>
-      this.resultados.markReady(id).pipe(catchError(err => { this.error(err); return of(null); })),
-    )).subscribe(() => {
-      this.messages.add({
-        severity: 'success', summary: 'Listo', detail: 'Resultados marcados como completados.', life: 3500,
+    this.resultados.markReadyBatch(resultIds).pipe(catchError(err => { this.error(err); return of(null); }))
+      .subscribe(res => {
+        // null = error ya mostrado por this.error; no navegar como si fuera éxito.
+        if (res === null) return;
+        this.messages.add({
+          severity: 'success', summary: 'Listo', detail: 'Resultados marcados como completados.', life: 3500,
+        });
+        // "Marcar completadas": tras completar el markReady, volver a procesamiento.
+        this.goToProcesamiento();
       });
-      // "Marcar completadas": tras completar el markReady, volver a procesamiento.
-      this.goToProcesamiento();
-    });
   }
 
   // "Mantener": los valores ya se guardaron en onSave; se deja la label como está y se vuelve a procesamiento.

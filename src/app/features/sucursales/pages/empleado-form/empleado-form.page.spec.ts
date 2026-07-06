@@ -39,9 +39,56 @@ describe('EmpleadoFormPage (smoke)', () => {
     expect((fixture.nativeElement as HTMLElement).innerHTML).toContain('Nuevo empleado');
   });
 
-  it('the wizard has exactly 3 steps', () => {
+  // NOTA: este spec NO llama fixture.detectChanges() porque el renderer JIT del
+  // entorno de test (Angular 21 + vitest/jsdom) falla al resolver ui-wizard-shell
+  // (NG0303) — es un problema de infra preexistente en esta rama, no de la lógica.
+  // Por eso los tests ejercen la lógica sobre la instancia. La estructura de pasos
+  // condicional se cubre además en employee-form-steps.spec.ts (función pura).
+
+  it('the wizard has 3 steps for a non-biochemist', () => {
     const fixture = TestBed.createComponent(EmpleadoFormPage);
-    expect(fixture.componentInstance.steps.map((s) => s.key)).toEqual(['datos', 'usuario', 'resumen']);
+    const cmp = fixture.componentInstance;
+    fillDatos(cmp, false);
+    expect(cmp.steps().map((s) => s.key)).toEqual(['datos', 'usuario', 'resumen']);
+  });
+
+  it('inserts the "firma" step between usuario and resumen when isBiochemist', () => {
+    const fixture = TestBed.createComponent(EmpleadoFormPage);
+    const cmp = fixture.componentInstance;
+    fillDatos(cmp, true);
+    expect(cmp.steps().map((s) => s.key)).toEqual(['datos', 'usuario', 'firma', 'resumen']);
+  });
+
+  it('sends the signature for a biochemist on create', () => {
+    const fixture = TestBed.createComponent(EmpleadoFormPage);
+    const cmp = fixture.componentInstance;
+    fillDatos(cmp, true);
+    cmp.firmaGroup.get('signature')!.setValue('data:image/png;base64,SIGN');
+    cmp.currentStep.set(cmp.steps().length - 1); // resumen
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onSubmit();
+    expect(spy).toHaveBeenCalledWith(addEmployee({
+      req: {
+        firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: true, registration: null,
+        address: null, signature: 'data:image/png;base64,SIGN',
+      },
+      contacts: [],
+    }));
+  });
+
+  it('does NOT send the signature when the employee is not a biochemist', () => {
+    const fixture = TestBed.createComponent(EmpleadoFormPage);
+    const cmp = fixture.componentInstance;
+    fillDatos(cmp, false);
+    // Aunque hubiera quedado un valor en el grupo firma, no se manda si no es bioquímico.
+    cmp.firmaGroup.get('signature')!.setValue('data:image/png;base64,STALE');
+    cmp.currentStep.set(cmp.steps().length - 1);
+    const spy = vi.spyOn(store, 'dispatch');
+    cmp.onSubmit();
+    expect(spy).toHaveBeenCalledWith(addEmployee({
+      req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null, address: null, signature: null },
+      contacts: [],
+    }));
   });
 
   it('dispatches addEmployee (no user, no address) with no contacts when contact fields are empty', () => {
@@ -53,7 +100,7 @@ describe('EmpleadoFormPage (smoke)', () => {
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(addEmployee({
-      req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null, address: null },
+      req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null, address: null, signature: null },
       contacts: [],
     }));
   });
@@ -67,7 +114,7 @@ describe('EmpleadoFormPage (smoke)', () => {
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(addEmployee({
-      req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null, address: null },
+      req: { firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null, address: null, signature: null },
       contacts: [{ contactType: 'EMAIL', value: 'eva@x.com' }, { contactType: 'MOBILE', value: '2211234567' }],
     }));
   });
@@ -85,6 +132,7 @@ describe('EmpleadoFormPage (smoke)', () => {
       req: {
         firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null,
         address: { street: 'Av. Mitre', streetNumber: '500', neighborhood: 'Centro', city: 'La Plata', province: 'Buenos Aires' },
+        signature: null,
       },
       contacts: [],
     }));
@@ -103,7 +151,7 @@ describe('EmpleadoFormPage (smoke)', () => {
     expect(spy).toHaveBeenCalledWith(addEmployee({
       req: {
         firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: false, registration: null,
-        address: null, userId: 77,
+        address: null, userId: 77, signature: null,
       },
       contacts: [],
     }));
@@ -114,12 +162,13 @@ describe('EmpleadoFormPage (smoke)', () => {
     fixture.detectChanges();
     const cmp = fixture.componentInstance;
     fillDatos(cmp, true);
+    fixture.detectChanges();
     cmp.usuarioGroup.patchValue({
       mode: 'new',
       newUser: { firstName: 'Eva', lastName: 'Ruiz', email: 'eva@x.com', username: 'eruiz', document: '30111222', roleId: 3, branchId: 8 },
       sections: ['RECEPCION'],
     });
-    cmp.currentStep.set(RESUMEN_STEP);
+    cmp.currentStep.set(cmp.steps().length - 1); // resumen (con firma para bioquímico)
     const spy = vi.spyOn(store, 'dispatch');
     cmp.onSubmit();
     expect(spy).toHaveBeenCalledWith(createEmployeeWithUser({
@@ -129,6 +178,7 @@ describe('EmpleadoFormPage (smoke)', () => {
       },
       req: {
         firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: true, registration: null, address: null,
+        signature: null,
       },
       contacts: [],
     }));

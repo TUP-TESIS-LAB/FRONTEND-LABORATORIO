@@ -19,6 +19,11 @@ import {
   saveSmtpConfig, saveSmtpConfigSuccess, saveSmtpConfigFailure,
   sendTestEmail, sendTestEmailSuccess, sendTestEmailFailure,
   clearTestEmailResult,
+  loadReportTemplate, loadReportTemplateSuccess, loadReportTemplateFailure,
+  saveReportTemplateText, saveReportTemplateTextSuccess, saveReportTemplateTextFailure,
+  uploadReportImage, uploadReportImageSuccess, uploadReportImageFailure,
+  deleteReportImage, deleteReportImageSuccess, deleteReportImageFailure,
+  loadAuthorizerCandidates, loadAuthorizerCandidatesSuccess, loadAuthorizerCandidatesFailure,
 } from './empresa.actions';
 
 const setPending = (state: EmpresaState): EmpresaState => ({
@@ -48,6 +53,11 @@ export const empresaReducer = createReducer(
   on(saveWhiteLabel, setPending),
   on(loadModulos, setPending),
   on(toggleModulo, setPending),
+  on(loadReportTemplate, setPending),
+  on(saveReportTemplateText, setPending),
+  on(uploadReportImage, setPending),
+  on(deleteReportImage, setPending),
+  on(loadAuthorizerCandidates, setPending),
 
   // ---- usuarios success ----
   on(loadUsuariosSuccess, (state, { result }): EmpresaState => ({
@@ -133,6 +143,25 @@ export const empresaReducer = createReducer(
     error: null,
   })),
 
+  // ---- report template success ----
+  on(loadReportTemplateSuccess, (state, { reportTemplate }): EmpresaState => ({
+    ...state, reportTemplate, pending: false, error: null,
+  })),
+  on(saveReportTemplateTextSuccess, (state, { reportTemplate }): EmpresaState => ({
+    ...state, reportTemplate, pending: false, error: null,
+  })),
+  // upload/delete: el effect re-dispara loadReportTemplate para traer hasHeaderLogo/
+  // hasWatermark del server; acá solo cerramos el pending de la mutación.
+  on(uploadReportImageSuccess, (state): EmpresaState => ({
+    ...state, pending: false, error: null,
+  })),
+  on(deleteReportImageSuccess, (state): EmpresaState => ({
+    ...state, pending: false, error: null,
+  })),
+  on(loadAuthorizerCandidatesSuccess, (state, { candidates }): EmpresaState => ({
+    ...state, authorizerCandidates: candidates, pending: false, error: null,
+  })),
+
   // ---- failures ----
   on(loadUsuariosFailure, (s, { error }) => setFailure(s, error)),
   on(loadUsuarioFailure, (s, { error }) => setFailure(s, error)),
@@ -146,6 +175,11 @@ export const empresaReducer = createReducer(
   on(saveWhiteLabelFailure, (s, { error }) => setFailure(s, error)),
   on(loadModulosFailure, (s, { error }) => setFailure(s, error)),
   on(toggleModuloFailure, (s, { error }) => setFailure(s, error)),
+  on(loadReportTemplateFailure, (s, { error }) => setFailure(s, error)),
+  on(saveReportTemplateTextFailure, (s, { error }) => setFailure(s, error)),
+  on(uploadReportImageFailure, (s, { error }) => setFailure(s, error)),
+  on(deleteReportImageFailure, (s, { error }) => setFailure(s, error)),
+  on(loadAuthorizerCandidatesFailure, (s, { error }) => setFailure(s, error)),
 
   // ---- SMTP pending markers ----
   on(loadSmtpConfig, (state) => ({ ...state, smtpPending: true, error: null })),

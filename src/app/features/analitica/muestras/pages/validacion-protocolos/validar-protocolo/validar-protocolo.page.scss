@@ -70,6 +70,11 @@
   &:disabled { background: #cdd0dc; box-shadow: none; cursor: not-allowed; }
 }
 .btn-total { background: #16a34a; box-shadow: 0 5px 13px #16a34a36; &:hover:not(:disabled) { background: #138a3e; } }
+.btn-pdf {
+  background: #fff; color: var(--brand, #2563eb); border: 1px solid var(--brand, #2563eb);
+  &:hover:not(:disabled) { background: var(--brand-50, #eff6ff); }
+  &:disabled { background: #f1f2f6; color: #9aa0ad; border-color: #d6d9e2; }
+}
 
 .vt-loading { font-size: 13.5px; color: var(--muted); margin: 0 0 14px; }
 

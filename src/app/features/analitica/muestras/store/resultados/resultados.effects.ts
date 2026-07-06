@@ -80,7 +80,7 @@ export class ResultadosEffects {
       ofType(markReady),
       switchMap(({ resultIds }) => {
         if (!resultIds.length) return of(markReadySuccess());
-        return forkJoin(resultIds.map(id => this.api.markReady(id))).pipe(
+        return this.api.markReadyBatch(resultIds).pipe(
           map(() => markReadySuccess()),
           catchError((error: HttpErrorResponse) => of(markReadyFailure({ error }))),
         );

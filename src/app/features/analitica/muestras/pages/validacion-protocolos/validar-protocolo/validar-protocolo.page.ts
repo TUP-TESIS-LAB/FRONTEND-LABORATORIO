@@ -1,22 +1,18 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { calcularEdad } from '@shared/utils/calcular-edad';
-import { humanizeBackendError } from '@shared/utils/error-messages';
 import { badgeFirma, badgeResultado, esPendiente } from '../../../models/postanalitica.model';
 import type { DetalleResultado, DetalleDeterminacion, ValidationOutcome } from '../../../models/postanalitica.model';
-import { loadDetalle, validarTodo, firmarEstudio } from '../../../store/validacion-detalle/validacion-detalle.actions';
-import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetalleError } from '../../../store/validacion-detalle/validacion-detalle.selectors';
+import { loadDetalle, validarTodo, firmarEstudio, verPdf } from '../../../store/validacion-detalle/validacion-detalle.actions';
+import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetallePdfLoading } from '../../../store/validacion-detalle/validacion-detalle.selectors';
 import { FirmarEstudioModalComponent } from '../../../components/firmar-estudio-modal/firmar-estudio-modal.component';
 
 @Component({
   selector: 'app-validar-protocolo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ToastModule, FirmarEstudioModalComponent],
-  providers: [MessageService],
+  imports: [RouterLink, FirmarEstudioModalComponent],
   templateUrl: './validar-protocolo.page.html',
   styleUrl: './validar-protocolo.page.scss',
 })
@@ -24,7 +20,6 @@ export class ValidarProtocoloPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(Store);
-  private readonly messages = inject(MessageService);
 
   readonly badgeFirma = badgeFirma;
   readonly badgeResultado = badgeResultado;
@@ -33,7 +28,7 @@ export class ValidarProtocoloPage implements OnInit {
   readonly detalle = this.store.selectSignal(selectDetalle);
   readonly loading = this.store.selectSignal(selectDetalleLoading);
   readonly saving = this.store.selectSignal(selectDetalleSaving);
-  private readonly error = this.store.selectSignal(selectDetalleError);
+  readonly pdfLoading = this.store.selectSignal(selectDetallePdfLoading);
 
   readonly protocolId = Number(this.route.snapshot.paramMap.get('protocolId'));
   /**
@@ -51,6 +46,15 @@ export class ValidarProtocoloPage implements OnInit {
   readonly canOpenFirmaModal = computed(() =>
     !this.isClosed() && this.results().some(r => r.status === 'VALIDATED'));
   readonly firmaBadge = computed(() => badgeFirma(this.studyStatus()));
+  /**
+   * El estudio tiene al menos un informe firmado disponible (parcial o cerrado).
+   * El back genera-si-falta el PDF, así que basta con que esté firmado para que
+   * "Ver PDF" devuelva el documento.
+   */
+  readonly estaFirmado = computed(() => {
+    const st = this.studyStatus();
+    return st === 'PARTIALLY_SIGNED' || st === 'CLOSED';
+  });
 
   // Datos del paciente: prioriza el header del backend (GAP-4); fallback a router.state.
   readonly patientName = computed(() => this.detalle()?.study.patientName ?? this.detalle()?.patientName ?? null);
@@ -59,17 +63,7 @@ export class ValidarProtocoloPage implements OnInit {
     calcularEdad(this.detalle()?.study.patientBirthDate ?? this.detalle()?.patientBirthDate ?? null));
 
   constructor() {
-    let lastSig: string | null = null;
-    effect(() => {
-      const err = this.error();
-      const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
-      if (sig && sig !== lastSig) {
-        lastSig = sig;
-        this.messages.add({ severity: 'error', summary: 'Error',
-          detail: humanizeBackendError(err, { fallback: 'No pudimos completar la operación. Probá de nuevo.' }), life: 5000 });
-      }
-    });
-
+    // El toast de error de carga/validación/firma se emite desde el effect (NotificationService).
     // Cuando llegan los resultados, abrir todas las filas por defecto (una sola vez por carga).
     let lastSeenIds = '';
     effect(() => {
@@ -184,5 +178,11 @@ export class ValidarProtocoloPage implements OnInit {
   confirmarFirma(): void {
     this.firmarModalOpen.set(false);
     this.store.dispatch(firmarEstudio({ protocolId: this.protocolId }));
+  }
+
+  /** Descarga el informe firmado del estudio y lo abre (vía effect verPdf$). */
+  verPdf(): void {
+    if (!this.estaFirmado() || this.pdfLoading()) return;
+    this.store.dispatch(verPdf({ protocolId: this.protocolId }));
   }
 }

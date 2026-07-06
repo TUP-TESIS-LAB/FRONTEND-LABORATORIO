@@ -31,12 +31,16 @@ export interface SectionOption {
 export const SIN_DESTINO_GROUP_ID = 'sin-destino';
 
 export interface RecommendedGroup {
-  /** `ws-{sectionId}` para grupos del routing; `sin-destino` para los no resolubles. */
+  /** `ws-{sectionId}` para grupos con destino pre-calculado; `sin-destino` para los sin sección. */
   id: string;
   branch: string;
   area: string;
   section: string;
   sampleIds: string[];
+  /** Sucursal destino real cuando el grupo es inter-sucursal (back nuevo). null/undefined = destino local. */
+  destinationBranchId?: number | null;
+  /** true si el destino del grupo es otra sucursal del tenant → al enviar se deriva (no se despacha). */
+  isOtherBranch?: boolean;
 }
 
 export interface TemporalLote {
