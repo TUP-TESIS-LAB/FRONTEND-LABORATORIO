@@ -46,8 +46,10 @@ Layout de la fila expandida (reemplaza la disposición actual de 2 zonas):
 
 **Bloque inferior (full width) — Asignados + Resumen** (unificados en una card, sin el header "✓ Usuarios asignados" que se veía mal):
 - **Resumen** (header del bloque, franja): contador grande ("N reciben") + desglose "rol X (M) − K excepciones + P puntuales" + hint "los nuevos con el rol reciben solos".
-- **Usuarios asignados** (abajo, con `max-height` + **scroll interno**): el set **resuelto** de quiénes reciben efectivamente ahora = `(⋃ usuarios de los roles agregados) − exclusiones + usuarios puntuales`, computado en cliente con los `roleCodes` reales. Muestra **TODOS** (nada de "+N/Otros" truncado — por eso el scroll). Cada fila: avatar/iniciales + nombre + etiqueta de origen ("rol"/"puntual") + acción **"× quitar"**.
-- **Quitar desde asignados** saca la notif a ese usuario: si entra por rol → agrega `EXCLUDED_USER` (excepción); si es puntual (`USER`) → lo elimina. Es el mismo efecto que destildarlo en la card B (reusa `applyUserToggle(id, false)`) — la card de asignados es el segundo lugar para gestionar exclusiones, pensado para "sacarle la notif a alguien" sin tener que buscarlo/filtrarlo primero.
+- **Usuarios asignados** (abajo): el set **resuelto** de quiénes reciben efectivamente ahora = `(⋃ usuarios de los roles agregados) − exclusiones + usuarios puntuales`, computado en cliente con los `roleCodes` reales. Se muestran como **chips** (nombre + etiqueta "· puntual" cuando aplica + **× para quitar**).
+- **Colapso con "Otros":** por defecto se ve **una fila** de chips; si hay más, un chip **"+N otros ▾"** que al tocarlo **despliega el resto en los renglones que hagan falta** (mismo estilo de chips, sin scroll — se expande). "menos ▲" vuelve a colapsar. Estado de colapso = signal local de UI.
+- **Reactivo:** la lista es un **computed** de `recipients` + `eligible` — si agregás un usuario desde la card B (o sumás/quitás un rol), el chip aparece/desaparece al instante; no es un snapshot.
+- **Quitar desde asignados** (× del chip) saca la notif a ese usuario: si entra por rol → agrega `EXCLUDED_USER` (excepción); si es puntual (`USER`) → lo elimina. Mismo efecto que destildarlo en la card B (reusa `applyUserToggle(id, false)`) → destildarlo ahí también actualiza este bloque. La card de asignados es el segundo lugar para gestionar exclusiones, pensado para "sacarle la notif a alguien" sin buscarlo/filtrarlo primero.
 
 ### Lógica (actualiza `recipients-editor.logic.ts` de KAN-185)
 
