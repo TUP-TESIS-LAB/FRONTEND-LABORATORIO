@@ -90,7 +90,7 @@ describe('NotifConfigEffects', () => {
   });
 
   it('loadEligible$ dispatches success', async () => {
-    const eligible: EligibleRecipients = { users: [], roles: [] };
+    const eligible: EligibleRecipients = { users: [], roles: [], branches: [] };
     api.getEligible.mockReturnValue(of(eligible));
     actions$ = of(loadEligible({ eventType: 'URGENT_SLA_AT_RISK' }));
     const effects = TestBed.inject(NotifConfigEffects);

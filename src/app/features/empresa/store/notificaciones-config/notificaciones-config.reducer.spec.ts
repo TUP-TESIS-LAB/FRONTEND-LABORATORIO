@@ -88,8 +88,8 @@ describe('notifConfigReducer', () => {
   });
 
   it('loadEligibleSuccess cachea por eventType sin pisar otros eventos', () => {
-    const eligibleA: EligibleRecipients = { users: [{ id: 1, nombre: 'Ana', tieneAcceso: true }], roles: [] };
-    const eligibleB: EligibleRecipients = { users: [], roles: [{ code: 'ADMINISTRADOR', label: 'Administrador' }] };
+    const eligibleA: EligibleRecipients = { users: [{ id: 1, nombre: 'Ana', tieneAcceso: true, roleCodes: [], branchId: null }], roles: [], branches: [] };
+    const eligibleB: EligibleRecipients = { users: [], roles: [{ code: 'ADMINISTRADOR', label: 'Administrador' }], branches: [] };
 
     let state: NotifConfigState = notifConfigReducer(
       initialNotifConfigState,
