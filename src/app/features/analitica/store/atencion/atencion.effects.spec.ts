@@ -241,7 +241,7 @@ describe('AtencionEffects', () => {
     const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
     (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null, isUrgent: false }));
     const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(api.createBlank).toHaveBeenCalled();
     expect(api.assignGeneralData).toHaveBeenCalledWith(10, { patientId: 5, doctorId: null, insurancePlanId: null, indications: null });
@@ -254,10 +254,20 @@ describe('AtencionEffects', () => {
     const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
     (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: 42 }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: 42, isUrgent: false }));
     const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(api.createBlank).toHaveBeenCalledWith(expect.objectContaining({ queueEntryId: 42 }));
     expect(out).toEqual(A.atencionMutationSuccess({ item: assigned }));
+  });
+
+  it('startAttentionForPatient$ → con isUrgent lo pasa al createBlank (GAP A / KAN-188)', async () => {
+    const created = { id: 10 } as any;
+    const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
+    (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
+    (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null, isUrgent: true }));
+    await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
+    expect(api.createBlank).toHaveBeenCalledWith(expect.objectContaining({ isUrgent: true }));
   });
 
   it('startAttentionForPatient$ → propaga doctorId e insurancePlanId al assignGeneralData', async () => {
@@ -265,7 +275,7 @@ describe('AtencionEffects', () => {
     const assigned = { id: 10, attentionState: 'REGISTERING_ANALYSES' } as any;
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(of(created));
     (api.assignGeneralData as ReturnType<typeof vi.fn>).mockReturnValue(of(assigned));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: 77, insurancePlanId: 99, indications: 'Ayuno', queueEntryId: null }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: 77, insurancePlanId: 99, indications: 'Ayuno', queueEntryId: null, isUrgent: false }));
     await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(api.assignGeneralData).toHaveBeenCalledWith(10, { patientId: 5, doctorId: 77, insurancePlanId: 99, indications: 'Ayuno' });
   });
@@ -273,7 +283,7 @@ describe('AtencionEffects', () => {
   it('startAttentionForPatient$ → createBlank falla → mutationFailure, sin navegar', async () => {
     const error = new HttpErrorResponse({ status: 500 });
     (api.createBlank as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
-    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null }));
+    actions$.next(A.startAttentionForPatient({ patientId: 5, doctorId: null, insurancePlanId: null, indications: null, queueEntryId: null, isUrgent: false }));
     const out = await firstValueFrom(effects.startAttentionForPatient$.pipe(take(1)));
     expect(out).toEqual(A.atencionMutationFailure({ error }));
   });

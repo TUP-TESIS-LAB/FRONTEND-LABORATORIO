@@ -96,6 +96,8 @@ export interface CreateBlankAttentionRequest {
   attentionNumber: string;
   deskAttentionBox?: number | null;
   queueEntryId?: number | null;
+  /** Recepción express: la atención nace urgente (gateado por URGENCIAS en el back). */
+  isUrgent?: boolean | null;
 }
 
 export interface CreatePreFilledAttentionRequest {
