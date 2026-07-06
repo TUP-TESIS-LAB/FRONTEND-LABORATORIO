@@ -166,6 +166,9 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
       .ui-topbar { padding: 0 var(--space-3); }
       .ui-topbar__hamburger { width: var(--ds-touch-target); height: var(--ds-touch-target); }
       .ui-topbar__search    { display: none; }
+      /* En mobile no entra el chip de sucursal junto a los iconos: se oculta
+         (el texto largo envolvía y aplastaba campana/chat/avatar). */
+      ui-branch-badge { display: none; }
       .ui-topbar__icon-btn,
       .ui-topbar__avatar {
         width: var(--ds-touch-target);
