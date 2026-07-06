@@ -225,16 +225,25 @@ describe('MuestrasEffects', () => {
 
   it('loadProcesamiento pide PROCESSING de la sucursal y mapea success', async () => {
     api.getWorklist.mockReturnValue(of([procItem]));
-    actions$ = of(loadProcesamiento());
+    actions$ = of(loadProcesamiento({ status: 'PROCESSING' }));
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadProcesamiento$);
     expect(api.getWorklist).toHaveBeenCalledWith('PROCESSING', 1001);
     expect(action).toEqual(loadProcesamientoSuccess({ items: [procItem] }));
   });
 
+  it('loadProcesamiento con status DERIVED pide DERIVED de la sucursal', async () => {
+    api.getWorklist.mockReturnValue(of([procItem]));
+    actions$ = of(loadProcesamiento({ status: 'DERIVED' }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.loadProcesamiento$);
+    expect(api.getWorklist).toHaveBeenCalledWith('DERIVED', 1001);
+    expect(action).toEqual(loadProcesamientoSuccess({ items: [procItem] }));
+  });
+
   it('loadProcesamiento 304 mapea a notModified', async () => {
     api.getWorklist.mockReturnValue(of(NOT_MODIFIED));
-    actions$ = of(loadProcesamiento());
+    actions$ = of(loadProcesamiento({ status: 'PROCESSING' }));
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadProcesamiento$);
     expect(action).toEqual(loadProcesamientoNotModified());
@@ -243,7 +252,7 @@ describe('MuestrasEffects', () => {
   it('loadProcesamiento failure mapea error', async () => {
     const error = new HttpErrorResponse({ status: 500 });
     api.getWorklist.mockReturnValue(throwError(() => error));
-    actions$ = of(loadProcesamiento());
+    actions$ = of(loadProcesamiento({ status: 'PROCESSING' }));
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadProcesamiento$);
     expect(action).toEqual(loadProcesamientoFailure({ error }));
