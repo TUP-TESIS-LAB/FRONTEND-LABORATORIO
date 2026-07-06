@@ -11,7 +11,8 @@ import { humanizeBackendError, type BackendErrorShape } from '@shared/utils/erro
 import { CURRENT_BRANCH } from '../../data/catalogs';
 import { groupTubes, type Tube } from '../../models/tube.model';
 import { initMuestras, loadProcesamiento } from '../../store/muestras.actions';
-import { selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError, selectMuestrasBranchId } from '../../store/muestras.selectors';
+import { MuestrasApiService } from '../../services/muestras-api.service';
 import { loadTemplates } from '../../store/worksheet-templates/worksheet-templates.actions';
 import { selectTemplates, selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
@@ -50,8 +51,10 @@ export class ProcesamientoPage implements OnInit {
   private readonly messages = inject(MessageService);
   private readonly progresoSvc = inject(ProcesamientoProgresoService);
   private readonly resultados = inject(ResultadosApiService);
+  private readonly muestrasApi = inject(MuestrasApiService);
 
   private readonly items = this.store.selectSignal(selectProcesamientoItems);
+  private readonly branchId = this.store.selectSignal(selectMuestrasBranchId);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
   private readonly templatesError = this.store.selectSignal(selectTemplatesError);
@@ -134,7 +137,13 @@ export class ProcesamientoPage implements OnInit {
   setFiltro(id: 'todos' | 'derivados'): void {
     if (this.filtro() === id) return;
     this.filtro.set(id);
-    this.store.dispatch(loadProcesamiento({ status: this.currentStatus() }));
+    const status = this.currentStatus();
+    // PROCESSING y DERIVED comparten el slice 'procesamiento' del store pero cachean ETags por
+    // separado. Sin invalidar, volver a un tab ya visitado daría 304 y el slice quedaría con los
+    // datos del otro tab. Invalidamos el ETag del status destino → la recarga trae 200 con datos.
+    const branchId = this.branchId();
+    if (branchId != null) this.muestrasApi.invalidateWorklistEtag(status, branchId);
+    this.store.dispatch(loadProcesamiento({ status }));
   }
 
   private currentStatus(): 'PROCESSING' | 'DERIVED' {
