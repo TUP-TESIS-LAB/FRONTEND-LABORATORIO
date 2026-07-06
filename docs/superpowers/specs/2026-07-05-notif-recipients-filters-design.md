@@ -1,6 +1,6 @@
 # Editor de destinatarios — filtros por rol/sucursal + búsqueda + asignados/resumen — Design
 
-> Follow-up de [[2026-07-05-notificaciones-config-redesign-design]] (KAN-185, mergeado). Ticket: _pendiente (jira-workflow)_.
+> Follow-up de [[2026-07-05-notificaciones-config-redesign-design]] (KAN-185, mergeado). Ticket: [KAN-198](https://exequielsantoro.atlassian.net/browse/KAN-198).
 
 ## Problema
 

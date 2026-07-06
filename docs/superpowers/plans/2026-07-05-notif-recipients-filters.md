@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recomendado) o superpowers:executing-plans. Pasos con checkbox (`- [ ]`).
 >
-> **Jira:** _pendiente — crear con jira-workflow antes de implementar (follow-up de KAN-185)._
+> **Jira:** [KAN-198](https://exequielsantoro.atlassian.net/browse/KAN-198) (follow-up de KAN-185).
 
 **Goal:** El editor de destinatarios (fila expandida de la config de notificaciones) filtra usuarios por rol/sucursal, tiene búsqueda + scroll, y un bloque "asignados + resumen" reactivo con chips que se despliegan ("Otros") y permiten quitar; manteniendo el modelo aditivo con excepciones de KAN-185.
 
