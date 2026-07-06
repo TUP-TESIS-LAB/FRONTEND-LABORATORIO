@@ -239,7 +239,7 @@ export class WorklistPage {
         key: 'muestras-procesamiento',
         intervalMs: 5000,
         poll: () => {
-          this.store.dispatch(loadProcesamiento());
+          this.store.dispatch(loadProcesamiento({ status: 'PROCESSING' }));
           return of(null);
         },
       });

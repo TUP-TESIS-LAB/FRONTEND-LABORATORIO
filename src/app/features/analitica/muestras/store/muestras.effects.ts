@@ -145,9 +145,9 @@ export class MuestrasEffects {
     this.actions$.pipe(
       ofType(loadProcesamiento),
       withLatestFrom(this.store.select(selectMuestrasBranchId)),
-      switchMap(([, branchId]) => {
+      switchMap(([{ status }, branchId]) => {
         if (branchId == null) return EMPTY;
-        return this.api.getWorklist('PROCESSING', branchId).pipe(
+        return this.api.getWorklist(status, branchId).pipe(
           map(res => isNotModified(res) ? loadProcesamientoNotModified() : loadProcesamientoSuccess({ items: res })),
           catchError((error: HttpErrorResponse) => of(loadProcesamientoFailure({ error }))),
         );

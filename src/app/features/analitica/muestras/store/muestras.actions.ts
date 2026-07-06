@@ -80,7 +80,10 @@ export const loadDescartadasFailure = createAction(
 );
 
 // Worklist Procesamiento (PROCESSING) — polleada, solo lectura (Arco 1)
-export const loadProcesamiento = createAction('[Muestras Page] Load Procesamiento');
+export const loadProcesamiento = createAction(
+  '[Muestras Page] Load Procesamiento',
+  props<{ status: 'PROCESSING' | 'DERIVED' }>(),
+);
 export const loadProcesamientoSuccess = createAction(
   '[Muestras API] Load Procesamiento Success',
   props<{ items: LabelWorklistItem[] }>()
