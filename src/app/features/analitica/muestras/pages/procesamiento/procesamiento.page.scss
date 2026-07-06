@@ -30,10 +30,21 @@
   display: flex; align-items: center; gap: 11px; margin-bottom: 18px; box-shadow: 0 1px 2px #0b132a08; flex-wrap: wrap;
 }
 .scan-input {
-  flex: 1; min-width: 260px; display: flex; align-items: center; gap: 10px; background: var(--bg);
+  flex: 1 1 320px; min-width: 260px; display: flex; align-items: center; gap: 10px; background: var(--bg);
   border: 1px solid var(--line); border-radius: 11px; padding: 0 14px; height: 46px; color: var(--muted); transition: all .15s;
   input { flex: 1; border: none; background: none; outline: none; font-size: 14px; color: var(--ink); }
   &:focus-within { border-color: var(--accent); background: #fff; color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+}
+.seg {
+  display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 11px; padding: 4px; height: 46px; align-items: center;
+}
+.seg-btn {
+  height: 38px; padding: 0 15px; border-radius: 8px; border: none; background: transparent;
+  color: var(--ink-2); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
+
+  &:hover { color: var(--ink); }
+  &.is-on { background: #fff; color: var(--accent); box-shadow: 0 1px 3px #0b132a14; }
 }
 .btn-ghost {
   height: 46px; padding: 0 16px; border-radius: 11px; border: 1px solid var(--line); background: #fff;

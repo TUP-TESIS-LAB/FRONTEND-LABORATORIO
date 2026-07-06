@@ -16,6 +16,13 @@
       <input [value]="query()" (input)="setQuery($any($event.target).value)"
              placeholder="Escaneá o buscá una muestra…" aria-label="Buscar muestra" />
     </div>
+    <div class="seg">
+      @for (f of FILTROS; track f.id) {
+        <button type="button" class="seg-btn" [class.is-on]="filtro() === f.id" (click)="setFiltro(f.id)">
+          {{ f.label }}
+        </button>
+      }
+    </div>
     <button type="button" class="btn-ghost" [disabled]="selectedCount() === 0" (click)="clearSelection()">Limpiar</button>
     <button type="button" class="btn-orange" (click)="openPlanillas()">
       <i class="pi pi-table"></i> Planillas

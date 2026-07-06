@@ -21,6 +21,11 @@ import { ProcesamientoProgresoService } from '../../services/procesamiento-progr
 import { ResultadosApiService } from '../../services/resultados-api.service';
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
 
+const FILTROS: ReadonlyArray<{ id: 'todos' | 'derivados'; label: string }> = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'derivados', label: 'Derivados' },
+];
+
 /**
  * Pantalla de Procesamiento (propia, separada del worklist genérico — GAP-P7).
  * Layout fiel al mockup: stats, scanbar, tabla de muestras en proceso, y acción
@@ -51,6 +56,9 @@ export class ProcesamientoPage implements OnInit {
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
   private readonly templatesError = this.store.selectSignal(selectTemplatesError);
   readonly templates = this.store.selectSignal(selectTemplates);
+
+  readonly FILTROS = FILTROS;
+  readonly filtro = signal<'todos' | 'derivados'>('todos');
 
   readonly query = signal('');
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());
@@ -118,9 +126,19 @@ export class ProcesamientoPage implements OnInit {
     const handle = this.polling.startPolling({
       key: 'procesamiento-page',
       intervalMs: 5000,
-      poll: () => { this.store.dispatch(loadProcesamiento()); return of(null); },
+      poll: () => { this.store.dispatch(loadProcesamiento({ status: this.currentStatus() })); return of(null); },
     });
     this.destroyRef.onDestroy(() => handle.stop());
+  }
+
+  setFiltro(id: 'todos' | 'derivados'): void {
+    if (this.filtro() === id) return;
+    this.filtro.set(id);
+    this.store.dispatch(loadProcesamiento({ status: this.currentStatus() }));
+  }
+
+  private currentStatus(): 'PROCESSING' | 'DERIVED' {
+    return this.filtro() === 'derivados' ? 'DERIVED' : 'PROCESSING';
   }
 
   setQuery(q: string): void { this.query.set(q); }
