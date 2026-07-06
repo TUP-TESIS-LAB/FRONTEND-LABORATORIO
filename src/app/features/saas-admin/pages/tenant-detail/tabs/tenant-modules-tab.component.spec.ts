@@ -4,6 +4,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TenantModulesTabComponent } from './tenant-modules-tab.component';
 import { SAAS_ADMIN_FEATURE_KEY, initialSaasAdminState } from '../../../store/saas-admin.state';
 import { toggleTenantModule } from '../../../store/saas-admin.actions';
+import { ACTIVABLE_MODULES } from '../../../models/module-code';
 
 describe('TenantModulesTabComponent', () => {
   beforeEach(() => {
@@ -20,10 +21,11 @@ describe('TenantModulesTabComponent', () => {
     });
   });
 
-  it('shows the 5 activable modules and reflects the enabled set', () => {
+  it('shows the 6 activable modules and reflects the enabled set', () => {
     const fixture = TestBed.createComponent(TenantModulesTabComponent);
     fixture.componentRef.setInput('tenantId', 1);
     fixture.detectChanges();
+    expect(ACTIVABLE_MODULES).toHaveLength(6);
     expect(fixture.componentInstance.isEnabled('PORTAL')).toBe(true);
     expect(fixture.componentInstance.isEnabled('TURNOS')).toBe(false);
   });
