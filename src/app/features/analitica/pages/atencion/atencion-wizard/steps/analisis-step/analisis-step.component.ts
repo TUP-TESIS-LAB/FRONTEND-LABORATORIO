@@ -192,21 +192,24 @@ export class AnalisisStepComponent implements OnInit {
   onUrgentChange(): void { this.items.update((arr) => [...arr]); }
 
   /**
-   * Continuar — pessimistic UI:
+   * Persiste los análisis cargados localmente (pessimistic UI):
    * 1. Dispatch addAnalysisList y esperar atencionMutationSuccess.
-   * 2. Si Financiero OFF, encadenar endSecretaryPhase y esperar otro success.
-   *    (Esa dispatch ya se hace en el wizard al recibir stepAdvanced — pero como
-   *    el flujo OFF tiene un salto extra, lo manejamos acá.) Esperamos a que
-   *    la mutación termine antes de emitir stepAdvanced, así si falla el back
-   *    el wizard NO avanza y el usuario ve el error sin perder contexto.
+   * 2. Solo entonces invoca `onSuccess` (avanzar de paso, o disparar advanceUrgent).
    *
    * El botón queda deshabilitado mientras `mutating` esté true, así no hay
    * doble click ni dispatch concurrente. Además, `submitting` evita re-entradas
    * sincrónicas (doble dispatch antes de que `mutating` se refleje) que generaban
    * 409 al encolar dos add/analysis.
+   *
+   * Compartido por `onContinue` (modo normal) y `onIniciarUrgente` (modo express,
+   * KAN-188/GAP-D): los análisis cargados en el picker viven solo en el signal
+   * local `items()` hasta que se persisten acá — sin este paso, `advanceUrgent`
+   * llegaba al back sin ninguna autorización guardada y el back rechazaba con 409
+   * "No se puede iniciar la urgencia sin análisis seleccionados", dejando al
+   * usuario sin poder salir del paso Análisis.
    */
   private submitting = false;
-  onContinue(): void {
+  private persistAnalysisList(onSuccess: () => void): void {
     if (this.items().length === 0 || this.mutating() || this.submitting) return;
     this.submitting = true;
     // Dedupe por análisis (el back deduplica, pero evitamos enviar duplicados).
@@ -237,20 +240,25 @@ export class AnalisisStepComponent implements OnInit {
       if (ok) {
         // Ya quedó persistido en el backend → el borrador local cumplió su rol.
         clearAnalisisDraft(this.atencionId());
-        this.stepAdvanced.emit();
+        onSuccess();
       }
     });
   }
 
+  onContinue(): void {
+    this.persistAnalysisList(() => this.stepAdvanced.emit());
+  }
+
   /**
    * Modo express urgente (KAN-140): salta directamente a extracción sin pasar por
-   * cobro/facturación/confirmación. Despacha `advanceUrgent` con el id de la atención.
-   * Solo se llama cuando `modoExpress()` es true.
+   * cobro/facturación/confirmación. Persiste los análisis cargados y, solo si
+   * quedan guardados, despacha `advanceUrgent`. Solo se llama cuando `modoExpress()`
+   * es true.
    */
   onIniciarUrgente(): void {
     const id = this.atencionId();
     if (!id || !this.modoExpress()) return;
-    this.store.dispatch(advanceUrgent({ id }));
+    this.persistAnalysisList(() => this.store.dispatch(advanceUrgent({ id })));
   }
 
   /**
