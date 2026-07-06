@@ -44,9 +44,10 @@ Layout de la fila expandida (reemplaza la disposición actual de 2 zonas):
 - Lista de usuarios con checkbox, **`max-height` + scroll interno**. Filtro efectivo = `(sin rol seleccionado ? todos : usuarios cuyo roleCodes ∩ rolesAgregados ≠ ∅) ∧ (sin sucursal ? todos : branchId == sucursal) ∧ matchea búsqueda`.
 - Checkbox tildado = recibe. Destildar un usuario que entra por rol → `EXCLUDED_USER`; re-tildar lo saca; tildar uno sin rol → `USER`. Usuario `tieneAcceso=false` → deshabilitado + aviso.
 
-**Bloque inferior (full width) — Asignados + Resumen** (unificados en una card):
-- **Resumen** (arriba, franja): "N usuarios reciben · rol X (M) − K excepciones + P puntuales · los nuevos con el rol reciben solos."
-- **Usuarios asignados** (abajo, con `max-height` + **scroll interno**): el set **resuelto** de quiénes reciben efectivamente ahora = `(⋃ usuarios de los roles agregados) − exclusiones + usuarios puntuales`, cada uno con etiqueta "· rol" / "· puntual". Se computa en el cliente con los `roleCodes` reales del `eligible`.
+**Bloque inferior (full width) — Asignados + Resumen** (unificados en una card, sin el header "✓ Usuarios asignados" que se veía mal):
+- **Resumen** (header del bloque, franja): contador grande ("N reciben") + desglose "rol X (M) − K excepciones + P puntuales" + hint "los nuevos con el rol reciben solos".
+- **Usuarios asignados** (abajo, con `max-height` + **scroll interno**): el set **resuelto** de quiénes reciben efectivamente ahora = `(⋃ usuarios de los roles agregados) − exclusiones + usuarios puntuales`, computado en cliente con los `roleCodes` reales. Muestra **TODOS** (nada de "+N/Otros" truncado — por eso el scroll). Cada fila: avatar/iniciales + nombre + etiqueta de origen ("rol"/"puntual") + acción **"× quitar"**.
+- **Quitar desde asignados** saca la notif a ese usuario: si entra por rol → agrega `EXCLUDED_USER` (excepción); si es puntual (`USER`) → lo elimina. Es el mismo efecto que destildarlo en la card B (reusa `applyUserToggle(id, false)`) — la card de asignados es el segundo lugar para gestionar exclusiones, pensado para "sacarle la notif a alguien" sin tener que buscarlo/filtrarlo primero.
 
 ### Lógica (actualiza `recipients-editor.logic.ts` de KAN-185)
 
