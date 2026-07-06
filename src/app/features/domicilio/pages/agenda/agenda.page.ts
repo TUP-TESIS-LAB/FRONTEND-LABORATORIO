@@ -15,6 +15,9 @@ import { take } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
+import { InputTextModule } from 'primeng/inputtext';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { FormsModule } from '@angular/forms';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
@@ -71,6 +74,9 @@ interface FilterOption {
     ButtonModule,
     SelectButtonModule,
     TagModule,
+    InputTextModule,
+    IconFieldModule,
+    InputIconModule,
     FormsModule,
   ],
   template: `
@@ -81,8 +87,18 @@ interface FilterOption {
         (onClick)="router.navigate(['/domicilio/nueva'])" />
     </ui-page-header>
 
-    <!-- Filtro por estado -->
+    <!-- Búsqueda + filtro por estado -->
     <div class="dom-agenda-filtros">
+      <p-iconfield iconPosition="left" class="dom-agenda-search">
+        <p-inputicon class="pi pi-search" />
+        <input
+          pInputText
+          type="text"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event ?? '')"
+          placeholder="Buscar por DNI, nombre, apellido o extractor"
+          aria-label="Buscar visitas" />
+      </p-iconfield>
       <p-selectButton
         [options]="filterOptions"
         [ngModel]="activeFilter()"
@@ -192,9 +208,14 @@ interface FilterOption {
   styles: [`
     .dom-agenda-filtros {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3, 0.75rem);
+      flex-wrap: wrap;
       margin-bottom: var(--space-3, 0.75rem);
     }
+    .dom-agenda-search { flex: 1 1 20rem; max-width: 28rem; }
+    .dom-agenda-search input { width: 100%; }
   `],
 })
 export class AgendaPage implements OnInit {
@@ -209,7 +230,8 @@ export class AgendaPage implements OnInit {
   readonly pending = this.store.selectSignal(selectHomeVisitsPending);
   readonly actionPending = this.store.selectSignal(selectActionPending);
 
-  // ── Filtro por estado ────────────────────────────────────────────────────────
+  // ── Búsqueda + filtro por estado ─────────────────────────────────────────────
+  readonly searchTerm = signal('');
   readonly activeFilter = signal<AgendaFilter>('TODAS');
 
   readonly filterOptions: FilterOption[] = [
@@ -217,13 +239,25 @@ export class AgendaPage implements OnInit {
     { label: 'Por recepcionar', value: 'POR_RECEPCIONAR' },
   ];
 
-  /** Visitas visibles según el filtro activo. */
+  /** Visitas visibles según el filtro de estado y la búsqueda por texto. */
   readonly filteredVisits = computed(() => {
-    const all = this.visits();
+    let list = this.visits();
     if (this.activeFilter() === 'POR_RECEPCIONAR') {
-      return all.filter((v) => v.status === 'EN_TRANSITO');
+      list = list.filter((v) => v.status === 'EN_TRANSITO');
     }
-    return all;
+    const q = this.searchTerm().trim().toLowerCase();
+    if (q) {
+      list = list.filter((v) => {
+        const r = v as HomeVisit & { patientName?: string; patientDni?: string; extractorName?: string };
+        // patientName viene como "Apellido, Nombre" → cubre nombre y apellido.
+        const haystack = [r.patientName, r.patientDni, r.extractorName]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+    return list;
   });
 
   readonly columns: readonly TableColumn[] = [

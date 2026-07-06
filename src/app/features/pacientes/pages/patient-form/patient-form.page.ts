@@ -286,9 +286,14 @@ export class PatientFormPage implements OnDestroy {
 
     this.actions$
       .pipe(ofType(addPatientSuccess, updatePatientSuccess), takeUntilDestroyed())
-      .subscribe(() => {
+      .subscribe((action) => {
         const target = this.returnTo();
-        this.router.navigateByUrl(target && target.startsWith('/') ? target : '/pacientes');
+        if (target && target.startsWith('/')) {
+          // Devolvemos el id del paciente creado/actualizado para que el flujo de origen lo preseleccione.
+          this.router.navigate([target], { queryParams: { patientId: action.patient.id } });
+        } else {
+          this.router.navigateByUrl('/pacientes');
+        }
       });
 
     // Precarga el DNI desde queryParam cuando llegamos por redirect del wizard de atención.

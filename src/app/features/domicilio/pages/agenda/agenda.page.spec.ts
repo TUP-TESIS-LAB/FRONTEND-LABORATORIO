@@ -243,6 +243,58 @@ describe('AgendaPage (smoke)', () => {
     const ids = comp.filteredVisits().map((v) => v.id);
     expect(ids).toEqual([2, 4]);
   });
+
+  // ── Búsqueda por texto (searchTerm) ──────────────────────────────────────────
+
+  it('el searchTerm por defecto está vacío y no filtra', () => {
+    const visitas = [makeVisit(1), makeVisit(2)];
+    const comp = setup(1, visitas).componentInstance;
+    expect(comp.searchTerm()).toBe('');
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([1, 2]);
+  });
+
+  it('la búsqueda filtra por DNI del paciente', () => {
+    const visitas = [
+      { ...makeVisit(1), patientDni: '30111222' },
+      { ...makeVisit(2), patientDni: '40999888' },
+    ];
+    const comp = setup(1, visitas).componentInstance;
+    comp.searchTerm.set('40999');
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([2]);
+  });
+
+  it('la búsqueda filtra por nombre/apellido del paciente (case-insensitive)', () => {
+    const visitas = [
+      { ...makeVisit(1), patientName: 'García, Ana' },
+      { ...makeVisit(2), patientName: 'Pérez, Juan' },
+    ];
+    const comp = setup(1, visitas).componentInstance;
+    comp.searchTerm.set('garcía');
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([1]);
+  });
+
+  it('la búsqueda filtra por nombre del extractor', () => {
+    const visitas = [
+      { ...makeVisit(1), extractorName: 'Homer Simpson' },
+      { ...makeVisit(2), extractorName: 'Lucas Martínez' },
+    ];
+    const comp = setup(1, visitas).componentInstance;
+    comp.searchTerm.set('martínez');
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([2]);
+  });
+
+  it('la búsqueda se combina con el filtro de estado', () => {
+    const visitas = [
+      { ...makeVisit(1, null, 'EN_TRANSITO'), patientName: 'García, Ana' },
+      { ...makeVisit(2, null, 'PROGRAMADA'),  patientName: 'García, Beto' },
+      { ...makeVisit(3, null, 'EN_TRANSITO'), patientName: 'Pérez, Juan' },
+    ];
+    const comp = setup(1, visitas).componentInstance;
+    comp.activeFilter.set('POR_RECEPCIONAR');
+    comp.searchTerm.set('garcía');
+    // Solo la #1: EN_TRANSITO + coincide "garcía".
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([1]);
+  });
 });
 
 // ── Factory ───────────────────────────────────────────────────────────────────

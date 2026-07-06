@@ -67,12 +67,25 @@ const mockBranchCtx = { branchId: () => 1, branchName: () => 'Sucursal Demo' };
 const mockEmployeeService = { list: () => of([]) };
 const mockPatientService = {
   search: () => of({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 10 }),
+  getById: vi.fn().mockReturnValue(of(MOCK_PATIENT)),
 };
 const mockAnalysisService = {
   searchByName: () => of([]),
   searchByShortCodePrefix: () => of([]),
   findByShortCode: () => of(null),
 };
+
+/** Asigna un extractor (obligatorio) reusando el handler del autocomplete. */
+function selectExtractor(component: any): void {
+  component.onExtractorSelect({
+    value: { id: 5, firstName: 'Lucas', lastName: 'Martínez', displayName: 'Martínez, Lucas', active: true },
+  });
+}
+
+/** Agrega un análisis (obligatorio) reusando el handler del picker. */
+function addAnalysis(component: any, id = 1): void {
+  component.onAnalysisAdded({ id, shortCode: 'HEM', name: 'Hemograma' });
+}
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -84,7 +97,7 @@ let store: MockStore;
  * dependencias de componentes hijos (WizardShell, DatePicker, AutoComplete).
  * Los tests de lógica no renderizan el DOM, así que el schema no oculta bugs.
  */
-function setup() {
+function setup(inputs?: { patientId?: string }) {
   actions$ = new ReplaySubject<Action>(1);
   TestBed.configureTestingModule({
     imports: [NuevaVisitaPage],
@@ -105,6 +118,11 @@ function setup() {
   });
   store = TestBed.inject(MockStore);
   const fixture = TestBed.createComponent(NuevaVisitaPage);
+  if (inputs?.patientId !== undefined) {
+    // El input patientId requiere flush del `effect` (Task 4) — detectChanges lo dispara.
+    fixture.componentRef.setInput('patientId', inputs.patientId);
+    fixture.detectChanges();
+  }
   return { fixture, component: fixture.componentInstance };
 }
 
@@ -141,13 +159,17 @@ describe('NuevaVisitaPage', () => {
     expect(form.contains('comments')).toBe(true);
   });
 
-  it('STEPS tiene 2 pasos con las claves correctas', () => {
-    // STEPS es protected; lo accedemos con cast any para el test.
+  it('STEPS tiene 4 pasos con las claves correctas', () => {
     const { component } = setup();
     const steps = (component as any).STEPS as readonly { key: string }[];
-    expect(steps.length).toBe(2);
-    expect(steps[0].key).toBe('paciente');
-    expect(steps[1].key).toBe('direccion');
+    expect(steps.map((s) => s.key)).toEqual(['paciente', 'direccion', 'analisis', 'resumen']);
+  });
+
+  it('step2Valid es false sin análisis y true con al menos uno (rótulos requieren determinaciones)', () => {
+    const { component } = setup();
+    expect(component.step2Valid()).toBe(false);
+    addAnalysis(component);
+    expect(component.step2Valid()).toBe(true);
   });
 
   // ── Validez por paso ────────────────────────────────────────────────────────
@@ -170,6 +192,19 @@ describe('NuevaVisitaPage', () => {
     expect(component.step0Valid()).toBe(true);
   });
 
+  it('step0Valid recomputa al cargar fecha/horas DESPUÉS del paciente (regresión: no se podía pasar del paso 1)', () => {
+    // Reproduce el orden real del usuario: primero el paciente, luego el resto.
+    // El template lee step0Valid() en cada change detection, así que se lo lee acá
+    // en el medio para cachear el `false` — como hacía la app. Sin la dependencia
+    // reactiva al form, el computed quedaba stale en false y "Continuar" nunca se
+    // habilitaba.
+    const { component } = setup();
+    component.onPatientSelected(MOCK_PATIENT);
+    expect(component.step0Valid()).toBe(false); // se cachea con el form aún vacío
+    component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00' });
+    expect(component.step0Valid()).toBe(true);  // debe reaccionar al cambio del form
+  });
+
   it('step1Valid es false cuando falta la calle de la dirección', () => {
     const { component } = setup();
     component.onPatientSelected(MOCK_PATIENT);
@@ -184,10 +219,18 @@ describe('NuevaVisitaPage', () => {
     expect(component.step1Valid()).toBe(false);
   });
 
-  it('step1Valid es true cuando todos los campos obligatorios están completos', () => {
+  it('step1Valid es false cuando falta el extractor asignado aunque la dirección esté completa', () => {
     const { component } = setup();
     component.onPatientSelected(MOCK_PATIENT);
     component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00', addressStreet: 'Av. 7', addressCity: 'La Plata' });
+    expect(component.step1Valid()).toBe(false);
+  });
+
+  it('step1Valid es true cuando la dirección está completa y hay extractor asignado', () => {
+    const { component } = setup();
+    component.onPatientSelected(MOCK_PATIENT);
+    component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00', addressStreet: 'Av. 7', addressCity: 'La Plata' });
+    selectExtractor(component);
     expect(component.step1Valid()).toBe(true);
   });
 
@@ -219,6 +262,27 @@ describe('NuevaVisitaPage', () => {
     component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00' });
     component.next();
     expect(component.visited().has(1)).toBe(true);
+  });
+
+  it('next() avanza de a un paso solo si el paso actual es válido', () => {
+    const { component } = setup();
+    component.next();                       // paso 0 inválido (sin paciente) -> no avanza
+    expect(component.currentIndex()).toBe(0);
+    component.onPatientSelected(MOCK_PATIENT);
+    component.form.patchValue({ scheduledAt: new Date(), timeWindowStart: '08:00', timeWindowEnd: '10:00' });
+    component.next();                       // paso 0 válido -> avanza a 1
+    expect(component.currentIndex()).toBe(1);
+    component.form.patchValue({ addressStreet: 'Av 7', addressCity: 'La Plata' });
+    component.next();                       // paso 1 sin extractor -> no avanza
+    expect(component.currentIndex()).toBe(1);
+    selectExtractor(component);
+    component.next();                       // paso 1 válido -> 2
+    expect(component.currentIndex()).toBe(2);
+    component.next();                       // paso 2 sin análisis -> no avanza
+    expect(component.currentIndex()).toBe(2);
+    addAnalysis(component);
+    component.next();                       // paso 2 válido -> 3 (resumen)
+    expect(component.currentIndex()).toBe(3);
   });
 
   it('prev() retrocede al paso 0 desde el paso 1', () => {
@@ -263,6 +327,53 @@ describe('NuevaVisitaPage', () => {
     expect(component.selectedPatient()?.id).toBe(42);
   });
 
+  it('al seleccionar un paciente con dirección primaria, precarga calle/número/ciudad', () => {
+    const { component } = setup();
+    mockPatientService.getById.mockReturnValue(of({
+      ...MOCK_PATIENT,
+      addresses: [{ street: 'Calle 50', streetNumber: '1234', city: 'La Plata', isPrimary: true, active: true }],
+    }));
+    component.onPatientSelected(MOCK_PATIENT);
+    expect(mockPatientService.getById).toHaveBeenCalledWith(MOCK_PATIENT.id);
+    expect(component.form.controls.addressStreet.value).toBe('Calle 50');
+    expect(component.form.controls.addressNumber.value).toBe('1234');
+    expect(component.form.controls.addressCity.value).toBe('La Plata');
+    expect(component.prefillPatientName()).toContain('García'); // apellido del MOCK_PATIENT
+  });
+
+  it('paciente sin dirección primaria: no precarga y limpia la dirección previa', () => {
+    const { component } = setup();
+    component.form.patchValue({ addressStreet: 'vieja', addressCity: 'vieja' });
+    mockPatientService.getById.mockReturnValue(of({ ...MOCK_PATIENT, addresses: [] }));
+    component.onPatientSelected(MOCK_PATIENT);
+    expect(component.form.controls.addressStreet.value).toBe('');
+    expect(component.prefillPatientName()).toBeNull();
+  });
+
+  it('con patientId en la ruta, preselecciona el paciente y precarga su dirección', () => {
+    mockPatientService.getById.mockReturnValue(of({
+      ...MOCK_PATIENT, id: 77,
+      addresses: [{ street: 'Calle 50', city: 'La Plata', isPrimary: true, active: true }],
+    }));
+    const { component } = setup({ patientId: '77' });
+    expect(mockPatientService.getById).toHaveBeenCalledWith(77);
+    expect(component.selectedPatient()?.id).toBe(77);
+    expect(component.form.controls.addressStreet.value).toBe('Calle 50');
+  });
+
+  it('addressSource: none sin precarga; prefilled tras precargar; edited al modificar', () => {
+    const { component } = setup();
+    expect(component.addressSource()).toBe('none');
+    mockPatientService.getById.mockReturnValue(of({
+      ...MOCK_PATIENT,
+      addresses: [{ street: 'Calle 50', streetNumber: '1234', city: 'La Plata', isPrimary: true, active: true }],
+    }));
+    component.onPatientSelected(MOCK_PATIENT);
+    expect(component.addressSource()).toBe('prefilled');
+    component.form.controls.addressStreet.setValue('Otra calle');
+    expect(component.addressSource()).toBe('edited');
+  });
+
   // ── [CRITICAL] Wiring del (finish) → dispatch createHomeVisit ──────────────
   //
   // Estos tests verifican que onFinish() — el método cableado via
@@ -284,6 +395,8 @@ describe('NuevaVisitaPage', () => {
       addressStreet:   'Av. 7',
       addressCity:     'La Plata',
     });
+    selectExtractor(component);
+    addAnalysis(component);
 
     // onFinish es protected; lo accedemos con cast any para el test.
     (component as any).onFinish();
@@ -320,6 +433,8 @@ describe('NuevaVisitaPage', () => {
       addressStreet:   'Av. 7',
       addressCity:     'La Plata',
     });
+    selectExtractor(component);
+    addAnalysis(component);
 
     (component as any).onFinish();
 
@@ -330,5 +445,30 @@ describe('NuevaVisitaPage', () => {
     const scheduledAt: string = matchingCall![0]?.payload?.scheduledAt ?? '';
     // La fecha local debe preservarse — empieza con '2025-06-27'
     expect(scheduledAt.startsWith('2025-06-27')).toBe(true);
+  });
+
+  it('onFinish() arma scheduledAt con la hora de inicio de la ventana, no la del datepicker (fix hallazgo #5)', () => {
+    const { component } = setup();
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    // El datepicker trae la hora del instante en que se abrió (00:30); el scheduledAt
+    // debe usar la hora de la ventana (09:15) para no quedar en el pasado (@Future).
+    component.onPatientSelected(MOCK_PATIENT);
+    component.form.patchValue({
+      scheduledAt:     new Date(2025, 5, 27, 0, 30, 0),
+      timeWindowStart: '09:15',
+      timeWindowEnd:   '10:00',
+      addressStreet:   'Av. 7',
+      addressCity:     'La Plata',
+    });
+    selectExtractor(component);
+    addAnalysis(component);
+
+    (component as any).onFinish();
+
+    const calls = dispatchSpy.mock.calls as unknown as Array<[any]>;
+    const matchingCall = calls.find(([a]) => a?.type === createHomeVisit.type);
+    const scheduledAt: string = matchingCall![0]?.payload?.scheduledAt ?? '';
+    expect(scheduledAt).toBe('2025-06-27T09:15:00');
   });
 });
