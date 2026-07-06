@@ -79,6 +79,21 @@ import { AsistenteAyudaComponent } from '@shared/asistente-ayuda/asistente-ayuda
       padding: 0;
       background: var(--brand-shell-bg);
     }
+    /* El header por defecto del p-drawer venía blanco y con padding grande — se
+       veía un bloque blanco arriba de la X. Lo integramos al fondo oscuro del
+       shell y lo compactamos (la X clara, alineada a la derecha). */
+    :host ::ng-deep .ui-admin-shell__mobile-drawer .p-drawer-header {
+      background: var(--brand-shell-bg);
+      padding: var(--space-2) var(--space-3);
+      min-height: 0;
+    }
+    :host ::ng-deep .ui-admin-shell__mobile-drawer .p-drawer-close-button {
+      color: rgba(255,255,255,.7);
+    }
+    :host ::ng-deep .ui-admin-shell__mobile-drawer .p-drawer-close-button:hover {
+      color: #fff;
+      background: rgba(255,255,255,.1);
+    }
     :host ::ng-deep .ui-admin-shell__mobile-drawer {
       width: 280px;
     }
