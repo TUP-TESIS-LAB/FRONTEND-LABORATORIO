@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
-import { of } from 'rxjs';
+import { catchError, of } from 'rxjs';
 
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicator/refresh-indicator.component';
@@ -15,8 +16,7 @@ import {
 } from '@shared/metrics';
 import { PollingHandle, PollingService } from '@core/refresh';
 
-import { selectAllSucursales } from '@features/sucursales/store/sucursales.selectors';
-import { loadSucursales } from '@features/sucursales/store/sucursales.actions';
+import { SucursalesService } from '@features/sucursales/services/sucursales.service';
 
 import { loadFlujoEnVivo, loadFlujoHistorico } from '../../store/flujo-metrics/flujo-metrics.actions';
 import {
@@ -191,6 +191,7 @@ export class FlujoDashboardPage implements OnInit {
   private readonly store = inject(Store);
   private readonly polling = inject(PollingService);
   private readonly destroy = inject(DestroyRef);
+  private readonly sucursalesService = inject(SucursalesService);
 
   // ── Selectors: histórico ────────────────────────────────────────────────
   readonly volumenTurnos = this.store.selectSignal(selectVolumenTurnos);
@@ -213,11 +214,13 @@ export class FlujoDashboardPage implements OnInit {
   readonly enVivoLoading = this.store.selectSignal(selectEnVivoLoading);
 
   // ── Sucursales accesibles (alimenta el selector del filtro) ────────────
-  private readonly sucursales = this.store.selectSignal(selectAllSucursales);
-  readonly branchOptions = computed<MetricBranchOption[]>(() =>
-    this.sucursales()
-      .filter((s) => s.active)
-      .map((s) => ({ id: s.id, name: s.description })),
+  // Mismo origen que financiero/analitica: /api/v1/sucursales/branches (el store
+  // legacy pega a /api/sucursales y devuelve 403).
+  readonly branchOptions = toSignal(
+    this.sucursalesService.listBranchesForSelector().pipe(
+      catchError(() => of([] as MetricBranchOption[])),
+    ),
+    { initialValue: [] as MetricBranchOption[] },
   );
 
   // ── Series/breakdowns derivados (null → undefined para el kit) ─────────
@@ -251,10 +254,6 @@ export class FlujoDashboardPage implements OnInit {
   private enVivoHandle: PollingHandle | null = null;
 
   ngOnInit(): void {
-    if (this.sucursales().length === 0) {
-      this.store.dispatch(loadSucursales());
-    }
-
     this.historicoHandle = this.polling.startPolling({
       key: 'turnos-flujo-historico',
       intervalMs: 5000,
