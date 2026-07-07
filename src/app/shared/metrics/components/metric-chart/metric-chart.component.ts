@@ -18,6 +18,10 @@ const PALETTE_VARS = [
   '--ds-danger',
 ] as const;
 
+// Canvas (`CanvasRenderingContext2D.fillStyle`) no resuelve `var(--x)` — Chart.js necesita
+// un color ya resuelto. Estos valores son exactamente los defaults de `:root` en
+// `src/styles/tokens.scss`, usados solo si no hay `document` (SSR/tests) o la CSS var
+// no está definida; en la app real siempre se resuelve desde el token vía `getComputedStyle`.
 const FALLBACK_PALETTE = ['#2563eb', '#0ea5a4', '#f97316', '#3b82f6', '#22c55e', '#f59e0b', '#e23a47'];
 
 /** Lee la paleta de colores del tenant activo desde las CSS vars del `:root`. */
