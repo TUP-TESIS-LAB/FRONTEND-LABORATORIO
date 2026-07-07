@@ -66,7 +66,7 @@ describe('SampleRowComponent', () => {
     expect(count).toBe(1);
   });
 
-  it('emite rowAction con la key al elegir una acción del menú', () => {
+  it('re-emite rowAction cuando el menú kebab dispara una acción', () => {
     fixture.componentRef.setInput('sample', SAMPLE);
     fixture.componentRef.setInput('selected', false);
     fixture.componentRef.setInput('flashing', false);
@@ -74,7 +74,9 @@ describe('SampleRowComponent', () => {
     fixture.detectChanges();
     const emitted: string[] = [];
     fixture.componentInstance.rowAction.subscribe((k) => emitted.push(k));
-    fixture.componentInstance.onRowAction('rollback');
+    // El menú hijo (RowActionsMenuComponent) emite 'accion'; el row la re-emite como rowAction.
+    const menu = fixture.debugElement.query(By.css('app-row-actions-menu'));
+    menu.componentInstance.accion.emit('rollback');
     expect(emitted).toEqual(['rollback']);
   });
 });

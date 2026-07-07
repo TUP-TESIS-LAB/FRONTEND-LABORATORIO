@@ -40,7 +40,7 @@ import {
   <div class="col-time">{{ sample.receivedAt | dateEs:'date' }} · {{ sample.receivedAt | dateEs:'time' }}</div>
   <div class="col-state"><span class="badge teal">En tránsito</span></div>
   <div class="col-actions" (click)="$event.stopPropagation()">
-    <app-row-actions-menu [actions]="rowMenuActions" (accion)="onRowAction($event)" />
+    <app-row-actions-menu [actions]="rowMenuActions" (accion)="rowAction.emit($event)" />
   </div>
 </div>
   `,
@@ -64,9 +64,5 @@ export class SampleRowComponent {
 
   branchShort(): string {
     return (this.sample?.branch || '').split(' — ')[0];
-  }
-
-  onRowAction(key: RowActionKey): void {
-    this.rowAction.emit(key);
   }
 }

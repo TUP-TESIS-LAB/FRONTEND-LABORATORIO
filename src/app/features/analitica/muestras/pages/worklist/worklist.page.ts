@@ -308,6 +308,11 @@ export class WorklistPage {
   readonly activeTransition = signal<Transition | null>(null);
   /** Samples del menú por-fila (kebab). Vacío = el diálogo usa la selección masiva. */
   readonly rowMenuSamples = signal<Sample[]>([]);
+  /** Muestras objetivo del diálogo: las del kebab si hay, si no la selección masiva. */
+  readonly dialogSamples = computed<Sample[]>(() => {
+    const row = this.rowMenuSamples();
+    return row.length ? row : this.selectedSamples();
+  });
   readonly flashId = signal<string | null>(null);
   readonly leavingIds = this.samples.leavingIds;
 
@@ -385,18 +390,15 @@ export class WorklistPage {
   async confirmDialog(payload: { dest: TransitionDest; note: string }): Promise<void> {
     const t = this.activeTransition();
     if (!t) return;
-    const rowSamples = this.rowMenuSamples();
-    const usingRowMenu = rowSamples.length > 0;
+    const targetSamples = this.dialogSamples();
     const ids = Array.from(this.selectedIds());
     this.activeTransition.set(null);
+    this.rowMenuSamples.set([]);
 
     if (this.isBackendScreen()) {
-      const tubes = (usingRowMenu ? rowSamples : this.selectedSamples()) as Tube[];
+      const tubes = targetSamples as Tube[];
       const labelIds = tubes.flatMap(tube => tube.labelIds ?? []);
-      if (labelIds.length === 0) {
-        this.rowMenuSamples.set([]);
-        return;
-      }
+      if (labelIds.length === 0) return;
       const detail = this.formatDestDetail(t, payload.dest);
       this.pendingToast = { count: tubes.length, toLabel: t.toLabel, detail };
       this.store.dispatch(transitionLabels({
@@ -404,11 +406,9 @@ export class WorklistPage {
         transitionKey: t.key,
         reason: payload.note || undefined,
       }));
-      this.rowMenuSamples.set([]);
       this.clearSelection();
     } else {
       await this.samples.transition(ids, t, payload.dest);
-      this.rowMenuSamples.set([]);
       this.clearSelection();
       const detail = this.formatDestDetail(t, payload.dest);
       this.messages.add({

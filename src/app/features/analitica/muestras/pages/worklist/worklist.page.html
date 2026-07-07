@@ -71,7 +71,7 @@
   @if (activeTransition(); as t) {
     <app-muestras-transition-dialog
       [transition]="t"
-      [samples]="rowMenuSamples().length ? rowMenuSamples() : selectedSamples()"
+      [samples]="dialogSamples()"
       [currentBranch]="currentBranch"
       [branches]="branches"
       [areas]="areas"
