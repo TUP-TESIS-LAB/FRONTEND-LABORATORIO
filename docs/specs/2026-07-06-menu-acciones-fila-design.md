@@ -1,6 +1,6 @@
 # Menú de acciones por fila (3 puntitos) en Recolección, Traslado y Procesamiento
 
-> **Jira:** _(pendiente — se crea con jira-workflow tras la review del spec)_
+> **Jira:** [KAN-208](https://exequielsantoro.atlassian.net/browse/KAN-208)
 > **Fecha:** 2026-07-06
 > **Rama:** `feat/procesamiento-filtro-derivados` (front; misma rama donde se acumula el trabajo de Procesamiento
 > sobre la PR de pdf-firmas ya mergeada).
