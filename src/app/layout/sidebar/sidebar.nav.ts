@@ -45,7 +45,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { kind: 'link', label: 'Sacar turno', icon: 'pi pi-calendar-clock', path: '/turnos/sacar', moduleKey: ModuleKey.Turnos, sectionKey: 'RECEPCION' },
       { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes', sectionKey: 'PACIENTES' },
       { kind: 'link', label: 'Configuración de agendas', icon: 'pi pi-calendar-plus', path: '/turnos/configuracion', moduleKey: ModuleKey.Turnos, sectionKey: 'AGENDAS' },
-      { kind: 'link', label: 'Médicos derivantes', icon: 'pi pi-heart', path: '/medicos', moduleKey: ModuleKey.Medicos, sectionKey: 'MEDICOS' },
+      { kind: 'link', label: 'Médicos derivantes', icon: 'pi pi-heart', path: '/medicos', sectionKey: 'MEDICOS' },
     ],
   },
   {
