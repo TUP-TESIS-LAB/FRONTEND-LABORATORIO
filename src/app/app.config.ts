@@ -55,6 +55,10 @@ import { financieroReducer } from '@features/financiero/store/financiero.reducer
 import { FinancieroEffects } from '@features/financiero/store/financiero.effects';
 import { LiquidacionesEffects } from '@features/financiero/store/liquidaciones.effects';
 
+import { FINANCIERO_METRICS_FEATURE_KEY } from '@features/financiero/store/metrics/state';
+import { financieroMetricsReducer } from '@features/financiero/store/metrics/reducer';
+import { FinancieroMetricsEffects } from '@features/financiero/store/metrics/effects';
+
 import { PATIENT_FEATURE_KEY } from '@features/pacientes/store/patient.state';
 import { patientReducer } from '@features/pacientes/store/patient.reducer';
 import { PatientEffects } from '@features/pacientes/store/patient.effects';
@@ -149,6 +153,8 @@ export const appConfig: ApplicationConfig = {
     provideState(FINANCIERO_FEATURE_KEY, financieroReducer),
     provideEffects(FinancieroEffects),
     provideEffects(LiquidacionesEffects),
+    provideState(FINANCIERO_METRICS_FEATURE_KEY, financieroMetricsReducer),
+    provideEffects(FinancieroMetricsEffects),
     provideState(PATIENT_FEATURE_KEY, patientReducer),
     provideEffects(PatientEffects),
     provideState(SAAS_ADMIN_FEATURE_KEY, saasAdminReducer),
