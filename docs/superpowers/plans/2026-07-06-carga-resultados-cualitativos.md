@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recomendado) o superpowers:executing-plans. Pasos con checkbox (`- [ ]`).
 >
-> **Jira:** _pendiente — crear con jira-workflow antes de implementar (follow-up de KAN-158)._
+> **Jira:** [KAN-207](https://exequielsantoro.atlassian.net/browse/KAN-207) (follow-up de KAN-158).
 
 **Goal:** En la planilla de carga de resultados, cada determinación se carga con el input correcto según su tipo efectivo: numérico (cuantitativo) o dropdown de valores permitidos (cualitativo / semicuantitativo ordinal); el backend valida el valor cualitativo al guardar.
 
@@ -129,7 +129,7 @@ public class ListLoadableDeterminationsUseCase {
 ```
 - [ ] **Step 6: Test del use case** — `ListLoadableDeterminationsUseCaseTest` (Mockito): 1 determinación global QUANTITATIVE + override QUALITATIVE con categoría (5L, valores) → response con type QUALITATIVE y labels ordenados; determinación sin override → QUANTITATIVE + valores vacíos.
 - [ ] **Step 7: Correr y ver pasar** — `./mvnw -q -Dtest='DeterminationTypeResolverTest,ListLoadableDeterminationsUseCaseTest' test`. PASS.
-- [ ] **Step 8: Commit** — `feat(analitica): endpoint determinations/loadable con tipo efectivo + valores cualitativos [KAN-XXX]`.
+- [ ] **Step 8: Commit** — `feat(analitica): endpoint determinations/loadable con tipo efectivo + valores cualitativos [KAN-207]`.
 
 ---
 
@@ -175,7 +175,7 @@ public class ListLoadableDeterminationsUseCase {
 ```
 (`categoriesById` = `categoryRepository.findVisibleForTenant(input.tenantId())` mapeado por id, calculado una vez antes del loop.)
 - [ ] **Step 4: Correr y ver pasar** — `./mvnw -q -Dtest=BatchUpdateDeterminationsUseCaseTest test`. PASS.
-- [ ] **Step 5: Commit** — `feat(analitica): validar valor cualitativo en el guardado batch (422 español) [KAN-XXX]`.
+- [ ] **Step 5: Commit** — `feat(analitica): validar valor cualitativo en el guardado batch (422 español) [KAN-207]`.
 
 ---
 
@@ -258,7 +258,7 @@ Importar `SelectModule` (PrimeNG) en el componente. `[options]` de string simple
 
 **Spec coverage:** grid expone tipo efectivo + valores → A1 (resolver + endpoint) ✅. Validación cualitativa al guardar → A2 ✅. Default cuantitativo backward-compat → A1 resolver ✅. Celda input/dropdown → B2 ✅. Guarda el label (string) → B2 (`setValue` con el string) + A2 valida contra labels ✅. Sin migración ✅. Semicuant = dropdown ordinal (orden por displayOrder) → A1 resolver ✅.
 
-**Placeholder scan:** el `[KAN-XXX]` de los commits se reemplaza por el ticket real; la nota "result-grid si está en uso — confirmar" es una decisión de alcance deliberada (ver riesgos), no un TODO de lógica. Sin placeholders de lógica.
+**Placeholder scan:** el `[KAN-207]` de los commits se reemplaza por el ticket real; la nota "result-grid si está en uso — confirmar" es una decisión de alcance deliberada (ver riesgos), no un TODO de lógica. Sin placeholders de lógica.
 
 **Type consistency:** `AnalyticalType` (BE enum QUANTITATIVE/QUALITATIVE/SEMI_QUALITATIVE ↔ FE union). `LoadableDeterminationResponse{id,name,unit,analyticalType,qualitativeValues}` (A1) ↔ `LoadableDetermination` (B1) ↔ `getLoadableDeterminations` (B1) ↔ fila del grid (B1) ↔ celda (B2). `DeterminationTypeResolver.Resolved{type,qualitativeValues}` reusado en A1 y A2. ✅
 

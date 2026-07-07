@@ -1,6 +1,6 @@
 # Carga de resultados según tipo (cuantitativo / cualitativo / semicuantitativo) — Design
 
-> Follow-up de KAN-158 (valores cualitativos/semicuant, mergeado). Wire de esos valores en la **carga real de resultados**. Ticket: _pendiente (jira-workflow)_.
+> Follow-up de KAN-158 (valores cualitativos/semicuant, mergeado). Wire de esos valores en la **carga real de resultados**. Ticket: [KAN-207](https://exequielsantoro.atlassian.net/browse/KAN-207).
 
 ## Problema
 
