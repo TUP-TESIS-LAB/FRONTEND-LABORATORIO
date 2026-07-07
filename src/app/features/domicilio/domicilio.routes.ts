@@ -36,18 +36,21 @@ export const DOMICILIO_ROUTES: Routes = [
       {
         path: 'agenda',
         canMatch: [sectionGuard('DOMICILIO')],
+        data: { breadcrumb: 'Extracción a domicilio' },
         loadComponent: () =>
           import('./pages/agenda/agenda.page').then((m) => m.AgendaPage),
       },
       {
         path: 'nueva',
         canMatch: [sectionGuard('DOMICILIO')],
+        data: { breadcrumb: 'Nueva visita' },
         loadComponent: () =>
           import('./pages/nueva-visita/nueva-visita.page').then((m) => m.NuevaVisitaPage),
       },
       {
         path: 'mi-ruta',
         canMatch: [sectionGuard('DOMICILIO_RUTA'), hasRoleGuard(['EXTRACTOR', 'ADMINISTRADOR'])],
+        data: { breadcrumb: 'Mi ruta del día' },
         loadComponent: () =>
           import('./pages/mi-ruta/mi-ruta.page').then((m) => m.MiRutaPage),
       },
@@ -57,6 +60,7 @@ export const DOMICILIO_ROUTES: Routes = [
         // navega a /domicilio/mi-ruta/:id.
         path: 'mi-ruta/:id',
         canMatch: [sectionGuard('DOMICILIO_RUTA'), hasRoleGuard(['EXTRACTOR', 'ADMINISTRADOR'])],
+        data: { breadcrumb: 'Detalle' },
         loadComponent: () =>
           import('./pages/visita-detalle/visita-detalle.page').then((m) => m.VisitaDetallePage),
       },

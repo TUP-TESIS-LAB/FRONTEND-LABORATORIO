@@ -20,6 +20,7 @@ export const OBRAS_SOCIALES_ROUTES: Routes = [
       },
       {
         path: 'nueva',
+        data: { breadcrumb: 'Nueva obra social' },
         loadComponent: () =>
           import('./pages/obra-social-form/obra-social-form.page').then((m) => m.ObraSocialFormPage),
       },

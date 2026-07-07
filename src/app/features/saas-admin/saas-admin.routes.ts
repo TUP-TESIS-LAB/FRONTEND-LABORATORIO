@@ -15,21 +15,25 @@ export const SAAS_ADMIN_ROUTES: Routes = [
     children: [
       {
         path: '',
+        data: { breadcrumb: 'Dashboard' },
         loadComponent: () =>
           import('./pages/dashboard/dashboard.page').then((m) => m.DashboardPage),
       },
       {
         path: 'tenants',
+        data: { breadcrumb: 'Tenants' },
         loadComponent: () =>
           import('./pages/tenants-list/tenants-list.page').then((m) => m.TenantsListPage),
       },
       {
         path: 'tenants/nuevo',
+        data: { breadcrumb: 'Nuevo tenant' },
         loadComponent: () =>
           import('./pages/tenant-wizard/tenant-wizard.page').then((m) => m.TenantWizardPage),
       },
       {
         path: 'tenants/:id',
+        data: { breadcrumb: 'Detalle' },
         loadComponent: () =>
           import('./pages/tenant-detail/tenant-detail.page').then((m) => m.TenantDetailPage),
       },
