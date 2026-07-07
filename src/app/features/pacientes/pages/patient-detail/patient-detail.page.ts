@@ -249,6 +249,7 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   private readonly catalogService = inject(CoverageCatalogService);
   private readonly historyService = inject(PatientHistoryService);
   private readonly notifications = inject(NotificationService);
+  private readonly datePipe = inject(DatePipe);
   readonly canMutate = this.perms.canMutate;
 
   readonly patient = this.store.selectSignal(selectSelectedPatient);
@@ -303,9 +304,10 @@ export class PatientDetailPage implements OnInit, OnDestroy {
     const patientId = this.patient()?.id;
     if (patientId == null) return;
     if (row.lastPrintedBy) {
+      const formattedDate = this.datePipe.transform(row.lastPrintedAt, 'dd/MM/yy HH:mm');
       this.confirm.confirm({
         header: 'Reimprimir estudio',
-        message: `Ya se imprimió el ${row.lastPrintedAt} por ${row.lastPrintedBy}. ¿Reimprimir igual?`,
+        message: `Ya se imprimió el ${formattedDate} por ${row.lastPrintedBy}. ¿Reimprimir igual?`,
         acceptLabel: 'Reimprimir',
         rejectLabel: 'Cancelar',
         accept: () => this.downloadAndOpenReport(patientId, row.protocolId!),
