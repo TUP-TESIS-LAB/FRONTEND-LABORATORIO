@@ -7,6 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService } from 'primeng/api';
 import { DatePipe } from '@angular/common';
 import { DniPipe } from '@shared/pipes/dni.pipe';
@@ -38,7 +39,7 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   imports: [
-    RouterLink, ButtonModule, TabsModule, TagModule, ConfirmDialogModule,
+    RouterLink, ButtonModule, TabsModule, TagModule, ConfirmDialogModule, TooltipModule,
     DatePipe, DniPipe, AgePipe, CurrencyArPipe, EmptyStateComponent,
     DataTableComponent, UiCellDirective, UiRowExpansionDirective, PageHeaderComponent,
   ],
@@ -161,6 +162,22 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
                         N° autorización: {{ row.authorizationNumber ?? '—' }}
                       </div>
                     </div>
+                    @if (row.reportAvailable) {
+                      <div class="mb-2 flex items-center gap-2">
+                        <p-button
+                          size="small"
+                          icon="pi pi-print"
+                          label="Imprimir estudio"
+                          [outlined]="true"
+                          (onClick)="printReport(row)" />
+                        @if (row.lastPrintedBy) {
+                          <span class="text-xs text-surface-500"
+                                [pTooltip]="'Impreso el ' + (row.lastPrintedAt | date:'dd/MM/yy HH:mm') + ' por ' + row.lastPrintedBy">
+                            <i class="pi pi-check-circle text-green-600"></i> Impreso
+                          </span>
+                        }
+                      </div>
+                    }
                     <table class="hist-detail">
                       <thead>
                         <tr><th>Análisis</th><th class="cv-center">Importe cobrado</th><th>Estado</th></tr>
@@ -277,6 +294,34 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   coverageLabel(insurancePlanId: number | null): string {
     if (insurancePlanId == null) return 'Particular';
     return insurerNameForPlan(this.catalog(), insurancePlanId);
+  }
+
+  printReport(row: PatientHistoryItem): void {
+    if (row.protocolId == null) return;
+    const patientId = this.patient()?.id;
+    if (patientId == null) return;
+    if (row.lastPrintedBy) {
+      this.confirm.confirm({
+        header: 'Reimprimir estudio',
+        message: `Ya se imprimió el ${row.lastPrintedAt} por ${row.lastPrintedBy}. ¿Reimprimir igual?`,
+        acceptLabel: 'Reimprimir',
+        rejectLabel: 'Cancelar',
+        accept: () => this.downloadAndOpenReport(patientId, row.protocolId!),
+      });
+    } else {
+      this.downloadAndOpenReport(patientId, row.protocolId);
+    }
+  }
+
+  private downloadAndOpenReport(patientId: number, protocolId: number): void {
+    this.historyService.printReport(patientId, protocolId).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        this.loadHistory(patientId);
+      },
+      error: () => { /* toast genérico ya cubierto por el interceptor global de errores HTTP */ },
+    });
   }
 
   ngOnDestroy(): void { this.store.dispatch(clearSelectedPatient()); }
