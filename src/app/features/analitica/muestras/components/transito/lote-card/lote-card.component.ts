@@ -8,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 import type { Sample } from '../../../models/sample.model';
 import type { LoteDestPatch, SectionOption, TemporalLote } from '../../../models/transito.model';
 import { SampleRowComponent } from '../sample-row/sample-row.component';
+import type { RowActionKey } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 
 @Component({
   selector: 'app-lote-card',
@@ -64,6 +65,7 @@ import { SampleRowComponent } from '../sample-row/sample-row.component';
         [flashing]="isFlashing(s.id)"
         [leaving]="isLeaving(s.id)"
         (toggle)="toggleSample.emit(s.id)"
+        (rowAction)="rowAction.emit({ id: s.id, key: $event })"
       />
     }
   </div>
@@ -88,6 +90,7 @@ export class LoteCardComponent {
   @Input() currentBranchName = '';
 
   readonly toggleSample = output<string>();
+  readonly rowAction = output<{ id: string; key: RowActionKey }>();
   readonly toggleAll = output<boolean>();
   readonly destChange = output<LoteDestPatch>();
   readonly setActive = output<void>();

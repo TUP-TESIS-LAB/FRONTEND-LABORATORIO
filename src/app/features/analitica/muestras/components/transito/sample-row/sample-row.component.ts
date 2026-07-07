@@ -6,11 +6,16 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import type { Sample } from '../../../models/sample.model';
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
+import {
+  RowActionsMenuComponent,
+  type RowAction,
+  type RowActionKey,
+} from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 
 @Component({
   selector: 'app-sample-row',
   standalone: true,
-  imports: [DateEsPipe],
+  imports: [DateEsPipe, RowActionsMenuComponent],
   template: `
 <div
   class="row"
@@ -34,6 +39,9 @@ import { DateEsPipe } from '@shared/pipes/date-es.pipe';
   <div class="col-origin">{{ branchShort() }}</div>
   <div class="col-time">{{ sample.receivedAt | dateEs:'date' }} · {{ sample.receivedAt | dateEs:'time' }}</div>
   <div class="col-state"><span class="badge teal">En tránsito</span></div>
+  <div class="col-actions" (click)="$event.stopPropagation()">
+    <app-row-actions-menu [actions]="rowMenuActions" (accion)="onRowAction($event)" />
+  </div>
 </div>
   `,
   styleUrl: './sample-row.component.scss',
@@ -46,8 +54,19 @@ export class SampleRowComponent {
   @Input({ required: true }) leaving!: boolean;
 
   readonly toggle = output<void>();
+  readonly rowAction = output<RowActionKey>();
+
+  readonly rowMenuActions: ReadonlyArray<RowAction> = [
+    { key: 'rollback', label: 'Volver a estado anterior', icon: 'pi-undo' },
+    { key: 'rejected', label: 'Rechazar', icon: 'pi-ban' },
+    { key: 'lost', label: 'Perder', icon: 'pi-exclamation-triangle' },
+  ];
 
   branchShort(): string {
     return (this.sample?.branch || '').split(' — ')[0];
+  }
+
+  onRowAction(key: RowActionKey): void {
+    this.rowAction.emit(key);
   }
 }

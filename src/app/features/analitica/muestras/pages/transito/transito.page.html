@@ -43,6 +43,7 @@
       [sectionOptions]="sectionOptions()"
       [currentBranchName]="branchName()"
       (toggleSample)="onToggleSample($event)"
+      (rowAction)="onRowAction($event.key, $event.id)"
       (toggleAll)="onToggleAllLote(lote.id, $event)"
       (destChange)="onUpdateDestLote(lote.id, $event)"
       (setActive)="onSetActiveLote(lote.id)"
@@ -63,6 +64,7 @@
       [reasons]="service.reasons()"
       [assignedSectionId]="service.sectionIdOf(group.id)"
       (toggleSample)="onToggleSample($event)"
+      (rowAction)="onRowAction($event.key, $event.id)"
       (toggleAll)="onToggleAllGroup(group.id, $event)"
       (toggleEditing)="onToggleEditing(group.id)"
       (assignSection)="onAssignSection(group.id, $event)"
@@ -77,6 +79,15 @@
     </div>
   }
 </section>
+
+@if (activeTransition(); as tr) {
+  <app-muestras-transition-dialog
+    [transition]="tr"
+    [samples]="rowMenuSamples()"
+    (confirm)="confirmDialog($event)"
+    (cancel)="cancelDialog()"
+  />
+}
 
 <p-toast position="bottom-right" />
 <app-confirm-send-all-dialog

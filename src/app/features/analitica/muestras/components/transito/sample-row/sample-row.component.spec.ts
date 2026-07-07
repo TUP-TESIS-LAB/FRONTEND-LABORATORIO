@@ -65,4 +65,16 @@ describe('SampleRowComponent', () => {
     fixture.debugElement.query(By.css('.row')).nativeElement.click();
     expect(count).toBe(1);
   });
+
+  it('emite rowAction con la key al elegir una acción del menú', () => {
+    fixture.componentRef.setInput('sample', SAMPLE);
+    fixture.componentRef.setInput('selected', false);
+    fixture.componentRef.setInput('flashing', false);
+    fixture.componentRef.setInput('leaving', false);
+    fixture.detectChanges();
+    const emitted: string[] = [];
+    fixture.componentInstance.rowAction.subscribe((k) => emitted.push(k));
+    fixture.componentInstance.onRowAction('rollback');
+    expect(emitted).toEqual(['rollback']);
+  });
 });
