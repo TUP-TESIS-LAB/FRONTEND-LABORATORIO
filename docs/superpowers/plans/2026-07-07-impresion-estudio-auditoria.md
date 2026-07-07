@@ -32,7 +32,7 @@
 - Modify: `src/app/features/pacientes/pages/patient-form/patient-form.page.ts`
 
 **Interfaces:**
-- Produces: `PatientHistoryAnalysis.analysisName: string | null`, `PatientHistoryItem.copaymentAmount`/`authorizationNumber: number | null` — consumidos por Task 3 más adelante (no romper esta forma).
+- Produces: `PatientHistoryAnalysis.analysisName: string | null`, `PatientHistoryItem.copaymentAmount`/`authorizationNumber: string | null` — consumidos por Task 3 más adelante (no romper esta forma).
 
 - [ ] **Step 1: Rename de columna + fix del N+1 de nombre de análisis (`patient-detail.page.ts`)**
 
@@ -274,7 +274,7 @@ export interface PatientHistoryItem {
   /** Importe total (snapshot + copago). null si la atención no tiene snapshot. */
   total: number | null;
   copaymentAmount: number | null;
-  authorizationNumber: number | null;
+  authorizationNumber: string | null;
   /** true si hay al menos un informe firmado (parcial o final) disponible para imprimir. */
   reportAvailable: boolean;
   lastPrintedAt: string | null;
