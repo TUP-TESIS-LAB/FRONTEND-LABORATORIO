@@ -68,3 +68,18 @@ describe('SCREENS state machine config', () => {
     }
   });
 });
+
+describe('state-machine.config — screen traslado', () => {
+  it('expone rejected, lost y rollback', () => {
+    const keys = SCREENS.traslado.targets.map((t) => t.key);
+    expect(keys).toContain('rejected');
+    expect(keys).toContain('lost');
+    expect(keys).toContain('rollback');
+  });
+
+  it('rejected/lost apuntan a los estados correctos', () => {
+    const byKey = new Map(SCREENS.traslado.targets.map((t) => [t.key, t]));
+    expect(byKey.get('rejected')!.toState).toBe('rejected');
+    expect(byKey.get('lost')!.toState).toBe('lost');
+  });
+});

@@ -60,6 +60,8 @@ const TRASLADO: ScreenConfig = {
       desc: 'Enviar al laboratorio de referencia.',
       fields: ['lab'],
     },
+    rejectedTarget,
+    lostTarget,
     {
       key: 'rollback', label: 'Volver a estado anterior', toLabel: 'Recolectada', toState: 'collected',
       color: 'slate', icon: 'pi-undo',
