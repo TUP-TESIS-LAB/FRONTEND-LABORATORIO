@@ -17,14 +17,26 @@
             @for (col of columns(); track col.protocolId) {
               <div class="ws-cell">
                 @if (row.cells[col.protocolId]; as cell) {
-                  <input
-                    class="ws-input"
-                    [class.is-filled]="filled(col.protocolId, row.catalogId, cell)"
-                    [value]="value(col.protocolId, row.catalogId, cell)"
-                    placeholder="—"
-                    inputmode="decimal"
-                    (input)="setValue(col.protocolId, row.catalogId, $any($event.target).value)"
-                  />
+                  @if (row.analyticalType !== 'QUANTITATIVE' && row.qualitativeValues.length) {
+                    <p-select
+                      class="ws-select"
+                      appendTo="body"
+                      [options]="row.qualitativeValues"
+                      [ngModel]="value(col.protocolId, row.catalogId, cell)"
+                      [showClear]="true"
+                      placeholder="—"
+                      (onChange)="setValue(col.protocolId, row.catalogId, $event.value ?? '')"
+                    />
+                  } @else {
+                    <input
+                      class="ws-input"
+                      [class.is-filled]="filled(col.protocolId, row.catalogId, cell)"
+                      [value]="value(col.protocolId, row.catalogId, cell)"
+                      placeholder="—"
+                      inputmode="decimal"
+                      (input)="setValue(col.protocolId, row.catalogId, $any($event.target).value)"
+                    />
+                  }
                 }
               </div>
             }
