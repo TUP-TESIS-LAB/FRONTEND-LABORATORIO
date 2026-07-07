@@ -1,5 +1,7 @@
 # Impresión de estudio con auditoría — Plan de implementación
 
+> **Jira:** [KAN-211](https://exequielsantoro.atlassian.net/browse/KAN-211)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Que la secretaría (y el resto del staff clínico) pueda imprimir desde el historial de paciente el PDF de resultado ya firmado de un protocolo, sin ver el valor clínico en pantalla, con auditoría de quién imprimió y cuándo.

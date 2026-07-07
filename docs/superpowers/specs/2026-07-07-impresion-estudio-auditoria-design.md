@@ -1,8 +1,9 @@
 # Impresión de estudio con auditoría — Diseño
 
 > **Fecha:** 2026-07-07
+> **Jira:** [KAN-211](https://exequielsantoro.atlassian.net/browse/KAN-211)
 > **Rama:** `feat/print-report-audit` (BE) / `feat/print-report-audit` (FE), ambas desde `development`
-> **Estado:** Diseño aprobado, pendiente de plan + ticket Jira
+> **Estado:** Diseño aprobado, plan escrito, ticket creado — listo para implementación
 > **Repos:** Backend + FRONTEND-LABORATORIO (feature full-stack)
 
 ## 1. Contexto y problema
