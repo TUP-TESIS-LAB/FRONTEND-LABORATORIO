@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, input, output, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
 import type { PlanillaGrid, PlanillaCell } from '../../models/resultado.model';
 
 /** Payload de guardado: por cada result, las determinaciones modificadas con valor. */
@@ -23,7 +25,7 @@ export interface PlanillaSavePayload {
   selector: 'app-planilla-grid',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule],
+  imports: [ButtonModule, FormsModule, SelectModule],
   templateUrl: './planilla-grid.component.html',
   styleUrl: './planilla-grid.component.scss',
 })
