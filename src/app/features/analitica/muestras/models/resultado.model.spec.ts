@@ -73,4 +73,20 @@ describe('buildPlanillaGrid', () => {
     const grid = buildPlanillaGrid(input);
     expect(grid.sections[0].rows[0].cells[50014]).toEqual({ resultId: null, determinationId: null, value: '' });
   });
+
+  it('propaga analyticalType y qualitativeValues del catálogo, con default cuantitativo si faltan', () => {
+    const input = baseInput();
+    input.determinationCatalogByAnalysis = {
+      6: [
+        { id: 90100, name: 'HIV', unit: null, referenceValues: null, analysisCatalogId: 6, analyticalType: 'QUALITATIVE', qualitativeValues: ['Positivo', 'Negativo'] },
+        { id: 90101, name: 'Colesterol', unit: 'mg/dL', referenceValues: '< 200', analysisCatalogId: 6 },
+      ],
+    } as Record<number, DeterminationCatalogEntry[]>;
+    const grid = buildPlanillaGrid(input);
+    const rows = grid.sections[0].rows;
+    expect(rows[0].analyticalType).toBe('QUALITATIVE');
+    expect(rows[0].qualitativeValues).toEqual(['Positivo', 'Negativo']);
+    expect(rows[1].analyticalType).toBe('QUANTITATIVE');
+    expect(rows[1].qualitativeValues).toEqual([]);
+  });
 });

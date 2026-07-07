@@ -5,8 +5,12 @@ export interface Determination {
   id: number; analyticalResultId: number; determinationCatalogId: number;
   resultValue: string | null; observations: string | null;
 }
+export type AnalyticalType = 'QUANTITATIVE' | 'QUALITATIVE' | 'SEMI_QUALITATIVE';
+
 export interface DeterminationCatalogEntry {
   id: number; name: string; unit: string | null; referenceValues: string | null; analysisCatalogId: number;
+  analyticalType?: AnalyticalType;
+  qualitativeValues?: string[];
 }
 
 export interface GridCell { determinationId: number; value: string; }
@@ -29,7 +33,11 @@ export interface PlanillaColumn { protocolId: number; patientName: string; label
 /** Celda de planilla: si `determinationId`/`resultId` son null, la celda no persiste. */
 export interface PlanillaCell { resultId: number | null; determinationId: number | null; value: string; }
 
-export interface PlanillaRow { catalogId: number; name: string; unit: string | null; cells: Record<number, PlanillaCell>; }
+export interface PlanillaRow {
+  catalogId: number; name: string; unit: string | null; cells: Record<number, PlanillaCell>;
+  analyticalType: AnalyticalType;
+  qualitativeValues: string[];
+}
 
 export interface PlanillaSection { analysisCatalogId: number; analysisName: string; rows: PlanillaRow[]; }
 
@@ -89,7 +97,11 @@ export function buildPlanillaGrid(input: BuildPlanillaGridInput): PlanillaGrid {
             ? { resultId: result.id, determinationId: det.id, value: '' } // abrir en blanco; el back conserva lo guardado
             : { resultId: result.id, determinationId: null, value: '' };
         }
-        return { catalogId: cat.id, name: cat.name, unit: cat.unit, cells };
+        return {
+          catalogId: cat.id, name: cat.name, unit: cat.unit, cells,
+          analyticalType: cat.analyticalType ?? 'QUANTITATIVE',
+          qualitativeValues: cat.qualitativeValues ?? [],
+        };
       });
 
       return { analysisCatalogId, analysisName: ta.analysisName ?? `#${analysisCatalogId}`, rows };
