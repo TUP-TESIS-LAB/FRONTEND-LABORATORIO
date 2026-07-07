@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, output, signal } from '@ang
 import { AutoCompleteModule, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { Patient } from '../../models/patient.model';
 import { PatientService } from '../../services/patient.service';
+import { genderLabel } from '../../models/patient-labels';
 import { DniPipe } from '@shared/pipes/dni.pipe';
 import { AgePipe } from '@shared/pipes/age.pipe';
 
@@ -23,7 +24,7 @@ import { AgePipe } from '@shared/pipes/age.pipe';
         <div class="flex flex-col py-1">
           <div class="font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
           <div class="text-xs text-surface-500">
-            DNI {{ p.dni | dni }} · {{ p.gender }} · {{ (p.birthDate | age) ?? '?' }} años
+            DNI {{ p.dni | dni }} · {{ genderLabel(p.gender) }} · {{ (p.birthDate | age) ?? '?' }} años
           </div>
         </div>
       </ng-template>
@@ -34,6 +35,7 @@ export class PatientSearchAutocompleteComponent {
   readonly selected = output<Patient>();
   private readonly svc = inject(PatientService);
   readonly suggestions = signal<Patient[]>([]);
+  protected readonly genderLabel = genderLabel;
 
   onComplete(e: AutoCompleteCompleteEvent): void {
     const q = e.query?.trim();
