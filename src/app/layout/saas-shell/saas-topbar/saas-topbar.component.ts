@@ -2,12 +2,13 @@ import { ChangeDetectionStrategy, Component, inject, output } from '@angular/cor
 import { Router } from '@angular/router';
 import { TokenService } from '@core/auth/token.service';
 import { ButtonModule } from 'primeng/button';
+import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb.component';
 
 @Component({
   selector: 'saas-topbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule],
+  imports: [ButtonModule, BreadcrumbComponent],
   template: `
     <header class="saas-topbar">
       <div class="saas-topbar__brand">
@@ -15,6 +16,7 @@ import { ButtonModule } from 'primeng/button';
         <span class="saas-topbar__title">Platform Admin</span>
         <span class="saas-topbar__badge">SaaS</span>
       </div>
+      <ui-breadcrumb class="saas-topbar__breadcrumb" />
       <div class="saas-topbar__actions">
         <p-button [text]="true" icon="pi pi-sign-out" label="Salir" (onClick)="logout()" />
       </div>
@@ -30,6 +32,7 @@ import { ButtonModule } from 'primeng/button';
       border-bottom: 1px solid var(--saas-border, #e6e8ef);
     }
     .saas-topbar__brand { display: flex; align-items: center; gap: 10px; }
+    .saas-topbar__breadcrumb { min-width: 0; display: flex; align-items: center; margin-left: var(--space-4, 16px); }
     .saas-topbar__logo {
       width: 30px; height: 30px; border-radius: 8px; object-fit: contain;
       background: var(--saas-accent-tint, rgba(99,102,241,.10)); padding: 4px;

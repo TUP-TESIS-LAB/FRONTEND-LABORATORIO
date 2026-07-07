@@ -62,6 +62,7 @@ export const TURNOS_ROUTES: Routes = [
           {
             path: 'nueva',
             canActivate: [agendaWriteGuard],
+            data: { breadcrumb: 'Nueva agenda' },
             loadComponent: () =>
               import('./pages/configuracion/agenda-wizard/agenda-wizard.page').then(m => m.AgendaWizardPage),
           },
@@ -69,6 +70,7 @@ export const TURNOS_ROUTES: Routes = [
             path: ':id/editar',
             canActivate: [agendaWriteGuard],
             resolve: { agenda: agendaConfigResolver },
+            data: { breadcrumb: 'Editar agenda' },
             loadComponent: () =>
               import('./pages/configuracion/agenda-wizard/agenda-wizard.page').then(m => m.AgendaWizardPage),
           },

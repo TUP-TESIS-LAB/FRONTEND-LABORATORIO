@@ -20,11 +20,13 @@ export const MEDICOS_ROUTES: Routes = [
       },
       {
         path: 'nuevo',
+        data: { breadcrumb: 'Nuevo médico' },
         loadComponent: () =>
           import('./pages/medico-form/medico-form.page').then((m) => m.MedicoFormPage),
       },
       {
         path: ':id/editar',
+        data: { breadcrumb: 'Editar médico' },
         loadComponent: () =>
           import('./pages/medico-form/medico-form.page').then((m) => m.MedicoFormPage),
       },

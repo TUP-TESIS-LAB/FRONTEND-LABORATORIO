@@ -8,11 +8,13 @@ export const PACIENTES_ROUTES: Routes = [
   },
   {
     path: 'nuevo',
+    data: { breadcrumb: 'Nuevo paciente' },
     loadComponent: () =>
       import('./pages/patient-form/patient-form.page').then((m) => m.PatientFormPage),
   },
   {
     path: ':id/editar',
+    data: { breadcrumb: 'Editar paciente' },
     loadComponent: () =>
       import('./pages/patient-form/patient-form.page').then((m) => m.PatientFormPage),
   },
