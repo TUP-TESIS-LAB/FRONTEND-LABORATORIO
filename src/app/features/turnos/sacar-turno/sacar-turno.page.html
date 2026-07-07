@@ -12,25 +12,17 @@
 
       @switch (currentKey()) {
 
-        @case ('paciente') {
+        @case ('datos-generales') {
           <sacar-step-paciente
             [selectedPatient]="selectedPatient()"
             [creating]="creatingPatient()"
             (patientSelected)="onPatientSelected($event)"
             (clearSelection)="onClearPatient()"
             (createPatient)="onCreatePatient($event)" />
-        }
 
-        @case ('analisis') {
-          <sacar-step-tipos
-            [tipos]="tipos()"
-            [selectedIds]="selectedTipoIds()"
-            [loading]="tiposLoading()"
-            (selectionChange)="onTiposChange($event)" />
-        }
+          <hr class="border-surface-200 my-5" />
 
-        @case ('turno') {
-          <!-- Sucursal (compacta) + horario en el mismo paso -->
+          <!-- Sucursal (compacta) + horario -->
           <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-2">
             <span class="text-sm font-medium text-surface-600 sm:w-24">Sucursal</span>
             @if (branches().length <= 1) {
@@ -57,6 +49,14 @@
             [minDate]="minBookingDate"
             (fechaChange)="onFechaChange($event)"
             (horaChange)="onHoraChange($event)" />
+        }
+
+        @case ('analisis') {
+          <sacar-step-tipos
+            [tipos]="tipos()"
+            [selectedIds]="selectedTipoIds()"
+            [loading]="tiposLoading()"
+            (selectionChange)="onTiposChange($event)" />
         }
 
         @case ('confirmar') {
