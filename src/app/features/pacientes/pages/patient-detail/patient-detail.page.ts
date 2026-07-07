@@ -19,6 +19,7 @@ import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.direct
 import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
 import { TableColumn } from '@shared/ui/models/table-column.model';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
+import { NotificationService } from '@core/services/notification.service';
 import {
   loadPatient, loadPatientFailure, clearSelectedPatient, togglePatientActive,
 } from '../../store/patient.actions';
@@ -247,6 +248,7 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   private readonly perms = inject(PatientPermissionsService);
   private readonly catalogService = inject(CoverageCatalogService);
   private readonly historyService = inject(PatientHistoryService);
+  private readonly notifications = inject(NotificationService);
   readonly canMutate = this.perms.canMutate;
 
   readonly patient = this.store.selectSignal(selectSelectedPatient);
@@ -320,7 +322,7 @@ export class PatientDetailPage implements OnInit, OnDestroy {
         window.open(url, '_blank');
         this.loadHistory(patientId);
       },
-      error: () => { /* toast genérico ya cubierto por el interceptor global de errores HTTP */ },
+      error: () => this.notifications.error('No se pudo imprimir el estudio. Intentá de nuevo en unos minutos.'),
     });
   }
 
