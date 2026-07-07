@@ -25,6 +25,7 @@ import { loadTemplates } from '../../store/worksheet-templates/worksheet-templat
 import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
 import { WorksheetConfigModalComponent } from '../../components/planillas/worksheet-config-modal.component';
+import type { RowActionKey } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 
 @Component({
   selector: 'app-muestras-worklist',
@@ -305,6 +306,8 @@ export class WorklistPage {
 
   readonly menuOpen = signal(false);
   readonly activeTransition = signal<Transition | null>(null);
+  /** Samples del menú por-fila (kebab). Vacío = el diálogo usa la selección masiva. */
+  readonly rowMenuSamples = signal<Sample[]>([]);
   readonly flashId = signal<string | null>(null);
   readonly leavingIds = this.samples.leavingIds;
 
@@ -366,18 +369,34 @@ export class WorklistPage {
     this.activeTransition.set(t);
   }
 
-  cancelDialog(): void { this.activeTransition.set(null); }
+  cancelDialog(): void {
+    this.activeTransition.set(null);
+    this.rowMenuSamples.set([]);
+  }
+
+  /** Abre el diálogo de transición para UNA fila (kebab), sin tocar la selección masiva. */
+  onRowAction(key: RowActionKey, row: Sample): void {
+    const t = this.config().targets.find((tt) => tt.key === key);
+    if (!t) return;
+    this.rowMenuSamples.set([row]);
+    this.activeTransition.set(t);
+  }
 
   async confirmDialog(payload: { dest: TransitionDest; note: string }): Promise<void> {
     const t = this.activeTransition();
     if (!t) return;
+    const rowSamples = this.rowMenuSamples();
+    const usingRowMenu = rowSamples.length > 0;
     const ids = Array.from(this.selectedIds());
     this.activeTransition.set(null);
 
     if (this.isBackendScreen()) {
-      const tubes = this.selectedSamples() as Tube[];
+      const tubes = (usingRowMenu ? rowSamples : this.selectedSamples()) as Tube[];
       const labelIds = tubes.flatMap(tube => tube.labelIds ?? []);
-      if (labelIds.length === 0) return;
+      if (labelIds.length === 0) {
+        this.rowMenuSamples.set([]);
+        return;
+      }
       const detail = this.formatDestDetail(t, payload.dest);
       this.pendingToast = { count: tubes.length, toLabel: t.toLabel, detail };
       this.store.dispatch(transitionLabels({
@@ -385,9 +404,11 @@ export class WorklistPage {
         transitionKey: t.key,
         reason: payload.note || undefined,
       }));
+      this.rowMenuSamples.set([]);
       this.clearSelection();
     } else {
       await this.samples.transition(ids, t, payload.dest);
+      this.rowMenuSamples.set([]);
       this.clearSelection();
       const detail = this.formatDestDetail(t, payload.dest);
       this.messages.add({

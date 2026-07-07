@@ -189,12 +189,12 @@ describe('SampleTableComponent', () => {
     expect(el.querySelector('.caret-btn')).toBeNull();
   });
 
-  it('muestra mensaje vacío con colspan 7 cuando no hay filas', () => {
+  it('muestra mensaje vacío con colspan 8 cuando no hay filas', () => {
     setInputs([]);
     const el = fixture.nativeElement as HTMLElement;
     const emptyTd = el.querySelector('tr.empty td');
     expect(emptyTd).not.toBeNull();
-    expect(emptyTd!.getAttribute('colspan')).toBe('7');
+    expect(emptyTd!.getAttribute('colspan')).toBe('8');
     expect(emptyTd!.textContent).toContain('No hay muestras');
   });
 });

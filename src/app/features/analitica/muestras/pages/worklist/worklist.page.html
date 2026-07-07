@@ -65,12 +65,13 @@
     [screenKey]="config().key"
     (toggleRow)="toggleRow($event)"
     (toggleAll)="toggleAll()"
+    (rowAction)="onRowAction($event.key, $event.row)"
   />
 
   @if (activeTransition(); as t) {
     <app-muestras-transition-dialog
       [transition]="t"
-      [samples]="selectedSamples()"
+      [samples]="rowMenuSamples().length ? rowMenuSamples() : selectedSamples()"
       [currentBranch]="currentBranch"
       [branches]="branches"
       [areas]="areas"

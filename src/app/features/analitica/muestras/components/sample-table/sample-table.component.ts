@@ -3,6 +3,7 @@ import type { Sample } from '../../models/sample.model';
 import type { ScreenKey } from '../../models/transition.model';
 import type { Tube } from '../../models/tube.model';
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
+import { RowActionsMenuComponent, type RowAction, type RowActionKey } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 
 const STATE_LABELS: Record<Sample['state'], string> = {
   collected: 'Recolectada',
@@ -29,7 +30,7 @@ const STATE_COLORS: Record<Sample['state'], string> = {
 @Component({
   selector: 'app-muestras-sample-table',
   standalone: true,
-  imports: [DateEsPipe],
+  imports: [DateEsPipe, RowActionsMenuComponent],
   templateUrl: './sample-table.component.html',
   styleUrl: './sample-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +44,13 @@ export class SampleTableComponent {
 
   readonly toggleRow = output<string>();
   readonly toggleAll = output<void>();
+  readonly rowAction = output<{ key: RowActionKey; row: Sample }>();
+
+  /** Acciones del menú por-fila en Recolección (Rechazar / Perder). */
+  readonly rowMenuActions: ReadonlyArray<RowAction> = [
+    { key: 'rejected', label: 'Rechazar', icon: 'pi-ban' },
+    { key: 'lost', label: 'Perder', icon: 'pi-exclamation-triangle' },
+  ];
 
   /** Ids de filas con el panel de análisis abierto. */
   readonly expandedIds = signal<ReadonlySet<string>>(new Set());

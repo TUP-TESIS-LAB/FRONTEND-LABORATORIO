@@ -16,6 +16,7 @@
         <th>{{ sucursalHeader() }}</th>
         <th>Toma</th>
         <th>Estado</th>
+        <th class="actions-col" aria-label="Acciones"></th>
       </tr>
     </thead>
     <tbody>
@@ -76,11 +77,14 @@
               <div class="state-sub">↧ {{ row.area }}</div>
             }
           </td>
+          <td class="actions-col" (click)="$event.stopPropagation()">
+            <app-row-actions-menu [actions]="rowMenuActions" (accion)="rowAction.emit({ key: $event, row })" />
+          </td>
         </tr>
         @if (tubeAnalyses(row); as analyses) {
           @if (isExpanded(row.id)) {
             <tr class="expansion-row">
-              <td colspan="7">
+              <td colspan="8">
                 @if (rejectionReason(row); as motivo) {
                   <p class="rejection-reason">
                     <span class="rejection-label">Motivo:</span> {{ motivo }}
@@ -103,7 +107,7 @@
         }
       } @empty {
         <tr class="empty">
-          <td colspan="7">No hay muestras en este estado.</td>
+          <td colspan="8">No hay muestras en este estado.</td>
         </tr>
       }
     </tbody>
