@@ -20,6 +20,7 @@
                   @if (row.analyticalType !== 'QUANTITATIVE' && row.qualitativeValues.length) {
                     <p-select
                       class="ws-select"
+                      [class.is-filled]="filled(col.protocolId, row.catalogId, cell)"
                       appendTo="body"
                       [options]="row.qualitativeValues"
                       [ngModel]="value(col.protocolId, row.catalogId, cell)"
