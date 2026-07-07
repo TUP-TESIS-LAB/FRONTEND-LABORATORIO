@@ -11,7 +11,7 @@ import { Employee, EmployeeContact } from '../models/employee.model';
 
 const mk = (id: number, active = true): Employee => ({
   id, firstName: `f${id}`, lastName: `l${id}`, document: `${id}`,
-  isBiochemist: false, registration: null, userId: null, active,
+  isBiochemist: false, registration: null, userId: null, active, hasSignature: false,
 });
 const contact = (id: number): EmployeeContact => ({ id, employeeId: 1, contactType: 'EMAIL', value: `c${id}@x.com` });
 
