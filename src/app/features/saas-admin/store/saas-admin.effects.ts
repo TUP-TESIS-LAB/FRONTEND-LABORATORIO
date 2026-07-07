@@ -4,6 +4,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { from, of } from 'rxjs';
 import { catchError, concatMap, exhaustMap, map, switchMap } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
+import { NotificationService } from '@core/services/notification.service';
 import { SaasAdminApiService } from '../services/saas-admin-api.service';
 import * as A from './saas-admin.actions';
 
@@ -15,6 +16,7 @@ function toErr(e: unknown): HttpErrorResponse {
 export class SaasAdminEffects {
   private readonly actions$ = inject(Actions);
   private readonly api = inject(SaasAdminApiService);
+  private readonly notification = inject(NotificationService);
 
   loadTenants$ = createEffect(() => this.actions$.pipe(
     ofType(A.loadTenants),
@@ -84,7 +86,10 @@ export class SaasAdminEffects {
     ofType(A.toggleTenantModule),
     concatMap(({ tenantId, code, enable }) => from(this.api.toggleTenantModule(tenantId, code, enable)).pipe(
       map(() => A.toggleTenantModuleSuccess({ tenantId, code, enabled: enable })),
-      catchError((e) => of(A.toggleTenantModuleFailure({ error: toErr(e) }))),
+      catchError((e) => {
+        this.notification.error('No se pudo actualizar el módulo.', 'Reintentá en un momento.');
+        return of(A.toggleTenantModuleFailure({ error: toErr(e) }));
+      }),
     )),
   ));
 
