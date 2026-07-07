@@ -52,13 +52,13 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Clínico',
     items: [
       {
-        kind: 'expandable', label: 'Muestras', icon: 'pi pi-flask',
+        kind: 'expandable', label: 'Muestras', icon: 'pi pi-clipboard',
         children: [
-          { label: 'Recolección',   path: '/analitica/recoleccion',   sectionKey: 'PREANALITICA' },
-          { label: 'Traslado',      path: '/analitica/traslado',      sectionKey: 'PREANALITICA' },
-          { label: 'Procesamiento', path: '/analitica/procesamiento', sectionKey: 'ANALITICA' },
-          { label: 'Validación',    path: '/analitica/validacion',    sectionKey: 'ANALITICA' },
-          { label: 'Descarte',      path: '/analitica/descarte',      sectionKey: 'POSTANALITICA' },
+          { label: 'Recolección',   path: '/analitica/recoleccion',   icon: 'pi pi-inbox',        sectionKey: 'PREANALITICA' },
+          { label: 'Traslado',      path: '/analitica/traslado',      icon: 'pi pi-truck',        sectionKey: 'PREANALITICA' },
+          { label: 'Procesamiento', path: '/analitica/procesamiento', icon: 'pi pi-cog',          sectionKey: 'ANALITICA' },
+          { label: 'Validación',    path: '/analitica/validacion',    icon: 'pi pi-check-circle', sectionKey: 'ANALITICA' },
+          { label: 'Descarte',      path: '/analitica/descarte',      icon: 'pi pi-trash',        sectionKey: 'POSTANALITICA' },
         ],
       },
       { kind: 'link', label: 'Cola de extracción', icon: 'pi pi-bolt', path: '/analitica/extraccion', sectionKey: 'EXTRACCIONES' },
