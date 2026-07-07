@@ -13,7 +13,7 @@ import { SectionService } from '@features/sucursales/services/section.service';
 import type { Section } from '@features/sucursales/models/section.model';
 import type { Sample } from '../../models/sample.model';
 import type { LoteDestPatch, SectionOption } from '../../models/transito.model';
-import type { Transition, TransitionDest } from '../../models/transition.model';
+import type { RowActionKey } from '../../models/transition.model';
 import { TransitoLotesService, NO_SAMPLE_LINK_TEXT } from '../../services/transito-lotes.service';
 import { TransitoScanBarComponent } from '../../components/transito/transito-scan-bar/transito-scan-bar.component';
 import { BulkActionsBarComponent } from '../../components/transito/bulk-actions-bar/bulk-actions-bar.component';
@@ -22,15 +22,15 @@ import { RecommendedGroupCardComponent } from '../../components/transito/recomme
 import { ConfirmSendAllDialogComponent } from '../../components/transito/confirm-send-all-dialog/confirm-send-all-dialog.component';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
 import {
-  deriveTubesSuccess, dispatchTubesSuccess, initMuestras, loadTransito, loadWorkspaces, transitionLabels,
+  deriveTubesSuccess, dispatchTubesSuccess, initMuestras, loadTransito, loadWorkspaces,
 } from '../../store/muestras.actions';
 import {
   selectMuestrasBranchId, selectMuestrasBranchName, selectMuestrasBranches, selectMuestrasError,
   selectRouting, selectTransitoItems, selectWorkspaces,
 } from '../../store/muestras.selectors';
 import { groupTubes, type Tube } from '../../models/tube.model';
-import { SCREENS } from '../../data/state-machine.config';
-import type { RowActionKey } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
+import { rowActionsFor } from '../../data/state-machine.config';
+import { createRowTransitionDialog } from '../row-transition-dialog';
 
 @Component({
   selector: 'app-transito-page',
@@ -57,10 +57,10 @@ export class TransitoPage {
   protected readonly flashId = signal<string | null>(null);
   protected readonly confirmOpen = signal(false);
 
-  /** Transición activa disparada por el menú por-fila (kebab). */
-  readonly activeTransition = signal<Transition | null>(null);
-  /** Tubos del menú por-fila para el diálogo de transición. */
-  readonly rowMenuSamples = signal<Tube[]>([]);
+  /** Andamiaje del diálogo de transición del menú kebab por-fila. */
+  readonly rowDialog = createRowTransitionDialog(this.store, 'traslado');
+  /** Acciones del menú por-fila, derivadas de la config. */
+  readonly rowMenuActions = rowActionsFor('traslado');
 
   // ── Fuente real: store NgRx (mochila) ──
   private readonly transitoItems = this.store.selectSignal(selectTransitoItems);
@@ -207,34 +207,11 @@ export class TransitoPage {
     return all.filter(s => set.has(s.id));
   }
 
-  /** Abre el diálogo de transición para UNA fila (kebab). rollback/rejected/lost → fields: []. */
-  onRowAction(key: RowActionKey, id: string): void {
-    const t = SCREENS.traslado.targets.find((tt) => tt.key === key);
-    if (!t) return;
+  /** Abre el diálogo de transición para UNA fila (kebab). Resuelve el tube desde el id. */
+  onRowAction(key: string, id: string): void {
     const tube = this.samplesOf([id])[0] as Tube | undefined;
     if (!tube) return;
-    this.rowMenuSamples.set([tube]);
-    this.activeTransition.set(t);
-  }
-
-  cancelDialog(): void {
-    this.activeTransition.set(null);
-    this.rowMenuSamples.set([]);
-  }
-
-  confirmDialog(payload: { dest: TransitionDest; note: string }): void {
-    const t = this.activeTransition();
-    const tubes = this.rowMenuSamples();
-    this.activeTransition.set(null);
-    this.rowMenuSamples.set([]);
-    if (!t || tubes.length === 0) return;
-    const labelIds = tubes.flatMap((tube) => tube.labelIds ?? []);
-    if (labelIds.length === 0) return;
-    this.store.dispatch(transitionLabels({
-      labelIds,
-      transitionKey: t.key,
-      reason: payload.note || undefined,
-    }));
+    this.rowDialog.open(key as RowActionKey, tube);
   }
 
   loteNumber(loteId: string): number {

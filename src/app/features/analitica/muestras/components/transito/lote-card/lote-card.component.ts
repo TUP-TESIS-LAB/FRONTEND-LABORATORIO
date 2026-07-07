@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 import type { Sample } from '../../../models/sample.model';
 import type { LoteDestPatch, SectionOption, TemporalLote } from '../../../models/transito.model';
 import { SampleRowComponent } from '../sample-row/sample-row.component';
-import type { RowActionKey } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
+import type { RowActionKey } from '../../../models/transition.model';
 
 @Component({
   selector: 'app-lote-card',

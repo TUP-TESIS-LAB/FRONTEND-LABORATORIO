@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { RowActionsMenuComponent, type RowAction } from './row-actions-menu.component';
+import { RowActionsMenuComponent, type RowMenuAction } from './row-actions-menu.component';
 
 describe('RowActionsMenuComponent', () => {
-  const actions: RowAction[] = [
+  const actions: RowMenuAction[] = [
     { key: 'rejected', label: 'Rechazar', icon: 'pi-ban' },
     { key: 'lost', label: 'Perder', icon: 'pi-exclamation-triangle' },
   ];

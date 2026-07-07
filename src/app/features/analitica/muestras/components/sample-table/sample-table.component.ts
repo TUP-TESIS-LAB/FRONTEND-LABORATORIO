@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { Sample } from '../../models/sample.model';
-import type { ScreenKey } from '../../models/transition.model';
+import type { RowActionKey, ScreenKey } from '../../models/transition.model';
 import type { Tube } from '../../models/tube.model';
+import { rowActionsFor } from '../../data/state-machine.config';
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
-import { RowActionsMenuComponent, type RowAction, type RowActionKey } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
+import { RowActionsMenuComponent } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 
 const STATE_LABELS: Record<Sample['state'], string> = {
   collected: 'Recolectada',
@@ -46,11 +47,12 @@ export class SampleTableComponent {
   readonly toggleAll = output<void>();
   readonly rowAction = output<{ key: RowActionKey; row: Sample }>();
 
-  /** Acciones del menú por-fila en Recolección (Rechazar / Perder). */
-  readonly rowMenuActions: ReadonlyArray<RowAction> = [
-    { key: 'rejected', label: 'Rechazar', icon: 'pi-ban' },
-    { key: 'lost', label: 'Perder', icon: 'pi-exclamation-triangle' },
-  ];
+  /** Acciones del menú por-fila, derivadas de la config de la pantalla. */
+  readonly rowMenuActions = computed(() => rowActionsFor(this.screenKey()));
+
+  emitRowAction(key: string, row: Sample): void {
+    this.rowAction.emit({ key: key as RowActionKey, row });
+  }
 
   /** Ids de filas con el panel de análisis abierto. */
   readonly expandedIds = signal<ReadonlySet<string>>(new Set());

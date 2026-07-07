@@ -26,12 +26,29 @@ export interface Transition {
   sep?: boolean;
   fields: DestField[];
   reason?: string;
+  /**
+   * Si está presente, la transición aparece en el menú kebab por-fila.
+   * `label` es el texto imperativo de la acción (ej. 'Rechazar' vs el `label` 'Rechazada');
+   * `icon` cae al `icon` del target si se omite. Ausente = no va al menú por-fila.
+   */
+  rowMenu?: { label: string; icon?: string };
 }
 
 export interface TransitionDest {
   sucursal?: string;
   area?: string;
   lab?: string;
+}
+
+/** Acciones que el menú kebab por-fila puede disparar (subconjunto de TransitionKey). */
+export type RowActionKey = 'rollback' | 'rejected' | 'lost';
+
+/** Ítem del menú kebab por-fila, derivado de un `Transition` con `rowMenu` en la config. */
+export interface RowAction {
+  key: RowActionKey;
+  label: string;
+  /** PrimeIcons name, ej. 'pi-ban'. */
+  icon: string;
 }
 
 export type ScreenKey = 'recoleccion' | 'traslado' | 'procesamiento' | 'descarte';

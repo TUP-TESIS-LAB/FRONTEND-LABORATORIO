@@ -70,30 +70,30 @@ describe('ProcesamientoPage — menú por-fila', () => {
     const component = fx.componentInstance;
     const tube = { id: 'p1', labelIds: [20], state: 'processing' } as unknown as Tube;
     component.onRowAction('rejected', tube);
-    expect(component.activeTransition()?.key).toBe('rejected');
-    expect(component.rowMenuSamples()).toEqual([tube]);
+    expect(component.rowDialog.activeTransition()?.key).toBe('rejected');
+    expect(component.rowDialog.rowMenuSamples()).toEqual([tube]);
   });
 
-  it('confirmDialog despacha transitionLabels con los labelIds del tube', () => {
+  it('rowDialog.confirm despacha transitionLabels con los labelIds del tube', () => {
     const fx = setup();
     const component = fx.componentInstance;
     const store = TestBed.inject(MockStore);
     const dispatch = vi.spyOn(store, 'dispatch');
     const tube = { id: 'p1', labelIds: [20, 21], state: 'processing' } as unknown as Tube;
     component.onRowAction('rollback', tube);
-    component.confirmDialog({ dest: {}, note: '' });
+    component.rowDialog.confirm({ dest: {}, note: '' });
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ labelIds: [20, 21], transitionKey: 'rollback' }),
     );
   });
 
-  it('cancelDialog limpia la transición activa y las filas del menú', () => {
+  it('rowDialog.cancel limpia la transición activa y las filas del menú', () => {
     const fx = setup();
     const component = fx.componentInstance;
     const tube = { id: 'p1', labelIds: [20], state: 'processing' } as unknown as Tube;
     component.onRowAction('lost', tube);
-    component.cancelDialog();
-    expect(component.activeTransition()).toBeNull();
-    expect(component.rowMenuSamples()).toEqual([]);
+    component.rowDialog.cancel();
+    expect(component.rowDialog.activeTransition()).toBeNull();
+    expect(component.rowDialog.rowMenuSamples()).toEqual([]);
   });
 });

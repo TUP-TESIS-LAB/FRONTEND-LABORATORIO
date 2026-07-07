@@ -122,12 +122,12 @@
   <app-marcar-completadas-modal [visible]="completadasOpen()" [items]="resumenItems()"
     (marcar)="onMarcarCompletadas($event)" (closed)="cerrarCompletadas()" />
 
-  @if (activeTransition(); as tr) {
+  @if (rowDialog.activeTransition(); as tr) {
     <app-muestras-transition-dialog
       [transition]="tr"
-      [samples]="rowMenuSamples()"
-      (confirm)="confirmDialog($event)"
-      (cancel)="cancelDialog()"
+      [samples]="rowDialog.samples()"
+      (confirm)="rowDialog.confirm($event)"
+      (cancel)="rowDialog.cancel()"
     />
   }
 

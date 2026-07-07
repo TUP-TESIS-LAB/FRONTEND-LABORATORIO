@@ -10,11 +10,12 @@ import { PageHeaderComponent } from '@shared/ui/components/page-header/page-head
 import { humanizeBackendError, type BackendErrorShape } from '@shared/utils/error-messages';
 import { CURRENT_BRANCH } from '../../data/catalogs';
 import { groupTubes, type Tube } from '../../models/tube.model';
-import { SCREENS } from '../../data/state-machine.config';
-import type { Transition, TransitionDest } from '../../models/transition.model';
+import { rowActionsFor } from '../../data/state-machine.config';
+import { createRowTransitionDialog } from '../row-transition-dialog';
+import type { RowActionKey } from '../../models/transition.model';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
-import { RowActionsMenuComponent, type RowAction, type RowActionKey } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
-import { initMuestras, loadProcesamiento, transitionLabels } from '../../store/muestras.actions';
+import { RowActionsMenuComponent } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
+import { initMuestras, loadProcesamiento } from '../../store/muestras.actions';
 import { selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError, selectMuestrasBranchId } from '../../store/muestras.selectors';
 import { MuestrasApiService } from '../../services/muestras-api.service';
 import { loadTemplates } from '../../store/worksheet-templates/worksheet-templates.actions';
@@ -116,40 +117,14 @@ export class ProcesamientoPage implements OnInit {
   readonly resumenItems = signal<ResumenMuestra[]>([]);
 
   // --- menú por-fila (KAN-208): Rollback / Rechazar / Perder ---
-  readonly activeTransition = signal<Transition | null>(null);
-  readonly rowMenuSamples = signal<Tube[]>([]);
+  /** Andamiaje del diálogo de transición del menú kebab por-fila. */
+  readonly rowDialog = createRowTransitionDialog(this.store, 'procesamiento');
 
-  readonly rowMenuActions: ReadonlyArray<RowAction> = [
-    { key: 'rollback', label: 'Volver a estado anterior', icon: 'pi-undo' },
-    { key: 'rejected', label: 'Rechazar', icon: 'pi-ban' },
-    { key: 'lost', label: 'Perder', icon: 'pi-exclamation-triangle' },
-  ];
+  /** Acciones del menú por-fila, derivadas de la config. */
+  readonly rowMenuActions = rowActionsFor('procesamiento');
 
-  onRowAction(key: RowActionKey, row: Tube): void {
-    const t = SCREENS.procesamiento.targets.find((tt) => tt.key === key);
-    if (!t) return;
-    this.rowMenuSamples.set([row]);
-    this.activeTransition.set(t);
-  }
-
-  cancelDialog(): void {
-    this.activeTransition.set(null);
-    this.rowMenuSamples.set([]);
-  }
-
-  confirmDialog(payload: { dest: TransitionDest; note: string }): void {
-    const t = this.activeTransition();
-    const tubes = this.rowMenuSamples();
-    this.activeTransition.set(null);
-    this.rowMenuSamples.set([]);
-    if (!t || tubes.length === 0) return;
-    const labelIds = tubes.flatMap((tube) => tube.labelIds ?? []);
-    if (labelIds.length === 0) return;
-    this.store.dispatch(transitionLabels({
-      labelIds,
-      transitionKey: t.key,
-      reason: payload.note || undefined,
-    }));
+  onRowAction(key: string, row: Tube): void {
+    this.rowDialog.open(key as RowActionKey, row);
   }
 
   constructor() {

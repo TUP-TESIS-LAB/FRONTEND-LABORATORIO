@@ -1,4 +1,6 @@
-import type { ScreenConfig, ScreenKey, Transition } from '../models/transition.model';
+import type { RowAction, RowActionKey, ScreenConfig, ScreenKey, Transition } from '../models/transition.model';
+
+const ROW_ACTION_KEYS: ReadonlySet<string> = new Set<RowActionKey>(['rollback', 'rejected', 'lost']);
 
 const transitoTarget: Transition = {
   key: 'transito', label: 'En tránsito', toLabel: 'En tránsito', toState: 'transito',
@@ -13,6 +15,7 @@ const rejectedTarget: Transition = {
   desc: 'La muestra no cumple criterios de calidad.',
   fields: [],
   reason: 'Motivo del rechazo (opcional)',
+  rowMenu: { label: 'Rechazar' },
 };
 
 const lostTarget: Transition = {
@@ -21,6 +24,7 @@ const lostTarget: Transition = {
   desc: 'Se reporta pérdida del material.',
   fields: [],
   reason: 'Detalle de la pérdida (opcional)',
+  rowMenu: { label: 'Perder' },
 };
 
 const RECOLECCION: ScreenConfig = {
@@ -69,6 +73,7 @@ const TRASLADO: ScreenConfig = {
       sep: true,
       fields: [],
       reason: 'Motivo del rollback',
+      rowMenu: { label: 'Volver a estado anterior' },
     },
   ],
 };
@@ -96,6 +101,7 @@ const PROCESAMIENTO: ScreenConfig = {
       sep: true,
       fields: [],
       reason: 'Motivo del rollback',
+      rowMenu: { label: 'Volver a estado anterior' },
     },
   ],
 };
@@ -133,3 +139,20 @@ export const SCREENS: Record<ScreenKey, ScreenConfig> = {
   procesamiento: PROCESAMIENTO,
   descarte: DESCARTE,
 };
+
+/**
+ * Acciones del menú kebab por-fila de una pantalla, derivadas de la config.
+ * Única fuente de verdad: un target aparece en el menú sii declara `rowMenu`.
+ * Garantiza que lo que el menú muestra == lo que `onRowAction` puede resolver.
+ */
+export function rowActionsFor(screen: ScreenKey): RowAction[] {
+  return SCREENS[screen].targets
+    .filter((t): t is Transition & { rowMenu: NonNullable<Transition['rowMenu']> } =>
+      !!t.rowMenu && ROW_ACTION_KEYS.has(t.key),
+    )
+    .map((t) => ({
+      key: t.key as RowActionKey,
+      label: t.rowMenu.label,
+      icon: t.rowMenu.icon ?? t.icon,
+    }));
+}

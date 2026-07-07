@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { MenuModule } from 'primeng/menu';
 import type { MenuItem } from 'primeng/api';
 
-/** Subconjunto de TransitionKey que el menú por-fila puede disparar. */
-export type RowActionKey = 'rollback' | 'rejected' | 'lost';
-
-export interface RowAction {
-  key: RowActionKey;
+/**
+ * Ítem genérico del menú kebab por-fila. El componente es agnóstico del dominio:
+ * `K` es el tipo de la key (el consumidor la tipa; en muestras es `RowActionKey`).
+ */
+export interface RowMenuAction<K extends string = string> {
+  key: K;
   label: string;
   /** PrimeIcons name, ej. 'pi-ban'. */
   icon: string;
@@ -38,8 +39,8 @@ export interface RowAction {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RowActionsMenuComponent {
-  readonly actions = input.required<ReadonlyArray<RowAction>>();
-  readonly accion = output<RowActionKey>();
+  readonly actions = input.required<ReadonlyArray<RowMenuAction>>();
+  readonly accion = output<string>();
 
   readonly items = computed<MenuItem[]>(() =>
     this.actions().map((a) => ({

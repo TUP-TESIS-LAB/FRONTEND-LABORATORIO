@@ -25,7 +25,7 @@ import { loadTemplates } from '../../store/worksheet-templates/worksheet-templat
 import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
 import { WorksheetConfigModalComponent } from '../../components/planillas/worksheet-config-modal.component';
-import type { RowActionKey } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
+import type { RowActionKey } from '../../models/transition.model';
 
 @Component({
   selector: 'app-muestras-worklist',
