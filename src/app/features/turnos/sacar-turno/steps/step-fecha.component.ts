@@ -11,8 +11,10 @@ import { SlotDisponible } from '../models/sacar-turno.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, DatePickerModule, SkeletonModule],
   template: `
-    <h2 class="text-lg font-semibold mb-1">Fecha y horario</h2>
-    <p class="text-sm text-surface-500 mb-4">El turno debe agendarse con al menos 2 días de anticipación.</p>
+    <div class="flex items-baseline gap-2 mb-2">
+      <label class="text-sm font-medium text-surface-600">Fecha y horario</label>
+      <span class="text-xs text-surface-400">mínimo 2 días de anticipación</span>
+    </div>
 
     <div class="flex flex-col lg:flex-row gap-6">
       <p-datepicker
