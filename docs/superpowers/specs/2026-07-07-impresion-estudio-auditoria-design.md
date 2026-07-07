@@ -50,13 +50,13 @@ Al mismo tiempo, la secretaría necesita poder **entregarle el resultado en pape
 ### 4.1 Nuevo endpoint
 
 ```
-GET /api/v1/analitica/atencion/patients/{patientId}/protocols/{protocolId}/report-print
+GET /api/v1/attentions/patient/{patientId}/protocol/{protocolId}/report-print
 @PreAuthorize("hasAnyRole('SECRETARIA', 'ADMINISTRADOR', 'BIOQUIMICO', 'TECNICO_LABORATORIO')")
 ```
 
 Mismo set de roles que ya tiene el endpoint de post-analítica (`ReportController`, `hasAnyRole('BIOQUIMICO', 'ADMINISTRADOR', 'TECNICO_LABORATORIO')`) más `SECRETARIA` — no se restringe a solo secretaría porque el resto del staff clínico también puede necesitar imprimir en mostrador.
 
-Vive en el módulo `atencion` (dueño del historial de paciente), no en `postanalitica` — evita mezclar audiencias/propósitos en el mismo controller.
+Vive en `SecretaryAttentionController` (módulo `atencion`), el mismo controller que ya expone `GET /api/v1/attentions/patient/{patientId}/history` — no un controller nuevo. No se toca `ReportController` de `postanalitica` — evita mezclar audiencias/propósitos.
 
 ### 4.2 `PrintPatientReportUseCase`
 
