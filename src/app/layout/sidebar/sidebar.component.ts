@@ -515,14 +515,21 @@ export class SidebarComponent implements OnInit {
     if (id != null) this.store.dispatch(loadBranchTotemConfig({ branchId: id }));
   }
 
+  /** `roleKey` ausente = sin restricción. Array = alcanza con tener UNO de los roles listados. */
+  private hasRequiredRole(roleKey: string | string[] | undefined): boolean {
+    if (!roleKey) return true;
+    const userRoles = this.token.getRoles();
+    const required = Array.isArray(roleKey) ? roleKey : [roleKey];
+    return required.some((r) => userRoles.includes(r));
+  }
+
   /** Para expandables: filtra hijos por sectionKey + roleKey. Para links: devuelve el item igual. */
   private applyChildVisibility(item: NavItem): NavItem {
     if (item.kind !== 'expandable') return item;
     return {
       ...item,
       children: item.children.filter((c) =>
-        (!c.sectionKey || this.access.has(c.sectionKey)) &&
-        (!c.roleKey || this.token.getRoles().includes(c.roleKey)),
+        (!c.sectionKey || this.access.has(c.sectionKey)) && this.hasRequiredRole(c.roleKey),
       ),
     };
   }
@@ -536,7 +543,7 @@ export class SidebarComponent implements OnInit {
     }
     if (item.kind === 'external') return true;
     if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
-    if (item.roleKey && !this.token.getRoles().includes(item.roleKey)) return false;
+    if (!this.hasRequiredRole(item.roleKey)) return false;
     if (item.sectionKey && !this.access.has(item.sectionKey)) return false;
     return true;
   }
