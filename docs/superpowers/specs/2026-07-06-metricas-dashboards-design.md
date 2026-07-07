@@ -3,7 +3,7 @@
 > **Fecha:** 2026-07-06
 > **Repo:** FRONTEND-LABORATORIO (Angular 21 + NgRx clásico + PrimeNG 21 + Tailwind v4)
 > **Backend:** 56 endpoints de métricas ya entregados (PR #125), polleables con ETag/304.
-> **Jira:** _(pendiente — crear al cerrar el plan)_
+> **Jira:** [KAN-201](https://exequielsantoro.atlassian.net/browse/KAN-201)
 
 ## Intención
 

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Angular 21, PrimeNG 21 (`p-chart`, `p-datepicker`, `p-multiSelect`, `p-select`), Tailwind v4, Chart.js (nuevo), Vitest.
 
-**Jira:** _(pendiente — crear al cerrar el plan)_
+**Jira:** [KAN-201](https://exequielsantoro.atlassian.net/browse/KAN-201)
 
 ## Global Constraints
 
