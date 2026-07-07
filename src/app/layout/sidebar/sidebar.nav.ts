@@ -63,6 +63,11 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       { kind: 'link', label: 'Cola de extracción', icon: 'pi pi-bolt', path: '/analitica/extraccion', sectionKey: 'EXTRACCIONES' },
       { kind: 'link', label: 'Nomenclador NBU', icon: 'pi pi-book', path: '/analitica/nbu', sectionKey: 'ANALITICA' },
+      // sectionKey único de gate: la página en sí también filtra tabs individuales
+      // por PREANALITICA/POSTANALITICA (`AnaliticaDashboardPage`) — el ítem del menú
+      // solo necesita al menos una sección de Analítica habilitada, y ANALITICA es la
+      // tab por defecto (ver design.md "Dashboards de métricas").
+      { kind: 'link', label: 'Métricas', icon: 'pi pi-chart-bar', path: '/analitica/metricas', sectionKey: 'ANALITICA' },
       { kind: 'link', label: 'Urgentes en curso', icon: 'pi pi-clock', path: '/urgencias/en-curso', moduleKey: ModuleKey.Urgencias },
     ],
   },

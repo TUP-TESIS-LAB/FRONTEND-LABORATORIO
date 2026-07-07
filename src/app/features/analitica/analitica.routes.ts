@@ -83,6 +83,13 @@ export const ANALITICA_ROUTES: Routes = [
         title: 'Descarte',
       },
       { path: 'nbu', data: { breadcrumb: 'Nomenclador NBU' }, loadComponent: () => import('./pages/nbu/nbu.component').then(m => m.NbuComponent) },
+      {
+        path: 'metricas',
+        canMatch: [hasRoleGuard(['BIOQUIMICO', 'ADMINISTRADOR'])],
+        loadComponent: () => import('./pages/dashboard/analitica-dashboard.page').then(m => m.AnaliticaDashboardPage),
+        title: 'Métricas de Analítica',
+        data: { breadcrumb: 'Métricas' },
+      },
     ],
   },
 ];
