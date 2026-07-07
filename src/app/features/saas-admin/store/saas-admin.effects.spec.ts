@@ -4,6 +4,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { Observable, ReplaySubject, firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { Action } from '@ngrx/store';
+import { NotificationService } from '@core/services/notification.service';
 import { SaasAdminApiService } from '../services/saas-admin-api.service';
 import { SaasAdminEffects } from './saas-admin.effects';
 import * as A from './saas-admin.actions';
@@ -11,6 +12,7 @@ import * as A from './saas-admin.actions';
 describe('SaasAdminEffects', () => {
   let actions$: ReplaySubject<Action>;
   let api: Partial<Record<keyof SaasAdminApiService, ReturnType<typeof vi.fn>>>;
+  let notification: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
   let effects: SaasAdminEffects;
 
   beforeEach(() => {
@@ -28,11 +30,13 @@ describe('SaasAdminEffects', () => {
       getTenantWhiteLabel: vi.fn(),
       upsertTenantWhiteLabel: vi.fn(),
     };
+    notification = { success: vi.fn(), error: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
         SaasAdminEffects,
         provideMockActions(() => actions$),
         { provide: SaasAdminApiService, useValue: api },
+        { provide: NotificationService, useValue: notification },
       ],
     });
     effects = TestBed.inject(SaasAdminEffects);
@@ -71,6 +75,14 @@ describe('SaasAdminEffects', () => {
     actions$.next(A.toggleTenantModule({ tenantId: 1, code: 'PORTAL', enable: true }));
     const out = await expectEmits(effects.toggleTenantModule$);
     expect(out).toEqual(A.toggleTenantModuleSuccess({ tenantId: 1, code: 'PORTAL', enabled: true }));
+  });
+
+  it('toggleTenantModule$ → error → toast + toggleTenantModuleFailure', async () => {
+    api.toggleTenantModule!.mockRejectedValue({ status: 403 });
+    actions$.next(A.toggleTenantModule({ tenantId: 1, code: 'URGENCIAS', enable: false }));
+    const out = await expectEmits(effects.toggleTenantModule$);
+    expect(notification.error).toHaveBeenCalled();
+    expect(out.type).toBe(A.toggleTenantModuleFailure.type);
   });
 
   it('softDeleteTenant$ → softDeleteTenantSuccess with the id', async () => {

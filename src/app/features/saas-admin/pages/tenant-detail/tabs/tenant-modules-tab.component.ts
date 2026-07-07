@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { ToggleSwitch } from 'primeng/toggleswitch';
 import { TagModule } from 'primeng/tag';
 import { ACTIVABLE_MODULES, CORE_MODULES, ModuleCode } from '../../../models/module-code';
-import { toggleTenantModule } from '../../../store/saas-admin.actions';
+import { toggleTenantModule, toggleTenantModuleFailure } from '../../../store/saas-admin.actions';
 import { selectSaasAdminPending, selectSelectedTenantModules } from '../../../store/saas-admin.selectors';
 
 @Component({
@@ -16,7 +18,7 @@ import { selectSaasAdminPending, selectSelectedTenantModules } from '../../../st
     <section class="modules">
       <h3>Activables</h3>
       <p class="muted">Estos módulos podés prenderlos o apagarlos por tenant.</p>
-      @for (m of activables; track m.code) {
+      @for (m of activables; track m.code + '-' + resetToken()) {
         <div class="module-row">
           <i [class]="m.icon"></i>
           <div class="module-row__text">
@@ -60,11 +62,28 @@ export class TenantModulesTabComponent {
   readonly tenantId = input.required<number>();
 
   private readonly store = inject(Store);
+  private readonly actions$ = inject(Actions);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly cores = CORE_MODULES;
   protected readonly activables = ACTIVABLE_MODULES;
 
   private readonly enabled = this.store.selectSignal(selectSelectedTenantModules);
   protected readonly pending = this.store.selectSignal(selectSaasAdminPending);
+
+  /**
+   * PrimeNG ToggleSwitch flippea su estado visual interno de forma optimista al click
+   * (antes de que resuelva el dispatch). Si el backend rechaza el cambio, el valor
+   * derivado de `isEnabled()` vuelve al mismo booleano que tenía ANTES del click — Angular
+   * no detecta una transición real y nunca vuelve a llamar `writeValue`, así que el switch
+   * queda visualmente "prendido" aunque la base nunca cambió. Bumpear este contador en la
+   * key del `@for` fuerza la recreación del switch, resincronizándolo con el valor real.
+   */
+  protected readonly resetToken = signal(0);
+
+  constructor() {
+    this.actions$.pipe(ofType(toggleTenantModuleFailure), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.resetToken.update((n) => n + 1));
+  }
 
   isEnabled(code: ModuleCode): boolean {
     return this.enabled()?.includes(code) ?? false;

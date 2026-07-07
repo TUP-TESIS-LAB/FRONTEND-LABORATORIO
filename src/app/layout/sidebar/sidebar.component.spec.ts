@@ -117,13 +117,16 @@ describe('SidebarComponent visibility', () => {
     return fin?.kind === 'expandable' ? fin.children.map((c) => c.label) : null;
   }
 
-  it('Financiero (secretaria): solo Caja y Cobros, sin las pantallas de configuración', () => {
-    expect(financiero(['FINANCIERO'], ['SECRETARIA'])).toEqual(['Caja', 'Cobros']);
+  it('Financiero (secretaria): ve lo operativo (Caja/Cobros/Liquidaciones/Sucursales), sin las pantallas de configuración', () => {
+    // financiero.routes.ts no gatea sucursales/liquidaciones con hasRoleGuard — son operativas,
+    // a diferencia de subcajas/cuentas-destino (ADMINISTRADOR) y config-fiscal (SAAS_ADMIN).
+    expect(financiero(['FINANCIERO'], ['SECRETARIA']))
+      .toEqual(['Caja', 'Cobros', 'Liquidaciones', 'Sucursales']);
   });
 
   it('Financiero (administrador): suma Cajas y Cuentas destino, pero no Config fiscal', () => {
     expect(financiero(['FINANCIERO'], ['ADMINISTRADOR']))
-      .toEqual(['Caja', 'Cobros', 'Cajas', 'Cuentas destino']);
+      .toEqual(['Caja', 'Cobros', 'Liquidaciones', 'Sucursales', 'Cajas', 'Cuentas destino']);
   });
 
   it('Financiero (saas-admin): ve Config fiscal', () => {
