@@ -83,6 +83,7 @@ export const NAV_SECTIONS: NavSection[] = [
         kind: 'expandable', label: 'Financiero', icon: 'pi pi-wallet',
         moduleKey: ModuleKey.Financiero, sectionKey: 'FINANCIERO',
         children: [
+          { label: 'Dashboard',       path: '/financiero/dashboard',       icon: 'pi pi-chart-bar',        roleKey: 'ADMINISTRADOR' },
           // Operativo / diario
           { label: 'Caja',            path: '/financiero/caja',            icon: 'pi pi-wallet' },
           { label: 'Cobros',          path: '/financiero/cobros',          icon: 'pi pi-receipt' },

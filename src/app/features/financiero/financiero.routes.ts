@@ -13,6 +13,15 @@ export const FINANCIERO_ROUTES: Routes = [
     children: [
       { path: '', redirectTo: 'caja', pathMatch: 'full' },
       {
+        path: 'dashboard',
+        canMatch: [hasRoleGuard(['ADMINISTRADOR'])],
+        data: { breadcrumb: 'Dashboard' },
+        loadComponent: () =>
+          import('./pages/dashboard/financiero-dashboard.page').then(
+            (m) => m.FinancieroDashboardPage,
+          ),
+      },
+      {
         path: 'caja',
         data: { breadcrumb: 'Caja' },
         loadComponent: () =>
