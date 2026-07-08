@@ -5,7 +5,7 @@ import { withPolling, NotModified } from '@core/refresh';
 import {
   SettlementSummary, SettlementDetail, SettlementFilters,
   GenerateSettlementBody, InformSettlementBody, CancelSettlementBody, PendingService,
-  PreviewDetailBody, SettlementPreviewDetail, SettlementPlanResponse,
+  PreviewDetailBody, SettlementPreviewDetail, SettlementPlanResponse, RegisterCollectionBody,
 } from '../models/liquidaciones.model';
 
 @Injectable({ providedIn: 'root' })
@@ -57,6 +57,10 @@ export class LiquidacionesApiService {
 
   cancelSettlement(id: number, body: CancelSettlementBody): Observable<void> {
     return this.http.patch<void>(`${this.base}/settlements/${id}/cancel`, body);
+  }
+
+  registerSettlementCollection(id: number, body: RegisterCollectionBody): Observable<SettlementDetail> {
+    return this.http.patch<SettlementDetail>(`${this.base}/settlements/${id}/collect`, body);
   }
 
   /** Prestaciones pendientes polleable (ETag/304, sin filtros). */

@@ -99,6 +99,11 @@ export interface CancelSettlementBody {
   cancellationReason: string;
 }
 
+export interface RegisterCollectionBody {
+  amount: number;
+  method: string; // PaymentMethod (CASH | TRANSFER | QR | ...)
+}
+
 /** Prestación pendiente: GET /provided-services/pending. */
 export interface PendingService {
   id: number;

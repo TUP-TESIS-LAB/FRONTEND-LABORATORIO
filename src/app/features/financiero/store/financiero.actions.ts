@@ -2,7 +2,7 @@
 import { CashSession, SessionActivity, TransactionType, PaymentListItem, Payment, PaymentStatus, TenantFiscalConfig, FiscalProvider, CreatePaymentRequest, RegisterPaymentResponse, CashRegister, BankAccount, BankAccountInput, BranchOtherMedia, RegisterBranchMovementInput, MovementsFeed } from '../models/financiero.model';
 import {
   SettlementSummary, SettlementDetail, SettlementFilters, PendingService,
-  GenerateSettlementBody, InformSettlementBody, CancelSettlementBody,
+  GenerateSettlementBody, InformSettlementBody, CancelSettlementBody, RegisterCollectionBody,
   PreviewDetailBody, SettlementPreviewDetail, InsurerPlanOption,
 } from '../models/liquidaciones.model';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
@@ -334,6 +334,14 @@ export const cancelSettlementSuccess = createAction(
   '[Liquidaciones API] Cancel Settlement Success', props<{ id: number }>());
 export const cancelSettlementFailure = createAction(
   '[Liquidaciones API] Cancel Settlement Failure', props<{ error: string }>());
+
+// ── Liquidaciones: registrar cobro ───────────────────────────────────────────
+export const registerSettlementCollection = createAction(
+  '[Liquidaciones] Register Settlement Collection', props<{ id: number; body: RegisterCollectionBody }>());
+export const registerSettlementCollectionSuccess = createAction(
+  '[Liquidaciones API] Register Settlement Collection Success', props<{ settlement: SettlementDetail }>());
+export const registerSettlementCollectionFailure = createAction(
+  '[Liquidaciones API] Register Settlement Collection Failure', props<{ error: string }>());
 
 // ── Liquidaciones: exportar a Excel ──────────────────────────────────────────
 export const exportSettlement = createAction(

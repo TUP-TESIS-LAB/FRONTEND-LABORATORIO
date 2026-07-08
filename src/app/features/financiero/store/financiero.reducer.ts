@@ -27,6 +27,7 @@ import {
   generateSettlement, generateSettlementSuccess, generateSettlementFailure,
   informSettlement, informSettlementSuccess, informSettlementFailure,
   cancelSettlement, cancelSettlementSuccess, cancelSettlementFailure,
+  registerSettlementCollection, registerSettlementCollectionSuccess, registerSettlementCollectionFailure,
   exportSettlement, exportSettlementSuccess, exportSettlementFailure,
   loadPendingServices, loadPendingServicesSuccess, loadPendingServicesNotModified, loadPendingServicesFailure,
   loadInsurersIndexSuccess, loadInsurerPlansSuccess,
@@ -335,8 +336,8 @@ export const financieroReducer = createReducer(
     ...state, liquidaciones: { ...state.liquidaciones, generating: false, generateError: error },
   })),
 
-  // ── liquidaciones: informar / anular (lifecycle) ───────────────────────────
-  on(informSettlement, cancelSettlement, (state): FinancieroState => ({
+  // ── liquidaciones: informar / anular / cobrar (lifecycle) ──────────────────
+  on(informSettlement, cancelSettlement, registerSettlementCollection, (state): FinancieroState => ({
     ...state, liquidaciones: { ...state.liquidaciones, lifecycleInProgress: true, lifecycleError: null },
   })),
   on(informSettlementSuccess, (state, { settlement }): FinancieroState => ({
@@ -345,7 +346,10 @@ export const financieroReducer = createReducer(
   on(cancelSettlementSuccess, (state): FinancieroState => ({
     ...state, liquidaciones: { ...state.liquidaciones, lifecycleInProgress: false, lifecycleError: null },
   })),
-  on(informSettlementFailure, cancelSettlementFailure, (state, { error }): FinancieroState => ({
+  on(registerSettlementCollectionSuccess, (state, { settlement }): FinancieroState => ({
+    ...state, liquidaciones: { ...state.liquidaciones, selected: settlement, lifecycleInProgress: false, lifecycleError: null },
+  })),
+  on(informSettlementFailure, cancelSettlementFailure, registerSettlementCollectionFailure, (state, { error }): FinancieroState => ({
     ...state, liquidaciones: { ...state.liquidaciones, lifecycleInProgress: false, lifecycleError: error },
   })),
 

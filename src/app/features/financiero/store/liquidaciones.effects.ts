@@ -14,6 +14,7 @@ import {
   generateSettlement, generateSettlementSuccess, generateSettlementFailure,
   informSettlement, informSettlementSuccess, informSettlementFailure,
   cancelSettlement, cancelSettlementSuccess, cancelSettlementFailure,
+  registerSettlementCollection, registerSettlementCollectionSuccess, registerSettlementCollectionFailure,
   loadPendingServices, loadPendingServicesSuccess, loadPendingServicesNotModified, loadPendingServicesFailure,
   loadInsurersIndex, loadInsurersIndexSuccess, loadInsurersIndexFailure,
   loadInsurerPlans, loadInsurerPlansSuccess, loadInsurerPlansFailure,
@@ -32,13 +33,13 @@ function mapGenerateError(e: HttpErrorResponse): string {
   return 'No se pudo generar la liquidación. Probá de nuevo.';
 }
 
-function mapLifecycleError(e: HttpErrorResponse, accion: 'informar' | 'anular'): string {
+function mapLifecycleError(e: HttpErrorResponse, accion: 'informar' | 'anular' | 'registrar el cobro de'): string {
   if (e.status === 404) return 'La liquidación no existe.';
   if (e.status === 409) return 'La liquidación fue modificada por otra operación. Recargá la página y volvé a intentar.';
   if (e.status === 422) {
-    return accion === 'informar'
-      ? 'No se puede informar la liquidación en su estado actual.'
-      : 'No se puede anular la liquidación en su estado actual.';
+    if (accion === 'informar') return 'No se puede informar la liquidación en su estado actual.';
+    if (accion === 'anular') return 'No se puede anular la liquidación en su estado actual.';
+    return 'No se puede registrar el cobro de la liquidación en su estado actual.';
   }
   return 'No se pudo completar la acción sobre la liquidación. Probá de nuevo.';
 }
@@ -141,10 +142,31 @@ export class LiquidacionesEffects {
     ),
   );
 
-  /** Tras informar o anular, recargamos el detalle para reflejar el nuevo estado. */
+  registerSettlementCollection$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(registerSettlementCollection),
+      concatMap(({ id, body }) =>
+        this.api.registerSettlementCollection(id, body).pipe(
+          map(settlement => {
+            this.notif.success('Cobro de liquidación registrado.');
+            return registerSettlementCollectionSuccess({ settlement });
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapLifecycleError(e, 'registrar el cobro de');
+            this.notif.error(error);
+            const out: Action[] = [registerSettlementCollectionFailure({ error })];
+            if (e.status === 409) out.push(loadSettlement({ id }));
+            return from(out);
+          }),
+        ),
+      ),
+    ),
+  );
+
+  /** Tras informar, anular o cobrar, recargamos el detalle para reflejar el nuevo estado. */
   reloadAfterLifecycle$ = createEffect(() =>
     this.actions$.pipe(
-      ofType(informSettlementSuccess, cancelSettlementSuccess),
+      ofType(informSettlementSuccess, cancelSettlementSuccess, registerSettlementCollectionSuccess),
       map(action => 'settlement' in action
         ? loadSettlement({ id: action.settlement.id })
         : loadSettlement({ id: action.id })),

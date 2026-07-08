@@ -20,14 +20,15 @@ import {
 } from '../../store/financiero.selectors';
 import {
   loadSettlement, informSettlement, cancelSettlement, loadInsurersIndex, loadInsurerPlans, exportSettlement,
-  informSettlementSuccess, cancelSettlementSuccess,
+  informSettlementSuccess, cancelSettlementSuccess, registerSettlementCollection,
 } from '../../store/financiero.actions';
-import { InformSettlementBody, CancelSettlementBody, SettlementStatus } from '../../models/liquidaciones.model';
+import { InformSettlementBody, CancelSettlementBody, RegisterCollectionBody, SettlementStatus } from '../../models/liquidaciones.model';
 import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidacion-pill.component';
 import { InformarLiquidacionModalComponent } from './components/informar-liquidacion-modal.component';
 import { AnularLiquidacionModalComponent } from './components/anular-liquidacion-modal.component';
+import { RegistrarCobroLiquidacionModalComponent } from './components/registrar-cobro-liquidacion-modal.component';
 
-type Modal = 'informar' | 'anular' | null;
+type Modal = 'informar' | 'anular' | 'cobro' | null;
 type TlState = 'done' | 'current' | 'future';
 interface TimelineStep { label: string; date: string | null; amount: number | null; state: TlState; }
 
@@ -38,6 +39,7 @@ interface TimelineStep { label: string; date: string | null; amount: number | nu
   imports: [
     DatePipe, ButtonModule, PageHeaderComponent, EmptyStateComponent, CurrencyArPipe,
     EstadoLiquidacionPillComponent, InformarLiquidacionModalComponent, AnularLiquidacionModalComponent,
+    RegistrarCobroLiquidacionModalComponent,
   ],
   template: `
     <div class="liq-det">
@@ -58,6 +60,10 @@ interface TimelineStep { label: string; date: string | null; amount: number | nu
           @if (isAdmin() && lh.status === 'PENDING') {
             <p-button data-testid="btn-informar" label="Informar" icon="pi pi-send"
                       severity="success" [loading]="lifecycleInProgress()" (onClick)="modal.set('informar')" />
+          }
+          @if (isAdmin() && lh.status === 'INFORMED') {
+            <p-button data-testid="btn-cobrar" label="Registrar cobro" icon="pi pi-wallet"
+                      severity="success" [loading]="lifecycleInProgress()" (onClick)="modal.set('cobro')" />
           }
         }
       </ui-page-header>
@@ -189,6 +195,9 @@ interface TimelineStep { label: string; date: string | null; amount: number | nu
       }
       @if (modal() === 'anular') {
         <fin-anular-liquidacion-modal (confirm)="onAnular($event)" (closed)="modal.set(null)" />
+      }
+      @if (modal() === 'cobro') {
+        <fin-registrar-cobro-liquidacion-modal [total]="liq()?.informedAmount ?? totalConIva()" (confirm)="onCobrar($event)" (closed)="modal.set(null)" />
       }
     </div>
   `,
@@ -434,6 +443,11 @@ export class LiquidacionDetallePage implements OnInit {
 
   protected onInformar(body: InformSettlementBody): void {
     this.store.dispatch(informSettlement({ id: this.id, body }));
+    this.modal.set(null);
+  }
+
+  protected onCobrar(body: RegisterCollectionBody): void {
+    this.store.dispatch(registerSettlementCollection({ id: this.id, body }));
     this.modal.set(null);
   }
 
