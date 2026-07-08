@@ -16,7 +16,6 @@ import {
   endSecretaryPhase,
   atencionMutationSuccess,
   atencionMutationFailure,
-  setCopayment,
   removeAnalysisFromResumen,
   downloadProtocolLabels,
 } from '../../../../../store/atencion/atencion.actions';
@@ -359,15 +358,17 @@ describe('ResumenStepComponent', () => {
     expect(normalized).toContain('$ 0,00');
   });
 
-  it('liveTotal recalcula el total EN VIVO al cambiar el copago, sin dispatch (005)', () => {
+  // El copago pasa a editarse en el paso Cobro (KAN-214); acá en Confirmar
+  // solo se muestra en solo-lectura, reflejando lo que trae el pricing.
+  it('muestra el copago del pricing en solo lectura, sin input editable', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', attn());
     f.detectChanges();
-    // SAMPLE_PRICING.subtotal = 0 y copaymentValue arranca null → total 0
-    expect(f.componentInstance.liveTotal()).toBe(0);
-    // Tipear el coseguro recalcula el total localmente (subtotal + copago)
-    f.componentInstance.copaymentValue.set(1500);
-    expect(f.componentInstance.liveTotal()).toBe(1500);
+    const el = f.nativeElement as HTMLElement;
+    const text = el.textContent ?? '';
+    expect(text).toContain('Copago');
+    expect(el.querySelector('#copago-input')).toBeNull();
+    expect(el.querySelector('p-inputnumber')).toBeNull();
   });
 
   it('muestra el NOMBRE COMPLETO + el código NBU del análisis (006)', () => {
@@ -392,30 +393,22 @@ describe('ResumenStepComponent', () => {
     expect(text).not.toContain('BIO001');
   });
 
-  it('onCopaymentBlur despacha setCopayment cuando el valor cambia', () => {
+  it('muestra el monto de copago del pricing formateado', () => {
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { id: 5, dni: '1', firstName: 'A', lastName: 'B' } as any,
+        summaryAnalyses: [{ id: 3, shortCode: 'BIO001', name: 'Hemograma', familyName: null, ubCount: null }],
+        pricing: { ...SAMPLE_PRICING, copayment: 1500, total: 1500 },
+      },
+    });
+    store.refreshState();
     const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), copaymentAmount: null });
+    f.componentRef.setInput('atencion', attn());
     f.detectChanges();
-    const dispatched: any[] = [];
-    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    f.componentInstance.copaymentValue.set(1500);
-    f.componentInstance.onCopaymentBlur();
-    expect(dispatched.length).toBeGreaterThan(0);
-    expect(dispatched[0].type).toBe(setCopayment.type);
-    expect(dispatched[0].attentionId).toBe(42);
-    expect(dispatched[0].copaymentAmount).toBe(1500);
-  });
-
-  it('onCopaymentBlur NO despacha si el valor no cambió', () => {
-    const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), copaymentAmount: 500 });
-    f.detectChanges();
-    const dispatched: any[] = [];
-    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    // Same value as copaymentAmount
-    f.componentInstance.copaymentValue.set(500);
-    f.componentInstance.onCopaymentBlur();
-    expect(dispatched.filter((a: any) => a.type === setCopayment.type)).toHaveLength(0);
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    const normalized = text.replace(/ /g, ' ');
+    expect(normalized).toContain('1.500,00');
   });
 
   // ── Item 4: Código de autorización de OS — solo lectura acá (se carga en Análisis) ──

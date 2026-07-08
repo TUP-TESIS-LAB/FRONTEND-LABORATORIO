@@ -11,10 +11,8 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
 import { EMPTY } from 'rxjs';
@@ -39,10 +37,8 @@ import {
   loadAttentionPatient,
   loadPricing,
   removeAnalysisFromResumen,
-  setCopayment,
 } from '../../../../../store/atencion/atencion.actions';
 import {
-  selectCopaymentMutating,
   selectMutating,
   selectPricing,
   selectPricingLoading,
@@ -57,7 +53,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FinalizeAttentionModalComponent, InputNumberModule, FormsModule,
+    FinalizeAttentionModalComponent,
     CurrencyArPipe, DataTableComponent, UiCellDirective, TagModule,
   ],
   styles: [`:host { display: block; height: 100%; }`],
@@ -146,22 +142,10 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         <section class="border-t pt-3 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-sm">
           <span><span class="opacity-60">Subtotal</span> {{ p.subtotal | currencyAr }}</span>
           <span class="flex items-center gap-2">
-            <label class="opacity-60" for="copago-input">Copago</label>
-            <p-inputNumber
-              inputId="copago-input"
-              [ngModel]="copaymentValue()"
-              (ngModelChange)="copaymentValue.set($event)"
-              (onBlur)="onCopaymentBlur()"
-              mode="decimal"
-              [minFractionDigits]="2"
-              [maxFractionDigits]="2"
-              [min]="0"
-              [disabled]="copaymentMutating() || readOnly()"
-              inputStyleClass="w-32 text-right"
-              placeholder="0,00"
-            />
+            <label class="opacity-60">Copago</label>
+            <span class="font-medium">{{ p.copayment | currencyAr }}</span>
           </span>
-          <span class="font-semibold text-base"><span class="opacity-60 font-normal">Total</span> {{ liveTotal() | currencyAr }}</span>
+          <span class="font-semibold text-base"><span class="opacity-60 font-normal">Total</span> {{ p.total | currencyAr }}</span>
         </section>
       } @else if (pricingLoading()) {
         <section class="border-t pt-3">
@@ -221,11 +205,7 @@ export class ResumenStepComponent implements OnInit {
   readonly analyses           = this.store.selectSignal(selectSummaryAnalyses);
   readonly pricing            = this.store.selectSignal(selectPricing);
   readonly pricingLoading     = this.store.selectSignal(selectPricingLoading);
-  readonly copaymentMutating  = this.store.selectSignal(selectCopaymentMutating);
   readonly removingAnalysis   = this.store.selectSignal(selectRemovingAnalysis);
-
-  /** Valor local del input de copago — se inicializa desde la atención y se actualiza al cambiar */
-  readonly copaymentValue = signal<number | null>(null);
 
   readonly analysisById = computed(
     // `summaryAnalyses` se carga con AnalysisService.getById → AnalysisDetail (trae nbuCode/name),
@@ -298,27 +278,11 @@ export class ResumenStepComponent implements OnInit {
     })
   );
 
-  /**
-   * Total EN VIVO: subtotal del pricing + el coseguro tipeado en el input.
-   * El backend computa total = subtotal + copayment; replicamos esa fórmula localmente
-   * para que el total se recalcule mientras la secretaria escribe el monto, sin esperar
-   * al blur + round-trip que persiste y refresca el pricing. Cuando el pricing vuelve del
-   * backend ya incluye el copago, y como copaymentValue queda igual, el número coincide.
-   */
-  readonly liveTotal = computed<number | null>(() => {
-    const p = this.pricing();
-    if (!p) return null;
-    return p.subtotal + (this.copaymentValue() ?? 0);
-  });
-
   ngOnInit(): void {
     const attn = this.atencion();
 
     // Refrescar el detail para que analysisAuthorizations refleje lo cargado en el paso 2.
     this.store.dispatch(loadAtencion({ id: attn.id }));
-
-    // Initialize copago from attention
-    this.copaymentValue.set(attn.copaymentAmount ?? null);
 
     // Only load patient if not already resolved for this atención
     if (
@@ -363,15 +327,6 @@ export class ResumenStepComponent implements OnInit {
         authorizationNumber: attn.authorizationNumber,
       },
     }));
-  }
-
-  onCopaymentBlur(): void {
-    const attn = this.atencion();
-    const amount = this.copaymentValue();
-    // Only dispatch if the value actually changed
-    const current = attn.copaymentAmount ?? null;
-    if (amount === current) return;
-    this.store.dispatch(setCopayment({ attentionId: attn.id, copaymentAmount: amount }));
   }
 
   openFinalize(): void  { this.finalizeModalOpen.set(true); }
