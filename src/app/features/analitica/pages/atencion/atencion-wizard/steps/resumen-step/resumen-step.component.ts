@@ -15,7 +15,6 @@ import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
 import { EMPTY } from 'rxjs';
@@ -40,11 +39,9 @@ import {
   loadAttentionPatient,
   loadPricing,
   removeAnalysisFromResumen,
-  setAuthorizationNumber,
   setCopayment,
 } from '../../../../../store/atencion/atencion.actions';
 import {
-  selectAuthorizationMutating,
   selectCopaymentMutating,
   selectMutating,
   selectPricing,
@@ -60,7 +57,7 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FinalizeAttentionModalComponent, InputNumberModule, InputTextModule, FormsModule,
+    FinalizeAttentionModalComponent, InputNumberModule, FormsModule,
     CurrencyArPipe, DataTableComponent, UiCellDirective, TagModule,
   ],
   styles: [`:host { display: block; height: 100%; }`],
@@ -86,13 +83,11 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         <section>
           <div class="text-sm opacity-60">Cobertura</div>
           <div class="text-base">{{ coverageLabel() }}</div>
-          <!-- Item 4: Nro de autorización (uno por atención) — solo con obra social. -->
+          <!-- Item 4: Nro de autorización — solo lectura acá; se carga en el paso Análisis. -->
           @if (atencion().insurancePlanId != null) {
             <div class="flex items-center gap-2 mt-2">
-              <label class="opacity-60 text-sm" for="auth-input">Nro de autorización</label>
-              <input pInputText id="auth-input" type="text" [ngModel]="authorizationValue()"
-                     (ngModelChange)="authorizationValue.set($event)" (blur)="onAuthorizationBlur()"
-                     [disabled]="authorizationMutating() || readOnly()" class="w-48" placeholder="Ej. AUTH-1" />
+              <label class="opacity-60 text-sm">Código de autorización de obra social</label>
+              <span class="text-sm font-medium">{{ atencion().authorizationNumber || '—' }}</span>
             </div>
           }
         </section>
@@ -227,14 +222,10 @@ export class ResumenStepComponent implements OnInit {
   readonly pricing            = this.store.selectSignal(selectPricing);
   readonly pricingLoading     = this.store.selectSignal(selectPricingLoading);
   readonly copaymentMutating  = this.store.selectSignal(selectCopaymentMutating);
-  readonly authorizationMutating = this.store.selectSignal(selectAuthorizationMutating);
   readonly removingAnalysis   = this.store.selectSignal(selectRemovingAnalysis);
 
   /** Valor local del input de copago — se inicializa desde la atención y se actualiza al cambiar */
   readonly copaymentValue = signal<number | null>(null);
-
-  /** Valor local del input "Nro de autorización" (item 4) — se inicializa desde la atención. */
-  readonly authorizationValue = signal<string | null>(null);
 
   readonly analysisById = computed(
     // `summaryAnalyses` se carga con AnalysisService.getById → AnalysisDetail (trae nbuCode/name),
@@ -329,9 +320,6 @@ export class ResumenStepComponent implements OnInit {
     // Initialize copago from attention
     this.copaymentValue.set(attn.copaymentAmount ?? null);
 
-    // Initialize nro de autorización from attention (item 4).
-    this.authorizationValue.set(attn.authorizationNumber ?? null);
-
     // Only load patient if not already resolved for this atención
     if (
       attn.patientId != null &&
@@ -384,19 +372,6 @@ export class ResumenStepComponent implements OnInit {
     const current = attn.copaymentAmount ?? null;
     if (amount === current) return;
     this.store.dispatch(setCopayment({ attentionId: attn.id, copaymentAmount: amount }));
-  }
-
-  /**
-   * Item 4: persiste el nro de autorización vía el endpoint dedicado (espeja el copago).
-   * Dedup contra el valor actual; normaliza string vacío/espacios a null.
-   */
-  onAuthorizationBlur(): void {
-    const attn = this.atencion();
-    const value = this.authorizationValue();
-    const current = attn.authorizationNumber ?? null;
-    const normalized = value && value.trim() !== '' ? value.trim() : null;
-    if (normalized === current) return;
-    this.store.dispatch(setAuthorizationNumber({ attentionId: attn.id, authorizationNumber: normalized }));
   }
 
   openFinalize(): void  { this.finalizeModalOpen.set(true); }

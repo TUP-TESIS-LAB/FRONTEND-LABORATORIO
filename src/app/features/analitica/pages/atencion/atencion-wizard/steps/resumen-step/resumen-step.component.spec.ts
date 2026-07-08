@@ -17,7 +17,6 @@ import {
   atencionMutationSuccess,
   atencionMutationFailure,
   setCopayment,
-  setAuthorizationNumber,
   removeAnalysisFromResumen,
   downloadProtocolLabels,
 } from '../../../../../store/atencion/atencion.actions';
@@ -419,46 +418,25 @@ describe('ResumenStepComponent', () => {
     expect(dispatched.filter((a: any) => a.type === setCopayment.type)).toHaveLength(0);
   });
 
-  // ── Item 4: Nro de autorización (solo OS) ─────────────────────────────────
+  // ── Item 4: Código de autorización de OS — solo lectura acá (se carga en Análisis) ──
 
-  it('item 4: con obra social renderiza el input "Nro de autorización"', () => {
+  it('item 4: con obra social muestra el código de autorización en solo lectura', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7 });
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7, authorizationNumber: 'AUTH-1' });
     f.detectChanges();
-    const input = (f.nativeElement as HTMLElement).querySelector('#auth-input');
-    expect(input).toBeTruthy();
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Código de autorización de obra social');
+    expect(text).toContain('AUTH-1');
+    // No debe renderizar ningún input editable para este dato.
+    expect((f.nativeElement as HTMLElement).querySelector('#auth-input')).toBeNull();
   });
 
-  it('item 4: con cobertura Particular NO renderiza el input "Nro de autorización"', () => {
+  it('item 4: con cobertura Particular NO muestra el código de autorización', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: null });
     f.detectChanges();
-    const input = (f.nativeElement as HTMLElement).querySelector('#auth-input');
-    expect(input).toBeNull();
-  });
-
-  it('item 4: onAuthorizationBlur despacha setAuthorizationNumber cuando el valor cambia', () => {
-    const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7, authorizationNumber: null });
-    f.detectChanges();
-    const dispatched: any[] = [];
-    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    f.componentInstance.authorizationValue.set('AUTH-1');
-    f.componentInstance.onAuthorizationBlur();
-    expect(dispatched[0].type).toBe(setAuthorizationNumber.type);
-    expect(dispatched[0].attentionId).toBe(42);
-    expect(dispatched[0].authorizationNumber).toBe('AUTH-1');
-  });
-
-  it('item 4: onAuthorizationBlur NO despacha si el valor no cambió (normaliza vacío a null)', () => {
-    const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7, authorizationNumber: null });
-    f.detectChanges();
-    const dispatched: any[] = [];
-    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    f.componentInstance.authorizationValue.set('   '); // se normaliza a null === actual
-    f.componentInstance.onAuthorizationBlur();
-    expect(dispatched.filter((a: any) => a.type === setAuthorizationNumber.type)).toHaveLength(0);
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).not.toContain('Código de autorización de obra social');
   });
 
   // ── tests B3c: remover análisis desde el resumen ─────────────────────────
