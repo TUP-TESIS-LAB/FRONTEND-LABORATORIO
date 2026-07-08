@@ -207,13 +207,25 @@ export class CobroAtencionComponent {
         this.lineas.set([{ ...ls[0], amount: target }]);
         return;
       }
-      // Re-sync: si el total bajó y quedamos sobre-asignados, recortamos la última línea.
+      // Re-sync: si el total bajó y quedamos sobre-asignados, absorbemos el exceso
+      // COMPLETO recorriendo las líneas de la última a la primera (waterfall): a cada
+      // línea le restamos lo que puede absorber y el remanente pasa a la anterior, hasta
+      // agotar el exceso o dejar todas en 0. Así el asignado nunca queda por encima del
+      // total (restante() nunca negativo), aunque el exceso supere el monto de la última.
       const asignado = ls.reduce((s, l) => s + (Number(l.amount) || 0), 0);
       if (target > 0 && asignado > target && ls.length > 0) {
-        const exceso = round2(asignado - target);
-        const last = ls[ls.length - 1];
-        const nuevo = Math.max(0, round2((Number(last.amount) || 0) - exceso));
-        this.lineas.set(ls.map((l, i) => i === ls.length - 1 ? { ...l, amount: nuevo } : l));
+        let exceso = round2(asignado - target);
+        const nuevos = ls.map(l => ({ ...l }));
+        for (let i = nuevos.length - 1; i >= 0 && exceso > 0; i--) {
+          const actual = Number(nuevos[i].amount) || 0;
+          const absorbe = Math.min(actual, exceso);
+          nuevos[i].amount = round2(actual - absorbe);
+          exceso = round2(exceso - absorbe);
+        }
+        // CLAVE para cortar el loop del effect: sólo escribimos si algún VALOR cambió.
+        // Comparación por valor (no por referencia), así el effect llega a un punto fijo.
+        const cambio = nuevos.some((l, i) => l.amount !== ls[i].amount);
+        if (cambio) this.lineas.set(nuevos);
       }
     });
     effect(() => {
