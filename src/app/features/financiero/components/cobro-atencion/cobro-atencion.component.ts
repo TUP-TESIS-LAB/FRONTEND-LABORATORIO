@@ -113,7 +113,7 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
           <label class="fin-cobro__factura">
             <input type="checkbox" [checked]="optOutElectronic()"
                    (change)="optOutElectronic.set($any($event.target).checked)" />
-            No facturar electrónicamente (emitir Factura X)
+            No facturar electrónicamente
           </label>
 
           <!-- CONFIRMAR -->
