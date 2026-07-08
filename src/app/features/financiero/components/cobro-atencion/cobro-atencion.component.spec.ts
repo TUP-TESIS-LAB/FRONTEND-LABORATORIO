@@ -158,3 +158,34 @@ describe('CobroAtencionComponent — smoke tests', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="cobro-exito"]')).toBeTruthy();
   });
 });
+
+describe('CobroAtencionComponent — restante nunca negativo', () => {
+  // Reusa el harness setupWithTemplate (Store + Router + contexto de sucursal/caja mockeados)
+  // en vez del build() minimalista del brief: el componente inyecta OperatorBranchContextService
+  // y CajaContextService, no sólo el Store, así que provideMockStore solo no alcanza para montar.
+  function build(total: number) {
+    const fixture = setupWithTemplate(MINIMAL_FORM_TEMPLATE, {
+      pricing: { items: [], subtotal: total, copayment: 0, total },
+    });
+    return fixture.componentInstance as any;
+  }
+
+  it('clampa el monto de una línea para no superar A cobrar', () => {
+    const c = build(100);
+    const lineId = c.lineas()[0].id;
+    c.setAmount(lineId, '500');           // intento sobre-asignar
+    expect(c.asignado()).toBe(100);        // clampeado al total
+    expect(c.restante()).toBe(0);          // nunca negativo
+  });
+
+  it('con dos líneas, la segunda no puede empujar el asignado sobre el total', () => {
+    const c = build(100);
+    const first = c.lineas()[0].id;
+    c.setAmount(first, '60');
+    c.agregarLinea();
+    const second = c.lineas()[1].id;
+    c.setAmount(second, '80');             // 60 + 80 = 140 > 100
+    expect(c.asignado()).toBe(100);        // la 2da se clampa a 40
+    expect(c.restante()).toBe(0);
+  });
+});

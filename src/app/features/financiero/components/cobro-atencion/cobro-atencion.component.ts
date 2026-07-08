@@ -202,8 +202,18 @@ export class CobroAtencionComponent {
     effect(() => {
       const target = this.aCobrar();
       const ls = this.lineas();
+      // Prefill inicial: primera (y única) línea en 0 → arranca con el total.
       if (target > 0 && ls.length === 1 && ls[0].amount === 0) {
         this.lineas.set([{ ...ls[0], amount: target }]);
+        return;
+      }
+      // Re-sync: si el total bajó y quedamos sobre-asignados, recortamos la última línea.
+      const asignado = ls.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+      if (target > 0 && asignado > target && ls.length > 0) {
+        const exceso = round2(asignado - target);
+        const last = ls[ls.length - 1];
+        const nuevo = Math.max(0, round2((Number(last.amount) || 0) - exceso));
+        this.lineas.set(ls.map((l, i) => i === ls.length - 1 ? { ...l, amount: nuevo } : l));
       }
     });
     effect(() => {
@@ -237,7 +247,12 @@ export class CobroAtencionComponent {
     this.lineas.update(ls => ls.map(l => l.id === id ? { ...l, method } : l));
   }
   protected setAmount(id: number, raw: string): void {
-    const amount = Number(raw) || 0;
+    const parsed = Number(raw) || 0;
+    // El asignado no puede superar A cobrar: clampeamos esta línea al margen
+    // disponible = total − suma del resto de las líneas. Nunca negativo.
+    const otras = this.lineas().reduce((sum, l) => l.id === id ? sum : sum + (Number(l.amount) || 0), 0);
+    const disponible = Math.max(0, round2(this.aCobrar() - otras));
+    const amount = Math.min(Math.max(0, parsed), disponible);
     this.lineas.update(ls => ls.map(l => l.id === id ? { ...l, amount } : l));
   }
   protected setReference(id: number, reference: string): void {
