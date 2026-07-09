@@ -40,6 +40,12 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/pacientes/pacientes.routes').then((m) => m.PACIENTES_ROUTES),
       },
+      {
+        path: 'medicos',
+        data: { breadcrumb: 'Médicos derivantes' },
+        loadChildren: () =>
+          import('./features/medicos/medicos.routes').then((m) => m.MEDICOS_ROUTES),
+      },
 
       // ACTIVABLES — requieren módulo habilitado para el tenant
       {
@@ -57,13 +63,6 @@ export const routes: Routes = [
         canMatch: [moduleActiveGuard(ModuleKey.Financiero), sectionGuard('FINANCIERO')],
         loadChildren: () =>
           import('./features/financiero/financiero.routes').then((m) => m.FINANCIERO_ROUTES),
-      },
-      {
-        path: 'medicos',
-        canMatch: [moduleActiveGuard(ModuleKey.Medicos)],
-        data: { breadcrumb: 'Médicos derivantes' },
-        loadChildren: () =>
-          import('./features/medicos/medicos.routes').then((m) => m.MEDICOS_ROUTES),
       },
       {
         path: 'stock',

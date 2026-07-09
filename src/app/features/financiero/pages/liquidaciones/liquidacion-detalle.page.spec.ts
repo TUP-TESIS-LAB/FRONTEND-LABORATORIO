@@ -69,6 +69,27 @@ describe('LiquidacionDetallePage — smoke', () => {
     expect(fixture.debugElement.query(By.css('[data-testid="btn-anular"]'))).toBeTruthy();
   });
 
+  it('muestra Registrar cobro en estado INFORMED para ADMIN, y no Informar', async () => {
+    await setup('INFORMED', ['ADMINISTRADOR']);
+    const fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="btn-cobrar"]'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('[data-testid="btn-informar"]'))).toBeNull();
+  });
+
+  it('no muestra Registrar cobro si el rol no es ADMIN, ni en otros estados', async () => {
+    await setup('INFORMED', ['SECRETARIA']);
+    let fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="btn-cobrar"]'))).toBeNull();
+
+    TestBed.resetTestingModule();
+    await setup('PENDING', ['ADMINISTRADOR']);
+    fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="btn-cobrar"]'))).toBeNull();
+  });
+
   it('no muestra acciones de mutación si el rol no es ADMIN', async () => {
     await setup('PENDING', ['SECRETARIA']);
     const fixture = TestBed.createComponent(LiquidacionDetallePage);

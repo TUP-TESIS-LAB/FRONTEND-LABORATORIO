@@ -1,10 +1,10 @@
 // Historial de atenciones de un paciente (GET /api/v1/attentions/patient/{id}/history).
-// El BE devuelve analysisId; el nombre lo resuelve el front con AnalysisService.
 
 export type DeliveryStatus = 'DELIVERED' | 'IN_PROCESS' | 'PENDING' | 'CANCELED';
 
 export interface PatientHistoryAnalysis {
   analysisId: number;
+  analysisName: string | null;
   /** Precio cobrado (snapshot). null en atenciones previas al feature. */
   chargedPrice: number | null;
   deliveryStatus: DeliveryStatus | null;
@@ -20,6 +20,12 @@ export interface PatientHistoryItem {
   analysisCount: number;
   /** Importe total (snapshot + copago). null si la atención no tiene snapshot. */
   total: number | null;
+  copaymentAmount: number | null;
+  authorizationNumber: string | null;
+  /** true si hay al menos un informe firmado (parcial o final) disponible para imprimir. */
+  reportAvailable: boolean;
+  lastPrintedAt: string | null;
+  lastPrintedBy: string | null;
   analyses: PatientHistoryAnalysis[];
 }
 

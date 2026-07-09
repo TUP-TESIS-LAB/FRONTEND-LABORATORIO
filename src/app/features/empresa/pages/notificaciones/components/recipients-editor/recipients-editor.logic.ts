@@ -33,18 +33,67 @@ export function buildRecipients(
 }
 
 /**
- * Estado "recibe" de cada usuario elegible. Como el endpoint `eligible` no discrimina usuarios
- * por rol, "entra por rol" = hay ≥1 rol agregado (todos los elegibles cuentan como del rol).
+ * Filtra los usuarios de la card B según los filtros activos:
+ * - `roleCodes`: si hay roles agregados, sólo los usuarios que tienen alguno de esos roles.
+ * - `branchId`: si hay sucursal, sólo los usuarios de esa sucursal.
+ * - `search`: coincidencia parcial (case-insensitive) por nombre.
+ * Sin filtros, devuelve todos.
+ */
+export function filterUsers(
+  users: EligibleUser[],
+  f: { roleCodes: string[]; branchId: number | null; search: string },
+): EligibleUser[] {
+  const term = f.search.trim().toLowerCase();
+  return users.filter(
+    (u) =>
+      (f.roleCodes.length === 0 || u.roleCodes.some((c) => f.roleCodes.includes(c))) &&
+      (f.branchId == null || u.branchId === f.branchId) &&
+      (term === '' || u.nombre.toLowerCase().includes(term)),
+  );
+}
+
+/**
+ * Estado "recibe" de cada usuario elegible. `enteredByRole` es por-usuario: el usuario entra por rol
+ * sólo si alguno de sus `roleCodes` está entre los roles agregados (no el hack global de KAN-185).
  */
 export function deriveUserRows(recipients: Recipient[], eligibleUsers: EligibleUser[]): RecipientUserRow[] {
-  const enteredByRole = roleCodesOf(recipients).length > 0;
+  const roles = roleCodesOf(recipients);
   const users = userRefsOf(recipients);
   const excluded = excludedRefsOf(recipients);
   return eligibleUsers.map((u) => {
     const idStr = String(u.id);
-    const receives = (enteredByRole || users.includes(idStr)) && !excluded.includes(idStr);
+    const byRole = u.roleCodes.some((c) => roles.includes(c));
+    const receives = (byRole || users.includes(idStr)) && !excluded.includes(idStr);
     return { id: u.id, nombre: u.nombre, receives, disabled: !u.tieneAcceso };
   });
+}
+
+/** Usuario que recibe efectivamente el evento con la config actual, con su origen (rol o puntual). */
+export interface AssignedUser {
+  id: number;
+  nombre: string;
+  /** true si entra por un rol agregado; false si es destinatario puntual (`USER`). */
+  viaRole: boolean;
+}
+
+/**
+ * Resuelve el set de quiénes reciben ahora = (⋃ usuarios de los roles agregados) − exclusiones +
+ * usuarios puntuales. Computado en cliente con los `roleCodes` reales de cada usuario.
+ */
+export function resolveAssigned(recipients: Recipient[], eligibleUsers: EligibleUser[]): AssignedUser[] {
+  const roles = roleCodesOf(recipients);
+  const explicit = userRefsOf(recipients);
+  const excluded = excludedRefsOf(recipients);
+  return eligibleUsers
+    .map((u): AssignedUser | null => {
+      const idStr = String(u.id);
+      if (excluded.includes(idStr)) return null;
+      const byRole = u.roleCodes.some((c) => roles.includes(c));
+      if (byRole) return { id: u.id, nombre: u.nombre, viaRole: true };
+      if (explicit.includes(idStr)) return { id: u.id, nombre: u.nombre, viaRole: false };
+      return null;
+    })
+    .filter((x): x is AssignedUser => x !== null);
 }
 
 /**
@@ -59,14 +108,15 @@ export function applyRolesChange(recipients: Recipient[], newCodes: string[]): R
 }
 
 /**
- * Tilda/destilda un usuario:
+ * Tilda/destilda un usuario. `enteredByRole` es por-usuario: el usuario entra por rol sólo si
+ * alguno de sus `roleCodes` está entre los roles agregados.
  * - Tildar: quita la exclusión; si no entra por rol, lo agrega como destinatario puntual (USER).
  * - Destildar: quita el USER explícito; si entra por rol, lo agrega como excepción (EXCLUDED_USER).
  */
-export function applyUserToggle(recipients: Recipient[], id: number, checked: boolean): Recipient[] {
-  const idStr = String(id);
+export function applyUserToggle(recipients: Recipient[], user: EligibleUser, checked: boolean): Recipient[] {
+  const idStr = String(user.id);
   const roleCodes = roleCodesOf(recipients);
-  const enteredByRole = roleCodes.length > 0;
+  const enteredByRole = user.roleCodes.some((c) => roleCodes.includes(c));
   let users = userRefsOf(recipients);
   let excluded = excludedRefsOf(recipients);
 

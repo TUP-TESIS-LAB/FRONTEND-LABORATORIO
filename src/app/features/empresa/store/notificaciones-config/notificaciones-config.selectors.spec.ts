@@ -6,7 +6,7 @@ describe('notifConfig selectors', () => {
   const eventConfigs: EventConfig[] = [
     { eventType: 'HOME_VISIT_ASSIGNED', title: 't', enabled: true, hasTrigger: false, recipients: [], section: 'DOMICILIO' },
   ];
-  const eligibleA: EligibleRecipients = { users: [{ id: 1, nombre: 'Ana', tieneAcceso: true }], roles: [] };
+  const eligibleA: EligibleRecipients = { users: [{ id: 1, nombre: 'Ana', tieneAcceso: true, roleCodes: [], branchId: null }], roles: [], branches: [] };
 
   const state: NotifConfigState = {
     ...initialNotifConfigState,

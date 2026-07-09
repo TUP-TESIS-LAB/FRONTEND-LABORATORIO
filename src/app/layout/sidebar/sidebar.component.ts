@@ -14,8 +14,6 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/ro
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
 import { Store } from '@ngrx/store';
-import { ModuleRegistry } from '@core/tenant/module-registry';
-import { TokenService } from '@core/auth/token.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { loadBranchTotemConfig } from '@features/turnos/store/branch-totem-config/branch-totem-config.actions';
 import {
@@ -24,8 +22,8 @@ import {
   selectExtraccionDisplayEnabled,
 } from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
 import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
-import { AccessRegistry } from '@core/access/access-registry';
-import { NAV_SECTIONS, NavItem, NavSection } from './sidebar.nav';
+import { NavAccessService } from '@core/nav/nav-access.service';
+import { NavItem } from './sidebar.nav';
 
 @Component({
   selector: 'ui-sidebar',
@@ -410,12 +408,10 @@ export class SidebarComponent implements OnInit {
   readonly collapsed = input<boolean>(false);
   readonly itemClick = output<void>();
 
-  private readonly registry = inject(ModuleRegistry);
   private readonly router   = inject(Router);
   private readonly store    = inject(Store);
   private readonly session  = inject(UserSessionService);
-  private readonly token    = inject(TokenService);
-  private readonly access   = inject(AccessRegistry);
+  private readonly navAccess = inject(NavAccessService);
 
   private readonly tenantConfig = this.store.selectSignal(selectTenantConfig);
   protected readonly tenantName = computed(() => this.tenantConfig()?.name ?? 'LabCore');
@@ -440,16 +436,7 @@ export class SidebarComponent implements OnInit {
 
   private readonly expandedSet = signal<Set<string>>(new Set());
 
-  readonly visibleSections = computed<NavSection[]>(() =>
-    NAV_SECTIONS
-      .map((section) => ({
-        ...section,
-        items: section.items
-          .map((item) => this.applyChildVisibility(item))
-          .filter((item) => this.isItemVisible(item)),
-      }))
-      .filter((section) => section.items.length > 0),
-  );
+  readonly visibleSections = this.navAccess.visibleSections;
 
   // ---- Pantallas (TV) + tótem: links condicionales en el footer ----
   // Cada link es visible solo si su flag está ON en la config de la sucursal del
@@ -494,7 +481,7 @@ export class SidebarComponent implements OnInit {
   constructor() {
     const sync = () => {
       const url = this.url();
-      for (const section of NAV_SECTIONS) {
+      for (const section of this.visibleSections()) {
         for (const item of section.items) {
           if (item.kind === 'expandable' && item.children.some(c => url.startsWith(c.path))) {
             const next = new Set(this.expandedSet());
@@ -513,32 +500,6 @@ export class SidebarComponent implements OnInit {
   ngOnInit(): void {
     const id = this.branchId();
     if (id != null) this.store.dispatch(loadBranchTotemConfig({ branchId: id }));
-  }
-
-  /** Para expandables: filtra hijos por sectionKey + roleKey. Para links: devuelve el item igual. */
-  private applyChildVisibility(item: NavItem): NavItem {
-    if (item.kind !== 'expandable') return item;
-    return {
-      ...item,
-      children: item.children.filter((c) =>
-        (!c.sectionKey || this.access.has(c.sectionKey)) &&
-        (!c.roleKey || this.token.getRoles().includes(c.roleKey)),
-      ),
-    };
-  }
-
-  protected isItemVisible(item: NavItem): boolean {
-    if (item.kind === 'expandable') {
-      // El grupo entero se gatea por módulo/sección; luego debe quedar al menos un hijo visible.
-      if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
-      if (item.sectionKey && !this.access.has(item.sectionKey)) return false;
-      return item.children.length > 0;
-    }
-    if (item.kind === 'external') return true;
-    if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
-    if (item.roleKey && !this.token.getRoles().includes(item.roleKey)) return false;
-    if (item.sectionKey && !this.access.has(item.sectionKey)) return false;
-    return true;
   }
 
   protected isExpanded(label: string): boolean {

@@ -113,7 +113,7 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
           <label class="fin-cobro__factura">
             <input type="checkbox" [checked]="optOutElectronic()"
                    (change)="optOutElectronic.set($any($event.target).checked)" />
-            No facturar electrónicamente (emitir Factura X)
+            No facturar electrónicamente
           </label>
 
           <!-- CONFIRMAR -->
@@ -202,8 +202,30 @@ export class CobroAtencionComponent {
     effect(() => {
       const target = this.aCobrar();
       const ls = this.lineas();
+      // Prefill inicial: primera (y única) línea en 0 → arranca con el total.
       if (target > 0 && ls.length === 1 && ls[0].amount === 0) {
         this.lineas.set([{ ...ls[0], amount: target }]);
+        return;
+      }
+      // Re-sync: si el total bajó y quedamos sobre-asignados, absorbemos el exceso
+      // COMPLETO recorriendo las líneas de la última a la primera (waterfall): a cada
+      // línea le restamos lo que puede absorber y el remanente pasa a la anterior, hasta
+      // agotar el exceso o dejar todas en 0. Así el asignado nunca queda por encima del
+      // total (restante() nunca negativo), aunque el exceso supere el monto de la última.
+      const asignado = ls.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+      if (target > 0 && asignado > target && ls.length > 0) {
+        let exceso = round2(asignado - target);
+        const nuevos = ls.map(l => ({ ...l }));
+        for (let i = nuevos.length - 1; i >= 0 && exceso > 0; i--) {
+          const actual = Number(nuevos[i].amount) || 0;
+          const absorbe = Math.min(actual, exceso);
+          nuevos[i].amount = round2(actual - absorbe);
+          exceso = round2(exceso - absorbe);
+        }
+        // CLAVE para cortar el loop del effect: sólo escribimos si algún VALOR cambió.
+        // Comparación por valor (no por referencia), así el effect llega a un punto fijo.
+        const cambio = nuevos.some((l, i) => l.amount !== ls[i].amount);
+        if (cambio) this.lineas.set(nuevos);
       }
     });
     effect(() => {
@@ -237,7 +259,12 @@ export class CobroAtencionComponent {
     this.lineas.update(ls => ls.map(l => l.id === id ? { ...l, method } : l));
   }
   protected setAmount(id: number, raw: string): void {
-    const amount = Number(raw) || 0;
+    const parsed = Number(raw) || 0;
+    // El asignado no puede superar A cobrar: clampeamos esta línea al margen
+    // disponible = total − suma del resto de las líneas. Nunca negativo.
+    const otras = this.lineas().reduce((sum, l) => l.id === id ? sum : sum + (Number(l.amount) || 0), 0);
+    const disponible = Math.max(0, round2(this.aCobrar() - otras));
+    const amount = Math.min(Math.max(0, parsed), disponible);
     this.lineas.update(ls => ls.map(l => l.id === id ? { ...l, amount } : l));
   }
   protected setReference(id: number, reference: string): void {

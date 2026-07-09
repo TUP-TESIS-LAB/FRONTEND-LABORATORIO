@@ -18,9 +18,8 @@ import * as A from './store/sacar-turno.actions';
 import * as S from './store/sacar-turno.selectors';
 
 const STEPS: FormStep[] = [
-  { key: 'paciente', title: 'Paciente', subtitle: 'Buscar o alta' },
+  { key: 'datos-generales', title: 'Datos generales', subtitle: 'Paciente, sucursal y horario' },
   { key: 'analisis', title: 'Análisis', subtitle: 'Opcional' },
-  { key: 'turno', title: 'Sucursal y horario', subtitle: 'Dónde y cuándo' },
   { key: 'confirmar', title: 'Confirmar', subtitle: 'Revisar' },
 ];
 
@@ -111,11 +110,10 @@ export class SacarTurnoPage {
 
   protected readonly canProceed = computed(() => {
     switch (this.currentKey()) {
-      case 'paciente': return this.selectedPatient() !== null;
+      case 'datos-generales': return this.selectedPatient() !== null
+        && this.selectedBranchId() !== null && this.selectedFecha() !== null && this.selectedHora() !== null;
       // Opcional: el análisis definitivo se confirma en la atención (puede ir sin análisis).
       case 'analisis': return true;
-      case 'turno': return this.selectedBranchId() !== null
-        && this.selectedFecha() !== null && this.selectedHora() !== null;
       case 'confirmar': return true;
       default: return false;
     }

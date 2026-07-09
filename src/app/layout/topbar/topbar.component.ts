@@ -1,7 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Popover } from 'primeng/popover';
+import { AutoCompleteModule, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 import { TokenService } from '@core/auth/token.service';
+import { NavAccessService, NavSearchEntry } from '@core/nav/nav-access.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
 import { ProfileMenuComponent } from '@features/profile/components/profile-menu/profile-menu.component';
 import { NotificationBellComponent } from '@features/notifications/components/notification-bell/notification-bell.component';
@@ -12,7 +15,14 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
   selector: 'ui-topbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Popover, ProfileMenuComponent, BranchBadgeComponent, BreadcrumbComponent, NotificationBellComponent],
+  imports: [
+    Popover,
+    AutoCompleteModule,
+    ProfileMenuComponent,
+    BranchBadgeComponent,
+    BreadcrumbComponent,
+    NotificationBellComponent,
+  ],
   template: `
     <header class="ui-topbar">
       <button
@@ -25,10 +35,24 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
 
       <ui-breadcrumb class="ui-topbar__breadcrumb" />
 
-      <!-- TODO: implementar búsqueda global -->
-      <div class="ui-topbar__search" role="search" aria-disabled="true">
-        <i class="pi pi-search"></i>
-        <span>Buscar pacientes, turnos, estudios…</span>
+      <div class="ui-topbar__search" role="search">
+        <p-autocomplete
+          [suggestions]="suggestions()"
+          (completeMethod)="onComplete($event)"
+          (onSelect)="onSelect($event)"
+          optionLabel="label"
+          placeholder="Buscar una sección…"
+          appendTo="body">
+          <ng-template let-e pTemplate="item">
+            <div class="ui-topbar__search-item">
+              <i [class]="e.icon"></i>
+              <div class="ui-topbar__search-item-text">
+                <span class="ui-topbar__search-item-label">{{ e.label }}</span>
+                <span class="ui-topbar__search-item-section">{{ e.sectionLabel }}</span>
+              </div>
+            </div>
+          </ng-template>
+        </p-autocomplete>
       </div>
 
       <div class="ui-topbar__actions">
@@ -98,18 +122,25 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
       flex: 1;
       max-width: 420px;
       margin: 0 var(--space-3);
+    }
+    .ui-topbar__search ::ng-deep .p-autocomplete { width: 100%; display: block; }
+    .ui-topbar__search ::ng-deep .p-autocomplete-input {
+      width: 100%;
       background: rgba(15,23,42,.04);
       border: 1px solid rgba(15,23,42,.1);
-      border-radius: 6px;
-      padding: 7px 10px;
-      color: rgba(30,41,59,.55);
       font-size: 12px;
+      padding: 7px 10px;
+    }
+    .ui-topbar__search-item {
       display: flex;
       align-items: center;
-      gap: var(--space-1);
-      cursor: text;
-      user-select: none;
+      gap: var(--space-2);
+      padding: 2px 0;
     }
+    .ui-topbar__search-item i { color: rgba(30,41,59,.5); font-size: 13px; width: 16px; text-align: center; }
+    .ui-topbar__search-item-text { display: flex; flex-direction: column; gap: 1px; }
+    .ui-topbar__search-item-label { font-size: 13px; color: #1e293b; }
+    .ui-topbar__search-item-section { font-size: 10px; color: rgba(30,41,59,.5); }
 
     .ui-topbar__actions {
       margin-left: auto;
@@ -193,6 +224,8 @@ export class TopbarComponent {
 
   private readonly userSession = inject(UserSessionService);
   private readonly tokens = inject(TokenService);
+  private readonly navAccess = inject(NavAccessService);
+  private readonly router = inject(Router);
   protected readonly assistant = inject(AsistenteAyudaService);
 
   protected readonly userInitials = computed(() => {
@@ -203,4 +236,24 @@ export class TopbarComponent {
     const sub = this.tokens.getPayload()?.sub ?? '';
     return sub.slice(0, 2).toUpperCase() || '?';
   });
+
+  protected readonly suggestions = signal<NavSearchEntry[]>([]);
+
+  /** Filtra localmente sobre las rutas ya permitidas (módulo + sección + rol) — no hay backend acá. */
+  protected onComplete(e: AutoCompleteCompleteEvent): void {
+    const q = e.query?.trim().toLowerCase();
+    if (!q) { this.suggestions.set([]); return; }
+    this.suggestions.set(
+      this.navAccess.searchableEntries().filter((entry) => entry.label.toLowerCase().includes(q)),
+    );
+  }
+
+  protected onSelect(e: AutoCompleteSelectEvent): void {
+    const entry = e.value as NavSearchEntry;
+    if (entry.external) {
+      window.open(entry.path, '_blank', 'noopener');
+    } else {
+      this.router.navigateByUrl(entry.path);
+    }
+  }
 }

@@ -45,20 +45,20 @@ export const NAV_SECTIONS: NavSection[] = [
       { kind: 'link', label: 'Sacar turno', icon: 'pi pi-calendar-clock', path: '/turnos/sacar', moduleKey: ModuleKey.Turnos, sectionKey: 'RECEPCION' },
       { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes', sectionKey: 'PACIENTES' },
       { kind: 'link', label: 'Configuración de agendas', icon: 'pi pi-calendar-plus', path: '/turnos/configuracion', moduleKey: ModuleKey.Turnos, sectionKey: 'AGENDAS' },
-      { kind: 'link', label: 'Médicos derivantes', icon: 'pi pi-heart', path: '/medicos', moduleKey: ModuleKey.Medicos, sectionKey: 'MEDICOS' },
+      { kind: 'link', label: 'Médicos derivantes', icon: 'pi pi-heart', path: '/medicos', sectionKey: 'MEDICOS' },
     ],
   },
   {
     label: 'Clínico',
     items: [
       {
-        kind: 'expandable', label: 'Muestras', icon: 'pi pi-flask',
+        kind: 'expandable', label: 'Muestras', icon: 'pi pi-clipboard',
         children: [
-          { label: 'Recolección',   path: '/analitica/recoleccion',   sectionKey: 'PREANALITICA' },
-          { label: 'Traslado',      path: '/analitica/traslado',      sectionKey: 'PREANALITICA' },
-          { label: 'Procesamiento', path: '/analitica/procesamiento', sectionKey: 'ANALITICA' },
-          { label: 'Validación',    path: '/analitica/validacion',    sectionKey: 'ANALITICA' },
-          { label: 'Descarte',      path: '/analitica/descarte',      sectionKey: 'POSTANALITICA' },
+          { label: 'Recolección',   path: '/analitica/recoleccion',   icon: 'pi pi-inbox',        sectionKey: 'PREANALITICA' },
+          { label: 'Traslado',      path: '/analitica/traslado',      icon: 'pi pi-truck',        sectionKey: 'PREANALITICA' },
+          { label: 'Procesamiento', path: '/analitica/procesamiento', icon: 'pi pi-cog',          sectionKey: 'ANALITICA' },
+          { label: 'Validación',    path: '/analitica/validacion',    icon: 'pi pi-check-circle', sectionKey: 'ANALITICA' },
+          { label: 'Descarte',      path: '/analitica/descarte',      icon: 'pi pi-trash',        sectionKey: 'POSTANALITICA' },
         ],
       },
       { kind: 'link', label: 'Cola de extracción', icon: 'pi pi-bolt', path: '/analitica/extraccion', sectionKey: 'EXTRACCIONES' },

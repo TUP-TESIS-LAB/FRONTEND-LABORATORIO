@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
+import { InputTextModule } from 'primeng/inputtext';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { race, take } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
@@ -18,8 +19,9 @@ import {
   atencionMutationFailure,
   atencionMutationSuccess,
   loadAttentionAnalyses,
+  setAuthorizationNumber,
 } from '../../../../../store/atencion/atencion.actions';
-import { selectDetail, selectMutating, selectSummaryAnalyses } from '../../../../../store/atencion/atencion.selectors';
+import { selectAuthorizationMutating, selectDetail, selectMutating, selectSummaryAnalyses } from '../../../../../store/atencion/atencion.selectors';
 import {
   AnalisisDraftRow, clearAnalisisDraft, readAnalisisDraft, writeAnalisisDraft,
 } from '../../../../../utils/analisis-draft-store';
@@ -28,7 +30,7 @@ import {
   selector: 'lab-analisis-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
+  imports: [FormsModule, InputTextModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
@@ -42,10 +44,20 @@ import {
         (detailRequested)="onDetailRequested($event)">
         <!-- Proyectado a la derecha del buscador; la tabla del picker queda a todo el ancho. -->
         @if (!readOnly()) {
-          <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
-            <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
-            <span class="text-sm font-semibold">Urgente</span>
-          </label>
+          <div class="flex items-end gap-3">
+            @if (detail()?.insurancePlanId != null) {
+              <label class="flex flex-col gap-1 text-sm">
+                <span class="font-semibold">Código de autorización de obra social</span>
+                <input pInputText type="text" [ngModel]="authorizationValue()"
+                       (ngModelChange)="authorizationValue.set($event)" (blur)="onAuthorizationBlur()"
+                       [disabled]="authorizationMutating()" class="w-56" placeholder="" />
+              </label>
+            }
+            <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
+              <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
+              <span class="text-sm font-semibold">Urgente</span>
+            </label>
+          </div>
         }
       </lab-analysis-picker>
 
@@ -88,8 +100,12 @@ export class AnalisisStepComponent implements OnInit {
 
   readonly mutating = this.store.selectSignal(selectMutating);
 
-  private readonly detail          = this.store.selectSignal(selectDetail);
+  protected readonly detail        = this.store.selectSignal(selectDetail);
+  protected readonly authorizationMutating = this.store.selectSignal(selectAuthorizationMutating);
   private readonly summaryAnalyses = this.store.selectSignal(selectSummaryAnalyses);
+
+  /** Valor local del input "Código de autorización de obra social" — se inicializa desde el detail. */
+  readonly authorizationValue = signal<string | null>(null);
 
   /**
    * Cobertura Particular = la atención no tiene plan (`insurancePlanId == null`).
@@ -170,6 +186,8 @@ export class AnalisisStepComponent implements OnInit {
       .filter((x) => x.active !== false)
       .map((x) => x.analysisId);
 
+    this.authorizationValue.set(d?.authorizationNumber ?? null);
+
     if (analysisIds.length > 0) {
       // Backend manda — hidratamos urgente desde lo persistido y traemos el catálogo.
       this.isUrgentValue = d?.isUrgent ?? false;
@@ -190,6 +208,20 @@ export class AnalisisStepComponent implements OnInit {
   closeDetail(): void { this.detailOpen.set(false); }
   /** Re-persistir el borrador al togglear urgente (el effect depende de items(), no de isUrgentValue). */
   onUrgentChange(): void { this.items.update((arr) => [...arr]); }
+
+  /**
+   * Persiste el código de autorización de obra social vía el endpoint dedicado.
+   * Dedup contra el valor actual; normaliza string vacío/espacios a null.
+   */
+  onAuthorizationBlur(): void {
+    const d = this.detail();
+    if (!d) return;
+    const value = this.authorizationValue();
+    const current = d.authorizationNumber ?? null;
+    const normalized = value && value.trim() !== '' ? value.trim() : null;
+    if (normalized === current) return;
+    this.store.dispatch(setAuthorizationNumber({ attentionId: d.id, authorizationNumber: normalized }));
+  }
 
   /**
    * Persiste los análisis cargados localmente (pessimistic UI):

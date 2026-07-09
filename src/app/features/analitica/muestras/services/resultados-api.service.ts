@@ -23,7 +23,7 @@ export class ResultadosApiService {
   /** Determinaciones de catálogo de un análisis (filas del grid de planilla). */
   getDeterminationCatalogByAnalysis(analysisCatalogId: number): Observable<DeterminationCatalogEntry[]> {
     const params = new HttpParams().set('analysisId', analysisCatalogId);
-    return this.http.get<DeterminationCatalogEntry[]>(this.catalogBase, { params });
+    return this.http.get<DeterminationCatalogEntry[]>(`${this.catalogBase}/loadable`, { params });
   }
   batchUpdate(resultId: number, items: BatchDeterminationItem[]): Observable<Determination[]> {
     return this.http.patch<Determination[]>(`${this.base}/${resultId}/determinations/batch`, { items });

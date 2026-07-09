@@ -16,8 +16,6 @@ import {
   endSecretaryPhase,
   atencionMutationSuccess,
   atencionMutationFailure,
-  setCopayment,
-  setAuthorizationNumber,
   removeAnalysisFromResumen,
   downloadProtocolLabels,
 } from '../../../../../store/atencion/atencion.actions';
@@ -360,15 +358,17 @@ describe('ResumenStepComponent', () => {
     expect(normalized).toContain('$ 0,00');
   });
 
-  it('liveTotal recalcula el total EN VIVO al cambiar el copago, sin dispatch (005)', () => {
+  // El copago pasa a editarse en el paso Cobro (KAN-214); acá en Confirmar
+  // solo se muestra en solo-lectura, reflejando lo que trae el pricing.
+  it('muestra el copago del pricing en solo lectura, sin input editable', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', attn());
     f.detectChanges();
-    // SAMPLE_PRICING.subtotal = 0 y copaymentValue arranca null → total 0
-    expect(f.componentInstance.liveTotal()).toBe(0);
-    // Tipear el coseguro recalcula el total localmente (subtotal + copago)
-    f.componentInstance.copaymentValue.set(1500);
-    expect(f.componentInstance.liveTotal()).toBe(1500);
+    const el = f.nativeElement as HTMLElement;
+    const text = el.textContent ?? '';
+    expect(text).toContain('Copago');
+    expect(el.querySelector('#copago-input')).toBeNull();
+    expect(el.querySelector('p-inputnumber')).toBeNull();
   });
 
   it('muestra el NOMBRE COMPLETO + el código NBU del análisis (006)', () => {
@@ -393,72 +393,43 @@ describe('ResumenStepComponent', () => {
     expect(text).not.toContain('BIO001');
   });
 
-  it('onCopaymentBlur despacha setCopayment cuando el valor cambia', () => {
+  it('muestra el monto de copago del pricing formateado', () => {
+    store.setState({
+      [ATENCION_FEATURE_KEY]: {
+        ...initialAtencionState,
+        resolvedPatient: { id: 5, dni: '1', firstName: 'A', lastName: 'B' } as any,
+        summaryAnalyses: [{ id: 3, shortCode: 'BIO001', name: 'Hemograma', familyName: null, ubCount: null }],
+        pricing: { ...SAMPLE_PRICING, copayment: 1500, total: 1500 },
+      },
+    });
+    store.refreshState();
     const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), copaymentAmount: null });
+    f.componentRef.setInput('atencion', attn());
     f.detectChanges();
-    const dispatched: any[] = [];
-    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    f.componentInstance.copaymentValue.set(1500);
-    f.componentInstance.onCopaymentBlur();
-    expect(dispatched.length).toBeGreaterThan(0);
-    expect(dispatched[0].type).toBe(setCopayment.type);
-    expect(dispatched[0].attentionId).toBe(42);
-    expect(dispatched[0].copaymentAmount).toBe(1500);
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    const normalized = text.replace(/ /g, ' ');
+    expect(normalized).toContain('1.500,00');
   });
 
-  it('onCopaymentBlur NO despacha si el valor no cambió', () => {
+  // ── Item 4: Código de autorización de OS — solo lectura acá (se carga en Análisis) ──
+
+  it('item 4: con obra social muestra el código de autorización en solo lectura', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), copaymentAmount: 500 });
+    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7, authorizationNumber: 'AUTH-1' });
     f.detectChanges();
-    const dispatched: any[] = [];
-    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    // Same value as copaymentAmount
-    f.componentInstance.copaymentValue.set(500);
-    f.componentInstance.onCopaymentBlur();
-    expect(dispatched.filter((a: any) => a.type === setCopayment.type)).toHaveLength(0);
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Código de autorización de obra social');
+    expect(text).toContain('AUTH-1');
+    // No debe renderizar ningún input editable para este dato.
+    expect((f.nativeElement as HTMLElement).querySelector('#auth-input')).toBeNull();
   });
 
-  // ── Item 4: Nro de autorización (solo OS) ─────────────────────────────────
-
-  it('item 4: con obra social renderiza el input "Nro de autorización"', () => {
-    const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7 });
-    f.detectChanges();
-    const input = (f.nativeElement as HTMLElement).querySelector('#auth-input');
-    expect(input).toBeTruthy();
-  });
-
-  it('item 4: con cobertura Particular NO renderiza el input "Nro de autorización"', () => {
+  it('item 4: con cobertura Particular NO muestra el código de autorización', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: null });
     f.detectChanges();
-    const input = (f.nativeElement as HTMLElement).querySelector('#auth-input');
-    expect(input).toBeNull();
-  });
-
-  it('item 4: onAuthorizationBlur despacha setAuthorizationNumber cuando el valor cambia', () => {
-    const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7, authorizationNumber: null });
-    f.detectChanges();
-    const dispatched: any[] = [];
-    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    f.componentInstance.authorizationValue.set('AUTH-1');
-    f.componentInstance.onAuthorizationBlur();
-    expect(dispatched[0].type).toBe(setAuthorizationNumber.type);
-    expect(dispatched[0].attentionId).toBe(42);
-    expect(dispatched[0].authorizationNumber).toBe('AUTH-1');
-  });
-
-  it('item 4: onAuthorizationBlur NO despacha si el valor no cambió (normaliza vacío a null)', () => {
-    const f = TestBed.createComponent(ResumenStepComponent);
-    f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7, authorizationNumber: null });
-    f.detectChanges();
-    const dispatched: any[] = [];
-    (f.componentInstance as any)['store'].dispatch = vi.fn().mockImplementation((x: any) => dispatched.push(x));
-    f.componentInstance.authorizationValue.set('   '); // se normaliza a null === actual
-    f.componentInstance.onAuthorizationBlur();
-    expect(dispatched.filter((a: any) => a.type === setAuthorizationNumber.type)).toHaveLength(0);
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).not.toContain('Código de autorización de obra social');
   });
 
   // ── tests B3c: remover análisis desde el resumen ─────────────────────────

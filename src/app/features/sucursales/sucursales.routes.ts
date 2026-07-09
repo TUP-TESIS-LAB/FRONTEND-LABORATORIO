@@ -22,12 +22,14 @@ export const SUCURSALES_ROUTES: Routes = [
       {
         path: 'empleados/nuevo',
         canMatch: [roleGuard('ADMINISTRADOR')],
+        data: { breadcrumb: 'Nuevo empleado' },
         loadComponent: () =>
           import('./pages/empleado-form/empleado-form.page').then((m) => m.EmpleadoFormPage),
       },
       {
         path: 'empleados/:id/editar',
         canMatch: [roleGuard('ADMINISTRADOR')],
+        data: { breadcrumb: 'Editar empleado' },
         loadComponent: () =>
           import('./pages/empleado-form/empleado-form.page').then((m) => m.EmpleadoFormPage),
       },
@@ -53,6 +55,7 @@ export const SUCURSALES_ROUTES: Routes = [
       {
         path: 'configuracion/nueva',
         canMatch: [roleGuard('ADMINISTRADOR')],
+        data: { breadcrumb: 'Nueva sucursal' },
         loadComponent: () =>
           import('./pages/configuracion/sucursal-alta-stepper/sucursal-alta-stepper.page')
             .then(m => m.SucursalAltaStepperPage),
@@ -65,6 +68,7 @@ export const SUCURSALES_ROUTES: Routes = [
       {
         path: 'configuracion/:id/editar',
         canMatch: [roleGuard('ADMINISTRADOR')],
+        data: { breadcrumb: 'Editar sucursal' },
         loadComponent: () =>
           import('./pages/configuracion/sucursal-alta-stepper/sucursal-alta-stepper.page')
             .then(m => m.SucursalAltaStepperPage),

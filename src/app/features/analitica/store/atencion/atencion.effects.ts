@@ -195,7 +195,10 @@ export class AtencionEffects {
       ofType(endBilling),
       concatMap(({ id }) => this.api.endBilling(id).pipe(
         map(item => atencionMutationSuccess({ item })),
-        catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
+        catchError((error: HttpErrorResponse) => {
+          this.notification.error('No se pudo avanzar a la confirmación. Revisá la conexión y volvé a intentarlo.');
+          return of(atencionMutationFailure({ error }));
+        })
       ))
     )
   );
