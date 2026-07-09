@@ -236,13 +236,40 @@ describe('AnalisisStepComponent', () => {
     fixture.detectChanges();
   }
 
-  it('KAN-140: en modo urgente con Urgencias activo, onIniciarUrgente despacha advanceUrgent', () => {
+  it('KAN-188/GAP-D: onIniciarUrgente persiste los análisis (addAnalysisList) ANTES de advanceUrgent', () => {
     registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
     setDetailUrgent(true);
     fixture.componentInstance.onAnalysisAdded(makeRow());
     fixture.componentInstance.onIniciarUrgente();
+    // Antes del success del backend: se guardó el análisis pero NO se avanzó todavía.
+    expect(dispatched.find((a) => a.type === A.addAnalysisList.type)).toBeTruthy();
+    expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeUndefined();
+  });
+
+  it('KAN-188/GAP-D: onIniciarUrgente despacha advanceUrgent SOLO tras atencionMutationSuccess', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(true);
+    fixture.componentInstance.onAnalysisAdded(makeRow());
+    fixture.componentInstance.onIniciarUrgente();
+    expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeUndefined();
+    actions$.next(A.atencionMutationSuccess({ item: {} as any }));
     expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeTruthy();
-    expect(dispatched.find((a) => a.type === A.addAnalysisList.type)).toBeUndefined();
+  });
+
+  it('KAN-188/GAP-D: onIniciarUrgente NO despacha advanceUrgent si falla el guardado de análisis', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(true);
+    fixture.componentInstance.onAnalysisAdded(makeRow());
+    fixture.componentInstance.onIniciarUrgente();
+    actions$.next(A.atencionMutationFailure({ error: {} as any }));
+    expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeUndefined();
+  });
+
+  it('KAN-188/GAP-D: onIniciarUrgente con 0 análisis no dispatcha nada', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(true);
+    fixture.componentInstance.onIniciarUrgente();
+    expect(dispatched).toHaveLength(0);
   });
 
   it('KAN-140: en modo normal (no urgente), onIniciarUrgente NO existe y onContinue despacha addAnalysisList', () => {

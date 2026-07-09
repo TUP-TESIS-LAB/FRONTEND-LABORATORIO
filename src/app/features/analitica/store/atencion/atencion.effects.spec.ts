@@ -42,6 +42,7 @@ describe('AtencionEffects', () => {
   let api: Partial<Record<keyof AtencionApiService, ReturnType<typeof vi.fn>>> & {
     getPricing: ReturnType<typeof vi.fn>;
     setCopayment: ReturnType<typeof vi.fn>;
+    advanceUrgent: ReturnType<typeof vi.fn>;
   };
   let patients: { existsByDni: ReturnType<typeof vi.fn>; getByDni: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; getById: ReturnType<typeof vi.fn>; verify: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
@@ -71,6 +72,7 @@ describe('AtencionEffects', () => {
       getPricing: vi.fn(),
       setCopayment: vi.fn(),
       setAuthorizationNumber: vi.fn(),
+      advanceUrgent: vi.fn(),
     };
     patients = { existsByDni: vi.fn(), getByDni: vi.fn(), create: vi.fn(), update: vi.fn(), getById: vi.fn(), verify: vi.fn() };
     router = { navigate: vi.fn() };
@@ -606,5 +608,38 @@ describe('AtencionEffects', () => {
     actions$.next(A.registerGuardianSuccess({ patientId: 20 }));
     const out = await firstValueFrom(effects.refreshGuardiansAfterRegister$.pipe(take(1)));
     expect(out).toEqual(A.loadPatientGuardians({ patientId: 20 }));
+  });
+
+  // ── KAN-140/KAN-188 (GAP E): modo express urgente ─────────────────────────
+
+  it('advanceUrgent$ → OK → advanceUrgentSuccess', async () => {
+    const item = sample({ id: 1, isUrgent: true, attentionState: AttentionState.AWAITING_EXTRACTION });
+    api.advanceUrgent.mockReturnValue(of(item));
+    actions$.next(A.advanceUrgent({ id: 1 }));
+    const out = await firstValueFrom(effects.advanceUrgent$.pipe(take(1)));
+    expect(api.advanceUrgent).toHaveBeenCalledWith(1);
+    expect(out).toEqual(A.advanceUrgentSuccess({ item }));
+  });
+
+  it('advanceUrgent$ → error → toast en español + advanceUrgentFailure', async () => {
+    const error = new HttpErrorResponse({ status: 409 });
+    api.advanceUrgent.mockReturnValue(throwError(() => error));
+    actions$.next(A.advanceUrgent({ id: 1 }));
+    const out = await firstValueFrom(effects.advanceUrgent$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalled();
+    expect(out).toEqual(A.advanceUrgentFailure({ error }));
+  });
+
+  it('GAP E (KAN-188): advanceUrgentNavigate$ vuelve a Recepción (no a /analitica/extraccion, gateada a EXTRACTOR/ADMIN)', async () => {
+    actions$.next(A.advanceUrgentSuccess({ item: sample({ id: 1, isUrgent: true }) }));
+    await firstValueFrom(effects.advanceUrgentNavigate$.pipe(take(1)));
+    expect(router.navigate).toHaveBeenCalledWith(['/turnos/recepcion']);
+    expect(router.navigate).not.toHaveBeenCalledWith(['/analitica/extraccion']);
+  });
+
+  it('GAP E (KAN-188): advanceUrgentNavigate$ muestra un toast de confirmación', async () => {
+    actions$.next(A.advanceUrgentSuccess({ item: sample({ id: 1, isUrgent: true }) }));
+    await firstValueFrom(effects.advanceUrgentNavigate$.pipe(take(1)));
+    expect(notification.success).toHaveBeenCalled();
   });
 });
