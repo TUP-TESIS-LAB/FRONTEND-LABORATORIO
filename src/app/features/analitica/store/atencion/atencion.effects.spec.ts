@@ -186,6 +186,17 @@ describe('AtencionEffects', () => {
     expect(out).toEqual(A.atencionMutationFailure({ error }));
   });
 
+  it('endBilling$ ante error muestra toast en español y emite atencionMutationFailure', async () => {
+    const error = new HttpErrorResponse({ status: 500 });
+    (api.endBilling as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.endBilling({ id: 7 }));
+    const out = await firstValueFrom(effects.endBilling$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo avanzar a la confirmación. Revisá la conexión y volvé a intentarlo.'
+    );
+    expect(out).toEqual(A.atencionMutationFailure({ error }));
+  });
+
   it('createPatientInline$ → create OK → auto-verifica y emite patientResolved con el verificado', async () => {
     const created  = { id: 9, dni: '5' } as Patient;
     const verified = { id: 9, dni: '5', verifiedAt: '2026-06-10T10:00:00Z' } as Patient;
