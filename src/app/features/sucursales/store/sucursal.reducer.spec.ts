@@ -292,6 +292,11 @@ describe('sucursalReducer — areas', () => {
     const state = reduce(withAreas, A.toggleAreaStatusSuccess({ area: toggled }));
     expect(state.areas[0].active).toBe(false);
   });
+
+  it('deleteAreaSuccess removes the area from the list', () => {
+    const state = reduce(withAreas, A.deleteAreaSuccess({ id: mockArea.id }));
+    expect(state.areas.find(a => a.id === mockArea.id)).toBeUndefined();
+  });
 });
 
 // ── Sections ──────────────────────────────────────────────────────────────────
@@ -330,6 +335,11 @@ describe('sucursalReducer — sections', () => {
     const toggled: Section = { ...mockSection, active: false };
     const state = reduce(withSections, A.toggleSectionStatusSuccess({ section: toggled }));
     expect(state.sections[0].active).toBe(false);
+  });
+
+  it('deleteSectionSuccess removes the section from the list', () => {
+    const state = reduce(withSections, A.deleteSectionSuccess({ id: mockSection.id }));
+    expect(state.sections.find(s => s.id === mockSection.id)).toBeUndefined();
   });
 });
 

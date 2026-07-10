@@ -52,4 +52,11 @@ describe('AreaService', () => {
     expect(req.request.method).toBe('PATCH');
     req.flush({ id: 1, name: 'Bioquímica', areaType: 'QUIMICA_CLINICA', externalLabName: null, active: false });
   });
+
+  it('delete sends DELETE to areas/{id}', () => {
+    service.delete(1).subscribe();
+    const req = httpMock.expectOne('/api/v1/sucursales/areas/1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null);
+  });
 });

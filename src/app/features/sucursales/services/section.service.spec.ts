@@ -60,4 +60,11 @@ describe('SectionService', () => {
     expect(req.request.method).toBe('PATCH');
     req.flush({ id: 1, name: 'Hematología', areaId: 2, active: false });
   });
+
+  it('delete sends DELETE to sections/{id}', () => {
+    service.delete(1).subscribe();
+    const req = httpMock.expectOne('/api/v1/sucursales/sections/1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null);
+  });
 });

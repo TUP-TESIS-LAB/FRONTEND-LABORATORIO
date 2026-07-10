@@ -30,4 +30,8 @@ export class SectionService {
   toggleStatus(id: number): Observable<Section> {
     return this.http.patch<Section>(`${this.base}/${id}/status`, {});
   }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
+  }
 }

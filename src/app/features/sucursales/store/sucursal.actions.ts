@@ -125,6 +125,10 @@ export const toggleAreaStatus = createAction('[Sucursal] Toggle Area Status', pr
 export const toggleAreaStatusSuccess = createAction('[Sucursal] Toggle Area Status Success', props<{ area: Area }>());
 export const toggleAreaStatusFailure = createAction('[Sucursal] Toggle Area Status Failure', props<{ error: unknown }>());
 
+export const deleteArea = createAction('[Sucursal] Delete Area', props<{ id: number }>());
+export const deleteAreaSuccess = createAction('[Sucursal] Delete Area Success', props<{ id: number }>());
+export const deleteAreaFailure = createAction('[Sucursal] Delete Area Failure', props<{ error: unknown }>());
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Sections (catalog, scoped by area)
 // ──────────────────────────────────────────────────────────────────────────────
@@ -143,6 +147,10 @@ export const updateSectionFailure = createAction('[Sucursal] Update Section Fail
 export const toggleSectionStatus = createAction('[Sucursal] Toggle Section Status', props<{ id: number }>());
 export const toggleSectionStatusSuccess = createAction('[Sucursal] Toggle Section Status Success', props<{ section: Section }>());
 export const toggleSectionStatusFailure = createAction('[Sucursal] Toggle Section Status Failure', props<{ error: unknown }>());
+
+export const deleteSection = createAction('[Sucursal] Delete Section', props<{ id: number }>());
+export const deleteSectionSuccess = createAction('[Sucursal] Delete Section Success', props<{ id: number }>());
+export const deleteSectionFailure = createAction('[Sucursal] Delete Section Failure', props<{ error: unknown }>());
 
 // ──────────────────────────────────────────────────────────────────────────────
 // UI state

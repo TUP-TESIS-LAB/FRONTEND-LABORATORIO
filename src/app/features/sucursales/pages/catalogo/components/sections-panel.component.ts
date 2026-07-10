@@ -18,7 +18,7 @@ import {
   loadSections,
   addSection,
   updateSection,
-  toggleSectionStatus,
+  deleteSection,
 } from '../../../store/sucursal.actions';
 import { Section, SectionCreateInput } from '../../../models/section.model';
 
@@ -113,7 +113,7 @@ export class SectionsPanelComponent {
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
       acceptButtonStyleClass: 'p-button-danger',
-      accept: () => this.store.dispatch(toggleSectionStatus({ id: section.id })),
+      accept: () => this.store.dispatch(deleteSection({ id: section.id })),
     });
   }
 }

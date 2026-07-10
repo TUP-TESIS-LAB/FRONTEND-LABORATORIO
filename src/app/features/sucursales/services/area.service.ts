@@ -27,4 +27,8 @@ export class AreaService {
   toggleStatus(id: number): Observable<Area> {
     return this.http.patch<Area>(`${this.base}/${id}/status`, {});
   }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
+  }
 }
