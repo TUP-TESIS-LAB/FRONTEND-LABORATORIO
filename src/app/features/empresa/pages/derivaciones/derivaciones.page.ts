@@ -5,10 +5,11 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectButtonModule } from 'primeng/selectbutton';
 
-import { ExternalLab, ExternalLabState } from '../../models/external-lab.model';
-import { enter, setState } from '../../store/derivaciones/derivaciones.actions';
+import { ExternalLab, ExternalLabRequest, ExternalLabState } from '../../models/external-lab.model';
+import { enter, setState, create, update, toggle } from '../../store/derivaciones/derivaciones.actions';
 import { selectLabs, selectState, selectPending } from '../../store/derivaciones/derivaciones.selectors';
 import { DerivacionesTableComponent } from './components/derivaciones-table.component';
+import { DerivadoFormDrawerComponent } from './components/derivado-form-drawer.component';
 
 interface StateOption { label: string; value: ExternalLabState; }
 
@@ -17,7 +18,7 @@ interface StateOption { label: string; value: ExternalLabState; }
   standalone: true,
   imports: [
     FormsModule, ButtonModule, InputTextModule, SelectButtonModule,
-    DerivacionesTableComponent,
+    DerivacionesTableComponent, DerivadoFormDrawerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -46,6 +47,14 @@ interface StateOption { label: string; value: ExternalLabState; }
       [labs]="filtered()"
       [loading]="pending()"
       (edit)="openEdit($event)" />
+
+    <emp-derivado-form-drawer
+      [visible]="drawerOpen()"
+      [lab]="editingLab()"
+      [saving]="pending()"
+      (cancel)="closeDrawer()"
+      (save)="onSave($event)"
+      (toggleActive)="onToggleActive($event)" />
   `,
   styles: [`
     :host {
@@ -81,6 +90,8 @@ export class DerivacionesPage implements OnInit {
   readonly pending = this.store.selectSignal(selectPending);
 
   readonly query = signal('');
+  readonly drawerOpen = signal(false);
+  readonly editingLab = signal<ExternalLab | null>(null);
 
   readonly stateOptions: StateOption[] = [
     { label: 'Activados', value: 'active' },
@@ -111,12 +122,33 @@ export class DerivacionesPage implements OnInit {
     this.store.dispatch(setState({ state: value }));
   }
 
-  // Handlers del drawer (D5): por ahora placeholders — D5 los completa.
   openNuevo(): void {
-    // TODO(D5): abrir drawer de alta.
+    this.editingLab.set(null);
+    this.drawerOpen.set(true);
   }
 
-  openEdit(_lab: ExternalLab): void {
-    // TODO(D5): abrir drawer de edición con _lab.
+  openEdit(lab: ExternalLab): void {
+    this.editingLab.set(lab);
+    this.drawerOpen.set(true);
+  }
+
+  closeDrawer(): void {
+    this.drawerOpen.set(false);
+    this.editingLab.set(null);
+  }
+
+  onSave(req: ExternalLabRequest): void {
+    const lab = this.editingLab();
+    if (lab) {
+      this.store.dispatch(update({ id: lab.id, req }));
+    } else {
+      this.store.dispatch(create({ req }));
+    }
+    this.closeDrawer();
+  }
+
+  onToggleActive(event: { id: number; deleted: boolean }): void {
+    this.store.dispatch(toggle(event));
+    this.closeDrawer();
   }
 }
