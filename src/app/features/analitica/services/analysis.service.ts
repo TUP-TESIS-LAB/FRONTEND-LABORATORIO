@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Analysis, AnalysisDetail } from '../models/atencion.model';
+import { ResolvedAnalysis, SectionAnalysis } from '../models/section-analysis.model';
 
 @Injectable({ providedIn: 'root' })
 export class AnalysisService {
@@ -53,5 +54,32 @@ export class AnalysisService {
    */
   list(limit = 200): Observable<Analysis[]> {
     return this.http.get<Analysis[]>(this.baseUrl, { params: { shortCodePrefix: '', limit: String(limit) } });
+  }
+
+  // ── Secciones (KAN-218) — rutas absolutas distintas de baseUrl ──────────────
+
+  /** Conteo de análisis por sección (sectionId → cantidad) para el tenant actual. */
+  countBySection(): Observable<Record<number, number>> {
+    return this.http.get<Record<number, number>>('/api/v1/analitica/analyses/count-by-section');
+  }
+
+  /** Cantidad de análisis del tenant sin sección asignada. */
+  unassignedCount(): Observable<number> {
+    return this.http.get<number>('/api/v1/analitica/analyses/unassigned-count');
+  }
+
+  /** Análisis asignados a una sección (con nombre resuelto), para poblar el editor de chips. */
+  sectionAnalyses(sectionId: number): Observable<SectionAnalysis[]> {
+    return this.http.get<SectionAnalysis[]>(`/api/v1/analitica/section-assignments/${sectionId}`);
+  }
+
+  /** Set atómico de los análisis de una sección (PUT tenant-safe → 204). */
+  setSectionAnalyses(sectionId: number, analysisIds: number[]): Observable<void> {
+    return this.http.put<void>(`/api/v1/analitica/section-assignments/${sectionId}`, { analysisIds });
+  }
+
+  /** Resuelve nombres pegados (batch) contra el catálogo del tenant. */
+  resolveByNames(names: string[]): Observable<ResolvedAnalysis[]> {
+    return this.http.post<ResolvedAnalysis[]>('/api/v1/analitica/analysis/resolve', { names });
   }
 }

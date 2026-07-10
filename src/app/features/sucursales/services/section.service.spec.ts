@@ -60,4 +60,20 @@ describe('SectionService', () => {
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
   });
+
+  it('listWithBranches calls GET /sections and returns items with branches (KAN-218)', () => {
+    let received: unknown;
+    service.listWithBranches({ page: 0, size: 100 }).subscribe((page) => (received = page));
+    const req = httpMock.expectOne((r) => r.url === '/api/v1/sucursales/sections');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('page')).toBe('0');
+    expect(req.request.params.get('size')).toBe('100');
+    const body = {
+      ...emptyPage,
+      content: [{ id: 1, name: 'Hematología', active: true, branches: [{ id: 9, code: 'B1', name: 'Central' }] }],
+      totalElements: 1,
+    };
+    req.flush(body);
+    expect(received).toEqual(body);
+  });
 });

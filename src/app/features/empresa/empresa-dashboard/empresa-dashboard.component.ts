@@ -28,6 +28,7 @@ import { InformePdfSaveBus } from '../pages/informe-pdf/informe-pdf-save.bus';
 
     <nav class="emp-dashboard__tabs" role="tablist">
       <a routerLink="usuarios" routerLinkActive="is-active" role="tab">Usuarios</a>
+      <a routerLink="secciones" routerLinkActive="is-active" role="tab">Secciones</a>
       <a routerLink="white-label" routerLinkActive="is-active" role="tab">White-label</a>
       <a routerLink="fiscal" routerLinkActive="is-active" role="tab">Fiscal</a>
       <a routerLink="email" routerLinkActive="is-active" role="tab">Email</a>

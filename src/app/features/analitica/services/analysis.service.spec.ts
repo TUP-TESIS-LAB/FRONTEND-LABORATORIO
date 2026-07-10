@@ -4,11 +4,11 @@ import { firstValueFrom, of } from 'rxjs';
 import { AnalysisService } from './analysis.service';
 
 describe('AnalysisService', () => {
-  let http: { get: ReturnType<typeof vi.fn> };
+  let http: { get: ReturnType<typeof vi.fn>; put: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
   let service: AnalysisService;
 
   beforeEach(() => {
-    http = { get: vi.fn() };
+    http = { get: vi.fn(), put: vi.fn(), post: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
         AnalysisService,
@@ -73,5 +73,41 @@ describe('AnalysisService', () => {
     http.get.mockReturnValue(of([]));
     await firstValueFrom(service.search('hem', 5));
     expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis', { params: { q: 'hem', limit: '5' } });
+  });
+
+  // ── Secciones (KAN-218) ─────────────────────────────────────────────────────
+
+  it('countBySection calls GET /api/v1/analitica/analyses/count-by-section', async () => {
+    http.get.mockReturnValue(of({ 1: 4, 2: 0 }));
+    const r = await firstValueFrom(service.countBySection());
+    expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analyses/count-by-section');
+    expect(r).toEqual({ 1: 4, 2: 0 });
+  });
+
+  it('unassignedCount calls GET /api/v1/analitica/analyses/unassigned-count', async () => {
+    http.get.mockReturnValue(of(7));
+    const r = await firstValueFrom(service.unassignedCount());
+    expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analyses/unassigned-count');
+    expect(r).toBe(7);
+  });
+
+  it('sectionAnalyses calls GET /api/v1/analitica/section-assignments/{id}', async () => {
+    http.get.mockReturnValue(of([{ analysisId: 5, name: 'Hemograma', shortCode: '1001' }]));
+    const r = await firstValueFrom(service.sectionAnalyses(3));
+    expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/section-assignments/3');
+    expect(r).toHaveLength(1);
+  });
+
+  it('setSectionAnalyses PUTs {analysisIds} to /section-assignments/{id}', async () => {
+    http.put.mockReturnValue(of(undefined));
+    await firstValueFrom(service.setSectionAnalyses(3, [5, 6]));
+    expect(http.put).toHaveBeenCalledWith('/api/v1/analitica/section-assignments/3', { analysisIds: [5, 6] });
+  });
+
+  it('resolveByNames POSTs {names} to /api/v1/analitica/analysis/resolve', async () => {
+    http.post.mockReturnValue(of([{ name: 'hemograma', analysisId: 5, matched: true }]));
+    const r = await firstValueFrom(service.resolveByNames(['hemograma', 'xxx']));
+    expect(http.post).toHaveBeenCalledWith('/api/v1/analitica/analysis/resolve', { names: ['hemograma', 'xxx'] });
+    expect(r[0].matched).toBe(true);
   });
 });

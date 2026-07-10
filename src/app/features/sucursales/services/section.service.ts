@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Section, SectionCreateInput } from '../models/section.model';
 import { PageResponse } from '../models/page-response.model';
+import { SectionListItem } from '@features/empresa/models/section-list-item.model';
 
 @Injectable({ providedIn: 'root' })
 export class SectionService {
@@ -14,6 +15,18 @@ export class SectionService {
       .set('page', options.page ?? 0)
       .set('size', options.size ?? 20);
     return this.http.get<PageResponse<Section>>(this.base, { params });
+  }
+
+  /**
+   * Listado enriquecido con las sucursales que usan cada sección (KAN-218).
+   * Mismo endpoint que `list()`, tipado sobre el response actual del back
+   * (`SectionListItem` = superset de `Section` + `branches`).
+   */
+  listWithBranches(options: { page?: number; size?: number } = {}): Observable<PageResponse<SectionListItem>> {
+    const params = new HttpParams()
+      .set('page', options.page ?? 0)
+      .set('size', options.size ?? 20);
+    return this.http.get<PageResponse<SectionListItem>>(this.base, { params });
   }
 
   create(input: SectionCreateInput): Observable<Section> {
