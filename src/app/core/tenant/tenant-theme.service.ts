@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { TenantConfig } from '@core/models/tenant.model';
+import { resolveTenantIcon, mimeTypeForIcon } from './tenant-icon.util';
 
 @Injectable({ providedIn: 'root' })
 export class TenantThemeService {
@@ -8,6 +9,15 @@ export class TenantThemeService {
     root.style.setProperty('--brand-primary',   this.safeColor(config.primaryColor));
     root.style.setProperty('--brand-secondary', config.secondaryColor);
     root.style.setProperty('--p-primary-color', this.safeColor(config.primaryColor));
+
+    // Favicon por tenant: su logo propio si subió uno, si no el default
+    // (círculo con su color + tubo de ensayo). Misma regla que el sidebar.
+    const iconUrl = resolveTenantIcon(config.logoUrl, config.primaryColor);
+    const faviconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (faviconLink) {
+      faviconLink.href = iconUrl;
+      faviconLink.type = mimeTypeForIcon(iconUrl);
+    }
   }
 
   private safeColor(hex: string): string {

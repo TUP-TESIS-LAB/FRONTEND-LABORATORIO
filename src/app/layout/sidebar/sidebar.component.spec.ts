@@ -72,7 +72,8 @@ describe('SidebarComponent visibility', () => {
     expect(brand).not.toBeNull();
     const logo = brand?.querySelector('.ui-sidebar__logo') as HTMLImageElement | null;
     expect(logo).not.toBeNull();
-    expect(logo?.getAttribute('src')).toBe('logo.png');
+    // Sin tenant config, cae al ícono default (círculo + tubo de ensayo).
+    expect(logo?.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
     expect(brand?.querySelector('.ui-sidebar__brand-name')?.textContent?.trim()).toBe('LabCore');
   });
 

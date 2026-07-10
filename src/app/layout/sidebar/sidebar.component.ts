@@ -22,6 +22,7 @@ import {
   selectExtraccionDisplayEnabled,
 } from '@features/turnos/store/branch-totem-config/branch-totem-config.selectors';
 import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
+import { resolveTenantIcon } from '@core/tenant/tenant-icon.util';
 import { NavAccessService } from '@core/nav/nav-access.service';
 import { NavItem } from './sidebar.nav';
 
@@ -416,12 +417,14 @@ export class SidebarComponent implements OnInit {
   private readonly tenantConfig = this.store.selectSignal(selectTenantConfig);
   protected readonly tenantName = computed(() => this.tenantConfig()?.name ?? 'LabCore');
 
-  private readonly defaultLogo = 'logo.png';
+  // Logo propio del tenant si subió uno (o si la carga previa falló); si no,
+  // el default de la plataforma (círculo con su color + tubo de ensayo).
+  // Misma regla que el favicon, ver tenant-icon.util.ts.
   private readonly logoFallback = signal(false);
   protected readonly logoSrc = computed(() => {
-    if (this.logoFallback()) return this.defaultLogo;
-    const url = this.tenantConfig()?.logoUrl;
-    return url && url.length > 0 ? url : this.defaultLogo;
+    const primaryColor = this.tenantConfig()?.primaryColor || '#2563EB';
+    const logoUrl = this.logoFallback() ? null : this.tenantConfig()?.logoUrl;
+    return resolveTenantIcon(logoUrl, primaryColor);
   });
   protected onLogoError(): void { this.logoFallback.set(true); }
 

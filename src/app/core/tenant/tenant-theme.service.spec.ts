@@ -32,4 +32,35 @@ describe('TenantThemeService', () => {
     expect((service as any).isRedHue('#e23a47')).toBe(true);
     expect((service as any).isRedHue('#2563eb')).toBe(false);
   });
+
+  describe('favicon por tenant: logo propio si existe, si no círculo + tubo de ensayo', () => {
+    function conLinkFavicon(): HTMLLinkElement {
+      document.querySelector('link[rel="icon"]')?.remove();
+      const link = document.createElement('link');
+      link.rel = 'icon';
+      link.type = 'image/x-icon';
+      link.href = '/favicon.ico';
+      document.head.appendChild(link);
+      return link;
+    }
+
+    it('sin logoUrl, el favicon es el SVG data-URI con el color del tenant y la silueta neutra', () => {
+      const link = conLinkFavicon();
+      service.applyTheme(baseConfig);
+
+      expect(link.type).toBe('image/svg+xml');
+      expect(link.href.startsWith('data:image/svg+xml')).toBe(true);
+      const svg = decodeURIComponent(link.href.split(',')[1]);
+      expect(svg).toContain('fill="#2563eb"');
+      expect(svg).toContain('data:image/png;base64,');
+    });
+
+    it('con logoUrl propio, el favicon usa ese logo y no el default', () => {
+      const link = conLinkFavicon();
+      service.applyTheme({ ...baseConfig, logoUrl: '/assets/tenants/x/logo.svg' });
+
+      expect(link.href).toContain('/assets/tenants/x/logo.svg');
+      expect(link.type).toBe('image/svg+xml');
+    });
+  });
 });
