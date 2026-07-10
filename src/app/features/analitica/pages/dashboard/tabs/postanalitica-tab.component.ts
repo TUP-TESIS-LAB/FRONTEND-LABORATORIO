@@ -38,7 +38,7 @@ import { defaultMetricDateRange } from '../metrics-date-range.util';
       <section class="metrics-tab__charts">
         <div class="metrics-tab__chart-card">
           <h3>TAT promedio en el tiempo</h3>
-          <ui-metric-chart type="line" [series]="tatSerie()" [loading]="loading()" />
+          <ui-metric-chart type="bar" [series]="tatSerie()" [loading]="loading()" />
         </div>
         <div class="metrics-tab__chart-card">
           <h3>Estudios por estado</h3>

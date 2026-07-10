@@ -119,7 +119,7 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
         <div class="fin-viz-grid">
           <div class="fin-card fin-viz-card fin-viz-card--wide">
             <h3 class="fin-viz-card__title">Evolución de la recaudación</h3>
-            <ui-metric-chart type="line" [series]="recaudacionSerie()" [loading]="loading()" />
+            <ui-metric-chart type="bar" [series]="recaudacionSerie()" [loading]="loading()" />
           </div>
           <div class="fin-card fin-viz-card">
             <h3 class="fin-viz-card__title">Por método de pago</h3>

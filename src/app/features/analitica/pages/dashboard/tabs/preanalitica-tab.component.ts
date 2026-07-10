@@ -38,7 +38,7 @@ import { defaultMetricDateRange } from '../metrics-date-range.util';
       <section class="metrics-tab__charts">
         <div class="metrics-tab__chart-card">
           <h3>Volumen de muestras</h3>
-          <ui-metric-chart type="line" [series]="volumenTendencia()" [loading]="loading()" />
+          <ui-metric-chart type="bar" [series]="volumenTendencia()" [loading]="loading()" />
         </div>
         <div class="metrics-tab__chart-card">
           <h3>Rechazo por sección</h3>
