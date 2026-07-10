@@ -1,4 +1,4 @@
-export type ModuleCode = 'PORTAL' | 'TURNOS' | 'FINANCIERO' | 'MEDICOS' | 'STOCK';
+export type ModuleCode = 'PORTAL' | 'TURNOS' | 'FINANCIERO' | 'MEDICOS' | 'STOCK' | 'DERIVACIONES';
 
 export interface ModuloTenant {
   moduleCode: ModuleCode;
@@ -42,5 +42,11 @@ export const MODULO_META: Record<ModuleCode, ModuloMeta> = {
     label: 'Stock',
     description: 'Inventario de insumos y reactivos.',
     icon: 'pi pi-box',
+  },
+  DERIVACIONES: {
+    code: 'DERIVACIONES',
+    label: 'Derivaciones',
+    description: 'Laboratorios terciarizados a los que la empresa deriva muestras.',
+    icon: 'pi pi-sitemap',
   },
 };
