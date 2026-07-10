@@ -4,6 +4,8 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter, map } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import { UsuariosCreateBus } from '../pages/usuarios/usuarios-create.bus';
 import { InformePdfSaveBus } from '../pages/informe-pdf/informe-pdf-save.bus';
 
@@ -29,6 +31,9 @@ import { InformePdfSaveBus } from '../pages/informe-pdf/informe-pdf-save.bus';
     <nav class="emp-dashboard__tabs" role="tablist">
       <a routerLink="usuarios" routerLinkActive="is-active" role="tab">Usuarios</a>
       <a routerLink="secciones" routerLinkActive="is-active" role="tab">Secciones</a>
+      @if (derivacionesActiva()) {
+        <a routerLink="derivaciones" routerLinkActive="is-active" role="tab">Derivaciones</a>
+      }
       <a routerLink="white-label" routerLinkActive="is-active" role="tab">White-label</a>
       <a routerLink="fiscal" routerLinkActive="is-active" role="tab">Fiscal</a>
       <a routerLink="email" routerLinkActive="is-active" role="tab">Email</a>
@@ -71,6 +76,9 @@ export class EmpresaDashboardComponent {
   protected readonly bus = inject(UsuariosCreateBus);
   protected readonly reportBus = inject(InformePdfSaveBus);
   private readonly router = inject(Router);
+  private readonly modules = inject(ModuleRegistry);
+
+  protected readonly derivacionesActiva = computed(() => this.modules.isActive(ModuleKey.Derivaciones));
 
   // El botón de acción del header depende de la tab activa; se actualiza con cada
   // navegación. "Nuevo usuario" sólo se muestra en la tab Usuarios.

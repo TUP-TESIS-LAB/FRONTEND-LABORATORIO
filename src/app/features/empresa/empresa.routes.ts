@@ -2,6 +2,9 @@ import { Routes } from '@angular/router';
 import { provideEffects } from '@ngrx/effects';
 import { provideState } from '@ngrx/store';
 
+import { moduleActiveGuard } from '@core/guards/module-active.guard';
+import { ModuleKey } from '@core/models/module-key.enum';
+
 import { NotifConfigEffects } from './store/notificaciones-config/notificaciones-config.effects';
 import { notifConfigReducer } from './store/notificaciones-config/notificaciones-config.reducer';
 import { NOTIF_CONFIG_FEATURE_KEY } from './store/notificaciones-config/notificaciones-config.state';
@@ -9,6 +12,10 @@ import { NOTIF_CONFIG_FEATURE_KEY } from './store/notificaciones-config/notifica
 import { SeccionesEffects } from './store/secciones/secciones.effects';
 import { seccionesReducer } from './store/secciones/secciones.reducer';
 import { SECCIONES_FEATURE_KEY } from './store/secciones/secciones.state';
+
+import { DerivacionesEffects } from './store/derivaciones/derivaciones.effects';
+import { derivacionesReducer } from './store/derivaciones/derivaciones.reducer';
+import { DERIVACIONES_FEATURE_KEY } from './store/derivaciones/derivaciones.state';
 
 export const EMPRESA_ROUTES: Routes = [
   {
@@ -26,6 +33,16 @@ export const EMPRESA_ROUTES: Routes = [
         providers: [
           provideState(SECCIONES_FEATURE_KEY, seccionesReducer),
           provideEffects(SeccionesEffects),
+        ],
+      },
+      {
+        path: 'derivaciones',
+        data: { breadcrumb: 'Derivaciones' },
+        canMatch: [moduleActiveGuard(ModuleKey.Derivaciones)],
+        loadComponent: () => import('./pages/derivaciones/derivaciones.page').then(m => m.DerivacionesPage),
+        providers: [
+          provideState(DERIVACIONES_FEATURE_KEY, derivacionesReducer),
+          provideEffects(DerivacionesEffects),
         ],
       },
       { path: 'white-label', data: { breadcrumb: 'White label' },  loadComponent: () => import('./pages/white-label/white-label.page').then(m => m.WhiteLabelPage) },
