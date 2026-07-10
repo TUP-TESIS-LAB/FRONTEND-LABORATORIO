@@ -7,47 +7,41 @@
     [visited]="visited()"
     (stepSelected)="onStepSelected($event)" />
 
-  <div class="flex-1 overflow-y-auto px-6 py-6">
+  <div class="flex-1 overflow-y-auto px-6 py-4">
     <div class="w-full mx-auto" style="max-width: 900px">
 
       @switch (currentKey()) {
 
-        @case ('paciente') {
-          <sacar-step-paciente
-            [selectedPatient]="selectedPatient()"
-            [creating]="creatingPatient()"
-            (patientSelected)="onPatientSelected($event)"
-            (clearSelection)="onClearPatient()"
-            (createPatient)="onCreatePatient($event)" />
-        }
+        @case ('datos-generales') {
+          <div class="flex flex-col sm:flex-row gap-4 sm:items-start">
+            <div class="flex-1 min-w-0">
+              <sacar-step-paciente
+                [selectedPatient]="selectedPatient()"
+                [creating]="creatingPatient()"
+                (patientSelected)="onPatientSelected($event)"
+                (clearSelection)="onClearPatient()"
+                (createPatient)="onCreatePatient($event)" />
+            </div>
 
-        @case ('analisis') {
-          <sacar-step-tipos
-            [tipos]="tipos()"
-            [selectedIds]="selectedTipoIds()"
-            [loading]="tiposLoading()"
-            (selectionChange)="onTiposChange($event)" />
-        }
-
-        @case ('turno') {
-          <!-- Sucursal (compacta) + horario en el mismo paso -->
-          <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-2">
-            <span class="text-sm font-medium text-surface-600 sm:w-24">Sucursal</span>
-            @if (branches().length <= 1) {
-              <span class="font-medium">{{ selectedBranchName() ?? 'Sucursal única' }}</span>
-            } @else {
-              <p-select
-                [options]="branches()"
-                optionLabel="name"
-                optionValue="id"
-                [ngModel]="selectedBranchId()"
-                (ngModelChange)="onBranchChange($event)"
-                placeholder="Elegí una sucursal"
-                styleClass="w-full sm:w-80" />
-            }
+            <!-- Sucursal (compacta), al lado del paciente para no sumar filas -->
+            <div class="sm:w-64 shrink-0">
+              <label class="text-sm font-medium text-surface-600 block mb-1">Sucursal</label>
+              @if (branches().length <= 1) {
+                <span class="font-medium">{{ selectedBranchName() ?? 'Sucursal única' }}</span>
+              } @else {
+                <p-select
+                  [options]="branches()"
+                  optionLabel="name"
+                  optionValue="id"
+                  [ngModel]="selectedBranchId()"
+                  (ngModelChange)="onBranchChange($event)"
+                  placeholder="Elegí una sucursal"
+                  styleClass="w-full" />
+              }
+            </div>
           </div>
 
-          <hr class="border-surface-200 mb-4" />
+          <hr class="border-surface-200 my-3" />
 
           <sacar-step-fecha
             [fecha]="selectedFecha()"
@@ -57,6 +51,14 @@
             [minDate]="minBookingDate"
             (fechaChange)="onFechaChange($event)"
             (horaChange)="onHoraChange($event)" />
+        }
+
+        @case ('analisis') {
+          <sacar-step-tipos
+            [tipos]="tipos()"
+            [selectedIds]="selectedTipoIds()"
+            [loading]="tiposLoading()"
+            (selectionChange)="onTiposChange($event)" />
         }
 
         @case ('confirmar') {

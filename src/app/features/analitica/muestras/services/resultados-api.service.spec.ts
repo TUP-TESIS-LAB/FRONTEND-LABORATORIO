@@ -29,9 +29,9 @@ describe('ResultadosApiService', () => {
     const req = http.expectOne('/api/v1/analitica/determinations/500');
     expect(req.request.method).toBe('GET'); req.flush({});
   });
-  it('getDeterminationCatalogByAnalysis → GET /determinations?analysisId=', () => {
+  it('getDeterminationCatalogByAnalysis → GET /determinations/loadable?analysisId=', () => {
     service.getDeterminationCatalogByAnalysis(1).subscribe();
-    const req = http.expectOne('/api/v1/analitica/determinations?analysisId=1');
+    const req = http.expectOne('/api/v1/analitica/determinations/loadable?analysisId=1');
     expect(req.request.method).toBe('GET'); req.flush([]);
   });
   it('batchUpdate → PATCH /resultados/{id}/determinations/batch con {items}', () => {

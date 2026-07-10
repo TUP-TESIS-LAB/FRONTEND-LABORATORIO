@@ -7,10 +7,9 @@ import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService } from 'primeng/api';
 import { DatePipe } from '@angular/common';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import { DniPipe } from '@shared/pipes/dni.pipe';
 import { AgePipe } from '@shared/pipes/age.pipe';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
@@ -20,7 +19,7 @@ import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.direct
 import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
 import { TableColumn } from '@shared/ui/models/table-column.model';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
-import { AnalysisService } from '@features/analitica/services/analysis.service';
+import { NotificationService } from '@core/services/notification.service';
 import {
   loadPatient, loadPatientFailure, clearSelectedPatient, togglePatientActive,
 } from '../../store/patient.actions';
@@ -33,7 +32,7 @@ import { CoverageCatalogService } from '../../services/coverage-catalog.service'
 import { PatientHistoryService } from '../../services/patient-history.service';
 import { PatientHistoryItem, deliveryStatusLabel, deliveryStatusSeverity } from '../../models/patient-history.model';
 import { genderLabel, sexLabel, statusLabel } from '../../models/patient-labels';
-import { ContactType, Patient } from '../../models/patient.model';
+import { Address, ContactType, Patient } from '../../models/patient.model';
 
 @Component({
   selector: 'pat-patient-detail-page',
@@ -41,7 +40,7 @@ import { ContactType, Patient } from '../../models/patient.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   imports: [
-    RouterLink, ButtonModule, TabsModule, TagModule, ConfirmDialogModule,
+    RouterLink, ButtonModule, TabsModule, TagModule, ConfirmDialogModule, TooltipModule,
     DatePipe, DniPipe, AgePipe, CurrencyArPipe, EmptyStateComponent,
     DataTableComponent, UiCellDirective, UiRowExpansionDirective, PageHeaderComponent,
   ],
@@ -55,7 +54,7 @@ import { ContactType, Patient } from '../../models/patient.model';
           <p-tag [value]="statusLabel(p.status)" severity="info" />
           @if (!p.active) { <p-tag value="Inactivo" severity="danger" /> }
           @if (canMutate()) {
-            <a [routerLink]="['/pacientes', p.id, 'editar']">
+            <a [routerLink]="['/pacientes', p.id, 'editar']" [queryParams]="{ returnTo: '/pacientes/' + p.id }">
               <p-button severity="secondary" [outlined]="true" label="Editar" />
             </a>
             <p-button
@@ -85,8 +84,20 @@ import { ContactType, Patient } from '../../models/patient.model';
                 <div><div class="text-xs text-surface-500">Email</div><div>{{ primaryContact(p, 'EMAIL') || '—' }}</div></div>
               </div>
               <div class="mt-4 pt-3 border-t">
-                <div class="text-xs text-surface-500 mb-1">Domicilio</div>
-                <div>{{ addressLine(p) || 'Sin domicilio cargado' }}</div>
+                <div class="text-xs text-surface-500 mb-2">Domicilio</div>
+                @if (primaryAddress(p); as a) {
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3">
+                    <div><div class="text-xs text-surface-500">Calle</div><div>{{ a.street || '—' }}</div></div>
+                    <div><div class="text-xs text-surface-500">Número</div><div>{{ a.streetNumber || '—' }}</div></div>
+                    <div><div class="text-xs text-surface-500">Piso/Depto</div><div>{{ a.apartment || '—' }}</div></div>
+                    <div><div class="text-xs text-surface-500">Barrio</div><div>{{ a.neighborhood || '—' }}</div></div>
+                    <div><div class="text-xs text-surface-500">Ciudad</div><div>{{ a.city || '—' }}</div></div>
+                    <div><div class="text-xs text-surface-500">Provincia</div><div>{{ a.province || '—' }}</div></div>
+                    <div><div class="text-xs text-surface-500">Código postal</div><div>{{ a.zipCode || '—' }}</div></div>
+                  </div>
+                } @else {
+                  <div class="cv-muted">Sin domicilio cargado</div>
+                }
               </div>
             </p-tabpanel>
             <p-tabpanel value="coverages">
@@ -141,17 +152,41 @@ import { ContactType, Patient } from '../../models/patient.model';
                   <ng-template uiCell="cobertura" let-row>{{ coverageLabel(row.insurancePlanId) }}</ng-template>
 
                   <ng-template uiRowExpansion let-row>
-                    <div class="text-xs text-surface-500 mb-2 font-medium">
-                      Protocolo {{ row.protocolId ? ('P-' + row.protocolId) : '—' }}
+                    <div class="flex flex-wrap gap-x-6 gap-y-1 mb-2">
+                      <div class="text-xs font-medium text-surface-700">
+                        Protocolo {{ row.protocolId ? ('P-' + row.protocolId) : '—' }}
+                      </div>
+                      <div class="text-xs text-surface-500">
+                        Copago: {{ row.copaymentAmount != null ? (row.copaymentAmount | currencyAr) : '—' }}
+                      </div>
+                      <div class="text-xs text-surface-500">
+                        N° autorización: {{ row.authorizationNumber ?? '—' }}
+                      </div>
                     </div>
+                    @if (row.reportAvailable) {
+                      <div class="mb-2 flex items-center gap-2">
+                        <p-button
+                          size="small"
+                          icon="pi pi-print"
+                          label="Imprimir estudio"
+                          [outlined]="true"
+                          (onClick)="printReport(row)" />
+                        @if (row.lastPrintedBy) {
+                          <span class="text-xs text-surface-500"
+                                [pTooltip]="'Impreso el ' + (row.lastPrintedAt | date:'dd/MM/yy HH:mm') + ' por ' + row.lastPrintedBy">
+                            <i class="pi pi-check-circle text-green-600"></i> Impreso
+                          </span>
+                        }
+                      </div>
+                    }
                     <table class="hist-detail">
                       <thead>
-                        <tr><th>Análisis</th><th class="cv-center">Valor</th><th>Estado</th></tr>
+                        <tr><th>Análisis</th><th class="cv-center">Importe cobrado</th><th>Estado</th></tr>
                       </thead>
                       <tbody>
                         @for (a of row.analyses; track a.analysisId) {
                           <tr>
-                            <td>{{ analysisName(a.analysisId) }}</td>
+                            <td>{{ a.analysisName ?? ('#' + a.analysisId) }}</td>
                             <td class="cv-center">{{ a.chargedPrice != null ? (a.chargedPrice | currencyAr) : '—' }}</td>
                             <td>
                               <p-tag [severity]="deliverySeverity(a.deliveryStatus)" [value]="deliveryLabel(a.deliveryStatus)" />
@@ -213,7 +248,8 @@ export class PatientDetailPage implements OnInit, OnDestroy {
   private readonly perms = inject(PatientPermissionsService);
   private readonly catalogService = inject(CoverageCatalogService);
   private readonly historyService = inject(PatientHistoryService);
-  private readonly analysisService = inject(AnalysisService);
+  private readonly notifications = inject(NotificationService);
+  private readonly datePipe = inject(DatePipe);
   readonly canMutate = this.perms.canMutate;
 
   readonly patient = this.store.selectSignal(selectSelectedPatient);
@@ -226,7 +262,6 @@ export class PatientDetailPage implements OnInit, OnDestroy {
 
   // ── Historial de atenciones ──
   readonly history = signal<PatientHistoryItem[]>([]);
-  private readonly analysisNameById = signal<ReadonlyMap<number, string>>(new Map());
   readonly historyColumns: readonly TableColumn[] = [
     { field: 'attentionNumber', header: 'N° atención' },
     { field: 'fecha',           header: 'Fecha' },
@@ -251,34 +286,46 @@ export class PatientDetailPage implements OnInit, OnDestroy {
     this.loadHistory(numericId);
   }
 
-  /** Carga el historial y resuelve los nombres de los análisis (el BE devuelve sólo el id). */
   private loadHistory(patientId: number): void {
     this.historyService.getHistory(patientId).subscribe({
-      next: (items) => {
-        this.history.set(items);
-        const ids = [...new Set(items.flatMap((i) => i.analyses.map((a) => a.analysisId)))];
-        if (ids.length === 0) return;
-        forkJoin(
-          ids.map((id) => this.analysisService.getById(id).pipe(catchError(() => of(null)))),
-        ).subscribe((details) => {
-          const map = new Map<number, string>();
-          details.forEach((d, idx) => { if (d) map.set(ids[idx], d.name); });
-          this.analysisNameById.set(map);
-        });
-      },
+      next: (items) => this.history.set(items),
       error: () => { /* historial vacío; no se expone el error al usuario */ },
     });
-  }
-
-  /** Nombre del análisis resuelto por id (fallback "#id" mientras carga). */
-  analysisName(id: number): string {
-    return this.analysisNameById().get(id) ?? `#${id}`;
   }
 
   /** Etiqueta de cobertura para una atención: Particular si no hay plan, si no la obra social. */
   coverageLabel(insurancePlanId: number | null): string {
     if (insurancePlanId == null) return 'Particular';
     return insurerNameForPlan(this.catalog(), insurancePlanId);
+  }
+
+  printReport(row: PatientHistoryItem): void {
+    if (row.protocolId == null) return;
+    const patientId = this.patient()?.id;
+    if (patientId == null) return;
+    if (row.lastPrintedBy) {
+      const formattedDate = this.datePipe.transform(row.lastPrintedAt, 'dd/MM/yy HH:mm');
+      this.confirm.confirm({
+        header: 'Reimprimir estudio',
+        message: `Ya se imprimió el ${formattedDate} por ${row.lastPrintedBy}. ¿Reimprimir igual?`,
+        acceptLabel: 'Reimprimir',
+        rejectLabel: 'Cancelar',
+        accept: () => this.downloadAndOpenReport(patientId, row.protocolId!),
+      });
+    } else {
+      this.downloadAndOpenReport(patientId, row.protocolId);
+    }
+  }
+
+  private downloadAndOpenReport(patientId: number, protocolId: number): void {
+    this.historyService.printReport(patientId, protocolId).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        this.loadHistory(patientId);
+      },
+      error: () => this.notifications.error('No se pudo imprimir el estudio. Intentá de nuevo en unos minutos.'),
+    });
   }
 
   ngOnDestroy(): void { this.store.dispatch(clearSelectedPatient()); }
@@ -300,13 +347,9 @@ export class PatientDetailPage implements OnInit, OnDestroy {
     return chosen?.contactValue ?? '';
   }
 
-  /** Domicilio del paciente en una línea (primera dirección). */
-  addressLine(p: Patient): string {
-    const a = p.addresses[0];
-    if (!a) return '';
-    const head = [a.street, a.streetNumber].filter(Boolean).join(' ');
-    const tail = [a.neighborhood, a.city, a.province].filter(Boolean).join(', ');
-    return [head, tail].filter(Boolean).join(' · ');
+  /** Dirección a mostrar: activa+primaria → activa → primera cargada. */
+  primaryAddress(p: Patient): Address | undefined {
+    return p.addresses.find((a) => a.active && a.isPrimary) ?? p.addresses.find((a) => a.active) ?? p.addresses[0];
   }
 
   confirmToggle(): void {

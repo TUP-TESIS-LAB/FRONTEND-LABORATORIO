@@ -11,4 +11,11 @@ export class PatientHistoryService {
   getHistory(patientId: number): Observable<PatientHistoryItem[]> {
     return this.http.get<PatientHistoryItem[]>(`/api/v1/attentions/patient/${patientId}/history`);
   }
+
+  /** Descarga el PDF del informe más reciente disponible (parcial o final) de un protocolo. */
+  printReport(patientId: number, protocolId: number): Observable<Blob> {
+    return this.http.get(`/api/v1/attentions/patient/${patientId}/protocol/${protocolId}/report-print`, {
+      responseType: 'blob',
+    });
+  }
 }

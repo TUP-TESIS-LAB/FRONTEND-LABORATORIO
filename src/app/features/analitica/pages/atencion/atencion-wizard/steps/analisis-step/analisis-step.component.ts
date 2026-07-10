@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
+import { InputTextModule } from 'primeng/inputtext';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { race, take } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
@@ -18,8 +19,9 @@ import {
   atencionMutationFailure,
   atencionMutationSuccess,
   loadAttentionAnalyses,
+  setAuthorizationNumber,
 } from '../../../../../store/atencion/atencion.actions';
-import { selectDetail, selectMutating, selectSummaryAnalyses } from '../../../../../store/atencion/atencion.selectors';
+import { selectAuthorizationMutating, selectDetail, selectMutating, selectSummaryAnalyses } from '../../../../../store/atencion/atencion.selectors';
 import {
   AnalisisDraftRow, clearAnalisisDraft, readAnalisisDraft, writeAnalisisDraft,
 } from '../../../../../utils/analisis-draft-store';
@@ -28,7 +30,7 @@ import {
   selector: 'lab-analisis-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
+  imports: [FormsModule, InputTextModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
@@ -42,10 +44,20 @@ import {
         (detailRequested)="onDetailRequested($event)">
         <!-- Proyectado a la derecha del buscador; la tabla del picker queda a todo el ancho. -->
         @if (!readOnly()) {
-          <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
-            <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
-            <span class="text-sm font-semibold">Urgente</span>
-          </label>
+          <div class="flex items-end gap-3">
+            @if (detail()?.insurancePlanId != null) {
+              <label class="flex flex-col gap-1 text-sm">
+                <span class="font-semibold">Código de autorización de obra social</span>
+                <input pInputText type="text" [ngModel]="authorizationValue()"
+                       (ngModelChange)="authorizationValue.set($event)" (blur)="onAuthorizationBlur()"
+                       [disabled]="authorizationMutating()" class="w-56" placeholder="" />
+              </label>
+            }
+            <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
+              <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
+              <span class="text-sm font-semibold">Urgente</span>
+            </label>
+          </div>
         }
       </lab-analysis-picker>
 
@@ -88,8 +100,12 @@ export class AnalisisStepComponent implements OnInit {
 
   readonly mutating = this.store.selectSignal(selectMutating);
 
-  private readonly detail          = this.store.selectSignal(selectDetail);
+  protected readonly detail        = this.store.selectSignal(selectDetail);
+  protected readonly authorizationMutating = this.store.selectSignal(selectAuthorizationMutating);
   private readonly summaryAnalyses = this.store.selectSignal(selectSummaryAnalyses);
+
+  /** Valor local del input "Código de autorización de obra social" — se inicializa desde el detail. */
+  readonly authorizationValue = signal<string | null>(null);
 
   /**
    * Cobertura Particular = la atención no tiene plan (`insurancePlanId == null`).
@@ -170,6 +186,8 @@ export class AnalisisStepComponent implements OnInit {
       .filter((x) => x.active !== false)
       .map((x) => x.analysisId);
 
+    this.authorizationValue.set(d?.authorizationNumber ?? null);
+
     if (analysisIds.length > 0) {
       // Backend manda — hidratamos urgente desde lo persistido y traemos el catálogo.
       this.isUrgentValue = d?.isUrgent ?? false;
@@ -192,21 +210,38 @@ export class AnalisisStepComponent implements OnInit {
   onUrgentChange(): void { this.items.update((arr) => [...arr]); }
 
   /**
-   * Continuar — pessimistic UI:
+   * Persiste el código de autorización de obra social vía el endpoint dedicado.
+   * Dedup contra el valor actual; normaliza string vacío/espacios a null.
+   */
+  onAuthorizationBlur(): void {
+    const d = this.detail();
+    if (!d) return;
+    const value = this.authorizationValue();
+    const current = d.authorizationNumber ?? null;
+    const normalized = value && value.trim() !== '' ? value.trim() : null;
+    if (normalized === current) return;
+    this.store.dispatch(setAuthorizationNumber({ attentionId: d.id, authorizationNumber: normalized }));
+  }
+
+  /**
+   * Persiste los análisis cargados localmente (pessimistic UI):
    * 1. Dispatch addAnalysisList y esperar atencionMutationSuccess.
-   * 2. Si Financiero OFF, encadenar endSecretaryPhase y esperar otro success.
-   *    (Esa dispatch ya se hace en el wizard al recibir stepAdvanced — pero como
-   *    el flujo OFF tiene un salto extra, lo manejamos acá.) Esperamos a que
-   *    la mutación termine antes de emitir stepAdvanced, así si falla el back
-   *    el wizard NO avanza y el usuario ve el error sin perder contexto.
+   * 2. Solo entonces invoca `onSuccess` (avanzar de paso, o disparar advanceUrgent).
    *
    * El botón queda deshabilitado mientras `mutating` esté true, así no hay
    * doble click ni dispatch concurrente. Además, `submitting` evita re-entradas
    * sincrónicas (doble dispatch antes de que `mutating` se refleje) que generaban
    * 409 al encolar dos add/analysis.
+   *
+   * Compartido por `onContinue` (modo normal) y `onIniciarUrgente` (modo express,
+   * KAN-188/GAP-D): los análisis cargados en el picker viven solo en el signal
+   * local `items()` hasta que se persisten acá — sin este paso, `advanceUrgent`
+   * llegaba al back sin ninguna autorización guardada y el back rechazaba con 409
+   * "No se puede iniciar la urgencia sin análisis seleccionados", dejando al
+   * usuario sin poder salir del paso Análisis.
    */
   private submitting = false;
-  onContinue(): void {
+  private persistAnalysisList(onSuccess: () => void): void {
     if (this.items().length === 0 || this.mutating() || this.submitting) return;
     this.submitting = true;
     // Dedupe por análisis (el back deduplica, pero evitamos enviar duplicados).
@@ -237,20 +272,25 @@ export class AnalisisStepComponent implements OnInit {
       if (ok) {
         // Ya quedó persistido en el backend → el borrador local cumplió su rol.
         clearAnalisisDraft(this.atencionId());
-        this.stepAdvanced.emit();
+        onSuccess();
       }
     });
   }
 
+  onContinue(): void {
+    this.persistAnalysisList(() => this.stepAdvanced.emit());
+  }
+
   /**
    * Modo express urgente (KAN-140): salta directamente a extracción sin pasar por
-   * cobro/facturación/confirmación. Despacha `advanceUrgent` con el id de la atención.
-   * Solo se llama cuando `modoExpress()` es true.
+   * cobro/facturación/confirmación. Persiste los análisis cargados y, solo si
+   * quedan guardados, despacha `advanceUrgent`. Solo se llama cuando `modoExpress()`
+   * es true.
    */
   onIniciarUrgente(): void {
     const id = this.atencionId();
     if (!id || !this.modoExpress()) return;
-    this.store.dispatch(advanceUrgent({ id }));
+    this.persistAnalysisList(() => this.store.dispatch(advanceUrgent({ id })));
   }
 
   /**

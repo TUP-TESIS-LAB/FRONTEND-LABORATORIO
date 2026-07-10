@@ -14,6 +14,7 @@ import {
   informSettlement, informSettlementFailure, loadSettlement,
   loadInsurerPlans, loadInsurerPlansSuccess,
   loadInsurersIndex, loadInsurersIndexSuccess,
+  registerSettlementCollection, registerSettlementCollectionSuccess, registerSettlementCollectionFailure,
 } from './financiero.actions';
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import { NOT_MODIFIED } from '@core/refresh';
@@ -26,6 +27,7 @@ describe('LiquidacionesEffects', () => {
     exportSettlement: ReturnType<typeof vi.fn>;
     informSettlement: ReturnType<typeof vi.fn>;
     listSettlementPlans: ReturnType<typeof vi.fn>;
+    registerSettlementCollection: ReturnType<typeof vi.fn>;
   };
   let os: { search: ReturnType<typeof vi.fn>; getCompleteById: ReturnType<typeof vi.fn> };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
@@ -45,7 +47,10 @@ describe('LiquidacionesEffects', () => {
   }
 
   beforeEach(() => {
-    api = { listSettlements: vi.fn(), generateSettlement: vi.fn(), exportSettlement: vi.fn(), informSettlement: vi.fn(), listSettlementPlans: vi.fn() };
+    api = {
+      listSettlements: vi.fn(), generateSettlement: vi.fn(), exportSettlement: vi.fn(), informSettlement: vi.fn(),
+      listSettlementPlans: vi.fn(), registerSettlementCollection: vi.fn(),
+    };
     os = { search: vi.fn(), getCompleteById: vi.fn() };
     notif = { success: vi.fn(), error: vi.fn() };
   });
@@ -133,6 +138,31 @@ describe('LiquidacionesEffects', () => {
     const emitted: Array<{ type: string }> = [];
     await new Promise<void>(r => eff.informSettlement$.subscribe({ next: a => emitted.push(a as { type: string }), complete: r }));
     expect(emitted.map(a => a.type)).toEqual([informSettlementFailure.type]);
+  });
+
+  it('registerSettlementCollection$ con éxito emite Success y toast', async () => {
+    api.registerSettlementCollection.mockReturnValue(of({ id: 5, status: 'BILLED' }));
+    const eff = make(registerSettlementCollection({ id: 5, body: { amount: 1000, method: 'TRANSFER' } }));
+    const out = await new Promise(r => eff.registerSettlementCollection$.subscribe(r));
+    expect(out).toEqual(registerSettlementCollectionSuccess({ settlement: { id: 5, status: 'BILLED' } as never }));
+    expect(notif.success).toHaveBeenCalled();
+  });
+
+  it('registerSettlementCollection$ con 409 emite Failure y además recarga el detalle (loadSettlement)', async () => {
+    api.registerSettlementCollection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    const eff = make(registerSettlementCollection({ id: 5, body: { amount: 1000, method: 'TRANSFER' } }));
+    const emitted: Array<{ type: string }> = [];
+    await new Promise<void>(r => eff.registerSettlementCollection$.subscribe({ next: a => emitted.push(a as { type: string }), complete: r }));
+    expect(emitted.map(a => a.type)).toEqual([registerSettlementCollectionFailure.type, loadSettlement.type]);
+    expect(notif.error).toHaveBeenCalled();
+  });
+
+  it('registerSettlementCollection$ con 422 NO recarga el detalle (solo Failure)', async () => {
+    api.registerSettlementCollection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
+    const eff = make(registerSettlementCollection({ id: 5, body: { amount: 1000, method: 'TRANSFER' } }));
+    const emitted: Array<{ type: string }> = [];
+    await new Promise<void>(r => eff.registerSettlementCollection$.subscribe({ next: a => emitted.push(a as { type: string }), complete: r }));
+    expect(emitted.map(a => a.type)).toEqual([registerSettlementCollectionFailure.type]);
   });
 
   it('loadInsurerPlans$ mapea la respuesta del endpoint de settlements (planId/planName/arancel/convenio)', async () => {

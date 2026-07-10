@@ -195,7 +195,10 @@ export class AtencionEffects {
       ofType(endBilling),
       concatMap(({ id }) => this.api.endBilling(id).pipe(
         map(item => atencionMutationSuccess({ item })),
-        catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
+        catchError((error: HttpErrorResponse) => {
+          this.notification.error('No se pudo avanzar a la confirmación. Revisá la conexión y volvé a intentarlo.');
+          return of(atencionMutationFailure({ error }));
+        })
       ))
     )
   );
@@ -564,11 +567,25 @@ export class AtencionEffects {
     )
   );
 
-  /** Al avanzar urgente con éxito, navega a la cola de extracción. */
+  /**
+   * Al avanzar urgente con éxito, vuelve a Recepción con un toast de confirmación.
+   *
+   * KAN-188/GAP-E: navegaba a `/analitica/extraccion`, ruta gateada a EXTRACTOR/ADMINISTRADOR
+   * (`hasRoleGuard`) — pero quien dispara `advanceUrgent` es SECRETARIA/RESPONSABLE_SECRETARIA
+   * (mismos roles que el back autoriza en `/urgent/advance`). El guard bloqueaba el match y
+   * Angular redirigía a `/` sin ningún feedback: la atención SÍ había avanzado en el back, pero
+   * la secretaria terminaba en el home sin saber si la acción funcionó — no podía "salir" del
+   * flujo con una confirmación clara. Recepción es accesible para esos mismos roles
+   * (`recepcionAccessGuard`) y es el destino que ya usan el resto de los cierres del wizard
+   * (onFinished/backToList/cancel).
+   */
   advanceUrgentNavigate$ = createEffect(() =>
     this.actions$.pipe(
       ofType(advanceUrgentSuccess),
-      tap(() => this.router.navigate(['/analitica/extraccion'])),
+      tap(() => {
+        this.notification.success('Atención urgente enviada a la cola de extracción.');
+        this.router.navigate(['/turnos/recepcion']);
+      }),
     ),
     { dispatch: false }
   );

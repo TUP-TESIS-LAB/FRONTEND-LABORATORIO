@@ -478,9 +478,18 @@ export class PatientFormPage implements OnDestroy {
     }
   }
 
+  private navigateBack(): void {
+    const target = this.returnTo();
+    if (target && target.startsWith('/')) {
+      this.router.navigateByUrl(target);
+    } else {
+      this.router.navigateByUrl('/pacientes');
+    }
+  }
+
   onBack(): void {
     if (!this.form.dirty) {
-      this.router.navigate(['/pacientes']);
+      this.navigateBack();
       return;
     }
     this.confirm.confirm({
@@ -488,7 +497,7 @@ export class PatientFormPage implements OnDestroy {
       message: 'Vas a perder los cambios sin guardar.',
       acceptLabel: 'Descartar',
       rejectLabel: 'Seguir editando',
-      accept: () => this.router.navigate(['/pacientes']),
+      accept: () => this.navigateBack(),
     });
   }
 

@@ -236,13 +236,40 @@ describe('AnalisisStepComponent', () => {
     fixture.detectChanges();
   }
 
-  it('KAN-140: en modo urgente con Urgencias activo, onIniciarUrgente despacha advanceUrgent', () => {
+  it('KAN-188/GAP-D: onIniciarUrgente persiste los análisis (addAnalysisList) ANTES de advanceUrgent', () => {
     registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
     setDetailUrgent(true);
     fixture.componentInstance.onAnalysisAdded(makeRow());
     fixture.componentInstance.onIniciarUrgente();
+    // Antes del success del backend: se guardó el análisis pero NO se avanzó todavía.
+    expect(dispatched.find((a) => a.type === A.addAnalysisList.type)).toBeTruthy();
+    expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeUndefined();
+  });
+
+  it('KAN-188/GAP-D: onIniciarUrgente despacha advanceUrgent SOLO tras atencionMutationSuccess', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(true);
+    fixture.componentInstance.onAnalysisAdded(makeRow());
+    fixture.componentInstance.onIniciarUrgente();
+    expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeUndefined();
+    actions$.next(A.atencionMutationSuccess({ item: {} as any }));
     expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeTruthy();
-    expect(dispatched.find((a) => a.type === A.addAnalysisList.type)).toBeUndefined();
+  });
+
+  it('KAN-188/GAP-D: onIniciarUrgente NO despacha advanceUrgent si falla el guardado de análisis', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(true);
+    fixture.componentInstance.onAnalysisAdded(makeRow());
+    fixture.componentInstance.onIniciarUrgente();
+    actions$.next(A.atencionMutationFailure({ error: {} as any }));
+    expect(dispatched.find((a) => a.type === A.advanceUrgent.type)).toBeUndefined();
+  });
+
+  it('KAN-188/GAP-D: onIniciarUrgente con 0 análisis no dispatcha nada', () => {
+    registry.isActive.mockImplementation((key: string) => key === ModuleKey.Urgencias);
+    setDetailUrgent(true);
+    fixture.componentInstance.onIniciarUrgente();
+    expect(dispatched).toHaveLength(0);
   });
 
   it('KAN-140: en modo normal (no urgente), onIniciarUrgente NO existe y onContinue despacha addAnalysisList', () => {
@@ -269,5 +296,37 @@ describe('AnalisisStepComponent', () => {
     registry.isActive.mockReturnValue(false);
     setDetailUrgent(true);
     expect((fixture.componentInstance as any).modoExpress()).toBe(false);
+  });
+
+  // ── KAN-214: código de autorización de OS movido a este paso ─────────────
+
+  it('KAN-214: con obra social renderiza el input "Código de autorización de obra social"', () => {
+    setDetailInsurancePlan(7);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Código de autorización de obra social');
+    const input = (fixture.nativeElement as HTMLElement).querySelector('input[type="text"]');
+    expect(input).toBeTruthy();
+  });
+
+  it('KAN-214: con cobertura Particular NO renderiza el input de autorización', () => {
+    setDetailInsurancePlan(null);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).not.toContain('Código de autorización de obra social');
+  });
+
+  it('KAN-214: onAuthorizationBlur despacha setAuthorizationNumber cuando el valor cambia', () => {
+    setDetailInsurancePlan(7);
+    fixture.componentInstance.authorizationValue.set('AUTH-1');
+    fixture.componentInstance.onAuthorizationBlur();
+    expect(dispatched[0].type).toBe(A.setAuthorizationNumber.type);
+    expect(dispatched[0].attentionId).toBe(42);
+    expect(dispatched[0].authorizationNumber).toBe('AUTH-1');
+  });
+
+  it('KAN-214: onAuthorizationBlur NO despacha si el valor no cambió (normaliza vacío a null)', () => {
+    setDetailInsurancePlan(7);
+    fixture.componentInstance.authorizationValue.set('   '); // se normaliza a null === actual
+    fixture.componentInstance.onAuthorizationBlur();
+    expect(dispatched.filter((a: any) => a.type === A.setAuthorizationNumber.type)).toHaveLength(0);
   });
 });
