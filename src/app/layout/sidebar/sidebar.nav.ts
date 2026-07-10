@@ -12,7 +12,7 @@ export type NavItem =
       badge?: NavBadge;
       chip?: string;
       moduleKey?: ModuleKey;
-      roleKey?: string;    // required role to show the item
+      roleKey?: string | string[];    // required role(s) to show the item — array = any of them
       sectionKey?: AccessSection;
       exact?: boolean;     // routerLinkActive exact match — útil para paths padre que tienen sub-rutas en el mismo nav
     }
@@ -32,7 +32,7 @@ export type NavItem =
       // `external: true` → el hijo abre en pestaña nueva (href = path), como los items
       // `kind: 'external'`. Permite agrupar pantallas externas dentro de un desplegable.
       // `roleKey` gatea el hijo por rol (p. ej. config solo para ADMINISTRADOR).
-      children: { label: string; path: string; icon?: string; sectionKey?: AccessSection; roleKey?: string; external?: boolean }[];
+      children: { label: string; path: string; icon?: string; sectionKey?: AccessSection; roleKey?: string | string[]; external?: boolean }[];
     };
 
 export interface NavSection { label: string; items: NavItem[]; }
@@ -43,6 +43,10 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { kind: 'link', label: 'Recepción', icon: 'pi pi-bell', path: '/turnos/recepcion', sectionKey: 'RECEPCION' },
       { kind: 'link', label: 'Sacar turno', icon: 'pi pi-calendar-clock', path: '/turnos/sacar', moduleKey: ModuleKey.Turnos, sectionKey: 'RECEPCION' },
+      {
+        kind: 'link', label: 'Flujo operativo', icon: 'pi pi-chart-bar', path: '/turnos/dashboard',
+        moduleKey: ModuleKey.Turnos, sectionKey: 'RECEPCION', roleKey: ['ADMINISTRADOR', 'RESPONSABLE_SECRETARIA'],
+      },
       { kind: 'link', label: 'Pacientes', icon: 'pi pi-address-book', path: '/pacientes', sectionKey: 'PACIENTES' },
       { kind: 'link', label: 'Configuración de agendas', icon: 'pi pi-calendar-plus', path: '/turnos/configuracion', moduleKey: ModuleKey.Turnos, sectionKey: 'AGENDAS' },
       { kind: 'link', label: 'Médicos derivantes', icon: 'pi pi-heart', path: '/medicos', sectionKey: 'MEDICOS' },
@@ -63,6 +67,11 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       { kind: 'link', label: 'Cola de extracción', icon: 'pi pi-bolt', path: '/analitica/extraccion', sectionKey: 'EXTRACCIONES' },
       { kind: 'link', label: 'Nomenclador NBU', icon: 'pi pi-book', path: '/analitica/nbu', sectionKey: 'ANALITICA' },
+      // sectionKey único de gate: la página en sí también filtra tabs individuales
+      // por PREANALITICA/POSTANALITICA (`AnaliticaDashboardPage`) — el ítem del menú
+      // solo necesita al menos una sección de Analítica habilitada, y ANALITICA es la
+      // tab por defecto (ver design.md "Dashboards de métricas").
+      { kind: 'link', label: 'Métricas', icon: 'pi pi-chart-bar', path: '/analitica/metricas', sectionKey: 'ANALITICA' },
       { kind: 'link', label: 'Urgentes en curso', icon: 'pi pi-clock', path: '/urgencias/en-curso', moduleKey: ModuleKey.Urgencias },
     ],
   },
@@ -83,6 +92,7 @@ export const NAV_SECTIONS: NavSection[] = [
         kind: 'expandable', label: 'Financiero', icon: 'pi pi-wallet',
         moduleKey: ModuleKey.Financiero, sectionKey: 'FINANCIERO',
         children: [
+          { label: 'Dashboard',       path: '/financiero/dashboard',       icon: 'pi pi-chart-bar',        roleKey: 'ADMINISTRADOR' },
           // Operativo / diario
           { label: 'Caja',            path: '/financiero/caja',            icon: 'pi pi-wallet' },
           { label: 'Cobros',          path: '/financiero/cobros',          icon: 'pi pi-receipt' },

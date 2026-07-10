@@ -21,6 +21,13 @@ import { BoxOccupationEffects } from './box-occupation/store/box-occupation.effe
 import { SACAR_TURNO_FEATURE_KEY } from './sacar-turno/store/sacar-turno.state';
 import { sacarTurnoReducer } from './sacar-turno/store/sacar-turno.reducer';
 import { SacarTurnoEffects } from './sacar-turno/store/sacar-turno.effects';
+import { FLUJO_METRICS_FEATURE_KEY } from './store/flujo-metrics/flujo-metrics.state';
+import { flujoMetricsReducer } from './store/flujo-metrics/flujo-metrics.reducer';
+import { FlujoMetricsEffects } from './store/flujo-metrics/flujo-metrics.effects';
+import { moduleActiveGuard } from '@core/guards/module-active.guard';
+import { sectionGuard } from '@core/guards/section.guard';
+import { hasRoleGuard } from '@core/guards/has-role.guard';
+import { ModuleKey } from '@core/models/module-key.enum';
 
 export const TURNOS_ROUTES: Routes = [
   {
@@ -77,6 +84,24 @@ export const TURNOS_ROUTES: Routes = [
         ],
       },
       { path: 'atencion-turno', data: { breadcrumb: 'Atención de turno' }, loadComponent: () => import('./pages/atencion-turno/atencion-turno.component').then(m => m.AtencionTurnoComponent) },
+      {
+        // Dashboard de métricas de flujo operativo (FOP-01..10, KAN-205). El
+        // padre 'turnos' ya gatea moduleActiveGuard(Turnos) + sectionGuard('RECEPCION');
+        // se repiten acá para que la ruta sea autodescriptiva si algún día se
+        // mueve fuera del árbol de turnos, y se suma el gate por rol.
+        path: 'dashboard',
+        canMatch: [
+          moduleActiveGuard(ModuleKey.Turnos),
+          sectionGuard('RECEPCION'),
+          hasRoleGuard(['ADMINISTRADOR', 'RESPONSABLE_SECRETARIA']),
+        ],
+        data: { breadcrumb: 'Flujo operativo' },
+        providers: [
+          provideState(FLUJO_METRICS_FEATURE_KEY, flujoMetricsReducer),
+          provideEffects([FlujoMetricsEffects]),
+        ],
+        loadComponent: () => import('./pages/dashboard/flujo-dashboard.page').then(m => m.FlujoDashboardPage),
+      },
       {
         path: 'recepcion',
         canActivate: [recepcionAccessGuard],

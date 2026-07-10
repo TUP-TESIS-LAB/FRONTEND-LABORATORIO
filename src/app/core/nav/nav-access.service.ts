@@ -24,6 +24,14 @@ export class NavAccessService {
   private readonly access = inject(AccessRegistry);
   private readonly token = inject(TokenService);
 
+  /** `roleKey` ausente = sin restricción. Array = alcanza con tener UNO de los roles listados. */
+  private hasRole(roleKey?: string | string[]): boolean {
+    if (!roleKey) return true;
+    const userRoles = this.token.getRoles();
+    const required = Array.isArray(roleKey) ? roleKey : [roleKey];
+    return required.some((r) => userRoles.includes(r));
+  }
+
   isItemVisible(item: NavItem): boolean {
     if (item.kind === 'expandable') {
       if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
@@ -32,7 +40,7 @@ export class NavAccessService {
     }
     if (item.kind === 'external') return true;
     if (item.moduleKey && !this.registry.isActive(item.moduleKey)) return false;
-    if (item.roleKey && !this.token.getRoles().includes(item.roleKey)) return false;
+    if (!this.hasRole(item.roleKey)) return false;
     if (item.sectionKey && !this.access.has(item.sectionKey)) return false;
     return true;
   }
@@ -40,8 +48,7 @@ export class NavAccessService {
   visibleChildren(item: NavItem) {
     if (item.kind !== 'expandable') return [];
     return item.children.filter((c) =>
-      (!c.sectionKey || this.access.has(c.sectionKey)) &&
-      (!c.roleKey || this.token.getRoles().includes(c.roleKey)),
+      (!c.sectionKey || this.access.has(c.sectionKey)) && this.hasRole(c.roleKey),
     );
   }
 
