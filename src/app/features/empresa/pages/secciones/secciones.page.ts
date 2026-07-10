@@ -4,7 +4,6 @@ import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 
-import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { SectionListItemWithCount } from '../../models/section-list-item.model';
 import {
   loadSecciones, loadCountBySection, loadUnassignedCount,
@@ -20,15 +19,17 @@ import { SeccionFormDrawerComponent } from './components/seccion-form-drawer.com
   standalone: true,
   imports: [
     FormsModule, ButtonModule, InputTextModule,
-    StatCardComponent, SeccionesTableComponent, SeccionFormDrawerComponent,
+    SeccionesTableComponent, SeccionFormDrawerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="sec-stats">
-      <ui-stat-card label="Secciones" [value]="secciones().length" icon="pi-sitemap" />
-      <ui-stat-card label="Análisis sin sección" [value]="unassignedCount()"
-                    icon="pi-inbox" accentColor="var(--ds-warning, #c2410c)" />
-      <ui-stat-card label="Secciones sin uso" [value]="unusedCount()" icon="pi-ban" />
+    <div class="page-head">
+      <p class="lead">Las secciones son del laboratorio y se comparten entre sucursales. Definí los análisis una vez y asociá la sección donde haga falta.</p>
+      <div class="stats">
+        <div class="stat"><b>{{ secciones().length }}</b><span>Secciones</span></div>
+        <div class="stat" [class.warn]="unassignedCount() > 0"><b>{{ unassignedCount() }}</b><span>Análisis sin sección</span></div>
+        <div class="stat"><b>{{ unusedCount() }}</b><span>Sin uso</span></div>
+      </div>
     </div>
 
     <div class="sec-toolbar">
@@ -52,8 +53,26 @@ import { SeccionFormDrawerComponent } from './components/seccion-form-drawer.com
       (cancel)="closeDrawer()" />
   `,
   styles: [`
-    :host { display: block; }
-    .sec-stats { display: flex; gap: var(--space-4); margin-bottom: var(--space-5); flex-wrap: wrap; }
+    :host {
+      --accent: #5b54e6; --orange: #e0820a; --muted: #8a90a3; --line: #eceef3;
+      display: block;
+    }
+    .page-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 24px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .lead { font-size: 13.5px; color: var(--muted); max-width: 760px; line-height: 1.55; margin: 4px 0 0; }
+    .stats { display: flex; gap: 10px; flex: none; }
+    .stat {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px;
+      text-align: center; min-width: 92px; box-shadow: 0 1px 2px #0b132a08;
+    }
+    .stat b { display: block; font-size: 22px; font-weight: 800; color: #1a2140; line-height: 1; }
+    .stat span { font-size: 11px; color: var(--muted); }
+    .stat.is-on { border-color: color-mix(in srgb, var(--accent) 45%, white); background: color-mix(in srgb, var(--accent) 7%, white); }
+    .stat.is-on b { color: var(--accent); }
+    .stat.warn { border-color: color-mix(in srgb, var(--orange) 45%, white); background: color-mix(in srgb, var(--orange) 8%, white); }
+    .stat.warn b { color: var(--orange); }
     .sec-toolbar {
       display: flex; gap: var(--space-3); align-items: center;
       justify-content: space-between; margin-bottom: var(--space-4);
