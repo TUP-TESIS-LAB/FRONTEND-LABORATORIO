@@ -9,13 +9,10 @@ export class SectionService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/sucursales/sections';
 
-  list(options: { areaId?: number; page?: number; size?: number } = {}): Observable<PageResponse<Section>> {
-    let params = new HttpParams()
+  list(options: { page?: number; size?: number } = {}): Observable<PageResponse<Section>> {
+    const params = new HttpParams()
       .set('page', options.page ?? 0)
       .set('size', options.size ?? 20);
-    if (options.areaId != null) {
-      params = params.set('areaId', options.areaId);
-    }
     return this.http.get<PageResponse<Section>>(this.base, { params });
   }
 

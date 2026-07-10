@@ -1,8 +1,6 @@
 <div class="panel">
   <div class="panel-header">
     <h2>Secciones {{ selectedAreaName() ? '— ' + selectedAreaName() : '' }}</h2>
-    <p-button label="Nueva sección"
-              (click)="openNew()" [disabled]="!selectedAreaId()" />
   </div>
 
   @if (!selectedAreaId()) {
@@ -43,7 +41,7 @@
     [(visible)]="dialogVisible"
     [modal]="true"
     [draggable]="false"
-    [header]="editing() ? 'Editar sección' : 'Nueva sección'"
+    header="Editar sección"
     [style]="{ width: '26rem' }">
     <form [formGroup]="form" (ngSubmit)="submit()" class="dialog-form">
       <div class="form-field">

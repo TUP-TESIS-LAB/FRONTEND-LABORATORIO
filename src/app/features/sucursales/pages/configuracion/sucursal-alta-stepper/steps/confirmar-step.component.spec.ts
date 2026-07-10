@@ -60,8 +60,8 @@ describe('ConfirmarStepComponent — resumen real', () => {
       ],
       areas: [{ id: 1, name: 'Hematología', areaType: 'OTRO', externalLabName: null, active: true }],
       sections: [
-        { id: 10, name: 'Sección A', areaId: 1, active: true },
-        { id: 11, name: 'Sección B', areaId: 1, active: true },
+        { id: 10, name: 'Sección A', active: true },
+        { id: 11, name: 'Sección B', active: true },
       ],
       totem: { branchId: 1, enabled: true, active: true, atencionDisplayEnabled: true, extraccionDisplayEnabled: false },
     });

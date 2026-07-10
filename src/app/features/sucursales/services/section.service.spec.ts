@@ -29,15 +29,8 @@ describe('SectionService', () => {
     req.flush(emptyPage);
   });
 
-  it('list appends areaId query param when provided', () => {
-    service.list({ areaId: 9 }).subscribe();
-    const req = httpMock.expectOne(r => r.url === '/api/v1/sucursales/sections');
-    expect(req.request.params.get('areaId')).toBe('9');
-    req.flush(emptyPage);
-  });
-
   it('create posts the input body', () => {
-    const input = { name: 'Hematología', areaId: 2 };
+    const input = { name: 'Hematología' };
     service.create(input).subscribe();
     const req = httpMock.expectOne('/api/v1/sucursales/sections');
     expect(req.request.method).toBe('POST');
@@ -46,7 +39,7 @@ describe('SectionService', () => {
   });
 
   it('update sends PUT with body to sections/{id}', () => {
-    const input = { name: 'Hematología actualizada', areaId: 2 };
+    const input = { name: 'Hematología actualizada' };
     service.update(1, input).subscribe();
     const req = httpMock.expectOne('/api/v1/sucursales/sections/1');
     expect(req.request.method).toBe('PUT');
@@ -58,7 +51,7 @@ describe('SectionService', () => {
     service.toggleStatus(1).subscribe();
     const req = httpMock.expectOne('/api/v1/sucursales/sections/1/status');
     expect(req.request.method).toBe('PATCH');
-    req.flush({ id: 1, name: 'Hematología', areaId: 2, active: false });
+    req.flush({ id: 1, name: 'Hematología', active: false });
   });
 
   it('delete sends DELETE to sections/{id}', () => {

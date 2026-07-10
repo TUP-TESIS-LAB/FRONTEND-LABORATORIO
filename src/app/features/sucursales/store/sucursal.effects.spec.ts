@@ -64,7 +64,7 @@ const mockTotemConfig: BranchTotemConfig = {
 
 const mockArea: Area = { id: 100, name: 'Química Clínica', areaType: 'QUIMICA_CLINICA', externalLabName: null, active: true };
 
-const mockSection: Section = { id: 200, name: 'Sección A', areaId: 100, active: true };
+const mockSection: Section = { id: 200, name: 'Sección A', active: true };
 
 // ────── setup ──────
 
@@ -405,24 +405,11 @@ describe('SucursalEffects', () => {
     it('success: dispatches loadSectionsSuccess with page content', () => {
       return new Promise<void>((resolve) => {
         sectionService.list.mockReturnValue(of({ content: [mockSection], totalElements: 1, totalPages: 1, page: 0, size: 100 }));
-        actions$ = of(A.loadSections({ areaId: 100 }));
+        actions$ = of(A.loadSections());
 
         effects.loadSections$.subscribe((action) => {
           expect(action).toEqual(A.loadSectionsSuccess({ sections: [mockSection] }));
-          expect(sectionService.list).toHaveBeenCalledWith({ areaId: 100, page: 0, size: 100 });
-          resolve();
-        });
-      });
-    });
-
-    it('success without areaId: passes undefined to service', () => {
-      return new Promise<void>((resolve) => {
-        sectionService.list.mockReturnValue(of({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 100 }));
-        actions$ = of(A.loadSections({}));
-
-        effects.loadSections$.subscribe((action) => {
-          expect(action.type).toBe('[Sucursal] Load Sections Success');
-          expect(sectionService.list).toHaveBeenCalledWith({ areaId: undefined, page: 0, size: 100 });
+          expect(sectionService.list).toHaveBeenCalledWith({ page: 0, size: 100 });
           resolve();
         });
       });

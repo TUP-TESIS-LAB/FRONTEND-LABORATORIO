@@ -252,7 +252,7 @@ export class SucursalEffects {
   // ──────────────────────────────────────────────────────────────────────────
   loadSections$ = createEffect(() => this.actions$.pipe(
     ofType(A.loadSections),
-    switchMap(({ areaId }) => this.sectionService.list({ areaId, page: 0, size: 100 }).pipe(
+    switchMap(() => this.sectionService.list({ page: 0, size: 100 }).pipe(
       map(page => A.loadSectionsSuccess({ sections: page.content })),
       catchError(err => of(A.loadSectionsFailure({ error: this.errorMessage(err) }))),
     )),

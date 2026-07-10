@@ -132,7 +132,7 @@ export const deleteAreaFailure = createAction('[Sucursal] Delete Area Failure', 
 // ──────────────────────────────────────────────────────────────────────────────
 // Sections (catalog, scoped by area)
 // ──────────────────────────────────────────────────────────────────────────────
-export const loadSections = createAction('[Sucursal] Load Sections', props<{ areaId?: number }>());
+export const loadSections = createAction('[Sucursal] Load Sections');
 export const loadSectionsSuccess = createAction('[Sucursal] Load Sections Success', props<{ sections: Section[] }>());
 export const loadSectionsFailure = createAction('[Sucursal] Load Sections Failure', props<{ error: unknown }>());
 
