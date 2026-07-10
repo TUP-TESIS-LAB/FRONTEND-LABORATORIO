@@ -26,11 +26,6 @@ export const selectPending = createSelector(
   (state) => state.pending,
 );
 
-export const selectSeccionesError = createSelector(
-  selectSeccionesState,
-  (state) => state.error,
-);
-
 /** Merge de secciones + count con default 0 para las que no tienen análisis. */
 export const selectSeccionesConCount = createSelector(
   selectSecciones,

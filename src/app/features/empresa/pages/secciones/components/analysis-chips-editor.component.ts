@@ -43,9 +43,9 @@ import { AnalysisService } from '@features/analitica/services/analysis.service';
         </ng-template>
       </p-autocomplete>
 
-      @if (chips().length) {
+      @if (value().length) {
         <div class="ace__chips">
-          @for (chip of chips(); track $index) {
+          @for (chip of value(); track $index) {
             <p-tag
               [value]="chip.name"
               [severity]="chip.state === 'notfound' ? 'danger' : 'info'"
@@ -97,7 +97,6 @@ export class AnalysisChipsEditorComponent {
   protected autoModel: string | Analysis = '';
   protected readonly suggestions = signal<Analysis[]>([]);
 
-  protected readonly chips = computed(() => this.value());
   protected readonly notFoundCount = computed(
     () => this.value().filter((c) => c.state === 'notfound').length,
   );
