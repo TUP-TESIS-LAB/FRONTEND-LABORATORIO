@@ -111,6 +111,8 @@ type Cmp = InstanceType<typeof GenerarLiquidacionPage> & {
   activePlanTab: { (): number | null; set: (v: number | null) => void };
   reviewSearch: { (): string; set: (v: string) => void };
   visibleGroups: () => Array<{ planId: number; items: unknown[] }>;
+  tipo: { (): 'SIMPLE' | 'ESPECIAL'; set: (v: 'SIMPLE' | 'ESPECIAL') => void };
+  tramosPorPlan: { set: (v: Record<number, Array<{ desde: number; hasta: number | null; valorUb: number | null }>>) => void };
 };
 
 describe('GenerarLiquidacionPage — smoke', () => {
@@ -187,11 +189,47 @@ describe('GenerarLiquidacionPage — smoke', () => {
       body: {
         insurerId: 7,
         period: { from: '2026-01-01', to: '2026-01-31' },
-        specialRules: [],
+        specialRulesByPlan: null, // SIMPLE → sin reglas por plan
         excludedAnalysisIdsByPs: null,
         planIds: [3],
       },
     }));
+  });
+
+  it('generar en modo ESPECIAL dispatchea generateSettlement con specialRulesByPlan mapeado desde los tramos', async () => {
+    await setup(PREVIEW);
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    // Plan 3 tildado y con convenio, para que selectedPlans() lo resuelva.
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+    ]);
+    store.refreshState();
+    const dispatch = vi.spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    cmp.os.set(OS);
+    cmp.from.set(new Date(2026, 0, 1));
+    cmp.to.set(new Date(2026, 0, 31));
+    cmp.selectedPlanIds.set([3]);
+    // Modo ESPECIAL + tramos válidos del plan 3: 1–10 a $500, 11+ a $400.
+    cmp.tipo.set('ESPECIAL');
+    cmp.tramosPorPlan.set({
+      3: [
+        { desde: 1, hasta: 10, valorUb: 500 },
+        { desde: 11, hasta: null, valorUb: 400 },
+      ],
+    });
+
+    cmp.generar();
+
+    const last = dispatch.mock.calls.at(-1)?.[0] as { body?: { specialRulesByPlan?: Record<number, unknown[]> | null } };
+    expect(last.body?.specialRulesByPlan).toEqual({
+      3: [
+        { ruleType: 'BETWEEN', fromCount: 1, toCount: 10, amount: 500 },
+        { ruleType: 'GREATER_THAN', fromCount: 10, amount: 400 },
+      ],
+    });
   });
 
   it('post-generar navega al listado de liquidaciones', async () => {
