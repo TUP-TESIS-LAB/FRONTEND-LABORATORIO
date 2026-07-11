@@ -20,6 +20,10 @@ export interface TramoRow {
 export function validateTramos(rows: TramoRow[]): string | null {
   if (!rows.length) return 'Agregá al menos un tramo.';
   if (rows[0].desde !== 1) return 'El primer tramo debe empezar desde 1 estudio.';
+  const lastRow = rows[rows.length - 1];
+  if (lastRow.hasta != null) {
+    return `El último tramo debe quedar abierto (de ${lastRow.desde} en adelante).`;
+  }
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     const last = i === rows.length - 1;
@@ -44,6 +48,49 @@ export function tramosToRules(rows: TramoRow[]): SpecialRule[] {
       ? { ruleType: 'GREATER_THAN' as const, fromCount: r.desde - 1, amount: r.valorUb! }
       : { ruleType: 'BETWEEN' as const, fromCount: r.desde, toCount: r.hasta!, amount: r.valorUb! };
   });
+}
+
+/**
+ * Devuelve una copia contigua desde 1 de `rows`: reencadena cada `desde` al
+ * `hasta + 1` del anterior. Preserva la partición aunque una fila del medio
+ * cambie o desaparezca. No fuerza el invariante del último tramo abierto.
+ */
+function relinkDesde(rows: TramoRow[]): TramoRow[] {
+  return rows.map((r, i) => {
+    if (i === 0) return { ...r, desde: 1 };
+    const prev = rows[i - 1];
+    return prev.hasta != null ? { ...r, desde: prev.hasta + 1 } : { ...r };
+  });
+}
+
+/**
+ * Agrega un tramo al final: cierra el anterior si estaba abierto (`hasta = desde`)
+ * y crea el nuevo contiguo (`desde = hasta_anterior + 1`) y abierto (`hasta = null`).
+ * Función pura: devuelve un array nuevo sin mutar la entrada.
+ */
+export function addTramoRow(rows: TramoRow[]): TramoRow[] {
+  const prevIndex = rows.length - 1;
+  const prev = rows[prevIndex];
+  const closed = prev && prev.hasta == null
+    ? rows.map((r, i) => (i === prevIndex ? { ...r, hasta: r.desde } : { ...r }))
+    : rows.map((r) => ({ ...r }));
+  const last = closed[prevIndex];
+  const desde = last ? last.hasta! + 1 : 1;
+  return [...closed, { desde, hasta: null, valorUb: null }];
+}
+
+/**
+ * Quita la fila `index`, reencadena los `desde` restantes y garantiza el
+ * invariante: el nuevo último tramo queda siempre abierto (`hasta = null`).
+ * Función pura: devuelve un array nuevo sin mutar la entrada.
+ */
+export function removeTramoRow(rows: TramoRow[], index: number): TramoRow[] {
+  const remaining = relinkDesde(rows.filter((_, i) => i !== index));
+  if (remaining.length) {
+    const lastIndex = remaining.length - 1;
+    remaining[lastIndex] = { ...remaining[lastIndex], hasta: null };
+  }
+  return remaining;
 }
 
 @Component({
@@ -220,27 +267,11 @@ export class TramosEditorComponent {
 
   /** Agrega un tramo nuevo al final: cierra el anterior (si estaba abierto) y arranca contiguo. */
   protected addRow(): void {
-    const current = this.rows();
-    const prevIndex = current.length - 1;
-    const prev = current[prevIndex];
-    let next = current;
-    if (prev && prev.hasta == null) {
-      next = current.map((r, i) => (i === prevIndex ? { ...r, hasta: r.desde } : r));
-    }
-    const closedPrev = next[prevIndex];
-    const desde = closedPrev ? closedPrev.hasta! + 1 : 1;
-    this.rowsChange.emit([...next, { desde, hasta: null, valorUb: null }]);
+    this.rowsChange.emit(addTramoRow(this.rows()));
   }
 
   protected removeRow(index: number): void {
     if (this.rows().length <= 1) return;
-    const remaining = this.rows().filter((_, i) => i !== index);
-    // Re-encadena "desde" para que la partición siga siendo contigua desde 1.
-    const relinked = remaining.map((r, i) => (i === 0 ? { ...r, desde: 1 } : r));
-    for (let i = 1; i < relinked.length; i++) {
-      const prev = relinked[i - 1];
-      if (prev.hasta != null) relinked[i] = { ...relinked[i], desde: prev.hasta + 1 };
-    }
-    this.rowsChange.emit(relinked);
+    this.rowsChange.emit(removeTramoRow(this.rows(), index));
   }
 }
