@@ -29,7 +29,8 @@ import {
   generateSettlement, generateSettlementSuccess,
 } from '../../store/financiero.actions';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
-import { PreviewItem, PreviewGroup, ExcludedAnalysisIdsByPs } from '../../models/liquidaciones.model';
+import { PreviewItem, PreviewGroup, ExcludedAnalysisIdsByPs, SpecialRule } from '../../models/liquidaciones.model';
+import { TramosEditorComponent, TramoRow, tramosToRules } from './components/tramos-editor.component';
 
 const STEPS: FormStep[] = [
   { key: 'datos', title: 'Datos', subtitle: 'Obra social, período y planes' },
@@ -58,11 +59,12 @@ function norm(s: string | null | undefined): string {
   imports: [
     DatePipe, CurrencyArPipe, FormsModule, SelectModule, MultiSelectModule, DatePickerModule,
     WizardShellComponent, DataTableComponent, UiCellDirective, UiRowExpansionDirective, FilterBarComponent,
+    TramosEditorComponent,
   ],
   template: `
     <ui-wizard-shell
       heading="Generar liquidación"
-      [steps]="steps"
+      [steps]="steps()"
       [currentIndex]="step()"
       [visited]="visited()"
       [continueDisabled]="continueDisabled()"
@@ -75,7 +77,7 @@ function norm(s: string | null | undefined): string {
       (cancel)="cancelar()"
       (finish)="generar()">
 
-      @if (step() === 0) {
+      @if (stepKey() === 'datos') {
         <div class="step">
           <p class="muted">Elegí la obra social, el período y los planes a liquidar.</p>
 
@@ -83,6 +85,15 @@ function norm(s: string | null | undefined): string {
             <label for="os">Obra Social <span class="pat-form__req" aria-hidden="true">*</span></label>
             <p-select inputId="os" [options]="insurers()" optionLabel="name" [filter]="true"
                       appendTo="body" [ngModel]="os()" (ngModelChange)="onOsChange($event)" data-testid="sel-os" />
+          </div>
+
+          <div class="form-field">
+            <label>Tipo de liquidación</label>
+            <div class="tipo-sel">
+              <label><input type="radio" name="tipo" [checked]="tipo() === 'SIMPLE'" (change)="setTipo('SIMPLE')"> Simple</label>
+              <label><input type="radio" name="tipo" [checked]="tipo() === 'ESPECIAL'" (change)="setTipo('ESPECIAL')"> Especial</label>
+            </div>
+            @if (tipo() === 'ESPECIAL') { <p class="muted">Definís el valor de la UB por tramos de cantidad, para cada plan.</p> }
           </div>
 
           <div class="form-row">
@@ -142,7 +153,26 @@ function norm(s: string | null | undefined): string {
             }
           }
         </div>
-      } @else if (step() === 1) {
+      } @else if (stepKey() === 'tramos') {
+        <div class="step">
+          <p class="muted">Definí el valor de la U.B. por tramos de cantidad de estudios, para cada plan.</p>
+          <div class="liq-tabs" role="tablist">
+            @for (p of selectedPlans(); track p.id) {
+              <button type="button" class="liq-tab" [class.liq-tab--active]="activeTramoPlan() === p.id"
+                      (click)="activeTramoPlan.set(p.id)">
+                {{ p.name }} {{ tramosValidos()[p.id] ? '✓' : '' }}
+              </button>
+            }
+          </div>
+          @for (p of selectedPlans(); track p.id) {
+            @if (activeTramoPlan() === p.id) {
+              <fin-tramos-editor [rows]="tramosPorPlan()[p.id] ?? []"
+                                 (rowsChange)="onTramosChange(p.id, $event)"
+                                 (validChange)="onTramosValid(p.id, $event)" />
+            }
+          }
+        </div>
+      } @else if (stepKey() === 'revisar') {
         <div class="step">
           <p class="muted">Revisá las prestaciones agrupadas por plan y elegí cuáles incluir. Podés excluir prestaciones enteras, análisis individuales, o usar la selección múltiple para excluir/incluir en lote; los montos se recalculan solos.</p>
 
@@ -223,7 +253,7 @@ function norm(s: string | null | undefined): string {
 
                   <ui-table
                     [value]="g.items"
-                    [columns]="itemColumns"
+                    [columns]="itemColumns()"
                     dataKey="providedServiceId"
                     [selectable]="true"
                     [selection]="selectionFor(g)"
@@ -254,6 +284,10 @@ function norm(s: string | null | undefined): string {
 
                     <ng-template uiCell="coveredAmount" let-it>
                       <span class="liq-cell-covered" [class.liq-cell--excluded]="it.fullyExcluded">{{ it.coveredAmount | currencyAr }}</span>
+                    </ng-template>
+
+                    <ng-template uiCell="appliedUbValue" let-it>
+                      {{ it.appliedUbValue != null ? (it.appliedUbValue | currencyAr) : '—' }}
                     </ng-template>
 
                     <ng-template uiRowExpansion let-it>
@@ -339,6 +373,10 @@ function norm(s: string | null | undefined): string {
     :host ::ng-deep .form-field .p-multiselect { display: flex; width: 100%; }
     :host ::ng-deep .form-field .p-select .p-select-label { flex: 1 1 auto; min-width: 0; text-overflow: ellipsis; }
     .field-error { color: #d83a3a; font-size: 12.5px; }
+    .tipo-sel { display: flex; gap: 20px; }
+    .tipo-sel label { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 400;
+                       color: var(--ds-text, #1a1a2e); cursor: pointer; }
+    .tipo-sel input[type="radio"] { accent-color: #0f8a55; cursor: pointer; }
 
     .liq-warn { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 10px 14px; border-radius: 9px; font-size: 13px; }
     .liq-summary { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e8edf3; border-radius: 10px; }
@@ -446,7 +484,15 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   private readonly actions$ = inject(Actions);
   private readonly destroy = inject(DestroyRef);
 
-  protected readonly steps = STEPS;
+  /** Steps dinámicos: ESPECIAL inserta el paso "Tramos por plan" entre Datos y Revisar. */
+  protected readonly steps = computed<FormStep[]>(() => this.tipo() === 'ESPECIAL'
+    ? [{ key: 'datos', title: 'Datos y tipo', subtitle: 'Obra social, período y tipo' },
+       { key: 'tramos', title: 'Tramos por plan', subtitle: 'Valor U.B. por cantidad' },
+       { key: 'revisar', title: 'Revisar', subtitle: 'Prestaciones a liquidar' },
+       { key: 'confirmar', title: 'Confirmar', subtitle: 'Resumen y generación' }]
+    : STEPS);
+  /** Key del paso actual, para no keyear la navegación por índice fijo (el paso "tramos" corre los índices). */
+  protected readonly stepKey = computed(() => this.steps()[this.step()]?.key);
   /** Tope de fecha: hoy — no se pueden liquidar períodos futuros. */
   protected readonly hoy = new Date();
   protected readonly step = signal(0);
@@ -458,6 +504,14 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   protected readonly to = signal<Date | null>(null);
   /** Planes tildados de la OS (ids). Por defecto todos; se re-tildan al cambiar de OS. */
   protected readonly selectedPlanIds = signal<number[]>([]);
+  /** SIMPLE (arancel del convenio) o ESPECIAL (tramos por plan, valor U.B. por cantidad). */
+  protected readonly tipo = signal<'SIMPLE' | 'ESPECIAL'>('SIMPLE');
+  /** Filas de tramos por plan: { planId: TramoRow[] }. */
+  protected readonly tramosPorPlan = signal<Record<number, TramoRow[]>>({});
+  /** Validez de tramos por plan: { planId: boolean }. */
+  protected readonly tramosValidos = signal<Record<number, boolean>>({});
+  /** Tab de plan activo en el paso Tramos. */
+  protected readonly activeTramoPlan = signal<number | null>(null);
 
   // ── Paso Revisar: tab de plan activo + búsqueda client-side ──
   /** Plan activo del tab en el paso Revisar; null = "Todos". */
@@ -472,12 +526,17 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   private readonly excluded = signal<ExcludedAnalysisIdsByPs>({});
 
   protected readonly rowsPerPage = 10;
-  protected readonly itemColumns: readonly TableColumn[] = [
-    { field: 'patientName', header: 'Paciente' },
-    { field: 'serviceDate', header: 'Fecha' },
-    { field: 'copaymentAmount', header: 'Copago', align: 'right' },
-    { field: 'coveredAmount', header: 'Cubierto', align: 'right' },
-  ];
+  /** En ESPECIAL se agrega la columna del valor U.B. de tramo aplicado a cada prestación. */
+  protected readonly itemColumns = computed<readonly TableColumn[]>(() => {
+    const cols: TableColumn[] = [
+      { field: 'patientName', header: 'Paciente' },
+      { field: 'serviceDate', header: 'Fecha' },
+      { field: 'copaymentAmount', header: 'Copago', align: 'right' },
+      { field: 'coveredAmount', header: 'Cubierto', align: 'right' },
+    ];
+    if (this.tipo() === 'ESPECIAL') cols.push({ field: 'appliedUbValue', header: 'Valor U.B.', align: 'right' });
+    return cols;
+  });
 
   protected readonly insurers = this.store.selectSignal(selectLiqInsurers);
   protected readonly insurerPlans = this.store.selectSignal(selectLiqInsurerPlans);
@@ -504,6 +563,13 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     !!this.os() && !!this.from() && !!this.to() && !this.rangoInvalido()
     && this.selectedPlanIds().length > 0 && !this.noPlanConvenio());
 
+  /** En ESPECIAL, todos los planes tildados deben tener sus tramos completos y válidos. */
+  protected readonly tramosTodosValidos = computed(() => {
+    if (this.tipo() !== 'ESPECIAL') return true;
+    const v = this.tramosValidos();
+    return this.selectedPlans().every(p => v[p.id] === true);
+  });
+
   /** Todas las prestaciones de todos los grupos, aplanadas. */
   private readonly allItems = computed(() =>
     (this.preview()?.groups ?? []).flatMap(g => g.items));
@@ -513,9 +579,14 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   protected readonly excluidasCount = computed(() => this.totalPrestaciones() - this.incluidas());
   protected readonly canGenerate = computed(() => this.incluidas() > 0);
 
-  /** Botón "Continuar": paso Datos exige form válido; paso Revisar exige ≥1 incluida. */
-  protected readonly continueDisabled = computed(() =>
-    this.step() === 0 ? !this.paso1Valido() : !this.canGenerate());
+  /** Botón "Continuar": por paso — Datos exige form válido, Tramos exige tramos completos, Revisar exige ≥1 incluida. */
+  protected readonly continueDisabled = computed(() => {
+    const k = this.stepKey();
+    if (k === 'datos') return !this.paso1Valido();
+    if (k === 'tramos') return !this.tramosTodosValidos();
+    if (k === 'revisar') return !this.canGenerate();
+    return false;
+  });
 
   /** Nombres de los planes elegidos, para el resumen del paso Confirmar. */
   protected readonly selectedPlanNames = computed(() => {
@@ -592,6 +663,26 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     if (insurer) this.store.dispatch(loadInsurerPlans({ insurerId: insurer.id }));
   }
 
+  /** Cambia SIMPLE/ESPECIAL; al pasar a ESPECIAL, precarga un tramo inicial por cada plan tildado que no tenga uno. */
+  protected setTipo(t: 'SIMPLE' | 'ESPECIAL'): void {
+    this.tipo.set(t);
+    if (t === 'ESPECIAL') {
+      const cur = this.tramosPorPlan();
+      const next = { ...cur };
+      for (const p of this.selectedPlans()) if (!next[p.id]) next[p.id] = [{ desde: 1, hasta: null, valorUb: null }];
+      this.tramosPorPlan.set(next);
+      this.activeTramoPlan.set(this.selectedPlans()[0]?.id ?? null);
+    }
+  }
+
+  protected onTramosChange(planId: number, rows: TramoRow[]): void {
+    this.tramosPorPlan.update(m => ({ ...m, [planId]: rows }));
+  }
+
+  protected onTramosValid(planId: number, valid: boolean): void {
+    this.tramosValidos.update(m => ({ ...m, [planId]: valid }));
+  }
+
   protected toggleAnalysis(psId: number, analysisId: number): void {
     const cur = { ...this.excluded() };
     const set = new Set(cur[psId] ?? []);
@@ -661,24 +752,50 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
         period: { from: toIso(this.from()), to: toIso(this.to()) },
         excludedAnalysisIdsByPs: Object.keys(excl).length ? excl : null,
         planIds: this.selectedPlanIds(),
+        specialRulesByPlan: this.buildRulesByPlan(),
       },
     }));
   }
 
+  /** Reglas especiales por plan para el body de preview/generate; null fuera de ESPECIAL. */
+  private buildRulesByPlan(): Record<number, SpecialRule[]> | null {
+    if (this.tipo() !== 'ESPECIAL') return null;
+    const out: Record<number, SpecialRule[]> = {};
+    for (const p of this.selectedPlans()) out[p.id] = tramosToRules(this.tramosPorPlan()[p.id] ?? []);
+    return out;
+  }
+
+  /**
+   * Navega al paso siguiente keyeando por la KEY del paso actual (no por índice fijo):
+   * el paso "tramos" solo existe en ESPECIAL, así que los índices se corren según el tipo.
+   */
   protected next(): void {
-    if (this.step() === 0) {
+    const k = this.stepKey();
+    if (k === 'datos') {
       if (!this.paso1Valido()) return;
-      this.excluded.set({});
-      this.activePlanTab.set(null);
-      this.reviewSearch.set('');
-      this.step.set(1);
-      this.visited.update(s => new Set(s).add(1));
-      this.reloadPreview();
-    } else if (this.step() === 1) {
+      this.goTo(this.step() + 1);
+      if (this.stepKey() === 'revisar') this.enterRevisar();
+    } else if (k === 'tramos') {
+      if (!this.tramosTodosValidos()) return;
+      this.goTo(this.step() + 1);
+      this.enterRevisar();
+    } else if (k === 'revisar') {
       if (!this.canGenerate()) return;
-      this.step.set(2);
-      this.visited.update(s => new Set(s).add(2));
+      this.goTo(this.step() + 1);
     }
+  }
+
+  private goTo(i: number): void {
+    this.step.set(i);
+    this.visited.update(s => new Set(s).add(i));
+  }
+
+  /** Al entrar al paso Revisar (desde Datos en SIMPLE, o desde Tramos en ESPECIAL): reset de filtros + preview. */
+  private enterRevisar(): void {
+    this.excluded.set({});
+    this.activePlanTab.set(null);
+    this.reviewSearch.set('');
+    this.reloadPreview();
   }
 
   protected back(): void {
@@ -693,7 +810,7 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
       body: {
         insurerId: insurer.id,
         period: { from: toIso(this.from()), to: toIso(this.to()) },
-        specialRules: [],
+        specialRulesByPlan: this.buildRulesByPlan(),
         excludedAnalysisIdsByPs: Object.keys(excl).length ? excl : null,
         planIds: this.selectedPlanIds(),
       },

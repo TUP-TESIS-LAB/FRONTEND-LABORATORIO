@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Action } from '@ngrx/store';
 import { from, of } from 'rxjs';
-import { catchError, concatMap, map, switchMap } from 'rxjs/operators';
+import { catchError, concatMap, debounceTime, map, switchMap } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { isNotModified } from '@core/refresh';
 import { NotificationService } from '@core/services/notification.service';
@@ -270,6 +270,7 @@ export class LiquidacionesEffects {
   loadPreviewDetail$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadPreviewDetail),
+      debounceTime(300),
       switchMap(({ body }) =>
         this.api.previewDetail(body).pipe(
           map(preview => loadPreviewDetailSuccess({ preview })),
