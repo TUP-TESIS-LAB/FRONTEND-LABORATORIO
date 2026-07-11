@@ -38,7 +38,7 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
   selector: 'pat-patient-detail-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ConfirmationService],
+  providers: [ConfirmationService, DatePipe],
   imports: [
     RouterLink, ButtonModule, TabsModule, TagModule, ConfirmDialogModule, TooltipModule,
     DatePipe, DniPipe, AgePipe, CurrencyArPipe, EmptyStateComponent,
