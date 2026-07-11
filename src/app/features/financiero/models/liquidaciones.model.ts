@@ -3,6 +3,16 @@
 export type SettlementStatus = 'PENDING' | 'INFORMED' | 'BILLED' | 'CANCELLED';
 export type SettlementType = 'SIMPLE' | 'ESPECIAL';
 
+/** Regla de tramo especial (mapea a SpecialRuleDto del backend). */
+export interface SpecialRule {
+  ruleType: 'BETWEEN' | 'GREATER_THAN';
+  fromCount?: number | null;
+  toCount?: number | null;
+  amount: number;
+}
+/** Reglas por plan: { planId: SpecialRule[] }. Vacío → SIMPLE. */
+export type SpecialRulesByPlan = Record<number, SpecialRule[]>;
+
 /**
  * Fila del listado: GET /settlements. OJO: el DTO de listado usa `settlementId`
  * y trae `totalAmount` (no `createdAt`) — distinto del detalle, que usa `id`.
@@ -83,7 +93,7 @@ export interface SettlementPlanResponse {
 export interface GenerateSettlementBody {
   insurerId: number;
   period: { from: string; to: string };
-  specialRules: [];
+  specialRulesByPlan?: SpecialRulesByPlan | null;
   excludedAnalysisIdsByPs: Record<number, number[]> | null;
   /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
   planIds?: number[] | null;
@@ -126,6 +136,7 @@ export interface PreviewDetailBody {
   insurerId: number;
   period: { from: string; to: string };
   excludedAnalysisIdsByPs?: ExcludedAnalysisIdsByPs | null;
+  specialRulesByPlan?: SpecialRulesByPlan | null;
   /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
   planIds?: number[] | null;
 }
@@ -156,6 +167,10 @@ export interface PreviewItem {
   coveredAmount: number;
   fullyExcluded: boolean;
   analyses: PreviewAnalysis[];
+  /** Tramo especial aplicado (null en SIMPLE). */
+  appliedFrom?: number | null;
+  appliedTo?: number | null;
+  appliedUbValue?: number | null;
 }
 
 /** Grupo por plan (estilo OSSACRA): subtotales neto/IVA/bruto + sus prestaciones. */
