@@ -146,6 +146,8 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                   [options]="insurerOptions()"
                   optionLabel="name"
                   optionValue="id"
+                  [filter]="true"
+                  filterBy="name"
                   placeholder="Particular (sin obra social)"
                   [showClear]="true"
                   appendTo="body"
@@ -357,6 +359,8 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
                         [options]="insurerOptions()"
                         optionLabel="name"
                         optionValue="id"
+                        [filter]="true"
+                        filterBy="name"
                         placeholder="Particular (sin obra social)"
                         [showClear]="true"
                         appendTo="body"
@@ -452,7 +456,7 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       <!-- Indicaciones + confirmar -->
       <div>
         <label class="block text-sm font-medium mb-1">Indicaciones</label>
-        <input pInputText [(ngModel)]="indications" class="w-full" placeholder="Ej: Ayuno 8 hs"
+        <input pInputText [(ngModel)]="indications" class="w-full"
                [readonly]="readOnly()" />
       </div>
 
