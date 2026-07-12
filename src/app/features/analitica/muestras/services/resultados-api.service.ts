@@ -34,4 +34,7 @@ export class ResultadosApiService {
   markReadyBatch(resultIds: number[]): Observable<AnalyticalResult[]> {
     return this.http.post<AnalyticalResult[]>(`${this.base}/mark-ready`, { resultIds });
   }
+  receiveExternalResult(protocolIds: number[]): Observable<AnalyticalResult[]> {
+    return this.http.post<AnalyticalResult[]>(`${this.base}/receive-external-result`, { protocolIds });
+  }
 }
