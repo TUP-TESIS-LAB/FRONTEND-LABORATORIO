@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { forkJoin, of, Observable } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { ResultadosApiService } from './resultados-api.service';
 import { WorksheetTemplatesApiService } from './worksheet-templates-api.service';
 import { PacientesApiService } from './pacientes-api.service';
@@ -26,7 +26,12 @@ export class PlanillaGridBuilderService {
   private readonly pacientes = inject(PacientesApiService);
 
   build(templateId: number, protocolIds: number[]): Observable<PlanillaGrid> {
-    return forkJoin({
+    // KAN-227: para protocolos con órdenes derivadas sin result, materializarlos ANTES de leerlos.
+    // El back decide cuáles son derivadas; es idempotente (no recrea si ya existen).
+    const prep$ = protocolIds.length
+      ? this.resultados.receiveExternalResult(protocolIds).pipe(catchError(() => of(null)))
+      : of(null);
+    return prep$.pipe(switchMap(() => forkJoin({
       form: this.templates.getForm(templateId),
       resultsByProtocol: protocolIds.length
         ? forkJoin(protocolIds.map(pid =>
@@ -101,6 +106,6 @@ export class PlanillaGridBuilderService {
           }),
         );
       }),
-    );
+    )));
   }
 }
