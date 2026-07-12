@@ -81,13 +81,24 @@ function startOfDay(d: Date): number {
     }
     .ui-metric-filter-bar__field {
       display: flex; flex-direction: column; gap: 5px;
-      min-width: 160px; flex: 1 1 160px; max-width: 240px;
+      min-width: 160px; flex: 1 1 160px;
     }
     .ui-metric-filter-bar__field label {
       font-size: 12px; font-weight: 600; color: var(--ds-text-muted);
     }
     .ui-metric-filter-bar__field ::ng-deep .p-datepicker,
     .ui-metric-filter-bar__field ::ng-deep .p-select { width: 100%; }
+    /* p-select y p-datepicker tienen paddings internos distintos por default en
+       PrimeNG 21 (el select reserva espacio para el ícono de dropdown, el
+       datepicker sin [showIcon] no) — se fuerza la misma altura para que los
+       4 campos queden alineados en la fila. */
+    .ui-metric-filter-bar__field ::ng-deep .p-datepicker-input,
+    .ui-metric-filter-bar__field ::ng-deep .p-select {
+      height: 40px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+    }
   `],
 })
 export class MetricFilterBarComponent implements OnInit {

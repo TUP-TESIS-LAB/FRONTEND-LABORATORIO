@@ -35,6 +35,20 @@
   --space-12: 48px;
 }
 
+// ─── Paleta de gráficos (ui-metric-chart), derivada por colorimetría de la marca.
+// Defaults acá = deriveChartPalette(--brand-primary, --brand-secondary) default;
+// TenantThemeService la recalcula y sobreescribe al aplicar el tenant activo. ───
+:root {
+  --chart-1: #5a84d7;
+  --chart-2: #009e9e;
+  --chart-3: #db7d16;
+  --chart-4: #2aa064;
+  --chart-5: #c3608c;
+  --chart-6: #b1ac00;
+  --chart-7: #a16cc0;
+  --chart-8: #ca6353;
+}
+
 // ─── Overrides PrimeNG ───
 :root {
   --p-primary-color: var(--brand-primary);

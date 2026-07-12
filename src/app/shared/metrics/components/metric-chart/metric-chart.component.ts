@@ -7,22 +7,19 @@ import { mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './cha
 /** Tipo de gráfico soportado por el wrapper (subconjunto de los que expone `p-chart`). */
 export type MetricChartType = 'line' | 'bar' | 'pie' | 'doughnut';
 
-/** Paleta multi-tenant: tokens de marca primero, luego los fijos del design system. */
-const PALETTE_VARS = [
-  '--brand-primary',
-  '--brand-secondary',
-  '--brand-accent',
-  '--ds-info',
-  '--ds-success',
-  '--ds-warning',
-  '--ds-danger',
-] as const;
+/**
+ * Paleta categórica de 8 colores, derivada por colorimetría de la marca del tenant
+ * (`TenantThemeService.applyTheme` → `deriveChartPalette`) y expuesta como CSS vars
+ * `--chart-1..--chart-8`. Nunca se usan acá los colores de estado (`--ds-success/
+ * warning/danger/info`) como identidad de serie — están reservados para feedback.
+ */
+const PALETTE_VARS = Array.from({ length: 8 }, (_, i) => `--chart-${i + 1}`);
 
 // Canvas (`CanvasRenderingContext2D.fillStyle`) no resuelve `var(--x)` — Chart.js necesita
-// un color ya resuelto. Estos valores son exactamente los defaults de `:root` en
-// `src/styles/tokens.scss`, usados solo si no hay `document` (SSR/tests) o la CSS var
-// no está definida; en la app real siempre se resuelve desde el token vía `getComputedStyle`.
-const FALLBACK_PALETTE = ['#2563eb', '#0ea5a4', '#f97316', '#3b82f6', '#22c55e', '#f59e0b', '#e23a47'];
+// un color ya resuelto. Estos valores son la paleta derivada de los brand tokens default
+// de `src/styles/tokens.scss`, usados solo si no hay `document` (SSR/tests) o las CSS vars
+// no están definidas; en la app real siempre se resuelve desde el token vía `getComputedStyle`.
+const FALLBACK_PALETTE = ['#5a84d7', '#009e9e', '#db7d16', '#2aa064', '#c3608c', '#b1ac00', '#a16cc0', '#ca6353'];
 
 /** Lee la paleta de colores del tenant activo desde las CSS vars del `:root`. */
 function resolvePalette(): string[] {
@@ -52,7 +49,11 @@ function resolveVar(name: string, fallback: string): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ChartModule, EmptyStateComponent],
   template: `
-    @if (loading()) {
+    <!-- loading() && !chartData(): el skeleton solo tapa la carga INICIAL. Un poll de
+         background (5s, dashboards financiero/analítica/turnos) prende loading() de nuevo
+         aunque ya haya datos — sin el "&& !chartData()" eso destruye y recrea <p-chart> en
+         cada tick, aunque el dato sea idéntico (se ve como un parpadeo/recarga constante). -->
+    @if (loading() && !chartData()) {
       <div class="ui-metric-chart__skeleton" [style.height]="height()"></div>
     } @else if (chartData(); as data) {
       <p-chart [type]="type" [data]="data" [options]="chartOptions()" [height]="height()" />
@@ -89,6 +90,9 @@ export class MetricChartComponent {
   readonly breakdown = input<MetricBreakdown | undefined>();
   readonly loading = input(false);
   readonly height = input('320px');
+  /** Posición de la leyenda (pie/doughnut). 'right' achica el alto total cuando el
+   * gráfico convive con cards de poca altura (ej. sección "En vivo"). */
+  readonly legendPosition = input<'top' | 'right' | 'bottom' | 'left'>('top');
 
   /** `true` para pie/doughnut, que consumen `breakdown` en vez de `series`. */
   protected readonly isCategorical = computed(() => {
@@ -124,6 +128,7 @@ export class MetricChartComponent {
       plugins: {
         legend: {
           display: categorical || datasetCount > 1,
+          position: this.legendPosition(),
           labels: { color: textColor },
         },
       },
