@@ -26,7 +26,7 @@ export interface RowMenuAction<K extends string = string> {
     >
       <i class="pi pi-ellipsis-v"></i>
     </button>
-    <p-menu #menu [popup]="true" [model]="items()" />
+    <p-menu #menu [popup]="true" [model]="items()" appendTo="body" />
   `,
   styles: [`
     .row-kebab {
