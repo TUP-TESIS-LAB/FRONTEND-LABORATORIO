@@ -18,4 +18,11 @@ describe('formatHandlingTime', () => {
     expect(formatHandlingTime(null, null)).toBe('a confirmar en el laboratorio');
     expect(formatHandlingTime(5, null)).toBe('a confirmar en el laboratorio');
   });
+  it('valor <= 0 → a confirmar', () => {
+    expect(formatHandlingTime(0, 'HOURS')).toBe('a confirmar en el laboratorio');
+    expect(formatHandlingTime(-3, 'DAYS')).toBe('a confirmar en el laboratorio');
+  });
+  it('unidad desconocida → a confirmar', () => {
+    expect(formatHandlingTime(3, 'WEEKS' as never)).toBe('a confirmar en el laboratorio');
+  });
 });
