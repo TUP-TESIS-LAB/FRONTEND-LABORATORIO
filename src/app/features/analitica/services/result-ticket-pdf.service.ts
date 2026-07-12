@@ -39,7 +39,12 @@ const LINE_FACTOR = 1.15;
 /**
  * Comprobante de atención para el paciente (PDF client-side, rollo 80mm). Lista los
  * análisis solicitados con su tiempo estimado de resultado. Dos pasadas (mide y dibuja)
- * para alto exacto; fuerza el diálogo de impresión (autoPrint), igual que el ticket del tótem.
+ * para alto exacto.
+ *
+ * Se DESCARGA como archivo (no abre pestaña con autoPrint): al finalizar la atención el
+ * flujo de rótulos ya abre una pestaña de impresión, y el navegador sólo permite un popup
+ * por interacción — dos `window.open` se pisan (a veces salían los rótulos, a veces el
+ * comprobante). La descarga no consume ese cupo, así que rótulos + comprobante salen siempre.
  */
 @Injectable({ providedIn: 'root' })
 export class ResultTicketPdfService {
@@ -52,8 +57,7 @@ export class ResultTicketPdfService {
     const doc = this.createDoc(pageHeight);
     this.render(doc, data);
 
-    doc.autoPrint();
-    this.openInWindow(doc);
+    this.saveDoc(doc);
   }
 
   private render(doc: jsPDF, data: ResultTicketData): number {
@@ -105,8 +109,7 @@ export class ResultTicketPdfService {
     return new jsPDF({ orientation, unit: 'mm', format: [WIDTH, heightMm] });
   }
 
-  protected openInWindow(doc: jsPDF): void {
-    const url = doc.output('bloburl') as unknown as string;
-    window.open(url, '_blank');
+  protected saveDoc(doc: jsPDF): void {
+    doc.save('comprobante-atencion.pdf');
   }
 }
