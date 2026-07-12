@@ -18,7 +18,7 @@ import { SucursalesService } from '@features/sucursales/services/sucursales.serv
 
 import {
   MetricBreakdown, MetricChartComponent, MetricFilter, MetricFilterBarComponent, MetricKpi,
-  formatKpiValue, kpiDeltaMeta,
+  createBreakdownTranslator, formatKpiValue, kpiDeltaMeta,
 } from '@shared/metrics';
 
 import { loadFinancieroMetricsDashboard } from '../../store/metrics/actions';
@@ -144,15 +144,28 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
       <!-- ── Facturación (MFI-02) ── -->
       <section class="fin-section">
         <h2 class="fin-section__title">Facturación</h2>
-        <div class="fin-kpi-grid">
-          @for (kpi of facturacionKpiCards(); track kpi.label) {
-            <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
-          }
-        </div>
-        <div class="fin-viz-grid fin-viz-grid--single">
+        <div class="fin-viz-grid fin-viz-grid--donut-table">
           <div class="fin-card fin-viz-card">
             <h3 class="fin-viz-card__title">Particular vs. cobertura</h3>
             <ui-metric-chart type="doughnut" [breakdown]="facturacionPorCobertura()" [loading]="loading()" />
+          </div>
+          <div class="fin-viz-grid__table-col">
+            <div class="fin-card fin-viz-card fin-card--table">
+              <h3 class="fin-viz-card__title">Detalle</h3>
+              <ui-table
+                [value]="facturacionPorCoberturaRows()"
+                [columns]="breakdownColumns"
+                [loading]="loading()"
+                dataKey="label"
+                emptyIcon="pi-inbox"
+                emptyHeading="Sin facturación en el rango"
+                emptyDescription="No hay facturación registrada para los filtros elegidos.">
+                <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
+              </ui-table>
+            </div>
+            @for (kpi of facturacionKpiCards(); track kpi.label) {
+              <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
+            }
           </div>
         </div>
       </section>
@@ -206,15 +219,28 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
       <!-- ── Conciliación (MFI-05) ── -->
       <section class="fin-section">
         <h2 class="fin-section__title">Conciliación digital</h2>
-        <div class="fin-kpi-grid">
-          @for (kpi of conciliacionKpiCards(); track kpi.label) {
-            <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
-          }
-        </div>
-        <div class="fin-viz-grid fin-viz-grid--single">
+        <div class="fin-viz-grid fin-viz-grid--donut-table">
           <div class="fin-card fin-viz-card">
             <h3 class="fin-viz-card__title">Por método</h3>
-            <ui-metric-chart type="doughnut" [breakdown]="conciliacionPorMetodo()" [loading]="loading()" />
+            <ui-metric-chart type="doughnut" legendPosition="right" [breakdown]="conciliacionPorMetodo()" [loading]="loading()" />
+          </div>
+          <div class="fin-viz-grid__table-col">
+            <div class="fin-card fin-viz-card fin-card--table">
+              <h3 class="fin-viz-card__title">Detalle</h3>
+              <ui-table
+                [value]="conciliacionPorMetodoRows()"
+                [columns]="breakdownColumns"
+                [loading]="loading()"
+                dataKey="label"
+                emptyIcon="pi-inbox"
+                emptyHeading="Sin conciliación en el rango"
+                emptyDescription="No hay lotes digitales conciliados para los filtros elegidos.">
+                <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
+              </ui-table>
+            </div>
+            @for (kpi of conciliacionKpiCards(); track kpi.label) {
+              <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
+            }
           </div>
         </div>
       </section>
@@ -227,10 +253,23 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
             <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
           }
         </div>
-        <div class="fin-viz-grid fin-viz-grid--single">
+        <div class="fin-viz-grid fin-viz-grid--donut-table">
           <div class="fin-card fin-viz-card">
             <h3 class="fin-viz-card__title">Por origen</h3>
-            <ui-metric-chart type="doughnut" [breakdown]="tesoreriaPorOrigen()" [loading]="loading()" />
+            <ui-metric-chart type="doughnut" legendPosition="right" [breakdown]="tesoreriaPorOrigen()" [loading]="loading()" />
+          </div>
+          <div class="fin-card fin-viz-card fin-card--table">
+            <h3 class="fin-viz-card__title">Detalle</h3>
+            <ui-table
+              [value]="tesoreriaPorOrigenRows()"
+              [columns]="breakdownColumns"
+              [loading]="loading()"
+              dataKey="label"
+              emptyIcon="pi-inbox"
+              emptyHeading="Sin movimientos en el rango"
+              emptyDescription="No hay movimientos de tesorería para los filtros elegidos.">
+              <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
+            </ui-table>
           </div>
         </div>
       </section>
@@ -254,8 +293,24 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
     .fin-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
 
     .fin-viz-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
-    .fin-viz-grid--single { grid-template-columns: 1fr; }
-    @media (max-width: 900px) { .fin-viz-grid { grid-template-columns: 1fr; } }
+    /* Secciones con un solo donut (Facturación/Conciliación/Tesorería): antes el donut
+       quedaba solo en la fila y "1fr" lo estiraba a todo el ancho de la sección — se
+       le agregó al lado una tabla de detalle (mismo dato, en números) para que ese
+       espacio se use en vez de quedar vacío. El donut queda acotado a un ancho cómodo,
+       la tabla se lleva el resto. */
+    .fin-viz-grid--donut-table { grid-template-columns: minmax(320px, 480px) 1fr; }
+    @media (max-width: 900px) {
+      .fin-viz-grid { grid-template-columns: 1fr; }
+      .fin-viz-grid--donut-table { grid-template-columns: 1fr; }
+    }
+
+    /* Columna derecha de Facturación/Conciliación: la tabla de detalle es corta (2-6 filas,
+       no crece) y sola dejaba hueco debajo — la KPI card (que antes iba sola arriba,
+       estirada a todo el ancho de la sección) baja acá para ocupar ese lugar. */
+    .fin-viz-grid__table-col { display: flex; flex-direction: column; gap: 14px; }
+    /* La tabla toma el alto disponible (empareja al donut de al lado); la KPI card
+       queda última, con su alto natural — no se estira. */
+    .fin-viz-grid__table-col > .fin-card--table { flex: 1; }
 
     .fin-viz-card { padding: 16px 18px; }
     .fin-viz-card--wide { min-width: 0; }
@@ -280,10 +335,19 @@ export class FinancieroDashboardPage implements OnInit {
     { initialValue: [] as { id: number; name: string }[] },
   );
 
+  // `createBreakdownTranslator()` memoiza por referencia de entrada — evita que el
+  // computed() se recalcule (y el chart re-renderice) en cada poll con datos idénticos
+  // (KAN-220), y de paso traduce las claves crudas de enum (PaymentMethod,
+  // TreasuryEntrySource) que el backend serializa sin traducir.
+  private readonly translateRecaudacionPorMetodo = createBreakdownTranslator();
+  private readonly translateConciliacionPorMetodo = createBreakdownTranslator();
+  private readonly translateTesoreriaPorOrigen = createBreakdownTranslator();
+
   // ── Selectors: recaudación ──
   private readonly recaudacionKpis = this.store.selectSignal(selectRecaudacionKpis);
   readonly recaudacionSerie = this.store.selectSignal(selectRecaudacionSerie);
-  readonly recaudacionPorMetodo = this.store.selectSignal(selectRecaudacionPorMetodo);
+  private readonly recaudacionPorMetodoRaw = this.store.selectSignal(selectRecaudacionPorMetodo);
+  readonly recaudacionPorMetodo = computed(() => this.translateRecaudacionPorMetodo(this.recaudacionPorMetodoRaw()));
   private readonly recaudacionPorSucursal = this.store.selectSignal(selectRecaudacionPorSucursal);
 
   // ── Selectors: facturación ──
@@ -300,11 +364,13 @@ export class FinancieroDashboardPage implements OnInit {
 
   // ── Selectors: conciliación ──
   private readonly conciliacionKpis = this.store.selectSignal(selectConciliacionKpis);
-  readonly conciliacionPorMetodo = this.store.selectSignal(selectConciliacionPorMetodo);
+  private readonly conciliacionPorMetodoRaw = this.store.selectSignal(selectConciliacionPorMetodo);
+  readonly conciliacionPorMetodo = computed(() => this.translateConciliacionPorMetodo(this.conciliacionPorMetodoRaw()));
 
   // ── Selectors: tesorería ──
   private readonly tesoreriaKpis = this.store.selectSignal(selectTesoreriaKpis);
-  readonly tesoreriaPorOrigen = this.store.selectSignal(selectTesoreriaPorOrigen);
+  private readonly tesoreriaPorOrigenRaw = this.store.selectSignal(selectTesoreriaPorOrigen);
+  readonly tesoreriaPorOrigen = computed(() => this.translateTesoreriaPorOrigen(this.tesoreriaPorOrigenRaw()));
 
   readonly loading = this.store.selectSignal(selectFinancieroMetricsLoading);
   readonly error = this.store.selectSignal(selectFinancieroMetricsError);
@@ -321,6 +387,11 @@ export class FinancieroDashboardPage implements OnInit {
   readonly recaudacionPorSucursalRows = computed(() => toBreakdownRows(this.recaudacionPorSucursal()));
   readonly liquidacionesPorObraSocialRows = computed(() => toBreakdownRows(this.liquidacionesPorObraSocial()));
   readonly cajaPorSucursalRows = computed(() => toBreakdownRows(this.cajaPorSucursal()));
+
+  // ── Mismos breakdowns de los donuts "solitarios", como tabla de detalle al lado ──
+  readonly facturacionPorCoberturaRows = computed(() => toBreakdownRows(this.facturacionPorCobertura()));
+  readonly conciliacionPorMetodoRows = computed(() => toBreakdownRows(this.conciliacionPorMetodo()));
+  readonly tesoreriaPorOrigenRows = computed(() => toBreakdownRows(this.tesoreriaPorOrigen()));
 
   readonly breakdownColumns = BREAKDOWN_TABLE_COLUMNS;
 

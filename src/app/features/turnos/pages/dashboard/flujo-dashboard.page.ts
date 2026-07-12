@@ -101,12 +101,12 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
 
       <!-- ── KPIs histórico ── -->
       <div class="flu-kpi-grid">
-        <ui-stat-card label="Turnos" [value]="kpiValue(volumenTurnos()?.total)" icon="pi-calendar" />
-        <ui-stat-card label="Cola" [value]="kpiValue(volumenCola()?.total)" icon="pi-sort-numeric-up" />
-        <ui-stat-card label="Cancelación" [value]="kpiValue(tasaCancelacion())" icon="pi-times-circle" />
-        <ui-stat-card label="Ocupación de agenda" [value]="kpiValue(ocupacionAgenda()?.ocupacion)" icon="pi-calendar-plus" />
-        <ui-stat-card label="Espera de llamado (prom.)" [value]="kpiValue(esperaLlamado()?.avg)" icon="pi-clock" />
-        <ui-stat-card label="Re-llamados (prom.)" [value]="kpiValue(reLlamados()?.promedio)" icon="pi-replay" />
+        <ui-stat-card label="Turnos" [value]="kpiValue(volumenTurnos()?.total)" />
+        <ui-stat-card label="Cola" [value]="kpiValue(volumenCola()?.total)" />
+        <ui-stat-card label="Cancelación" [value]="kpiValue(tasaCancelacion())" />
+        <ui-stat-card label="Ocupación de agenda" [value]="kpiValue(ocupacionAgenda()?.ocupacion)" />
+        <ui-stat-card label="Espera de llamado (prom.)" [value]="kpiValue(esperaLlamado()?.avg)" />
+        <ui-stat-card label="Re-llamados (prom.)" [value]="kpiValue(reLlamados()?.promedio)" />
       </div>
 
       <!-- ── Charts histórico ── -->
@@ -145,13 +145,20 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
           <h3>En vivo</h3>
           <ui-refresh-indicator [lastRefreshAt]="enVivoRefreshAt()" />
         </div>
-        <div class="flu-kpi-grid">
-          <ui-stat-card label="Cola de extracción" [value]="kpiValue(colaExtraccionVivo())" icon="pi-users" />
-          <ui-stat-card label="Ocupación de boxes" [value]="kpiValue(ocupacionBoxesVivo())" icon="pi-th-large" />
-        </div>
-        <div class="flu-card flu-card--inset">
-          <h4>Urgentes por estado</h4>
-          <ui-metric-chart type="doughnut" height="220px" [breakdown]="urgentesBreakdown()" [loading]="enVivoLoading()" />
+        <div class="flu-live-grid">
+          <div class="flu-live-kpis">
+            <ui-stat-card label="Cola de extracción" [value]="kpiValue(colaExtraccionVivo())" />
+            <ui-stat-card label="Ocupación de boxes" [value]="kpiValue(ocupacionBoxesVivo())" />
+          </div>
+          <div class="flu-card flu-card--inset">
+            <h4>Urgentes por estado</h4>
+            <ui-metric-chart
+              type="doughnut"
+              height="140px"
+              legendPosition="right"
+              [breakdown]="urgentesBreakdown()"
+              [loading]="enVivoLoading()" />
+          </div>
         </div>
       </div>
     </div>
@@ -165,7 +172,7 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
       border: 1px solid #e8e9f0;
       padding: 16px 18px;
     }
-    .flu-card--inset { box-shadow: none; border-style: dashed; margin-top: 14px; }
+    .flu-card--inset { box-shadow: none; border-style: dashed; }
     .flu-card h3 { margin: 0 0 12px; font-size: 15px; font-weight: 700; color: #1a1a2e; }
     .flu-card h4 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #1a1a2e; }
 
@@ -179,12 +186,28 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
       font-size: 13px; font-weight: 500;
     }
 
-    .flu-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+    /* Grid de KPIs: 2 columnas en mobile, 3 en desktop (convención del DS) —
+       evita amontonar las 6 cards en una sola fila estirada. */
+    .flu-kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    @media (min-width: 768px) {
+      .flu-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    }
 
     .flu-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
 
     .flu-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
     .flu-section-head h3 { margin: 0; }
+
+    /* Sección "En vivo": las 2 KPI cards de un lado, el gráfico del otro —
+       en vez de apiladas con el gráfico ocupando el ancho completo. */
+    .flu-live-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .flu-live-kpis { display: flex; flex-direction: column; gap: 14px; }
+    /* Las 2 KPI cards se reparten el alto disponible para no dejar espacio muerto
+       cuando la columna se estira a la altura del gráfico de al lado. */
+    .flu-live-kpis > ui-stat-card { flex: 1; }
+    @media (min-width: 768px) {
+      .flu-live-grid { grid-template-columns: minmax(220px, 320px) 1fr; align-items: stretch; }
+    }
   `],
 })
 export class FlujoDashboardPage implements OnInit {

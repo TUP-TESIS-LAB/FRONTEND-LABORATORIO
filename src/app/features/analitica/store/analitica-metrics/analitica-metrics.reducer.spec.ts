@@ -36,6 +36,19 @@ describe('analiticaMetricsReducer', () => {
     expect(s.volumenLoading).toBe(false);
   });
 
+  it('loadVolumenTab NO vuelve a prender loading en un poll/filtro posterior a la primera carga (evita el flash de todos los gráficos)', () => {
+    const kpi = { key: 'volumen-total', label: 'Volumen total', value: 120, unit: 'determinaciones' };
+    const data = { ...initialVolumenTabData, volumen: { kpi, series: { labels: [], datasets: [] } } };
+    const afterFirstLoad = analiticaMetricsReducer(
+      initialAnaliticaMetricsState,
+      A.loadVolumenTabSuccess({ data }),
+    );
+    const next = analiticaMetricsReducer(afterFirstLoad, A.loadVolumenTab({
+      filter: { dateFrom: '2026-06-01', dateTo: '2026-06-30', granularity: 'DAY' },
+    }));
+    expect(next.volumenLoading).toBe(false);
+  });
+
   // ── Preanalítica tab ─────────────────────────────────────────────────────
   it('loadPreanaliticaTab sets loading=true and clears error', () => {
     const start = { ...initialAnaliticaMetricsState, preanaliticaError: 'error previo' };
@@ -65,6 +78,18 @@ describe('analiticaMetricsReducer', () => {
     expect(s.preanaliticaLoading).toBe(false);
   });
 
+  it('loadPreanaliticaTab NO vuelve a prender loading en un poll/filtro posterior a la primera carga', () => {
+    const data = { ...initialPreanaliticaTabData, rechazoResumen: { key: 'rechazo', label: 'Tasa de rechazo', value: 3.2, unit: '%' } };
+    const afterFirstLoad = analiticaMetricsReducer(
+      initialAnaliticaMetricsState,
+      A.loadPreanaliticaTabSuccess({ data }),
+    );
+    const next = analiticaMetricsReducer(afterFirstLoad, A.loadPreanaliticaTab({
+      filter: { dateFrom: '2026-06-01', dateTo: '2026-06-30', granularity: 'DAY' },
+    }));
+    expect(next.preanaliticaLoading).toBe(false);
+  });
+
   // ── Postanalítica tab ────────────────────────────────────────────────────
   it('loadPostanaliticaTab sets loading=true and clears error', () => {
     const start = { ...initialAnaliticaMetricsState, postanaliticaError: 'error previo' };
@@ -92,5 +117,17 @@ describe('analiticaMetricsReducer', () => {
     );
     expect(s.postanaliticaError).toBe('No se pudieron cargar las métricas. Intentá de nuevo.');
     expect(s.postanaliticaLoading).toBe(false);
+  });
+
+  it('loadPostanaliticaTab NO vuelve a prender loading en un poll/filtro posterior a la primera carga', () => {
+    const data = { ...initialPostanaliticaTabData, estudiosTotal: { key: 'total', label: 'Estudios', value: 40, unit: 'estudios' } };
+    const afterFirstLoad = analiticaMetricsReducer(
+      initialAnaliticaMetricsState,
+      A.loadPostanaliticaTabSuccess({ data }),
+    );
+    const next = analiticaMetricsReducer(afterFirstLoad, A.loadPostanaliticaTab({
+      filter: { dateFrom: '2026-06-01', dateTo: '2026-06-30', granularity: 'DAY' },
+    }));
+    expect(next.postanaliticaLoading).toBe(false);
   });
 });
