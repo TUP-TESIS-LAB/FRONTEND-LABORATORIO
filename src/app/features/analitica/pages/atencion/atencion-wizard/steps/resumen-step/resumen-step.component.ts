@@ -15,7 +15,7 @@ import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { TagModule } from 'primeng/tag';
 import { race, take } from 'rxjs';
-import { EMPTY } from 'rxjs';
+import { EMPTY, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
@@ -25,6 +25,8 @@ import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '@f
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { DoctorService } from '@features/medicos/services/doctor.service';
+import { NbuConfigApiService } from '../../../../../services/nbu-config-api.service';
+import { ResultTicketPdfService, formatHandlingTime } from '../../../../../services/result-ticket-pdf.service';
 import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencion.model';
 import { FinalizeAttentionModalComponent } from '../../../../../components/finalize-attention-modal/finalize-attention-modal.component';
 import {
@@ -170,6 +172,8 @@ export class ResumenStepComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly doctorsApi = inject(DoctorService);
   private readonly coverageCatalogApi = inject(CoverageCatalogService);
+  private readonly nbuConfigApi = inject(NbuConfigApiService);
+  private readonly ticketPdf = inject(ResultTicketPdfService);
 
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
@@ -340,8 +344,8 @@ export class ResumenStepComponent implements OnInit {
    * falla, el usuario queda en el wizard con el estado actual y puede
    * reintentar — antes navegaba afuera y perdía contexto.
    *
-   * (Se quitó el flag `printTicket`: era un stub vacío y no existe comprobante
-   *  de atención. Ver FinalizeAttentionModalComponent para el detalle.)
+   * (Se quitó el flag `printTicket` del modal: era un stub vacío. El comprobante
+   *  real se genera acá mismo — ver `generateResultTicket` — sin depender de esa UI.)
    */
   onFinalize(): void {
     this.finalizeModalOpen.set(false);
@@ -357,8 +361,46 @@ export class ResumenStepComponent implements OnInit {
       if (protocolId != null) {
         this.store.dispatch(downloadProtocolLabels({ protocolId, protocolNumber: `P-${protocolId}` }));
       }
-      clearAtencionSession();
-      this.finished.emit();
+      this.generateResultTicket(() => {
+        clearAtencionSession();
+        this.finished.emit();
+      });
+    });
+  }
+
+  /**
+   * Genera el comprobante del paciente (PDF) con los análisis del resumen y su tiempo estimado.
+   * El tiempo se resuelve joineando `listTenantAnalyses()` (config por tenant) por catalogId con
+   * los análisis del resumen. Nunca bloquea el cierre: ante cualquier error, sigue igual (`done`).
+   */
+  private generateResultTicket(done: () => void): void {
+    const p = this.patient();
+    const details = this.analyses() as AnalysisDetail[];
+    if (!p || details.length === 0) { done(); return; }
+
+    this.nbuConfigApi.listTenantAnalyses().pipe(
+      catchError(() => of([])),
+    ).subscribe((rows) => {
+      try {
+        const byCatalog = new Map(rows.map((r) => [r.catalogId, r]));
+        const items = details.map((d) => {
+          const row = byCatalog.get(d.id);
+          return { name: d.name ?? `#${d.id}`, duration: formatHandlingTime(row?.handlingTimeValue ?? null, row?.handlingTimeUnit ?? null) };
+        });
+        const now = new Date();
+        const dateTime = now.toLocaleString('es-AR', {
+          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+        this.ticketPdf.printTicket({
+          patientName: `${p.lastName}, ${p.firstName}`,
+          patientDni: String(p.dni ?? ''),
+          dateTime,
+          items,
+        });
+      } catch {
+        // generación de PDF falló — no rompemos el cierre de la atención
+      }
+      done();
     });
   }
 
