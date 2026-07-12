@@ -361,22 +361,25 @@ export class ResumenStepComponent implements OnInit {
       if (protocolId != null) {
         this.store.dispatch(downloadProtocolLabels({ protocolId, protocolNumber: `P-${protocolId}` }));
       }
-      this.generateResultTicket(() => {
-        clearAtencionSession();
-        this.finished.emit();
-      });
+      // Fire-and-forget: el comprobante nunca debe bloquear el cierre de la
+      // atención (espera un HTTP round-trip). Cerramos sincrónicamente, exactamente
+      // como antes de que existiera el comprobante.
+      try { this.generateResultTicket(); } catch { /* el comprobante nunca bloquea el cierre */ }
+      clearAtencionSession();
+      this.finished.emit();
     });
   }
 
   /**
    * Genera el comprobante del paciente (PDF) con los análisis del resumen y su tiempo estimado.
    * El tiempo se resuelve joineando `listTenantAnalyses()` (config por tenant) por catalogId con
-   * los análisis del resumen. Nunca bloquea el cierre: ante cualquier error, sigue igual (`done`).
+   * los análisis del resumen. Fire-and-forget: no bloquea el cierre de la atención (no recibe
+   * callback), y cualquier error (HTTP o generación de PDF) se traga silenciosamente.
    */
-  private generateResultTicket(done: () => void): void {
+  private generateResultTicket(): void {
     const p = this.patient();
     const details = this.analyses() as AnalysisDetail[];
-    if (!p || details.length === 0) { done(); return; }
+    if (!p || details.length === 0) return;
 
     this.nbuConfigApi.listTenantAnalyses().pipe(
       catchError(() => of([])),
@@ -400,7 +403,6 @@ export class ResumenStepComponent implements OnInit {
       } catch {
         // generación de PDF falló — no rompemos el cierre de la atención
       }
-      done();
     });
   }
 

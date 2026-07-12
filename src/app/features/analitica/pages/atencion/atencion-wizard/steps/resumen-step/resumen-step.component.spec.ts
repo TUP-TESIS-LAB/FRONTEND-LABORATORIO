@@ -7,6 +7,8 @@ import { DoctorService } from '@features/medicos/services/doctor.service';
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { EMPTY_CATALOG } from '@features/pacientes/models/coverage-catalog.model';
 import { ResumenStepComponent } from './resumen-step.component';
+import { NbuConfigApiService } from '../../../../../services/nbu-config-api.service';
+import { ResultTicketPdfService } from '../../../../../services/result-ticket-pdf.service';
 import { ATENCION_FEATURE_KEY, initialAtencionState } from '../../../../../store/atencion/atencion.state';
 import {
   loadAtencion,
@@ -93,6 +95,8 @@ describe('ResumenStepComponent', () => {
         provideMockActions(() => actions$),
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: CoverageCatalogService, useValue: coverageCatalogStub },
+        { provide: NbuConfigApiService, useValue: { listTenantAnalyses: () => of([]) } },
+        { provide: ResultTicketPdfService, useValue: { printTicket: () => {} } },
       ],
     }).compileComponents();
 
