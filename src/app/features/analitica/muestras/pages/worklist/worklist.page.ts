@@ -49,7 +49,9 @@ export class WorklistPage {
   readonly currentBranch = CURRENT_BRANCH;
   readonly branches = BRANCHES;
   readonly areas = AREAS;
-  readonly labs = LABS;
+  // Pantalla demo con catálogo mock; el modal ahora espera {id,name}. La derivación real
+  // (a ExternalLab con id de verdad) vive en la pantalla de Traslado, no acá.
+  readonly labs = LABS.map((name, i) => ({ id: i, name }));
 
   readonly config = computed<ScreenConfig>(() => {
     const key = this.route.snapshot.data['screenKey'] as ScreenKey;
@@ -423,7 +425,7 @@ export class WorklistPage {
   private formatDestDetail(t: Transition, dest: TransitionDest): string {
     if (t.key === 'reroute') return `${dest.sucursal ?? ''} · ${dest.area ?? ''}`.trim();
     if (t.key === 'area') return dest.area ?? '';
-    if (t.key === 'derived') return dest.lab ?? '';
+    if (t.key === 'derived') return dest.lab != null ? String(dest.lab) : '';
     return '';
   }
 }
