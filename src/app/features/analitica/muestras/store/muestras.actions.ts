@@ -143,3 +143,17 @@ export const deriveTubesFailure = createAction(
   '[Muestras API] Derive Tubes Failure',
   props<{ error: HttpErrorResponse }>()
 );
+
+// Derivación real a laboratorio externo (label → DERIVED con externalLabId)
+export const deriveToExternalLab = createAction(
+  '[Muestras Page] Derive To External Lab',
+  props<{ labelIds: number[]; externalLabId: number; protocolId?: number }>()
+);
+export const deriveToExternalLabSuccess = createAction(
+  '[Muestras API] Derive To External Lab Success',
+  props<{ labelIds: number[] }>()
+);
+export const deriveToExternalLabFailure = createAction(
+  '[Muestras API] Derive To External Lab Failure',
+  props<{ error: HttpErrorResponse }>()
+);

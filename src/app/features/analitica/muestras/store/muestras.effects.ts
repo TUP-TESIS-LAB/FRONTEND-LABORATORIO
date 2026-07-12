@@ -18,6 +18,7 @@ import {
   loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
   dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
   deriveTubes, deriveTubesSuccess, deriveTubesFailure,
+  deriveToExternalLab, deriveToExternalLabSuccess, deriveToExternalLabFailure,
 } from './muestras.actions';
 import { selectMuestrasBranchId, selectTransitoItems } from './muestras.selectors';
 import type { TransitionKey } from '../models/transition.model';
@@ -209,6 +210,18 @@ export class MuestrasEffects {
           map(() => deriveTubesSuccess({ count: tubeCount })),
           catchError((error: HttpErrorResponse) => of(deriveTubesFailure({ error }))),
         )),
+    ),
+  );
+
+  deriveToExternalLab$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(deriveToExternalLab),
+      concatMap(({ labelIds, externalLabId, protocolId }) =>
+        this.api.markAsDerived(labelIds, externalLabId, protocolId).pipe(
+          map(() => deriveToExternalLabSuccess({ labelIds })),
+          catchError((error: HttpErrorResponse) => of(deriveToExternalLabFailure({ error }))),
+        ),
+      ),
     ),
   );
 

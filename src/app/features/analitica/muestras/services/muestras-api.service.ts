@@ -81,4 +81,13 @@ export class MuestrasApiService {
   getBranchWorkspaces(branchId: number): Observable<BranchWorkspace[]> {
     return this.http.get<BranchWorkspace[]>(`/api/v1/sucursales/branches/${branchId}/workspaces`);
   }
+
+  /** Derivación real: label a un laboratorio externo (queda DERIVED). */
+  markAsDerived(labelIds: number[], externalLabId: number, protocolId?: number): Observable<unknown> {
+    return this.http.post(`${this.base}/mark-as-derived`, { labelIds, externalLabId, protocolId });
+  }
+
+  activeExternalLabs(): Observable<Array<{ id: number; name: string }>> {
+    return this.http.get<Array<{ id: number; name: string }>>(`${this.base}/external-labs/active`);
+  }
 }
