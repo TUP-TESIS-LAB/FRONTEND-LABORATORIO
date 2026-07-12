@@ -31,6 +31,9 @@ import {
 import { groupTubes, type Tube } from '../../models/tube.model';
 import { rowActionsFor } from '../../data/state-machine.config';
 import { createRowTransitionDialog } from '../row-transition-dialog';
+import { MuestrasApiService } from '../../services/muestras-api.service';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 
 @Component({
   selector: 'app-transito-page',
@@ -53,14 +56,23 @@ export class TransitoPage {
   private readonly polling = inject(PollingService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sectionService = inject(SectionService);
+  private readonly registry = inject(ModuleRegistry);
+  private readonly api = inject(MuestrasApiService);
+
+  readonly externalLabs = signal<Array<{ id: number; name: string }>>([]);
 
   protected readonly flashId = signal<string | null>(null);
   protected readonly confirmOpen = signal(false);
 
   /** Andamiaje del diálogo de transición del menú kebab por-fila. */
   readonly rowDialog = createRowTransitionDialog(this.store, 'traslado');
-  /** Acciones del menú por-fila, derivadas de la config. */
-  readonly rowMenuActions = rowActionsFor('traslado');
+  /** Acciones del menú por-fila, derivadas de la config. Oculta 'derived' si el módulo está off. */
+  readonly rowMenuActions = computed(() => {
+    const all = rowActionsFor('traslado');
+    return this.registry.isActive(ModuleKey.Derivaciones)
+      ? all
+      : all.filter((a) => a.key !== 'derived');
+  });
 
   // ── Fuente real: store NgRx (mochila) ──
   private readonly transitoItems = this.store.selectSignal(selectTransitoItems);
@@ -135,6 +147,13 @@ export class TransitoPage {
 
   constructor() {
     this.store.dispatch(initMuestras());
+
+    // Catálogo de laboratorios externos para el modal de derivación (solo si el módulo está activo).
+    if (this.registry.isActive(ModuleKey.Derivaciones)) {
+      this.api.activeExternalLabs()
+        .pipe(takeUntilDestroyed())
+        .subscribe((labs) => this.externalLabs.set(labs));
+    }
 
     const handle = this.polling.startPolling({
       key: 'muestras-transito',

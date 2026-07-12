@@ -84,6 +84,7 @@
   <app-muestras-transition-dialog
     [transition]="tr"
     [samples]="rowDialog.samples()"
+    [labs]="externalLabs()"
     (confirm)="rowDialog.confirm($event)"
     (cancel)="rowDialog.cancel()"
   />

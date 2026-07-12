@@ -4,7 +4,7 @@ import type { Sample } from '../models/sample.model';
 import type { Tube } from '../models/tube.model';
 import type { RowActionKey, ScreenKey, Transition, TransitionDest } from '../models/transition.model';
 import { SCREENS } from '../data/state-machine.config';
-import { transitionLabels } from '../store/muestras.actions';
+import { deriveToExternalLab, transitionLabels } from '../store/muestras.actions';
 
 /**
  * Andamiaje del diálogo de transición disparado por el menú kebab por-fila.
@@ -47,6 +47,13 @@ export class RowTransitionDialog {
     if (!t || tubes.length === 0) return;
     const labelIds = tubes.flatMap((tube) => tube.labelIds ?? []);
     if (labelIds.length === 0) return;
+    if (t.key === 'derived') {
+      const externalLabId = payload.dest.lab;
+      if (externalLabId == null) return;
+      const protocolId = tubes[0]?.protocolId;
+      this.store.dispatch(deriveToExternalLab({ labelIds, externalLabId, protocolId }));
+      return;
+    }
     this.store.dispatch(transitionLabels({
       labelIds,
       transitionKey: t.key,
