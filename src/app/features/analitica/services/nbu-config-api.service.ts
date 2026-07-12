@@ -91,6 +91,8 @@ export interface TenantAnalysisRow {
   customName: string | null;
   active: boolean;
   defaultSectionId: number | null;
+  handlingTimeValue: number | null;
+  handlingTimeUnit: 'HOURS' | 'DAYS' | null;
 }
 
 /**
@@ -141,7 +143,12 @@ export class NbuConfigApiService {
 
   updateTenantAnalysis(
     tenantAnalysisId: number,
-    body: { shortCode?: string; customName?: string | null },
+    body: {
+      shortCode?: string;
+      customName?: string | null;
+      handlingTimeValue?: number | null;
+      handlingTimeUnit?: 'HOURS' | 'DAYS' | null;
+    },
   ): Observable<unknown> {
     return this.http.patch(`${this.tenantAnalysesBase}/${tenantAnalysisId}`, body);
   }
