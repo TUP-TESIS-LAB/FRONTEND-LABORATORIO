@@ -84,8 +84,8 @@ import type { Transition, TransitionDest } from '../../models/transition.model';
           <span>Laboratorio externo <em>obligatorio</em></span>
           <select [ngModel]="dest().lab" (ngModelChange)="dest.update(d => ({ ...d, lab: $event }))">
             <option [ngValue]="undefined" disabled selected>Elegí un laboratorio…</option>
-            @for (l of labs; track l) {
-              <option [ngValue]="l">{{ l }}</option>
+            @for (l of labs; track l.id) {
+              <option [ngValue]="l.id">{{ l.name }}</option>
             }
           </select>
         </label>
@@ -343,7 +343,7 @@ export class TransitionDialogComponent {
   @Input() currentBranch: string = '';
   @Input() branches: ReadonlyArray<string> = [];
   @Input() areas: ReadonlyArray<string> = [];
-  @Input() labs: ReadonlyArray<string> = [];
+  @Input() labs: ReadonlyArray<{ id: number; name: string }> = [];
 
   readonly confirm = output<{ dest: TransitionDest; note: string }>();
   readonly cancel = output<void>();

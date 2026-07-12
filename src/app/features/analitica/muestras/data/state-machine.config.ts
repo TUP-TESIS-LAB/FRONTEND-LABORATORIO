@@ -1,6 +1,6 @@
 import type { RowAction, RowActionKey, ScreenConfig, ScreenKey, Transition } from '../models/transition.model';
 
-const ROW_ACTION_KEYS: ReadonlySet<string> = new Set<RowActionKey>(['rollback', 'rejected', 'lost']);
+const ROW_ACTION_KEYS: ReadonlySet<string> = new Set<RowActionKey>(['rollback', 'rejected', 'lost', 'derived']);
 
 const transitoTarget: Transition = {
   key: 'transito', label: 'En tránsito', toLabel: 'En tránsito', toState: 'transito',
@@ -63,6 +63,7 @@ const TRASLADO: ScreenConfig = {
       color: 'purple', icon: 'pi-building',
       desc: 'Enviar al laboratorio de referencia.',
       fields: ['lab'],
+      rowMenu: { label: 'Derivar', icon: 'pi-building' },
     },
     rejectedTarget,
     lostTarget,

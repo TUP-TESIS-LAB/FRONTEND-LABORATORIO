@@ -37,11 +37,11 @@ export interface Transition {
 export interface TransitionDest {
   sucursal?: string;
   area?: string;
-  lab?: string;
+  lab?: number;
 }
 
 /** Acciones que el menú kebab por-fila puede disparar (subconjunto de TransitionKey). */
-export type RowActionKey = 'rollback' | 'rejected' | 'lost';
+export type RowActionKey = 'rollback' | 'rejected' | 'lost' | 'derived';
 
 /** Ítem del menú kebab por-fila, derivado de un `Transition` con `rowMenu` en la config. */
 export interface RowAction {
