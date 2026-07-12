@@ -18,6 +18,7 @@ import {
   loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
   dispatchTubes, dispatchTubesSuccess, dispatchTubesFailure,
   deriveTubes, deriveTubesSuccess, deriveTubesFailure,
+  deriveToExternalLab, deriveToExternalLabSuccess, deriveToExternalLabFailure,
 } from './muestras.actions';
 import { selectMuestrasBranchId, selectTransitoItems } from './muestras.selectors';
 import { NOT_MODIFIED } from '@core/refresh/polling-context';
@@ -42,6 +43,7 @@ describe('MuestrasEffects', () => {
     dispatch: ReturnType<typeof vi.fn>;
     sendToBranch: ReturnType<typeof vi.fn>;
     getBranchWorkspaces: ReturnType<typeof vi.fn>;
+    markAsDerived: ReturnType<typeof vi.fn>;
   };
 
   const transitoItem: LabelWorklistItem = {
@@ -54,6 +56,7 @@ describe('MuestrasEffects', () => {
       getMyBranches: vi.fn(), getWorklist: vi.fn(), updateStatus: vi.fn(),
       reject: vi.fn(), markLost: vi.fn(), rollback: vi.fn(),
       resolveRouting: vi.fn(), dispatch: vi.fn(), sendToBranch: vi.fn(), getBranchWorkspaces: vi.fn(),
+      markAsDerived: vi.fn(),
     };
     TestBed.configureTestingModule({
       providers: [
@@ -365,6 +368,35 @@ describe('MuestrasEffects', () => {
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.deriveTubes$);
     expect(action).toEqual(deriveTubesFailure({ error }));
+  });
+
+  // ── deriveToExternalLab (KAN-226) ──────────────────────────────────────────
+
+  it('deriveToExternalLab llama api.markAsDerived con el externalLabId y mapea success', async () => {
+    api.markAsDerived.mockReturnValue(of({}));
+    actions$ = of(deriveToExternalLab({ labelIds: [1], externalLabId: 7 }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.deriveToExternalLab$);
+    expect(api.markAsDerived).toHaveBeenCalledWith([1], 7, undefined);
+    expect(action).toEqual(deriveToExternalLabSuccess({ labelIds: [1] }));
+  });
+
+  it('deriveToExternalLab propaga el protocolId a api.markAsDerived', async () => {
+    api.markAsDerived.mockReturnValue(of({}));
+    actions$ = of(deriveToExternalLab({ labelIds: [1, 2], externalLabId: 7, protocolId: 50001 }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.deriveToExternalLab$);
+    expect(api.markAsDerived).toHaveBeenCalledWith([1, 2], 7, 50001);
+    expect(action).toEqual(deriveToExternalLabSuccess({ labelIds: [1, 2] }));
+  });
+
+  it('deriveToExternalLab failure mapea error', async () => {
+    const error = new HttpErrorResponse({ status: 422 });
+    api.markAsDerived.mockReturnValue(throwError(() => error));
+    actions$ = of(deriveToExternalLab({ labelIds: [1], externalLabId: 7 }));
+    const effects = TestBed.inject(MuestrasEffects);
+    const action = await firstValueFrom(effects.deriveToExternalLab$);
+    expect(action).toEqual(deriveToExternalLabFailure({ error }));
   });
 
   // ── reloadAfterDispatch ───────────────────────────────────────────────────

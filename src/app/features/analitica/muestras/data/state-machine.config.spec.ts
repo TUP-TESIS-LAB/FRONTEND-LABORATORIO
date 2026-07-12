@@ -91,14 +91,21 @@ describe('rowActionsFor — menú kebab derivado de la config', () => {
     expect(actions.map((a) => a.label)).toEqual(['Rechazar', 'Perder']);
   });
 
-  it('Procesamiento: {Rollback, Rechazar, Perder}', () => {
+  it('Procesamiento: {Rollback, Rechazar, Perder} — sin Derivar', () => {
     const actions = rowActionsFor('procesamiento');
     expect(actions.map((a) => a.key).sort()).toEqual(['lost', 'rejected', 'rollback']);
+    expect(actions.map((a) => a.key)).not.toContain('derived');
   });
 
-  it('Traslado: {Rollback, Rechazar, Perder}', () => {
+  it('Traslado: {Derivar, Rollback, Rechazar, Perder}', () => {
     const actions = rowActionsFor('traslado');
-    expect(actions.map((a) => a.key).sort()).toEqual(['lost', 'rejected', 'rollback']);
+    expect(actions.map((a) => a.key).sort()).toEqual(['derived', 'lost', 'rejected', 'rollback']);
+  });
+
+  it('Traslado: incluye acción derived con label "Derivar" (KAN-226)', () => {
+    const derived = rowActionsFor('traslado').find((a) => a.key === 'derived');
+    expect(derived).toBeDefined();
+    expect(derived!.label).toBe('Derivar');
   });
 
   it('Descarte: sin menú kebab (ningún target declara rowMenu)', () => {
