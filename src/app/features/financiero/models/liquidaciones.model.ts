@@ -38,12 +38,39 @@ export interface SettlementAgreement {
   agreementId: number;
   agreementSubtotal: number;
   providedServiceIds: number[];
-  rules: unknown[];
+}
+
+/**
+ * Tramo aplicado en el detalle de la liquidación (KAN-234 Fase 2, BE-3). Es la regla ya
+ * resuelta contra las prestaciones reales — `subtotal`/`count` son lo efectivamente
+ * facturado en ese tramo, no la configuración cruda que se mandó a generar.
+ * El último tramo es siempre GREATER_THAN con `fromCount = N-1` (matchea count > fromCount).
+ */
+export interface SettlementPlanRuleDetail {
+  ruleType: 'BETWEEN' | 'GREATER_THAN';
+  fromCount: number | null;
+  toCount: number | null;
+  amount: number;
+  subtotal: number;
+  count: number;
+}
+
+/** Valor fijo aplicado a un análisis dentro del plan, en el detalle (KAN-234 Fase 2, BE-3). */
+export interface SettlementPlanFixedAmountDetail {
+  analysisId: number;
+  analysisName: string;
+  amount: number;
+  appliedCount: number;
+  subtotal: number;
 }
 
 export interface SettlementPlan {
   planId: number;
   agreements: SettlementAgreement[];
+  /** Tramos aplicados en este plan. Vacío/ausente en SIMPLE. */
+  rules?: SettlementPlanRuleDetail[];
+  /** Valores fijos aplicados por análisis en este plan. Vacío/ausente si no hay. */
+  fixedAmounts?: SettlementPlanFixedAmountDetail[];
 }
 
 /** Detalle: GET /settlements/{id}. */

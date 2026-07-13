@@ -9,13 +9,13 @@ import { Subject } from 'rxjs';
 import type { Action } from '@ngrx/store';
 import { vi } from 'vitest';
 import { informSettlementSuccess, cancelSettlementSuccess } from '../../store/financiero.actions';
-import { LiquidacionDetallePage } from './liquidacion-detalle.page';
+import { LiquidacionDetallePage, tramoDesde, tramoHastaLabel } from './liquidacion-detalle.page';
 import {
   selectLiqSelected, selectLiqDetailLoading, selectLiqDetailError,
   selectLiqLifecycleInProgress, selectLiqInsurersIndex, selectLiqExporting, selectLiqInsurerPlans,
 } from '../../store/financiero.selectors';
 import { TokenService } from '@core/auth/token.service';
-import { SettlementDetail } from '../../models/liquidaciones.model';
+import { SettlementDetail, SettlementPlanRuleDetail } from '../../models/liquidaciones.model';
 import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidacion-pill.component';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 
@@ -23,12 +23,12 @@ const detail: SettlementDetail = {
   id: 1, insurerId: 7, settlementNumber: 100, status: 'PENDING', type: 'SIMPLE',
   periodFrom: '2026-01-01', periodTo: '2026-01-31', informedDate: null, informedAmount: null,
   paymentId: null, createdAt: '2026-02-01T10:00:00',
-  plans: [{ planId: 3, agreements: [{ agreementId: 9, agreementSubtotal: 1500, providedServiceIds: [1, 2], rules: [] }] }],
+  plans: [{ planId: 3, agreements: [{ agreementId: 9, agreementSubtotal: 1500, providedServiceIds: [1, 2] }] }],
 };
 
 let actions$: Subject<Action>;
 
-function setup(status: SettlementDetail['status'], roles: string[]) {
+function setup(status: SettlementDetail['status'], roles: string[], detailOverride: Partial<SettlementDetail> = {}) {
   actions$ = new Subject<Action>();
   return TestBed.configureTestingModule({
     imports: [LiquidacionDetallePage],
@@ -40,7 +40,7 @@ function setup(status: SettlementDetail['status'], roles: string[]) {
       { provide: TokenService, useValue: { getRoles: () => roles } },
       provideMockStore({
         selectors: [
-          { selector: selectLiqSelected, value: { ...detail, status } },
+          { selector: selectLiqSelected, value: { ...detail, ...detailOverride, status } },
           { selector: selectLiqDetailLoading, value: false },
           { selector: selectLiqDetailError, value: null },
           { selector: selectLiqLifecycleInProgress, value: false },
@@ -144,5 +144,80 @@ describe('LiquidacionDetallePage — smoke', () => {
     nav.mockClear();
     actions$.next(cancelSettlementSuccess({ id: 1 }));
     expect(nav).toHaveBeenCalledWith(['/financiero/liquidaciones']);
+  });
+
+  it('en ESPECIAL muestra "Reglas usadas" por plan, con tramos y valores fijos', async () => {
+    await setup('PENDING', ['ADMINISTRADOR'], {
+      type: 'ESPECIAL',
+      plans: [{
+        planId: 3,
+        agreements: [{ agreementId: 9, agreementSubtotal: 5300, providedServiceIds: [1, 2] }],
+        rules: [
+          { ruleType: 'BETWEEN', fromCount: 1, toCount: 50, amount: 100, subtotal: 5000, count: 50 },
+          { ruleType: 'GREATER_THAN', fromCount: 50, toCount: null, amount: 80, subtotal: 800, count: 10 },
+        ],
+        fixedAmounts: [
+          { analysisId: 55, analysisName: 'Hemograma', amount: 1500, appliedCount: 3, subtotal: 4500 },
+        ],
+      }],
+    });
+    const fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+
+    const section = fixture.debugElement.query(By.css('[data-testid="reglas-usadas"]'));
+    expect(section).toBeTruthy();
+    const planBlock = fixture.debugElement.query(By.css('[data-testid="reglas-plan-3"]'));
+    const txt = (planBlock.nativeElement.textContent ?? '').replace(/\s+/g, ' ');
+    expect(txt).toContain('Plan PMO');
+    expect(txt).toContain('Tramos');
+    expect(txt).toContain('51+ / en adelante');
+    expect(txt).toContain('Valores fijos');
+    expect(txt).toContain('Hemograma');
+  });
+
+  it('en SIMPLE no muestra la sección "Reglas usadas"', async () => {
+    await setup('PENDING', ['ADMINISTRADOR']); // detail base es SIMPLE
+    const fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-usadas"]'))).toBeNull();
+  });
+
+  it('en ESPECIAL, un plan sin valores fijos no muestra la sub-tabla de fijos', async () => {
+    await setup('PENDING', ['ADMINISTRADOR'], {
+      type: 'ESPECIAL',
+      plans: [{
+        planId: 3,
+        agreements: [{ agreementId: 9, agreementSubtotal: 5000, providedServiceIds: [1, 2] }],
+        rules: [{ ruleType: 'GREATER_THAN', fromCount: 0, toCount: null, amount: 100, subtotal: 5000, count: 50 }],
+        fixedAmounts: [],
+      }],
+    });
+    const fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    const planBlock = fixture.debugElement.query(By.css('[data-testid="reglas-plan-3"]'));
+    const txt = (planBlock.nativeElement.textContent ?? '').replace(/\s+/g, ' ');
+    expect(txt).toContain('Tramos');
+    expect(txt).not.toContain('Valores fijos');
+  });
+});
+
+describe('tramoDesde / tramoHastaLabel — formateo de tramos del detalle (KAN-234)', () => {
+  const between: SettlementPlanRuleDetail = { ruleType: 'BETWEEN', fromCount: 1, toCount: 50, amount: 100, subtotal: 5000, count: 50 };
+  const open: SettlementPlanRuleDetail = { ruleType: 'GREATER_THAN', fromCount: 50, toCount: null, amount: 80, subtotal: 800, count: 10 };
+
+  it('tramoDesde: BETWEEN usa fromCount tal cual', () => {
+    expect(tramoDesde(between)).toBe(1);
+  });
+
+  it('tramoDesde: GREATER_THAN muestra fromCount+1 (el backend guarda N-1)', () => {
+    expect(tramoDesde(open)).toBe(51);
+  });
+
+  it('tramoHastaLabel: BETWEEN muestra el toCount', () => {
+    expect(tramoHastaLabel(between)).toBe('50');
+  });
+
+  it('tramoHastaLabel: el tramo abierto se etiqueta "N+ / en adelante"', () => {
+    expect(tramoHastaLabel(open)).toBe('51+ / en adelante');
   });
 });
