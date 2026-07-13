@@ -32,8 +32,8 @@ import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 import {
   PreviewItem, PreviewGroup, PreviewAnalysis, ExcludedAnalysisIdsByPs, SpecialRule, FixedAmountsByPlan,
 } from '../../models/liquidaciones.model';
-import { TramosEditorComponent, TramoRow, tramosToRules } from './components/tramos-editor.component';
-import { FijosEditorComponent, FixedAmountRow, validateFijos, fijosToMap } from './components/fijos-editor.component';
+import { TramosEditorComponent, TramoRow, tramosToRules, copyTramosFrom } from './components/tramos-editor.component';
+import { FijosEditorComponent, FixedAmountRow, validateFijos, fijosToMap, copyFijosFrom } from './components/fijos-editor.component';
 
 const STEPS: FormStep[] = [
   { key: 'datos', title: 'Datos', subtitle: 'Obra social, período y planes' },
@@ -184,6 +184,16 @@ export function analysisLabel(a: PreviewAnalysis): string {
           </div>
           @for (p of selectedPlans(); track p.id) {
             @if (activeTramoPlan() === p.id) {
+              @if (tramoCopySources(p.id).length) {
+                <div class="liq-tramos-copy">
+                  <label for="copiar-tramos-{{ p.id }}">Copiar tramos de otro plan</label>
+                  <p-select inputId="copiar-tramos-{{ p.id }}"
+                            [options]="tramoCopySources(p.id)" optionLabel="name" optionValue="id"
+                            appendTo="body" placeholder="Elegí un plan"
+                            [ngModel]="null" (ngModelChange)="onCopyTramos(p.id, $event)"
+                            data-testid="sel-copiar-tramos" />
+                </div>
+              }
               <fin-tramos-editor [rows]="tramosPorPlan()[p.id] ?? []"
                                  (rowsChange)="onTramosChange(p.id, $event)"
                                  (validChange)="onTramosValid(p.id, $event)" />
@@ -237,6 +247,15 @@ export function analysisLabel(a: PreviewAnalysis): string {
               }
 
               <ui-filter-bar [config]="reviewFilterConfig" (valueChange)="onReviewSearch($event)" />
+
+              @if (activePlanTab() === null && plansWithoutPrestaciones().length) {
+                @for (p of plansWithoutPrestaciones(); track p.id) {
+                  <div class="liq-empty liq-empty--plan" [attr.data-testid]="'sin-prestaciones-' + p.id">
+                    <i class="pi pi-info-circle"></i>
+                    <span><strong>{{ p.name }}</strong> — No se encontraron prestaciones para este plan en el período.</span>
+                  </div>
+                }
+              }
 
               @if (!visibleGroups().length) {
                 <div class="liq-empty" data-testid="sin-resultados-busqueda">
@@ -424,6 +443,12 @@ export function analysisLabel(a: PreviewAnalysis): string {
     .liq-confirm__plan-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
 
     .liq-empty { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 12px 14px; border-radius: 9px; font-size: 13.5px; }
+    /* Aviso discreto por plan sin prestaciones en el período (paso Revisar, Item 3 KAN-237). */
+    .liq-empty--plan { margin-bottom: 2px; }
+    /* Control "Copiar tramos de otro plan" (paso Tramos, Item 2 KAN-237). */
+    .liq-tramos-copy { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .liq-tramos-copy label { font-size: 12.5px; font-weight: 500; color: var(--ds-text-muted, #64748b); white-space: nowrap; }
+    .liq-tramos-copy p-select { display: flex; min-width: 220px; }
     .liq-loading { color: #7c8092; font-size: 13.5px; display: flex; align-items: center; gap: 8px; padding: 12px; }
     /* Loading grande centrado mientras se buscan las prestaciones (antes de renderizar el paso). */
     .liq-loading--full { flex-direction: column; justify-content: center; align-items: center; gap: 12px;
@@ -602,6 +627,19 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
       v[p.id] === true && validateFijos(fijos[p.id] ?? []) === null);
   });
 
+  /**
+   * Planes tildados SIN prestaciones pendientes en el período (KAN-237, Item 3): el
+   * backend solo devuelve grupo para los planes con al menos una prestación, así que
+   * un plan tildado que no aparece en `pv.groups` (o aparece con `items` vacío) quedaba
+   * mudo en el paso Revisar. Se resuelve mostrando un aviso explícito por plan.
+   */
+  protected readonly plansWithoutPrestaciones = computed(() => {
+    const pv = this.preview();
+    if (!pv) return [];
+    const withData = new Set(pv.groups.filter(g => g.items.length > 0).map(g => g.planId));
+    return this.selectedPlans().filter(p => !withData.has(p.id));
+  });
+
   /** Todas las prestaciones de todos los grupos, aplanadas. */
   private readonly allItems = computed(() =>
     (this.preview()?.groups ?? []).flatMap(g => g.items));
@@ -695,16 +733,33 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     if (insurer) this.store.dispatch(loadInsurerPlans({ insurerId: insurer.id }));
   }
 
-  /** Cambia SIMPLE/ESPECIAL; al pasar a ESPECIAL, precarga un tramo inicial por cada plan tildado que no tenga uno. */
+  /** Cambia SIMPLE/ESPECIAL; al pasar a ESPECIAL, asegura el tramo inicial de cada plan tildado. */
   protected setTipo(t: 'SIMPLE' | 'ESPECIAL'): void {
     this.tipo.set(t);
-    if (t === 'ESPECIAL') {
-      const cur = this.tramosPorPlan();
-      const next = { ...cur };
-      for (const p of this.selectedPlans()) if (!next[p.id]) next[p.id] = [{ desde: 1, hasta: null, valorUb: null }];
-      this.tramosPorPlan.set(next);
-      this.activeTramoPlan.set(this.selectedPlans()[0]?.id ?? null);
+    if (t === 'ESPECIAL') this.ensureTramoDefaults();
+  }
+
+  /**
+   * Garantiza que cada plan tildado tenga al menos un tramo (`desde: 1, hasta: null,
+   * valorUb: null` = "en adelante") apenas se entra al paso Tramos o se activa ESPECIAL
+   * (KAN-237, Item 1) — antes el editor podía arrancar vacío. También arregla el tab
+   * activo si quedó en `null` o apuntando a un plan que ya no está tildado.
+   */
+  private ensureTramoDefaults(): void {
+    const cur = this.tramosPorPlan();
+    const next = { ...cur };
+    let changed = false;
+    for (const p of this.selectedPlans()) {
+      if (!next[p.id]?.length) {
+        next[p.id] = [{ desde: 1, hasta: null, valorUb: null }];
+        changed = true;
+      }
     }
+    if (changed) this.tramosPorPlan.set(next);
+
+    const ids = this.selectedPlans().map(p => p.id);
+    const active = this.activeTramoPlan();
+    if (active == null || !ids.includes(active)) this.activeTramoPlan.set(ids[0] ?? null);
   }
 
   protected onTramosChange(planId: number, rows: TramoRow[]): void {
@@ -717,6 +772,32 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
 
   protected onFijosChange(planId: number, rows: FixedAmountRow[]): void {
     this.fijosPorPlan.update(m => ({ ...m, [planId]: rows }));
+  }
+
+  /** Otros planes tildados que ya tienen tramos cargados — fuentes válidas para "Copiar tramos de…". */
+  protected tramoCopySources(planId: number): Array<{ id: number; name: string }> {
+    const tp = this.tramosPorPlan();
+    return this.selectedPlans()
+      .filter(p => p.id !== planId && (tp[p.id]?.length ?? 0) > 0)
+      .map(p => ({ id: p.id, name: p.name }));
+  }
+
+  /**
+   * Copia los tramos del plan `sourcePlanId` al plan `targetPlanId`, reemplazando
+   * los que tuviera (KAN-237, Item 2). Si el origen también tiene valores fijos
+   * cargados, los copia también (bonus del ticket). Deep copy — no comparte
+   * referencias entre planes.
+   */
+  protected onCopyTramos(targetPlanId: number, sourcePlanId: number | null): void {
+    if (sourcePlanId == null) return;
+    const sourceTramos = this.tramosPorPlan()[sourcePlanId];
+    if (!sourceTramos?.length) return;
+    this.tramosPorPlan.update(m => ({ ...m, [targetPlanId]: copyTramosFrom(sourceTramos) }));
+
+    const sourceFijos = this.fijosPorPlan()[sourcePlanId];
+    if (sourceFijos?.length) {
+      this.fijosPorPlan.update(m => ({ ...m, [targetPlanId]: copyFijosFrom(sourceFijos) }));
+    }
   }
 
   protected toggleAnalysis(psId: number, analysisId: number): void {
@@ -825,6 +906,7 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     if (k === 'datos') {
       if (!this.paso1Valido()) return;
       this.goTo(this.step() + 1);
+      if (this.stepKey() === 'tramos') this.ensureTramoDefaults();
       if (this.stepKey() === 'revisar') this.enterRevisar();
     } else if (k === 'tramos') {
       if (!this.tramosTodosValidos()) return;

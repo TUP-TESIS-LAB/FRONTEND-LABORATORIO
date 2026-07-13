@@ -1,4 +1,4 @@
-import { validateFijos, fijosToMap } from './fijos-editor.component';
+import { validateFijos, fijosToMap, copyFijosFrom } from './fijos-editor.component';
 
 describe('validateFijos', () => {
   it('fila sin analisis -> error', () => {
@@ -25,5 +25,18 @@ describe('fijosToMap', () => {
       { analysisId: 1, nombre: 'X', monto: 100 },
       { analysisId: 2, nombre: 'Y', monto: 50 },
     ])).toEqual({ 1: 100, 2: 50 });
+  });
+});
+
+describe('copyFijosFrom', () => {
+  it('devuelve una copia con el mismo contenido', () => {
+    const source = [{ analysisId: 1, nombre: 'X', monto: 100 }];
+    expect(copyFijosFrom(source)).toEqual(source);
+  });
+  it('es un deep copy: no comparte referencias de fila con el origen', () => {
+    const source = [{ analysisId: 1, nombre: 'X', monto: 100 }];
+    const copy = copyFijosFrom(source);
+    copy[0].monto = 999;
+    expect(source[0].monto).toBe(100);
   });
 });

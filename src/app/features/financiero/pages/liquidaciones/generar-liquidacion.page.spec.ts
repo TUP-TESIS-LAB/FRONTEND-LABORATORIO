@@ -137,7 +137,19 @@ type Cmp = InstanceType<typeof GenerarLiquidacionPage> & {
   reviewSearch: { (): string; set: (v: string) => void };
   visibleGroups: () => Array<{ planId: number; items: unknown[] }>;
   tipo: { (): 'SIMPLE' | 'ESPECIAL'; set: (v: 'SIMPLE' | 'ESPECIAL') => void };
-  tramosPorPlan: { set: (v: Record<number, Array<{ desde: number; hasta: number | null; valorUb: number | null }>>) => void };
+  tramosPorPlan: {
+    (): Record<number, Array<{ desde: number; hasta: number | null; valorUb: number | null }>>;
+    set: (v: Record<number, Array<{ desde: number; hasta: number | null; valorUb: number | null }>>) => void;
+  };
+  fijosPorPlan: {
+    (): Record<number, Array<{ analysisId: number | null; nombre: string; monto: number | null }>>;
+    set: (v: Record<number, Array<{ analysisId: number | null; nombre: string; monto: number | null }>>) => void;
+  };
+  activeTramoPlan: { (): number | null; set: (v: number | null) => void };
+  setTipo: (t: 'SIMPLE' | 'ESPECIAL') => void;
+  tramoCopySources: (planId: number) => Array<{ id: number; name: string }>;
+  onCopyTramos: (targetPlanId: number, sourcePlanId: number | null) => void;
+  plansWithoutPrestaciones: () => Array<{ id: number; name: string }>;
 };
 
 describe('GenerarLiquidacionPage — smoke', () => {
@@ -418,5 +430,172 @@ describe('GenerarLiquidacionPage — smoke', () => {
     cmp.activePlanTab.set(3);
     cmp.reviewSearch.set('caro'); // Caro está en Plan B (4), no en el tab activo (3)
     expect(cmp.visibleGroups()).toEqual([]);
+  });
+
+  // ── KAN-237 Item 1: el editor de tramos arranca con un tramo (desde 1) ────────
+  it('setTipo(ESPECIAL) precarga un tramo inicial (desde 1, hasta null, valorUb null) por cada plan tildado sin tramos', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 900, hasActiveAgreement: true },
+    ]);
+    fixture.detectChanges();
+    cmp.selectedPlanIds.set([3, 4]);
+
+    cmp.setTipo('ESPECIAL');
+
+    expect(cmp.tramosPorPlan()).toEqual({
+      3: [{ desde: 1, hasta: null, valorUb: null }],
+      4: [{ desde: 1, hasta: null, valorUb: null }],
+    });
+  });
+
+  it('no pisa los tramos ya cargados de un plan al precargar defaults', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [{ id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true }]);
+    fixture.detectChanges();
+    cmp.selectedPlanIds.set([3]);
+    cmp.tramosPorPlan.set({ 3: [{ desde: 1, hasta: null, valorUb: 500 }] });
+
+    cmp.setTipo('ESPECIAL');
+
+    expect(cmp.tramosPorPlan()).toEqual({ 3: [{ desde: 1, hasta: null, valorUb: 500 }] });
+  });
+
+  it('al avanzar de Datos a Tramos con next(), cada plan tildado queda con al menos un tramo', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [{ id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true }]);
+    fixture.detectChanges();
+    cmp.os.set(OS);
+    cmp.from.set(new Date(2026, 0, 1));
+    cmp.to.set(new Date(2026, 0, 31));
+    cmp.selectedPlanIds.set([3]);
+    cmp.tipo.set('ESPECIAL'); // set directo del signal: NO pasa por setTipo, simula estado sin tramos precargados
+
+    cmp.next();
+
+    expect(cmp.tramosPorPlan()[3]).toEqual([{ desde: 1, hasta: null, valorUb: null }]);
+    expect(cmp.activeTramoPlan()).toBe(3);
+  });
+
+  // ── KAN-237 Item 2: "Copiar tramos de otro plan" ──────────────────────────────
+  it('tramoCopySources lista solo los OTROS planes tildados que ya tienen tramos cargados', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 900, hasActiveAgreement: true },
+      { id: 5, name: 'Plan C', iva: 0, arancel: 900, hasActiveAgreement: true },
+    ]);
+    fixture.detectChanges();
+    cmp.selectedPlanIds.set([3, 4, 5]);
+    cmp.tramosPorPlan.set({ 4: [{ desde: 1, hasta: null, valorUb: 500 }], 5: [] });
+
+    expect(cmp.tramoCopySources(3)).toEqual([{ id: 4, name: 'Plan B' }]);
+    expect(cmp.tramoCopySources(4)).toEqual([]); // el propio plan 4 no se lista a sí mismo, y 3/5 no tienen tramos
+  });
+
+  it('onCopyTramos copia (deep copy) los tramos del plan origen al plan destino, reemplazando los que tuviera', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 900, hasActiveAgreement: true },
+    ]);
+    fixture.detectChanges();
+    cmp.selectedPlanIds.set([3, 4]);
+    cmp.tramosPorPlan.set({
+      3: [{ desde: 1, hasta: null, valorUb: 999 }], // debe reemplazarse
+      4: [{ desde: 1, hasta: 10, valorUb: 500 }, { desde: 11, hasta: null, valorUb: 400 }],
+    });
+
+    cmp.onCopyTramos(3, 4);
+
+    expect(cmp.tramosPorPlan()[3]).toEqual(cmp.tramosPorPlan()[4]);
+    expect(cmp.tramosPorPlan()[3]).not.toBe(cmp.tramosPorPlan()[4]); // deep copy, no la misma referencia
+  });
+
+  it('onCopyTramos también copia los valores fijos del plan origen si tiene', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 900, hasActiveAgreement: true },
+    ]);
+    fixture.detectChanges();
+    cmp.selectedPlanIds.set([3, 4]);
+    cmp.tramosPorPlan.set({ 4: [{ desde: 1, hasta: null, valorUb: 500 }] });
+    cmp.fijosPorPlan.set({ 4: [{ analysisId: 100, nombre: 'Hemograma', monto: 750 }] });
+
+    cmp.onCopyTramos(3, 4);
+
+    expect(cmp.fijosPorPlan()[3]).toEqual([{ analysisId: 100, nombre: 'Hemograma', monto: 750 }]);
+  });
+
+  it('onCopyTramos no hace nada si el plan origen no tiene tramos cargados', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 900, hasActiveAgreement: true },
+    ]);
+    fixture.detectChanges();
+    cmp.selectedPlanIds.set([3, 4]);
+    cmp.tramosPorPlan.set({ 3: [{ desde: 1, hasta: null, valorUb: 999 }] });
+
+    cmp.onCopyTramos(3, 4);
+
+    expect(cmp.tramosPorPlan()[3]).toEqual([{ desde: 1, hasta: null, valorUb: 999 }]);
+  });
+
+  // ── KAN-237 Item 3: aviso de plan sin prestaciones (paso Revisar) ─────────────
+  it('plansWithoutPrestaciones detecta un plan tildado que no tiene grupo (0 prestaciones) en el preview', async () => {
+    await setup(PREVIEW_MULTI); // trae grupos para los planes 3 y 4
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 900, hasActiveAgreement: true },
+      { id: 9, name: 'Plan sin datos', iva: 0, arancel: 900, hasActiveAgreement: true },
+    ]);
+    store.refreshState();
+    fixture.detectChanges();
+    cmp.selectedPlanIds.set([3, 4, 9]);
+
+    expect(cmp.plansWithoutPrestaciones()).toEqual([{ id: 9, name: 'Plan sin datos', iva: 0, arancel: 900, hasActiveAgreement: true }]);
+  });
+
+  it('plansWithoutPrestaciones no marca planes cuyo grupo existe con items', async () => {
+    await setup(PREVIEW_MULTI);
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+      { id: 4, name: 'Plan B', iva: 0, arancel: 900, hasActiveAgreement: true },
+    ]);
+    store.refreshState();
+    fixture.detectChanges();
+    cmp.selectedPlanIds.set([3, 4]);
+
+    expect(cmp.plansWithoutPrestaciones()).toEqual([]);
   });
 });

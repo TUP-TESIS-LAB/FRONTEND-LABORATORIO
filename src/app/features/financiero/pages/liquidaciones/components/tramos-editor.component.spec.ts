@@ -1,4 +1,4 @@
-import { validateTramos, tramosToRules, addTramoRow, removeTramoRow } from './tramos-editor.component';
+import { validateTramos, tramosToRules, addTramoRow, removeTramoRow, copyTramosFrom } from './tramos-editor.component';
 
 describe('validateTramos', () => {
   it('acepta tramos contiguos desde 1 con último abierto', () => {
@@ -81,5 +81,26 @@ describe('removeTramoRow', () => {
     const input = [{ desde: 1, hasta: 3, valorUb: 500 }, { desde: 4, hasta: null, valorUb: 900 }];
     removeTramoRow(input, 1);
     expect(input).toEqual([{ desde: 1, hasta: 3, valorUb: 500 }, { desde: 4, hasta: null, valorUb: 900 }]);
+  });
+});
+
+describe('copyTramosFrom', () => {
+  it('devuelve una copia con el mismo contenido', () => {
+    const source = [{ desde: 1, hasta: 3, valorUb: 500 }, { desde: 4, hasta: null, valorUb: 900 }];
+    expect(copyTramosFrom(source)).toEqual(source);
+  });
+  it('es un deep copy: no comparte referencias de fila con el origen', () => {
+    const source = [{ desde: 1, hasta: null, valorUb: 500 }];
+    const copy = copyTramosFrom(source);
+    copy[0].valorUb = 999;
+    expect(source[0].valorUb).toBe(500);
+  });
+  it('no muta la entrada', () => {
+    const source = [{ desde: 1, hasta: null, valorUb: 500 }];
+    copyTramosFrom(source);
+    expect(source).toEqual([{ desde: 1, hasta: null, valorUb: 500 }]);
+  });
+  it('copia lista vacía como lista vacía', () => {
+    expect(copyTramosFrom([])).toEqual([]);
   });
 });

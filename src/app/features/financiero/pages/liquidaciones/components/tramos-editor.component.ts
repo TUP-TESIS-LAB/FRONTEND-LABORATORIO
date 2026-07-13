@@ -93,6 +93,15 @@ export function removeTramoRow(rows: TramoRow[], index: number): TramoRow[] {
   return remaining;
 }
 
+/**
+ * Deep copy de las filas de tramos de otro plan, para "Copiar tramos de otro plan"
+ * (KAN-237, Item 2): nuevo array con nuevos objetos por fila, sin compartir
+ * referencias con el plan origen (editar el plan copiado no debe mutar el original).
+ */
+export function copyTramosFrom(rows: TramoRow[]): TramoRow[] {
+  return rows.map(r => ({ ...r }));
+}
+
 @Component({
   selector: 'fin-tramos-editor',
   standalone: true,
