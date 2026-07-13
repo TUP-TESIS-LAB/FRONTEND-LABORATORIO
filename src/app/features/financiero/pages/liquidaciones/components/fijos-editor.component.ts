@@ -3,7 +3,6 @@ import { FormsModule } from '@angular/forms';
 import { AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
-import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { AnalysisService } from '@features/analitica/services/analysis.service';
 import { Analysis } from '@features/analitica/models/atencion.model';
 
@@ -52,7 +51,7 @@ export function fijosToMap(rows: FixedAmountRow[]): Record<number, number> {
   selector: 'fin-fijos-editor',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, AutoCompleteModule, InputNumberModule, ButtonModule, CurrencyArPipe],
+  imports: [FormsModule, AutoCompleteModule, InputNumberModule, ButtonModule],
   template: `
     <div class="liq-fijos">
       <span class="liq-fijos__title">Valores fijos por análisis (opcional)</span>

@@ -255,6 +255,7 @@ export function tramoHastaLabel(rule: SettlementPlanRuleDetail): string {
                 @if (rp.fixedAmounts.length) {
                   <div class="liq-rules__block">
                     <span class="liq-rules__block-title">Valores fijos</span>
+                    <p class="liq-rules__note">Estos valores ya están incluidos en el subtotal del tramo.</p>
                     <div class="liq-rules__scroll">
                       <table class="liq-rules__table" aria-label="Valores fijos aplicados en {{ rp.name }}">
                         <thead>
@@ -431,6 +432,7 @@ export function tramoHastaLabel(rule: SettlementPlanRuleDetail): string {
       display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
       color: var(--ds-text-muted); font-weight: 600; margin-bottom: 6px;
     }
+    .liq-rules__note { font-size: 12px; color: var(--ds-text-muted); font-style: italic; margin: 0 0 var(--space-2); }
     .liq-rules__scroll { overflow-x: auto; }
     .liq-rules__table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .liq-rules__table th {
