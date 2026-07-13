@@ -10,13 +10,14 @@ import { PageHeaderComponent } from '@shared/ui/components/page-header/page-head
 import { humanizeBackendError, type BackendErrorShape } from '@shared/utils/error-messages';
 import { CURRENT_BRANCH } from '../../data/catalogs';
 import { groupTubes, type Tube } from '../../models/tube.model';
+import type { LabelWorklistItem } from '../../models/label-worklist.model';
 import { rowActionsFor } from '../../data/state-machine.config';
 import { createRowTransitionDialog } from '../row-transition-dialog';
 import type { RowActionKey } from '../../models/transition.model';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
 import { RowActionsMenuComponent } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 import { initMuestras, loadProcesamiento } from '../../store/muestras.actions';
-import { selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError, selectMuestrasBranchId } from '../../store/muestras.selectors';
+import { selectProcesamientoItems, selectDerivadosItems, selectMuestrasBranchName, selectMuestrasError, selectMuestrasBranchId } from '../../store/muestras.selectors';
 import { MuestrasApiService } from '../../services/muestras-api.service';
 import { loadTemplates } from '../../store/worksheet-templates/worksheet-templates.actions';
 import { selectTemplates, selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
@@ -58,7 +59,9 @@ export class ProcesamientoPage implements OnInit {
   private readonly resultados = inject(ResultadosApiService);
   private readonly muestrasApi = inject(MuestrasApiService);
 
-  private readonly items = this.store.selectSignal(selectProcesamientoItems);
+  // Slices separados por status: el tab y la lista leen el mismo criterio (filtro), imposible desalinear.
+  private readonly procesamientoItems = this.store.selectSignal(selectProcesamientoItems);
+  private readonly derivadosItems = this.store.selectSignal(selectDerivadosItems);
   private readonly branchId = this.store.selectSignal(selectMuestrasBranchId);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
@@ -67,6 +70,10 @@ export class ProcesamientoPage implements OnInit {
 
   readonly FILTROS = FILTROS;
   readonly filtro = signal<'todos' | 'derivados'>('todos');
+
+  /** La lista renderizada sale del slice que corresponde al tab activo. */
+  private readonly items = computed<LabelWorklistItem[]>(() =>
+    this.filtro() === 'derivados' ? this.derivadosItems() : this.procesamientoItems());
 
   readonly query = signal('');
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());

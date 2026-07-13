@@ -79,16 +79,21 @@ export const loadDescartadasFailure = createAction(
   props<{ error: HttpErrorResponse }>()
 );
 
-// Worklist Procesamiento (PROCESSING) — polleada, solo lectura (Arco 1)
+// Worklist Procesamiento (PROCESSING) y Derivados (DERIVED) — polleada, solo lectura (Arco 1).
+// El `status` viaja de punta a punta (action → effect → reducer) para rutear a slices separados
+// (procesamiento vs derivados) y que el tab y la lista nunca se desalineen.
 export const loadProcesamiento = createAction(
   '[Muestras Page] Load Procesamiento',
   props<{ status: 'PROCESSING' | 'DERIVED' }>(),
 );
 export const loadProcesamientoSuccess = createAction(
   '[Muestras API] Load Procesamiento Success',
-  props<{ items: LabelWorklistItem[] }>()
+  props<{ status: 'PROCESSING' | 'DERIVED'; items: LabelWorklistItem[] }>()
 );
-export const loadProcesamientoNotModified = createAction('[Muestras API] Load Procesamiento Not Modified');
+export const loadProcesamientoNotModified = createAction(
+  '[Muestras API] Load Procesamiento Not Modified',
+  props<{ status: 'PROCESSING' | 'DERIVED' }>()
+);
 export const loadProcesamientoFailure = createAction(
   '[Muestras API] Load Procesamiento Failure',
   props<{ error: HttpErrorResponse }>()

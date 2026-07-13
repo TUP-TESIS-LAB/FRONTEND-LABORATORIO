@@ -149,7 +149,9 @@ export class MuestrasEffects {
       switchMap(([{ status }, branchId]) => {
         if (branchId == null) return EMPTY;
         return this.api.getWorklist(status, branchId).pipe(
-          map(res => isNotModified(res) ? loadProcesamientoNotModified() : loadProcesamientoSuccess({ items: res })),
+          map(res => isNotModified(res)
+            ? loadProcesamientoNotModified({ status })
+            : loadProcesamientoSuccess({ status, items: res })),
           catchError((error: HttpErrorResponse) => of(loadProcesamientoFailure({ error }))),
         );
       }),

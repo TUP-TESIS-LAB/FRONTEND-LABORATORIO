@@ -45,7 +45,10 @@ export const muestrasReducer = createReducer(
   on(loadDescartadasNotModified, (state): MuestrasState => ({ ...state })),
   on(loadDescartadasFailure, (state, { error }): MuestrasState => ({ ...state, error })),
 
-  on(loadProcesamientoSuccess, (state, { items }): MuestrasState => ({ ...state, procesamiento: items, error: null })),
+  on(loadProcesamientoSuccess, (state, { status, items }): MuestrasState =>
+    status === 'DERIVED'
+      ? ({ ...state, derivados: items, error: null })
+      : ({ ...state, procesamiento: items, error: null })),
   on(loadProcesamientoNotModified, (state): MuestrasState => ({ ...state })),
   on(loadProcesamientoFailure, (state, { error }): MuestrasState => ({ ...state, error })),
 

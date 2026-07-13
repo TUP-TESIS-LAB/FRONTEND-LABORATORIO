@@ -232,7 +232,7 @@ describe('MuestrasEffects', () => {
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadProcesamiento$);
     expect(api.getWorklist).toHaveBeenCalledWith('PROCESSING', 1001);
-    expect(action).toEqual(loadProcesamientoSuccess({ items: [procItem] }));
+    expect(action).toEqual(loadProcesamientoSuccess({ status: 'PROCESSING', items: [procItem] }));
   });
 
   it('loadProcesamiento con status DERIVED pide DERIVED de la sucursal', async () => {
@@ -241,7 +241,8 @@ describe('MuestrasEffects', () => {
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadProcesamiento$);
     expect(api.getWorklist).toHaveBeenCalledWith('DERIVED', 1001);
-    expect(action).toEqual(loadProcesamientoSuccess({ items: [procItem] }));
+    // el status DERIVED viaja en el Success para rutear al slice 'derivados' (no pisar 'procesamiento')
+    expect(action).toEqual(loadProcesamientoSuccess({ status: 'DERIVED', items: [procItem] }));
   });
 
   it('loadProcesamiento 304 mapea a notModified', async () => {
@@ -249,7 +250,7 @@ describe('MuestrasEffects', () => {
     actions$ = of(loadProcesamiento({ status: 'PROCESSING' }));
     const effects = TestBed.inject(MuestrasEffects);
     const action = await firstValueFrom(effects.loadProcesamiento$);
-    expect(action).toEqual(loadProcesamientoNotModified());
+    expect(action).toEqual(loadProcesamientoNotModified({ status: 'PROCESSING' }));
   });
 
   it('loadProcesamiento failure mapea error', async () => {
