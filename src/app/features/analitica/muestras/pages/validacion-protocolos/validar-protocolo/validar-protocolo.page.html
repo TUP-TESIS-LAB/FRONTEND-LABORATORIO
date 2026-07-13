@@ -113,7 +113,7 @@
                 <span class="vt-n">{{ d.name }}</span>
                 <span class="vt-v" [class.flag-h]="outOf(d)">{{ d.value }}</span>
                 <span class="vt-u">{{ d.unit }}</span>
-                <span class="vt-ref">{{ d.referenceRange }}</span>
+                <span class="vt-ref">{{ (d.analyticalType === 'QUALITATIVE' || d.analyticalType === 'SEMI_QUALITATIVE') ? (d.expectedQualitativeValue || '') : (d.referenceRange || '') }}</span>
                 <span class="vt-cell">
                   @if (d.manualOutcome) {
                     <span class="vb vb-ok"><i class="pi pi-check"></i> {{ outcomeLabel(d.manualOutcome) }}</span>
