@@ -192,6 +192,7 @@ describe('GenerarLiquidacionPage — smoke', () => {
         specialRulesByPlan: null, // SIMPLE → sin reglas por plan
         excludedAnalysisIdsByPs: null,
         planIds: [3],
+        fixedAmountsByPlan: null, // SIMPLE → sin valores fijos
       },
     }));
   });
@@ -230,6 +231,32 @@ describe('GenerarLiquidacionPage — smoke', () => {
         { ruleType: 'GREATER_THAN', fromCount: 10, amount: 400 },
       ],
     });
+  });
+
+  it('generar en modo ESPECIAL dispatchea generateSettlement con fixedAmountsByPlan mapeado desde los valores fijos', async () => {
+    await setup(PREVIEW);
+    const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+    const cmp = fixture.componentInstance as unknown as Cmp;
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectLiqInsurerPlans, [
+      { id: 3, name: 'Plan A', iva: 21, arancel: 1500, hasActiveAgreement: true },
+    ]);
+    store.refreshState();
+    const dispatch = vi.spyOn(store, 'dispatch');
+    fixture.detectChanges();
+    cmp.os.set(OS);
+    cmp.from.set(new Date(2026, 0, 1));
+    cmp.to.set(new Date(2026, 0, 31));
+    cmp.selectedPlanIds.set([3]);
+    cmp.tipo.set('ESPECIAL');
+    cmp.tramosPorPlan.set({ 3: [{ desde: 1, hasta: null, valorUb: 500 }] });
+    (cmp as unknown as { fijosPorPlan: { set: (v: Record<number, Array<{ analysisId: number | null; nombre: string; monto: number | null }>>) => void } })
+      .fijosPorPlan.set({ 3: [{ analysisId: 100, nombre: 'Hemograma', monto: 750 }] });
+
+    cmp.generar();
+
+    const last = dispatch.mock.calls.at(-1)?.[0] as { body?: { fixedAmountsByPlan?: Record<number, Record<number, number>> | null } };
+    expect(last.body?.fixedAmountsByPlan).toEqual({ 3: { 100: 750 } });
   });
 
   it('post-generar navega al listado de liquidaciones', async () => {

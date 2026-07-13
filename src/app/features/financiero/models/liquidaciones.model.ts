@@ -14,6 +14,12 @@ export interface SpecialRule {
 export type SpecialRulesByPlan = Record<number, SpecialRule[]>;
 
 /**
+ * Valores fijos en $ por análisis, por plan: { planId: { analysisId: monto } }.
+ * Un análisis con valor fijo ignora el cálculo por tramo/U.B. — se factura ese monto plano.
+ */
+export type FixedAmountsByPlan = Record<number, Record<number, number>>;
+
+/**
  * Fila del listado: GET /settlements. OJO: el DTO de listado usa `settlementId`
  * y trae `totalAmount` (no `createdAt`) — distinto del detalle, que usa `id`.
  */
@@ -97,6 +103,7 @@ export interface GenerateSettlementBody {
   excludedAnalysisIdsByPs: Record<number, number[]> | null;
   /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
   planIds?: number[] | null;
+  fixedAmountsByPlan?: FixedAmountsByPlan | null;
 }
 
 export interface InformSettlementBody {
@@ -139,6 +146,7 @@ export interface PreviewDetailBody {
   specialRulesByPlan?: SpecialRulesByPlan | null;
   /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
   planIds?: number[] | null;
+  fixedAmountsByPlan?: FixedAmountsByPlan | null;
 }
 
 export interface PreviewAnalysis {

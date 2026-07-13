@@ -29,8 +29,11 @@ import {
   generateSettlement, generateSettlementSuccess,
 } from '../../store/financiero.actions';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
-import { PreviewItem, PreviewGroup, ExcludedAnalysisIdsByPs, SpecialRule } from '../../models/liquidaciones.model';
+import {
+  PreviewItem, PreviewGroup, ExcludedAnalysisIdsByPs, SpecialRule, FixedAmountsByPlan,
+} from '../../models/liquidaciones.model';
 import { TramosEditorComponent, TramoRow, tramosToRules } from './components/tramos-editor.component';
+import { FijosEditorComponent, FixedAmountRow, validateFijos, fijosToMap } from './components/fijos-editor.component';
 
 const STEPS: FormStep[] = [
   { key: 'datos', title: 'Datos', subtitle: 'Obra social, período y planes' },
@@ -59,7 +62,7 @@ function norm(s: string | null | undefined): string {
   imports: [
     DatePipe, CurrencyArPipe, FormsModule, SelectModule, MultiSelectModule, DatePickerModule,
     WizardShellComponent, DataTableComponent, UiCellDirective, UiRowExpansionDirective, FilterBarComponent,
-    TramosEditorComponent,
+    TramosEditorComponent, FijosEditorComponent,
   ],
   template: `
     <ui-wizard-shell
@@ -169,6 +172,8 @@ function norm(s: string | null | undefined): string {
               <fin-tramos-editor [rows]="tramosPorPlan()[p.id] ?? []"
                                  (rowsChange)="onTramosChange(p.id, $event)"
                                  (validChange)="onTramosValid(p.id, $event)" />
+              <fin-fijos-editor [rows]="fijosPorPlan()[p.id] ?? []"
+                                (rowsChange)="onFijosChange(p.id, $event)" />
             }
           }
         </div>
@@ -512,6 +517,8 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   protected readonly tramosValidos = signal<Record<number, boolean>>({});
   /** Tab de plan activo en el paso Tramos. */
   protected readonly activeTramoPlan = signal<number | null>(null);
+  /** Filas de valores fijos por análisis, por plan: { planId: FixedAmountRow[] }. Opcional, solo en ESPECIAL. */
+  protected readonly fijosPorPlan = signal<Record<number, FixedAmountRow[]>>({});
 
   // ── Paso Revisar: tab de plan activo + búsqueda client-side ──
   /** Plan activo del tab en el paso Revisar; null = "Todos". */
@@ -563,11 +570,17 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     !!this.os() && !!this.from() && !!this.to() && !this.rangoInvalido()
     && this.selectedPlanIds().length > 0 && !this.noPlanConvenio());
 
-  /** En ESPECIAL, todos los planes tildados deben tener sus tramos completos y válidos. */
+  /**
+   * En ESPECIAL, todos los planes tildados deben tener sus tramos completos y válidos,
+   * y si tienen filas de valores fijos cargadas, esas filas también deben ser válidas
+   * (análisis elegido, monto > 0, sin repetidos).
+   */
   protected readonly tramosTodosValidos = computed(() => {
     if (this.tipo() !== 'ESPECIAL') return true;
     const v = this.tramosValidos();
-    return this.selectedPlans().every(p => v[p.id] === true);
+    const fijos = this.fijosPorPlan();
+    return this.selectedPlans().every(p =>
+      v[p.id] === true && validateFijos(fijos[p.id] ?? []) === null);
   });
 
   /** Todas las prestaciones de todos los grupos, aplanadas. */
@@ -683,6 +696,10 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     this.tramosValidos.update(m => ({ ...m, [planId]: valid }));
   }
 
+  protected onFijosChange(planId: number, rows: FixedAmountRow[]): void {
+    this.fijosPorPlan.update(m => ({ ...m, [planId]: rows }));
+  }
+
   protected toggleAnalysis(psId: number, analysisId: number): void {
     const cur = { ...this.excluded() };
     const set = new Set(cur[psId] ?? []);
@@ -753,6 +770,7 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
         excludedAnalysisIdsByPs: Object.keys(excl).length ? excl : null,
         planIds: this.selectedPlanIds(),
         specialRulesByPlan: this.buildRulesByPlan(),
+        fixedAmountsByPlan: this.buildFixedByPlan(),
       },
     }));
   }
@@ -763,6 +781,20 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     const out: Record<number, SpecialRule[]> = {};
     for (const p of this.selectedPlans()) out[p.id] = tramosToRules(this.tramosPorPlan()[p.id] ?? []);
     return out;
+  }
+
+  /**
+   * Valores fijos por plan para el body de preview/generate: solo incluye planes con
+   * al menos una fila válida cargada. null si no hay ninguno (o fuera de ESPECIAL).
+   */
+  private buildFixedByPlan(): FixedAmountsByPlan | null {
+    if (this.tipo() !== 'ESPECIAL') return null;
+    const out: FixedAmountsByPlan = {};
+    for (const p of this.selectedPlans()) {
+      const map = fijosToMap(this.fijosPorPlan()[p.id] ?? []);
+      if (Object.keys(map).length) out[p.id] = map;
+    }
+    return Object.keys(out).length ? out : null;
   }
 
   /**
@@ -813,6 +845,7 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
         specialRulesByPlan: this.buildRulesByPlan(),
         excludedAnalysisIdsByPs: Object.keys(excl).length ? excl : null,
         planIds: this.selectedPlanIds(),
+        fixedAmountsByPlan: this.buildFixedByPlan(),
       },
     }));
   }
