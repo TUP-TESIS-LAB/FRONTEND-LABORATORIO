@@ -528,7 +528,7 @@ describe('GenerarLiquidacionPage — smoke', () => {
     expect(cmp.tramosPorPlan()[3]).not.toBe(cmp.tramosPorPlan()[4]); // deep copy, no la misma referencia
   });
 
-  it('onCopyTramos también copia los valores fijos del plan origen si tiene', async () => {
+  it('onCopyTramos NO copia los valores fijos del plan origen (solo tramos)', async () => {
     await setup();
     const fixture = TestBed.createComponent(GenerarLiquidacionPage);
     const cmp = fixture.componentInstance as unknown as Cmp;
@@ -544,7 +544,8 @@ describe('GenerarLiquidacionPage — smoke', () => {
 
     cmp.onCopyTramos(3, 4);
 
-    expect(cmp.fijosPorPlan()[3]).toEqual([{ analysisId: 100, nombre: 'Hemograma', monto: 750 }]);
+    expect(cmp.tramosPorPlan()[3]).toEqual([{ desde: 1, hasta: null, valorUb: 500 }]);
+    expect(cmp.fijosPorPlan()[3]).toBeUndefined(); // los fijos NO se arrastran
   });
 
   it('onCopyTramos no hace nada si el plan origen no tiene tramos cargados', async () => {

@@ -47,15 +47,6 @@ export function fijosToMap(rows: FixedAmountRow[]): Record<number, number> {
   return out;
 }
 
-/**
- * Deep copy de las filas de valores fijos de otro plan (KAN-237, Item 2 — bonus:
- * "Copiar tramos de otro plan" también arrastra los fijos del plan origen, si tiene).
- * Nuevo array con nuevos objetos por fila, sin compartir referencias con el origen.
- */
-export function copyFijosFrom(rows: FixedAmountRow[]): FixedAmountRow[] {
-  return rows.map(r => ({ ...r }));
-}
-
 @Component({
   selector: 'fin-fijos-editor',
   standalone: true,

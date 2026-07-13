@@ -33,7 +33,7 @@ import {
   PreviewItem, PreviewGroup, PreviewAnalysis, ExcludedAnalysisIdsByPs, SpecialRule, FixedAmountsByPlan,
 } from '../../models/liquidaciones.model';
 import { TramosEditorComponent, TramoRow, tramosToRules, copyTramosFrom } from './components/tramos-editor.component';
-import { FijosEditorComponent, FixedAmountRow, validateFijos, fijosToMap, copyFijosFrom } from './components/fijos-editor.component';
+import { FijosEditorComponent, FixedAmountRow, validateFijos, fijosToMap } from './components/fijos-editor.component';
 
 const STEPS: FormStep[] = [
   { key: 'datos', title: 'Datos', subtitle: 'Obra social, período y planes' },
@@ -191,7 +191,7 @@ export function analysisLabel(a: PreviewAnalysis): string {
                             [options]="tramoCopySources(p.id)" optionLabel="name" optionValue="id"
                             appendTo="body" placeholder="Elegí un plan"
                             [ngModel]="null" (ngModelChange)="onCopyTramos(p.id, $event)"
-                            data-testid="sel-copiar-tramos" />
+                            [attr.data-testid]="'sel-copiar-tramos-' + p.id" />
                 </div>
               }
               <fin-tramos-editor [rows]="tramosPorPlan()[p.id] ?? []"
@@ -783,21 +783,16 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Copia los tramos del plan `sourcePlanId` al plan `targetPlanId`, reemplazando
-   * los que tuviera (KAN-237, Item 2). Si el origen también tiene valores fijos
-   * cargados, los copia también (bonus del ticket). Deep copy — no comparte
-   * referencias entre planes.
+   * Copia SOLO los tramos del plan `sourcePlanId` al plan `targetPlanId`, reemplazando
+   * los que tuviera (KAN-237, Item 2). Deep copy — no comparte referencias entre planes.
+   * NO copia los valores fijos: son montos por análisis que inciden en la facturación y
+   * el control dice explícitamente "tramos", así que un swap de fijos sería inesperado.
    */
   protected onCopyTramos(targetPlanId: number, sourcePlanId: number | null): void {
     if (sourcePlanId == null) return;
     const sourceTramos = this.tramosPorPlan()[sourcePlanId];
     if (!sourceTramos?.length) return;
     this.tramosPorPlan.update(m => ({ ...m, [targetPlanId]: copyTramosFrom(sourceTramos) }));
-
-    const sourceFijos = this.fijosPorPlan()[sourcePlanId];
-    if (sourceFijos?.length) {
-      this.fijosPorPlan.update(m => ({ ...m, [targetPlanId]: copyFijosFrom(sourceFijos) }));
-    }
   }
 
   protected toggleAnalysis(psId: number, analysisId: number): void {
