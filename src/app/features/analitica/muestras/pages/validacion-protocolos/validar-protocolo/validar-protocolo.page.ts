@@ -7,6 +7,8 @@ import type { DetalleResultado, DetalleDeterminacion, ValidationOutcome } from '
 import { loadDetalle, validarTodo, firmarEstudio, verPdf } from '../../../store/validacion-detalle/validacion-detalle.actions';
 import { selectDetalle, selectDetalleLoading, selectDetalleSaving, selectDetallePdfLoading } from '../../../store/validacion-detalle/validacion-detalle.selectors';
 import { FirmarEstudioModalComponent } from '../../../components/firmar-estudio-modal/firmar-estudio-modal.component';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 
 @Component({
   selector: 'app-validar-protocolo',
@@ -20,6 +22,10 @@ export class ValidarProtocoloPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(Store);
+  private readonly moduleRegistry = inject(ModuleRegistry);
+
+  /** La columna "Validación Automática" solo se muestra si el módulo autovalidación está activo. */
+  readonly autoValidacionActiva = computed(() => this.moduleRegistry.isActive(ModuleKey.Autovalidacion));
 
   readonly badgeFirma = badgeFirma;
   readonly badgeResultado = badgeResultado;

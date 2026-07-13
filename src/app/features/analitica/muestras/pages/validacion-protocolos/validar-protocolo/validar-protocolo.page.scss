@@ -146,6 +146,8 @@
 
 /* ---- tabla de determinaciones ---- */
 .anx-body { border-top: 1px solid var(--line); overflow-x: auto; }
+// Sin módulo de autovalidación: 5 columnas (se oculta "Validación Automática"), sin desalinear.
+.anx-body.no-auto-col { --vt-grid: minmax(180px, 1.5fr) 78px 92px minmax(170px, 1.5fr) 150px; }
 .vt-grid { display: grid; grid-template-columns: var(--vt-grid); align-items: center; gap: 10px; min-width: 880px; }
 .vt-head {
   padding: 10px 20px; background: #f7f8fc; border-bottom: 1px solid var(--line);

@@ -6,4 +6,5 @@ export enum ModuleKey {
   Domicilio  = 'domicilio',
   Urgencias  = 'urgencias',
   Derivaciones = 'derivaciones',
+  Autovalidacion = 'autovalidacion',
 }
