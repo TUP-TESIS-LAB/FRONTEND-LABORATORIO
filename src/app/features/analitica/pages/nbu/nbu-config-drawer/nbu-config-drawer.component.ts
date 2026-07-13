@@ -130,6 +130,18 @@ function monthsToYears(months: number | null): number | null {
                   <input id="nbu-custom-name" pInputText type="text" autocomplete="off"
                          class="pat-form__input" formControlName="customName" />
                 </div>
+                <div class="pat-form__field">
+                  <label class="pat-form__label" for="nbu-handling-time">Tiempo estimado de resultado</label>
+                  <div class="flex gap-2">
+                    <p-inputnumber inputId="nbu-handling-time" formControlName="handlingTimeValue"
+                                   [min]="1" [useGrouping]="false" inputStyleClass="pat-form__input w-24"
+                                   placeholder="—" />
+                    <p-select [options]="handlingTimeUnitOptions" optionLabel="label" optionValue="value"
+                              formControlName="handlingTimeUnit" appendTo="body" styleClass="w-32"
+                              placeholder="Unidad" [showClear]="true" />
+                  </div>
+                  <span class="text-xs text-[var(--ds-text-muted)]">Se muestra en el comprobante del paciente.</span>
+                </div>
                 <div class="pat-form__field flex items-center gap-2" style="grid-column: 1 / -1;">
                   <p-toggleswitch [ngModel]="active()" [ngModelOptions]="{ standalone: true }"
                                   (ngModelChange)="onToggleActive($event)" inputId="nbu-active" />
@@ -438,11 +450,21 @@ export class NbuConfigDrawerComponent implements OnChanges {
   protected readonly newCategoryOrdinal = signal(false);
   protected readonly creatingCategory = signal(false);
 
-  /** Form de la sección General: código interno (requerido) y nombre propio (opcional). */
+  /**
+   * Form de la sección General: código interno (requerido), nombre propio (opcional) y
+   * tiempo estimado de resultado (opcional, valor + unidad Horas/Días).
+   */
   protected readonly generalForm = this.fb.group({
     shortCode: this.fb.control<string>('', { nonNullable: true }),
     customName: this.fb.control<string | null>(null),
+    handlingTimeValue: this.fb.control<number | null>(null),
+    handlingTimeUnit: this.fb.control<'HOURS' | 'DAYS' | null>(null),
   });
+
+  protected readonly handlingTimeUnitOptions = [
+    { label: 'Horas', value: 'HOURS' as const },
+    { label: 'Días', value: 'DAYS' as const },
+  ];
 
   protected readonly genderOptions: GenderOption[] = [
     { label: 'Ambos', value: null },
@@ -466,6 +488,9 @@ export class NbuConfigDrawerComponent implements OnChanges {
   /** Valores originales de shortCode/customName (para detectar cambios al guardar). */
   private originalShortCode = '';
   private originalCustomName: string | null = null;
+  /** Valores originales del tiempo estimado de resultado (para detectar cambios al guardar). */
+  private originalHandlingTimeValue: number | null = null;
+  private originalHandlingTimeUnit: 'HOURS' | 'DAYS' | null = null;
 
   protected headerLabel(): string {
     return this.analysis ? `Configurar — ${this.analysis.name}` : 'Configurar análisis';
@@ -614,7 +639,9 @@ export class NbuConfigDrawerComponent implements OnChanges {
     this.tenantAnalysisId = null;
     this.originalShortCode = '';
     this.originalCustomName = null;
-    this.generalForm.reset({ shortCode: '', customName: null });
+    this.originalHandlingTimeValue = null;
+    this.originalHandlingTimeUnit = null;
+    this.generalForm.reset({ shortCode: '', customName: null, handlingTimeValue: null, handlingTimeUnit: null });
 
     forkJoin({
       determinations: this.nbuConfig.getCatalogDeterminations(analysis.id).pipe(
@@ -634,9 +661,13 @@ export class NbuConfigDrawerComponent implements OnChanges {
         this.tenantAnalysisId = tenantRow?.id ?? null;
         this.originalShortCode = tenantRow?.shortCode ?? '';
         this.originalCustomName = tenantRow?.customName ?? null;
+        this.originalHandlingTimeValue = tenantRow?.handlingTimeValue ?? null;
+        this.originalHandlingTimeUnit = tenantRow?.handlingTimeUnit ?? null;
         this.generalForm.setValue({
           shortCode: this.originalShortCode,
           customName: this.originalCustomName,
+          handlingTimeValue: this.originalHandlingTimeValue,
+          handlingTimeUnit: this.originalHandlingTimeUnit,
         });
 
         if (determinations.length === 0) {
@@ -839,20 +870,45 @@ export class NbuConfigDrawerComponent implements OnChanges {
       return;
     }
 
-    const calls: Array<Observable<unknown>> = [];
-
     // General: si cambió el código interno o el nombre propio, PATCH a tenant-analyses.
     const customNameRaw = this.generalForm.controls.customName.value;
     const customNameNuevo = customNameRaw == null || customNameRaw.trim().length === 0
       ? null
       : customNameRaw.trim();
+
+    const htValue = this.generalForm.controls.handlingTimeValue.value;
+    const htUnit = this.generalForm.controls.handlingTimeUnit.value;
+    // value y unit: ambos o ninguno
+    if ((htValue == null) !== (htUnit == null)) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Tiempo estimado incompleto',
+        detail: 'Cargá el tiempo estimado y su unidad juntos, o dejá ambos vacíos.',
+      });
+      return;
+    }
+    if (htValue != null && htValue <= 0) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Tiempo estimado inválido',
+        detail: 'El tiempo estimado debe ser mayor a cero.',
+      });
+      return;
+    }
+
+    const calls: Array<Observable<unknown>> = [];
+
+    const handlingTimeChanged =
+      (htValue ?? null) !== (this.originalHandlingTimeValue ?? null) ||
+      (htUnit ?? null) !== (this.originalHandlingTimeUnit ?? null);
     const generalChanged =
       shortCodeNuevo !== (this.originalShortCode ?? '').trim() ||
-      customNameNuevo !== (this.originalCustomName ?? null);
+      customNameNuevo !== (this.originalCustomName ?? null) ||
+      handlingTimeChanged;
     if (generalChanged && this.tenantAnalysisId != null) {
       calls.push(this.nbuConfig.updateTenantAnalysis(this.tenantAnalysisId, {
         shortCode: shortCodeNuevo,
         customName: customNameNuevo,
+        handlingTimeValue: htValue ?? null,
+        handlingTimeUnit: htUnit ?? null,
       }));
     }
 

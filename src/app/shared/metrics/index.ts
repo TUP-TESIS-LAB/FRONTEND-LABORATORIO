@@ -29,6 +29,7 @@ export * from './models/metric-envelopes.model';
 // ── Utils ────────────────────────────────────────────────────────────────────
 export * from './util/build-metric-params';
 export * from './util/metric-kpi.util';
+export * from './util/metric-label.util';
 
 // ── Componentes ──────────────────────────────────────────────────────────────
 export * from './components/metric-chart/metric-chart.component';
