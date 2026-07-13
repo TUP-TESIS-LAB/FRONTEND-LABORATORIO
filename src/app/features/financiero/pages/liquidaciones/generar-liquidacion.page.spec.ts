@@ -7,7 +7,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { Subject } from 'rxjs';
 import type { Action } from '@ngrx/store';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
-import { GenerarLiquidacionPage } from './generar-liquidacion.page';
+import { GenerarLiquidacionPage, analysisLabel } from './generar-liquidacion.page';
 import {
   selectLiqInsurers, selectLiqInsurerPlans, selectLiqGenerating,
   selectLiqPreviewDetail, selectLiqPreviewLoading,
@@ -16,7 +16,32 @@ import {
   loadInsurerPlans, generateSettlement, generateSettlementSuccess,
 } from '../../store/financiero.actions';
 import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
-import { SettlementPreviewDetail } from '../../models/liquidaciones.model';
+import { SettlementPreviewDetail, PreviewAnalysis } from '../../models/liquidaciones.model';
+
+function analysis(overrides: Partial<PreviewAnalysis> = {}): PreviewAnalysis {
+  return {
+    analysisId: 1, code: 'HEM', name: 'Hemograma', ubUnits: 5, amount: 1000,
+    excluded: false, authorized: true, fixedAmount: null,
+    ...overrides,
+  };
+}
+
+describe('analysisLabel', () => {
+  it('muestra "$X fijo" cuando el análisis tiene valor fijo asignado', () => {
+    const label = analysisLabel(analysis({ fixedAmount: 1500 }));
+    expect(label).toContain('1.500,00');
+    expect(label).toContain('$');
+    expect(label).toContain('fijo');
+    expect(label).not.toContain('U.B.');
+  });
+
+  it('muestra el detalle U.B. × valor cuando no tiene valor fijo', () => {
+    const label = analysisLabel(analysis({ ubUnits: 5, amount: 1000, fixedAmount: null }));
+    expect(label).toContain('5 U.B. ×');
+    expect(label).toContain('200,00');
+    expect(label).not.toContain('fijo');
+  });
+});
 
 const OS = { id: 7, code: 'OS7', acronym: 'OS', name: 'IOMA', insurerType: 'SOCIAL' as const, insurerTypeName: 'Obra Social', active: true };
 

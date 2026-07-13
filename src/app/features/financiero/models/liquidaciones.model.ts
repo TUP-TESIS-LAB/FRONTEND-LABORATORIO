@@ -158,6 +158,8 @@ export interface PreviewAnalysis {
   excluded: boolean;
   /** false = el análisis no está cubierto por la OS (no suma al monto cubierto). */
   authorized: boolean;
+  /** Valor fijo asignado en $ (Task 5). Si viene seteado, ignora el cálculo por U.B. */
+  fixedAmount?: number | null;
 }
 
 export interface PreviewItem {

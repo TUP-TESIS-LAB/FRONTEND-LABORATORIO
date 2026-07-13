@@ -30,7 +30,7 @@ import {
 } from '../../store/financiero.actions';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
 import {
-  PreviewItem, PreviewGroup, ExcludedAnalysisIdsByPs, SpecialRule, FixedAmountsByPlan,
+  PreviewItem, PreviewGroup, PreviewAnalysis, ExcludedAnalysisIdsByPs, SpecialRule, FixedAmountsByPlan,
 } from '../../models/liquidaciones.model';
 import { TramosEditorComponent, TramoRow, tramosToRules } from './components/tramos-editor.component';
 import { FijosEditorComponent, FixedAmountRow, validateFijos, fijosToMap } from './components/fijos-editor.component';
@@ -53,6 +53,21 @@ function toIso(d: Date | null): string {
 function norm(s: string | null | undefined): string {
   // ̀-ͯ = marcas diacríticas combinantes (acentos) que deja NFD.
   return (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+const currencyPipe = new CurrencyArPipe();
+
+/**
+ * Etiqueta del detalle de un análisis en el desglose del preview del paso Revisar:
+ * "$X fijo" si tiene un valor fijo asignado (Task 5), si no el detalle por U.B.
+ * ("{ubUnits} U.B. × {valor unitario}").
+ */
+export function analysisLabel(a: PreviewAnalysis): string {
+  if (a.fixedAmount != null) {
+    return `${currencyPipe.transform(a.fixedAmount)} fijo`;
+  }
+  const unitValue = a.ubUnits > 0 ? a.amount / a.ubUnits : a.amount;
+  return `${a.ubUnits} U.B. × ${currencyPipe.transform(unitValue)}`;
 }
 
 @Component({
@@ -311,8 +326,9 @@ function norm(s: string | null | undefined): string {
                                 <span class="liq-tag-unauth">No cubierto por OS</span>
                               }
                             </span>
-                            <span class="liq-analysis__ub">{{ a.ubUnits }} UB</span>
-                            <span class="liq-analysis__amount">{{ a.amount | currencyAr }}</span>
+                            <span class="liq-analysis__detail" [class.liq-analysis__detail--fixed]="a.fixedAmount != null">
+                              {{ analysisLabel(a) }}
+                            </span>
                           </label>
                         }
                       </div>
@@ -470,16 +486,16 @@ function norm(s: string | null | undefined): string {
     .liq-cell--excluded { opacity: .55; text-decoration: line-through; }
 
     .liq-analyses { display: flex; flex-direction: column; }
-    .liq-analysis { display: grid; grid-template-columns: 22px 70px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 4px; font-size: 12.5px; cursor: pointer; }
+    .liq-analysis { display: grid; grid-template-columns: 22px 70px 1fr auto; align-items: center; gap: 10px; padding: 7px 4px; font-size: 12.5px; cursor: pointer; }
     .liq-analysis + .liq-analysis { border-top: 1px solid #eef2f7; }
     .liq-analysis input { accent-color: #0f8a55; }
     .liq-analysis--excluded { color: #94a3b8; }
-    .liq-analysis--excluded .liq-analysis__amount { text-decoration: line-through; }
+    .liq-analysis--excluded .liq-analysis__detail { text-decoration: line-through; }
     .liq-analysis--unauth { color: #94a3b8; cursor: not-allowed; }
     .liq-analysis__code { font-family: 'Roboto Mono', monospace; color: #64748b; }
     .liq-analysis__name { display: flex; align-items: center; gap: 8px; }
-    .liq-analysis__ub { color: #94a3b8; font-size: 11.5px; }
-    .liq-analysis__amount { font-weight: 500; }
+    .liq-analysis__detail { font-weight: 500; white-space: nowrap; }
+    .liq-analysis__detail--fixed { color: #0f8a55; }
     .liq-tag-unauth { font-size: 10.5px; background: #fbeaea; color: #b5740c; padding: 1px 7px; border-radius: 20px; white-space: nowrap; }
   `],
 })
@@ -488,6 +504,9 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly actions$ = inject(Actions);
   private readonly destroy = inject(DestroyRef);
+
+  /** Etiqueta del desglose por análisis (valor fijo o U.B. × valor). */
+  protected readonly analysisLabel = analysisLabel;
 
   /** Steps dinámicos: ESPECIAL inserta el paso "Tramos por plan" entre Datos y Revisar. */
   protected readonly steps = computed<FormStep[]>(() => this.tipo() === 'ESPECIAL'
