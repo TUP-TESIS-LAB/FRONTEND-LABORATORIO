@@ -20,6 +20,8 @@ export interface MuestrasState {
   descarte: LabelWorklistItem[];
   /** "Descartadas": tubos ya en DISCARDED (historial, solo lectura). */
   descartadas: LabelWorklistItem[];
+  /** "Rechazadas/Perdidas": labels REJECTED/LOST, candidatas a re-inyección. */
+  rechazadas: LabelWorklistItem[];
   /** Tab "Todos" de Procesamiento: tubos en PROCESSING. */
   procesamiento: LabelWorklistItem[];
   /** Tab "Derivados" de Procesamiento: tubos en DERIVED. Slice separado para que el tab y la
@@ -41,6 +43,7 @@ export const initialMuestrasState: MuestrasState = {
   dispatchPending: false,
   descarte: [],
   descartadas: [],
+  rechazadas: [],
   procesamiento: [],
   derivados: [],
 };

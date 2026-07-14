@@ -13,6 +13,7 @@ import {
   loadTransito, loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
   loadDescarte, loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
   loadDescartadas, loadDescartadasSuccess, loadDescartadasNotModified, loadDescartadasFailure,
+  loadRechazadas, loadRechazadasSuccess, loadRechazadasNotModified, loadRechazadasFailure,
   loadProcesamiento, loadProcesamientoSuccess, loadProcesamientoNotModified, loadProcesamientoFailure,
   resolveRouting, resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspaces, loadWorkspacesSuccess, loadWorkspacesFailure,
@@ -91,10 +92,13 @@ export class MuestrasEffects {
   reloadAfterTransition$ = createEffect(() =>
     this.actions$.pipe(
       ofType(transitionLabelsSuccess),
-      concatMap(({ transitionKey }) =>
-        transitionKey === 'discard'
-          ? [loadDescarte(), loadDescartadas()]
-          : [loadRecoleccion()]),
+      concatMap(({ transitionKey }) => {
+        if (transitionKey === 'discard') return [loadDescarte(), loadDescartadas()];
+        // La re-inyección NO cambia el estado de la label (queda REJECTED/LOST); recargamos
+        // esa lista para reflejar el pedido, no la de recolección.
+        if (transitionKey === 'reinjectRequest') return [loadRechazadas()];
+        return [loadRecoleccion()];
+      }),
     ),
   );
 
@@ -122,6 +126,21 @@ export class MuestrasEffects {
         return this.api.getWorklist('COMPLETED', branchId).pipe(
           map(res => isNotModified(res) ? loadDescarteNotModified() : loadDescarteSuccess({ items: res })),
           catchError((error: HttpErrorResponse) => of(loadDescarteFailure({ error }))),
+        );
+      }),
+    ),
+  );
+
+  // "Rechazadas/Perdidas": labels REJECTED/LOST, candidatas a re-inyección por-fila.
+  loadRechazadas$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadRechazadas),
+      withLatestFrom(this.store.select(selectMuestrasBranchId)),
+      switchMap(([, branchId]) => {
+        if (branchId == null) return EMPTY;
+        return this.api.getWorklist('REJECTED,LOST', branchId).pipe(
+          map(res => isNotModified(res) ? loadRechazadasNotModified() : loadRechazadasSuccess({ items: res })),
+          catchError((error: HttpErrorResponse) => of(loadRechazadasFailure({ error }))),
         );
       }),
     ),
@@ -247,6 +266,9 @@ export class MuestrasEffects {
         return this.api.rollback(labelIds);
       case 'discard':
         return this.api.discard(labelIds);
+      case 'reinjectRequest':
+        // Acción por-fila: un solo label. NO cambia el estado; dispara el pedido de re-inyección.
+        return this.api.requestReinjection(labelIds[0], reason ?? '');
       default:
         // Recolección solo expone transito/rejected/lost/rollback; el resto es del arco mochila.
         return EMPTY;

@@ -67,6 +67,18 @@ export const loadDescarteFailure = createAction(
   props<{ error: HttpErrorResponse }>()
 );
 
+// Worklist "Rechazadas/Perdidas" (REJECTED,LOST) — polleada; permite re-inyección por-fila
+export const loadRechazadas = createAction('[Muestras Page] Load Rechazadas');
+export const loadRechazadasSuccess = createAction(
+  '[Muestras API] Load Rechazadas Success',
+  props<{ items: LabelWorklistItem[] }>()
+);
+export const loadRechazadasNotModified = createAction('[Muestras API] Load Rechazadas Not Modified');
+export const loadRechazadasFailure = createAction(
+  '[Muestras API] Load Rechazadas Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
 // Worklist "Descartadas" (DISCARDED) — polleada, solo lectura (historial)
 export const loadDescartadas = createAction('[Muestras Page] Load Descartadas');
 export const loadDescartadasSuccess = createAction(

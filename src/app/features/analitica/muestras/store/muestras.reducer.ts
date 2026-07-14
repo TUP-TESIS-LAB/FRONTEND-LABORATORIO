@@ -7,6 +7,7 @@ import {
   loadTransitoSuccess, loadTransitoNotModified, loadTransitoFailure,
   loadDescarteSuccess, loadDescarteNotModified, loadDescarteFailure,
   loadDescartadasSuccess, loadDescartadasNotModified, loadDescartadasFailure,
+  loadRechazadasSuccess, loadRechazadasNotModified, loadRechazadasFailure,
   loadProcesamientoSuccess, loadProcesamientoNotModified, loadProcesamientoFailure,
   resolveRoutingSuccess, resolveRoutingFailure,
   loadWorkspacesSuccess, loadWorkspacesFailure,
@@ -44,6 +45,10 @@ export const muestrasReducer = createReducer(
   on(loadDescartadasSuccess, (state, { items }): MuestrasState => ({ ...state, descartadas: items, error: null })),
   on(loadDescartadasNotModified, (state): MuestrasState => ({ ...state })),
   on(loadDescartadasFailure, (state, { error }): MuestrasState => ({ ...state, error })),
+
+  on(loadRechazadasSuccess, (state, { items }): MuestrasState => ({ ...state, rechazadas: items, error: null })),
+  on(loadRechazadasNotModified, (state): MuestrasState => ({ ...state })),
+  on(loadRechazadasFailure, (state, { error }): MuestrasState => ({ ...state, error })),
 
   on(loadProcesamientoSuccess, (state, { status, items }): MuestrasState =>
     status === 'DERIVED'

@@ -15,6 +15,12 @@
                   (click)="setDescarteView('descartadas')">
             Descartadas
           </button>
+          <button type="button" role="tab"
+                  [attr.aria-selected]="descarteView() === 'rechazadas'"
+                  [class.active]="descarteView() === 'rechazadas'"
+                  (click)="setDescarteView('rechazadas')">
+            Rechazadas/Perdidas
+          </button>
         </div>
       }
       <span class="chip">{{ total() }} · {{ countLabelText() }}</span>

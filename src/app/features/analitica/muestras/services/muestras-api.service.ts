@@ -87,6 +87,11 @@ export class MuestrasApiService {
     return this.http.post(`${this.base}/mark-as-derived`, { labelIds, externalLabId, protocolId });
   }
 
+  /** backend: POST /labels/{labelId}/request-reinjection { observation } → 204. Solicita re-inyección. */
+  requestReinjection(labelId: number, observation: string): Observable<unknown> {
+    return this.http.post(`${this.base}/${labelId}/request-reinjection`, { observation });
+  }
+
   activeExternalLabs(): Observable<Array<{ id: number; name: string }>> {
     return this.http.get<Array<{ id: number; name: string }>>(`${this.base}/external-labs/active`);
   }

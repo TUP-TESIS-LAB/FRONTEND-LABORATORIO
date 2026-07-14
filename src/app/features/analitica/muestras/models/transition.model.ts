@@ -12,7 +12,8 @@ export type TransitionKey =
   | 'derived'
   | 'completed'
   | 'discard'
-  | 'rollback';
+  | 'rollback'
+  | 'reinjectRequest';
 
 export interface Transition {
   key: TransitionKey;
@@ -41,7 +42,7 @@ export interface TransitionDest {
 }
 
 /** Acciones que el menú kebab por-fila puede disparar (subconjunto de TransitionKey). */
-export type RowActionKey = 'rollback' | 'rejected' | 'lost' | 'derived';
+export type RowActionKey = 'rollback' | 'rejected' | 'lost' | 'derived' | 'reinjectRequest';
 
 /** Ítem del menú kebab por-fila, derivado de un `Transition` con `rowMenu` en la config. */
 export interface RowAction {

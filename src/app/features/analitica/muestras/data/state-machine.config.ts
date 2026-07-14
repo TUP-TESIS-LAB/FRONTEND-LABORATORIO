@@ -1,6 +1,6 @@
 import type { RowAction, RowActionKey, ScreenConfig, ScreenKey, Transition } from '../models/transition.model';
 
-const ROW_ACTION_KEYS: ReadonlySet<string> = new Set<RowActionKey>(['rollback', 'rejected', 'lost', 'derived']);
+const ROW_ACTION_KEYS: ReadonlySet<string> = new Set<RowActionKey>(['rollback', 'rejected', 'lost', 'derived', 'reinjectRequest']);
 
 const transitoTarget: Transition = {
   key: 'transito', label: 'En tránsito', toLabel: 'En tránsito', toState: 'transito',
@@ -130,6 +130,17 @@ const DESCARTE: ScreenConfig = {
       sep: true,
       fields: [],
       reason: 'Motivo del rollback',
+    },
+    // Re-inyección: acción por-fila para labels REJECTED/LOST. NO transiciona el estado real de la
+    // label (queda Rechazada/Perdida); solo dispara POST request-reinjection con la observación.
+    // toState/toLabel son placeholders para satisfacer tipos — no reflejan un cambio de estado.
+    {
+      key: 'reinjectRequest', label: 'Pedir de nuevo', toLabel: 'Pendiente re-pedido', toState: 'rejected',
+      color: 'blue', icon: 'pi-replay',
+      desc: 'Solicitar re-inyección de una nueva muestra para esta orden.',
+      fields: [],
+      reason: 'Motivo / observación de la re-inyección',
+      rowMenu: { label: 'Pedir de nuevo', icon: 'pi-replay' },
     },
   ],
 };

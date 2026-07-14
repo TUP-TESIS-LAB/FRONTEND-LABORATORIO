@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { Sample } from '../../models/sample.model';
-import type { RowActionKey, ScreenKey } from '../../models/transition.model';
+import type { RowAction, RowActionKey, ScreenKey } from '../../models/transition.model';
 import type { Tube } from '../../models/tube.model';
 import { rowActionsFor } from '../../data/state-machine.config';
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
@@ -49,6 +49,17 @@ export class SampleTableComponent {
 
   /** Acciones del menú por-fila, derivadas de la config de la pantalla. */
   readonly rowMenuActions = computed(() => rowActionsFor(this.screenKey()));
+
+  /**
+   * Acciones del kebab válidas para UNA fila. La mayoría son screen-level, pero algunas dependen
+   * del estado de la fila:
+   * - 'reinjectRequest' (Pedir de nuevo) solo aplica a labels Rechazadas/Perdidas.
+   */
+  actionsForRow(row: Sample): ReadonlyArray<RowAction> {
+    return this.rowMenuActions().filter((a) =>
+      a.key === 'reinjectRequest' ? row.state === 'rejected' || row.state === 'lost' : true,
+    );
+  }
 
   emitRowAction(key: string, row: Sample): void {
     this.rowAction.emit({ key: key as RowActionKey, row });

@@ -78,7 +78,7 @@
             }
           </td>
           <td class="actions-col" (click)="$event.stopPropagation()">
-            <app-row-actions-menu [actions]="rowMenuActions()" (accion)="emitRowAction($event, row)" />
+            <app-row-actions-menu [actions]="actionsForRow(row)" (accion)="emitRowAction($event, row)" />
           </td>
         </tr>
         @if (tubeAnalyses(row); as analyses) {
