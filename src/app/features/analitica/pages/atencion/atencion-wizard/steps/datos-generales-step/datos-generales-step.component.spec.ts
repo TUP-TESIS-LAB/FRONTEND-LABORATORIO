@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { ConfirmationService } from 'primeng/api';
 import { DatosGeneralesStepComponent } from './datos-generales-step.component';
 import { initialAtencionState, ATENCION_FEATURE_KEY } from '../../../../../store/atencion/atencion.state';
 import {
@@ -1220,6 +1222,7 @@ describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS activo)', ()
       imports: [DatosGeneralesStepComponent],
       providers: [
         provideMockStore({ initialState: { [ATENCION_FEATURE_KEY]: initialAtencionState } }),
+        provideNoopAnimations(),
         { provide: CoverageCatalogService, useValue: coverageCatalogStub },
         { provide: DoctorService, useValue: doctorServiceStub },
         { provide: NotificationService, useValue: notificationStub },
@@ -1245,28 +1248,77 @@ describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS activo)', ()
     expect((fixture.componentInstance as any).urgenciasActive()).toBe(true);
   });
 
-  it('onUrgentChange() despacha setUrgentFlag cuando atencionId está disponible', () => {
+  /** Espía `confirm.confirm` sin dejar que dispare el diálogo real; captura accept/reject. */
+  function stubConfirm(fixture: any): { accept?: () => void; reject?: () => void } {
+    const confirm = fixture.debugElement.injector.get(ConfirmationService);
+    const captured: { accept?: () => void; reject?: () => void } = {};
+    vi.spyOn(confirm, 'confirm').mockImplementation((opts: any) => {
+      captured.accept = opts.accept;
+      captured.reject = opts.reject;
+      return confirm;
+    });
+    return captured;
+  }
+
+  it('onUrgentChange() al ACTIVAR muestra el modal informativo y NO despacha hasta confirmar (KAN-237)', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.detectChanges();
     // Parchear el signal atencionId para que devuelva 7 (simula atención ya creada)
     const cmp = fixture.componentInstance as any;
     vi.spyOn(cmp, 'atencionId').mockReturnValue(7);
+    const confirmed = stubConfirm(fixture);
     const spy = vi.spyOn(store, 'dispatch');
     spy.mockClear();
     cmp.isUrgentValue = true;
     cmp.onUrgentChange();
+    expect(confirmed.accept).toBeDefined();
+    expect(spy).not.toHaveBeenCalledWith(setUrgentFlag({ id: 7, isUrgent: true }));
+    // El operador confirma → recién ahí se despacha.
+    confirmed.accept!();
     expect(spy).toHaveBeenCalledWith(setUrgentFlag({ id: 7, isUrgent: true }));
   });
 
-  it('onUrgentChange() es no-op si atencionId() retorna null (atención aún no creada)', () => {
+  it('onUrgentChange() al ACTIVAR y CANCELAR el modal revierte el toggle y no despacha nada (KAN-237)', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    vi.spyOn(cmp, 'atencionId').mockReturnValue(7);
+    const confirmed = stubConfirm(fixture);
+    const spy = vi.spyOn(store, 'dispatch');
+    spy.mockClear();
+    cmp.isUrgentValue = true;
+    cmp.onUrgentChange();
+    confirmed.reject!();
+    expect(cmp.isUrgentValue).toBe(false);
+    expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: '[Atencion Wizard] Set Urgent Flag' }));
+  });
+
+  it('onUrgentChange() al DESACTIVAR no muestra modal y despacha directo', () => {
+    const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as any;
+    vi.spyOn(cmp, 'atencionId').mockReturnValue(7);
+    const confirmService = fixture.debugElement.injector.get(ConfirmationService);
+    const confirmSpy = vi.spyOn(confirmService, 'confirm');
+    const spy = vi.spyOn(store, 'dispatch');
+    spy.mockClear();
+    cmp.isUrgentValue = false;
+    cmp.onUrgentChange();
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith(setUrgentFlag({ id: 7, isUrgent: false }));
+  });
+
+  it('onUrgentChange() es no-op si atencionId() retorna null (atención aún no creada), incluso confirmando el modal', () => {
     const fixture = TestBed.createComponent(DatosGeneralesStepComponent);
     fixture.detectChanges();
     const cmp = fixture.componentInstance as any;
     // Por defecto atencionId es null (input no recibió valor)
+    const confirmed = stubConfirm(fixture);
     const spy = vi.spyOn(store, 'dispatch');
     spy.mockClear();
     cmp.isUrgentValue = true;
     cmp.onUrgentChange();
+    confirmed.accept!();
     expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ type: '[Atencion Wizard] Set Urgent Flag' }));
   });
 
@@ -1282,13 +1334,15 @@ describe('DatosGeneralesStepComponent — urgente toggle (URGENCIAS activo)', ()
     store.refreshState();
     fixture.detectChanges();
     const cmp = fixture.componentInstance as any;
+    const confirmed = stubConfirm(fixture);
     // Default para no-urgente = cobertura principal (20).
     expect(cmp.selectedInsurancePlanId()).toBe(20);
-    // Marcar urgente → Particular (null).
+    // Marcar urgente → confirma el modal → Particular (null).
     cmp.isUrgentValue = true;
     cmp.onUrgentChange();
+    confirmed.accept!();
     expect(cmp.selectedInsurancePlanId()).toBeNull();
-    // Desmarcar → vuelve a la principal (20).
+    // Desmarcar → sin modal → vuelve a la principal (20).
     cmp.isUrgentValue = false;
     cmp.onUrgentChange();
     expect(cmp.selectedInsurancePlanId()).toBe(20);

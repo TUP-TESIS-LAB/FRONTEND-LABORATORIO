@@ -6,7 +6,6 @@ import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { race, take } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
@@ -30,7 +29,7 @@ import {
   selector: 'lab-analisis-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, InputTextModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
+  imports: [FormsModule, InputTextModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
@@ -42,7 +41,8 @@ import {
         (analysisRemoved)="onAnalysisRemoved($event)"
         (itemsChanged)="onItemsChanged($event)"
         (detailRequested)="onDetailRequested($event)">
-        <!-- Proyectado a la derecha del buscador; la tabla del picker queda a todo el ancho. -->
+        <!-- Proyectado a la derecha del buscador; la tabla del picker queda a todo el ancho.
+             La urgencia se marca en el paso 1 (Datos generales) — acá no se repite (KAN-237). -->
         @if (!readOnly()) {
           <div class="flex items-end gap-3">
             @if (detail()?.insurancePlanId != null) {
@@ -53,10 +53,6 @@ import {
                        [disabled]="authorizationMutating()" class="w-56" placeholder="" />
               </label>
             }
-            <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
-              <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
-              <span class="text-sm font-semibold">Urgente</span>
-            </label>
           </div>
         }
       </lab-analysis-picker>
@@ -206,8 +202,6 @@ export class AnalisisStepComponent implements OnInit {
   onItemsChanged(rows: PickerRow[]): void { this.items.set(rows); }
   onDetailRequested(id: number): void { this.detailId.set(id); this.detailOpen.set(true); }
   closeDetail(): void { this.detailOpen.set(false); }
-  /** Re-persistir el borrador al togglear urgente (el effect depende de items(), no de isUrgentValue). */
-  onUrgentChange(): void { this.items.update((arr) => [...arr]); }
 
   /**
    * Persiste el código de autorización de obra social vía el endpoint dedicado.

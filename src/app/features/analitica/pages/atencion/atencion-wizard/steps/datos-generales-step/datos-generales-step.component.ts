@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   OnInit,
@@ -12,6 +13,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
@@ -65,11 +68,28 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
   { value: 'INTERSEX', label: 'Intersex' },
 ];
 
+/**
+ * Modal informativo al activar el toggle "Atención urgente" (KAN-237): estas consecuencias
+ * son reales (verificadas contra el código de KAN-140/153/169), no genéricas.
+ */
+const URGENT_CONFIRM_MESSAGE = `
+  <ul style="margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:6px;">
+    <li>Vas a poder iniciarla directo a extracción, sin pasar por cobro ni facturación.</li>
+    <li>El cobro, la autorización de la obra social y los datos administrativos quedan pendientes de regularizar.</li>
+    <li>La atención se prioriza en las colas (extracción, preanalítica y validación).</li>
+    <li>Arranca el reloj de SLA y la atención aparece en el tablero de Urgentes en curso.</li>
+  </ul>
+`;
+
 @Component({
   selector: 'lab-datos-generales-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule, PortalAccessDialogComponent],
+  providers: [ConfirmationService],
+  imports: [
+    NgClass, FormsModule, ButtonModule, InputTextModule, SelectModule, ToggleSwitchModule,
+    ConfirmDialogModule, PortalAccessDialogComponent,
+  ],
   template: `
     <div class="flex flex-col h-full min-h-0">
       <!-- T8: contenido scrolleable interno; el footer queda abajo y la página no crece. -->
@@ -472,6 +492,9 @@ const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
       [patientId]="resolved()?.id ?? null"
       [patientHasEmail]="tieneEmail()"
       (closed)="portalDialogVisible.set(false)" />
+
+    <!-- Confirmación informativa al marcar "Atención urgente" (KAN-237). -->
+    <p-confirmDialog />
   `,
   styles: [`
     :host { display: block; height: 100%; }
@@ -525,6 +548,8 @@ export class DatosGeneralesStepComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly moduleRegistry = inject(ModuleRegistry);
+  private readonly confirm = inject(ConfirmationService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   /** Módulo PORTAL activo para el tenant: gatea el banner de relación familiar pendiente. */
   protected readonly portalActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Portal));
@@ -969,8 +994,32 @@ export class DatosGeneralesStepComponent implements OnInit {
     this.store.dispatch(validateBond({ userPatientId: g.userPatientId, status: 'REJECTED' }));
   }
 
-  /** Cambio del toggle urgente: persiste inmediatamente vía endpoint dedicado (KAN-140). */
+  /**
+   * Cambio del toggle urgente. Al ACTIVAR (false → true) primero mostramos un modal
+   * informativo (KAN-237): si el operador confirma, sigue el flujo de siempre; si
+   * cancela, revertimos el toggle y no persistimos nada. Al DESACTIVAR no hay modal.
+   */
   onUrgentChange(): void {
+    if (!this.isUrgentValue) {
+      this.applyUrgentChange();
+      return;
+    }
+    this.confirm.confirm({
+      header: 'Marcar la atención como urgente',
+      message: URGENT_CONFIRM_MESSAGE,
+      icon: 'pi pi-info-circle',
+      acceptLabel: 'Marcar como urgente',
+      rejectLabel: 'Cancelar',
+      accept: () => this.applyUrgentChange(),
+      reject: () => {
+        this.isUrgentValue = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Persiste (o difiere, en alta nueva) el flag urgente ya confirmado. */
+  private applyUrgentChange(): void {
     const id = this.atencionId();
     // GAP B (KAN-188): recepción express difiere la obra social. Al marcar urgente en un alta
     // nueva, default a Particular (sin cobertura); al desmarcar, volvemos a la cobertura principal.
