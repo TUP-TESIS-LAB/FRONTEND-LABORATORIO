@@ -23,6 +23,7 @@ import { selectCopaymentMutating, selectPricing } from '@features/analitica/stor
             inputId="copago-input"
             [ngModel]="copaymentValue()"
             (ngModelChange)="copaymentValue.set($event)"
+            (onFocus)="selectAllText($event)"
             (onBlur)="onCopaymentBlur()"
             mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [min]="0"
             [disabled]="copaymentMutating()"
@@ -47,7 +48,9 @@ export class CobroStepComponent implements OnInit {
     let seeded = false;
     effect(() => {
       const p = this.pricing();
-      if (!seeded && p) { this.copaymentValue.set(p.copayment ?? null); seeded = true; }
+      // Copago 0 se siembra como null para que el input quede vacío (placeholder "0,00")
+      // y el operador pueda escribir de una, sin tener que borrar el "0,00".
+      if (!seeded && p) { this.copaymentValue.set(p.copayment || null); seeded = true; }
     });
   }
 
@@ -55,9 +58,16 @@ export class CobroStepComponent implements OnInit {
     this.store.dispatch(loadPricing({ attentionId: this.atencionId }));
   }
 
+  /** Selecciona todo el texto al enfocar para poder tipear encima de un copago ya cargado. */
+  selectAllText(event: Event): void {
+    (event.target as HTMLInputElement | null)?.select();
+  }
+
   onCopaymentBlur(): void {
-    const amount = this.copaymentValue();
-    const current = this.pricing()?.copayment ?? null;
+    // null (campo vacío) y 0 son equivalentes: sin copago. Normalizamos para no
+    // disparar una mutación espuria cuando el operador solo entra y sale del campo.
+    const amount = this.copaymentValue() ?? 0;
+    const current = this.pricing()?.copayment ?? 0;
     if (amount === current) return;
     this.store.dispatch(setCopayment({ attentionId: this.atencionId, copaymentAmount: amount }));
   }
