@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Store } from '@ngrx/store';
+import { Store, type Action } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
@@ -26,6 +26,7 @@ import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-
 import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
 import { WorksheetConfigModalComponent } from '../../components/planillas/worksheet-config-modal.component';
 import type { RowActionKey } from '../../models/transition.model';
+import type { LabelWorklistItem } from '../../models/label-worklist.model';
 
 /** Vistas del switch de la pantalla Descarte. */
 type DescarteView = 'pendientes' | 'descartadas' | 'rechazadas';
@@ -77,20 +78,18 @@ export class WorklistPage {
   readonly descarteView = signal<DescarteView>('pendientes');
 
   /** Etiqueta del KPI de conteo (dinámica en descarte según la vista del switch). */
-  readonly countLabelText = computed(() => {
-    if (this.config().key === 'descarte') {
-      const v = this.descarteView();
-      if (v === 'pendientes') return 'a descartar';
-      if (v === 'descartadas') return 'descartadas';
-      return 'rechazadas/perdidas';
-    }
-    return this.config().countLabel;
-  });
+  readonly countLabelText = computed(() =>
+    this.config().key === 'descarte'
+      ? this.DESCARTE_VIEWS[this.descarteView()].countLabel
+      : this.config().countLabel,
+  );
 
   setDescarteView(v: DescarteView): void {
     if (v === this.descarteView()) return;
     this.descarteView.set(v);
     this.clearSelection();
+    // Refresco inmediato de la vista recién activada (no esperar al próximo tick de polling).
+    this.store.dispatch(this.DESCARTE_VIEWS[v].load());
   }
 
   /**
@@ -134,15 +133,22 @@ export class WorklistPage {
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
   private readonly templatesError = this.store.selectSignal(selectTemplatesError);
 
+  /**
+   * Config por sub-vista de Descarte: etiqueta del KPI, items del slice y la action de recarga.
+   * Fuente única — countLabelText, sourceRows y el polling la consumen (evita enumerar las 3 vistas
+   * en cada método por separado).
+   */
+  private readonly DESCARTE_VIEWS: Record<DescarteView, { countLabel: string; items: () => LabelWorklistItem[]; load: () => Action }> = {
+    pendientes:  { countLabel: 'a descartar',         items: () => this.descarteItems(),    load: loadDescarte },
+    descartadas: { countLabel: 'descartadas',         items: () => this.descartadasItems(), load: loadDescartadas },
+    rechazadas:  { countLabel: 'rechazadas/perdidas', items: () => this.rechazadasItems(),  load: loadRechazadas },
+  };
+
   private readonly sourceRows = computed<Sample[]>(() => {
     const key = this.config().key;
     if (key === 'recoleccion') return groupTubes(this.recoleccionItems(), this.branchName());
     if (key === 'descarte') {
-      const v = this.descarteView();
-      const items = v === 'pendientes' ? this.descarteItems()
-        : v === 'descartadas' ? this.descartadasItems()
-          : this.rechazadasItems();
-      return groupTubes(items, this.branchName());
+      return groupTubes(this.DESCARTE_VIEWS[this.descarteView()].items(), this.branchName());
     }
     if (key === 'procesamiento') return groupTubes(this.procesamientoItems(), this.branchName());
     return this.samples.byState(this.config().source)();
@@ -226,9 +232,9 @@ export class WorklistPage {
         key: 'muestras-descarte',
         intervalMs: 5000,
         poll: () => {
-          this.store.dispatch(loadDescarte());     // COMPLETED (a descartar)
-          this.store.dispatch(loadDescartadas());  // DISCARDED (descartadas)
-          this.store.dispatch(loadRechazadas());   // REJECTED,LOST (rechazadas/perdidas)
+          // Solo la vista visible: las 3 sub-vistas son mutuamente excluyentes, no tiene sentido
+          // pollear las ocultas (eran 3 requests/tick, ahora 1).
+          this.store.dispatch(this.DESCARTE_VIEWS[this.descarteView()].load());
           return of(null);
         },
       });

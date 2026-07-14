@@ -133,9 +133,10 @@ const DESCARTE: ScreenConfig = {
     },
     // Re-inyección: acción por-fila para labels REJECTED/LOST. NO transiciona el estado real de la
     // label (queda Rechazada/Perdida); solo dispara POST request-reinjection con la observación.
-    // toState/toLabel son placeholders para satisfacer tipos — no reflejan un cambio de estado.
+    // `toState` no se usa (la acción no cambia estado); `toLabel` es el texto de confirmación de la
+    // acción ("Re-inyección solicitada"), no un estado destino — así el toast "N tubo(s) → …" no miente.
     {
-      key: 'reinjectRequest', label: 'Pedir de nuevo', toLabel: 'Pendiente re-pedido', toState: 'rejected',
+      key: 'reinjectRequest', label: 'Pedir de nuevo', toLabel: 'Re-inyección solicitada', toState: 'rejected',
       color: 'blue', icon: 'pi-replay',
       desc: 'Solicitar re-inyección de una nueva muestra para esta orden.',
       fields: [],
