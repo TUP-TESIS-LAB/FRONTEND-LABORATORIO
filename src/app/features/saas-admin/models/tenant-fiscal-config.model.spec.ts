@@ -1,4 +1,4 @@
-import { buildFiscalConfigRequest, isoFromDate, FiscalIdentityFormValue } from './tenant-fiscal-config.model';
+import { buildFiscalConfigRequest, isoFromDate, dateFromIso, FiscalIdentityFormValue } from './tenant-fiscal-config.model';
 
 /**
  * El contrato de merge del backend es el único lugar donde esta feature puede corromper
@@ -75,5 +75,28 @@ describe('isoFromDate', () => {
   it('devuelve null para fecha ausente o inválida', () => {
     expect(isoFromDate(null)).toBeNull();
     expect(isoFromDate(new Date('no-es-fecha'))).toBeNull();
+  });
+});
+
+describe('dateFromIso', () => {
+  it('parsea como fecha local, sin correr el día', () => {
+    // `new Date('2026-07-10')` es medianoche UTC: en UTC-3 cae el 09/07 a las 21:00 y el
+    // datepicker mostraría el día anterior. Bug encontrado en QA manual.
+    const d = dateFromIso('2026-07-10')!;
+    expect(d.getFullYear()).toBe(2026);
+    expect(d.getMonth()).toBe(6);
+    expect(d.getDate()).toBe(10);
+  });
+
+  it('hace round-trip con isoFromDate sin perder el día', () => {
+    for (const iso of ['2026-07-10', '2020-01-01', '2026-12-31']) {
+      expect(isoFromDate(dateFromIso(iso))).toBe(iso);
+    }
+  });
+
+  it('devuelve null para entrada ausente o basura', () => {
+    expect(dateFromIso(null)).toBeNull();
+    expect(dateFromIso('')).toBeNull();
+    expect(dateFromIso('no-es-fecha')).toBeNull();
   });
 });

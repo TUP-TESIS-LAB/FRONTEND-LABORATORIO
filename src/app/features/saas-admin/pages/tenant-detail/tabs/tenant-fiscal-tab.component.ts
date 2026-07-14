@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { buildFiscalConfigRequest, CondicionIva } from '../../../models/tenant-fiscal-config.model';
+import { buildFiscalConfigRequest, CondicionIva, dateFromIso } from '../../../models/tenant-fiscal-config.model';
 import { upsertTenantFiscalConfig } from '../../../store/saas-admin.actions';
 import { selectSaasAdminPending, selectSelectedTenantFiscalConfig } from '../../../store/saas-admin.selectors';
 
@@ -132,7 +132,9 @@ export class TenantFiscalTabComponent {
   constructor() {
     effect(() => {
       const cfg = this.current();
-      if (cfg) {
+      // Solo hidrata si el usuario no editó nada todavía: el GET de la config puede resolver
+      // después de que empezó a tipear, y un reset acá le borraría lo escrito.
+      if (cfg && this.form.pristine) {
         this.form.reset({
           invoicePointOfSale: cfg.invoicePointOfSale ?? '',
           razonSocial: cfg.razonSocial ?? '',
@@ -140,7 +142,7 @@ export class TenantFiscalTabComponent {
           ingresosBrutos: cfg.ingresosBrutos ?? '',
           domicilioComercial: cfg.domicilioComercial ?? '',
           condicionIva: cfg.condicionIva ?? null,
-          inicioActividades: cfg.inicioActividades ? new Date(cfg.inicioActividades) : null,
+          inicioActividades: dateFromIso(cfg.inicioActividades),
         });
       }
     });

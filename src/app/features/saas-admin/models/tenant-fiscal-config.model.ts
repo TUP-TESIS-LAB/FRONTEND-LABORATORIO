@@ -78,3 +78,22 @@ export function isoFromDate(d: Date | null): string | null {
   const day = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${month}-${day}`;
 }
+
+/**
+ * Parsea `YYYY-MM-DD` como fecha LOCAL.
+ *
+ * `new Date('2026-07-10')` la interpreta como medianoche UTC, que en un offset negativo
+ * (Argentina, UTC-3) cae el día anterior a las 21:00 — el datepicker mostraría 09/07.
+ * Construir la fecha por componentes evita el corrimiento. Es el inverso exacto de
+ * `isoFromDate`.
+ */
+export function dateFromIso(iso: string | null): Date | null {
+  if (!iso) {
+    return null;
+  }
+  const [year, month, day] = iso.split('-').map(Number);
+  if (!year || !month || !day) {
+    return null;
+  }
+  return new Date(year, month - 1, day);
+}
