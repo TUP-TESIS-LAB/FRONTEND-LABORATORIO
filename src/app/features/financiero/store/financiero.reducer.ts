@@ -17,7 +17,7 @@ import {
   updateBankAccount, updateBankAccountSuccess, updateBankAccountFailure,
   deactivateBankAccountFailure,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
-  loadPayment, loadPaymentSuccess, loadPaymentFailure,
+  loadPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
   downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure, resetCobro,
@@ -239,6 +239,12 @@ export const financieroReducer = createReducer(
   on(loadPaymentSuccess, (state, { payment }): FinancieroState => ({
     ...state,
     cobros: { ...state.cobros, selected: payment, loading: false, error: null },
+  })),
+  // Tick de polling sin cambios (304): solo baja el loading, sin tocar `selected`
+  // — mismo patrón que loadSettlementsNotModified.
+  on(loadPaymentNotModified, (state): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, loading: false },
   })),
   on(loadPaymentFailure, (state, { error }): FinancieroState => ({
     ...state,

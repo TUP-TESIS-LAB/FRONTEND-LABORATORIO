@@ -23,7 +23,7 @@ import {
   createBankAccount, createBankAccountFailure,
   deactivateBankAccountSuccess,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
-  loadPayment, loadPaymentSuccess, loadPaymentFailure,
+  loadPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
   downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure,
@@ -269,6 +269,14 @@ describe('FinancieroEffects', () => {
     expect(action).toEqual(loadPaymentSuccess({ payment }));
   });
 
+  it('loadPayment$ emite loadPaymentNotModified ante 304 (polling sin cambios)', async () => {
+    api.getPayment.mockReturnValue(of(NOT_MODIFIED));
+    actions$ = of(loadPayment({ id: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.loadPayment$);
+    expect(action).toEqual(loadPaymentNotModified());
+  });
+
   it('loadPayment$ mapea errores a loadPaymentFailure', async () => {
     api.getPayment.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
     actions$ = of(loadPayment({ id: 99 }));
@@ -337,7 +345,7 @@ describe('FinancieroEffects', () => {
     vi.restoreAllMocks();
   });
 
-  it('downloadComprobante$ ante 404 emite Failure con mensaje en español, sin leak de internals', async () => {
+  it('downloadComprobante$ ante 404 sin body emite Failure con mensaje en español, sin leak de internals', async () => {
     api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
     actions$ = of(downloadComprobante({ paymentId: 99 }));
     const effects = TestBed.inject(FinancieroEffects);
@@ -350,12 +358,31 @@ describe('FinancieroEffects', () => {
     expect(notif.error).toHaveBeenCalledWith('No existe un comprobante emitido para este pago.');
   });
 
-  it('downloadComprobante$ ante 409 emite Failure con mensaje de configuración fiscal incompleta', async () => {
+  it('downloadComprobante$ ante 409 con body Blob parseable muestra el message del backend (ya en español y saneado)', async () => {
+    const body = new Blob([JSON.stringify({ message: 'El comprobante todavía está pendiente de emisión. Volvé a intentar en unos segundos.' })]);
+    api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409, error: body })));
+    actions$ = of(downloadComprobante({ paymentId: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
+    expect(action.error).toBe('El comprobante todavía está pendiente de emisión. Volvé a intentar en unos segundos.');
+    expect(notif.error).toHaveBeenCalledWith('El comprobante todavía está pendiente de emisión. Volvé a intentar en unos segundos.');
+  });
+
+  it('downloadComprobante$ ante 409 sin body (o no parseable) cae al fallback genérico — ya no asume "configuración incompleta"', async () => {
     api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
     actions$ = of(downloadComprobante({ paymentId: 9 }));
     const effects = TestBed.inject(FinancieroEffects);
     const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
-    expect(action.error).toBe('La configuración fiscal del emisor está incompleta. Contactá al administrador.');
+    expect(action.error).toBe('No se pudo descargar el comprobante. Probá de nuevo.');
+  });
+
+  it('downloadComprobante$ ante body Blob no parseable como JSON cae al fallback genérico', async () => {
+    const body = new Blob(['no es json']);
+    api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409, error: body })));
+    actions$ = of(downloadComprobante({ paymentId: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
+    expect(action.error).toBe('No se pudo descargar el comprobante. Probá de nuevo.');
   });
 
   it('downloadComprobante$ ante error genérico emite Failure con mensaje default', async () => {

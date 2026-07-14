@@ -199,6 +199,17 @@ describe('financiero reducer — cobros', () => {
     expect(s.cobros.error).toBe('No encontrado');
   });
 
+  it('loadPaymentNotModified (304 del polling) solo baja loading, no toca selected', () => {
+    const withSelected = financieroReducer(
+      initialState,
+      A.loadPaymentSuccess({ payment: { id: 9, status: 'PROCESSED' } as any }),
+    );
+    const loading = { ...withSelected, cobros: { ...withSelected.cobros, loading: true } };
+    const s = financieroReducer(loading, A.loadPaymentNotModified());
+    expect(s.cobros.loading).toBe(false);
+    expect(s.cobros.selected).toBe(withSelected.cobros.selected);
+  });
+
   it('cancelPaymentSuccess actualiza el seleccionado a CANCELLED', () => {
     const sel = financieroReducer(initialState, A.loadPaymentSuccess({ payment: { id: 9, status: 'PROCESSED' } as any }));
     const s = financieroReducer(sel, A.cancelPaymentSuccess({ payment: { id: 9, status: 'CANCELLED' } as any }));

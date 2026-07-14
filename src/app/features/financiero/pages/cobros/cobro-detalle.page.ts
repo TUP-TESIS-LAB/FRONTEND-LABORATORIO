@@ -1,17 +1,21 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { of } from 'rxjs';
 
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
+import { PollingHandle, PollingService } from '@core/refresh';
 
 import {
   selectCobroSelected,
@@ -25,7 +29,26 @@ import { MetodoChipComponent } from '../../components/metodo-chip.component';
 import { EstadoPagoPillComponent } from '../../components/estado-pago-pill.component';
 import { ComprobanteCardComponent } from '../../components/comprobante-card.component';
 import { CancelarPagoModalComponent } from './components/cancelar-pago-modal.component';
-import { METHOD_META } from '../../models/financiero.model';
+import { METHOD_META, InvoiceEmissionStatus, PaymentStatus } from '../../models/financiero.model';
+
+/** true si el emissionStatus amerita seguir polleando el detalle del pago. */
+export function isPendingEmission(status: InvoiceEmissionStatus | null): boolean {
+  return status === 'PENDING';
+}
+
+/**
+ * El botón "Descargar PDF" se bloquea mientras el comprobante ARCA está
+ * PENDING (el backend devuelve 409 — el PDF todavía no existe), salvo en
+ * pagos ya CANCELLED, que siempre se pueden descargar con watermark ANULADO
+ * (regresión de KAN-242 a evitar). Los comprobantes no electrónicos (Factura
+ * X) no tienen emissionStatus, así que nunca bloquean la descarga.
+ */
+export function isDownloadBlockedByPendingEmission(
+  emissionStatus: InvoiceEmissionStatus | null,
+  paymentStatus: PaymentStatus | undefined,
+): boolean {
+  return emissionStatus === 'PENDING' && paymentStatus !== 'CANCELLED';
+}
 
 @Component({
   selector: 'fin-cobro-detalle-page',
@@ -176,13 +199,23 @@ import { METHOD_META } from '../../models/financiero.model';
               <button class="fin-action-btn" type="button" (click)="imprimir()">
                 <i class="pi pi-print"></i> Imprimir ticket
               </button>
-              <button class="fin-action-btn" type="button" [disabled]="downloadingComprobante()" (click)="descargar(p.id)">
+              <button
+                class="fin-action-btn"
+                type="button"
+                [disabled]="downloadingComprobante() || downloadBlockedByPending()"
+                (click)="descargar(p.id)">
                 @if (downloadingComprobante()) {
                   <i class="pi pi-spin pi-spinner"></i> Descargando...
                 } @else {
                   <i class="pi pi-download"></i> Descargar PDF
                 }
               </button>
+              @if (downloadBlockedByPending()) {
+                <div class="fin-download-hint">
+                  <i class="pi pi-info-circle"></i>
+                  El comprobante todavía se está emitiendo. Vas a poder descargarlo apenas ARCA confirme el CAE.
+                </div>
+              }
               @if (p.status === 'PROCESSED') {
                 <button class="fin-action-btn fin-action-btn--danger" type="button" (click)="abrirCancelar()">
                   <i class="pi pi-ban"></i> Cancelar pago
@@ -319,12 +352,21 @@ import { METHOD_META } from '../../models/financiero.model';
       border-color: #fca5a5; color: #b91c1c; background: #fff;
     }
     .fin-action-btn--danger:hover { background: #fdecea !important; }
+
+    .fin-download-hint {
+      display: flex; align-items: flex-start; gap: 6px;
+      font-size: 11.5px; color: var(--ds-text-muted, #6b7280);
+      padding: 0 2px;
+    }
+    .fin-download-hint i { margin-top: 1px; }
   `],
 })
 export class CobroDetallePage implements OnInit {
-  private readonly store  = inject(Store);
-  private readonly router = inject(Router);
-  private readonly route  = inject(ActivatedRoute);
+  private readonly store   = inject(Store);
+  private readonly router  = inject(Router);
+  private readonly route   = inject(ActivatedRoute);
+  private readonly polling = inject(PollingService);
+  private readonly destroy = inject(DestroyRef);
 
   protected readonly payment = this.store.selectSignal(selectCobroSelected);
   protected readonly loading = this.store.selectSignal(selectCobrosLoading);
@@ -341,12 +383,57 @@ export class CobroDetallePage implements OnInit {
   });
 
   protected readonly fiscalRef = computed(() => this.payment()?.fiscalReference ?? null);
+  protected readonly emissionStatus = computed(() => this.fiscalRef()?.emissionStatus ?? null);
+
+  /**
+   * Con ARCA, descargar en PENDING da 409 (el PDF todavía no existe). Los
+   * comprobantes no electrónicos (Factura X) no tienen emissionStatus — quedan
+   * disponibles al instante — y los pagos CANCELLED siempre se pueden
+   * descargar (con watermark ANULADO, KAN-242), aunque hayan quedado con la
+   * emisión pendiente al cancelarse.
+   */
+  protected readonly downloadBlockedByPending = computed(() =>
+    isDownloadBlockedByPendingEmission(this.emissionStatus(), this.payment()?.status));
+
+  /**
+   * Polling condicional: patrón nuevo en el repo (nada más pollea sobre estado
+   * de dominio hoy). El `effect()` arranca el handle recién cuando aparece
+   * PENDING y lo para (nuleándolo) al llegar a estado terminal — `stop()`
+   * completa los subjects del handle y no es reiniciable, así que no lo
+   * reusamos, creamos uno nuevo si hiciera falta.
+   */
+  private handle: PollingHandle | null = null;
+
+  constructor() {
+    effect(() => {
+      const status = this.emissionStatus();
+      if (isPendingEmission(status)) {
+        if (!this.handle) {
+          this.handle = this.polling.startPolling({
+            key: 'cobro-detalle',
+            intervalMs: 5000,
+            poll: () => {
+              const p = this.payment();
+              if (p) this.store.dispatch(loadPayment({ id: p.id }));
+              return of(null);
+            },
+          });
+        } else {
+          this.handle.setActive(true);
+        }
+      } else if (this.handle) {
+        this.handle.stop();
+        this.handle = null;
+      }
+    });
+  }
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       this.store.dispatch(loadPayment({ id: +idParam }));
     }
+    this.destroy.onDestroy(() => this.handle?.stop());
   }
 
   protected volver(): void {

@@ -237,6 +237,9 @@ export const loadPaymentSuccess = createAction(
   '[Financiero Cobros API] Load Payment Success',
   props<{ payment: Payment }>(),
 );
+export const loadPaymentNotModified = createAction(
+  '[Financiero Cobros API] Load Payment Not Modified',
+);
 export const loadPaymentFailure = createAction(
   '[Financiero Cobros API] Load Payment Failure',
   props<{ error: string }>(),

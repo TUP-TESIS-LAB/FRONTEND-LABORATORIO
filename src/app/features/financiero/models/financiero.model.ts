@@ -4,6 +4,13 @@ export type TransactionType = 'INGRESS' | 'EGRESS';
 export type CashSessionStatus = 'OPEN' | 'CLOSED';
 export type FiscalProvider = 'ARCA' | 'COLPPY' | 'NONE';
 export type ComprobanteTipo = 'FACTURA_X' | 'FACTURA_A' | 'FACTURA_B' | 'FACTURA_C';
+/**
+ * Estado de emisión ante ARCA. La emisión electrónica es asincrónica: el CAE
+ * se resuelve fuera de banda, segundos después del cobro. Los comprobantes no
+ * electrónicos (Factura X) no pasan por este flujo — quedan disponibles al
+ * instante, por eso el campo es opcional en `FiscalInvoiceReference`.
+ */
+export type InvoiceEmissionStatus = 'PENDING' | 'EMITTED' | 'FAILED';
 
 export interface CashSession {
   id: number; tenantId: number; cashRegisterId: number; openedByUserId: number;
@@ -22,7 +29,44 @@ export interface PaymentDetail { id: number; analysisId: number; coverageId: num
 export interface FiscalInvoiceReference {
   id: number; paymentId: number; provider: FiscalProvider; comprobanteTipo: ComprobanteTipo;
   internalReference: string | null; externalInvoiceId: string | null; electronic: boolean; isVoid: boolean; emittedAt: string;
+  /**
+   * Ausente en comprobantes no electrónicos (Factura X) — nunca pasan por el
+   * flujo de emisión ARCA. Presente en electrónicos: 'PENDING' hasta que llega
+   * el CAE fuera de banda, luego 'EMITTED' o 'FAILED'.
+   */
+  emissionStatus?: InvoiceEmissionStatus;
+  cae?: string | null;
+  /** ISO date. */
+  caeVencimiento?: string | null;
+  puntoVenta?: string | null;
+  numeroComprobante?: string | null;
 }
+/** Cómo se presenta el comprobante en la UI. */
+export type ComprobanteDisplayState = 'NONE' | 'PENDING' | 'FAILED' | 'READY';
+
+/**
+ * Deriva el estado visible del comprobante.
+ *
+ * Los no electrónicos (Factura X) no tienen `emissionStatus` — nunca pasan por el flujo de
+ * emisión de ARCA — así que están listos apenas existen. Los electrónicos arrancan en PENDING
+ * hasta que el CAE llega fuera de banda.
+ *
+ * Vive acá y no dentro del componente para poder testearlo sin TestBed: `componentRef.setInput()`
+ * no llega a los signal inputs bajo el Vitest de este repo (NG0303 / NG0950).
+ */
+export function comprobanteDisplayState(ref: FiscalInvoiceReference | null | undefined): ComprobanteDisplayState {
+  if (!ref) {
+    return 'NONE';
+  }
+  if (ref.emissionStatus === 'PENDING') {
+    return 'PENDING';
+  }
+  if (ref.emissionStatus === 'FAILED') {
+    return 'FAILED';
+  }
+  return 'READY';
+}
+
 export interface Payment {
   id: number; tenantId: number; attentionId: number; branchId: number;
   totalAmount: number; copaymentAmount: number; status: PaymentStatus;

@@ -1,6 +1,6 @@
 ﻿import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { of } from 'rxjs';
+import { from, of } from 'rxjs';
 import { catchError, concatMap, filter, map, switchMap } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { isNotModified } from '@core/refresh';
@@ -24,7 +24,7 @@ import {
   updateBankAccount, updateBankAccountSuccess, updateBankAccountFailure,
   deactivateBankAccount, deactivateBankAccountSuccess, deactivateBankAccountFailure,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
-  loadPayment, loadPaymentSuccess, loadPaymentFailure,
+  loadPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
   downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure,
@@ -67,14 +67,38 @@ function mapCobrosError(e: HttpErrorResponse): string {
 }
 
 /**
+ * Fallback genérico por status cuando el body de error no se pudo leer o
+ * parsear. El 409 ya no tiene un único significado fijo (identidad fiscal
+ * incompleta / comprobante pendiente de emisión / factura ya emitida) — sin
+ * body legible no podemos distinguir cuál de los tres es, así que cae a un
+ * mensaje neutro en vez de asumir "configuración incompleta".
+ */
+function mapComprobanteErrorFallback(status: number): string {
+  if (status === 404) return 'No existe un comprobante emitido para este pago.';
+  return 'No se pudo descargar el comprobante. Probá de nuevo.';
+}
+
+/**
  * El backend devuelve el body de error como JSON, pero como pedimos
  * `responseType: 'blob'` para el PDF, ese body llega como Blob, no parseado.
- * Mapear solo por status — leer e.error.message acá rompería en runtime.
+ * Hay que leerlo explícitamente para recuperar el `message` — que ya viene en
+ * español y saneado (GlobalExceptionHandler) — y así distinguir los tres
+ * significados que hoy conviven bajo 409. Si el body no está o no parsea,
+ * cae al fallback genérico por status.
  */
-function mapComprobanteError(e: HttpErrorResponse): string {
-  if (e.status === 404) return 'No existe un comprobante emitido para este pago.';
-  if (e.status === 409) return 'La configuración fiscal del emisor está incompleta. Contactá al administrador.';
-  return 'No se pudo descargar el comprobante. Probá de nuevo.';
+async function resolveComprobanteErrorMessage(e: HttpErrorResponse): Promise<string> {
+  if (e.error instanceof Blob) {
+    try {
+      const text = await e.error.text();
+      const parsed = JSON.parse(text) as { message?: unknown };
+      if (typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
+        return parsed.message;
+      }
+    } catch {
+      // body no parseable como JSON → cae al fallback genérico.
+    }
+  }
+  return mapComprobanteErrorFallback(e.status);
 }
 
 function mapRegisterPaymentError(e: HttpErrorResponse): string {
@@ -412,13 +436,15 @@ export class FinancieroEffects {
     ),
   );
 
-  // ── cobros: detalle de pago ────────────────────────────────────────────────
+  // ── cobros: detalle de pago (polleado mientras el comprobante está PENDING) ─
   loadPayment$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadPayment),
       switchMap(({ id }) =>
         this.api.getPayment(id).pipe(
-          map(payment => loadPaymentSuccess({ payment })),
+          map(res => isNotModified(res)
+            ? loadPaymentNotModified()
+            : loadPaymentSuccess({ payment: res })),
           catchError((e: HttpErrorResponse) => {
             const error = mapCobrosError(e);
             return of(loadPaymentFailure({ error }));
@@ -466,11 +492,16 @@ export class FinancieroEffects {
             triggerDownload(res, `comprobante-${paymentId}.pdf`);
             return downloadComprobanteSuccess();
           }),
-          catchError((e: HttpErrorResponse) => {
-            const error = mapComprobanteError(e);
-            this.notif.error(error);
-            return of(downloadComprobanteFailure({ error }));
-          }),
+          // Leer el body del error es asíncrono (es un Blob), así que el mensaje se resuelve
+          // dentro del stream con from(...). El Failure se despacha una sola vez.
+          catchError((e: HttpErrorResponse) =>
+            from(resolveComprobanteErrorMessage(e)).pipe(
+              map(error => {
+                this.notif.error(error);
+                return downloadComprobanteFailure({ error });
+              }),
+            ),
+          ),
         ),
       ),
     ),

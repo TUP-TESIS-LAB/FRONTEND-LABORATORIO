@@ -29,6 +29,7 @@ describe('TenantFiscalTabComponent', () => {
                 razonSocial: 'Demo SA', cuit: '20-12345678-9', ingresosBrutos: '901-1',
                 domicilioComercial: 'Calle Falsa 123', condicionIva: 'RESPONSABLE_INSCRIPTO',
                 inicioActividades: '2020-01-01',
+                arcaEnvironment: null, arcaIvaPercentage: null, arcaCredentialsConfigured: false,
               },
             },
           },

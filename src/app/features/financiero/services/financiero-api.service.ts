@@ -105,8 +105,8 @@ export class FinancieroApiService {
     return this.http.get<PaymentListItem[]>(`${this.base}/payments`, { params });
   }
 
-  getPayment(id: number): Observable<Payment> {
-    return this.http.get<Payment>(`${this.base}/payments/${id}`);
+  getPayment(id: number): Observable<Payment | NotModified> {
+    return this.http.get<Payment | NotModified>(`${this.base}/payments/${id}`, { context: withPolling() });
   }
 
   cancelPayment(id: number, reason: string): Observable<Payment> {
