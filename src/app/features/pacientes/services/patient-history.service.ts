@@ -18,4 +18,9 @@ export class PatientHistoryService {
       responseType: 'blob',
     });
   }
+
+  /** Dispara la re-inyección de una orden pendiente: genera una nueva muestra y reabre la extracción. */
+  reinject(orderId: number): Observable<void> {
+    return this.http.post<void>(`/api/v1/protocols/orders/${orderId}/reinject`, {});
+  }
 }

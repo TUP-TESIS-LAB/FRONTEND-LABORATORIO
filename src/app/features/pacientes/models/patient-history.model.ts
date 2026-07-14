@@ -8,6 +8,12 @@ export interface PatientHistoryAnalysis {
   /** Precio cobrado (snapshot). null en atenciones previas al feature. */
   chargedPrice: number | null;
   deliveryStatus: DeliveryStatus | null;
+  /** Orden de análisis a la que pertenece (target del POST de re-inyección). */
+  analysisOrderId: number;
+  /** true si el back marcó esta orden pendiente de re-inyección (muestra perdida/rechazada). */
+  pendingReinjection: boolean;
+  /** Observación/motivo del re-pedido cargada por el operador. null si no hay. */
+  reinjectionObservation: string | null;
 }
 
 export interface PatientHistoryItem {
