@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { isNotModified } from '@core/refresh';
 import { FinancieroApiService } from '../services/financiero-api.service';
 import { NotificationService } from '@core/services/notification.service';
+import { triggerDownload } from '@shared/utils/blob-download';
 import {
   loadCashRegisters, loadCashRegistersSuccess, loadCashRegistersFailure,
   createCashRegister, createCashRegisterSuccess, createCashRegisterFailure,
@@ -25,6 +26,7 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure,
   loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
   saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
@@ -62,6 +64,17 @@ function mapCobrosError(e: HttpErrorResponse): string {
   if (e.status === 409) return 'El pago ya fue cancelado o no se puede cancelar en su estado actual.';
   if (e.status === 422) return 'La suma de los medios de pago no coincide con el total.';
   return 'Ocurrió un error al procesar la operación. Intentá de nuevo.';
+}
+
+/**
+ * El backend devuelve el body de error como JSON, pero como pedimos
+ * `responseType: 'blob'` para el PDF, ese body llega como Blob, no parseado.
+ * Mapear solo por status — leer e.error.message acá rompería en runtime.
+ */
+function mapComprobanteError(e: HttpErrorResponse): string {
+  if (e.status === 404) return 'No existe un comprobante emitido para este pago.';
+  if (e.status === 409) return 'La configuración fiscal del emisor está incompleta. Contactá al administrador.';
+  return 'No se pudo descargar el comprobante. Probá de nuevo.';
 }
 
 function mapRegisterPaymentError(e: HttpErrorResponse): string {
@@ -440,6 +453,26 @@ export class FinancieroEffects {
     this.actions$.pipe(
       ofType(cancelPaymentSuccess),
       map(({ payment }) => loadPayment({ id: payment.id })),
+    ),
+  );
+
+  // ── cobros: descargar comprobante PDF ──────────────────────────────────────
+  downloadComprobante$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(downloadComprobante),
+      concatMap(({ paymentId }) =>
+        this.api.getComprobantePdf(paymentId).pipe(
+          map(res => {
+            triggerDownload(res, `comprobante-${paymentId}.pdf`);
+            return downloadComprobanteSuccess();
+          }),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapComprobanteError(e);
+            this.notif.error(error);
+            return of(downloadComprobanteFailure({ error }));
+          }),
+        ),
+      ),
     ),
   );
 

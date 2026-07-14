@@ -210,6 +210,27 @@ describe('financiero reducer — cobros', () => {
     expect(s.cobros.error).toBe('No se pudo cancelar');
   });
 
+  it('estado inicial tiene downloadingComprobante en false', () => {
+    expect(initialState.cobros.downloadingComprobante).toBe(false);
+  });
+
+  it('downloadComprobante marca downloadingComprobante', () => {
+    const s = financieroReducer(initialState, A.downloadComprobante({ paymentId: 9 }));
+    expect(s.cobros.downloadingComprobante).toBe(true);
+  });
+
+  it('downloadComprobanteSuccess limpia downloadingComprobante', () => {
+    const started = financieroReducer(initialState, A.downloadComprobante({ paymentId: 9 }));
+    const s = financieroReducer(started, A.downloadComprobanteSuccess());
+    expect(s.cobros.downloadingComprobante).toBe(false);
+  });
+
+  it('downloadComprobanteFailure limpia downloadingComprobante', () => {
+    const started = financieroReducer(initialState, A.downloadComprobante({ paymentId: 9 }));
+    const s = financieroReducer(started, A.downloadComprobanteFailure({ error: 'No existe un comprobante emitido para este pago.' }));
+    expect(s.cobros.downloadingComprobante).toBe(false);
+  });
+
   it('no muta el slice caja al operar sobre cobros', () => {
     const s = financieroReducer(initialState, A.loadPaymentsSuccess({ items: [] }));
     expect(s.caja).toBe(initialState.caja);

@@ -12,7 +12,7 @@ export interface FinancieroState {
   otros:   { data: BranchOtherMedia | null; loading: boolean; error: string | null };
   movimientos: { data: MovementsFeed | null; loading: boolean; error: string | null };
   cuentas: { list: BankAccount[]; loading: boolean; saving: boolean; error: string | null };
-  cobros:  { list: PaymentListItem[]; selected: Payment | null; loading: boolean; error: string | null };
+  cobros:  { list: PaymentListItem[]; selected: Payment | null; loading: boolean; error: string | null; downloadingComprobante: boolean };
   cobro:   { submitting: boolean; result: RegisterPaymentResponse | null; error: string | null };
   config:  { current: TenantFiscalConfig | null; saving: boolean; error: string | null };
   liquidaciones: {
@@ -33,7 +33,7 @@ export const initialFinancieroState: FinancieroState = {
   otros:   { data: null, loading: false, error: null },
   movimientos: { data: null, loading: false, error: null },
   cuentas: { list: [], loading: false, saving: false, error: null },
-  cobros:  { list: [], selected: null, loading: false, error: null },
+  cobros:  { list: [], selected: null, loading: false, error: null, downloadingComprobante: false },
   cobro:   { submitting: false, result: null, error: null },
   config:  { current: null, saving: false, error: null },
   liquidaciones: {

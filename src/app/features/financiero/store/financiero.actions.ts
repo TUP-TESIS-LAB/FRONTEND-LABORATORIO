@@ -256,6 +256,19 @@ export const cancelPaymentFailure = createAction(
   props<{ error: string }>(),
 );
 
+// ── Cobros: descargar comprobante PDF ────────────────────────────────────────
+export const downloadComprobante = createAction(
+  '[Financiero Cobros] Download Comprobante',
+  props<{ paymentId: number }>(),
+);
+export const downloadComprobanteSuccess = createAction(
+  '[Financiero Cobros API] Download Comprobante Success',
+);
+export const downloadComprobanteFailure = createAction(
+  '[Financiero Cobros API] Download Comprobante Failure',
+  props<{ error: string }>(),
+);
+
 // ── cobro: registrar pago de atención ──
 export const registerPayment = createAction(
   '[Financiero Cobro] Register Payment', props<{ body: CreatePaymentRequest }>());

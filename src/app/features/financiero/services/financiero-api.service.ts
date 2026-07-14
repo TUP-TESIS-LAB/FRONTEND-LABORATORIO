@@ -1,10 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { withPolling, NotModified } from '@core/refresh';
 import {
   CashSession, SessionActivity, PaymentListItem, Payment, PaymentStatus,
-  TransactionType, TenantFiscalConfig, FiscalProvider, FiscalInvoiceReference,
+  TransactionType, TenantFiscalConfig, FiscalProvider,
   CreatePaymentRequest, RegisterPaymentResponse,
   CashRegister, BankAccount, BankAccountInput,
   BranchOtherMedia, RegisterBranchMovementInput,
@@ -105,12 +105,20 @@ export class FinancieroApiService {
     return this.http.get<PaymentListItem[]>(`${this.base}/payments`, { params });
   }
 
-  getPayment(id: number): Observable<Payment & { fiscalReference?: FiscalInvoiceReference }> {
-    return this.http.get<Payment & { fiscalReference?: FiscalInvoiceReference }>(`${this.base}/payments/${id}`);
+  getPayment(id: number): Observable<Payment> {
+    return this.http.get<Payment>(`${this.base}/payments/${id}`);
   }
 
   cancelPayment(id: number, reason: string): Observable<Payment> {
     return this.http.request<Payment>('delete', `${this.base}/payments/${id}`, { body: { reason } });
+  }
+
+  /** El filename viene en el header Content-Disposition, no en el body: hay que observar la respuesta completa. */
+  getComprobantePdf(paymentId: number): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.base}/payments/${paymentId}/comprobante/pdf`, {
+      responseType: 'blob',
+      observe: 'response',
+    });
   }
 
   createPayment(body: CreatePaymentRequest): Observable<RegisterPaymentResponse> {
