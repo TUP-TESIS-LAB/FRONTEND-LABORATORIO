@@ -93,7 +93,8 @@ export function analysisLabel(a: PreviewAnalysis): string {
       (next)="next()"
       (back)="back()"
       (cancel)="cancelar()"
-      (finish)="generar()">
+      (finish)="generar()"
+      (stepSelected)="goToStep($event)">
 
       @if (stepKey() === 'datos') {
         <div class="step">
@@ -928,6 +929,20 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
 
   protected back(): void {
     this.step.update(s => Math.max(0, s - 1));
+  }
+
+  /**
+   * Click en el header del stepper (KAN-237, Item A): navega directo a un paso YA
+   * VISITADO, sin tocar ningún otro estado (OS, tramos, fijos, exclusiones quedan
+   * intactos — a diferencia de `next()`, que dispara side-effects como `enterRevisar()`
+   * o `ensureTramoDefaults()`). El guard es cinturón-y-tiradores: `ui-form-stepper-header`
+   * ya sólo emite `stepSelected` para pasos visitados (nunca hacia adelante a uno no
+   * completado), igual que el resto de los wizards del repo (`goToStep` en paciente,
+   * médico, empleado, obra social, agenda, sucursal).
+   */
+  protected goToStep(i: number): void {
+    if (!this.visited().has(i)) return;
+    this.step.set(i);
   }
 
   protected generar(): void {

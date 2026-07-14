@@ -199,6 +199,68 @@ describe('LiquidacionDetallePage — smoke', () => {
     expect(txt).toContain('Tramos');
     expect(txt).not.toContain('Valores fijos');
   });
+
+  // ── KAN-237 Item B: filtro por plan en "Reglas usadas" ────────────────────────
+  const detailMultiPlan: Partial<SettlementDetail> = {
+    type: 'ESPECIAL',
+    plans: [
+      {
+        planId: 3,
+        agreements: [{ agreementId: 9, agreementSubtotal: 5000, providedServiceIds: [1, 2] }],
+        rules: [{ ruleType: 'GREATER_THAN', fromCount: 0, toCount: null, amount: 100, subtotal: 5000, count: 50 }],
+        fixedAmounts: [],
+      },
+      {
+        planId: 4,
+        agreements: [{ agreementId: 10, agreementSubtotal: 2000, providedServiceIds: [3] }],
+        rules: [{ ruleType: 'GREATER_THAN', fromCount: 0, toCount: null, amount: 200, subtotal: 2000, count: 10 }],
+        fixedAmounts: [],
+      },
+    ],
+  };
+
+  it('con >1 plan en ESPECIAL, muestra tabs de filtro por plan en "Reglas usadas"', async () => {
+    await setup('PENDING', ['ADMINISTRADOR'], detailMultiPlan);
+    const fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-plan-tabs"]'))).toBeTruthy();
+    // Por defecto ("Todos"), se ven los bloques de ambos planes.
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-plan-3"]'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-plan-4"]'))).toBeTruthy();
+  });
+
+  it('clickear el tab de un plan filtra "Reglas usadas" a solo ese plan', async () => {
+    await setup('PENDING', ['ADMINISTRADOR'], detailMultiPlan);
+    const fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+
+    const tabPlan3 = fixture.debugElement.query(By.css('[data-testid="reglas-tab-3"]'));
+    tabPlan3.nativeElement.click();
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-plan-3"]'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-plan-4"]'))).toBeNull();
+
+    fixture.debugElement.query(By.css('[data-testid="reglas-tab-todos"]')).nativeElement.click();
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-plan-4"]'))).toBeTruthy();
+  });
+
+  it('con un solo plan en ESPECIAL, NO muestra tabs de filtro (no hace falta)', async () => {
+    await setup('PENDING', ['ADMINISTRADOR'], {
+      type: 'ESPECIAL',
+      plans: [{
+        planId: 3,
+        agreements: [{ agreementId: 9, agreementSubtotal: 5000, providedServiceIds: [1, 2] }],
+        rules: [{ ruleType: 'GREATER_THAN', fromCount: 0, toCount: null, amount: 100, subtotal: 5000, count: 50 }],
+        fixedAmounts: [],
+      }],
+    });
+    const fixture = TestBed.createComponent(LiquidacionDetallePage);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-plan-tabs"]'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('[data-testid="reglas-plan-3"]'))).toBeTruthy();
+  });
 });
 
 describe('tramoDesde / tramoHastaLabel — formateo de tramos del detalle (KAN-234)', () => {

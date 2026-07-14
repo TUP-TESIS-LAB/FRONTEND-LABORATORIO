@@ -218,7 +218,18 @@ export function tramoHastaLabel(rule: SettlementPlanRuleDetail): string {
               <span class="liq-rules__count">{{ reglasPorPlan().length }} plan{{ reglasPorPlan().length === 1 ? '' : 'es' }}</span>
             </header>
 
-            @for (rp of reglasPorPlan(); track rp.planId) {
+            @if (reglasPorPlan().length > 1) {
+              <div class="flex gap-1 flex-wrap border-b border-[var(--ds-border)] mb-3" role="tablist" data-testid="reglas-plan-tabs">
+                <button type="button" [class]="rulesTabClass(activeRulesPlan() === null)"
+                        (click)="activeRulesPlan.set(null)" data-testid="reglas-tab-todos">Todos</button>
+                @for (rp of reglasPorPlan(); track rp.planId) {
+                  <button type="button" [class]="rulesTabClass(activeRulesPlan() === rp.planId)"
+                          (click)="activeRulesPlan.set(rp.planId)" [attr.data-testid]="'reglas-tab-' + rp.planId">{{ rp.name }}</button>
+                }
+              </div>
+            }
+
+            @for (rp of visibleReglas(); track rp.planId) {
               <div class="liq-rules__plan" [attr.data-testid]="'reglas-plan-' + rp.planId">
                 <h3 class="liq-rules__plan-name"><i class="pi pi-file"></i>{{ rp.name }}</h3>
 
@@ -541,6 +552,31 @@ export class LiquidacionDetallePage implements OnInit {
       }))
       .filter(p => p.rules.length > 0 || p.fixedAmounts.length > 0);
   });
+
+  /**
+   * Filtro por plan de "Reglas usadas" (KAN-237, Item B): con varios planes, las tablas de
+   * tramos/fijos apiladas ocupan mucho — se agregan tabs para ver un plan a la vez.
+   * `null` = "Todos" (comportamiento previo, todos los planes apilados).
+   */
+  protected readonly activeRulesPlan = signal<number | null>(null);
+
+  /** `reglasPorPlan()` recortado al plan del tab activo; sin filtrar cuando es "Todos". */
+  protected readonly visibleReglas = computed<PlanRulesDisplay[]>(() => {
+    const tab = this.activeRulesPlan();
+    const all = this.reglasPorPlan();
+    return tab === null ? all : all.filter(p => p.planId === tab);
+  });
+
+  /**
+   * Clases Tailwind del tab de plan (activo/inactivo) — utility classes en vez de agrandar
+   * el `styles: []` del componente, que ya está cerca del budget de 8kB por-componente.
+   */
+  protected rulesTabClass(active: boolean): string {
+    const base = 'px-3 py-1.5 text-xs cursor-pointer bg-transparent border-0 border-b-2';
+    return active
+      ? `${base} border-[var(--brand-primary)] text-[var(--brand-primary)] font-bold`
+      : `${base} border-transparent text-[var(--ds-text-muted)] font-medium`;
+  }
 
   /** El monto informado a la OS difiere del total calculado (chequeo del administrador). */
   protected readonly informedDiffiere = computed(() => {

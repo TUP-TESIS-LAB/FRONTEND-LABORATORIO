@@ -124,6 +124,8 @@ type Cmp = InstanceType<typeof GenerarLiquidacionPage> & {
   selectedPlans: () => Array<{ id: number; name: string; hasActiveAgreement: boolean }>;
   noPlanConvenio: () => boolean;
   step: { (): number; set: (v: number) => void };
+  visited: () => ReadonlySet<number>;
+  goToStep: (i: number) => void;
   os: { set: (v: unknown) => void };
   from: { set: (v: Date) => void };
   to: { set: (v: Date) => void };
@@ -598,5 +600,54 @@ describe('GenerarLiquidacionPage — smoke', () => {
     cmp.selectedPlanIds.set([3, 4]);
 
     expect(cmp.plansWithoutPrestaciones()).toEqual([]);
+  });
+
+  // ── KAN-237 Item A: stepper navegable hacia atrás ─────────────────────────────
+  describe('goToStep — click en un paso del header del stepper', () => {
+    it('navega a un paso anterior ya visitado', async () => {
+      await setup();
+      const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+      const cmp = fixture.componentInstance as unknown as Cmp;
+      fixture.detectChanges();
+      cmp.os.set(OS);
+      cmp.from.set(new Date(2026, 0, 1));
+      cmp.to.set(new Date(2026, 0, 31));
+      cmp.selectedPlanIds.set([3]);
+      cmp.next(); // datos → revisar (visita el paso 1)
+      expect(cmp.step()).toBe(1);
+
+      cmp.goToStep(0);
+
+      expect(cmp.step()).toBe(0);
+    });
+
+    it('NO navega a un paso no visitado (no permite saltar hacia adelante)', async () => {
+      await setup();
+      const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+      const cmp = fixture.componentInstance as unknown as Cmp;
+      fixture.detectChanges();
+      expect(cmp.step()).toBe(0);
+
+      cmp.goToStep(2); // "confirmar" nunca fue visitado
+
+      expect(cmp.step()).toBe(0);
+    });
+
+    it('preserva el estado cargado (OS, planes) al volver a un paso anterior', async () => {
+      await setup();
+      const fixture = TestBed.createComponent(GenerarLiquidacionPage);
+      const cmp = fixture.componentInstance as unknown as Cmp;
+      fixture.detectChanges();
+      cmp.os.set(OS);
+      cmp.from.set(new Date(2026, 0, 1));
+      cmp.to.set(new Date(2026, 0, 31));
+      cmp.selectedPlanIds.set([3]);
+      cmp.next();
+
+      cmp.goToStep(0);
+
+      expect(cmp.selectedPlanIds()).toEqual([3]);
+      expect(cmp.paso1Valido()).toBe(true);
+    });
   });
 });
