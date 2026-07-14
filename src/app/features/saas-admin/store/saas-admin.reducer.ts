@@ -23,6 +23,7 @@ export const saasAdminReducer = createReducer<SaasAdminState>(
     selectedTenant: null,
     selectedTenantModules: null,
     selectedTenantWhiteLabel: null,
+    selectedTenantFiscalConfig: null,
   })),
 
   // Create
@@ -96,4 +97,13 @@ export const saasAdminReducer = createReducer<SaasAdminState>(
   on(A.upsertTenantWhiteLabel, pendingOn),
   on(A.upsertTenantWhiteLabelSuccess, (state, { whiteLabel }) => ({ ...state, pending: false, selectedTenantWhiteLabel: whiteLabel })),
   on(A.upsertTenantWhiteLabelFailure, (state, { error }) => ({ ...state, pending: false, error })),
+
+  // Fiscal config
+  on(A.loadTenantFiscalConfig, pendingOn),
+  on(A.loadTenantFiscalConfigSuccess, (state, { fiscalConfig }) => ({ ...state, pending: false, selectedTenantFiscalConfig: fiscalConfig })),
+  on(A.loadTenantFiscalConfigFailure, (state, { error }) => ({ ...state, pending: false, error })),
+
+  on(A.upsertTenantFiscalConfig, pendingOn),
+  on(A.upsertTenantFiscalConfigSuccess, (state, { fiscalConfig }) => ({ ...state, pending: false, selectedTenantFiscalConfig: fiscalConfig })),
+  on(A.upsertTenantFiscalConfigFailure, (state, { error }) => ({ ...state, pending: false, error })),
 );

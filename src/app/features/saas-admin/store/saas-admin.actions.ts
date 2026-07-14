@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Tenant, CreateTenantRequest, CreateTenantResponse, UpdateTenantRequest } from '../models/tenant.model';
 import { TenantModule } from '../models/tenant-module.model';
 import { TenantWhiteLabel, UpsertTenantWhiteLabelRequest } from '../models/tenant-white-label.model';
+import { TenantFiscalConfig, UpsertTenantFiscalConfigRequest } from '../models/tenant-fiscal-config.model';
 import { ModuleCode } from '../models/module-code';
 
 // --- Tenants list ---
@@ -60,3 +61,12 @@ export const loadTenantWhiteLabelFailure = createAction('[SaaS Admin API] Load T
 export const upsertTenantWhiteLabel = createAction('[SaaS Admin] Upsert Tenant White Label', props<{ tenantId: number; req: UpsertTenantWhiteLabelRequest }>());
 export const upsertTenantWhiteLabelSuccess = createAction('[SaaS Admin API] Upsert Tenant White Label Success', props<{ whiteLabel: TenantWhiteLabel }>());
 export const upsertTenantWhiteLabelFailure = createAction('[SaaS Admin API] Upsert Tenant White Label Failure', props<{ error: HttpErrorResponse }>());
+
+// --- Tenant fiscal config ---
+export const loadTenantFiscalConfig = createAction('[SaaS Admin] Load Tenant Fiscal Config', props<{ tenantId: number }>());
+export const loadTenantFiscalConfigSuccess = createAction('[SaaS Admin API] Load Tenant Fiscal Config Success', props<{ fiscalConfig: TenantFiscalConfig }>());
+export const loadTenantFiscalConfigFailure = createAction('[SaaS Admin API] Load Tenant Fiscal Config Failure', props<{ error: HttpErrorResponse }>());
+
+export const upsertTenantFiscalConfig = createAction('[SaaS Admin] Upsert Tenant Fiscal Config', props<{ req: UpsertTenantFiscalConfigRequest }>());
+export const upsertTenantFiscalConfigSuccess = createAction('[SaaS Admin API] Upsert Tenant Fiscal Config Success', props<{ fiscalConfig: TenantFiscalConfig }>());
+export const upsertTenantFiscalConfigFailure = createAction('[SaaS Admin API] Upsert Tenant Fiscal Config Failure', props<{ error: HttpErrorResponse }>());
