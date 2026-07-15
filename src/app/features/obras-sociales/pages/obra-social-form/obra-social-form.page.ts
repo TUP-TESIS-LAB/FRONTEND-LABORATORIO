@@ -57,7 +57,7 @@ function isoFromDate(d: unknown): string {
           @case (2) { <os-resumen-step [data]="resumenView()" /> }
         }
       </ui-wizard-shell>
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </form>
   `,
 })

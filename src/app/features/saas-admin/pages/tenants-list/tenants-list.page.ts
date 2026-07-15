@@ -86,7 +86,7 @@ type Filter = 'all' | 'active' | 'inactive' | 'deleted';
       </ng-template>
     </p-table>
 
-    <p-confirmDialog styleClass="saas-themed" />
+    <p-confirmDialog styleClass="saas-themed" [draggable]="false" />
   `,
   styles: [`
     :host { display: block; color: var(--saas-text, #1a1a2e); }

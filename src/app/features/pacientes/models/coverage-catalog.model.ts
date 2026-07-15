@@ -6,6 +6,9 @@ export type InsurerType = 'SOCIAL' | 'PRIVATE';
 export interface InsurerOption {
   id: number;
   name: string;
+  acronym: string;
+  /** "SIGLA — Nombre", precomputado para optionLabel/filterBy de los <p-select> (KAN-246). */
+  displayLabel: string;
   insurerType: InsurerType;
 }
 

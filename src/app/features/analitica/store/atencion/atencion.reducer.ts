@@ -105,39 +105,21 @@ export const atencionReducer = createReducer(
   on(loadPricingFailure, (s, { error }): AtencionFeatureState => ({ ...s, pricingLoading: false, pricingError: error })),
 
   on(setCopayment, (s): AtencionFeatureState => ({ ...s, copaymentMutating: true })),
-  on(setCopaymentSuccess, (s, { item }): AtencionFeatureState => {
-    // El endpoint de copago devuelve la atención SIN `analysisAuthorizations`
-    // (a diferencia del GET y de otras mutaciones). Si reemplazáramos el `detail`
-    // verbatim, el listado de análisis del resumen (paso 3) quedaría vacío al
-    // tipear el copago y hacer blur. Preservamos las autorizaciones del detail
-    // actual cuando la respuesta no las trae; si el backend las incluye, se usan.
-    const merged = s.detail && !item.analysisAuthorizations?.length
-      ? { ...item, analysisAuthorizations: s.detail.analysisAuthorizations }
-      : item;
-    return {
-      ...s,
-      copaymentMutating: false,
-      detail: merged,
-      list: replaceInList(s.list, merged),
-    };
-  }),
+  on(setCopaymentSuccess, (s, { item }): AtencionFeatureState => ({
+    ...s,
+    copaymentMutating: false,
+    detail: item,
+    list: replaceInList(s.list, item),
+  })),
   on(setCopaymentFailure, (s): AtencionFeatureState => ({ ...s, copaymentMutating: false })),
 
   on(setAuthorizationNumber, (s): AtencionFeatureState => ({ ...s, authorizationMutating: true })),
-  on(setAuthorizationNumberSuccess, (s, { item }): AtencionFeatureState => {
-    // Igual que el copago: el endpoint dedicado devuelve la atención SIN
-    // `analysisAuthorizations`. Preservamos las del detail actual cuando la
-    // respuesta no las trae para no vaciar el listado del resumen.
-    const merged = s.detail && !item.analysisAuthorizations?.length
-      ? { ...item, analysisAuthorizations: s.detail.analysisAuthorizations }
-      : item;
-    return {
-      ...s,
-      authorizationMutating: false,
-      detail: merged,
-      list: replaceInList(s.list, merged),
-    };
-  }),
+  on(setAuthorizationNumberSuccess, (s, { item }): AtencionFeatureState => ({
+    ...s,
+    authorizationMutating: false,
+    detail: item,
+    list: replaceInList(s.list, item),
+  })),
   on(setAuthorizationNumberFailure, (s): AtencionFeatureState => ({ ...s, authorizationMutating: false })),
 
   on(setUrgentFlagSuccess, (s, { item }): AtencionFeatureState => ({

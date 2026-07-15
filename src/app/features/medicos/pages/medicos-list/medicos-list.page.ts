@@ -81,7 +81,7 @@ import { MedicoFormDrawerComponent } from './components/medico-form-drawer.compo
         (createAndNext)="onCreateAndNext($event)"
         (cancel)="closeDrawer()" />
 
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </div>
   `,
 })

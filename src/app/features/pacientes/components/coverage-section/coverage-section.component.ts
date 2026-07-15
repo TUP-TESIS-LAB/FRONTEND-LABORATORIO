@@ -35,8 +35,8 @@ import { CoverageCatalogService } from '../../services/coverage-catalog.service'
         <div class="cv-toolbar__field cv-toolbar__field--grow">
           <label class="pat-form__label">Obra social</label>
           <p-select [options]="osOptions()" [ngModel]="selInsurer()" (ngModelChange)="onInsurerChange($event)"
-                    optionLabel="name" optionValue="id" placeholder="Elegí una obra social"
-                    appendTo="body" [filter]="true" filterBy="name" class="w-full" />
+                    optionLabel="displayLabel" optionValue="id" placeholder="Elegí una obra social"
+                    appendTo="body" [filter]="true" filterBy="displayLabel" class="w-full" />
         </div>
         <div class="cv-toolbar__field cv-toolbar__field--grow">
           <label class="pat-form__label">Plan</label>

@@ -25,6 +25,8 @@ import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '@f
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { DoctorService } from '@features/medicos/services/doctor.service';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import { NbuConfigApiService } from '../../../../../services/nbu-config-api.service';
 import { ResultTicketPdfService, formatHandlingTime } from '../../../../../services/result-ticket-pdf.service';
 import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencion.model';
@@ -98,13 +100,19 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
 
       <!-- C1: Análisis solicitados en tabla genérica striped. T5: scroll interno
            (alto relativo al viewport → más filas a mayor resolución) para que la
-           página no crezca en vertical. -->
+           página no crezca en vertical.
+
+           showDelete se gatea por !financieroActive() (NO es un typo, KAN-246):
+           con FINANCIERO activo, para cuando el operador llega a Confirmar ya
+           pasó por Cobro y Facturación → la atención ya se cobró/facturó y
+           borrar un análisis desincronizaría la plata. Sin FINANCIERO no hay
+           cobro, así que quitarlo acá es inofensivo. -->
       <section class="flex-1 min-h-0 flex flex-col">
         <div class="text-sm opacity-60 mb-2">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
         <ui-table
           [value]="analysisRows()"
           [columns]="analysisColumns()"
-          [showDelete]="!readOnly()"
+          [showDelete]="!readOnly() && !financieroActive()"
           [scrollHeight]="'flex'"
           emptyHeading="Sin análisis solicitados"
           emptyIcon="pi-flask"
@@ -139,20 +147,23 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
         </ui-table>
       </section>
 
-      <!-- Pricing totals — item 7: Subtotal · Copago · Total en una sola fila compacta. -->
-      @if (pricing(); as p) {
-        <section class="border-t pt-3 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-sm">
-          <span><span class="opacity-60">Subtotal</span> {{ p.subtotal | currencyAr }}</span>
-          <span class="flex items-center gap-2">
-            <label class="opacity-60">Copago</label>
-            <span class="font-medium">{{ p.copayment | currencyAr }}</span>
-          </span>
-          <span class="font-semibold text-base"><span class="opacity-60 font-normal">Total</span> {{ p.total | currencyAr }}</span>
-        </section>
-      } @else if (pricingLoading()) {
-        <section class="border-t pt-3">
-          <div class="text-sm opacity-60">Calculando precios…</div>
-        </section>
+      <!-- Pricing totals — item 7: Subtotal · Copago · Total en una sola fila compacta.
+           Sin FINANCIERO activo no hay nada financiero que mostrar acá (KAN-246). -->
+      @if (financieroActive()) {
+        @if (pricing(); as p) {
+          <section class="border-t pt-3 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-sm">
+            <span><span class="opacity-60">Subtotal</span> {{ p.subtotal | currencyAr }}</span>
+            <span class="flex items-center gap-2">
+              <label class="opacity-60">Copago</label>
+              <span class="font-medium">{{ p.copayment | currencyAr }}</span>
+            </span>
+            <span class="font-semibold text-base"><span class="opacity-60 font-normal">Total</span> {{ p.total | currencyAr }}</span>
+          </section>
+        } @else if (pricingLoading()) {
+          <section class="border-t pt-3">
+            <div class="text-sm opacity-60">Calculando precios…</div>
+          </section>
+        }
       }
 
       <!-- Item 1: el footer (Volver fase / Finalizar atención) lo provee el contenedor
@@ -174,6 +185,10 @@ export class ResumenStepComponent implements OnInit {
   private readonly coverageCatalogApi = inject(CoverageCatalogService);
   private readonly nbuConfigApi = inject(NbuConfigApiService);
   private readonly ticketPdf = inject(ResultTicketPdfService);
+  private readonly moduleRegistry = inject(ModuleRegistry);
+
+  /** Si FINANCIERO está apagado, el resumen no muestra nada financiero (KAN-246). */
+  readonly financieroActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Financiero));
 
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
@@ -255,11 +270,16 @@ export class ResumenStepComponent implements OnInit {
    */
   readonly isParticular = computed(() => this.atencion().insurancePlanId == null);
 
-  /** Columnas de la tabla de análisis solicitados (C1); "Autorizado" solo con obra social. */
+  /**
+   * Columnas de la tabla de análisis solicitados (C1); "Autorizado" solo con obra
+   * social, y "Autorizado"/"Precio" solo si FINANCIERO está activo (KAN-246).
+   */
   readonly analysisColumns = computed<readonly TableColumn[]>(() => {
     const cols: TableColumn[] = [{ field: 'analisis', header: 'Análisis' }];
-    if (!this.isParticular()) cols.push({ field: 'autorizado', header: 'Autorizado', align: 'center' });
-    cols.push({ field: 'precio', header: 'Precio', align: 'right' });
+    if (!this.isParticular() && this.financieroActive()) {
+      cols.push({ field: 'autorizado', header: 'Autorizado', align: 'center' });
+    }
+    if (this.financieroActive()) cols.push({ field: 'precio', header: 'Precio', align: 'right' });
     return cols;
   });
 

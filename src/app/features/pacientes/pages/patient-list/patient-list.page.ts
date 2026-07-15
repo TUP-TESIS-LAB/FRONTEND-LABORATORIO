@@ -127,7 +127,7 @@ import {
       </ui-table>
       </div>
 
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </div>
   `,
 })

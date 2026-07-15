@@ -29,6 +29,17 @@ export class AnalysisService {
     });
   }
 
+  /**
+   * Búsqueda unificada (KAN-246): matchea nombre, código interno (short_code) y código
+   * NBU, con match tipo "contiene" (no solo prefijo) — encuentra por ej. por los últimos
+   * dígitos de un código. Usada por el autocomplete del picker de análisis en la atención.
+   */
+  search(q: string, limit = 10): Observable<Analysis[]> {
+    return this.http.get<Analysis[]>(this.baseUrl, {
+      params: { q, limit: String(limit) },
+    });
+  }
+
   getById(id: number): Observable<AnalysisDetail> {
     return this.http.get<AnalysisDetail>(`${this.baseUrl}/${id}`);
   }

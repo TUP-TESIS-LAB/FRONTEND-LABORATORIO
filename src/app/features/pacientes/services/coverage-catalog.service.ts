@@ -3,9 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { CoverageCatalog, InsurerOption, InsurerType, PlanOption } from '../models/coverage-catalog.model';
+import { insurerDisplayLabel } from '@shared/utils/insurer-display.util';
 
 interface PagedResponse<T> { content: T[]; }
-interface InsurerResponse { id: number; name: string; insurerType: InsurerType; active: boolean; }
+interface InsurerResponse { id: number; name: string; acronym: string; insurerType: InsurerType; active: boolean; }
 interface PlanResponse { id: number; insurerId: number; name: string; active: boolean; }
 
 /**
@@ -20,7 +21,10 @@ export class CoverageCatalogService {
     const insurers$ = this.http
       .get<PagedResponse<InsurerResponse>>('/api/v1/coverages/insurers', { params: { state: 'active', size: '200' } })
       .pipe(map((res): InsurerOption[] =>
-        res.content.map((i) => ({ id: i.id, name: i.name, insurerType: i.insurerType })),
+        res.content.map((i) => ({
+          id: i.id, name: i.name, acronym: i.acronym, insurerType: i.insurerType,
+          displayLabel: insurerDisplayLabel(i),
+        })),
       ));
 
     const plans$ = this.http

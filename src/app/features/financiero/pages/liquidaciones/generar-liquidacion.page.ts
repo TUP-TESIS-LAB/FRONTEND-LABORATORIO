@@ -29,6 +29,7 @@ import {
   generateSettlement, generateSettlementSuccess,
 } from '../../store/financiero.actions';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
+import { insurerDisplayLabel } from '@shared/utils/insurer-display.util';
 import {
   PreviewItem, PreviewGroup, PreviewAnalysis, ExcludedAnalysisIdsByPs, SpecialRule, FixedAmountsByPlan,
 } from '../../models/liquidaciones.model';
@@ -102,8 +103,11 @@ export function analysisLabel(a: PreviewAnalysis): string {
 
           <div class="form-field">
             <label for="os">Obra Social <span class="pat-form__req" aria-hidden="true">*</span></label>
-            <p-select inputId="os" [options]="insurers()" optionLabel="name" [filter]="true"
-                      appendTo="body" [ngModel]="os()" (ngModelChange)="onOsChange($event)" data-testid="sel-os" />
+            <p-select inputId="os" [options]="insurers()" optionLabel="name" [filter]="true" filterBy="name,acronym"
+                      appendTo="body" [ngModel]="os()" (ngModelChange)="onOsChange($event)" data-testid="sel-os">
+              <ng-template let-i pTemplate="selectedItem">{{ insurerDisplayLabel(i) }}</ng-template>
+              <ng-template let-i pTemplate="item">{{ insurerDisplayLabel(i) }}</ng-template>
+            </p-select>
           </div>
 
           <div class="form-field">
@@ -589,6 +593,9 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     if (this.tipo() === 'ESPECIAL') cols.push({ field: 'appliedUbValue', header: 'Valor U.B.', align: 'right' });
     return cols;
   });
+
+  /** "SIGLA — Nombre" para el select de obra social (KAN-246). */
+  protected readonly insurerDisplayLabel = insurerDisplayLabel;
 
   protected readonly insurers = this.store.selectSignal(selectLiqInsurers);
   protected readonly insurerPlans = this.store.selectSignal(selectLiqInsurerPlans);

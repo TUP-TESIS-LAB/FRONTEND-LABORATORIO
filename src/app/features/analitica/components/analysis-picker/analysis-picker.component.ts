@@ -161,10 +161,9 @@ export class AnalysisPickerComponent implements AfterViewInit {
   onAutoCompleteSearch(e: AutoCompleteCompleteEvent): void {
     const q = (e.query ?? '').trim();
     if (!q) { this.suggestions.set([]); return; }
-    const obs = /^\d+$/.test(q)
-      ? this.api.searchByShortCodePrefix(q)
-      : this.api.searchByName(q);
-    obs.subscribe({
+    // KAN-246: búsqueda unificada — matchea nombre, código interno y código NBU
+    // con match "contiene" (no solo prefijo), sin heurística por tipo de caracter.
+    this.api.search(q).subscribe({
       next: (list) => this.suggestions.set(list ?? []),
       error: () => this.suggestions.set([]),
     });

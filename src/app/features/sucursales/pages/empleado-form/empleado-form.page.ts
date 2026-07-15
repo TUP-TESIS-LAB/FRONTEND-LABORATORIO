@@ -83,7 +83,7 @@ interface DireccionValue { street: string; streetNumber: string; neighborhood: s
           </div>
         </ng-container>
       </ui-wizard-shell>
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </form>
   `,
 })
