@@ -29,7 +29,7 @@ import { setUrgentFlag } from '../../../../../store/atencion/atencion.actions';
 
 const STUB_CATALOG = {
   insurers: [
-    { id: 96002, name: 'OSDE', insurerType: 'PRIVATE' as const },
+    { id: 96002, name: 'OSDE', acronym: 'OSDE', displayLabel: 'OSDE — OSDE', insurerType: 'PRIVATE' as const },
   ],
   plans: [
     { planId: 96002, insurerId: 96002, name: '210' },

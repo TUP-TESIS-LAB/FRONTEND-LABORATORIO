@@ -10,8 +10,8 @@ import { CoverageCatalog } from '../../models/coverage-catalog.model';
 
 const CATALOG: CoverageCatalog = {
   insurers: [
-    { id: 2, name: 'OSDE', insurerType: 'PRIVATE' },
-    { id: 3, name: 'PAMI', insurerType: 'SOCIAL' },
+    { id: 2, name: 'OSDE', acronym: 'OSDE', displayLabel: 'OSDE — OSDE', insurerType: 'PRIVATE' },
+    { id: 3, name: 'PAMI', acronym: 'PAMI', displayLabel: 'PAMI — PAMI', insurerType: 'SOCIAL' },
   ],
   plans: [
     { planId: 20, insurerId: 2, name: '210' },
