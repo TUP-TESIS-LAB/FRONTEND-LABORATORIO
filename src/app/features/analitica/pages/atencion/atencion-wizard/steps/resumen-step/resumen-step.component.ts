@@ -100,13 +100,19 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
 
       <!-- C1: Análisis solicitados en tabla genérica striped. T5: scroll interno
            (alto relativo al viewport → más filas a mayor resolución) para que la
-           página no crezca en vertical. -->
+           página no crezca en vertical.
+
+           showDelete se gatea por !financieroActive() (NO es un typo, KAN-246):
+           con FINANCIERO activo, para cuando el operador llega a Confirmar ya
+           pasó por Cobro y Facturación → la atención ya se cobró/facturó y
+           borrar un análisis desincronizaría la plata. Sin FINANCIERO no hay
+           cobro, así que quitarlo acá es inofensivo. -->
       <section class="flex-1 min-h-0 flex flex-col">
         <div class="text-sm opacity-60 mb-2">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
         <ui-table
           [value]="analysisRows()"
           [columns]="analysisColumns()"
-          [showDelete]="!readOnly() && financieroActive()"
+          [showDelete]="!readOnly() && !financieroActive()"
           [scrollHeight]="'flex'"
           emptyHeading="Sin análisis solicitados"
           emptyIcon="pi-flask"

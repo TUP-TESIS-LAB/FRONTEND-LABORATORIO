@@ -262,7 +262,11 @@ describe('ResumenStepComponent', () => {
     expect(deleteBtn).toBeNull();
   });
 
-  it('C1: la acción de quitar fila despacha removeAnalysisFromResumen', () => {
+  // El tachito solo existe sin FINANCIERO (KAN-246: con FINANCIERO ya se cobró
+  // al llegar a Confirmar), así que hay que reconfigurar para poder clickearlo.
+  it('C1: la acción de quitar fila despacha removeAnalysisFromResumen', async () => {
+    TestBed.resetTestingModule();
+    await configure(false);
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', attn()); // analysisId 3
     f.detectChanges();
@@ -533,9 +537,19 @@ describe('ResumenStepComponent', () => {
       expect(text).not.toContain('Copago');
     });
 
-    it('no ofrece la acción de quitar análisis (showDelete gateado por financieroActive)', () => {
+    // Sin FINANCIERO no hay cobro → quitar un análisis en Confirmar es inofensivo.
+    it('SÍ ofrece la acción de quitar análisis (no hay cobro que desincronizar)', () => {
       const f = TestBed.createComponent(ResumenStepComponent);
       f.componentRef.setInput('atencion', attn());
+      f.detectChanges();
+      const deleteBtn = (f.nativeElement as HTMLElement).querySelector('button[aria-label="Eliminar"]');
+      expect(deleteBtn).not.toBeNull();
+    });
+
+    it('en readOnly no ofrece la acción de quitar, aunque FINANCIERO esté apagado', () => {
+      const f = TestBed.createComponent(ResumenStepComponent);
+      f.componentRef.setInput('atencion', attn());
+      f.componentRef.setInput('readOnly', true);
       f.detectChanges();
       const deleteBtn = (f.nativeElement as HTMLElement).querySelector('button[aria-label="Eliminar"]');
       expect(deleteBtn).toBeNull();
@@ -547,5 +561,15 @@ describe('ResumenStepComponent', () => {
       f.detectChanges();
       expect(f.componentInstance.financieroActive()).toBe(false);
     });
+  });
+
+  // Con FINANCIERO activo, al llegar a Confirmar ya se pasó por Cobro/Facturación
+  // → la atención ya se cobró y borrar un análisis desincronizaría la plata.
+  it('KAN-246: con FINANCIERO activo NO ofrece la acción de quitar análisis (ya cobrado)', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    const deleteBtn = (f.nativeElement as HTMLElement).querySelector('button[aria-label="Eliminar"]');
+    expect(deleteBtn).toBeNull();
   });
 });
