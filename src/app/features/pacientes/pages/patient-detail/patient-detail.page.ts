@@ -202,7 +202,7 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
           </p-tabpanels>
         </p-tabs>
 
-        <p-confirmDialog />
+        <p-confirmDialog [draggable]="false" />
       </div>
     } @else {
       <div class="p-6">{{ pending() ? 'Cargando…' : 'Paciente no encontrado.' }}</div>

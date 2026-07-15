@@ -125,7 +125,7 @@ import {
         }
       </section>
 
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </div>
   `,
   styles: [`

@@ -59,7 +59,7 @@ import { selectAllEmployees, selectEmployeePending } from '../../store/employee.
         </ng-template>
       </ui-table>
 
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </div>
   `,
 })

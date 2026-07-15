@@ -489,7 +489,7 @@ const URGENT_CONFIRM_MESSAGE = `
       (closed)="portalDialogVisible.set(false)" />
 
     <!-- Confirmación informativa al marcar "Atención urgente" (KAN-237). -->
-    <p-confirmDialog />
+    <p-confirmDialog [draggable]="false" [style]="{ width: '460px' }" />
   `,
   styles: [`
     :host { display: block; height: 100%; }
