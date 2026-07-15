@@ -29,9 +29,12 @@ export class ReportesApiService {
   private buildListParams(query: ReportQuery): HttpParams {
     let params = new HttpParams()
       .set('page', query.page)
-      .set('size', query.size)
-      .set('sort', query.sortField)
-      .set('direction', query.sortDir);
+      .set('size', query.size);
+    // El backend parsea el orden en formato combinado `campo,DIRECCION` (ReportSortParam),
+    // NO como dos params separados: mandar `direction` aparte hace que el DESC se ignore.
+    if (query.sortField) {
+      params = params.set('sort', query.sortDir ? `${query.sortField},${query.sortDir}` : query.sortField);
+    }
     return this.appendFilters(params, query.filters);
   }
 

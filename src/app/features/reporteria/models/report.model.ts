@@ -37,9 +37,21 @@ export interface ReportDef {
   sortableFields: readonly string[];
   defaultSort?: { field: string; direction: 'ASC' | 'DESC' };
   /**
-   * Filtros propios del reporte, más allá de los universales que ya resuelve
-   * `ReportFiltersComponent` para TODOS los reportes: `search` (texto libre),
-   * `dateFrom`/`dateTo` (rango de fecha) y `branchId` (sucursal).
+   * Nombre del query param de búsqueda de texto que espera ESTE reporte. El backend
+   * es inconsistente: pacientes y usuarios usan `search`; médicos, empleados y
+   * sucursales usan `busqueda`. Default: `'search'`. `null` oculta la caja de búsqueda
+   * en reportes que no la soportan (ej. altas-por-período).
+   */
+  searchKey?: string | null;
+  /**
+   * Rango de fechas propio del reporte, con los nombres de param que espera el backend.
+   * Solo se renderiza el selector de fechas si el reporte lo declara — ningún listado
+   * del catálogo actual expone rango de fechas, así que por defecto no se muestra.
+   */
+  dateRange?: { fromKey: string; toKey: string };
+  /**
+   * Filtros propios del reporte (por su `key` = query param del backend), más el
+   * `branchId` (sucursal) que resuelve `ReportFiltersComponent` cuando hay sucursales.
    */
   filters: readonly ReportFilterDef[];
 }

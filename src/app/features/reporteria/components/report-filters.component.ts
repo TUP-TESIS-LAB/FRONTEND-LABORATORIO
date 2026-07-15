@@ -34,20 +34,22 @@ function toIsoDate(d: Date): string {
   imports: [FormsModule, DatePickerModule, InputTextModule, InputNumberModule, CheckboxModule, FilterBarComponent],
   template: `
     <div class="rpt-filters">
-      <div class="rpt-filters__row">
-        <div class="rpt-filters__field">
-          <label for="rpt-date-from">Desde</label>
-          <p-datepicker inputId="rpt-date-from" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"
-                        [showIcon]="false" [maxDate]="dateTo() ?? undefined"
-                        [ngModel]="dateFrom()" (ngModelChange)="setDateFrom($event)" />
+      @if (def().dateRange) {
+        <div class="rpt-filters__row">
+          <div class="rpt-filters__field">
+            <label for="rpt-date-from">Desde</label>
+            <p-datepicker inputId="rpt-date-from" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"
+                          [showIcon]="false" [maxDate]="dateTo() ?? undefined"
+                          [ngModel]="dateFrom()" (ngModelChange)="setDateFrom($event)" />
+          </div>
+          <div class="rpt-filters__field">
+            <label for="rpt-date-to">Hasta</label>
+            <p-datepicker inputId="rpt-date-to" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"
+                          [showIcon]="false" [minDate]="dateFrom() ?? undefined"
+                          [ngModel]="dateTo()" (ngModelChange)="setDateTo($event)" />
+          </div>
         </div>
-        <div class="rpt-filters__field">
-          <label for="rpt-date-to">Hasta</label>
-          <p-datepicker inputId="rpt-date-to" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"
-                        [showIcon]="false" [minDate]="dateFrom() ?? undefined"
-                        [ngModel]="dateTo()" (ngModelChange)="setDateTo($event)" />
-        </div>
-      </div>
+      }
 
       <ui-filter-bar [config]="filterBarConfig()" (valueChange)="onFilterBarChange($event)" />
 
@@ -152,9 +154,16 @@ export class ReportFiltersComponent {
   private emit(): void {
     const filters: Record<string, unknown> = {};
 
-    if (this.searchValue().trim()) filters['search'] = this.searchValue().trim();
-    if (this.dateFrom()) filters['dateFrom'] = toIsoDate(this.dateFrom()!);
-    if (this.dateTo()) filters['dateTo'] = toIsoDate(this.dateTo()!);
+    // La búsqueda de texto usa el param que declara el reporte (search | busqueda | null).
+    const searchKey = this.def().searchKey === undefined ? 'search' : this.def().searchKey;
+    if (searchKey && this.searchValue().trim()) filters[searchKey] = this.searchValue().trim();
+
+    // El rango de fechas solo se emite si el reporte lo declara, con SUS nombres de param.
+    const dateRange = this.def().dateRange;
+    if (dateRange) {
+      if (this.dateFrom()) filters[dateRange.fromKey] = toIsoDate(this.dateFrom()!);
+      if (this.dateTo()) filters[dateRange.toKey] = toIsoDate(this.dateTo()!);
+    }
 
     for (const [key, vals] of Object.entries(this.selectValues())) {
       if (vals.length) filters[key] = vals;
