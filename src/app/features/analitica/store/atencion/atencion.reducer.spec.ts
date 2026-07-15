@@ -75,21 +75,14 @@ describe('atencionReducer', () => {
     expect(next.listLoading).toBe(false);
   });
 
-  it('setCopaymentSuccess preserva analysisAuthorizations cuando la respuesta del copago viene vacía', () => {
-    const auths = [{ id: 1, analysisId: 3, isAuthorized: true, active: true }] as any;
-    const detail = sample({ id: 42, analysisAuthorizations: auths });
-    // El endpoint de copago devuelve la atención sin autorizaciones.
-    const copaymentResponse = sample({ id: 42, copaymentAmount: 500, analysisAuthorizations: [] });
-    const next = atencionReducer(
-      { ...initialAtencionState, detail },
-      A.setCopaymentSuccess({ item: copaymentResponse }),
-    );
-    expect(next.detail?.copaymentAmount).toBe(500);
-    expect(next.detail?.analysisAuthorizations).toEqual(auths); // no se vacía
-    expect(next.copaymentMutating).toBe(false);
-  });
-
-  it('setCopaymentSuccess usa las autorizaciones de la respuesta si el backend las incluye', () => {
+  // KAN-246 B3: hasta ahora el reducer preservaba las autorizaciones del detail cuando la
+  // respuesta venía sin ellas, porque el backend devolvía la atención con
+  // analysisAuthorizations=[] en TODA mutación (AttentionRepositoryAdapter.save() no
+  // repoblaba la colección). Ese workaround se sacó: la causa raíz está arreglada en el
+  // backend (el adapter re-lee las autorizaciones activas después del flush, cubierto por
+  // AttentionRepositoryAdapterIT), así que la respuesta es la fuente de verdad. Preservar el
+  // valor viejo ahora sería un bug: dejaría análisis fantasma si la atención quedó sin ellos.
+  it('setCopaymentSuccess usa las autorizaciones de la respuesta (el backend siempre las manda)', () => {
     const detail = sample({ id: 42, analysisAuthorizations: [{ id: 1, analysisId: 3, isAuthorized: true, active: true }] as any });
     const newAuths = [{ id: 9, analysisId: 7, isAuthorized: false, active: true }] as any;
     const copaymentResponse = sample({ id: 42, copaymentAmount: 500, analysisAuthorizations: newAuths });
@@ -97,20 +90,31 @@ describe('atencionReducer', () => {
       { ...initialAtencionState, detail },
       A.setCopaymentSuccess({ item: copaymentResponse }),
     );
+    expect(next.detail?.copaymentAmount).toBe(500);
     expect(next.detail?.analysisAuthorizations).toEqual(newAuths);
+    expect(next.copaymentMutating).toBe(false);
   });
 
-  it('setAuthorizationNumberSuccess setea el valor y preserva analysisAuthorizations cuando la respuesta viene vacía', () => {
+  it('setCopaymentSuccess refleja una atención que quedó sin análisis en vez de preservar los viejos', () => {
+    const detail = sample({ id: 42, analysisAuthorizations: [{ id: 1, analysisId: 3, isAuthorized: true, active: true }] as any });
+    const copaymentResponse = sample({ id: 42, copaymentAmount: 500, analysisAuthorizations: [] });
+    const next = atencionReducer(
+      { ...initialAtencionState, detail },
+      A.setCopaymentSuccess({ item: copaymentResponse }),
+    );
+    expect(next.detail?.analysisAuthorizations).toEqual([]);
+  });
+
+  it('setAuthorizationNumberSuccess setea el valor y usa las autorizaciones de la respuesta', () => {
     const auths = [{ id: 1, analysisId: 3, isAuthorized: true, active: true }] as any;
-    const detail = sample({ id: 42, analysisAuthorizations: auths });
-    // El endpoint dedicado devuelve la atención sin autorizaciones.
-    const response = sample({ id: 42, authorizationNumber: 'AUTH-1', analysisAuthorizations: [] });
+    const detail = sample({ id: 42, analysisAuthorizations: [] });
+    const response = sample({ id: 42, authorizationNumber: 'AUTH-1', analysisAuthorizations: auths });
     const next = atencionReducer(
       { ...initialAtencionState, detail, authorizationMutating: true },
       A.setAuthorizationNumberSuccess({ item: response }),
     );
     expect(next.detail?.authorizationNumber).toBe('AUTH-1');
-    expect(next.detail?.analysisAuthorizations).toEqual(auths); // no se vacía
+    expect(next.detail?.analysisAuthorizations).toEqual(auths);
     expect(next.authorizationMutating).toBe(false);
   });
 
