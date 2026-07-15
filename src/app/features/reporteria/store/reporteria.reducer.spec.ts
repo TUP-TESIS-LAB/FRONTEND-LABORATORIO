@@ -17,7 +17,7 @@ describe('reporteriaReducer', () => {
     expect(state.content).toEqual([]);
     expect(state.error).toBeNull();
     expect(state.query.page).toBe(0);
-    expect(state.query.sortField).toBe('lastName');
+    expect(state.query.sortField).toBe('apellido');
     expect(state.query.sortDir).toBe('ASC');
     expect(state.loading).toBe(true);
   });
