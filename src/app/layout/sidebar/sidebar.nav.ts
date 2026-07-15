@@ -105,6 +105,10 @@ export const NAV_SECTIONS: NavSection[] = [
         ],
       },
       { kind: 'link', label: 'Stock e insumos',  icon: 'pi pi-box',      path: '/stock', moduleKey: ModuleKey.Stock, sectionKey: 'STOCK' },
+      // roleKey = unión de roles con al menos un reporte en el catálogo (ver
+      // reporteria.routes.ts REPORTERIA_ROLES); el gate fino por reporte lo hace
+      // la propia página de índice al listar solo los reportes del rol del usuario.
+      { kind: 'link', label: 'Reportes', icon: 'pi pi-chart-line', path: '/reporteria', roleKey: ['ADMINISTRADOR', 'RESPONSABLE_SECRETARIA'] },
     ],
   },
 ];

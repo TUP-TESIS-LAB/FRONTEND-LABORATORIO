@@ -9,6 +9,13 @@ export interface TableColumn {
    * tooltip. Útil para señalar que las celdas de esa columna tienen info en el hover.
    */
   headerInfo?: string;
+  /**
+   * Si es `true`, el header se renderiza con `pSortableColumn` (click para ordenar) y
+   * el ícono de sort. En modo `lazy`, ordenar dispara `(lazyLoad)` igual que paginar —
+   * el consumidor lee `sortField`/`sortOrder` del evento. Default: `false` (compatible
+   * con todo el código existente que no declara esta propiedad).
+   */
+  sortable?: boolean;
 }
 
 export interface TableAction {

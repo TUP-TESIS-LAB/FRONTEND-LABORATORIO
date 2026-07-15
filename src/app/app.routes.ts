@@ -113,6 +113,12 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/obras-sociales/obras-sociales.routes').then((m) => m.OBRAS_SOCIALES_ROUTES),
       },
+      {
+        path: 'reporteria',
+        data: { breadcrumb: 'Reportes' },
+        loadChildren: () =>
+          import('./features/reporteria/reporteria.routes').then((m) => m.REPORTERIA_ROUTES),
+      },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
