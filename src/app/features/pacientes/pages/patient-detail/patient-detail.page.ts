@@ -164,7 +164,7 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
                       </div>
                     </div>
                     @if (row.reportAvailable) {
-                      <div class="mb-2 flex items-center gap-2">
+                      <div class="mb-2 flex items-center justify-end gap-2">
                         <p-button
                           size="small"
                           icon="pi pi-print"
