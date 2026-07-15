@@ -87,6 +87,7 @@ export const USUARIOS_REPORTS: ReportDef[] = [
     description: 'Usuarios dados de alta en el rango de fechas elegido, interno vs. externo.',
     endpoint: `${BASE}/altas`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['periodo', 'altasInternas', 'altasExternas', 'total'],
     defaultSort: { field: 'periodo', direction: 'ASC' },
     filters: [

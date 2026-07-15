@@ -10,6 +10,7 @@ export const SUCURSALES_REPORTS: ReportDef[] = [
     description: 'Listado general de sucursales del tenant.',
     endpoint: BASE,
     roles: ROLES,
+    searchKey: 'busqueda',
     sortableFields: ['codigo', 'descripcion', 'estado'],
     defaultSort: { field: 'codigo', direction: 'ASC' },
     filters: [
@@ -42,6 +43,7 @@ export const SUCURSALES_REPORTS: ReportDef[] = [
     description: 'Cantidad de sucursales agrupadas por estado y provincia.',
     endpoint: `${BASE}/por-estado-provincia`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['estado', 'provincia', 'cantidad'],
     defaultSort: { field: 'provincia', direction: 'ASC' },
     filters: [],
@@ -60,6 +62,7 @@ export const SUCURSALES_REPORTS: ReportDef[] = [
     description: 'Sucursales que todavía no tienen un workspace configurado.',
     endpoint: `${BASE}/sin-workspace`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['codigo', 'descripcion', 'fechaAlta'],
     defaultSort: { field: 'fechaAlta', direction: 'DESC' },
     filters: [],

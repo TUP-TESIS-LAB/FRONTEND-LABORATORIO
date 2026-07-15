@@ -79,6 +79,7 @@ export const PACIENTES_REPORTS: ReportDef[] = [
     description: 'Pacientes dados de alta en el rango de fechas elegido.',
     endpoint: `${BASE}/altas-por-periodo`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['periodo'],
     defaultSort: { field: 'periodo', direction: 'DESC' },
     filters: [
@@ -104,6 +105,7 @@ export const PACIENTES_REPORTS: ReportDef[] = [
     description: 'Distribución de pacientes por rango etario y sexo.',
     endpoint: `${BASE}/demografia`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['grupoEtario', 'sexo', 'cantidad'],
     defaultSort: { field: 'grupoEtario', direction: 'ASC' },
     filters: [],
@@ -122,6 +124,7 @@ export const PACIENTES_REPORTS: ReportDef[] = [
     description: 'Cantidad de pacientes agrupados por obra social/cobertura.',
     endpoint: `${BASE}/por-cobertura`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['cobertura', 'cantidadPacientes'],
     defaultSort: { field: 'cantidadPacientes', direction: 'DESC' },
     filters: [
@@ -148,6 +151,7 @@ export const PACIENTES_REPORTS: ReportDef[] = [
     description: 'Ranking de campos omitidos entre pacientes con datos incompletos.',
     endpoint: `${BASE}/datos-incompletos`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['campo', 'cantidadPacientes'],
     defaultSort: { field: 'cantidadPacientes', direction: 'DESC' },
     filters: [],

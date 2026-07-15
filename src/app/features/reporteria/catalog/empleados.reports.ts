@@ -10,6 +10,7 @@ export const EMPLEADOS_REPORTS: ReportDef[] = [
     description: 'Listado general de empleados con su cuenta de usuario asociada.',
     endpoint: BASE,
     roles: ROLES,
+    searchKey: 'busqueda',
     sortableFields: ['apellido', 'documento'],
     defaultSort: { field: 'apellido', direction: 'ASC' },
     filters: [
@@ -40,6 +41,7 @@ export const EMPLEADOS_REPORTS: ReportDef[] = [
     description: 'Movimientos de alta y baja de empleados en el rango de fechas elegido.',
     endpoint: `${BASE}/altas-bajas-por-periodo`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['periodo'],
     defaultSort: { field: 'periodo', direction: 'DESC' },
     filters: [
@@ -66,6 +68,7 @@ export const EMPLEADOS_REPORTS: ReportDef[] = [
     description: 'Empleados con cuentas inactivas hace más de N días u otros problemas de higiene.',
     endpoint: `${BASE}/higiene-cuentas`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['apellido', 'diasSinAcceso'],
     defaultSort: { field: 'diasSinAcceso', direction: 'DESC' },
     filters: [

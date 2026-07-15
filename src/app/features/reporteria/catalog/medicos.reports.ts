@@ -10,6 +10,7 @@ export const MEDICOS_REPORTS: ReportDef[] = [
     description: 'Listado general de médicos derivantes con matrícula y especialidad.',
     endpoint: BASE,
     roles: ROLES,
+    searchKey: 'busqueda',
     sortableFields: ['apellido', 'matricula', 'especialidad'],
     defaultSort: { field: 'apellido', direction: 'ASC' },
     filters: [
@@ -45,6 +46,7 @@ export const MEDICOS_REPORTS: ReportDef[] = [
     description: 'Médicos derivantes dados de alta en el rango de fechas elegido.',
     endpoint: `${BASE}/altas-por-periodo`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['periodo'],
     defaultSort: { field: 'periodo', direction: 'DESC' },
     filters: [
@@ -70,6 +72,7 @@ export const MEDICOS_REPORTS: ReportDef[] = [
     description: 'Cantidad de médicos derivantes agrupados por especialidad.',
     endpoint: `${BASE}/por-especialidad`,
     roles: ROLES,
+    searchKey: null,
     sortableFields: ['especialidad', 'cantidad'],
     defaultSort: { field: 'cantidad', direction: 'DESC' },
     filters: [],
