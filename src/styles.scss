@@ -12,6 +12,30 @@
 @import "tailwindcss" layer(tailwind);
 @plugin "tailwindcss-primeui";
 
+// ── Shim de compatibilidad Tailwind v4 ──
+// El preflight de Tailwind v4 aplica `border: 0 solid` a `*`. Cualquier
+// utilidad `border` / `border-t` / etc. sin color explícito resuelve a
+// `currentColor`, que hereda `--ds-text` (casi negro) en vez del borde
+// gris del Design System.
+//
+// IMPORTANTE: esto va DENTRO de la sub-layer `tailwind.base` (no como CSS
+// sin layer). El import de arriba usa `layer(tailwind)`, que anida el
+// `@layer theme, base, components, utilities;` interno de Tailwind como
+// `tailwind.theme`, `tailwind.base`, etc. Si este shim fuera CSS sin layer,
+// por spec de cascade layers GANARÍA incondicionalmente sobre CUALQUIER
+// regla en capas — incluidas las utilidades `border-orange-300`,
+// `border-blue-200`, `border-primary`, etc. que ya se usan a propósito en
+// el repo (banners de estado, selección) — rompiéndolas. Al declararlo en
+// `tailwind.base`, sólo compite con el preflight (mismo selector, gana por
+// orden de aparición) y sigue perdiendo contra `tailwind.utilities`
+// (declarada después en el orden interno de Tailwind), que es donde viven
+// las clases `border-{color}`.
+@layer tailwind.base {
+  *, ::before, ::after {
+    border-color: var(--ds-border);
+  }
+}
+
 // ── SaaS Admin dark-theme palette (available globally so portaled overlays can reach them) ──
 :root {
   --saas-bg-page:      #1a1b3a;
