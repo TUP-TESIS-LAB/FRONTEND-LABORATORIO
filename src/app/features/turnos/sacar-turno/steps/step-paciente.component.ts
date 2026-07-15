@@ -6,18 +6,13 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { PatientSearchAutocompleteComponent } from '@features/pacientes/components/patient-search-autocomplete/patient-search-autocomplete.component';
 import { CreatePatientRequest, Gender, Patient, SexAtBirth } from '@features/pacientes/models/patient.model';
+import { SEX_OPTS } from '@features/pacientes/models/patient-labels';
 
 const GENEROS: Array<{ label: string; value: Gender }> = [
   { label: 'Masculino', value: 'MALE' },
   { label: 'Femenino', value: 'FEMALE' },
   { label: 'Otro', value: 'OTHER' },
   { label: 'Sin especificar', value: 'NOT_SPECIFIED' },
-];
-
-const SEXOS: Array<{ label: string; value: SexAtBirth }> = [
-  { label: 'Masculino', value: 'MALE' },
-  { label: 'Femenino', value: 'FEMALE' },
-  { label: 'Intersexual', value: 'INTERSEX' },
 ];
 
 /** Paso 1: la secretaria busca un paciente existente o lo da de alta rápido. */
@@ -117,7 +112,7 @@ export class StepPacienteComponent {
 
   protected showAlta = false;
   protected readonly generos = GENEROS;
-  protected readonly sexos = SEXOS;
+  protected readonly sexos = SEX_OPTS;
   protected readonly hoy = new Date();
 
   protected readonly form = this.fb.group({

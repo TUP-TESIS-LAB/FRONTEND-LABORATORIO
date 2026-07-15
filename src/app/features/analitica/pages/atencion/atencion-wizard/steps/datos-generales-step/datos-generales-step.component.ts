@@ -24,6 +24,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { NgClass } from '@angular/common';
 import { Gender, SexAtBirth } from '@features/pacientes/models/patient.model';
+import { SEX_OPTS } from '@features/pacientes/models/patient-labels';
 import { CoverageCatalog, EMPTY_CATALOG, InsurerOption, PlanOption, insurerNameForPlan, planName, plansForInsurer, planById } from '@features/pacientes/models/coverage-catalog.model';
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
@@ -60,12 +61,6 @@ const GENDER_OPTS: { value: Gender; label: string }[] = [
   { value: 'FEMALE', label: 'Femenino' },
   { value: 'OTHER', label: 'Otro' },
   { value: 'NOT_SPECIFIED', label: 'Sin especificar' },
-];
-
-const SEX_OPTS: { value: SexAtBirth; label: string }[] = [
-  { value: 'MALE', label: 'Masculino' },
-  { value: 'FEMALE', label: 'Femenino' },
-  { value: 'INTERSEX', label: 'Intersex' },
 ];
 
 /**

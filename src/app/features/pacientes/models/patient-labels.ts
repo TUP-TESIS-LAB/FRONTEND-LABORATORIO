@@ -12,7 +12,6 @@ export const GENDER_LABEL: Record<Gender, string> = {
 export const SEX_LABEL: Record<SexAtBirth, string> = {
   MALE: 'Masculino',
   FEMALE: 'Femenino',
-  INTERSEX: 'Intersex',
 };
 
 export const STATUS_LABEL: Record<PatientStatus, string> = {
