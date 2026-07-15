@@ -30,7 +30,8 @@ import {
   returnPhase,
 } from '../../../store/atencion/atencion.actions';
 import {
-  selectDetail, selectDetailLoading, selectMutating, selectPatientResolving, selectResolvedPatient,
+  selectCopaymentMutating, selectDetail, selectDetailLoading, selectMutating, selectPatientResolving,
+  selectResolvedPatient,
 } from '../../../store/atencion/atencion.selectors';
 import {
   clearAtencionSession, readAtencionSession, writeAtencionSession,
@@ -278,6 +279,7 @@ export class AtencionWizardComponent {
   protected readonly detail   = this.store.selectSignal(selectDetail);
   protected readonly loading  = this.store.selectSignal(selectDetailLoading);
   protected readonly mutating = this.store.selectSignal(selectMutating);
+  protected readonly copaymentMutating = this.store.selectSignal(selectCopaymentMutating);
   protected readonly patientResolving = this.store.selectSignal(selectPatientResolving);
   protected readonly isTerminal    = isTerminal;
   protected readonly AttentionState = AttentionState;
@@ -305,6 +307,10 @@ export class AtencionWizardComponent {
     switch (this.uiStep()?.key) {
       case 'datos':    return !this.datosCanConfirm();
       case 'analisis': return this.analysisCount() === 0 || this.mutating();
+      // KAN-246 B5: si el copago se está persistiendo (blur en cobro-step), esperamos a
+      // que termine antes de habilitar "Continuar" — endCollection decide ON_BILLING_PROCESS
+      // vs AWAITING_CONFIRMATION según el total, y necesita leer el copago ya persistido.
+      case 'cobro':    return this.mutating() || this.copaymentMutating();
       default:         return this.mutating();
     }
   }
@@ -490,7 +496,11 @@ export class AtencionWizardComponent {
 
   canReturn(): boolean {
     const s = this.detail()?.attentionState;
-    return s != null && s !== AttentionState.REGISTERING_GENERAL_DATA && !isTerminal(s);
+    // KAN-246 B4: una vez registrado el cobro (paymentId != null) no se puede retroceder —
+    // el backend rechaza el intento igual (ReturnPhaseUseCase), pero ocultamos el botón para
+    // no mostrar una acción que va a fallar. Sin escape hatch: la salida es cancelar.
+    return s != null && s !== AttentionState.REGISTERING_GENERAL_DATA && !isTerminal(s)
+      && this.detail()?.paymentId == null;
   }
   onReturnPhase(): void {
     const d = this.detail();
