@@ -37,6 +37,37 @@ export function isPendingEmission(status: InvoiceEmissionStatus | null): boolean
 }
 
 /**
+ * true si corresponde ARRANCAR/MANTENER el polling del detalle del pago. Hallazgo #3 de la
+ * review (Pertusati): `isPendingEmission` sola no alcanza — un pago CANCELLED puede quedar con
+ * `emissionStatus` todavía en PENDING (la emisión nunca se completa porque ya no tiene sentido
+ * emitir un comprobante de un pago anulado, KAN-242) y el polling seguiría para siempre. Se
+ * corta apenas el pago pasa a CANCELLED, aunque el emissionStatus no haya llegado a un estado
+ * terminal propio (EMITTED/FAILED).
+ */
+export function shouldPollEmission(
+  emissionStatus: InvoiceEmissionStatus | null,
+  paymentStatus: PaymentStatus | undefined,
+): boolean {
+  return isPendingEmission(emissionStatus) && paymentStatus !== 'CANCELLED';
+}
+
+/**
+ * Tope de intentos de polling del detalle del pago antes de frenar y mostrar el fallback
+ * manual (hallazgo #3, segunda parte). A `intervalMs: 5000` son ~2 minutos — suficiente para
+ * que ARCA confirme el CAE en el caso normal sin dejar un poll infinito si algo se cuelga
+ * del lado del proveedor fiscal.
+ */
+export const EMISSION_POLL_MAX_ATTEMPTS = 24;
+
+/** true cuando se alcanzó (o superó) el tope de intentos sin que la emisión resuelva. */
+export function hasReachedEmissionPollCap(
+  attempts: number,
+  maxAttempts: number = EMISSION_POLL_MAX_ATTEMPTS,
+): boolean {
+  return attempts >= maxAttempts;
+}
+
+/**
  * El botón "Descargar PDF" se bloquea mientras el comprobante ARCA está
  * PENDING (el backend devuelve 409 — el PDF todavía no existe), salvo en
  * pagos ya CANCELLED, que siempre se pueden descargar con watermark ANULADO
@@ -216,6 +247,15 @@ export function isDownloadBlockedByPendingEmission(
                   El comprobante todavía se está emitiendo. Vas a poder descargarlo apenas ARCA confirme el CAE.
                 </div>
               }
+              @if (emissionPollTimedOut()) {
+                <div class="fin-download-hint fin-download-hint--warning">
+                  <i class="pi pi-exclamation-triangle"></i>
+                  <span>
+                    La emisión todavía no se resolvió. Actualizá manualmente para ver si ARCA ya confirmó el CAE.
+                    <button type="button" class="fin-inline-link" (click)="actualizarEmisionManualmente()">Actualizar</button>
+                  </span>
+                </div>
+              }
               @if (p.status === 'PROCESSED') {
                 <button class="fin-action-btn fin-action-btn--danger" type="button" (click)="abrirCancelar()">
                   <i class="pi pi-ban"></i> Cancelar pago
@@ -359,6 +399,11 @@ export function isDownloadBlockedByPendingEmission(
       padding: 0 2px;
     }
     .fin-download-hint i { margin-top: 1px; }
+    .fin-download-hint--warning { color: #b45309; }
+    .fin-inline-link {
+      display: inline; padding: 0; margin-left: 4px; border: none; background: none;
+      font: inherit; color: #2563eb; text-decoration: underline; cursor: pointer;
+    }
   `],
 })
 export class CobroDetallePage implements OnInit {
@@ -398,21 +443,37 @@ export class CobroDetallePage implements OnInit {
   /**
    * Polling condicional: patrón nuevo en el repo (nada más pollea sobre estado
    * de dominio hoy). El `effect()` arranca el handle recién cuando aparece
-   * PENDING y lo para (nuleándolo) al llegar a estado terminal — `stop()`
-   * completa los subjects del handle y no es reiniciable, así que no lo
-   * reusamos, creamos uno nuevo si hiciera falta.
+   * PENDING y lo para (nuleándolo) al llegar a estado terminal, al cancelarse
+   * el pago (hallazgo #3) o al alcanzar `EMISSION_POLL_MAX_ATTEMPTS` (hallazgo
+   * #3, tope) — `stop()` completa los subjects del handle y no es reiniciable,
+   * así que no lo reusamos, creamos uno nuevo si hiciera falta.
    */
   private handle: PollingHandle | null = null;
+  private pollAttempts = 0;
+
+  /** true cuando el polling se frenó por tope de intentos sin que la emisión resuelva. */
+  protected readonly emissionPollTimedOut = signal(false);
 
   constructor() {
     effect(() => {
       const status = this.emissionStatus();
-      if (isPendingEmission(status)) {
+      const paymentStatus = this.payment()?.status;
+
+      if (shouldPollEmission(status, paymentStatus)) {
         if (!this.handle) {
+          this.pollAttempts = 0;
+          this.emissionPollTimedOut.set(false);
           this.handle = this.polling.startPolling({
             key: 'cobro-detalle',
             intervalMs: 5000,
             poll: () => {
+              this.pollAttempts += 1;
+              if (hasReachedEmissionPollCap(this.pollAttempts)) {
+                this.handle?.stop();
+                this.handle = null;
+                this.emissionPollTimedOut.set(true);
+                return of(null);
+              }
               const p = this.payment();
               if (p) this.store.dispatch(pollPayment({ id: p.id }));
               return of(null);
@@ -426,6 +487,15 @@ export class CobroDetallePage implements OnInit {
         this.handle = null;
       }
     });
+  }
+
+  /** Reintento manual del fallback: un solo poll fuera del schedule automático (que ya frenó). */
+  protected actualizarEmisionManualmente(): void {
+    const p = this.payment();
+    if (!p) return;
+    this.pollAttempts = 0;
+    this.emissionPollTimedOut.set(false);
+    this.store.dispatch(pollPayment({ id: p.id }));
   }
 
   ngOnInit(): void {

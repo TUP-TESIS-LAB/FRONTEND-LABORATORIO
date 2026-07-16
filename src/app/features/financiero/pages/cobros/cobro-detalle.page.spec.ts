@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { isDownloadBlockedByPendingEmission, isPendingEmission } from './cobro-detalle.page';
+import {
+  isDownloadBlockedByPendingEmission,
+  isPendingEmission,
+  shouldPollEmission,
+  hasReachedEmissionPollCap,
+  EMISSION_POLL_MAX_ATTEMPTS,
+} from './cobro-detalle.page';
 
 /**
  * `CobroDetallePage` es una smart page que mezcla Store, Router,
@@ -39,5 +45,52 @@ describe('isDownloadBlockedByPendingEmission', () => {
 
   it('no bloquea con comprobantes no electrónicos (sin emissionStatus)', () => {
     expect(isDownloadBlockedByPendingEmission(null, 'PROCESSED')).toBe(false);
+  });
+});
+
+/**
+ * Regresión del hallazgo #3 de la review (Pertusati): `isPendingEmission` sola no alcanza para
+ * decidir si hay que seguir polleando — un pago CANCELLED puede quedar con `emissionStatus`
+ * PENDING para siempre (nunca se termina de emitir un comprobante de un pago anulado), y el
+ * polling anterior no tenía forma de frenar ese caso.
+ */
+describe('shouldPollEmission', () => {
+  it('pollea con PENDING y el pago activo', () => {
+    expect(shouldPollEmission('PENDING', 'PROCESSED')).toBe(true);
+    expect(shouldPollEmission('PENDING', 'CREATED')).toBe(true);
+  });
+
+  it('NO pollea si el pago fue CANCELLED, aunque emissionStatus siga PENDING (KAN-242)', () => {
+    expect(shouldPollEmission('PENDING', 'CANCELLED')).toBe(false);
+  });
+
+  it('no pollea en estados terminales de emisión', () => {
+    expect(shouldPollEmission('EMITTED', 'PROCESSED')).toBe(false);
+    expect(shouldPollEmission('FAILED', 'PROCESSED')).toBe(false);
+    expect(shouldPollEmission(null, 'PROCESSED')).toBe(false);
+  });
+});
+
+/**
+ * Regresión del hallazgo #3, segunda parte: el polling no tenía tope de intentos — sin la
+ * transición a CANCELLED, un pago que nunca resuelve la emisión pollearía indefinidamente.
+ */
+describe('hasReachedEmissionPollCap', () => {
+  it('no llegó al tope todavía', () => {
+    expect(hasReachedEmissionPollCap(1)).toBe(false);
+    expect(hasReachedEmissionPollCap(EMISSION_POLL_MAX_ATTEMPTS - 1)).toBe(false);
+  });
+
+  it('frena exactamente al llegar al tope', () => {
+    expect(hasReachedEmissionPollCap(EMISSION_POLL_MAX_ATTEMPTS)).toBe(true);
+  });
+
+  it('frena si ya lo superó', () => {
+    expect(hasReachedEmissionPollCap(EMISSION_POLL_MAX_ATTEMPTS + 5)).toBe(true);
+  });
+
+  it('acepta un tope custom', () => {
+    expect(hasReachedEmissionPollCap(3, 3)).toBe(true);
+    expect(hasReachedEmissionPollCap(2, 3)).toBe(false);
   });
 });
