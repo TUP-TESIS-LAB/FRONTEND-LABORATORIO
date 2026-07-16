@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Form Stepper — Mockups</title>
+<style>
+  :root{
+    --bg:#f8fafc;--surface:#fff;--border:#e2e8f0;--muted:#64748b;--text:#0f172a;
+    --primary:#2563eb;--success:#10b981;--danger:#dc2626;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 24px;background:var(--bg);color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px}
+  h2{font-size:18px;margin:32px 0 4px}
+  h3{font-size:15px;margin:28px 0 6px;color:var(--text)}
+  .lead{color:var(--muted);font-size:13px;margin:0 0 24px}
+  .summary{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:13px}
+  .summary ul{margin:6px 0 0 18px;padding:0}
+  .summary li{margin-bottom:3px}
+  kbd{background:#f1f5f9;border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:3px;padding:0 4px;font-family:inherit;font-size:11px}
+
+  .s-shell{background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px;font-size:12px;box-shadow:0 1px 2px rgba(15,23,42,0.04)}
+  .s-header{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);background:#fafbfc}
+  .s-header h4{margin:0;font-size:13px;font-weight:600}
+  .s-crumb{margin-left:auto;font-size:10px;color:var(--muted)}
+  .s-steps{display:flex;align-items:center;gap:6px;padding:14px 24px;border-bottom:1px solid var(--border);background:#fff}
+  .s-step{display:flex;align-items:center;gap:8px;color:var(--muted);cursor:default}
+  .s-step.clickable{cursor:pointer}
+  .s-step .num{width:22px;height:22px;border-radius:50%;border:1.5px solid #cbd5e1;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;background:#fff}
+  .s-step.done .num{background:var(--success);border-color:var(--success);color:#fff}
+  .s-step.done{color:var(--text)}
+  .s-step.current .num{background:var(--primary);border-color:var(--primary);color:#fff}
+  .s-step.current{color:var(--primary);font-weight:600}
+  .s-step.locked{color:#94a3b8}
+  .s-step .lbl{font-size:11px}
+  .s-step .sub{font-size:9px;color:#94a3b8;display:block;font-weight:400}
+  .s-connector{flex:1;height:2px;background:var(--border);margin:0 2px}
+  .s-connector.done{background:var(--success)}
+  .s-body{padding:20px 24px;min-height:200px;background:#fff}
+  .s-body h5{margin:0 0 4px 0;font-size:13px;font-weight:600}
+  .s-body .h5sub{font-size:10px;color:var(--muted);margin-bottom:14px}
+  .s-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .s-field label{display:block;font-size:10px;color:#475569;margin-bottom:3px;font-weight:500}
+  .s-field .inp{height:28px;background:#f8fafc;border:1px solid var(--border);border-radius:4px}
+  .s-footer{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:#fafbfc}
+  .s-footer .meta{font-size:10px;color:var(--muted)}
+  .s-btn{padding:6px 14px;border-radius:4px;font-size:11px;font-weight:500;border:1px solid #cbd5e1;background:#fff;color:var(--text);display:inline-block}
+  .s-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .s-btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+  .s-btn.success{background:var(--success);color:#fff;border-color:var(--success)}
+  .s-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;padding:8px 10px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:4px;font-size:10px}
+  .s-row .pill{padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3;font-size:9px;font-weight:600}
+  .s-add{padding:8px 10px;border:1px dashed #94a3b8;border-radius:4px;color:var(--muted);font-size:10px;text-align:center;background:#fff}
+  .subsec{margin-top:18px}
+  .subsec-title{font-size:10px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .subsec-title .opt{background:#f1f5f9;color:var(--muted);padding:1px 6px;border-radius:8px;font-size:8px;letter-spacing:0;text-transform:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Patient Form Stepper — Mockups</h1>
+<p class="lead">Rediseño de <code>patient-form.page.ts</code> de pantalla larga (2 col, 4 cards) a un stepper horizontal de 3 pasos.</p>
+
+<div class="summary">
+  <strong>Decisiones tomadas en brainstorm</strong>
+  <ul>
+    <li><strong>Shell:</strong> stepper horizontal arriba (opción A).</li>
+    <li><strong>Pasos:</strong> 3 — Datos generales → Coberturas → Contacto &amp; Dirección.</li>
+    <li><strong>Navegación:</strong> lineal con Continuar/Atrás. Headers de pasos ya visitados son clickeables; no se puede saltar adelante.</li>
+    <li><strong>Obligatorios:</strong> sólo paso 1 (Datos generales). Pasos 2 y 3 son opcionales.</li>
+    <li><strong>Submit:</strong> botón "Registrar paciente" aparece sólo en el paso 3 (el Continuar del último paso se transforma).</li>
+    <li><strong>Edición:</strong> mismo stepper, los 3 headers ya están "visitados" desde el inicio (navegación libre). Botón "Guardar cambios" visible en cualquier paso.</li>
+  </ul>
+</div>
+
+<h2>Paso 1 — Datos generales</h2>
+<div class="s-shell">
+  <div class="s-header">
+    <span class="s-btn ghost">← Volver</span>
+    <h4>Nuevo paciente</h4>
+    <span class="s-crumb">Pacientes › Nuevo</span>
+  </div>
+  <div class="s-steps">
+    <div class="s-step current">
+      <span class="num">1</span>
+      <span class="lbl">Datos generales<span class="sub">Identidad del paciente</span></span>
+    </div>
+    <div class="s-connector"></div>
+    <div class="s-step locked">
+      <span class="num">2</span>
+      <span class="lbl">Coberturas<span class="sub">Obras sociales · opcional</span></span>
+    </div>
+    <div class="s-connector"></div>
+    <div class="s-step locked">
+      <span class="num">3</span>
+      <span class="lbl">Contacto &amp; Dirección<span class="sub">Cómo ubicarlo · opcional</span></span>
+    </div>
+  </div>
+  <div class="s-body">
+    <h5>Datos generales</h5>
+    <div class="h5sub">Lo mínimo para identificar al paciente. Único paso obligatorio.</div>
+    <div class="s-grid">
+      <div class="s-field"><label>Apellido*</label><div class="inp"></div></div>
+      <div class="s-field"><label>Nombre*</label><div class="inp"></div></div>
+      <div class="s-field"><label>DNI*</label><div class="inp"></div><div style="font-size:9px;color:var(--success);margin-top:3px">✓ DNI disponible</div></div>
+      <div class="s-field"><label>Fecha de nacimiento*</label><div class="inp"></div></div>
+      <div class="s-field"><label>Género</label><div class="inp"></div></div>
+      <div class="s-field"><label>Sexo registral</label><div class="inp"></div></div>
+    </div>
+  </div>
+  <div class="s-footer">
+    <span class="meta">Paso 1 de 3 · <kbd>Ctrl</kbd>+<kbd>→</kbd> avanzar</span>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <span class="s-btn">Cancelar</span>
+      <span class="s-btn primary">Continuar →</span>
+    </div>
+  </div>
+</div>
+
+<h2>Paso 2 — Coberturas (opcional)</h2>
+<div class="s-shell">
+  <div class="s-header">
+    <span class="s-btn ghost">← Volver</span>
+    <h4>Nuevo paciente <span style="color:var(--muted);font-weight:400">· García, María Elena</span></h4>
+    <span class="s-crumb">Pacientes › Nuevo</span>
+  </div>
+  <div class="s-steps">
+    <div class="s-step done clickable">
+      <span class="num">✓</span>
+      <span class="lbl">Datos generales<span class="sub">García, María · DNI 32.456.789</span></span>
+    </div>
+    <div class="s-connector done"></div>
+    <div class="s-step current">
+      <span class="num">2</span>
+      <span class="lbl">Coberturas<span class="sub">Obras sociales · opcional</span></span>
+    </div>
+    <div class="s-connector"></div>
+    <div class="s-step locked">
+      <span class="num">3</span>
+      <span class="lbl">Contacto &amp; Dirección<span class="sub">Cómo ubicarlo · opcional</span></span>
+    </div>
+  </div>
+  <div class="s-body">
+    <h5>Coberturas <span style="font-size:10px;color:var(--muted);font-weight:400">· opcional</span></h5>
+    <div class="h5sub">Si no agregás ninguna, el paciente queda como particular. Podés sumarlas más tarde.</div>
+
+    <div class="s-row">
+      <span class="pill">PRINCIPAL</span>
+      <strong>OSDE</strong>
+      <span style="color:var(--muted)">· Plan 210 · N° 88112233</span>
+      <span style="margin-left:auto;color:var(--muted)">✎  🗑</span>
+    </div>
+    <div class="s-row">
+      <span class="pill" style="background:#f1f5f9;color:#475569">SECUNDARIA</span>
+      <strong>Swiss Medical</strong>
+      <span style="color:var(--muted)">· SMG02 · N° 44557788</span>
+      <span style="margin-left:auto;color:var(--muted)">✎  🗑</span>
+    </div>
+    <div class="s-add">+ Agregar otra cobertura</div>
+  </div>
+  <div class="s-footer">
+    <span class="meta">Paso 2 de 3</span>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <span class="s-btn">Cancelar</span>
+      <span class="s-btn">← Atrás</span>
+      <span class="s-btn primary">Continuar →</span>
+    </div>
+  </div>
+</div>
+
+<h2>Paso 3 — Contacto &amp; Dirección (opcional)</h2>
+<div class="s-shell">
+  <div class="s-header">
+    <span class="s-btn ghost">← Volver</span>
+    <h4>Nuevo paciente <span style="color:var(--muted);font-weight:400">· García, María Elena</span></h4>
+    <span class="s-crumb">Pacientes › Nuevo</span>
+  </div>
+  <div class="s-steps">
+    <div class="s-step done clickable">
+      <span class="num">✓</span>
+      <span class="lbl">Datos generales<span class="sub">García, María · DNI 32.456.789</span></span>
+    </div>
+    <div class="s-connector done"></div>
+    <div class="s-step done clickable">
+      <span class="num">✓</span>
+      <span class="lbl">Coberturas<span class="sub">OSDE · Swiss Medical</span></span>
+    </div>
+    <div class="s-connector done"></div>
+    <div class="s-step current">
+      <span class="num">3</span>
+      <span class="lbl">Contacto &amp; Dirección<span class="sub">Último paso · opcional</span></span>
+    </div>
+  </div>
+  <div class="s-body">
+    <h5>Contacto y dirección <span style="font-size:10px;color:var(--muted);font-weight:400">· opcional</span></h5>
+    <div class="h5sub">Cómo ubicar al paciente. Podés saltarlo y registrarlo igual.</div>
+
+    <div class="subsec">
+      <div class="subsec-title">📞 Contactos <span class="opt">opcional</span></div>
+      <div class="s-row">
+        <span class="pill">PRINCIPAL</span>
+        <strong>📱 +54 9 11 5555-1234</strong>
+        <span style="margin-left:auto;color:var(--muted)">✎  🗑</span>
+      </div>
+      <div class="s-row">
+        <strong>✉ maria.garcia@gmail.com</strong>
+        <span style="margin-left:auto;color:var(--muted)">✎  🗑</span>
+      </div>
+      <div class="s-add">+ Agregar contacto</div>
+    </div>
+
+    <div class="subsec">
+      <div class="subsec-title">📍 Direcciones <span class="opt">opcional</span></div>
+      <div class="s-row">
+        <span class="pill">PRINCIPAL</span>
+        <strong>Av. Corrientes 1234, 4°B</strong>
+        <span style="color:var(--muted)">· CABA · CP 1043</span>
+        <span style="margin-left:auto;color:var(--muted)">✎  🗑</span>
+      </div>
+      <div class="s-add">+ Agregar dirección</div>
+    </div>
+  </div>
+  <div class="s-footer">
+    <span class="meta">Paso 3 de 3 · listo para registrar · <kbd>Ctrl</kbd>+<kbd>S</kbd></span>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <span class="s-btn">Cancelar</span>
+      <span class="s-btn">← Atrás</span>
+      <span class="s-btn success">✓ Registrar paciente</span>
+    </div>
+  </div>
+</div>
+
+<h2>Modo edición — todos los pasos navegables</h2>
+<p class="lead">Al editar, los 3 headers están "visitados" desde el inicio y "Guardar cambios" queda visible en cualquier paso.</p>
+
+<div class="s-shell">
+  <div class="s-header">
+    <span class="s-btn ghost">← Volver</span>
+    <h4>Editar paciente <span style="color:var(--muted);font-weight:400">· García, María Elena</span></h4>
+    <span class="s-crumb">Pacientes › Editar</span>
+  </div>
+  <div class="s-steps">
+    <div class="s-step done clickable">
+      <span class="num">✓</span><span class="lbl">Datos generales<span class="sub">García, María · DNI 32.456.789</span></span>
+    </div>
+    <div class="s-connector done"></div>
+    <div class="s-step current clickable">
+      <span class="num">2</span><span class="lbl">Coberturas<span class="sub">OSDE · Swiss Medical</span></span>
+    </div>
+    <div class="s-connector done"></div>
+    <div class="s-step done clickable">
+      <span class="num">✓</span><span class="lbl">Contacto &amp; Dirección<span class="sub">1 tel · 1 dirección</span></span>
+    </div>
+  </div>
+  <div class="s-body" style="min-height:120px">
+    <h5>Coberturas</h5>
+    <div class="h5sub">Editando paciente existente. Podés saltar a cualquier paso desde los headers.</div>
+    <div class="s-row">
+      <span class="pill">PRINCIPAL</span><strong>OSDE</strong>
+      <span style="color:var(--muted)">· Plan 210 · N° 88112233</span>
+      <span style="margin-left:auto;color:var(--muted)">✎  🗑</span>
+    </div>
+    <div class="s-add">+ Agregar otra cobertura</div>
+  </div>
+  <div class="s-footer">
+    <span class="meta">● Cambios sin guardar</span>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <span class="s-btn">Cancelar</span>
+      <span class="s-btn success">✓ Guardar cambios</span>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

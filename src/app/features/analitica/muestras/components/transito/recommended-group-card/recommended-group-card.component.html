@@ -1,0 +1,42 @@
+<!-- Referencia: el template real está inlineado en recommended-group-card.component.ts (workaround vitest). -->
+<article class="group-card" [class.outcome-here]="!isPendingDest" [class.outcome-pending]="isPendingDest">
+  <header>
+    <input type="checkbox" [checked]="allSelected" (change)="onAllToggle($event)" aria-label="Tildar todas las muestras del group">
+    <div class="title">
+      <span class="area">{{ title }}</span>
+      <span class="sub">{{ subtitle }}</span>
+    </div>
+    <span class="badge" [class.green]="!isPendingDest" [class.amber]="isPendingDest">
+      {{ isPendingDest ? 'Sin destino' : 'En proceso' }}
+    </span>
+    <span class="count">{{ group.sampleIds.length }} muestra{{ group.sampleIds.length === 1 ? '' : 's' }}</span>
+    @if (!isSinDestino) {
+      <button type="button" class="edit" (click)="toggleEditing.emit()">Editar destino</button>
+    }
+    <button type="button" class="send" [class.primary]="sendHighlighted" [disabled]="isPendingDest" (click)="send.emit()">{{ sendLabel }}</button>
+  </header>
+
+  @if (isEditing || isSinDestino) {
+    <div class="dest-form">
+      <select [value]="assignedSectionId ?? ''" (change)="onSectionChange($any($event.target).value)" aria-label="Sección de destino">
+        <option value="" disabled>Sección…</option>
+        @for (o of sectionOptions; track o.sectionId) { <option [value]="o.sectionId">{{ o.label }}</option> }
+      </select>
+    </div>
+  }
+
+  <div class="rows">
+    @for (s of samples; track s.id) {
+      <app-sample-row
+        [sample]="s"
+        [selected]="isSelected(s.id)"
+        [flashing]="isFlashing(s.id)"
+        [leaving]="isLeaving(s.id)"
+        (toggle)="toggleSample.emit(s.id)"
+      />
+      @if (isSinDestino && reasonOf(s.id)) {
+        <div class="row-reason"><i class="pi pi-info-circle"></i> {{ reasonOf(s.id) }}</div>
+      }
+    }
+  </div>
+</article>

@@ -1,0 +1,22 @@
+<p-button
+  label="Llamar"
+  severity="secondary"
+  [outlined]="true"
+  size="small"
+  (onClick)="call.emit()"
+  [ariaLabel]="'Llamar por pantalla turno ' + entryId" />
+<p-button
+  label="Atender"
+  severity="primary"
+  size="small"
+  (onClick)="nuevaAtencion.emit()"
+  [ariaLabel]="'Atender turno ' + entryId" />
+<p-button
+  icon="pi pi-times"
+  severity="danger"
+  [outlined]="true"
+  [rounded]="true"
+  size="small"
+  (onClick)="cancel.emit()"
+  pTooltip="Cancelar atención"
+  [ariaLabel]="'Cancelar atención ' + entryId" />

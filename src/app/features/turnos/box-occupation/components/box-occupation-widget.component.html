@@ -1,0 +1,23 @@
+<div class="box-widget">
+  @if (myBox(); as box) {
+    <button type="button" class="box-widget__pill" (click)="menu.toggle($event)">
+      <span class="dot"></span>
+      Box {{ box.boxNumber }}
+      <i class="pi pi-angle-down"></i>
+    </button>
+    <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
+  } @else {
+    <button type="button" class="box-widget__no-box" (click)="modalVisible.set(true)">
+      Elegir box
+    </button>
+  }
+
+  <app-box-selector-modal
+    [branchId]="branchId"
+    [totalBoxes]="totalBoxes"
+    [boxType]="boxType"
+    [currentUserId]="currentUserId"
+    [visible]="modalVisible()"
+    [canClose]="true"
+    (closed)="modalVisible.set(false)" />
+</div>

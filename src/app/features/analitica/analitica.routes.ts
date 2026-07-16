@@ -1,0 +1,95 @@
+import { Routes } from '@angular/router';
+import { hasRoleGuard } from '@core/guards/has-role.guard';
+import { sectionGuard } from '@core/guards/section.guard';
+
+export const ANALITICA_ROUTES: Routes = [
+  {
+    path: '',
+    children: [
+      { path: '', redirectTo: '/turnos/recepcion', pathMatch: 'full' },
+      {
+        path: 'extraccion',
+        loadComponent: () => import('./pages/extraction-queue/extraction-queue.page')
+          .then(m => m.ExtractionQueuePage),
+        canMatch: [hasRoleGuard(['EXTRACTOR', 'ADMINISTRADOR'])],
+        title: 'Cola de extracción',
+        data: { breadcrumb: 'Extracción' },
+      },
+      // El listado de atenciones NO tiene pantalla propia: vive embebido en la tab
+      // "Atenciones" de Recepción (/turnos/recepcion). Cualquier link viejo o URL directa
+      // a /analitica/atencion redirige ahí. El wizard sigue en atencion/nueva y atencion/:id.
+      { path: 'atencion', pathMatch: 'full', redirectTo: '/turnos/recepcion' },
+      {
+        path: 'atencion/nueva',
+        loadComponent: () => import('./pages/atencion/atencion-wizard/atencion-wizard.component')
+          .then(m => m.AtencionWizardComponent),
+        data: { breadcrumb: 'Atención' },
+      },
+      {
+        path: 'atencion/:id',
+        loadComponent: () => import('./pages/atencion/atencion-wizard/atencion-wizard.component')
+          .then(m => m.AtencionWizardComponent),
+        data: { breadcrumb: 'Atención' },
+      },
+      { path: 'protocolos', data: { breadcrumb: 'Protocolos' }, loadComponent: () => import('./pages/protocolos/protocolos.component').then(m => m.ProtocolosComponent) },
+      { path: 'rotulos',    data: { breadcrumb: 'Rótulos' },    loadComponent: () => import('./pages/rotulos/rotulos.component').then(m => m.RotulosComponent) },
+      {
+        path: 'recoleccion',
+        canMatch: [sectionGuard('PREANALITICA')],
+        loadComponent: () => import('./muestras/pages/worklist/worklist.page').then(m => m.WorklistPage),
+        data: { screenKey: 'recoleccion', breadcrumb: 'Recolección' },
+        title: 'Recolección',
+      },
+      {
+        path: 'traslado',
+        canMatch: [sectionGuard('PREANALITICA')],
+        loadComponent: () => import('./muestras/pages/transito/transito.page').then(m => m.TransitoPage),
+        data: { breadcrumb: 'Tránsito' },
+        title: 'Tránsito',
+      },
+      {
+        path: 'procesamiento',
+        canMatch: [sectionGuard('ANALITICA')],
+        loadComponent: () => import('./muestras/pages/procesamiento/procesamiento.page').then(m => m.ProcesamientoPage),
+        title: 'Procesamiento',
+        data: { breadcrumb: 'Procesamiento' },
+      },
+      {
+        path: 'procesamiento/cargar',
+        canMatch: [sectionGuard('ANALITICA')],
+        loadComponent: () => import('./muestras/pages/cargar-resultados/cargar-resultados.page').then(m => m.CargarResultadosPage),
+        title: 'Cargar resultados',
+        data: { breadcrumb: 'Cargar resultados' },
+      },
+      {
+        path: 'validacion',
+        canMatch: [sectionGuard('ANALITICA')],
+        loadComponent: () => import('./muestras/pages/validacion-protocolos/validacion-protocolos.page').then(m => m.ValidacionProtocolosPage),
+        title: 'Validación',
+        data: { breadcrumb: 'Validación' },
+      },
+      {
+        path: 'validacion/:protocolId',
+        canMatch: [sectionGuard('ANALITICA')],
+        loadComponent: () => import('./muestras/pages/validacion-protocolos/validar-protocolo/validar-protocolo.page').then(m => m.ValidarProtocoloPage),
+        title: 'Validar protocolo',
+        data: { breadcrumb: 'Validar protocolo' },
+      },
+      {
+        path: 'descarte',
+        canMatch: [sectionGuard('POSTANALITICA')],
+        loadComponent: () => import('./muestras/pages/worklist/worklist.page').then(m => m.WorklistPage),
+        data: { screenKey: 'descarte', breadcrumb: 'Descarte' },
+        title: 'Descarte',
+      },
+      { path: 'nbu', data: { breadcrumb: 'Nomenclador NBU' }, loadComponent: () => import('./pages/nbu/nbu.component').then(m => m.NbuComponent) },
+      {
+        path: 'metricas',
+        canMatch: [hasRoleGuard(['BIOQUIMICO', 'ADMINISTRADOR'])],
+        loadComponent: () => import('./pages/dashboard/analitica-dashboard.page').then(m => m.AnaliticaDashboardPage),
+        title: 'Métricas de Analítica',
+        data: { breadcrumb: 'Métricas' },
+      },
+    ],
+  },
+];

@@ -1,0 +1,507 @@
+import {
+  ChangeDetectionStrategy, Component, computed, effect, HostListener, inject, input, OnDestroy, signal,
+} from '@angular/core';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Actions, ofType } from '@ngrx/effects';
+import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
+import {
+  Address, Contact, CreatePatientRequest, Gender, Patient, SexAtBirth, UpdatePatientRequest,
+} from '../../models/patient.model';
+import {
+  addPatient, addPatientSuccess, updatePatient, updatePatientSuccess,
+  checkPatientDni, loadPatient, clearSelectedPatient,
+} from '../../store/patient.actions';
+import {
+  selectPatientPending, selectPatientError, selectPatientState, selectSelectedPatient,
+} from '../../store/patient.selectors';
+import { ContactSectionComponent } from '../../components/contact-section/contact-section.component';
+import { CoverageSectionComponent } from '../../components/coverage-section/coverage-section.component';
+import { WizardShellComponent } from '@shared/ui/components/wizard-shell/wizard-shell.component';
+import { GeneralStepComponent, notFutureDateValidator } from './steps/general-step/general-step.component';
+import { CoveragesStepComponent } from './steps/coverages-step/coverages-step.component';
+import { SummaryStepComponent, SummaryView } from './steps/summary-step/summary-step.component';
+import { PATIENT_FORM_STEPS } from './patient-form-steps';
+import { humanizeBackendError } from '@shared/utils/error-messages';
+
+function isoFromDate(d: unknown): string | null {
+  if (!d) return null;
+  if (typeof d === 'string') return d;
+  if (d instanceof Date && !Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  return null;
+}
+
+function isAddressFilled(a: Partial<Address>): boolean {
+  return !!(a.street || a.streetNumber || a.apartment || a.city || a.province
+    || a.neighborhood || a.zipCode);
+}
+
+@Component({
+  selector: 'pat-patient-form-page',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ReactiveFormsModule, ButtonModule, ConfirmDialogModule,
+    WizardShellComponent, GeneralStepComponent,
+    CoveragesStepComponent, SummaryStepComponent,
+  ],
+  providers: [ConfirmationService],
+  template: `
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
+      <ui-wizard-shell
+        [customFooter]="true"
+        [heading]="pageHeading()"
+        [breadcrumb]="'Pacientes › ' + (isEdit() ? 'Editar' : 'Nuevo')"
+        [steps]="steps"
+        [currentIndex]="currentStep()"
+        [visited]="visited()"
+        (stepSelected)="goToStep($event)">
+        @if (saveError(); as err) {
+          <div class="pat-form__card"
+               style="background:#fef2f2;border-color:var(--ds-danger);color:var(--ds-danger);margin-bottom:12px;">
+            {{ saveErrorMessage(err) }}
+          </div>
+        }
+
+        @switch (currentStep()) {
+          @case (0) {
+            <pat-general-step
+              [group]="generalGroup"
+              [addressGroup]="addressGroup"
+              [dniDuplicate]="dniDuplicate()"
+              [editMode]="isEdit()" />
+          }
+          @case (1) {
+            <pat-coverages-step [array]="coveragesArray" />
+          }
+          @case (2) {
+            <pat-summary-step [data]="summaryView()" (editStep)="goToStep($event)" />
+          }
+        }
+
+        <ng-container wizardFooter>
+          <span class="text-xs text-surface-400 hidden sm:inline">
+            {{ formStatusLabel() }} ·
+            <kbd>Ctrl</kbd>+<kbd>S</kbd> guardar · <kbd>Esc</kbd> volver
+          </span>
+          <div class="flex flex-row-reverse gap-2">
+            @if (showSubmitButton()) {
+              <p-button
+                [label]="isEdit() ? 'Guardar cambios' : 'Registrar paciente'"
+                type="submit"
+                severity="success"
+                [loading]="pending()"
+                [disabled]="!canSubmit()" />
+            }
+            @if (showContinueButton()) {
+              <p-button
+                label="Continuar"
+                type="button"
+                [disabled]="!canContinue()"
+                (onClick)="goNext()" />
+            }
+            @if (!isFirstStep()) {
+              <p-button label="Atrás" [text]="true" type="button" (onClick)="goBack()" />
+            }
+            <p-button label="Cancelar" severity="secondary" [outlined]="true" type="button" (onClick)="onBack()" />
+          </div>
+        </ng-container>
+      </ui-wizard-shell>
+      <p-confirmDialog [draggable]="false" />
+    </form>
+  `,
+})
+export class PatientFormPage implements OnDestroy {
+  readonly id = input<string | undefined>(undefined);
+  // Query params (bound automatically by withComponentInputBinding). Used when the
+  // wizard de Atención redirige acá tras no encontrar paciente por DNI.
+  readonly dni = input<string | undefined>(undefined);
+  readonly returnTo = input<string | undefined>(undefined);
+
+  private readonly fb = inject(FormBuilder);
+  private readonly store = inject(Store);
+  private readonly router = inject(Router);
+  private readonly actions$ = inject(Actions);
+  private readonly confirm = inject(ConfirmationService);
+
+  readonly steps = PATIENT_FORM_STEPS;
+
+  readonly pending = this.store.selectSignal(selectPatientPending);
+  readonly saveError = this.store.selectSignal(selectPatientError);
+  readonly patient = this.store.selectSignal(selectSelectedPatient);
+  private readonly state = this.store.selectSignal(selectPatientState);
+
+  readonly form: FormGroup = this.fb.group({
+    general: this.fb.group({
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      dni: ['', [Validators.required, Validators.pattern(/^\d{7,}$/)]],
+      birthDate: [null, [Validators.required, notFutureDateValidator]],
+      gender: [null, Validators.required],
+      sexAtBirth: [null, Validators.required],
+      mobile: [''],
+      email: [''],
+    }),
+    address: this.fb.group({
+      street: [''], streetNumber: [''], apartment: [''], neighborhood: [''],
+      city: [''], province: [''], zipCode: [''],
+    }),
+    contacts: this.fb.array<FormGroup>([]),
+    coverages: this.fb.array<FormGroup>([]),
+  });
+
+  readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+  readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
+
+  readonly isEdit = computed(() => {
+    const v = this.id();
+    return v != null && v !== '';
+  });
+  readonly invalid = computed(() => this.status() === 'INVALID');
+
+  /** Título de la página (lo consume `ui-wizard-shell`); en edición sufija el nombre. */
+  readonly pageHeading = computed(() => {
+    if (!this.isEdit()) return 'Nuevo paciente';
+    const p = this.patient();
+    return p ? `Editar paciente · ${p.lastName}, ${p.firstName}` : 'Editar paciente';
+  });
+
+  readonly dniDuplicate = computed(() => {
+    if (this.isEdit()) return false;
+    const dni = (this.value() as { general?: { dni?: string } } | undefined)?.general?.dni ?? '';
+    const clean = dni.toString().replace(/\D/g, '');
+    const check = this.state().dniCheck;
+    if (!check) return false;
+    return check.dni === clean && check.exists === true;
+  });
+
+  readonly step0Valid = computed(() => {
+    void this.value(); void this.status();
+    const g = this.form.get('general');
+    return !!g && g.valid && !this.dniDuplicate();
+  });
+
+  readonly currentStep = signal(0);
+  readonly visited = signal<ReadonlySet<number>>(new Set([0]));
+
+  readonly isFirstStep = computed(() => this.currentStep() === 0);
+  readonly isLastStep = computed(() => this.currentStep() === this.steps.length - 1);
+
+  readonly canContinue = computed(() => {
+    if (this.currentStep() === 0) return this.step0Valid();
+    return true;
+  });
+
+  // Submit habilitado solo cuando el boton Registrar/Guardar esta visible:
+  // en edicion en cualquier paso, en alta unicamente en el paso Resumen.
+  // Asi Ctrl+S desde paso 0/1/2 en alta no dispara onSubmit en silencio.
+  readonly canSubmit = computed(() =>
+    this.step0Valid() && !this.pending() && (this.isEdit() || this.isLastStep())
+  );
+
+  readonly showContinueButton = computed(() => !this.isLastStep() && !this.isEdit());
+  readonly showSubmitButton = computed(() => this.isEdit() || this.isLastStep());
+
+  readonly formStatusLabel = computed(() => {
+    if (this.pending()) return 'Guardando…';
+    void this.value();
+    return this.form.dirty ? '● Cambios sin guardar' : 'Sin cambios';
+  });
+
+  readonly summaryView = computed<SummaryView>(() => {
+    void this.value();
+    const raw = this.form.getRawValue() as {
+      general: {
+        firstName: string; lastName: string; dni: string;
+        birthDate: Date | string | null;
+        gender: Gender | null; sexAtBirth: SexAtBirth | null;
+        mobile: string; email: string;
+      };
+      address: Partial<Address>;
+      contacts: { contactType: 'PHONE' | 'EMAIL'; contactValue: string }[];
+      coverages: { planId: number | null; memberNumber: string; isPrimary: boolean }[];
+    };
+    return {
+      firstName: raw.general.firstName,
+      lastName: raw.general.lastName,
+      dni: raw.general.dni,
+      birthDate: raw.general.birthDate,
+      gender: raw.general.gender,
+      sexAtBirth: raw.general.sexAtBirth,
+      mobile: raw.general.mobile,
+      email: raw.general.email,
+      // Contactos adicionales: ya no se muestran en la UI (solo celular + email).
+      // Si el paciente trae extras del backend se conservan en el payload, pero no se listan acá.
+      extraContacts: [],
+      address: raw.address,
+      coverages: raw.coverages.filter((c) => c.planId != null),
+    };
+  });
+
+  get generalGroup(): FormGroup { return this.form.get('general') as FormGroup; }
+  get addressGroup(): FormGroup { return this.form.get('address') as FormGroup; }
+  get contactsArray(): FormArray<FormGroup> { return this.form.get('contacts') as FormArray<FormGroup>; }
+  get coveragesArray(): FormArray<FormGroup> { return this.form.get('coverages') as FormArray<FormGroup>; }
+
+  private hydratedForId: string | undefined = undefined;
+
+  constructor() {
+    effect(() => {
+      const id = this.id();
+      if (!id) {
+        if (this.hydratedForId !== undefined) {
+          this.resetForCreate();
+          this.hydratedForId = undefined;
+        }
+        return;
+      }
+      const numericId = Number(id);
+      if (Number.isNaN(numericId)) {
+        this.router.navigate(['/pacientes']);
+        return;
+      }
+      if (this.hydratedForId !== id) {
+        this.store.dispatch(loadPatient({ id: numericId }));
+        this.hydratedForId = id;
+      }
+    });
+
+    effect(() => {
+      const p = this.patient();
+      if (this.isEdit() && p && String(p.id) === this.id()) {
+        this.hydrate(p);
+        this.visited.set(new Set([0, 1, 2]));
+      }
+    });
+
+    this.form.get('general.dni')?.valueChanges.subscribe((dni: string) => {
+      if (this.isEdit()) return;
+      const clean = (dni ?? '').toString().replace(/\D/g, '');
+      if (/^\d{7,}$/.test(clean)) this.store.dispatch(checkPatientDni({ dni: clean }));
+    });
+
+    this.actions$
+      .pipe(ofType(addPatientSuccess, updatePatientSuccess), takeUntilDestroyed())
+      .subscribe((action) => {
+        const target = this.returnTo();
+        if (target && target.startsWith('/')) {
+          // Devolvemos el id del paciente creado/actualizado para que el flujo de origen lo preseleccione.
+          this.router.navigate([target], { queryParams: { patientId: action.patient.id } });
+        } else {
+          this.router.navigateByUrl('/pacientes');
+        }
+      });
+
+    // Precarga el DNI desde queryParam cuando llegamos por redirect del wizard de atención.
+    effect(() => {
+      const incomingDni = this.dni();
+      if (incomingDni && !this.isEdit()) {
+        const clean = String(incomingDni).replace(/\D/g, '');
+        if (clean) {
+          this.form.get('general.dni')?.setValue(clean);
+        }
+      }
+    });
+  }
+
+  goNext(): void {
+    if (!this.canContinue()) {
+      this.form.get('general')?.markAllAsTouched();
+      return;
+    }
+    const next = Math.min(this.currentStep() + 1, this.steps.length - 1);
+    this.currentStep.set(next);
+    this.visited.update((s) => new Set(s).add(next));
+    this.ensureStepDefaults(next);
+  }
+
+  goBack(): void {
+    const prev = Math.max(this.currentStep() - 1, 0);
+    this.currentStep.set(prev);
+  }
+
+  goToStep(i: number): void {
+    if (!this.visited().has(i)) return;
+    this.currentStep.set(i);
+    this.ensureStepDefaults(i);
+  }
+
+  private ensureStepDefaults(_stepIndex: number): void {
+    // Obras sociales (Diseño B): "Particular" es una fila fija visual del coverage-section,
+    // no se siembra en el FormArray. Las coberturas se agregan vía la cascada OS→Plan→afiliado.
+    // No hay defaults que sembrar por paso.
+  }
+
+  private resetForCreate(): void {
+    this.form.reset({
+      general: { firstName: '', lastName: '', dni: '', birthDate: null, gender: null, sexAtBirth: null, mobile: '', email: '' },
+      address: { street: '', streetNumber: '', apartment: '', neighborhood: '', city: '', province: '', zipCode: '' },
+    });
+    this.contactsArray.clear();
+    this.coveragesArray.clear();
+    this.currentStep.set(0);
+    this.visited.set(new Set([0]));
+  }
+
+  private hydrate(p: Patient): void {
+    // Backend solo conoce PHONE / EMAIL — para los inputs "Celular" y "Email"
+    // del general-step se elige el activo + primario; si no hay, fallback al
+    // primer activo; si no, al primero sin filtro (consistente con como
+    // patient-list lee el contacto principal del paciente).
+    const findPrimary = (type: 'PHONE' | 'EMAIL') => {
+      const sameType = p.contacts.filter((c) => c.contactType === type);
+      return sameType.find((c) => c.active && c.isPrimary)
+          ?? sameType.find((c) => c.active)
+          ?? sameType[0];
+    };
+    const primaryMobile = findPrimary('PHONE');
+    const primaryEmail  = findPrimary('EMAIL');
+    const extras = p.contacts.filter((c) => c !== primaryMobile && c !== primaryEmail);
+    const primaryAddress = p.addresses[0];
+
+    this.form.patchValue({
+      general: {
+        firstName: p.firstName, lastName: p.lastName, dni: p.dni,
+        birthDate: p.birthDate ? new Date(p.birthDate) : null,
+        gender: p.gender, sexAtBirth: p.sexAtBirth,
+        mobile: primaryMobile?.contactValue ?? '',
+        email: primaryEmail?.contactValue ?? '',
+      },
+      address: {
+        street: primaryAddress?.street ?? '',
+        streetNumber: primaryAddress?.streetNumber ?? '',
+        apartment: primaryAddress?.apartment ?? '',
+        neighborhood: primaryAddress?.neighborhood ?? '',
+        city: primaryAddress?.city ?? '',
+        province: primaryAddress?.province ?? '',
+        zipCode: primaryAddress?.zipCode ?? '',
+      },
+    });
+    this.contactsArray.clear();
+    extras.forEach((c) => this.contactsArray.push(ContactSectionComponent.toFormGroup(this.fb, c)));
+    this.coveragesArray.clear();
+    p.coverages.forEach((c) => this.coveragesArray.push(CoverageSectionComponent.toFormGroup(this.fb, c)));
+    this.form.markAsPristine();
+  }
+
+  saveErrorMessage(err: { status?: number; error?: { message?: string } }): string {
+    // Pasa por humanizeBackendError para no leakear FQCN / texto en inglés (regla #4).
+    return humanizeBackendError(err, {
+      fallback: 'No se pudo guardar el paciente.',
+      byStatus: {
+        409: 'Ya existe un paciente con ese DNI.',
+        400: 'Algunos datos del paciente no son válidos. Revisalos e intentá de nuevo.',
+        422: 'Algunos datos del paciente no son válidos. Revisalos e intentá de nuevo.',
+        500: 'No se pudo guardar el paciente. Intentá de nuevo en unos minutos.',
+      },
+    });
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(e: KeyboardEvent): void {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      this.onSubmit();
+      return;
+    }
+    if (e.key === 'Escape') {
+      const overlayOpen = document.querySelector('.p-overlay-mask, .p-datepicker-panel, .p-select-overlay');
+      if (overlayOpen) return;
+      e.preventDefault();
+      this.onBack();
+    }
+  }
+
+  onSubmit(): void {
+    if (!this.canSubmit()) return;
+    const raw = this.form.getRawValue() as {
+      general: {
+        firstName: string; lastName: string; dni: string;
+        birthDate: Date | string | null;
+        gender: Gender | null; sexAtBirth: SexAtBirth | null;
+        mobile: string; email: string;
+      };
+      address: Partial<Address>;
+      contacts: Contact[];
+      coverages: { id?: number; planId: number; memberNumber: string; isPrimary: boolean; active: boolean }[];
+    };
+
+    const contacts: Contact[] = [];
+    if (raw.general.mobile?.trim()) {
+      // Backend (analitica.domain.ContactType) sólo conoce PHONE / EMAIL.
+      // El campo "mobile" del general-step se mapea a PHONE en el modelo persistido.
+      // Si en el futuro se agrega MOBILE al enum del back, cambiar acá y en contact-section.
+      contacts.push({ contactType: 'PHONE', contactValue: raw.general.mobile.trim(), isPrimary: true, active: true });
+    }
+    if (raw.general.email?.trim()) {
+      contacts.push({
+        contactType: 'EMAIL', contactValue: raw.general.email.trim(),
+        isPrimary: !contacts.length, active: true,
+      });
+    }
+    contacts.push(...raw.contacts.filter((c) => !!c.contactValue));
+
+    const addresses: Address[] = isAddressFilled(raw.address)
+      ? [{
+          street: raw.address.street ?? '', streetNumber: raw.address.streetNumber ?? '',
+          apartment: raw.address.apartment ?? '', neighborhood: raw.address.neighborhood ?? '',
+          city: raw.address.city ?? '', province: raw.address.province ?? '',
+          zipCode: raw.address.zipCode ?? '', isPrimary: true, active: true,
+        }]
+      : [];
+
+    // Filtrar coberturas incompletas — el seed automatico al entrar al paso
+    // crea una fila vacia con planId/memberNumber requeridos; si el usuario
+    // no la toca, la dejamos afuera del payload para que el alta con datos
+    // minimos funcione (paso es opcional).
+    const coverages = raw.coverages.filter(
+      (c) => c.planId != null && !!c.memberNumber?.trim()
+    );
+
+    const common = {
+      firstName: raw.general.firstName, lastName: raw.general.lastName,
+      birthDate: isoFromDate(raw.general.birthDate),
+      gender: raw.general.gender, sexAtBirth: raw.general.sexAtBirth,
+      contacts, addresses, coverages,
+    };
+    const editId = this.id();
+    if (editId) {
+      const req: UpdatePatientRequest = common;
+      this.store.dispatch(updatePatient({ id: Number(editId), req }));
+    } else {
+      const req: CreatePatientRequest = { ...common, dni: raw.general.dni };
+      this.store.dispatch(addPatient({ req }));
+    }
+  }
+
+  private navigateBack(): void {
+    const target = this.returnTo();
+    if (target && target.startsWith('/')) {
+      this.router.navigateByUrl(target);
+    } else {
+      this.router.navigateByUrl('/pacientes');
+    }
+  }
+
+  onBack(): void {
+    if (!this.form.dirty) {
+      this.navigateBack();
+      return;
+    }
+    this.confirm.confirm({
+      header: '¿Descartar cambios?',
+      message: 'Vas a perder los cambios sin guardar.',
+      acceptLabel: 'Descartar',
+      rejectLabel: 'Seguir editando',
+      accept: () => this.navigateBack(),
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.store.dispatch(clearSelectedPatient());
+  }
+}

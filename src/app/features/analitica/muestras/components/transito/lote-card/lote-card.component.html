@@ -1,0 +1,55 @@
+<!-- Referencia: el template real está inlineado en lote-card.component.ts (workaround vitest). -->
+<article class="lote-card" [class.no-dest]="!hasDest">
+  <header>
+    <input type="checkbox" [checked]="allSelected" (change)="onAllToggle($event)" aria-label="Tildar todas las muestras del lote">
+    <div class="title">
+      <span class="name">Lote {{ number }}</span>
+      <span class="tag">TEMPORAL</span>
+    </div>
+    <div class="meta">
+      @if (hasDest) {
+        <span class="dest">{{ destLabel }}</span>
+        <span class="badge" [class.green]="outcome === 'en-proceso'" [class.blue]="outcome === 'en-transito'">
+          {{ outcome === 'en-proceso' ? 'En proceso' : 'En tránsito' }}
+        </span>
+      } @else {
+        <span class="warn"><i class="pi pi-exclamation-triangle"></i> Sin destino — asignalo para poder enviar</span>
+      }
+      <span class="count">{{ lote.sampleIds.length }} muestras</span>
+    </div>
+    <button type="button" class="scan-here" [class.is-active]="isActive" [attr.aria-pressed]="isActive" (click)="setActive.emit()">
+      {{ isActive ? 'Escaneo acá' : 'Escanear acá' }}
+    </button>
+    <button type="button" class="dissolve" (click)="dissolve.emit()" aria-label="Descartar lote"><i class="pi pi-times"></i></button>
+  </header>
+
+  <div class="dest-form">
+    <select [value]="lote.branch" (change)="onBranchChange($any($event.target).value)" aria-label="Sucursal de destino">
+      <option value="">Sucursal…</option>
+      @for (b of branchOptions; track b.id) { <option [value]="b.name">{{ b.name }}</option> }
+    </select>
+    @if (isHere) {
+      <select [value]="lote.sectionId ?? ''" (change)="onSectionChange($any($event.target).value)" aria-label="Sección de destino">
+        <option value="">Sección…</option>
+        @for (o of sectionOptions; track o.sectionId) { <option [value]="o.sectionId">{{ o.label }}</option> }
+      </select>
+    } @else {
+      <input type="text" class="obs" placeholder="Observaciones (opcional)" [disabled]="!lote.branch"
+             [value]="lote.observation ?? ''" (change)="onObservationChange($any($event.target).value)"
+             aria-label="Observaciones (opcional)">
+    }
+    <button type="button" class="send" [disabled]="!hasDest" (click)="send.emit()">{{ sendLabel }}</button>
+  </div>
+
+  <div class="rows">
+    @for (s of samples; track s.id) {
+      <app-sample-row
+        [sample]="s"
+        [selected]="isSelected(s.id)"
+        [flashing]="isFlashing(s.id)"
+        [leaving]="isLeaving(s.id)"
+        (toggle)="toggleSample.emit(s.id)"
+      />
+    }
+  </div>
+</article>

@@ -1,0 +1,66 @@
+<p-dialog [visible]="visible()" (onHide)="onClose()" [modal]="true" [draggable]="false"
+          [style]="{ width: '700px' }" [breakpoints]="{ '768px': '100vw' }"
+          styleClass="ui-dialog-fullscreen-mobile mc-dialog" [showHeader]="false">
+  <div class="modal-h">
+    <div>
+      <h2>¿Dar por completados los análisis?</h2>
+      <p>Resumen de las muestras seleccionadas.</p>
+    </div>
+    <button type="button" class="modal-x" (click)="onClose()" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="msum">
+      <div class="msum-it">
+        <span class="mic mic-ok"><i class="pi pi-check-circle"></i></span>
+        <span class="msum-txt"><b>{{ completas().length }}</b><span>completas</span></span>
+      </div>
+      <div class="msum-it">
+        <span class="mic mic-mid"><i class="pi pi-minus-circle"></i></span>
+        <span class="msum-txt"><b>{{ parciales().length }}</b><span>carga parcial</span></span>
+      </div>
+      <div class="msum-it">
+        <span class="mic mic-no"><i class="pi pi-exclamation-triangle"></i></span>
+        <span class="msum-txt"><b>{{ sin().length }}</b><span>sin resultados</span></span>
+      </div>
+    </div>
+
+    @if (sin().length > 0) {
+      <div class="modal-warn">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span><b>{{ sin().length }} {{ sin().length === 1 ? 'muestra' : 'muestras' }} sin resultados cargados.</b>
+          No se pueden marcar como completadas: van a permanecer en análisis.</span>
+      </div>
+    }
+
+    <div class="mrow-h">
+      <label class="cell-chk" (click)="$event.stopPropagation()">
+        <input type="checkbox" [checked]="allSel()" (change)="toggleAll()" aria-label="Seleccionar todas" />
+      </label>
+      <span>MUESTRA</span><span>DETERMINACIONES</span><span>ESTADO</span>
+    </div>
+
+    @for (i of items(); track i.protocolId) {
+      <div class="mrow" [class.is-dis]="!isSelectable(i)" (click)="toggle(i)">
+        <label class="cell-chk" (click)="$event.stopPropagation()">
+          <input type="checkbox" [disabled]="!isSelectable(i)" [checked]="isChecked(i)" (change)="toggle(i)"
+                 [attr.aria-label]="'Seleccionar ' + i.code" />
+        </label>
+        <span class="mrow-txt">
+          <b>{{ i.code }}</b>
+          <span>{{ i.patient }}</span>
+        </span>
+        <span class="mdet">{{ i.filled }}/{{ i.total }} cargadas</span>
+        <span [class]="'badge-st ' + estado(i)[0]"><span class="dot"></span>{{ estado(i)[1] }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="modal-foot">
+    <span class="modal-note">{{ checked().size }} de {{ items().length }} {{ items().length === 1 ? 'muestra' : 'muestras' }} para completar</span>
+    <button type="button" class="btn-ghost" (click)="onClose()">Mantener en la página</button>
+    <button type="button" class="btn-primary" [disabled]="checked().size === 0" (click)="onMarcar()">
+      <i class="pi pi-check"></i> Marcar completadas{{ checked().size ? ' · ' + checked().size : '' }}
+    </button>
+  </div>
+</p-dialog>

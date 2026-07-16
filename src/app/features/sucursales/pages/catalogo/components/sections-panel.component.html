@@ -1,0 +1,64 @@
+<div class="panel">
+  <div class="panel-header">
+    <h2>Secciones {{ selectedAreaName() ? '— ' + selectedAreaName() : '' }}</h2>
+    <p-button label="Nueva sección"
+              (click)="openNew()" [disabled]="!selectedAreaId()" />
+  </div>
+
+  @if (!selectedAreaId()) {
+    <div class="empty-state">
+      <i class="pi pi-arrow-left"></i>
+      <p class="muted">Seleccioná un área en el panel izquierdo para ver y editar sus secciones.</p>
+    </div>
+  } @else {
+    <p-table [value]="sections()" dataKey="id" [scrollable]="true" scrollHeight="500px">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre</th>
+          <th style="width:8rem"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-section>
+        <tr>
+          <td>{{ section.name }}</td>
+          <td class="actions">
+            <p-button icon="pi pi-pencil" [text]="true" size="small"
+                      (click)="openEdit(section)"
+                      pTooltip="Editar" />
+            <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
+                      (click)="remove(section)"
+                      pTooltip="Eliminar" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="2" class="muted">Esta área no tiene secciones aún.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+
+  <p-dialog
+    [(visible)]="dialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [header]="editing() ? 'Editar sección' : 'Nueva sección'"
+    [style]="{ width: '26rem' }">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="dialog-form">
+      <div class="form-field">
+        <label for="section-name">Nombre *</label>
+        <input id="section-name" pInputText formControlName="name" placeholder="Ej: Hemograma" />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="form-error">El nombre es requerido (máx 80 caracteres).</small>
+        }
+      </div>
+      <div class="dialog-actions">
+        <p-button label="Cancelar" severity="secondary" type="button" (click)="dialogVisible.set(false)" />
+        <p-button label="Guardar" type="submit" [disabled]="form.invalid" />
+      </div>
+    </form>
+  </p-dialog>
+
+  <p-confirmDialog [draggable]="false" />
+</div>

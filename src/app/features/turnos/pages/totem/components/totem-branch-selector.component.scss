@@ -1,0 +1,48 @@
+:host { display: block; }
+
+.kiosk-card {
+  max-width: 480px;
+  margin: 10vh auto;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-3);
+  background: var(--ds-surface);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  h2 { margin: 0; color: var(--ds-text); }
+  p { color: var(--ds-text-muted); margin: 0; }
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ds-text);
+  }
+
+  input {
+    width: 100%;
+  }
+}
+
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ds-danger, #e53e3e);
+  font-size: 0.875rem;
+  margin: 0;
+
+  .pi { flex-shrink: 0; }
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}

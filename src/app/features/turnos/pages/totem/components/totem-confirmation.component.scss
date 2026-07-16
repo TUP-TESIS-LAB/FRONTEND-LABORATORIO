@@ -1,0 +1,24 @@
+:host { display: block; }
+
+.kiosk-card {
+  max-width: 480px;
+  margin: 10vh auto;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-3);
+  background: var(--ds-surface);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  text-align: center;
+
+  h1 { margin: 0; color: var(--ds-text); }
+  p { color: var(--ds-text-muted); margin: 0; }
+  small { color: var(--ds-text-muted); font-size: 0.8rem; }
+}
+
+.queue-number {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--brand-primary, var(--ds-primary));
+  line-height: 1;
+}

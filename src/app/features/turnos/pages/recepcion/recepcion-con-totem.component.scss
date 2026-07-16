@@ -1,0 +1,71 @@
+:host { display: block; }
+
+.recepcion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;            // en anchos chicos los botones bajan, no se superponen
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+// Lista de cola: plana, sin card blanca (vive sobre el fondo de la página).
+.cola-espera :host ::ng-deep .p-datatable,
+:host ::ng-deep .cola-espera .p-datatable {
+  background: transparent;
+}
+.recepcion-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ds-text, #0f172a);
+}
+
+.empty-branch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: var(--ds-text-muted, #64748b);
+  font-size: 0.875rem;
+  background: rgba(245, 158, 11, 0.06);
+  border-radius: 6px;
+}
+
+.waiting-cell {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-muted, #64748b);
+  font-size: 0.875rem;
+}
+
+.call-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: 9999px;
+  background: var(--ds-warning, #f59e0b);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+// Color sutil para filas ST (sin turno). PrimeNG aplica el class al <tr>.
+:host ::ng-deep tr.row-st > td {
+  background-color: rgba(255, 165, 0, 0.05);
+}
+
+// CT (con turno) — fondo amarillo para distinguirlas del walk-in.
+:host ::ng-deep tr.row-ct > td {
+  background-color: rgba(245, 158, 11, 0.10);
+}
+
+// Header: grupo de botones a la derecha (Turnos del dia + Nueva atencion)
+.recepcion-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}

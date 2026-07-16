@@ -1,0 +1,27 @@
+@if (open()) {
+  <div class="menu-backdrop" (click)="closeMenu.emit()"></div>
+  <div class="batch-menu" role="menu">
+    <div class="menu-header">
+      Mover {{ selectionCount() }} muestra(s) a…
+    </div>
+    @for (t of transitions(); track t.key) {
+      @if (t.sep) {
+        <div class="sep"></div>
+      }
+      <button type="button" class="menu-item" role="menuitem" (click)="select.emit(t)">
+        <span class="icon" [attr.data-color]="t.color">
+          <i class="pi" [ngClass]="t.icon"></i>
+        </span>
+        <span class="body">
+          <span class="title">
+            {{ t.label }}
+            @if (t.reco) {
+              <span class="reco">{{ t.reco }}</span>
+            }
+          </span>
+          <span class="desc">{{ t.desc }}</span>
+        </span>
+      </button>
+    }
+  </div>
+}

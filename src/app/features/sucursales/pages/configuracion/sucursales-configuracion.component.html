@@ -1,0 +1,29 @@
+<div>
+  <ui-table
+    [value]="sucursales()"
+    [loading]="loading()"
+    [columns]="columns"
+    [showEdit]="true"
+    [showDelete]="true"
+    emptyHeading="Sin sucursales"
+    emptyIcon="pi-building"
+    emptyDescription="Agregá la primera sucursal del laboratorio."
+    emptyCtaLabel="Nueva sucursal"
+    (edit)="openEdit($any($event))"
+    (rowDelete)="remove($any($event))"
+    (emptyCtaClick)="openNew()">
+
+    <ng-template uiCell="estado" let-row>
+      <p-tag
+        [value]="$any(row).status === 'ACTIVE' ? 'Activa' : 'Inactiva'"
+        [severity]="$any(row).status === 'ACTIVE' ? 'success' : 'secondary'" />
+    </ng-template>
+
+    <ng-template uiCell="direccion" let-row>
+      {{ formatAddress($any(row)) }}
+    </ng-template>
+  </ui-table>
+
+  <p-confirmDialog [draggable]="false" />
+  <p-toast />
+</div>

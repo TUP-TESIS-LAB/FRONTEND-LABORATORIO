@@ -1,0 +1,60 @@
+@use '../../../pages/transito/tokens' as *;
+
+.group-card {
+  background: var(--gx-card-bg);
+  border: 1px solid var(--gx-border);
+  border-radius: 14px;
+  box-shadow: var(--gx-shadow-card);
+  margin-bottom: 12px;
+  overflow: hidden;
+
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gx-border-soft);
+
+    > i.pi {
+      width: 32px; height: 32px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 8px;
+    }
+    .title {
+      display: flex; flex-direction: column; gap: 2px;
+      .area { font-weight: 700; font-size: 14.5px; }
+      .sub { font-size: 12px; color: var(--gx-muted); i { margin-right: 4px; } }
+    }
+    .badge {
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+      &.green { background: var(--gx-green-bg); color: var(--gx-green); }
+      &.blue  { background: var(--gx-blue-bg);  color: var(--gx-blue);  }
+      &.amber { background: var(--gx-amber-bg); color: var(--gx-amber); }
+    }
+    .count { color: var(--gx-muted); font-size: 12.5px; margin-right: auto; }
+    .edit, .send {
+      border: 1px solid var(--gx-border); background: #fff;
+      padding: 7px 12px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    }
+    .send.primary {
+      background: var(--gx-brand); color: #fff; border-color: var(--gx-brand); font-weight: 600;
+      box-shadow: var(--gx-shadow-card);
+    }
+  }
+
+  &.outcome-here    header > i.pi { background: var(--gx-green-bg); color: var(--gx-green); }
+  &.outcome-other   header > i.pi { background: var(--gx-blue-bg);  color: var(--gx-blue);  }
+  &.outcome-pending { border-color: var(--gx-amber); }
+  &.outcome-pending header > i.pi { background: var(--gx-amber-bg); color: var(--gx-amber); }
+
+  .dest-form {
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    gap: 10px; padding: 12px 16px;
+    border-bottom: 1px solid var(--gx-border-soft);
+    select { height: 40px; border: 1px solid var(--gx-border); border-radius: 8px; padding: 0 8px; font-size: 13.5px; }
+  }
+
+  .row-reason {
+    padding: 2px 16px 8px 60px;
+    font-size: 12px; color: var(--gx-amber);
+    i { margin-right: 4px; }
+  }
+}

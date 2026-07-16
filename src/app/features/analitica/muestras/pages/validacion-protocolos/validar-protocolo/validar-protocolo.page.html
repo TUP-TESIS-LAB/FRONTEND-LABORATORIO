@@ -1,0 +1,152 @@
+<section class="validar-page">
+  <nav class="crumbs">
+    Gestión de analítica <span>›</span> Post-analítica <span>›</span> Validación <span>›</span> <b>Validar y firmar</b>
+  </nav>
+
+  <div class="val-top">
+    <a class="val-back" routerLink="/analitica/validacion">
+      <i class="pi pi-chevron-down"></i> Anterior
+    </a>
+  </div>
+
+  @if (loading()) {
+    <p class="vt-loading">Cargando…</p>
+  }
+
+  <section class="psum">
+    <div class="psum-pac">
+      <div class="psum-avatar"><i class="pi pi-user"></i></div>
+      <div class="psum-pac-id">
+        <b>{{ patientName() ?? 'Paciente' }}</b>
+        @if (patientSex() || edad() !== null) {
+          <span>
+            @if (patientSex()) { {{ sexoLabel(patientSex()) }} }
+            @if (patientSex() && edad() !== null) { · }
+            @if (edad() !== null) { {{ edad() }} años }
+          </span>
+        }
+      </div>
+    </div>
+    <div class="psum-field"><span class="psum-lbl">PROTOCOLO</span><b class="mono">{{ protocolId }}</b></div>
+    <div class="psum-field">
+      <span class="psum-lbl">ESTADO DE FIRMA</span>
+      <span [class]="'badge-st ' + firmaBadge()[0]"><span class="dot"></span>{{ firmaBadge()[1] }}</span>
+    </div>
+    <div class="psum-firma">
+      <span class="psum-lbl">FIRMA ELECTRÓNICA</span>
+      <div class="firma-btns">
+        @if (estaFirmado()) {
+          <button
+            type="button" class="btn-firmar btn-pdf"
+            [disabled]="pdfLoading()" (click)="verPdf()"
+          >
+            <i class="pi" [class.pi-file-pdf]="!pdfLoading()" [class.pi-spinner]="pdfLoading()" [class.pi-spin]="pdfLoading()"></i> Ver PDF
+          </button>
+        }
+        <button
+          type="button" class="btn-firmar btn-total"
+          [disabled]="!canOpenFirmaModal() || saving()" (click)="abrirFirmaModal()"
+        >
+          <i class="pi pi-check-circle"></i> Firmar estudio
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="anx-list">
+    @for (r of results(); track rowKey(r, $index); let i = $index) {
+      <section class="anx" [class.is-open]="isOpen(rowKey(r, i))" [class.is-val]="r.status === 'VALIDATED' || r.status === 'SIGNED'">
+        <div class="anx-head" (click)="toggle(rowKey(r, i))">
+          <button
+            type="button" class="anx-chev" [class.is-open]="isOpen(rowKey(r, i))"
+            (click)="toggle(rowKey(r, i)); $event.stopPropagation()" aria-label="Ver determinaciones"
+          >
+            <i class="pi pi-chevron-down"></i>
+          </button>
+          <b class="anx-name">{{ nombreAnalisis(r) }}</b>
+          @if (r.analysisFamily) {
+            <span class="fam-pill">{{ r.analysisFamily }}</span>
+          }
+          <div class="anx-actions" (click)="$event.stopPropagation()">
+            <button type="button" class="anx-btn anx-edit" [disabled]="esPendiente(r) || !canEdit(r) || saving()" (click)="editar(r, $event)">
+              <i class="pi pi-pencil"></i> Editar
+            </button>
+            @if (esValidable(r)) {
+              <button
+                type="button" class="anx-btn anx-val"
+                [disabled]="esPendiente(r) || saving() || !esCompleto(r)"
+                [title]="esCompleto(r) ? 'Validar resultado' : 'Faltan determinaciones por cargar'"
+                (click)="validar(r, $event)"
+              >
+                <i class="pi pi-check"></i> Validar
+              </button>
+              @if (!esCompleto(r)) {
+                <span class="anx-incompleto"><i class="pi pi-exclamation-circle"></i> Faltan determinaciones por cargar</span>
+              }
+            } @else if (r.status === 'VALIDATED' || r.status === 'SIGNED') {
+              <button type="button" class="anx-btn anx-done" disabled>
+                <i class="pi pi-check"></i> {{ r.status === 'SIGNED' ? 'Firmado' : 'Validado' }}
+              </button>
+            }
+          </div>
+          <span class="anx-meta">
+            <span class="anx-det">{{ r.determinations.length }} det</span>
+            <span [class]="'badge-st ' + badgeAnalisis(r)[0]"><span class="dot"></span>{{ badgeAnalisis(r)[1] }}</span>
+          </span>
+        </div>
+
+        @if (isOpen(rowKey(r, i))) {
+          @if (esPendiente(r)) {
+            <div class="anx-body anx-body--pending">
+              <p class="anx-pending-msg">
+                <i class="pi pi-clock"></i> Todavía no se cargaron resultados para este análisis.
+              </p>
+            </div>
+          } @else {
+          <div class="anx-body">
+            <div class="vt-head vt-grid">
+              <span>DETERMINACIÓN</span><span>VALOR</span><span>UNIDAD</span><span>REFERENCIA</span>
+              <span>VALIDACIÓN MANUAL</span><span>VALIDACIÓN AUTOMÁTICA</span>
+            </div>
+            @for (d of r.determinations; track d.determinationId) {
+              <div class="vt-row vt-grid" [class.is-flag]="outOf(d)">
+                <span class="vt-n">{{ d.name }}</span>
+                <span class="vt-v" [class.flag-h]="outOf(d)">{{ d.value }}</span>
+                <span class="vt-u">{{ d.unit }}</span>
+                <span class="vt-ref">{{ d.referenceRange }}</span>
+                <span class="vt-cell">
+                  @if (d.manualOutcome) {
+                    <span class="vb vb-ok"><i class="pi pi-check"></i> {{ outcomeLabel(d.manualOutcome) }}</span>
+                  } @else {
+                    <span class="vb vb-no">—</span>
+                  }
+                </span>
+                <span class="vt-cell">
+                  @if (d.aggregateOutcome) {
+                    @if (outOf(d)) {
+                      <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> {{ outcomeLabel(d.aggregateOutcome) }}</span>
+                    } @else {
+                      <span class="vb vb-ok"><i class="pi pi-check"></i> {{ outcomeLabel(d.aggregateOutcome) }}</span>
+                    }
+                  } @else if (outOf(d)) {
+                    <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> Fuera de rango</span>
+                  } @else {
+                    <span class="vb vb-no">—</span>
+                  }
+                </span>
+              </div>
+            }
+          </div>
+          }
+        }
+      </section>
+    }
+  </div>
+
+  <app-firmar-estudio-modal
+    [visible]="firmarModalOpen()"
+    [results]="results()"
+    (confirmar)="confirmarFirma()"
+    (closed)="cerrarFirmaModal()"
+  />
+</section>

@@ -1,0 +1,51 @@
+<p-dialog
+  [visible]="visible"
+  [modal]="true"
+  [draggable]="false"
+  [closable]="canClose"
+  [closeOnEscape]="canClose"
+  [dismissableMask]="canClose"
+  [header]="myOccupation() ? 'Cambiar de box' : 'Elegí tu box para empezar tu turno'"
+  styleClass="ui-box-selector-dialog"
+  [style]="{ width: '480px' }"
+  (onHide)="onClose()">
+
+  @if (allOccupied() && !myOccupation()) {
+    <div class="all-occupied">
+      <i class="pi pi-exclamation-triangle"></i>
+      <p>Todos los boxes están ocupados.<br>Pedí a alguien que libere o aumentá la cantidad en Configuración de sucursal.</p>
+      @if (canClose) {
+        <p-button label="Cerrar" (onClick)="onClose()" />
+      }
+    </div>
+  } @else {
+    <div class="boxes-grid">
+      @for (slot of slots(); track slot.boxNumber) {
+        <button
+          type="button"
+          class="box-slot"
+          [class.box-slot--free]="!slot.occupation"
+          [class.box-slot--occupied]="slot.occupation && slot.occupation.userId !== currentUserId"
+          [class.box-slot--mine]="slot.occupation && slot.occupation.userId === currentUserId"
+          [disabled]="!!slot.occupation || pending()"
+          (click)="onSlotClick(slot.boxNumber, slot.occupation)">
+          <div class="box-slot__label">Box {{ slot.boxNumber }}</div>
+          @if (slot.occupation && slot.occupation.userId !== currentUserId) {
+            <div class="box-slot__user">{{ slot.occupation.userName }}</div>
+          } @else if (slot.occupation && slot.occupation.userId === currentUserId) {
+            <div class="box-slot__user"><i class="pi pi-check"></i> Tu box</div>
+          }
+        </button>
+      }
+    </div>
+
+    @if (warningMsg(); as msg) {
+      <div class="warning-inline">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>{{ msg }}</span>
+      </div>
+    }
+
+    <div class="legend">Verde = libre · Gris = ocupado</div>
+  }
+</p-dialog>

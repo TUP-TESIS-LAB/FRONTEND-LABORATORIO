@@ -1,0 +1,48 @@
+<ui-wizard-shell
+  [heading]="editingId() ? 'Editar agenda' : 'Nueva agenda'"
+  [breadcrumb]="'Turnos › Agendas › ' + (editingId() ? 'Editar' : 'Nueva')"
+  [steps]="steps"
+  [currentIndex]="currentStep()"
+  [visited]="visited()"
+  [continueDisabled]="!canContinueCurrentStep()"
+  [finishLabel]="editingId() ? 'Guardar cambios' : 'Crear agenda'"
+  [finishDisabled]="!canShowConfirmar()"
+  [finishLoading]="saving()"
+  (stepSelected)="goToStep($event)"
+  (next)="onContinueFromCurrentStep()"
+  (back)="goBack()"
+  (cancel)="cancel()"
+  (finish)="confirm()">
+  @switch (currentStep()) {
+    @case (0) {
+      <app-step-sucursal
+        #step0
+        [initialBranchId]="branchId()"
+        (next)="onSucursalNext($event)"
+        (validChange)="step0Valid.set($event)" />
+    }
+    @case (1) {
+      <app-step-horario
+        #step1
+        [initial]="horario()"
+        (next)="onHorarioNext($event)"
+        (validChange)="step1Valid.set($event)" />
+    }
+    @case (2) {
+      <app-step-periodo
+        #step2
+        [initial]="periodo()"
+        (next)="onPeriodoNext($event)"
+        (validChange)="step2Valid.set($event)" />
+    }
+    @case (3) {
+      @if (canShowConfirmar()) {
+        <app-step-confirmar [summary]="summary()" [saving]="saving()" />
+      } @else {
+        <p class="muted">Completá los pasos anteriores primero.</p>
+      }
+    }
+  }
+</ui-wizard-shell>
+
+<p-toast />

@@ -1,0 +1,39 @@
+<div class="totem-step">
+  <section class="toggles-section">
+    <label class="display-toggle">
+      <p-toggleswitch [ngModel]="enabled()" (ngModelChange)="onToggle($event)" />
+      <span class="switch-label">Tótem</span>
+    </label>
+    <label class="display-toggle">
+      <p-toggleswitch [ngModel]="atencionDisplay()" (ngModelChange)="upsert({ atencionDisplayEnabled: $event })" />
+      <span class="switch-label">Pantalla sala de espera</span>
+    </label>
+    <label class="display-toggle">
+      <p-toggleswitch [ngModel]="extraccionDisplay()" (ngModelChange)="upsert({ extraccionDisplayEnabled: $event })" />
+      <span class="switch-label">Pantalla de extracción</span>
+    </label>
+  </section>
+
+  <section class="boxes-section">
+    <h3>Boxes</h3>
+    <form [formGroup]="boxesForm" class="form">
+      <div class="form-row">
+        <div class="form-field">
+          <label for="atencionBoxesCount">Cantidad de boxes de atención <span class="pat-form__req">*</span></label>
+          <p-inputNumber inputId="atencionBoxesCount" formControlName="atencionBoxesCount" [min]="1" [showButtons]="true" buttonLayout="horizontal" decrementButtonIcon="pi pi-minus" incrementButtonIcon="pi pi-plus" />
+          @if (boxesForm.controls.atencionBoxesCount.invalid && boxesForm.controls.atencionBoxesCount.touched) {
+            <small class="form-error">Mínimo 1.</small>
+          }
+        </div>
+        <div class="form-field">
+          <label for="extraccionBoxesCount">Cantidad de boxes de extracción <span class="pat-form__req">*</span></label>
+          <p-inputNumber inputId="extraccionBoxesCount" formControlName="extraccionBoxesCount" [min]="1" [showButtons]="true" buttonLayout="horizontal" decrementButtonIcon="pi pi-minus" incrementButtonIcon="pi pi-plus" />
+          @if (boxesForm.controls.extraccionBoxesCount.invalid && boxesForm.controls.extraccionBoxesCount.touched) {
+            <small class="form-error">Mínimo 1.</small>
+          }
+        </div>
+      </div>
+      <p class="boxes-hint">La cantidad de boxes se guarda automáticamente al finalizar.</p>
+    </form>
+  </section>
+</div>

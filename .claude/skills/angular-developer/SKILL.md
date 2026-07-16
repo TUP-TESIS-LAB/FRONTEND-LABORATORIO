@@ -9,6 +9,8 @@ metadata:
 
 # Angular Developer Guidelines
 
+> **Project override.** This is the official Angular Team skill and stays as the framework reference. In this repo, anything that involves a request to the backend (HTTP fetch, mutation, save, fetch-on-navigation, etc.) is handled by the **`ngrx-backend-request`** skill, which **takes precedence** over the patterns suggested here. In particular, do not introduce `resource()`, `toSignal(http.get(...))`, or service calls from components for remote data — those go through NgRx (actions → effects → service → reducer → selectors). The reactivity, forms, DI, routing, styling, testing, and tooling guidance below still applies as-is for everything that is not a backend request.
+
 1. Always analyze the project's Angular version before providing guidance, as best practices and available features can vary significantly between versions. If creating a new project with Angular CLI, do not specify a version unless prompted by the user.
 
 2. When generating code, follow Angular's style guide and best practices for maintainability and performance. Use the Angular CLI for scaffolding components, services, directives, pipes, and routes to ensure consistency.
@@ -20,7 +22,7 @@ metadata:
 If no guidelines are provided by the user, here are same default rules to follow when creating a new Angular project:
 
 1. Use the latest stable version of Angular unless the user specifies otherwise.
-2. Use Signals Forms for form management in new projects (available in Angular v21 and newer) [Find out more](references/signal-forms.md).
+2. Use Reactive Forms (`FormBuilder` / `formControlName`) for form management. Read [reactive-forms.md](references/reactive-forms.md). Project-wide rule.
 
 **Execution Rules for `ng new`:**
 When asked to create a new Angular project, you must determine the correct execution command by following these strict steps:
@@ -58,19 +60,15 @@ When managing state and data reactivity, use Angular Signals and consult the fol
 
 - **Signals Overview**: Core signal concepts (`signal`, `computed`), reactive contexts, and `untracked`. Read [signals-overview.md](references/signals-overview.md)
 - **Dependent State (`linkedSignal`)**: Creating writable state linked to source signals. Read [linked-signal.md](references/linked-signal.md)
-- **Async Reactivity (`resource`)**: Fetching asynchronous data directly into signal state. Read [resource.md](references/resource.md)
 - **Side Effects (`effect`)**: Logging, third-party DOM manipulation (`afterRenderEffect`), and when NOT to use effects. Read [effects.md](references/effects.md)
+
+> Async data from the backend is **not** loaded with `resource()` / `httpResource()` in this project — see `ngrx-backend-request` (NgRx is the only path).
 
 ## Forms
 
-In most cases for new apps, **prefer signal forms**. When making a forms decision, analyze the project and consider the following guidelines:
+This project uses **Reactive Forms** for every form with a submit. `[(ngModel)]` is only acceptable for UI-only filters (search box, view selector) — never on fields that submit. Form state (status, value, dirty/touched) should be exposed to the template as signals via `toSignal(...)` so it composes with the rest of the signal-based UI; see `angular-conventions` for the pattern.
 
-- if the application is using v21 or newer and this is a new form, **prefer signal forms**.
-  -For older applications or when working with existing forms, use the appropriate form type that matches the applications current form strategy.
-
-- **Signal Forms**: Use signals for form state management. Read [signal-forms.md](references/signal-forms.md)
-- **Template-driven forms**: Use for simple forms. Read [template-driven-forms.md](references/template-driven-forms.md)
-- **Reactive forms**: Use for complex forms. Read [reactive-forms.md](references/reactive-forms.md)
+- **Reactive forms**: `FormBuilder`, `FormGroup`, `formControlName`, custom validators. Read [reactive-forms.md](references/reactive-forms.md)
 
 ## Dependency Injection
 
@@ -97,8 +95,9 @@ When implementing navigation in Angular, consult the following references:
 - **Show Routes with Outlets**: Using `<router-outlet>`, nested outlets, and named outlets. Read [show-routes-with-outlets.md](references/show-routes-with-outlets.md)
 - **Navigate to Routes**: Declarative navigation with `RouterLink` and programmatic navigation with `Router`. Read [navigate-to-routes.md](references/navigate-to-routes.md)
 - **Control Route Access with Guards**: Implementing `CanActivate`, `CanMatch`, and other guards for security. Read [route-guards.md](references/route-guards.md)
-- **Data Resolvers**: Pre-fetching data before route activation with `ResolveFn`. Read [data-resolvers.md](references/data-resolvers.md)
 - **Router Lifecycle and Events**: Chronological order of navigation events and debugging. Read [router-lifecycle.md](references/router-lifecycle.md)
+
+> Pre-fetching data on navigation does **not** use `ResolveFn` in this project. If a list/detail must load when entering a route, dispatch the load action from an effect listening to `routerNavigatedAction` (see `ngrx-backend-request`, section 8.5).
 - **Rendering Strategies**: CSR, SSG (Prerendering), and SSR with hydration. Read [rendering-strategies.md](references/rendering-strategies.md)
 - **Route Transition Animations**: Enabling and customizing the View Transitions API. Read [route-animations.md](references/route-animations.md)
 

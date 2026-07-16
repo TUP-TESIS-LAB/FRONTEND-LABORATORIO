@@ -1,0 +1,111 @@
+<div class="table-card">
+  <table>
+    <thead>
+      <tr>
+        <th class="check">
+          <input
+            type="checkbox"
+            [checked]="allVisibleSelected()"
+            (change)="toggleAll.emit()"
+            aria-label="Seleccionar todo"
+          />
+        </th>
+        <th class="caret-col"></th>
+        <th>Muestra</th>
+        <th>Estudio</th>
+        <th>{{ sucursalHeader() }}</th>
+        <th>Toma</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of ordered(); track row.id) {
+        <tr
+          [class.selected]="isSelected(row.id)"
+          [class.leaving]="isLeaving(row.id)"
+          [class.flash]="isFlashing(row.id)"
+          (click)="toggleRow.emit(row.id)"
+        >
+          <td class="check">
+            <input
+              type="checkbox"
+              [checked]="isSelected(row.id)"
+              (click)="$event.stopPropagation()"
+              (change)="toggleRow.emit(row.id)"
+              [attr.aria-label]="'Seleccionar ' + row.barcode"
+            />
+          </td>
+          <td class="caret-col">
+            @if (tubeAnalyses(row)) {
+              <button
+                class="caret-btn"
+                type="button"
+                (click)="toggleExpansion(row.id, $event)"
+                [attr.aria-label]="isExpanded(row.id) ? 'Colapsar análisis' : 'Expandir análisis'"
+              >
+                <i
+                  class="pi"
+                  [class.pi-chevron-right]="!isExpanded(row.id)"
+                  [class.pi-chevron-down]="isExpanded(row.id)"
+                ></i>
+              </button>
+            }
+          </td>
+          <td>
+            <div class="barcode">
+              {{ row.barcode }}
+              @if (row.urgent) {
+                <span class="urgente">URGENTE</span>
+              }
+            </div>
+            <div class="patient">{{ row.patient }}</div>
+          </td>
+          <td>{{ row.study }}</td>
+          <td>
+            {{ row.branch }}
+          </td>
+          <td>{{ row.receivedAt | dateEs:'date' }} · {{ row.receivedAt | dateEs:'time' }}</td>
+          <td>
+            <span class="state-badge" [attr.data-color]="stateColor(row.state)">
+              {{ stateLabel(row.state) }}
+            </span>
+            @if (row.destino) {
+              <div class="state-sub">→ {{ row.destino }}</div>
+            }
+            @if (row.area) {
+              <div class="state-sub">↧ {{ row.area }}</div>
+            }
+          </td>
+        </tr>
+        @if (tubeAnalyses(row); as analyses) {
+          @if (isExpanded(row.id)) {
+            <tr class="expansion-row">
+              <td colspan="7">
+                @if (rejectionReason(row); as motivo) {
+                  <p class="rejection-reason">
+                    <span class="rejection-label">Motivo:</span> {{ motivo }}
+                  </p>
+                }
+                @if (analyses.length > 1) {
+                  <ul class="analyses-list">
+                    @for (a of analyses; track a.labelId) {
+                      <li class="analysis-item">
+                        <span class="analysis-name">{{ a.name }}</span>
+                        <span class="analysis-sep">·</span>
+                        <span class="analysis-barcode">{{ a.barcode }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </td>
+            </tr>
+          }
+        }
+      } @empty {
+        <tr class="empty">
+          <td colspan="7">No hay muestras en este estado.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

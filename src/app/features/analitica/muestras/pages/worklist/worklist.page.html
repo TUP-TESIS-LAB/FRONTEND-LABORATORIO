@@ -1,0 +1,94 @@
+<section class="worklist-page">
+  <ui-page-header [heading]="config().title" [subtitle]="config().sub">
+    <div class="stats">
+      @if (config().key === 'descarte') {
+        <div class="descarte-switch" role="tablist" aria-label="Vista de descarte">
+          <button type="button" role="tab"
+                  [attr.aria-selected]="descarteView() === 'pendientes'"
+                  [class.active]="descarteView() === 'pendientes'"
+                  (click)="setDescarteView('pendientes')">
+            A descartar
+          </button>
+          <button type="button" role="tab"
+                  [attr.aria-selected]="descarteView() === 'descartadas'"
+                  [class.active]="descarteView() === 'descartadas'"
+                  (click)="setDescarteView('descartadas')">
+            Descartadas
+          </button>
+        </div>
+      }
+      <span class="chip">{{ total() }} · {{ countLabelText() }}</span>
+      <span class="chip" [class.chip-selected]="selectedCount() > 0">
+        {{ selectedCount() }} · seleccionada(s) de {{ total() }}
+      </span>
+    </div>
+  </ui-page-header>
+
+  <div class="toolbar-wrap">
+    <app-muestras-scan-bar
+      [query]="query()"
+      [selectionCount]="selectedCount()"
+      [showBatchAction]="canTransition()"
+      (queryChange)="setQuery($event)"
+      (enterPressed)="onEnterScan($event)"
+      (simulate)="simulateScan()"
+      (clear)="clearSelection()"
+      (openMenu)="openMenu()"
+    />
+    @if (canTransition()) {
+      <app-muestras-batch-menu
+        [transitions]="config().targets"
+        [selectionCount]="selectedCount()"
+        [open]="menuOpen()"
+        (select)="selectTransition($event)"
+        (closeMenu)="closeMenu()"
+      />
+    }
+    @if (showWorksheetActions()) {
+      <div class="worksheet-actions">
+        <button type="button" class="ws-btn ws-btn--ghost" (click)="openPlanillas()">
+          Planillas
+        </button>
+        <button type="button" class="ws-btn ws-btn--primary" [disabled]="selectedProtocolIds().length === 0"
+                title="Seleccioná uno o más tubos para cargar sus resultados" (click)="cargarResultados()">
+          Cargar resultados
+        </button>
+      </div>
+    }
+  </div>
+
+  <app-muestras-sample-table
+    [rows]="rows()"
+    [selectedIds]="selectedIds()"
+    [leavingIds]="leavingIds()"
+    [flashId]="flashId()"
+    [screenKey]="config().key"
+    (toggleRow)="toggleRow($event)"
+    (toggleAll)="toggleAll()"
+  />
+
+  @if (activeTransition(); as t) {
+    <app-muestras-transition-dialog
+      [transition]="t"
+      [samples]="selectedSamples()"
+      [currentBranch]="currentBranch"
+      [branches]="branches"
+      [areas]="areas"
+      [labs]="labs"
+      (confirm)="confirmDialog($event)"
+      (cancel)="cancelDialog()"
+    />
+  }
+
+  @if (planillasOpen()) {
+    <app-planillas-modal [visible]="planillasOpen()" [selectionCount]="selectedProtocolIds().length"
+      (closed)="closePlanillas()" (newSheet)="onNewSheet()" (editSheet)="onEditSheet($event)"
+      (verDetalle)="onEditSheet($event)" (cargarConPlanilla)="onCargarConPlanilla($event)" />
+  }
+  @if (configOpen()) {
+    <app-worksheet-config-modal [visible]="configOpen()" [templateId]="editingTemplateId()"
+      (closed)="closeConfig()" (saved)="onConfigSaved()" />
+  }
+
+  <p-toast position="bottom-right" />
+</section>

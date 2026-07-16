@@ -1,0 +1,70 @@
+<div class="panel">
+  <div class="panel-header">
+    <h2>Áreas</h2>
+    <p-button label="Nueva área" (click)="openNew()" />
+  </div>
+
+  <p-table [value]="areas()" dataKey="id" [scrollable]="true" scrollHeight="500px">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th style="width:8rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-area>
+      <tr (click)="selectForSections(area)" class="row-selectable">
+        <td>{{ area.name }}</td>
+        <td>{{ labelForType(area.areaType) }}</td>
+        <td class="actions">
+          <p-button icon="pi pi-pencil" [text]="true" size="small"
+                    (click)="$event.stopPropagation(); openEdit(area)"
+                    pTooltip="Editar" />
+          <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
+                    (click)="$event.stopPropagation(); remove(area)"
+                    pTooltip="Eliminar" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="3" class="muted">Sin áreas cargadas. Creá la primera para empezar.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-dialog
+    [(visible)]="dialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [header]="editing() ? 'Editar área' : 'Nueva área'"
+    [style]="{ width: '28rem' }">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="dialog-form">
+      <div class="form-field">
+        <label for="area-name">Nombre *</label>
+        <input id="area-name" pInputText formControlName="name" placeholder="Ej: Hematología" />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="form-error">El nombre es requerido (máx 80 caracteres).</small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="area-type">Tipo *</label>
+        <p-select id="area-type" formControlName="areaType" [options]="typeOptions"
+                  optionLabel="label" optionValue="value" appendTo="body" />
+      </div>
+      @if (form.value.areaType === 'EXTERNO') {
+        <div class="form-field">
+          <label for="area-extlab">Lab externo *</label>
+          <input id="area-extlab" pInputText formControlName="externalLabName"
+                 placeholder="Nombre del laboratorio externo" />
+        </div>
+      }
+      <div class="dialog-actions">
+        <p-button label="Cancelar" severity="secondary" (click)="dialogVisible.set(false)" type="button" />
+        <p-button label="Guardar" type="submit" [disabled]="form.invalid" />
+      </div>
+    </form>
+  </p-dialog>
+
+  <p-confirmDialog [draggable]="false" />
+</div>

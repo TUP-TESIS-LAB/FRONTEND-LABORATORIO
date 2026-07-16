@@ -1,0 +1,17 @@
+<div class="totem-input-dni">
+  <h1>Ingresá tu DNI</h1>
+
+  <div class="dni-display">
+    {{ dni() || '—' }}
+  </div>
+
+  <app-totem-numpad
+    [submitDisabled]="submitDisabled()"
+    (digitPressed)="appendDigit($event)"
+    (clearPressed)="clear()"
+    (submitPressed)="submit()" />
+
+  @if (error() === 'UNKNOWN') {
+    <p-message severity="error" text="Hubo un error. Probá de nuevo en un momento." />
+  }
+</div>

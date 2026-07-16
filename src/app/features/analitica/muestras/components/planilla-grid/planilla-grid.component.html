@@ -1,0 +1,61 @@
+<div class="ws-secs">
+  @for (sec of grid().sections; track sec.analysisCatalogId) {
+    <section class="ws-sec">
+      <header class="ws-sec-h">
+        <span class="ws-sec-bar"></span>
+        <h2>{{ sec.analysisName }}</h2>
+        <span class="ws-sec-n">{{ columns().length }} {{ columns().length === 1 ? 'protocolo' : 'protocolos' }}</span>
+      </header>
+      <div class="ws-scroll">
+        <div class="ws-grid" [style.gridTemplateColumns]="gridTemplateColumns()">
+          <div class="ws-corner">DETERMINACIONES</div>
+          @for (col of columns(); track col.protocolId) {
+            <div class="ws-col"><b>{{ col.patientName }}</b><span>#{{ col.protocolId }}</span></div>
+          }
+          @for (row of sec.rows; track row.catalogId) {
+            <div class="ws-det">{{ row.name }}@if (row.unit) { <small class="ws-unit">({{ row.unit }})</small> }</div>
+            @for (col of columns(); track col.protocolId) {
+              <div class="ws-cell">
+                @if (row.cells[col.protocolId]; as cell) {
+                  @if (row.analyticalType !== 'QUANTITATIVE' && row.qualitativeValues.length) {
+                    <p-select
+                      class="ws-select"
+                      [class.is-filled]="filled(col.protocolId, row.catalogId, cell)"
+                      appendTo="body"
+                      [options]="row.qualitativeValues"
+                      [ngModel]="value(col.protocolId, row.catalogId, cell)"
+                      [showClear]="true"
+                      placeholder="—"
+                      (onChange)="setValue(col.protocolId, row.catalogId, $event.value ?? '')"
+                    />
+                  } @else {
+                    <input
+                      class="ws-input"
+                      [class.is-filled]="filled(col.protocolId, row.catalogId, cell)"
+                      [value]="value(col.protocolId, row.catalogId, cell)"
+                      placeholder="—"
+                      inputmode="decimal"
+                      (input)="setValue(col.protocolId, row.catalogId, $any($event.target).value)"
+                    />
+                  }
+                }
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </section>
+  }
+  @if (grid().sections.length === 0) {
+    <div class="ui-empty-state">
+      <i class="pi pi-table"></i>
+      <h4>La planilla no tiene análisis</h4>
+      <p>Configurá la planilla con al menos un análisis para cargar resultados.</p>
+    </div>
+  }
+</div>
+
+<div class="ws-footer">
+  <span class="ws-progress">{{ progreso().filled }} de {{ progreso().total }} determinaciones cargadas</span>
+  <p-button label="Guardar y revisar" icon="pi pi-check" (onClick)="onSave()" />
+</div>

@@ -1,26 +1,228 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideStore, provideState, Store } from '@ngrx/store';
+import { provideEffects } from '@ngrx/effects';
+import { provideRouterStore } from '@ngrx/router-store';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeng/themes/aura';
 
 import { routes } from './app.routes';
+import { authTokenInterceptor } from '@core/interceptors/auth-token.interceptor';
+import { tenantIdInterceptor } from '@core/interceptors/tenant-id.interceptor';
+import { etagInterceptor } from '@core/refresh';
+import { TokenService } from '@core/auth/token.service';
+import { loadTenantConfig } from '@core/tenant/store/tenant.actions';
+import { loadMySections } from '@core/access/store/access.actions';
+import { BranchBootstrapService } from '@core/branch/branch-bootstrap.service';
+import { metaReducers } from '@core/store/logger.meta-reducer';
+
+import { TENANT_FEATURE_KEY } from '@core/tenant/store/tenant.state';
+import { tenantReducer } from '@core/tenant/store/tenant.reducer';
+import { TenantEffects } from '@core/tenant/store/tenant.effects';
+
+import { EMPRESA_FEATURE_KEY } from '@features/empresa/store/empresa.state';
+import { empresaReducer } from '@features/empresa/store/empresa.reducer';
+import { EmpresaEffects } from '@features/empresa/store/empresa.effects';
+
+import { SUCURSALES_FEATURE_KEY } from '@features/sucursales/store/sucursales.state';
+import { sucursalesReducer } from '@features/sucursales/store/sucursales.reducer';
+import { SucursalesEffects } from '@features/sucursales/store/sucursales.effects';
+
+import { ANALITICA_FEATURE_KEY } from '@features/analitica/store/analitica.state';
+import { analiticaReducer } from '@features/analitica/store/analitica.reducer';
+import { AnaliticaEffects } from '@features/analitica/store/analitica.effects';
+
+import { ATENCION_FEATURE_KEY } from '@features/analitica/store/atencion/atencion.state';
+import { atencionReducer } from '@features/analitica/store/atencion/atencion.reducer';
+import { AtencionEffects } from '@features/analitica/store/atencion/atencion.effects';
+
+// Turnos stores son provistos por turnos.routes.ts (per-feature: queue, agendas,
+// appointments, totem). EXCEPCIÓN: branchTotemConfig se registra en root (abajo)
+// porque el sidebar —montado en todas las rutas— lee su selector y dispara su
+// load aun fuera de Turnos; si viviera solo en el lazy route, NgRx warnea
+// ("feature does not exist") y el load del sidebar no tendría effect que lo atienda.
+import { branchTotemConfigReducer } from '@features/turnos/store/branch-totem-config/branch-totem-config.reducer';
+import { BranchTotemConfigEffects } from '@features/turnos/store/branch-totem-config/branch-totem-config.effects';
+
+import { FINANCIERO_FEATURE_KEY } from '@features/financiero/store/financiero.state';
+import { financieroReducer } from '@features/financiero/store/financiero.reducer';
+import { FinancieroEffects } from '@features/financiero/store/financiero.effects';
+import { LiquidacionesEffects } from '@features/financiero/store/liquidaciones.effects';
+
+import { FINANCIERO_METRICS_FEATURE_KEY } from '@features/financiero/store/metrics/state';
+import { financieroMetricsReducer } from '@features/financiero/store/metrics/reducer';
+import { FinancieroMetricsEffects } from '@features/financiero/store/metrics/effects';
+
+import { PATIENT_FEATURE_KEY } from '@features/pacientes/store/patient.state';
+import { patientReducer } from '@features/pacientes/store/patient.reducer';
+import { PatientEffects } from '@features/pacientes/store/patient.effects';
+
+import { SAAS_ADMIN_FEATURE_KEY } from '@features/saas-admin/store/saas-admin.state';
+import { saasAdminReducer } from '@features/saas-admin/store/saas-admin.reducer';
+import { SaasAdminEffects } from '@features/saas-admin/store/saas-admin.effects';
+
+import { EXTRACTION_FEATURE_KEY } from '@features/analitica/store/extraction/extraction.state';
+import { extractionReducer } from '@features/analitica/store/extraction/extraction.reducer';
+import { ExtractionEffects } from '@features/analitica/store/extraction/extraction.effects';
+
+import { ACCESS_FEATURE_KEY } from '@core/access/store/access.state';
+import { accessReducer } from '@core/access/store/access.reducer';
+import { AccessEffects } from '@core/access/store/access.effects';
+
+import { ROLES_PERMISOS_FEATURE_KEY } from '@features/roles-permisos/store/roles-permisos.state';
+import { rolesPermisosReducer } from '@features/roles-permisos/store/roles-permisos.reducer';
+import { RolesPermisosEffects } from '@features/roles-permisos/store/roles-permisos.effects';
+
+import { MUESTRAS_FEATURE_KEY } from '@features/analitica/muestras/store/muestras.state';
+import { muestrasReducer } from '@features/analitica/muestras/store/muestras.reducer';
+import { MuestrasEffects } from '@features/analitica/muestras/store/muestras.effects';
+
+import { WORKSHEET_TEMPLATES_FEATURE_KEY } from '@features/analitica/muestras/store/worksheet-templates/worksheet-templates.state';
+import { worksheetTemplatesReducer } from '@features/analitica/muestras/store/worksheet-templates/worksheet-templates.reducer';
+import { WorksheetTemplatesEffects } from '@features/analitica/muestras/store/worksheet-templates/worksheet-templates.effects';
+
+import { RESULTADOS_FEATURE_KEY } from '@features/analitica/muestras/store/resultados/resultados.state';
+import { resultadosReducer } from '@features/analitica/muestras/store/resultados/resultados.reducer';
+import { ResultadosEffects } from '@features/analitica/muestras/store/resultados/resultados.effects';
+
+import { VALIDACION_PROTOCOLOS_FEATURE_KEY } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.state';
+import { validacionProtocolosReducer } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.reducer';
+import { ValidacionProtocolosEffects } from '@features/analitica/muestras/store/validacion-protocolos/validacion-protocolos.effects';
+
+import { VALIDACION_DETALLE_FEATURE_KEY } from '@features/analitica/muestras/store/validacion-detalle/validacion-detalle.state';
+import { validacionDetalleReducer } from '@features/analitica/muestras/store/validacion-detalle/validacion-detalle.reducer';
+import { ValidacionDetalleEffects } from '@features/analitica/muestras/store/validacion-detalle/validacion-detalle.effects';
+
+import { NOMENCLADOR_FEATURE_KEY } from '@features/analitica/store/nomenclador/nomenclador.state';
+import { nomencladorReducer } from '@features/analitica/store/nomenclador/nomenclador.reducer';
+import { NomencladorEffects } from '@features/analitica/store/nomenclador/nomenclador.effects';
+
+import { URGENT_PENDING_FEATURE_KEY } from '@features/analitica/store/urgent-pending/urgent-pending.state';
+import { urgentPendingReducer } from '@features/analitica/store/urgent-pending/urgent-pending.reducer';
+import { UrgentPendingEffects } from '@features/analitica/store/urgent-pending/urgent-pending.effects';
+
+import { URGENT_IN_PROGRESS_FEATURE_KEY } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.state';
+import { urgentInProgressReducer } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.reducer';
+import { UrgentInProgressEffects } from '@features/analitica/store/urgent-in-progress/urgent-in-progress.effects';
+
+import { ANALITICA_METRICS_FEATURE_KEY } from '@features/analitica/store/analitica-metrics/analitica-metrics.state';
+import { analiticaMetricsReducer } from '@features/analitica/store/analitica-metrics/analitica-metrics.reducer';
+import { AnaliticaMetricsEffects } from '@features/analitica/store/analitica-metrics/analitica-metrics.effects';
+
+import { NOTIFICATIONS_FEATURE_KEY } from '@features/notifications/store/notifications.state';
+import { notificationsReducer } from '@features/notifications/store/notifications.reducer';
+import { NotificationsEffects } from '@features/notifications/store/notifications.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
-    provideHttpClient(),
+    // On bootstrap, if there's already a valid token (e.g. page refresh),
+    // kick off tenant config loading so the resolver at `/` doesn't block
+    // waiting for a dispatch.
+    provideAppInitializer(() => {
+      const tokens = inject(TokenService);
+      const store = inject(Store);
+      const branchBootstrap = inject(BranchBootstrapService);
+      if (tokens.isTokenValid() && !tokens.getRoles().includes('SAAS_ADMIN')) {
+        store.dispatch(loadTenantConfig());
+        store.dispatch(loadMySections());
+        // No bloqueamos el boot: si la resolución de sucursal falla, las
+        // pantallas dependientes muestran fallback ("Sin sucursal").
+        branchBootstrap.init().subscribe();
+      }
+    }),
+    provideRouter(routes, withComponentInputBinding()),
+    provideHttpClient(
+      withInterceptors([etagInterceptor, authTokenInterceptor, tenantIdInterceptor]),
+    ),
+    provideStore({}, { metaReducers }),
+    provideEffects([]),
+    provideRouterStore(),
+    provideState(TENANT_FEATURE_KEY, tenantReducer),
+    provideEffects(TenantEffects),
+    provideState(EMPRESA_FEATURE_KEY, empresaReducer),
+    provideEffects(EmpresaEffects),
+    provideState(SUCURSALES_FEATURE_KEY, sucursalesReducer),
+    provideEffects(SucursalesEffects),
+    provideState(ANALITICA_FEATURE_KEY, analiticaReducer),
+    provideEffects(AnaliticaEffects),
+    provideState(ATENCION_FEATURE_KEY, atencionReducer),
+    provideEffects(AtencionEffects),
+    provideState(FINANCIERO_FEATURE_KEY, financieroReducer),
+    provideEffects(FinancieroEffects),
+    provideEffects(LiquidacionesEffects),
+    provideState(FINANCIERO_METRICS_FEATURE_KEY, financieroMetricsReducer),
+    provideEffects(FinancieroMetricsEffects),
+    provideState(PATIENT_FEATURE_KEY, patientReducer),
+    provideEffects(PatientEffects),
+    provideState(SAAS_ADMIN_FEATURE_KEY, saasAdminReducer),
+    provideEffects(SaasAdminEffects),
+    provideState(EXTRACTION_FEATURE_KEY, extractionReducer),
+    provideEffects(ExtractionEffects),
+    provideState(ACCESS_FEATURE_KEY, accessReducer),
+    provideEffects(AccessEffects),
+    provideState(ROLES_PERMISOS_FEATURE_KEY, rolesPermisosReducer),
+    provideEffects(RolesPermisosEffects),
+    provideState(MUESTRAS_FEATURE_KEY, muestrasReducer),
+    provideEffects(MuestrasEffects),
+    provideState(WORKSHEET_TEMPLATES_FEATURE_KEY, worksheetTemplatesReducer),
+    provideEffects(WorksheetTemplatesEffects),
+    provideState(RESULTADOS_FEATURE_KEY, resultadosReducer),
+    provideEffects(ResultadosEffects),
+    provideState(VALIDACION_PROTOCOLOS_FEATURE_KEY, validacionProtocolosReducer),
+    provideEffects(ValidacionProtocolosEffects),
+    provideState(VALIDACION_DETALLE_FEATURE_KEY, validacionDetalleReducer),
+    provideEffects(ValidacionDetalleEffects),
+    provideState(NOMENCLADOR_FEATURE_KEY, nomencladorReducer),
+    provideEffects(NomencladorEffects),
+    provideState(URGENT_PENDING_FEATURE_KEY, urgentPendingReducer),
+    provideEffects(UrgentPendingEffects),
+    provideState(URGENT_IN_PROGRESS_FEATURE_KEY, urgentInProgressReducer),
+    provideEffects(UrgentInProgressEffects),
+    provideState(ANALITICA_METRICS_FEATURE_KEY, analiticaMetricsReducer),
+    provideEffects(AnaliticaMetricsEffects),
+    // Slice global: la campana de notificaciones está siempre montada (layout).
+    provideState(NOTIFICATIONS_FEATURE_KEY, notificationsReducer),
+    provideEffects(NotificationsEffects),
+    // Slice de turnos registrada en root a propósito (ver comentario arriba).
+    provideState('branchTotemConfig', branchTotemConfigReducer),
+    provideEffects(BranchTotemConfigEffects),
     providePrimeNG({
+      // Locale es-AR para todos los overlays de PrimeNG (datepicker, etc.).
+      // Sin esto el calendario sale en inglés. La semana arranca en lunes.
+      translation: {
+        dayNames: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'],
+        dayNamesShort: ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'],
+        dayNamesMin: ['D', 'L', 'M', 'X', 'J', 'V', 'S'],
+        monthNames: [
+          'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+          'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+        ],
+        monthNamesShort: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+        today: 'Hoy',
+        clear: 'Limpiar',
+        firstDayOfWeek: 1,
+      },
       theme: {
         preset: Aura,
         options: {
+          // Disable PrimeNG's automatic dark-mode selector. By default it
+          // toggles on `.p-dark` or matches the OS preference, which paints
+          // labels and inputs with a dark fill on Windows users running in
+          // dark mode. Pin to a selector that never applies.
+          darkModeSelector: '.app-dark-mode-disabled',
           cssLayer: {
             name: 'primeng',
             order: 'tailwind, primeng',
-          }
-        }
-      }
-    })
-  ]
+          },
+        },
+      },
+    }),
+  ],
 };

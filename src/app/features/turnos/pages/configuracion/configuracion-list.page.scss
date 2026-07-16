@@ -1,0 +1,73 @@
+:host {
+  display: block;
+}
+
+.config-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0.25rem 0 0;
+      color: var(--p-text-muted-color);
+    }
+  }
+
+  &__toolbar {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+
+    > * {
+      min-width: 12rem;
+    }
+  }
+
+  &__banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+
+    &--error {
+      background: var(--p-red-50);
+      color: var(--p-red-700);
+      border: 1px solid var(--p-red-200);
+    }
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--p-text-muted-color);
+
+    i {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+}
+
+.branch-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  &__count {
+    color: var(--p-text-muted-color);
+    font-size: 0.9rem;
+  }
+}

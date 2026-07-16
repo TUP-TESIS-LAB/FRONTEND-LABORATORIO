@@ -1,0 +1,67 @@
+<div class="horarios-step">
+  <form [formGroup]="form" (ngSubmit)="add()" class="inline-form">
+    <div class="form-field full-width">
+      <label>Días <span class="pat-form__req">*</span></label>
+      <div class="day-chips">
+        @for (d of DAYS; track d.id) {
+          <button
+            class="day-chip"
+            type="button"
+            [class.selected]="selectedDays().has(d.id)"
+            (click)="toggleDay(d.id)"
+            [title]="d.id">{{ d.label }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label>Desde <span class="pat-form__req">*</span></label>
+        <input pInputText type="time" formControlName="fromTime" />
+        @if (form.controls.fromTime.invalid && form.controls.fromTime.touched) {
+          <small class="form-error">Formato HH:mm requerido.</small>
+        }
+      </div>
+      <div class="form-field">
+        <label>Hasta <span class="pat-form__req">*</span></label>
+        <input pInputText type="time" formControlName="toTime" />
+        @if (form.controls.toTime.invalid && form.controls.toTime.touched) {
+          <small class="form-error">Formato HH:mm requerido.</small>
+        }
+      </div>
+      <div class="form-field">
+        <label>Tipo <span class="pat-form__req">*</span></label>
+        <p-select formControlName="scheduleType" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body" />
+      </div>
+      <div class="form-action">
+        <p-button label="Agregar" type="submit" [disabled]="!canAdd()" />
+      </div>
+    </div>
+  </form>
+
+  <p class="counter muted">{{ schedules().length }} horario{{ schedules().length !== 1 ? 's' : '' }} cargado{{ schedules().length !== 1 ? 's' : '' }}</p>
+
+  <p-table [value]="schedules()" dataKey="id" class="schedules-table">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Día</th>
+        <th>Horario</th>
+        <th>Tipo</th>
+        <th style="width: 4rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-s>
+      <tr>
+        <td>{{ labelForDay(s.dayFrom) }}</td>
+        <td>{{ s.fromTime }} – {{ s.toTime }}</td>
+        <td>{{ labelForType(s.scheduleType) }}</td>
+        <td>
+          <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (click)="remove(s.id)" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="4" class="muted">Sin horarios cargados aún.</td></tr>
+    </ng-template>
+  </p-table>
+</div>

@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.branch-section {
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+  }
+
+  &__empty {
+    padding: 1rem;
+    text-align: center;
+    color: var(--p-text-muted-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__actions-th {
+    text-align: right;
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  &__actions-cell {
+    text-align: right;
+    white-space: nowrap;
+
+    p-button + p-button {
+      margin-left: 0.25rem;
+    }
+  }
+}

@@ -15,13 +15,17 @@ description: >
 
 # Laboratory UI — Design System multi-tenant white-label
 
-Stack: **Angular 17+ standalone + PrimeNG v17 + SCSS**.
+Stack: **Angular 21 standalone + PrimeNG 21 (Aura theme) + SCSS**.
+
+> **PrimeNG 21 ≠ v17.** Los tokens CSS legacy (`--primary-color`, `--surface-card`, `--text-color-secondary`, etc.) NO están definidos en v21 — usar los del proyecto (`--brand-primary`, `--ds-text`, `--ds-text-muted`, `--p-primary-contrast-color`). Ver `references/tokens.md` sección "Tokens legacy de PrimeNG".
 Distribución: **PWA instalable**, una sola base de código que renderiza dos experiencias distintas según breakpoint:
 mobile se siente como app nativa (bottom nav, full screen), desktop se ve como portal web clásico (sidebar).
 
 **Contexto del producto:** SaaS para laboratorios clínicos. Cada laboratorio cliente (tenant) personaliza su instancia con su propia paleta de colores y logo, pero el comportamiento, layout y componentes son idénticos para garantizar consistencia y velocidad de evolución del producto.
 
 **Alcance de esta skill:** únicamente diseño visual y componentes UI. Garantiza que toda la app tenga la misma apariencia y comportamiento de componentes en todos los tenants. Auth, arquitectura, servicios HTTP, guards, manejo de estado y errores **están fuera del alcance** y deben resolverse en otras skills/decisiones del equipo.
+
+> **Datos en componentes UI.** Cualquier dato que venga del backend (listas de turnos, pacientes, estudios, etc.) llega al componente **siempre vía `store.selectSignal(...)` según `ngrx-backend-request`**. Esta skill describe cómo se ven y comportan los componentes; nunca cómo se traen los datos. Si un patrón visual de esta skill muestra una lista o un detalle, asumir que el array o el objeto entró al componente como signal del store, no como `Observable` ni vía `resource()`.
 
 ---
 
@@ -172,7 +176,7 @@ Catálogo completo en `references/components.md`.
 ### Reglas generales
 - **Formularios:** siempre **Reactive Forms** (`FormBuilder`, `FormGroup`, `formControlName`). `ngModel` solo se permite en filtros de UI sin validación ni submit (búsquedas, selectores de vista).
 - **Botones:** `p-button` con `severity` mapeado a tokens. Nunca botones HTML planos. Tamaño mínimo `48×48` en mobile.
-- **Tablas:** `p-table` con `stripedRows`, `[paginator]="true"`, `[rows]="15"`. **En mobile se reemplaza por lista de cards** (patrón "tabla adaptativa").
+- **Tablas:** usar siempre `ui-table` (`DataTableComponent`) — ver skill `laboratory-ui-table`. **Nunca `p-table` inline** en list pages. En mobile se reemplaza por lista de cards (patrón "tabla adaptativa").
 - **Inputs:** `p-floatlabel` + componente PrimeNG. Inputs de mínimo 48px de alto en mobile, con `inputmode` y `autocomplete` correctos.
 - **Modales:** `p-dialog` con `[modal]="true"`, `[draggable]="false"`. **En mobile usar `[breakpoints]="{ '768px': '100vw' }"` y `styleClass="ui-dialog-fullscreen-mobile"`**.
 - **Notificaciones:** `p-toast` con posición `top-right` en desktop, `top-center` en mobile.
@@ -227,15 +231,43 @@ Estos son los patrones genéricos que el design system soporta. **No son pantall
 
 ### Listado de entidades
 Para cualquier vista que muestre una colección (pacientes, turnos, órdenes, sedes, etc.):
-- **Desktop:** `p-table` con columnas relevantes + acciones inline en la última columna.
+- **Desktop:** `ui-table` (`DataTableComponent`) — ver skill `laboratory-ui-table`. **Nunca `p-table` inline.**
 - **Mobile:** lista de cards (`ui-list-card`) con la información esencial + chevron.
 - Búsqueda: `p-iconField` arriba (sticky en mobile).
 - Filtros: `p-toolbar` en desktop / `p-drawer` lateral en mobile.
 
 ### Formulario de creación o edición
-- **Desktop:** `p-dialog` (520px form simple, 720px extenso, 900px con tabla embebida).
-- **Mobile:** dialog full-screen, o pantalla completa con header propio si el formulario tiene 3+ secciones.
-- **Wizard de pasos** en mobile cuando el formulario es muy largo; el mismo formulario en desktop se ve completo.
+
+El patrón depende del **dominio de la operación**, no del conteo de campos.
+
+**Drawer lateral de ~50% (`p-drawer position="left"`)** — para crear o editar UNA entidad atómica con campos directamente suyos. Ejemplos: Paciente, Sucursal, Área, Usuario, Rol, Médico derivante, Obra Social, Insumo, configuración del tenant, plantilla de notificación. El payload del backend es un objeto plano (o con un par de IDs de relación). El usuario está editando una "ficha".
+
+**Full-page con stepper (`/feature/nuevo`)** — para componer una TRANSACCIÓN que ata múltiples entidades en un solo evento de negocio. Ejemplos: Registrar llegada (paciente + turno + estudios + cobro), Nuevo turno (paciente + horario + estudios + médico derivante), Carga de protocolo (muestra + estudios + área), Cierre de caja, Facturación. El payload es un aggregate (root + colecciones anidadas). El usuario está armando un caso, no editando una ficha.
+
+**Regla práctica:** si el endpoint termina en `POST /<entidad>` con un body simple → drawer. Si arma `POST /<evento>` con arrays anidados, o si requiere lookup/creación inline de entidades relacionadas (ej: crear un paciente en el medio del alta de un turno) → stepper full-page.
+
+#### Drawer — mecánicas obligatorias
+
+- `p-drawer position="left"`, `[modal]="true"`, `[dismissable]="true"`.
+- Ancho: `styleClass="ui-drawer-half"` → en desktop `width: 50vw; min-width: 480px; max-width: 720px`; en mobile `width: 100vw`.
+- Header sticky con título + botón cerrar (X).
+- Footer sticky abajo con `Cancelar` (secondary) + `Guardar`/`Crear` (primary). Submit por `Enter` cuando aplique.
+- `Esc` cierra (PrimeNG lo provee; no override).
+- Reactive Forms siempre. Validación on blur + on submit.
+- Skeleton mientras se cargan datos en edición.
+
+#### Stepper full-page — mecánicas obligatorias
+
+Ver skill `laboratory-ui-stepper` para la guía completa con código.
+
+- Ruta dedicada (`/feature/nuevo`, `/feature/:id/editar` si la edición también es compleja).
+- Header con `ui-form-stepper-header` — **nunca un header custom**.
+- Body scrolleable, `max-width: 720px`, centrado.
+- Footer sticky con `Volver` + `Continuar` (o `Confirmar` en el último paso).
+- Validar solo el step actual antes de avanzar.
+- Sin títulos redundantes en el cuerpo del paso (el título vive en el header).
+- Sin placeholders en los inputs del stepper.
+- Listas repetibles con botón "Agregar" arriba y trash inline.
 
 ### Card expandible (acordeón)
 Para listas de items con detalle opcional:
@@ -438,6 +470,8 @@ Reglas estrictas que evitan inconsistencia y rompen el DS si se ignoran:
 - ❌ Usar `ngModel` en formularios con submit → ✅ Reactive Forms (`formControlName`)
 - ❌ Crear modales propios → ✅ usar `p-dialog` con `ui-dialog-fullscreen-mobile`
 - ❌ Renderizar tablas tal cual en mobile → ✅ patrón "tabla adaptativa" (cards en mobile)
+- ❌ Usar `p-table` inline en un list page → ✅ `ui-table` (skill `laboratory-ui-table`)
+- ❌ Crear header de stepper custom → ✅ `ui-form-stepper-header` (skill `laboratory-ui-stepper`)
 - ❌ Usar prefijos de tenant en clases (`.lcc-card`) → ✅ siempre `.ui-*`
 
 **Accesibilidad**

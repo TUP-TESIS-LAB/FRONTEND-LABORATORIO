@@ -1,0 +1,92 @@
+:host {
+  --accent: #5b54e6;
+  --ink: #1f2433;
+  --ink-2: #5b6276;
+  --muted: #8a90a3;
+  --line: #eceef3;
+  --bg: #f4f5f8;
+}
+
+/* el p-dialog provee la caja; nuestro contenido define header/body/foot */
+:host ::ng-deep .pl-dialog .p-dialog-content { padding: 0; border-radius: 18px; overflow: visible; }
+
+.modal-h {
+  padding: 22px 24px 14px; display: flex; align-items: flex-start; gap: 12px;
+  h2 { margin: 0; font-size: 18px; font-weight: 800; color: #1a2140; letter-spacing: -.01em; }
+  p { margin: 4px 0 0; font-size: 13px; color: var(--ink-2); }
+}
+.modal-x {
+  margin-left: auto; width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--bg);
+  color: var(--ink-2); display: grid; place-items: center; cursor: pointer;
+  &:hover { background: #e8eaf1; }
+}
+
+.modal-body { padding: 0 24px; overflow: visible; }
+.modal-foot { padding: 14px 24px 20px; display: flex; justify-content: flex-start; }
+
+.pl-head {
+  display: grid; grid-template-columns: 1fr auto; padding: 4px 2px 9px; border-bottom: 1px solid var(--line);
+  > span { font-size: 10px; font-weight: 700; letter-spacing: .09em; color: var(--muted); }
+  > span:last-child { padding-right: 46px; }
+}
+.pl-row {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
+  padding: 13px 2px; border-bottom: 1px solid #f1f2f6;
+  &:last-child { border-bottom: none; }
+}
+.pl-name {
+  display: flex; align-items: center; gap: 11px; min-width: 0;
+  > i { color: var(--accent); flex: none; font-size: 18px; }
+  b { display: block; font-size: 14px; color: #1a2140; font-weight: 700; }
+  span { font-size: 12px; color: var(--muted); }
+}
+.pl-actions { display: flex; align-items: center; gap: 8px; }
+.pl-load {
+  display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 9px; border: none;
+  background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+  &:hover { filter: brightness(1.05); }
+  &:disabled { background: #cdd0dc; box-shadow: none; cursor: not-allowed; }
+}
+.pl-kebab-wrap { position: relative; }
+.pl-kebab {
+  width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--line); background: #fff;
+  color: var(--ink-2); display: grid; place-items: center; cursor: pointer;
+  &:hover { background: var(--bg); }
+  &.is-open { background: var(--bg); border-color: #cfd3e0; }
+}
+.pl-menu {
+  position: absolute; top: 42px; right: 0; z-index: 60; background: #fff; border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 12px 32px #0b132a26; padding: 6px; min-width: 200px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.pl-mi {
+  display: flex; align-items: center; gap: 10px; text-align: left; background: none; border: none;
+  border-radius: 8px; padding: 9px 10px; font-size: 13px; color: var(--ink); cursor: pointer;
+  &:hover { background: var(--bg); }
+  > i { color: var(--muted); flex: none; }
+}
+.pl-mi-del { color: #dc2626; &:hover { background: #fef2f2; } > i { color: #dc2626; } }
+.pl-confirm {
+  margin-top: 4px; padding: 10px 4px 2px; border-top: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 8px;
+  > p { margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.4; }
+}
+.pl-confirm-btns { display: flex; gap: 6px; }
+.grp-btn {
+  display: flex; align-items: center; gap: 7px; height: 30px; flex: 1; justify-content: center;
+  border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink-2);
+  font-size: 12.5px; font-weight: 600; cursor: pointer;
+  &:hover { border-color: #cfd3e0; background: #fafbff; }
+}
+.pl-del-yes {
+  flex: 1; height: 30px; border-radius: 8px; border: none; background: #dc2626; color: #fff;
+  font-size: 12.5px; font-weight: 700; cursor: pointer;
+  &:hover { background: #b91c1c; }
+}
+.pl-empty { padding: 26px; text-align: center; font-size: 13px; color: var(--muted); }
+
+.grp-send {
+  display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 15px; border-radius: 9px; border: none;
+  background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  &:hover { filter: brightness(1.06); }
+}

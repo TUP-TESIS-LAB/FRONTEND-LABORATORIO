@@ -1,0 +1,111 @@
+// Design System
+@use 'styles/tokens';
+@use 'styles/breakpoints';
+@use 'styles/globals';
+@use 'styles/utilities';
+
+// Tailwind v4 + PrimeNG.
+// Tailwind se envuelve en su propia layer para que el order
+// declarado por providePrimeNG ({ order: 'tailwind, primeng' })
+// pueda hacer que PrimeNG gane sobre el preflight de Tailwind.
+@import "primeicons/primeicons.css";
+@import "tailwindcss" layer(tailwind);
+@plugin "tailwindcss-primeui";
+
+// ── Shim de compatibilidad Tailwind v4 ──
+// El preflight de Tailwind v4 aplica `border: 0 solid` a `*`. Cualquier
+// utilidad `border` / `border-t` / etc. sin color explícito resuelve a
+// `currentColor`, que hereda `--ds-text` (casi negro) en vez del borde
+// gris del Design System.
+//
+// IMPORTANTE: esto va DENTRO de la sub-layer `tailwind.base` (no como CSS
+// sin layer). El import de arriba usa `layer(tailwind)`, que anida el
+// `@layer theme, base, components, utilities;` interno de Tailwind como
+// `tailwind.theme`, `tailwind.base`, etc. Si este shim fuera CSS sin layer,
+// por spec de cascade layers GANARÍA incondicionalmente sobre CUALQUIER
+// regla en capas — incluidas las utilidades `border-orange-300`,
+// `border-blue-200`, `border-primary`, etc. que ya se usan a propósito en
+// el repo (banners de estado, selección) — rompiéndolas. Al declararlo en
+// `tailwind.base`, sólo compite con el preflight (mismo selector, gana por
+// orden de aparición) y sigue perdiendo contra `tailwind.utilities`
+// (declarada después en el orden interno de Tailwind), que es donde viven
+// las clases `border-{color}`.
+@layer tailwind.base {
+  *, ::before, ::after {
+    border-color: var(--ds-border);
+  }
+}
+
+// ── SaaS Admin dark-theme palette (available globally so portaled overlays can reach them) ──
+:root {
+  --saas-bg-page:      #1a1b3a;
+  --saas-bg-card:      #232447;
+  --saas-bg-card-alt:  #2a2c52;
+  --saas-border:       rgba(255,255,255,.08);
+  --saas-text:         #e2e8f0;
+  --saas-text-muted:   #94a3b8;
+  --saas-text-on-card: #fde68a;
+  --saas-accent:       #fbbf24;
+}
+
+// ── SaaS-themed p-dialog / p-confirmDialog (portaled to document.body) ──
+.p-dialog.saas-themed {
+  background: var(--saas-bg-card, #232447);
+  color: var(--saas-text, #e2e8f0);
+
+  .p-dialog-header {
+    background: var(--saas-bg-card-alt, #2a2c52);
+    color: var(--saas-text-on-card, #fde68a);
+    border-bottom: 1px solid var(--saas-border, rgba(255,255,255,.08));
+  }
+
+  .p-dialog-content {
+    background: var(--saas-bg-card, #232447);
+    color: var(--saas-text, #e2e8f0);
+  }
+
+  .p-inputtext,
+  input.p-inputtext {
+    background: var(--saas-bg-card-alt, #2a2c52);
+    color: var(--saas-text, #e2e8f0);
+    border-color: var(--saas-border, rgba(255,255,255,.08));
+  }
+
+  .p-dialog-footer {
+    background: var(--saas-bg-card, #232447);
+    border-top: 1px solid var(--saas-border, rgba(255,255,255,.08));
+  }
+
+  label, span {
+    color: var(--saas-text-muted, #94a3b8);
+  }
+}
+
+// ── Toggle switch: always blue when checked (global, covers portaled contexts) ──
+.p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider,
+.p-toggleswitch[data-p-checked="true"] .p-toggleswitch-slider,
+.p-toggleswitch.p-highlight .p-toggleswitch-slider {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+.p-confirmdialog.saas-themed {
+  background: var(--saas-bg-card, #232447);
+  color: var(--saas-text, #e2e8f0);
+
+  .p-dialog-header {
+    background: var(--saas-bg-card-alt, #2a2c52);
+    color: var(--saas-text-on-card, #fde68a);
+    border-bottom: 1px solid var(--saas-border, rgba(255,255,255,.08));
+  }
+
+  .p-dialog-content {
+    background: var(--saas-bg-card, #232447);
+    color: var(--saas-text, #e2e8f0);
+  }
+
+  .p-dialog-footer {
+    background: var(--saas-bg-card, #232447);
+    border-top: 1px solid var(--saas-border, rgba(255,255,255,.08));
+  }
+}

@@ -1,0 +1,22 @@
+<!-- Reference file — live template is inlined in bulk-actions-bar.component.ts (workaround for input.required + setInput in vitest) -->
+@if (selectedCount() === 0) {
+  <div class="bulk idle">
+    <span class="badge muted">0</span>
+    <span class="muted">Tildá muestras en cualquier lista (o escaneá) para armar lotes temporales</span>
+    <button type="button" class="create outline" disabled>+ Crear lote temporal</button>
+  </div>
+} @else {
+  <div class="bulk active">
+    <span class="badge brand">{{ selectedCount() }}</span>
+    <span>{{ selectedCount() }} muestras tildadas — armá un lote temporal</span>
+    <div class="actions">
+      @for (lote of lotes(); track lote.id; let i = $index) {
+        <button type="button" class="chip-add" (click)="addToLote.emit(lote.id)">
+          Lote {{ i + 1 }} · {{ lote.sampleIds.length }}
+        </button>
+      }
+      <button type="button" class="create" (click)="createLote.emit()">+ Crear lote temporal</button>
+      <button type="button" class="chip-clear" (click)="clear.emit()">✕ Limpiar</button>
+    </div>
+  </div>
+}

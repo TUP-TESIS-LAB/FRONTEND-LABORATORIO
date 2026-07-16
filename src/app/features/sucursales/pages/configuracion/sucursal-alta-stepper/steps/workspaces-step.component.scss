@@ -1,0 +1,64 @@
+.workspaces-step h2 { margin: 0 0 0.5rem; }
+.muted { color: var(--p-text-muted-color); }
+.empty-line { margin: 1rem 0; }
+
+.form-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.form-field label { font-size: 0.75rem; font-weight: 500; }
+.form-field.grow { flex: 1 1 auto; }
+.w-full { width: 100%; }
+
+/* ── Panel de asociación inline ── */
+.assoc-panel {
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 14px 16px;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.assoc-row { display: flex; align-items: flex-end; gap: 12px; }
+.assoc-row .grow { flex: 1 1 auto; }
+
+.sections-block { display: flex; flex-direction: column; gap: 0.6rem; }
+.sections-head { display: flex; align-items: center; justify-content: space-between; }
+.sections-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #475569; }
+
+.sections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.4rem 1rem;
+}
+.section-check { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; }
+
+.assoc-actions { display: flex; justify-content: flex-end; }
+
+/* ── Chips de secciones dentro de la fila expandida ── */
+.ws-sections { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.ws-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #eef4ff;
+  color: #1e3a8a;
+  border-radius: 999px;
+  padding: 2px 6px 2px 10px;
+  font-size: 0.8125rem;
+}
+.ws-chip__x {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 999px;
+  line-height: 1;
+}
+.ws-chip__x:hover { background: #dbe6ff; color: #1e3a8a; }
+.ws-chip__x .pi { font-size: 0.7rem; }
+
+/* ── Modales ── */
+.modal-form { display: flex; flex-direction: column; gap: 0.9rem; }

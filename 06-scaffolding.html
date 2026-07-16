@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup 6 · Scaffolding Angular + Tailwind</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons@7.0.0/primeicons.css" />
+<style>
+  :root {
+    --brand-primary: #4f46e5;
+    --brand-accent: #06b6d4;
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-alt: #f4f4f5;
+    --border: #e4e4e7;
+    --text: #18181b;
+    --text-muted: #71717a;
+    --core: #4f46e5;
+    --activable: #10b981;
+    --shared: #f59e0b;
+    --infra: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 28px 32px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .sub { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px;
+    padding: 12px 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px;
+  }
+  .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 3px; }
+
+  .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  }
+  .panel h2 {
+    font-size: 15px; font-weight: 600; margin: 0 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel h2 i { color: var(--brand-primary); }
+
+  /* Tree */
+  .tree {
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 12.5px; line-height: 1.7;
+    background: var(--surface-alt); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto;
+    border: 1px solid var(--border);
+  }
+  .tree .row { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .tree .name { color: var(--text); }
+  .tree .folder { color: var(--brand-primary); font-weight: 600; }
+  .tree .file { color: var(--text-muted); }
+  .tree .note {
+    margin-left: 12px; font-family: 'Inter', sans-serif; font-size: 11.5px;
+    color: var(--text-muted); font-weight: normal;
+  }
+  .tag {
+    display: inline-block; font-size: 9.5px; padding: 1px 6px;
+    border-radius: 4px; font-family: 'Inter', sans-serif;
+    font-weight: 600; letter-spacing: .03em; text-transform: uppercase;
+    margin-left: 6px;
+  }
+  .tag-core { background: color-mix(in srgb, var(--core) 14%, transparent); color: var(--core); }
+  .tag-act  { background: color-mix(in srgb, var(--activable) 14%, transparent); color: #047857; }
+  .tag-shared { background: color-mix(in srgb, var(--shared) 18%, transparent); color: #b45309; }
+  .tag-infra  { background: color-mix(in srgb, var(--infra) 18%, transparent); color: var(--infra); }
+
+  .pad-1 { padding-left: 16px; }
+  .pad-2 { padding-left: 32px; }
+  .pad-3 { padding-left: 48px; }
+  .pad-4 { padding-left: 64px; }
+  .pad-5 { padding-left: 80px; }
+
+  .block {
+    background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
+  }
+  .block h3 { font-size: 13.5px; margin: 0 0 4px; font-weight: 600; }
+  .block p { margin: 0; font-size: 12.5px; color: var(--text-muted); }
+  .block code {
+    font-family: ui-monospace, monospace; font-size: 11.5px;
+    background: var(--surface); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+
+  ul.bullet { margin: 0; padding-left: 18px; font-size: 13px; }
+  ul.bullet li { margin-bottom: 6px; color: var(--text); }
+  ul.bullet li b { color: var(--text); }
+
+  pre.code {
+    font-family: ui-monospace, monospace; font-size: 12px;
+    background: #0f172a; color: #e2e8f0; padding: 14px;
+    border-radius: 8px; overflow-x: auto; line-height: 1.55; margin: 0;
+  }
+  pre.code .k { color: #c084fc; }
+  pre.code .s { color: #86efac; }
+  pre.code .c { color: #64748b; font-style: italic; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .mock-info {
+    margin: 0 0 20px; padding: 10px 14px;
+    background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--brand-primary) 40%, transparent);
+    border-radius: 8px; font-size: 12.5px; color: var(--text-muted);
+  }
+  .mock-info b { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <h1>Scaffolding · Angular + Tailwind</h1>
+  <p class="sub">Estructura propuesta para LabCore — multi-tenant, white-label, módulos activables, lazy-loading por feature.</p>
+
+  <div class="mock-info">
+    <b>Decisiones clave.</b>
+    Standalone components (Angular 17+) · ruteo lazy por feature · CSS variables como puente para white-label dinámico (Tailwind extiende los tokens) · módulos activables se montan condicionalmente desde un <code>ModuleRegistry</code> alimentado por la config del tenant.
+  </div>
+
+  <div class="legend">
+    <div class="item"><span class="swatch" style="background:var(--core)"></span> Core (siempre presente)</div>
+    <div class="item"><span class="swatch" style="background:var(--activable)"></span> Activable (lazy + feature flag)</div>
+    <div class="item"><span class="swatch" style="background:var(--shared)"></span> Shared / UI</div>
+    <div class="item"><span class="swatch" style="background:var(--infra)"></span> Infra / Build</div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2><i class="pi pi-folder-open"></i> Árbol del proyecto</h2>
+      <div class="tree">
+<div class="row"><span class="folder">labcore-fe/</span></div>
+
+<div class="row pad-1"><span class="folder">src/</span></div>
+
+<div class="row pad-2"><span class="folder">app/</span></div>
+
+<div class="row pad-3"><span class="folder">core/</span><span class="tag tag-core">CORE</span><span class="note">// singletons: auth, tenant, http, errors</span></div>
+<div class="row pad-4"><span class="folder">auth/</span><span class="note">// guards, services, login</span></div>
+<div class="row pad-4"><span class="folder">tenant/</span><span class="note">// resolver de tenant, white-label, ModuleRegistry</span></div>
+<div class="row pad-4"><span class="folder">interceptors/</span><span class="note">// auth-token, tenant-id, error-handler</span></div>
+<div class="row pad-4"><span class="folder">guards/</span><span class="note">// auth.guard, role.guard, module-active.guard</span></div>
+<div class="row pad-4"><span class="folder">services/</span><span class="note">// AppConfig, FeatureFlag, NotificationService</span></div>
+<div class="row pad-4"><span class="folder">models/</span><span class="note">// User, Tenant, Role, ModuleKey</span></div>
+
+<div class="row pad-3"><span class="folder">shared/</span><span class="tag tag-shared">SHARED</span><span class="note">// componentes y utils reutilizables</span></div>
+<div class="row pad-4"><span class="folder">ui/</span><span class="note">// btn, input, modal, table, drawer, toast</span></div>
+<div class="row pad-4"><span class="folder">forms/</span><span class="note">// validadores, controles custom</span></div>
+<div class="row pad-4"><span class="folder">pipes/</span><span class="note">// currency-ar, date-es, safeHtml</span></div>
+<div class="row pad-4"><span class="folder">directives/</span><span class="note">// hasRole, hasModule, autofocus</span></div>
+
+<div class="row pad-3"><span class="folder">layout/</span><span class="tag tag-core">CORE</span><span class="note">// shell de la app autenticada</span></div>
+<div class="row pad-4"><span class="folder">topbar/</span></div>
+<div class="row pad-4"><span class="folder">sidebar/</span><span class="note">// menú dinámico según ModuleRegistry</span></div>
+<div class="row pad-4"><span class="file">shell.component.ts</span></div>
+
+<div class="row pad-3"><span class="folder">features/</span><span class="note">// módulos de negocio · lazy-loaded</span></div>
+
+<div class="row pad-4"><span class="folder">empresa/</span><span class="tag tag-core">CORE</span></div>
+<div class="row pad-5"><span class="folder">usuarios/</span></div>
+<div class="row pad-5"><span class="folder">roles/</span></div>
+<div class="row pad-5"><span class="folder">white-label/</span></div>
+<div class="row pad-5"><span class="folder">fiscal/</span><span class="note">// ARCA</span></div>
+<div class="row pad-5"><span class="folder">smtp-docs/</span></div>
+<div class="row pad-5"><span class="folder">modulos/</span><span class="note">// activar/desactivar módulos</span></div>
+<div class="row pad-5"><span class="file">empresa.routes.ts</span></div>
+
+<div class="row pad-4"><span class="folder">sucursales/</span><span class="tag tag-core">CORE</span></div>
+<div class="row pad-5"><span class="folder">sucursales/</span></div>
+<div class="row pad-5"><span class="folder">areas/</span></div>
+<div class="row pad-5"><span class="file">sucursales.routes.ts</span></div>
+
+<div class="row pad-4"><span class="folder">analitica/</span><span class="tag tag-core">CORE</span></div>
+<div class="row pad-5"><span class="folder">pacientes/</span></div>
+<div class="row pad-5"><span class="folder">atencion/</span><span class="note">// clínica · urgencia · domicilio</span></div>
+<div class="row pad-5"><span class="folder">protocolos/</span></div>
+<div class="row pad-5"><span class="folder">rotulos/</span></div>
+<div class="row pad-5"><span class="folder">pre-analitica/</span></div>
+<div class="row pad-5"><span class="folder">analitica/</span></div>
+<div class="row pad-5"><span class="folder">post-analitica/</span></div>
+<div class="row pad-5"><span class="folder">nbu/</span></div>
+<div class="row pad-5"><span class="file">analitica.routes.ts</span></div>
+
+<div class="row pad-4"><span class="folder">portal/</span><span class="tag tag-act">ACTIVABLE</span></div>
+<div class="row pad-5"><span class="folder">landing/</span></div>
+<div class="row pad-5"><span class="folder">auth/</span><span class="note">// login + recuperar</span></div>
+<div class="row pad-5"><span class="folder">perfil/</span></div>
+<div class="row pad-5"><span class="folder">turnos/</span></div>
+<div class="row pad-5"><span class="folder">estudios/</span></div>
+<div class="row pad-5"><span class="folder">familia/</span><span class="note">// opcional</span></div>
+
+<div class="row pad-4"><span class="folder">turnos/</span><span class="tag tag-act">ACTIVABLE</span></div>
+<div class="row pad-5"><span class="folder">agenda/</span></div>
+<div class="row pad-5"><span class="folder">configuracion/</span></div>
+<div class="row pad-5"><span class="folder">totem/</span></div>
+<div class="row pad-5"><span class="folder">colas/</span><span class="note">// entrada · extracción</span></div>
+<div class="row pad-5"><span class="folder">atencion-turno/</span></div>
+
+<div class="row pad-4"><span class="folder">financiero/</span><span class="tag tag-act">ACTIVABLE</span></div>
+<div class="row pad-5"><span class="folder">pagos/</span></div>
+<div class="row pad-5"><span class="folder">cajas/</span></div>
+<div class="row pad-5"><span class="folder">movimientos/</span><span class="note">// ingresos · egresos</span></div>
+<div class="row pad-5"><span class="folder">coberturas/</span><span class="note">// insurances · planes · convenios · NBU</span></div>
+<div class="row pad-5"><span class="folder">liquidaciones/</span></div>
+
+<div class="row pad-4"><span class="folder">medicos/</span><span class="tag tag-act">ACTIVABLE</span></div>
+<div class="row pad-4"><span class="folder">stock/</span><span class="tag tag-act">ACTIVABLE</span><span class="note">// opcional · bultos</span></div>
+<div class="row pad-4"><span class="folder">saas-admin/</span><span class="note">// super-admin · CRUD organizaciones</span></div>
+
+<div class="row pad-3"><span class="file">app.component.ts</span></div>
+<div class="row pad-3"><span class="file">app.routes.ts</span><span class="note">// arma rutas a partir del ModuleRegistry</span></div>
+<div class="row pad-3"><span class="file">app.config.ts</span><span class="note">// providers + interceptores</span></div>
+
+<div class="row pad-2"><span class="folder">assets/</span></div>
+<div class="row pad-3"><span class="folder">i18n/</span></div>
+<div class="row pad-3"><span class="folder">images/</span></div>
+
+<div class="row pad-2"><span class="folder">environments/</span></div>
+
+<div class="row pad-2"><span class="folder">styles/</span><span class="tag tag-shared">SHARED</span></div>
+<div class="row pad-3"><span class="file">tokens.css</span><span class="note">// CSS vars white-label (--brand-primary, etc.)</span></div>
+<div class="row pad-3"><span class="file">base.css</span></div>
+<div class="row pad-3"><span class="file">tailwind.css</span><span class="note">// @tailwind base/components/utilities</span></div>
+
+<div class="row pad-2"><span class="file">main.ts</span></div>
+<div class="row pad-2"><span class="file">index.html</span></div>
+
+<div class="row pad-1"><span class="folder">public/</span></div>
+
+<div class="row pad-1"><span class="file">tailwind.config.ts</span><span class="tag tag-infra">INFRA</span><span class="note">// extiende paleta con var(--brand-*)</span></div>
+<div class="row pad-1"><span class="file">angular.json</span><span class="tag tag-infra">INFRA</span></div>
+<div class="row pad-1"><span class="file">tsconfig.json</span><span class="tag tag-infra">INFRA</span></div>
+<div class="row pad-1"><span class="file">package.json</span><span class="tag tag-infra">INFRA</span></div>
+<div class="row pad-1"><span class="file">.eslintrc · .prettierrc</span><span class="tag tag-infra">INFRA</span></div>
+      </div>
+    </div>
+
+    <div>
+
+      <div class="panel" style="margin-bottom: 16px;">
+        <h2><i class="pi pi-bolt"></i> Principios</h2>
+        <ul class="bullet">
+          <li><b>Standalone components.</b> Sin NgModules; cada feature exporta sus rutas (<code>*.routes.ts</code>).</li>
+          <li><b>Lazy por feature.</b> Cada módulo activable carga bajo demanda con <code>loadChildren</code> y un guard que valida si está activo para el tenant.</li>
+          <li><b>White-label vía CSS vars.</b> Los colores del tenant viven en <code>tokens.css</code> como variables; Tailwind las consume desde su <code>theme.extend</code>.</li>
+          <li><b>Multi-tenant.</b> Un interceptor inyecta el <code>tenant_id</code> en cada request; un resolver carga la config del tenant antes de montar el shell.</li>
+          <li><b>ModuleRegistry.</b> Servicio en <code>core/tenant</code> que expone qué módulos están activos. El sidebar y las rutas se construyen a partir de él.</li>
+        </ul>
+      </div>
+
+      <div class="panel" style="margin-bottom: 16px;">
+        <h2><i class="pi pi-cog"></i> Activación de módulos</h2>
+        <div class="block">
+          <h3>1 · Tenant config</h3>
+          <p>El backend devuelve <code>{ modules: ["portal", "turnos", "financiero"] }</code> al iniciar sesión.</p>
+        </div>
+        <div class="block">
+          <h3>2 · ModuleRegistry</h3>
+          <p>Mantiene la lista en memoria; provee <code>isActive(key)</code> y <code>activeRoutes()</code>.</p>
+        </div>
+        <div class="block">
+          <h3>3 · Sidebar dinámico</h3>
+          <p>Renderiza items <em>core</em> siempre y items <em>activables</em> solo si <code>isActive</code>; los inactivos pueden mostrarse con candado (mockup 4).</p>
+        </div>
+        <div class="block">
+          <h3>4 · Guard por ruta</h3>
+          <p><code>moduleActiveGuard('turnos')</code> evita acceso directo por URL si el módulo está apagado.</p>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom: 16px;">
+        <h2><i class="pi pi-palette"></i> White-label · Tailwind</h2>
+        <pre class="code"><span class="c">// tailwind.config.ts</span>
+<span class="k">export default</span> {
+  content: [<span class="s">'./src/**/*.{html,ts}'</span>],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          DEFAULT: <span class="s">'rgb(var(--brand-primary-rgb) / &lt;alpha-value&gt;)'</span>,
+          fg:      <span class="s">'rgb(var(--brand-primary-fg-rgb) / &lt;alpha-value&gt;)'</span>,
+          accent:  <span class="s">'rgb(var(--brand-accent-rgb) / &lt;alpha-value&gt;)'</span>,
+        },
+      },
+      borderRadius: { DEFAULT: <span class="s">'var(--radius)'</span> },
+    },
+  },
+};</pre>
+      </div>
+
+      <div class="panel" style="margin-bottom: 16px;">
+        <h2><i class="pi pi-sitemap"></i> app.routes.ts (esquema)</h2>
+        <pre class="code"><span class="k">export const</span> APP_ROUTES = [
+  { path: <span class="s">''</span>, canActivate: [authGuard],
+    loadComponent: () =&gt; <span class="k">import</span>(<span class="s">'./layout/shell'</span>),
+    resolve: { tenant: tenantResolver },
+    children: [
+      <span class="c">// CORE</span>
+      { path: <span class="s">'empresa'</span>,    loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/empresa/empresa.routes'</span>) },
+      { path: <span class="s">'sucursales'</span>, loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/sucursales/sucursales.routes'</span>) },
+      { path: <span class="s">'analitica'</span>,  loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/analitica/analitica.routes'</span>) },
+
+      <span class="c">// ACTIVABLES — guard adicional</span>
+      { path: <span class="s">'portal'</span>,     canMatch: [moduleActive(<span class="s">'portal'</span>)],     loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/portal/portal.routes'</span>) },
+      { path: <span class="s">'turnos'</span>,     canMatch: [moduleActive(<span class="s">'turnos'</span>)],     loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/turnos/turnos.routes'</span>) },
+      { path: <span class="s">'financiero'</span>, canMatch: [moduleActive(<span class="s">'financiero'</span>)], loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/financiero/financiero.routes'</span>) },
+      { path: <span class="s">'medicos'</span>,    canMatch: [moduleActive(<span class="s">'medicos'</span>)],    loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/medicos/medicos.routes'</span>) },
+      { path: <span class="s">'stock'</span>,      canMatch: [moduleActive(<span class="s">'stock'</span>)],      loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/stock/stock.routes'</span>) },
+    ],
+  },
+  { path: <span class="s">'portal-publico'</span>, loadChildren: () =&gt; <span class="k">import</span>(<span class="s">'./features/portal/landing.routes'</span>) },
+  { path: <span class="s">'login'</span>,         loadComponent:  () =&gt; <span class="k">import</span>(<span class="s">'./core/auth/login'</span>) },
+  { path: <span class="s">'admin'</span>,         canActivate:    [rootGuard],
+                            loadChildren:  () =&gt; <span class="k">import</span>(<span class="s">'./features/saas-admin/admin.routes'</span>) },
+];</pre>
+      </div>
+
+      <div class="panel">
+        <h2><i class="pi pi-list"></i> Convenciones</h2>
+        <ul class="bullet">
+          <li><b>Naming.</b> Carpetas en <code>kebab-case</code>; archivos como <code>feature.component.ts</code>, <code>feature.service.ts</code>, <code>feature.routes.ts</code>.</li>
+          <li><b>Path aliases.</b> <code>@core/*</code>, <code>@shared/*</code>, <code>@features/*</code>, <code>@layout/*</code> en <code>tsconfig.json</code>.</li>
+          <li><b>Estado.</b> Signals + servicios. Si crece: NgRx Signal Store solo en features que lo necesiten.</li>
+          <li><b>Tests.</b> <code>*.spec.ts</code> al lado del archivo. E2E con Playwright en <code>e2e/</code>.</li>
+          <li><b>i18n.</b> ngx-translate o <code>@angular/localize</code> con archivos en <code>assets/i18n/</code>.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

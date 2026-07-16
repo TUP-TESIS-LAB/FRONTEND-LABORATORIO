@@ -1,0 +1,71 @@
+.totem-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 1.5rem);
+}
+
+.totem-step h2 {
+  margin: 0 0 0.5rem;
+}
+
+.muted {
+  color: var(--p-text-muted-color);
+  margin-bottom: 1rem;
+  max-width: 40rem;
+}
+
+.totem-section h3,
+.boxes-section h3 {
+  margin: 0 0 0.5rem;
+}
+
+.big-switch {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.switch-label {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+// 3 toggles (Tótem / Pantalla sala de espera / Pantalla de extracción): apilados
+// con separación clara entre sí y entre el switch y su label (antes iban inline y
+// pegados, sin estilos definidos).
+.toggles-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+.display-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+
+  .switch-label { font-size: 0.9375rem; }
+}
+
+.helper-text {
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+  margin: 0.5rem 0 0;
+}
+
+.boxes-section {
+  padding-top: var(--space-6, 1.5rem);
+  border-top: 1px solid #d1d5db;
+}
+
+.form { display: flex; flex-direction: column; gap: 1rem; }
+.form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.form-field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; min-width: 14rem; }
+.form-field label { font-size: 0.875rem; font-weight: 500; }
+.form-error { color: var(--p-red-500); font-size: 0.75rem; }
+
+.boxes-actions { display: flex; justify-content: flex-end; }

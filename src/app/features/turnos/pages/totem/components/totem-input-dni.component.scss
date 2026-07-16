@@ -1,0 +1,32 @@
+:host { display: block; }
+
+.totem-input-dni {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 3rem 1rem;
+
+  h1 {
+    font-size: 2.5rem;
+    margin: 0;
+    text-align: center;
+  }
+}
+
+.dni-display {
+  font-size: 2.75rem;
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Montserrat', system-ui, sans-serif;
+  letter-spacing: 0.2rem;
+  background: #ffffff;
+  border: 2px solid #d1d5db;
+  border-radius: 12px;
+  padding: 0.875rem 2rem;
+  width: 24rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  min-height: 4.5rem;
+}

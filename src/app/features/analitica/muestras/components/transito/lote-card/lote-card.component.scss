@@ -1,0 +1,61 @@
+@use '../../../pages/transito/tokens' as *;
+
+.lote-card {
+  background: var(--gx-card-bg);
+  border: 2px solid var(--gx-brand);
+  border-radius: 14px;
+  box-shadow: var(--gx-shadow-card);
+  margin-bottom: 12px;
+  overflow: hidden;
+
+  &.no-dest { border-color: var(--gx-amber); }
+  &.no-dest header { background: var(--gx-amber-bg); }
+
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gx-border);
+    .title {
+      display: flex; align-items: center; gap: 8px;
+      .name { font-weight: 700; font-size: 14.5px; }
+      .tag { background: var(--gx-brand); color: #fff; font-size: 9px; font-weight: 800; letter-spacing: .04em; padding: 2px 6px; border-radius: 4px; }
+    }
+    .meta { flex: 1; display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: var(--gx-ink-2); }
+    .dest i { margin-right: 4px; color: var(--gx-muted); }
+    .warn { color: var(--gx-amber); display: inline-flex; align-items: center; gap: 4px; }
+    .badge {
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+      &.green { background: var(--gx-green-bg); color: var(--gx-green); }
+      &.blue  { background: var(--gx-blue-bg);  color: var(--gx-blue);  }
+    }
+    .count { color: var(--gx-muted); }
+    .scan-here {
+      border: 1px solid var(--gx-border); background: #fff;
+      padding: 6px 10px; border-radius: 8px; font-size: 12.5px; cursor: pointer;
+      &.is-active { background: #eef0ff; border-color: var(--gx-sel-border); color: var(--gx-brand); font-weight: 600; }
+    }
+    .dissolve {
+      border: 0; background: transparent; padding: 4px 8px; font-size: 16px; color: var(--gx-muted); cursor: pointer;
+      &:hover { color: var(--gx-red); }
+    }
+  }
+
+  .dest-form {
+    display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.4fr) auto;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gx-border-soft);
+    select { height: 40px; border: 1px solid var(--gx-border); border-radius: 8px; padding: 0 8px; font-size: 13.5px; }
+    input.obs {
+      height: 40px; border: 1px solid var(--gx-border); border-radius: 8px;
+      padding: 0 10px; font-size: 13.5px;
+      &:disabled { opacity: 0.5; }
+    }
+    .send {
+      background: var(--gx-brand); color: #fff; border: 0;
+      padding: 0 16px; border-radius: 8px; font-weight: 600; font-size: 13.5px;
+      cursor: pointer; height: 40px;
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+    }
+  }
+}

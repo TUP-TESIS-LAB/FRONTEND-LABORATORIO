@@ -1,0 +1,58 @@
+.muted {
+  color: var(--ds-text-muted);
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.form-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.address-row {
+  grid-template-columns: 3fr 1fr;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.form-field label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ds-text);
+}
+
+.form-field input,
+.form-field ::ng-deep .p-select,
+.form-field ::ng-deep .p-inputtext {
+  width: 100%;
+}
+
+.form-error {
+  color: var(--ds-danger);
+  font-size: 0.75rem;
+}
+
+.address-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+@media (max-width: 700px) {
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+}

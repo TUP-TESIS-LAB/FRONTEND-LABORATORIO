@@ -1,0 +1,55 @@
+<div class="step">
+  <p class="muted">Días de la semana y rango de validez.</p>
+
+  <form [formGroup]="form" class="form">
+    <div class="form-field">
+      <label>Días de la semana <span class="pat-form__req">*</span></label>
+      <div class="day-chips">
+        @for (d of DAYS; track d.id) {
+          <button
+            type="button"
+            class="day-chip"
+            [class.selected]="isSelected(d.id)"
+            (click)="toggleDay(d.id)"
+          >
+            {{ d.label }}
+          </button>
+        }
+      </div>
+      @if (form.controls.daysOfWeek.touched && form.controls.daysOfWeek.invalid) {
+        <small class="field-error">Seleccioná al menos un día de la semana.</small>
+      }
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label for="validFrom">Válido desde <span class="pat-form__req">*</span></label>
+        <p-datePicker
+          inputId="validFrom"
+          formControlName="validFrom"
+          dateFormat="dd/mm/yy"
+          appendTo="body"
+        />
+        @if (form.controls.validFrom.touched && form.controls.validFrom.invalid) {
+          <small class="field-error">Ingresá la fecha de inicio de vigencia.</small>
+        }
+      </div>
+      <div class="form-field">
+        <label for="validTo">Válido hasta <span class="pat-form__req">*</span></label>
+        <p-datePicker
+          inputId="validTo"
+          formControlName="validTo"
+          dateFormat="dd/mm/yy"
+          appendTo="body"
+        />
+        @if (form.controls.validTo.touched && form.controls.validTo.invalid) {
+          <small class="field-error">Ingresá la fecha de fin de vigencia.</small>
+        }
+      </div>
+    </div>
+
+    @if (form.hasError('dateRangeInvalid') && (form.controls.validFrom.touched || form.controls.validTo.touched)) {
+      <small class="field-error">La fecha "Válido desde" debe ser anterior a "Válido hasta".</small>
+    }
+  </form>
+</div>

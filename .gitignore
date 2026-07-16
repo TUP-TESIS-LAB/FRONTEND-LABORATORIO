@@ -8,6 +8,9 @@
 
 # Node
 /node_modules
+
+# Brainstorm visual companion (mockups efimeros)
+.superpowers/
 npm-debug.log
 yarn-error.log
 
@@ -42,3 +45,23 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Claude Code — local settings per machine
+.claude/settings.local.json
+.claude/*.local.json
+
+# Brainstorm session artifacts
+.superpowers/
+test-output.txt
+test_output.txt
+
+# Worktrees
+.worktrees/
+
+# Playwright / e2e
+/e2e/.auth/
+/e2e/*.png
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

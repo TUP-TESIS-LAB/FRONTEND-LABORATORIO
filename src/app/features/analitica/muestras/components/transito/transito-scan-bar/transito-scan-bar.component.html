@@ -1,0 +1,23 @@
+<!-- Reference file — live template is inlined in transito-scan-bar.component.ts (workaround for input.required + setInput in vitest) -->
+<div class="scanbar">
+  <div class="input-wrap">
+    <i class="pi pi-barcode"></i>
+    <input
+      type="text"
+      [value]="value()"
+      (input)="value.set($any($event.target).value)"
+      (keydown)="onKey($event)"
+      [placeholder]="placeholder"
+      autocomplete="off"
+    >
+    <span class="hint">{{ hint }}</span>
+  </div>
+  <button
+    type="button"
+    class="send-all"
+    [disabled]="groupsCount() === 0"
+    (click)="sendAllClick.emit()"
+  >
+    Enviar todo
+  </button>
+</div>

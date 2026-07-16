@@ -1,0 +1,101 @@
+<div class="workspaces-step">
+  <!-- Panel de asociación inline: área + checklist de secciones -->
+  <div class="assoc-panel">
+    <div class="assoc-row">
+      <div class="form-field grow">
+        <label>Área</label>
+        <p-select [options]="areaOptions()" [ngModel]="selectedAreaId()"
+                  (ngModelChange)="selectedAreaId.set($event); onAreaChange()"
+                  optionLabel="label" optionValue="value" placeholder="Elegí un área"
+                  appendTo="body" [filter]="true" filterBy="label" class="w-full" />
+      </div>
+      <p-button label="Nueva área" severity="secondary" [outlined]="true"
+                (onClick)="openAreaModal()" />
+    </div>
+
+    @if (selectedAreaId() != null) {
+      <div class="sections-block">
+        <div class="sections-head">
+          <span class="sections-title">Secciones de esta área</span>
+          <p-button label="Nueva sección" severity="secondary" [text]="true" size="small"
+                    (onClick)="openSectionModal()" />
+        </div>
+        @if (sectionsForArea().length === 0) {
+          <p class="muted">Esta área no tiene secciones. Creá una con "Nueva sección".</p>
+        } @else {
+          <div class="sections-grid">
+            @for (s of sectionsForArea(); track s.id) {
+              <label class="section-check">
+                <p-checkbox [binary]="true" [ngModel]="isTicked(s.id)"
+                            (ngModelChange)="toggleSection(s.id, $event)" />
+                <span>{{ s.name }}</span>
+              </label>
+            }
+          </div>
+        }
+        <div class="assoc-actions">
+          <p-button label="Agregar al listado" [disabled]="!canAdd()" (onClick)="add()" />
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Tabla plegable: área → secciones asociadas -->
+  @if (areaGroups().length === 0) {
+    <p class="muted empty-line">Todavía no asociaste áreas a esta sucursal.</p>
+  } @else {
+    <ui-table
+      [value]="areaGroups()"
+      [columns]="groupColumns"
+      [actions]="groupActions"
+      [expandable]="true"
+      dataKey="areaId"
+      (action)="onGroupAction($event)">
+
+      <ng-template uiCell="sectionCount" let-row>{{ row.sectionCount }}</ng-template>
+
+      <ng-template uiRowExpansion let-row>
+        <div class="ws-sections">
+          @for (s of row.sections; track s.workspaceId) {
+            <span class="ws-chip">
+              {{ s.sectionName }}
+              <button type="button" class="ws-chip__x" aria-label="Quitar sección"
+                      (click)="removeSection(s.workspaceId)"><i class="pi pi-times"></i></button>
+            </span>
+          }
+        </div>
+      </ng-template>
+    </ui-table>
+  }
+
+  <!-- Modal: nueva área -->
+  <p-dialog [visible]="areaModalOpen()" (visibleChange)="areaModalOpen.set($event)"
+            [modal]="true" [draggable]="false" header="Nueva área" [style]="{ width: '420px' }">
+    <div class="modal-form">
+      <div class="form-field">
+        <label>Nombre <span class="pat-form__req">*</span></label>
+        <input pInputText [(ngModel)]="newAreaName" class="w-full" />
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="areaModalOpen.set(false)" />
+      <p-button label="Crear área" (onClick)="saveArea()" [disabled]="!newAreaName.trim()" />
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal: nueva sección -->
+  <p-dialog [visible]="sectionModalOpen()" (visibleChange)="sectionModalOpen.set($event)"
+            [modal]="true" [draggable]="false" header="Nueva sección" [style]="{ width: '420px' }">
+    <div class="modal-form">
+      <div class="form-field">
+        <label>Nombre <span class="pat-form__req">*</span></label>
+        <input pInputText [(ngModel)]="newSectionName" class="w-full" />
+      </div>
+      <p class="muted">Se creará dentro del área <strong>{{ selectedAreaId() != null ? areaName(selectedAreaId()!) : '' }}</strong>.</p>
+    </div>
+    <ng-template pTemplate="footer">
+      <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="sectionModalOpen.set(false)" />
+      <p-button label="Crear sección" (onClick)="saveSection()" [disabled]="!newSectionName.trim()" />
+    </ng-template>
+  </p-dialog>
+</div>

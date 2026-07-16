@@ -1,0 +1,23 @@
+<div
+  class="row"
+  role="checkbox"
+  [attr.aria-checked]="selected"
+  [class.is-selected]="selected"
+  [class.is-flashing]="flashing"
+  [class.is-leaving]="leaving"
+  (click)="toggle.emit()"
+  tabindex="0"
+>
+  <div class="check">
+    <span class="box" [class.checked]="selected"></span>
+  </div>
+  <div class="col-barcode">
+    <span class="barcode">{{ sample.barcode }}</span>
+    @if (sample.urgent) { <span class="urgente">URGENTE</span> }
+    <div class="patient">{{ sample.patient }}</div>
+  </div>
+  <div class="col-study">{{ sample.study }}</div>
+  <div class="col-origin">{{ branchShort() }}</div>
+  <div class="col-time">{{ sample.receivedAt | dateEs:'date' }} · {{ sample.receivedAt | dateEs:'time' }}</div>
+  <div class="col-state"><span class="badge teal">En tránsito</span></div>
+</div>

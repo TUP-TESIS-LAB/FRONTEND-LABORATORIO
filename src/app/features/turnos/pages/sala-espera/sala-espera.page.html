@@ -1,0 +1,110 @@
+@if (!tenantSlug || !branchId) {
+  <div class="invalid-url">URL inválida — falta tenantSlug o branchId</div>
+} @else {
+  <div class="display-page">
+    @if (!audioUnlocked()) {
+      <div class="audio-overlay" (click)="unlockAudio()">
+        <div class="audio-overlay-content">
+          <i class="pi pi-volume-up" style="font-size: 4rem;"></i>
+          <h2>Click para activar sonido</h2>
+          <p>Hacé click en cualquier parte de la pantalla para habilitar las notificaciones sonoras.</p>
+        </div>
+      </div>
+    }
+
+    <main class="cola-section">
+      @if (connectionLost()) {
+        <div class="banner-disconnected">
+          <i class="pi pi-wifi" style="margin-right: 0.5rem;"></i>
+          Reconectando...
+        </div>
+      }
+
+      @switch (viewMode()) {
+        @case ('loading') {
+          <div class="loading">Cargando...</div>
+        }
+        @case ('error') {
+          <div class="error-state">
+            <i class="pi pi-exclamation-triangle"></i>
+            <h2>Sin conexión con la sucursal</h2>
+            <p>
+              No se pudo cargar la sucursal <strong>#{{ branchId }}</strong>
+              del tenant <strong>{{ tenantSlug }}</strong>.
+            </p>
+            <button type="button" class="error-state__btn" (click)="openBranchDialog()">
+              <i class="pi pi-th-large"></i>
+              Cambiar sucursal
+            </button>
+          </div>
+        }
+        @case ('empty') {
+          <app-empty-state
+            [serverTime]="snapshot()?.serverTime ?? ''"
+            [branchName]="snapshot()?.branchName ?? ''" />
+        }
+        @case ('closed') {
+          <app-closed-state [reopenTime]="snapshot()?.openWindow?.startTime ?? ''" />
+        }
+        @case ('queue') {
+          <div class="layout">
+            <div class="proximos">
+              <h2>Últimos llamados:</h2>
+              @if (calledEntries().length === 0) {
+                <div class="empty-state">
+                  <i class="pi pi-info-circle"></i>
+                  <span>Aún no se llamó a ningún paciente hoy</span>
+                </div>
+              } @else {
+                <ul>
+                  @for (e of calledEntries().slice(0, 5); track e.id) {
+                    <li>
+                      <span class="code">{{ e.publicCode }}</span>
+                      <span class="box">→ Box {{ e.boxNumber ?? '—' }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          </div>
+        }
+      }
+    </main>
+
+    <aside class="ad-section">
+      <app-ad-carousel />
+    </aside>
+  </div>
+
+  <!-- Dialog: cambio de sucursal (recuperacion de error) -->
+  <p-dialog
+    [visible]="dialogOpen()"
+    (visibleChange)="dialogOpen.set($event)"
+    [modal]="true"
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    header="Elegir sucursal"
+    styleClass="ui-tv-branch-dialog">
+    @if (dialogLoading()) {
+      <div class="tv-dialog-loading">Cargando sucursales...</div>
+    } @else if (dialogError(); as err) {
+      <div class="tv-dialog-error">
+        <i class="pi pi-info-circle"></i>
+        <p>{{ err }}</p>
+      </div>
+    } @else {
+      <ul class="tv-branch-list">
+        @for (b of branchOptions(); track b.id) {
+          <li>
+            <button type="button" class="tv-branch-list__item" (click)="selectBranch(b)">
+              <span class="tv-branch-list__code">{{ b.code }}</span>
+              <span class="tv-branch-list__name">{{ b.description }}</span>
+              <i class="pi pi-chevron-right"></i>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </p-dialog>
+}

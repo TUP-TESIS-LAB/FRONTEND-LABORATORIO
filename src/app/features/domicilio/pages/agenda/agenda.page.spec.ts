@@ -1,0 +1,326 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { Router } from '@angular/router';
+import { Actions } from '@ngrx/effects';
+import { provideMockActions } from '@ngrx/effects/testing';
+import { provideMockStore, MockStore } from '@ngrx/store/testing';
+import { Subject } from 'rxjs';
+import { AgendaPage } from './agenda.page';
+import {
+  loadHomeVisits,
+  prepareLabels,
+  prepareLabelsSuccess,
+  receiveVisit,
+  receiveVisitSuccess,
+} from '../../store/home-visit.actions';
+import {
+  selectHomeVisits,
+  selectHomeVisitsPending,
+  selectActionPending,
+} from '../../store/home-visit.selectors';
+import { DOMICILIO_FEATURE_KEY, initialDomicilioState } from '../../store/home-visit.state';
+import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
+import { LabelPdfService } from '../../services/label-pdf.service';
+import { HomeVisit } from '../../models/home-visit.model';
+
+/**
+ * Smoke tests para AgendaPage.
+ *
+ * Se usan con vitest (JIT). Los componentes child reales (PageHeaderComponent,
+ * DataTableComponent) no se renderizan en JIT de la misma forma que en AOT,
+ * por lo que se usan NO_ERRORS_SCHEMA y se evita detectChanges() en los tests
+ * de template — se testean solo la lógica del componente (métodos, señales).
+ */
+describe('AgendaPage (smoke)', () => {
+  let store: MockStore;
+  let actions$: Subject<unknown>;
+  const mockRouter = { navigate: vi.fn() };
+  const mockLabelPdf = { generate: vi.fn().mockResolvedValue(undefined) };
+
+  function setup(branchId: number | null = 1, visits: HomeVisit[] = []) {
+    actions$ = new Subject();
+    TestBed.configureTestingModule({
+      imports: [AgendaPage],
+      schemas: [NO_ERRORS_SCHEMA],
+      providers: [
+        provideNoopAnimations(),
+        provideMockStore({
+          initialState: {
+            [DOMICILIO_FEATURE_KEY]: initialDomicilioState,
+          },
+          selectors: [
+            { selector: selectHomeVisits,        value: visits },
+            { selector: selectHomeVisitsPending,  value: false },
+            { selector: selectActionPending,      value: false },
+          ],
+        }),
+        provideMockActions(() => actions$),
+        { provide: Router,           useValue: mockRouter },
+        { provide: LabelPdfService,  useValue: mockLabelPdf },
+        {
+          provide: OperatorBranchContextService,
+          useValue: { branchId: () => branchId, branchName: () => 'Sucursal Demo' },
+        },
+      ],
+    });
+    store = TestBed.inject(MockStore);
+    return TestBed.createComponent(AgendaPage);
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    TestBed.resetTestingModule();
+  });
+
+  // ── Lógica del componente (sin template rendering) ──────────────────────────
+
+  it('el componente se crea sin errores', () => {
+    const fixture = setup();
+    expect(fixture.componentInstance).toBeTruthy();
+  });
+
+  it('en ngOnInit dispara loadHomeVisits con la sucursal del contexto', () => {
+    const fixture = setup(3);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.ngOnInit();
+    expect(spy).toHaveBeenCalledWith(loadHomeVisits({ branchId: 3 }));
+  });
+
+  it('en ngOnInit usa branchId=1 como fallback cuando el contexto devuelve null', () => {
+    const fixture = setup(null);
+    const spy = vi.spyOn(store, 'dispatch');
+    fixture.componentInstance.ngOnInit();
+    expect(spy).toHaveBeenCalledWith(loadHomeVisits({ branchId: 1 }));
+  });
+
+  it('formatTime recorta HH:mm:ss a HH:mm', () => {
+    const fixture = setup();
+    expect(fixture.componentInstance.formatTime('08:30:00')).toBe('08:30');
+    expect(fixture.componentInstance.formatTime('14:00:00')).toBe('14:00');
+    expect(fixture.componentInstance.formatTime('00:05:00')).toBe('00:05');
+  });
+
+  it('formatTime devuelve — para cadena vacía', () => {
+    const fixture = setup();
+    expect(fixture.componentInstance.formatTime('')).toBe('—');
+  });
+
+  it('statusDisplay devuelve label y severity correctos para PROGRAMADA', () => {
+    const fixture = setup();
+    const d = fixture.componentInstance.statusDisplay('PROGRAMADA');
+    expect(d.label).toBe('Programada');
+    expect(d.severity).toBe('info');
+  });
+
+  it('statusDisplay devuelve label y severity correctos para EXTRAIDA', () => {
+    const fixture = setup();
+    const d = fixture.componentInstance.statusDisplay('EXTRAIDA');
+    expect(d.label).toBe('Extraída');
+    expect(d.severity).toBe('success');
+  });
+
+  it('statusDisplay devuelve label y severity correctos para EN_TRANSITO', () => {
+    const fixture = setup();
+    const d = fixture.componentInstance.statusDisplay('EN_TRANSITO');
+    expect(d.label).toBe('En tránsito');
+    expect(d.severity).toBe('warn');
+  });
+
+  it('statusDisplay devuelve label y severity correctos para NO_REALIZADA', () => {
+    const fixture = setup();
+    const d = fixture.componentInstance.statusDisplay('NO_REALIZADA');
+    expect(d.label).toBe('No realizada');
+    expect(d.severity).toBe('danger');
+  });
+
+  it('las columnas definidas incluyen paciente, dirección, ventana, extractor, estado y acciones', () => {
+    const fixture = setup();
+    const fields = fixture.componentInstance.columns.map((c) => c.field);
+    expect(fields).toContain('paciente');
+    expect(fields).toContain('direccion');
+    expect(fields).toContain('ventana');
+    expect(fields).toContain('extractor');
+    expect(fields).toContain('estado');
+    expect(fields).toContain('acciones');
+  });
+
+  it('las visitas iniciales están vacías', () => {
+    const fixture = setup();
+    expect(fixture.componentInstance.visits()).toEqual([]);
+  });
+
+  it('pending inicial es false', () => {
+    const fixture = setup();
+    expect(fixture.componentInstance.pending()).toBe(false);
+  });
+
+  it('actionPending inicial es false', () => {
+    const fixture = setup();
+    expect(fixture.componentInstance.actionPending()).toBe(false);
+  });
+
+  // ── prepararRotulos: dispatch + PDF en success ───────────────────────────────
+
+  it('prepararRotulos() despacha prepareLabels con el id de la visita', () => {
+    const fixture = setup();
+    fixture.componentInstance.ngOnInit();
+    const spy = vi.spyOn(store, 'dispatch');
+    const row = makeVisit(10);
+    fixture.componentInstance.prepararRotulos(row);
+    expect(spy).toHaveBeenCalledWith(prepareLabels({ id: 10 }));
+  });
+
+  it('al recibir prepareLabelsSuccess genera el PDF y recarga la lista', () => {
+    const fixture = setup(5);
+    fixture.componentInstance.ngOnInit();
+    const spy = vi.spyOn(store, 'dispatch');
+    const row = makeVisit(10);
+    fixture.componentInstance.prepararRotulos(row);
+
+    const preparedVisit = { ...row, attentionId: 99 };
+    const labels = [{ labelId: 1, analysisId: 100 }];
+    actions$.next(prepareLabelsSuccess({ visit: preparedVisit, labels }));
+
+    expect(mockLabelPdf.generate).toHaveBeenCalledWith(preparedVisit, labels);
+    // Debe recargar la lista con el branchId actual
+    expect(spy).toHaveBeenCalledWith(loadHomeVisits({ branchId: 5 }));
+  });
+
+  // ── Estado ROTA (Task 16) ────────────────────────────────────────────────────
+
+  it('statusDisplay devuelve label "Rota" y severity danger para ROTA', () => {
+    const d = setup().componentInstance.statusDisplay('ROTA');
+    expect(d.label).toBe('Rota');
+    expect(d.severity).toBe('danger');
+  });
+
+  // ── Recepcionar (Task 16) ────────────────────────────────────────────────────
+
+  it('recepcionar() despacha receiveVisit con el id de la visita', () => {
+    const fixture = setup(1);
+    fixture.componentInstance.ngOnInit();
+    const spy = vi.spyOn(store, 'dispatch');
+    const row = makeVisit(10, null, 'EN_TRANSITO');
+    fixture.componentInstance.recepcionar(row);
+    expect(spy).toHaveBeenCalledWith(receiveVisit({ id: 10 }));
+  });
+
+  it('al recibir receiveVisitSuccess recarga la lista con el branchId actual', () => {
+    const fixture = setup(7);
+    fixture.componentInstance.ngOnInit();
+    const spy = vi.spyOn(store, 'dispatch');
+    const row = makeVisit(10, null, 'EN_TRANSITO');
+    fixture.componentInstance.recepcionar(row);
+    actions$.next(receiveVisitSuccess({ visit: { ...row, status: 'RECEPCIONADA' } }));
+    expect(spy).toHaveBeenCalledWith(loadHomeVisits({ branchId: 7 }));
+  });
+
+  // ── Filtro "Por recepcionar" (Task 16) ───────────────────────────────────────
+
+  it('el filtro por defecto es TODAS y muestra todas las visitas', () => {
+    const visitas = [
+      makeVisit(1, null, 'PROGRAMADA'),
+      makeVisit(2, null, 'EN_TRANSITO'),
+    ];
+    const fixture = setup(1, visitas);
+    const comp = fixture.componentInstance;
+    expect(comp.activeFilter()).toBe('TODAS');
+    expect(comp.filteredVisits()).toEqual(visitas);
+  });
+
+  it('el filtro POR_RECEPCIONAR deja solo las visitas EN_TRANSITO', () => {
+    const visitas = [
+      makeVisit(1, null, 'PROGRAMADA'),
+      makeVisit(2, null, 'EN_TRANSITO'),
+      makeVisit(3, null, 'RECEPCIONADA'),
+      makeVisit(4, null, 'EN_TRANSITO'),
+    ];
+    const fixture = setup(1, visitas);
+    const comp = fixture.componentInstance;
+    comp.activeFilter.set('POR_RECEPCIONAR');
+    const ids = comp.filteredVisits().map((v) => v.id);
+    expect(ids).toEqual([2, 4]);
+  });
+
+  // ── Búsqueda por texto (searchTerm) ──────────────────────────────────────────
+
+  it('el searchTerm por defecto está vacío y no filtra', () => {
+    const visitas = [makeVisit(1), makeVisit(2)];
+    const comp = setup(1, visitas).componentInstance;
+    expect(comp.searchTerm()).toBe('');
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([1, 2]);
+  });
+
+  it('la búsqueda filtra por DNI del paciente', () => {
+    const visitas = [
+      { ...makeVisit(1), patientDni: '30111222' },
+      { ...makeVisit(2), patientDni: '40999888' },
+    ];
+    const comp = setup(1, visitas).componentInstance;
+    comp.searchTerm.set('40999');
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([2]);
+  });
+
+  it('la búsqueda filtra por nombre/apellido del paciente (case-insensitive)', () => {
+    const visitas = [
+      { ...makeVisit(1), patientName: 'García, Ana' },
+      { ...makeVisit(2), patientName: 'Pérez, Juan' },
+    ];
+    const comp = setup(1, visitas).componentInstance;
+    comp.searchTerm.set('garcía');
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([1]);
+  });
+
+  it('la búsqueda filtra por nombre del extractor', () => {
+    const visitas = [
+      { ...makeVisit(1), extractorName: 'Homer Simpson' },
+      { ...makeVisit(2), extractorName: 'Lucas Martínez' },
+    ];
+    const comp = setup(1, visitas).componentInstance;
+    comp.searchTerm.set('martínez');
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([2]);
+  });
+
+  it('la búsqueda se combina con el filtro de estado', () => {
+    const visitas = [
+      { ...makeVisit(1, null, 'EN_TRANSITO'), patientName: 'García, Ana' },
+      { ...makeVisit(2, null, 'PROGRAMADA'),  patientName: 'García, Beto' },
+      { ...makeVisit(3, null, 'EN_TRANSITO'), patientName: 'Pérez, Juan' },
+    ];
+    const comp = setup(1, visitas).componentInstance;
+    comp.activeFilter.set('POR_RECEPCIONAR');
+    comp.searchTerm.set('garcía');
+    // Solo la #1: EN_TRANSITO + coincide "garcía".
+    expect(comp.filteredVisits().map((v) => v.id)).toEqual([1]);
+  });
+});
+
+// ── Factory ───────────────────────────────────────────────────────────────────
+
+function makeVisit(
+  id: number,
+  attentionId: number | null = null,
+  status: HomeVisit['status'] = 'PROGRAMADA',
+): HomeVisit {
+  return {
+    id,
+    appointmentId: 100 + id,
+    patientId: 200 + id,
+    branchId: 1,
+    assignedExtractorId: 5,
+    attentionId,
+    addressStreet: 'Av. Siempre Viva',
+    addressNumber: `${id * 100}`,
+    addressCity: 'Springfield',
+    addressReferences: 'Portón verde',
+    timeWindowStart: '08:00:00',
+    timeWindowEnd: '10:00:00',
+    status,
+    scheduledAt: '2026-07-15T09:00:00',
+    patientName: `Paciente ${id}`,
+    patientDni: `3000000${id}`,
+    extractorName: 'Homer Simpson',
+  };
+}
