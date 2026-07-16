@@ -14,6 +14,11 @@ import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { AwaitingExtractionItem, BoxAssignment } from '../../models/extraction.model';
 import { SampleTypeLabelPipe } from '../../models/sample-type-label.pipe';
+import {
+  containerRows,
+  pluralize,
+  totalContainers,
+} from '../finish-extraction-modal/finish-extraction-modal.component';
 
 type BoxState = 'libre' | 'ocupado' | 'sin-asignar';
 
@@ -81,17 +86,21 @@ interface BoxRow {
       </ng-template>
 
       <div class="modal-body">
-        <!-- Sección muestras -->
-        @if (patient()?.samples?.length) {
+        <!-- Sección recipientes: MISMO criterio que finish-extraction-modal (tubos, no análisis) -->
+        @if (containerRows().length) {
           <section class="section">
-            <h4 class="section-title">
-              Muestras a extraer
-            </h4>
+            <div class="section-head">
+              <h4 class="section-title">
+                <i class="pi pi-inbox"></i>
+                Recipientes a extraer
+              </h4>
+              <span class="section-total">{{ containersLabel() }}</span>
+            </div>
             <div class="chips-row">
-              @for (s of patient()!.samples; track s.sampleType) {
+              @for (s of containerRows(); track s.sampleType) {
                 <span class="sample-chip">
                   {{ s.sampleType | sampleTypeLabel }}
-                  <span class="chip-count">× {{ s.count }}</span>
+                  <span class="chip-count">× {{ s.tubeCount }}</span>
                 </span>
               }
             </div>
@@ -191,6 +200,19 @@ interface BoxRow {
     .modal-body { display: flex; flex-direction: column; gap: 20px; padding: 4px 0; }
 
     .section { display: flex; flex-direction: column; gap: 10px; }
+    /* Cabecera de sección con total a la derecha — espeja finish-extraction-modal. */
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-total {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ds-text, #1A1A2E);
+      font-variant-numeric: tabular-nums;
+    }
     .section-title {
       display: flex;
       align-items: center;
@@ -345,6 +367,20 @@ export class TakePatientModalComponent {
 
   /** Emite el boxNumber elegido para iniciar la extracción. */
   @Output() readonly assign = new EventEmitter<number>();
+
+  /**
+   * Un renglón por tipo de muestra que aporta recipientes.
+   *
+   * NO se usa `count` (cuenta análisis, no tubos): este modal se muestra ANTES de pinchar, así
+   * que el número que ve el extractor tiene que ser el de recipientes reales — el mismo que
+   * después muestra finish-extraction-modal. Dos pantallas, un solo número.
+   */
+  readonly containerRows = computed(() => containerRows(this.patient()?.samples));
+
+  /** Total de recipientes a extraer (suma de tubos, NO de análisis). */
+  readonly containersLabel = computed(() =>
+    pluralize(totalContainers(this.patient()?.samples), 'recipiente', 'recipientes'),
+  );
 
   /** Filas de boxes con estado calculado para el template. */
   readonly boxRows = computed<BoxRow[]>(() => {

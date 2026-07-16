@@ -237,15 +237,24 @@ const ALL_STEPS: WizardStepDef[] = [
                 }
                 @case ('facturacion') {
                   <!-- U4 (KAN-246): antes el botón vivía dentro de fin-cobro-atencion, inconsistente
-                       con el resto de los pasos. Ahora sube al footer del shell vía viewChild; tras
-                       el pago exitoso el propio componente muestra su pantalla de éxito con
-                       Imprimir/Continuar inline, así que acá no mostramos nada. -->
+                       con el resto de los pasos. Ahora sube al footer del shell vía viewChild, tanto
+                       "Confirmar cobro" como, tras el pago exitoso, "Continuar" — igual que el resto
+                       de los pasos. "Imprimir" queda en la card del comprobante. -->
                   @if (!cobroAtencionRef()?.result()) {
                     <p-button label="Confirmar cobro" icon="pi pi-check"
                               [loading]="cobroAtencionRef()?.submitting() ?? false"
                               [disabled]="!(cobroAtencionRef()?.puedeConfirmar() ?? false)"
                               (onClick)="cobroAtencionRef()?.confirmar()"
                               data-testid="cobro-confirmar" />
+                  } @else {
+                    <!-- Bindea mutating() como el resto del footer: endBilling$ usa concatMap, o sea
+                         que ENCOLA los clicks en vez de descartarlos — sin esto, un doble click manda
+                         dos endBilling y el segundo cae sobre una atención ya avanzada, mostrando un
+                         toast de error en un flujo que en realidad salió bien. -->
+                    <p-button label="Continuar" icon="pi pi-arrow-right"
+                              [loading]="mutating()" [disabled]="mutating()"
+                              (onClick)="cobroAtencionRef()?.continuarTrasExito()"
+                              data-testid="cobro-continuar" />
                   }
                 }
                 @case ('analisis') {
@@ -529,11 +538,11 @@ export class AtencionWizardComponent {
 
   canReturn(): boolean {
     const s = this.detail()?.attentionState;
-    // KAN-246 B4: una vez registrado el cobro (paymentId != null) no se puede retroceder —
-    // el backend rechaza el intento igual (ReturnPhaseUseCase), pero ocultamos el botón para
-    // no mostrar una acción que va a fallar. Sin escape hatch: la salida es cancelar.
-    return s != null && s !== AttentionState.REGISTERING_GENERAL_DATA && !isTerminal(s)
-      && this.detail()?.paymentId == null;
+    // KAN-246: el gate por paymentId se sacó — el detail del store no se refresca cuando
+    // financiero registra el pago, así que el valor estaba siempre stale en null y la
+    // condición nunca aplicaba. El backend (ReturnPhaseUseCase) es la fuente de verdad y
+    // su rechazo ahora se muestra como toast (ver returnPhase$ en atencion.effects.ts).
+    return s != null && s !== AttentionState.REGISTERING_GENERAL_DATA && !isTerminal(s);
   }
   onReturnPhase(): void {
     const d = this.detail();
