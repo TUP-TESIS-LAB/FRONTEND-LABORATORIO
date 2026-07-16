@@ -247,7 +247,12 @@ const ALL_STEPS: WizardStepDef[] = [
                               (onClick)="cobroAtencionRef()?.confirmar()"
                               data-testid="cobro-confirmar" />
                   } @else {
+                    <!-- Bindea mutating() como el resto del footer: endBilling$ usa concatMap, o sea
+                         que ENCOLA los clicks en vez de descartarlos — sin esto, un doble click manda
+                         dos endBilling y el segundo cae sobre una atención ya avanzada, mostrando un
+                         toast de error en un flujo que en realidad salió bien. -->
                     <p-button label="Continuar" icon="pi pi-arrow-right"
+                              [loading]="mutating()" [disabled]="mutating()"
                               (onClick)="cobroAtencionRef()?.continuarTrasExito()"
                               data-testid="cobro-continuar" />
                   }

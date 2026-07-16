@@ -199,6 +199,7 @@ export function pluralize(count: number, singular: string, plural: string): stri
       font-size: 13px;
       font-weight: 700;
       color: var(--ds-text, #1A1A2E);
+      font-variant-numeric: tabular-nums;
     }
     .chips-row { display: flex; flex-wrap: wrap; gap: 8px; }
     .sample-chip {
