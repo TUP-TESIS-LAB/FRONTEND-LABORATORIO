@@ -67,9 +67,10 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
               <h2 class="text-lg font-bold m-0">Cobraste {{ r.payment.totalAmount | currencyAr }}</h2>
             </div>
 
+            <!-- U4 (KAN-246): "Continuar" subió al [wizardFooter] del shell (mismo patrón que
+                 "Confirmar cobro") — acá queda solo "Imprimir". -->
             <div class="fin-cobro__exito-actions">
               <p-button label="Imprimir" icon="pi pi-print" severity="secondary" [outlined]="true" (onClick)="imprimir()" />
-              <p-button label="Continuar" icon="pi pi-arrow-right" (onClick)="continuarTrasExito()" />
             </div>
           </div>
           </div>
@@ -327,8 +328,10 @@ export class CobroAtencionComponent {
    * por el cambio de estado — no hay navegación acá. No se despacha resetCobro(): la
    * pantalla de éxito permanece visible hasta que el componente se desmonte (cambio de
    * step del wizard).
+   * Público (no protected): el wizard lo invoca vía viewChild desde el botón del
+   * [wizardFooter], igual que confirmar() — ver atencion-wizard.component.ts.
    */
-  protected continuarTrasExito(): void {
+  continuarTrasExito(): void {
     this.store.dispatch(endBilling({ id: this.attentionId }));
   }
   protected irACaja(): void { this.router.navigate(['/financiero/caja']); }

@@ -237,15 +237,19 @@ const ALL_STEPS: WizardStepDef[] = [
                 }
                 @case ('facturacion') {
                   <!-- U4 (KAN-246): antes el botón vivía dentro de fin-cobro-atencion, inconsistente
-                       con el resto de los pasos. Ahora sube al footer del shell vía viewChild; tras
-                       el pago exitoso el propio componente muestra su pantalla de éxito con
-                       Imprimir/Continuar inline, así que acá no mostramos nada. -->
+                       con el resto de los pasos. Ahora sube al footer del shell vía viewChild, tanto
+                       "Confirmar cobro" como, tras el pago exitoso, "Continuar" — igual que el resto
+                       de los pasos. "Imprimir" queda en la card del comprobante. -->
                   @if (!cobroAtencionRef()?.result()) {
                     <p-button label="Confirmar cobro" icon="pi pi-check"
                               [loading]="cobroAtencionRef()?.submitting() ?? false"
                               [disabled]="!(cobroAtencionRef()?.puedeConfirmar() ?? false)"
                               (onClick)="cobroAtencionRef()?.confirmar()"
                               data-testid="cobro-confirmar" />
+                  } @else {
+                    <p-button label="Continuar" icon="pi pi-arrow-right"
+                              (onClick)="cobroAtencionRef()?.continuarTrasExito()"
+                              data-testid="cobro-continuar" />
                   }
                 }
                 @case ('analisis') {
