@@ -2,8 +2,11 @@ import {
   buildFiscalConfigRequest,
   isoFromDate,
   dateFromIso,
+  identityWouldBeSilentlyDiscarded,
+  arcaEnvOrIvaChangeRequiresNewCredentials,
   FiscalIdentityFormValue,
   ArcaFormValue,
+  TenantFiscalConfig,
 } from './tenant-fiscal-config.model';
 
 /**
@@ -167,6 +170,125 @@ describe('buildFiscalConfigRequest — bloque ARCA', () => {
     for (const key of ARCA_KEYS) {
       expect(req[key]).toBeNull();
     }
+  });
+});
+
+/**
+ * Regresión del hallazgo #2 de la review (Pertusati): blanquear los 6 campos de identidad
+ * con una identidad previa configurada es indistinguible, para el backend, de "no cambié
+ * nada" — el bloque se preserva, el submit es un no-op silencioso con toast de éxito falso.
+ */
+describe('identityWouldBeSilentlyDiscarded', () => {
+  const existingConfig: Pick<
+    TenantFiscalConfig,
+    'razonSocial' | 'cuit' | 'ingresosBrutos' | 'domicilioComercial' | 'condicionIva' | 'inicioActividades'
+  > = {
+    razonSocial: 'Demo SA',
+    cuit: '20-12345678-9',
+    ingresosBrutos: '901-1',
+    domicilioComercial: 'Calle Falsa 123',
+    condicionIva: 'RESPONSABLE_INSCRIPTO',
+    inicioActividades: '2020-01-01',
+  };
+
+  const emptyForm: FiscalIdentityFormValue = {
+    invoicePointOfSale: '',
+    razonSocial: '',
+    cuit: '',
+    ingresosBrutos: '',
+    domicilioComercial: '',
+    condicionIva: null,
+    inicioActividades: null,
+  };
+
+  it('bloquea: había identidad configurada y el form deja los 6 vacíos', () => {
+    expect(identityWouldBeSilentlyDiscarded(existingConfig, emptyForm)).toBe(true);
+  });
+
+  it('no bloquea: no había identidad previa (alta nueva con form vacío no es "borrado")', () => {
+    const noPreviousIdentity = {
+      razonSocial: null, cuit: null, ingresosBrutos: null,
+      domicilioComercial: null, condicionIva: null, inicioActividades: null,
+    };
+    expect(identityWouldBeSilentlyDiscarded(noPreviousIdentity, emptyForm)).toBe(false);
+  });
+
+  it('no bloquea: al menos un campo de identidad sigue completo', () => {
+    expect(identityWouldBeSilentlyDiscarded(existingConfig, { ...emptyForm, razonSocial: 'Sigue acá' })).toBe(false);
+  });
+
+  it('no bloquea: currentCfg ausente (todavía no cargó el GET)', () => {
+    expect(identityWouldBeSilentlyDiscarded(null, emptyForm)).toBe(false);
+  });
+});
+
+/**
+ * Regresión del hallazgo #1 de la review (Pertusati, 🔴): cambiar el ambiente ARCA o el IVA sin
+ * volver a tipear ambos PEM se descarta en silencio porque el backend trata el bloque ARCA como
+ * atómico. El front tiene que bloquear el submit en vez de dejar pasar el cambio.
+ */
+describe('arcaEnvOrIvaChangeRequiresNewCredentials', () => {
+  const arcaConfigured: Pick<TenantFiscalConfig, 'arcaCredentialsConfigured' | 'arcaEnvironment' | 'arcaIvaPercentage'> = {
+    arcaCredentialsConfigured: true,
+    arcaEnvironment: 'HOMO',
+    arcaIvaPercentage: 21,
+  };
+
+  it('bloquea: cambió el ambiente HOMO→PROD sin tipear los PEM', () => {
+    const formArca: ArcaFormValue = {
+      provider: 'ARCA', arcaEnvironment: 'PROD', arcaIvaPercentage: 21,
+      arcaCertificatePem: '', arcaPrivateKeyPem: '',
+    };
+    expect(arcaEnvOrIvaChangeRequiresNewCredentials(arcaConfigured, formArca)).toBe(true);
+  });
+
+  it('bloquea: cambió el IVA sin tipear los PEM', () => {
+    const formArca: ArcaFormValue = {
+      provider: 'ARCA', arcaEnvironment: 'HOMO', arcaIvaPercentage: 10.5,
+      arcaCertificatePem: '', arcaPrivateKeyPem: '',
+    };
+    expect(arcaEnvOrIvaChangeRequiresNewCredentials(arcaConfigured, formArca)).toBe(true);
+  });
+
+  it('no bloquea: cambió el ambiente pero tipeó ambos PEM nuevos', () => {
+    const formArca: ArcaFormValue = {
+      provider: 'ARCA', arcaEnvironment: 'PROD', arcaIvaPercentage: 21,
+      arcaCertificatePem: '-----BEGIN CERTIFICATE-----...', arcaPrivateKeyPem: '-----BEGIN PRIVATE KEY-----...',
+    };
+    expect(arcaEnvOrIvaChangeRequiresNewCredentials(arcaConfigured, formArca)).toBe(false);
+  });
+
+  it('no bloquea: no cambió ni ambiente ni IVA', () => {
+    const formArca: ArcaFormValue = {
+      provider: 'ARCA', arcaEnvironment: 'HOMO', arcaIvaPercentage: 21,
+      arcaCertificatePem: '', arcaPrivateKeyPem: '',
+    };
+    expect(arcaEnvOrIvaChangeRequiresNewCredentials(arcaConfigured, formArca)).toBe(false);
+  });
+
+  it('no bloquea: todavía no había credenciales configuradas (primer alta, ya lo cubre arcaMissingFirstSetup)', () => {
+    const noCredentialsYet = { arcaCredentialsConfigured: false, arcaEnvironment: null, arcaIvaPercentage: null };
+    const formArca: ArcaFormValue = {
+      provider: 'ARCA', arcaEnvironment: 'PROD', arcaIvaPercentage: 21,
+      arcaCertificatePem: '', arcaPrivateKeyPem: '',
+    };
+    expect(arcaEnvOrIvaChangeRequiresNewCredentials(noCredentialsYet, formArca)).toBe(false);
+  });
+
+  it('no bloquea: provider NONE', () => {
+    const formArca: ArcaFormValue = {
+      provider: 'NONE', arcaEnvironment: 'PROD', arcaIvaPercentage: 21,
+      arcaCertificatePem: '', arcaPrivateKeyPem: '',
+    };
+    expect(arcaEnvOrIvaChangeRequiresNewCredentials(arcaConfigured, formArca)).toBe(false);
+  });
+
+  it('no bloquea: currentCfg ausente', () => {
+    const formArca: ArcaFormValue = {
+      provider: 'ARCA', arcaEnvironment: 'PROD', arcaIvaPercentage: 21,
+      arcaCertificatePem: '', arcaPrivateKeyPem: '',
+    };
+    expect(arcaEnvOrIvaChangeRequiresNewCredentials(null, formArca)).toBe(false);
   });
 });
 

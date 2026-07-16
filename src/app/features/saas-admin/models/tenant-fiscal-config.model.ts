@@ -140,6 +140,72 @@ export function buildFiscalConfigRequest(
   };
 }
 
+function hasAnyIdentityField(
+  cfg: Pick<
+    TenantFiscalConfig,
+    'razonSocial' | 'cuit' | 'ingresosBrutos' | 'domicilioComercial' | 'condicionIva' | 'inicioActividades'
+  >,
+): boolean {
+  return !!(
+    cfg.razonSocial ||
+    cfg.cuit ||
+    cfg.ingresosBrutos ||
+    cfg.domicilioComercial ||
+    cfg.condicionIva ||
+    cfg.inicioActividades
+  );
+}
+
+/**
+ * Detecta el hallazgo #2 de la review (Pertusati): blanquear los 6 campos de identidad es
+ * indistinguible, para `buildFiscalConfigRequest`, de "no toqué nada" — el backend interpreta
+ * los 6 en null como PRESERVAR la identidad ya guardada. Si eso pasa con una identidad previa
+ * configurada, el submit es un no-op silencioso: el backend devuelve la identidad vieja sin
+ * tocar, el toast dice éxito, y el form (una vez que se marca pristine) se re-hidrata con los
+ * valores viejos — pisando lo que el usuario acababa de borrar.
+ *
+ * El caller solo debe invocar esto con un form DIRTY (alguien tocó algo): si el form está
+ * pristine no hay nada que bloquear, eso ya lo cubre el guard de `save()`.
+ */
+export function identityWouldBeSilentlyDiscarded(
+  currentCfg: Pick<
+    TenantFiscalConfig,
+    'razonSocial' | 'cuit' | 'ingresosBrutos' | 'domicilioComercial' | 'condicionIva' | 'inicioActividades'
+  > | null,
+  v: FiscalIdentityFormValue,
+): boolean {
+  if (!currentCfg || !hasAnyIdentityField(currentCfg)) {
+    return false;
+  }
+  return !v.razonSocial && !v.cuit && !v.ingresosBrutos && !v.domicilioComercial && !v.condicionIva && !v.inicioActividades;
+}
+
+/**
+ * Detecta el hallazgo #1 de la review (Pertusati, 🔴): con ARCA ya configurado (hay cert
+ * guardado), cambiar SOLO `arcaEnvironment` o `arcaIvaPercentage` sin volver a tipear ambos
+ * PEM hace que `buildArcaBlock` mande el bloque entero en null (para no borrar el certificado
+ * — ver ese comentario). El backend preserva el bloque viejo completo, incluido el ambiente:
+ * el cambio de HOMO a PROD nunca aterriza, el toast dice éxito, y el dropdown vuelve a HOMO
+ * en la próxima hidratación. Con el contrato atómico actual del backend, re-subir el par de
+ * PEM es la única forma de tocar el bloque — así que hay que bloquear el submit en el front
+ * en vez de dejarlo pasar en silencio.
+ */
+export function arcaEnvOrIvaChangeRequiresNewCredentials(
+  currentCfg: Pick<TenantFiscalConfig, 'arcaCredentialsConfigured' | 'arcaEnvironment' | 'arcaIvaPercentage'> | null,
+  formArca: ArcaFormValue,
+): boolean {
+  if (!currentCfg || formArca.provider !== 'ARCA' || !currentCfg.arcaCredentialsConfigured) {
+    return false;
+  }
+  const hasNewCredentials = !!formArca.arcaCertificatePem && !!formArca.arcaPrivateKeyPem;
+  if (hasNewCredentials) {
+    return false;
+  }
+  const envChanged = formArca.arcaEnvironment !== currentCfg.arcaEnvironment;
+  const ivaChanged = formArca.arcaIvaPercentage !== currentCfg.arcaIvaPercentage;
+  return envChanged || ivaChanged;
+}
+
 /** Serializa a `YYYY-MM-DD` en hora local (no UTC: `toISOString()` correría el día). */
 export function isoFromDate(d: Date | null): string | null {
   if (!(d instanceof Date) || Number.isNaN(d.getTime())) {
