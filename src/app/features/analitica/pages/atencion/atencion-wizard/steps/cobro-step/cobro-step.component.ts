@@ -3,17 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
-import { EMPTY } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { TableColumn } from '@shared/ui/models/table-column.model';
-import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '@features/pacientes/models/coverage-catalog.model';
-import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { loadAttentionAnalyses, loadPricing, setCopayment } from '@features/analitica/store/atencion/atencion.actions';
 import {
-  selectCopaymentMutating, selectPricing, selectResolvedPatient, selectSummaryAnalyses,
+  selectCopaymentMutating, selectPricing, selectSummaryAnalyses,
 } from '@features/analitica/store/atencion/atencion.selectors';
 import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencion.model';
 
@@ -104,28 +100,15 @@ export class CobroStepComponent implements OnInit {
   ];
 
   private readonly store = inject(Store);
-  private readonly coverageCatalogApi = inject(CoverageCatalogService);
 
   readonly atencion = input.required<AttentionResponse>();
 
   protected readonly pricing = this.store.selectSignal(selectPricing);
   protected readonly copaymentMutating = this.store.selectSignal(selectCopaymentMutating);
-  protected readonly patient = this.store.selectSignal(selectResolvedPatient);
   protected readonly analyses = this.store.selectSignal(selectSummaryAnalyses);
 
   /** Copago manual único (como antes) — la tabla de arriba es solo el desglose visual de los estudios. */
   protected readonly copaymentValue = signal<number | null>(null);
-
-  /** Catálogo de coberturas para resolver el nombre de la obra social + plan (mismo patrón que resumen-step). */
-  private readonly catalog = signal<CoverageCatalog>(EMPTY_CATALOG);
-  protected readonly coverageLabel = computed<string>(() => {
-    const planId = this.atencion().insurancePlanId;
-    if (planId == null) return 'Particular';
-    const cat = this.catalog();
-    const cov = this.patient()?.coverages?.find((c) => c.planId === planId);
-    const member = cov?.memberNumber ? ` · N° ${cov.memberNumber}` : '';
-    return `${insurerNameForPlan(cat, planId)} ${planName(cat, planId)}${member}`;
-  });
 
   protected readonly analysisById = computed(
     () => new Map((this.analyses() as AnalysisDetail[]).map((a) => [a.id, a])),
@@ -167,10 +150,6 @@ export class CobroStepComponent implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(loadPricing({ attentionId: this.atencion().id }));
-    // Errores silenciados (catchError → EMPTY) para no romper el paso si el catálogo falla.
-    this.coverageCatalogApi.getCatalog().pipe(
-      catchError(() => EMPTY),
-    ).subscribe((cat) => this.catalog.set(cat));
   }
 
   /** Selecciona todo el texto al enfocar para poder tipear encima de un copago ya cargado. */
