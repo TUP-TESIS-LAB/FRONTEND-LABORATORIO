@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { provideState } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
+import { MessageService } from 'primeng/api';
 import { hasRoleGuard } from '@core/guards/has-role.guard';
 import { REPORTERIA_FEATURE_KEY } from './store/reporteria.state';
 import { reporteriaReducer } from './store/reporteria.reducer';
@@ -19,6 +20,7 @@ export const REPORTERIA_ROUTES: Routes = [
     providers: [
       provideState(REPORTERIA_FEATURE_KEY, reporteriaReducer),
       provideEffects(ReporteriaEffects),
+      MessageService,
     ],
     children: [
       {

@@ -81,4 +81,13 @@ describe('ReportViewerComponent', () => {
     cmp.onExport('pdf');
     expect(formats).toEqual(['csv', 'xlsx', 'pdf']);
   });
+
+  // NOTE: `setInput()` no propaga en este entorno de vitest (confirmado: incluso para
+  // inputs NO required, ver hallazgo en engram) — solo se puede validar el default.
+  // El caso errorStatus===403 → canRetry false queda cubierto por inspección de código
+  // y por QA manual/E2E (navegar a un reporte sin permiso y confirmar que no aparece
+  // "Reintentar"), no por unit test.
+  it('canRetry es true por default (sin errorStatus) — un error transitorio sí es reintentable', () => {
+    expect((cmp as unknown as { canRetry(): boolean }).canRetry()).toBe(true);
+  });
 });

@@ -4,6 +4,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
+import { MessageService } from 'primeng/api';
 import { ReporteriaEffects } from './reporteria.effects';
 import { ReportesApiService } from '../services/reportes-api.service';
 import { REPORTERIA_FEATURE_KEY, initialReporteriaState, ReporteriaState } from './reporteria.state';
@@ -26,6 +27,7 @@ describe('ReporteriaEffects', () => {
           initialState: { [REPORTERIA_FEATURE_KEY]: { ...initialReporteriaState, ...stateOverrides } },
         }),
         { provide: ReportesApiService, useValue: api },
+        MessageService,
       ],
     });
     TestBed.inject(MockStore);
@@ -102,5 +104,22 @@ describe('ReporteriaEffects', () => {
     const eff = make(exportReport({ format: 'pdf' }), { reportId: 'R-PAC-01' });
     const out = await new Promise((r) => eff.export$.subscribe(r));
     expect(out).toEqual(exportReportFailure({ error: 'No se pudo exportar el reporte. Probá de nuevo.' }));
+  });
+
+  it('loadOnQueryChange$ mapea un 403 del back a un mensaje de permiso, con status', async () => {
+    api.list.mockReturnValue(throwError(() => ({ status: 403, error: { message: 'Access Denied' } })));
+    const eff = make(enterReport({ reportId: 'R-PAC-01' }), { reportId: 'R-PAC-01' });
+    const out = await new Promise((r) => eff.loadOnQueryChange$.subscribe(r));
+    expect(out).toEqual(loadReportListFailure({ error: 'No tenés permiso para ver este reporte.', status: 403 }));
+  });
+
+  it('showExportError$ muestra el error de export como toast — antes era un fallo 100% silencioso', async () => {
+    const eff = make(exportReportFailure({ error: 'No se pudo exportar el reporte. Probá de nuevo.' }));
+    const messageService = TestBed.inject(MessageService);
+    const addSpy = vi.spyOn(messageService, 'add');
+    await new Promise((r) => eff.showExportError$.subscribe(r));
+    expect(addSpy).toHaveBeenCalledWith({
+      severity: 'error', summary: 'Error', detail: 'No se pudo exportar el reporte. Probá de nuevo.',
+    });
   });
 });

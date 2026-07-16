@@ -5,12 +5,13 @@ import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ReportViewerComponent } from '../components/report-viewer.component';
+import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { SucursalesService } from '@features/sucursales/services/sucursales.service';
 import { findReportById } from '../catalog';
 import { ExportFormat, ReportQuery } from '../models/report.model';
-import { enterReport, leaveReport, setReportQuery, exportReport } from '../store/reporteria.actions';
+import { enterReport, leaveReport, setReportQuery, exportReport, loadReportList } from '../store/reporteria.actions';
 import {
-  selectReportContent, selectReportError, selectReportExporting,
+  selectReportContent, selectReportError, selectReportErrorStatus, selectReportExporting,
   selectReportLoading, selectReportQuery, selectReportTotalElements,
 } from '../store/reporteria.selectors';
 
@@ -23,7 +24,7 @@ import {
   selector: 'rpt-report-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReportViewerComponent],
+  imports: [ReportViewerComponent, EmptyStateComponent],
   template: `
     @if (def(); as reportDef) {
       <rpt-report-viewer
@@ -34,9 +35,16 @@ import {
         [loading]="loading()"
         [exporting]="exporting()"
         [error]="error()"
+        [errorStatus]="errorStatus()"
         [branchOptions]="branchOptions()"
         (queryPatch)="onQueryPatch($event)"
-        (exportFormat)="onExport($event)" />
+        (exportFormat)="onExport($event)"
+        (retry)="onRetry()" />
+    } @else {
+      <ui-empty-state
+        icon="pi-exclamation-triangle"
+        heading="Reporte no encontrado"
+        description="El reporte solicitado no existe." />
     }
   `,
 })
@@ -58,6 +66,7 @@ export class ReportPage {
   protected readonly totalElements = this.store.selectSignal(selectReportTotalElements);
   protected readonly loading = this.store.selectSignal(selectReportLoading);
   protected readonly error = this.store.selectSignal(selectReportError);
+  protected readonly errorStatus = this.store.selectSignal(selectReportErrorStatus);
   protected readonly exporting = this.store.selectSignal(selectReportExporting);
 
   protected readonly branchOptions = toSignal(
@@ -84,5 +93,9 @@ export class ReportPage {
 
   onExport(format: ExportFormat): void {
     this.store.dispatch(exportReport({ format }));
+  }
+
+  onRetry(): void {
+    this.store.dispatch(loadReportList());
   }
 }

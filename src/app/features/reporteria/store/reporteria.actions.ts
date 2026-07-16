@@ -12,7 +12,8 @@ export const setReportQuery = createAction('[Reporteria] Set Query', props<{ pat
 /** Reintentar con la query actual (botón "Reintentar" del estado de error). */
 export const loadReportList = createAction('[Reporteria] Load List');
 export const loadReportListSuccess = createAction('[Reporteria] Load List Success', props<{ page: ReportPageResponse }>());
-export const loadReportListFailure = createAction('[Reporteria] Load List Failure', props<{ error: string }>());
+/** `status` es el HTTP status del back cuando aplica (ej. 403) — permite decidir si mostrar "Reintentar". */
+export const loadReportListFailure = createAction('[Reporteria] Load List Failure', props<{ error: string; status?: number }>());
 
 export const exportReport = createAction('[Reporteria] Export', props<{ format: ExportFormat }>());
 export const exportReportSuccess = createAction('[Reporteria] Export Success');

@@ -9,5 +9,6 @@ export const selectReportContent = createSelector(selectReporteriaState, (s) => 
 export const selectReportTotalElements = createSelector(selectReporteriaState, (s) => s.totalElements);
 export const selectReportLoading = createSelector(selectReporteriaState, (s) => s.loading);
 export const selectReportError = createSelector(selectReporteriaState, (s) => s.error);
+export const selectReportErrorStatus = createSelector(selectReporteriaState, (s) => s.errorStatus);
 export const selectReportExporting = createSelector(selectReporteriaState, (s) => s.exporting);
 export const selectReportExportError = createSelector(selectReporteriaState, (s) => s.exportError);

@@ -1,5 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Subject, merge } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -51,7 +54,7 @@ function toIsoDate(d: Date): string {
         </div>
       }
 
-      <ui-filter-bar [config]="filterBarConfig()" (valueChange)="onFilterBarChange($event)" />
+      <ui-filter-bar [config]="filterBarConfig()" [resetKey]="def().id" (valueChange)="onFilterBarChange($event)" />
 
       @if (extraFilters().length) {
         <div class="rpt-filters__extra">
@@ -121,15 +124,44 @@ export class ReportFiltersComponent {
     ],
   }));
 
+  /** Emisiones "de tecla" (search + text + number) se debouncean; selects/booleans/fechas se emiten al toque. */
+  private readonly debouncedEmit$ = new Subject<void>();
+
+  constructor() {
+    // Angular reusa la instancia de ReportFiltersComponent al navegar entre reportes (mismo
+    // motivo que ReportPage — ver report.page.ts). Sin este reset, los signals locales (y por
+    // ende los filtros mandados al backend) arrastran valores del reporte anterior.
+    effect(() => {
+      this.def().id; // trackea el cambio de reporte
+      untracked(() => {
+        this.dateFrom.set(null);
+        this.dateTo.set(null);
+        this.searchValue.set('');
+        this.selectValues.set({});
+        this.booleanValues.set({});
+        this.numberValues.set({});
+        this.textValues.set({});
+      });
+    });
+
+    this.debouncedEmit$.pipe(debounceTime(300), takeUntilDestroyed()).subscribe(() => this.emit());
+  }
+
   protected onFilterBarChange(value: FilterBarValue): void {
-    this.searchValue.set((value['search'] as string) ?? '');
+    const nextSearch = (value['search'] as string) ?? '';
+    const searchChanged = nextSearch !== this.searchValue();
+    this.searchValue.set(nextSearch);
+
     const selects: Record<string, unknown[]> = {};
     for (const key of Object.keys(value)) {
       if (key === 'search') continue;
       selects[key] = (value[key] as unknown[]) ?? [];
     }
     this.selectValues.set(selects);
-    this.emit();
+
+    // La búsqueda es "de tecla" (un GET por letra sin esto) — el resto (selects) es discreto.
+    if (searchChanged) this.debouncedEmit$.next();
+    else this.emit();
   }
 
   protected setDateFrom(d: Date | null): void { this.dateFrom.set(d); this.emit(); }
@@ -142,12 +174,12 @@ export class ReportFiltersComponent {
 
   protected onNumberChange(key: string, value: number | null): void {
     this.numberValues.update((m) => ({ ...m, [key]: value }));
-    this.emit();
+    this.debouncedEmit$.next();
   }
 
   protected onTextChange(key: string, value: string): void {
     this.textValues.update((m) => ({ ...m, [key]: value }));
-    this.emit();
+    this.debouncedEmit$.next();
   }
 
   /** Arma el bag plano de filtros (universales + propios) y lo emite completo. */
@@ -165,17 +197,21 @@ export class ReportFiltersComponent {
       if (this.dateTo()) filters[dateRange.toKey] = toIsoDate(this.dateTo()!);
     }
 
+    // Defensa en profundidad: si por lo que sea el reset de arriba no corrió a tiempo, esto
+    // evita mandar al backend keys de filtros propios de OTRO reporte (ver bug de reportería).
+    const ownFilterKeys = new Set(this.def().filters.map((f) => f.key));
+
     for (const [key, vals] of Object.entries(this.selectValues())) {
-      if (vals.length) filters[key] = vals;
+      if (vals.length && (key === 'branchId' || ownFilterKeys.has(key))) filters[key] = vals;
     }
     for (const [key, v] of Object.entries(this.booleanValues())) {
-      if (v) filters[key] = true;
+      if (v && ownFilterKeys.has(key)) filters[key] = true;
     }
     for (const [key, v] of Object.entries(this.numberValues())) {
-      if (v != null) filters[key] = v;
+      if (v != null && ownFilterKeys.has(key)) filters[key] = v;
     }
     for (const [key, v] of Object.entries(this.textValues())) {
-      if (v.trim()) filters[key] = v.trim();
+      if (v.trim() && ownFilterKeys.has(key)) filters[key] = v.trim();
     }
 
     this.filtersChange.emit(filters);

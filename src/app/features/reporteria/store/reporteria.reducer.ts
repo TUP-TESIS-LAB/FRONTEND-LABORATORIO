@@ -36,7 +36,7 @@ export const reporteriaReducer = createReducer(
     loading: true,
   })),
 
-  on(loadReportList, (state) => ({ ...state, loading: true, error: null })),
+  on(loadReportList, (state) => ({ ...state, loading: true, error: null, errorStatus: null })),
 
   on(loadReportListSuccess, (state, { page }) => ({
     ...state,
@@ -46,10 +46,11 @@ export const reporteriaReducer = createReducer(
     query: { ...state.query, page: page.page, size: page.size },
     loading: false,
     error: null,
+    errorStatus: null,
   })),
 
-  on(loadReportListFailure, (state, { error }) => ({
-    ...state, loading: false, error, content: [],
+  on(loadReportListFailure, (state, { error, status }) => ({
+    ...state, loading: false, error, errorStatus: status ?? null, content: [],
   })),
 
   on(exportReport, (state) => ({ ...state, exporting: true, exportError: null })),

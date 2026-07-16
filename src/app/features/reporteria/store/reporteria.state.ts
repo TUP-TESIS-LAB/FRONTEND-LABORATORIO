@@ -10,6 +10,8 @@ export interface ReporteriaState {
   totalPages: number;
   loading: boolean;
   error: string | null;
+  /** HTTP status del último error de carga (ej. 403) — null si no aplica o no hubo error. */
+  errorStatus: number | null;
   exporting: boolean;
   exportError: string | null;
 }
@@ -22,6 +24,7 @@ export const initialReporteriaState: ReporteriaState = {
   totalPages: 0,
   loading: false,
   error: null,
+  errorStatus: null,
   exporting: false,
   exportError: null,
 };

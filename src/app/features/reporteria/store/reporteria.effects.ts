@@ -2,8 +2,10 @@ import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
-import { catchError, concatMap, map, switchMap, withLatestFrom } from 'rxjs/operators';
-import { HttpResponse } from '@angular/common/http';
+import { catchError, concatMap, map, switchMap, tap, withLatestFrom } from 'rxjs/operators';
+import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { MessageService } from 'primeng/api';
+import { humanizeBackendError } from '@shared/utils/error-messages';
 import { ReportesApiService } from '../services/reportes-api.service';
 import { findReportById } from '../catalog';
 import { selectReportId, selectReportQuery } from './reporteria.selectors';
@@ -17,6 +19,7 @@ export class ReporteriaEffects {
   private readonly actions$ = inject(Actions);
   private readonly store = inject(Store);
   private readonly api = inject(ReportesApiService);
+  private readonly messageService = inject(MessageService);
 
   /**
    * Entrar a un reporte, cambiar página/orden o cambiar filtros: todo dispara la
@@ -33,11 +36,23 @@ export class ReporteriaEffects {
         if (!def) return of(loadReportListFailure({ error: 'El reporte solicitado no existe.' }));
         return this.api.list(def, query).pipe(
           map((page) => loadReportListSuccess({ page })),
-          catchError(() => of(loadReportListFailure({ error: 'No se pudo cargar el reporte. Probá de nuevo.' }))),
+          catchError((err: HttpErrorResponse) => of(loadReportListFailure({
+            error: humanizeBackendError(err, {
+              fallback: 'No se pudo cargar el reporte. Probá de nuevo.',
+              byStatus: { 403: 'No tenés permiso para ver este reporte.' },
+            }),
+            status: err?.status,
+          }))),
         );
       }),
     ),
   );
+
+  /** Toast del error de export — sin esto el fallo del back queda 100% silencioso para el usuario. */
+  showExportError$ = createEffect(() => this.actions$.pipe(
+    ofType(exportReportFailure),
+    tap(({ error }) => this.messageService.add({ severity: 'error', summary: 'Error', detail: error })),
+  ), { dispatch: false });
 
   /** Exportar: usa la query (con filtros) vigente en el store al momento del click. */
   export$ = createEffect(() =>

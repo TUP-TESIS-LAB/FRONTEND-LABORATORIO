@@ -72,7 +72,16 @@ describe('reporteriaReducer', () => {
     );
     expect(state.content).toEqual([]);
     expect(state.error).toBe('falló');
+    expect(state.errorStatus).toBeNull();
     expect(state.loading).toBe(false);
+  });
+
+  it('loadReportListFailure con status guarda el HTTP status (ej. 403 para ocultar "Reintentar")', () => {
+    const state = reporteriaReducer(
+      initialReporteriaState,
+      loadReportListFailure({ error: 'No tenés permiso para ver este reporte.', status: 403 }),
+    );
+    expect(state.errorStatus).toBe(403);
   });
 
   it('exportReport/Success/Failure gobiernan el flag exporting', () => {

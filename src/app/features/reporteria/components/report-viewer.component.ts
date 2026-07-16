@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { PanelCardComponent } from '@shared/ui/components/panel-card/panel-card.component';
@@ -62,7 +62,9 @@ export function resolveLazyLoadPatch(
           <ui-empty-state
             icon="pi-exclamation-triangle"
             heading="No se pudo cargar el reporte"
-            [description]="err" />
+            [description]="err"
+            [ctaLabel]="canRetry() ? 'Reintentar' : null"
+            (ctaClick)="retry.emit()" />
         } @else {
           <ui-table
             [value]="content()"
@@ -98,11 +100,17 @@ export class ReportViewerComponent {
   readonly loading = input<boolean>(false);
   readonly exporting = input<boolean>(false);
   readonly error = input<string | null>(null);
+  /** HTTP status del error de carga (ej. 403) — oculta "Reintentar" cuando es un problema de permisos. */
+  readonly errorStatus = input<number | null>(null);
   readonly branchOptions = input<readonly ReportBranchOption[]>([]);
+
+  /** Un 403 no se arregla reintentando — solo se muestra el CTA para errores transitorios. */
+  protected readonly canRetry = computed(() => this.errorStatus() !== 403);
 
   /** Patch de query a aplicar (paginación/orden desde la tabla, o filtros con page:0). */
   readonly queryPatch = output<Partial<ReportQuery>>();
   readonly exportFormat = output<ExportFormat>();
+  readonly retry = output<void>();
 
   onLazyLoad(e: TableLazyLoadEvent): void {
     this.queryPatch.emit(resolveLazyLoadPatch(e, this.query()));
