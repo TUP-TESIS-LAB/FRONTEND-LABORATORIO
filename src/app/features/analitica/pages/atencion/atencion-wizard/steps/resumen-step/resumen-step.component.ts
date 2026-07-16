@@ -60,115 +60,131 @@ import { clearAtencionSession } from '../../../../../utils/atencion-session-stor
     FinalizeAttentionModalComponent,
     CurrencyArPipe, DataTableComponent, UiCellDirective, TagModule,
   ],
-  styles: [`:host { display: block; height: 100%; }`],
+  styles: [`
+    :host { display: block; height: 100%; }
+    ::ng-deep .cobro-tag.p-tag { font-size: 0.7rem; padding: 0.15rem 0.5rem; }
+  `],
   template: `
-    <div class="flex flex-col h-full min-h-0 space-y-4">
-      <!-- Datos en 2 columnas: Paciente/Cobertura a la izquierda, Médico/Indicaciones a la derecha. -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
-        <section>
-          <div class="text-sm opacity-60">Paciente</div>
-          @if (patient(); as p) {
-            <div class="text-base font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
-            <div class="text-sm opacity-70">DNI {{ p.dni }}</div>
-          } @else {
-            <div class="text-base">ID {{ atencion().patientId ?? '—' }}</div>
-          }
-        </section>
+    <!-- Dos columnas: info + análisis a la izquierda (flexible, con scroll interno
+         propio en la tabla para que la página nunca crezca en vertical), card
+         "Resumen" fija a la derecha — mismo patrón que Cobro y Facturación. -->
+    <div [class]="gridClass()">
+      <div class="flex flex-col min-h-0 space-y-4">
+        <!-- Datos en 2 columnas: Paciente/Cobertura a la izquierda, Médico/Indicaciones a la derecha. -->
+        <div class="border border-surface-200 rounded-xl shadow-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+          <section>
+            <div class="text-sm opacity-60">Paciente</div>
+            @if (patient(); as p) {
+              <div class="text-base font-medium">{{ p.lastName }}, {{ p.firstName }}</div>
+              <div class="text-sm opacity-70">DNI {{ p.dni }}</div>
+            } @else {
+              <div class="text-base">ID {{ atencion().patientId ?? '—' }}</div>
+            }
+          </section>
 
-        <section>
-          <div class="text-sm opacity-60">Médico solicitante</div>
-          <div class="text-base">{{ doctorLabel() }}</div>
-        </section>
+          <section>
+            <div class="text-sm opacity-60">Médico solicitante</div>
+            <div class="text-base">{{ doctorLabel() }}</div>
+          </section>
 
-        <section>
-          <div class="text-sm opacity-60">Cobertura</div>
-          <div class="text-base">{{ coverageLabel() }}</div>
-          <!-- Item 4: Nro de autorización — solo lectura acá; se carga en el paso Análisis. -->
-          @if (atencion().insurancePlanId != null) {
-            <div class="flex items-center gap-2 mt-2">
-              <label class="opacity-60 text-sm">Código de autorización de obra social</label>
-              <span class="text-sm font-medium">{{ atencion().authorizationNumber || '—' }}</span>
-            </div>
-          }
-        </section>
+          <section>
+            <div class="text-sm opacity-60">Cobertura</div>
+            <div class="text-base">{{ coverageLabel() }}</div>
+            <!-- Item 4: Nro de autorización — solo lectura acá; se carga en el paso Análisis. -->
+            @if (atencion().insurancePlanId != null) {
+              <div class="flex items-center gap-2 mt-2">
+                <label class="opacity-60 text-sm">Código de autorización de obra social</label>
+                <span class="text-sm font-medium">{{ atencion().authorizationNumber || '—' }}</span>
+              </div>
+            }
+          </section>
 
-        <section>
-          <div class="text-sm opacity-60">Indicaciones</div>
-          <div class="text-base">{{ atencion().indications || '—' }}</div>
+          <section>
+            <div class="text-sm opacity-60">Indicaciones</div>
+            <div class="text-base">{{ atencion().indications || '—' }}</div>
+          </section>
+        </div>
+
+        <!-- C1: Análisis solicitados en tabla genérica striped. T5: scroll interno
+             (alto relativo al viewport → más filas a mayor resolución) para que la
+             página no crezca en vertical.
+
+             showDelete se gatea por !financieroActive() (NO es un typo, KAN-246):
+             con FINANCIERO activo, para cuando el operador llega a Confirmar ya
+             pasó por Cobro y Facturación → la atención ya se cobró/facturó y
+             borrar un análisis desincronizaría la plata. Sin FINANCIERO no hay
+             cobro, así que quitarlo acá es inofensivo. -->
+        <section class="flex-1 min-h-0 flex flex-col">
+          <div class="text-sm opacity-60 mb-2">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
+          <ui-table
+            [value]="analysisRows()"
+            [columns]="analysisColumns()"
+            [showDelete]="!readOnly() && !financieroActive()"
+            [scrollHeight]="'flex'"
+            emptyHeading="Sin análisis solicitados"
+            emptyIcon="pi-flask"
+            (rowDelete)="onRemoveAnalysis($any($event).analysisId)">
+
+            <ng-template uiCell="analisis" let-row>
+              @if ($any(row).name) {
+                {{ $any(row).name }}
+                @if ($any(row).nbuCode) {
+                  <span class="font-mono text-xs opacity-70">· NBU {{ $any(row).nbuCode }}</span>
+                }
+              } @else {
+                #{{ $any(row).analysisId }}
+              }
+            </ng-template>
+
+            <ng-template uiCell="autorizado" let-row>
+              @if ($any(row).isAuthorized) {
+                <p-tag value="Autorizado" severity="success" styleClass="cobro-tag" />
+              } @else {
+                <p-tag value="Particular" severity="warn" styleClass="cobro-tag" />
+              }
+            </ng-template>
+
+            <ng-template uiCell="precio" let-row>
+              @if ($any(row).precioPaciente != null) {
+                {{ $any(row).precioPaciente | currencyAr }}
+              } @else {
+                —
+              }
+            </ng-template>
+          </ui-table>
         </section>
       </div>
 
-      <!-- C1: Análisis solicitados en tabla genérica striped. T5: scroll interno
-           (alto relativo al viewport → más filas a mayor resolución) para que la
-           página no crezca en vertical.
-
-           showDelete se gatea por !financieroActive() (NO es un typo, KAN-246):
-           con FINANCIERO activo, para cuando el operador llega a Confirmar ya
-           pasó por Cobro y Facturación → la atención ya se cobró/facturó y
-           borrar un análisis desincronizaría la plata. Sin FINANCIERO no hay
-           cobro, así que quitarlo acá es inofensivo. -->
-      <section class="flex-1 min-h-0 flex flex-col">
-        <div class="text-sm opacity-60 mb-2">Análisis solicitados ({{ atencion().analysisAuthorizations.length }})</div>
-        <ui-table
-          [value]="analysisRows()"
-          [columns]="analysisColumns()"
-          [showDelete]="!readOnly() && !financieroActive()"
-          [scrollHeight]="'flex'"
-          emptyHeading="Sin análisis solicitados"
-          emptyIcon="pi-flask"
-          (rowDelete)="onRemoveAnalysis($any($event).analysisId)">
-
-          <ng-template uiCell="analisis" let-row>
-            @if ($any(row).name) {
-              {{ $any(row).name }}
-              @if ($any(row).nbuCode) {
-                <span class="font-mono text-xs opacity-70">· NBU {{ $any(row).nbuCode }}</span>
-              }
-            } @else {
-              #{{ $any(row).analysisId }}
-            }
-          </ng-template>
-
-          <ng-template uiCell="autorizado" let-row>
-            @if ($any(row).isAuthorized) {
-              <p-tag value="Autorizado" severity="success" />
-            } @else {
-              <p-tag value="Particular" severity="warn" />
-            }
-          </ng-template>
-
-          <ng-template uiCell="precio" let-row>
-            @if ($any(row).precioPaciente != null) {
-              {{ $any(row).precioPaciente | currencyAr }}
-            } @else {
-              —
-            }
-          </ng-template>
-        </ui-table>
-      </section>
-
-      <!-- Pricing totals — item 7: Subtotal · Copago · Total en una sola fila compacta.
-           Sin FINANCIERO activo no hay nada financiero que mostrar acá (KAN-246). -->
+      <!-- Resumen de totales — item 7, en card destacada. Sin FINANCIERO activo no hay
+           nada financiero que mostrar acá (KAN-246): el gridClass() cae a una sola
+           columna para no dejar un gutter vacío donde iría la card. -->
       @if (financieroActive()) {
-        @if (pricing(); as p) {
-          <section class="border-t pt-3 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-sm">
-            <span><span class="opacity-60">Subtotal</span> {{ p.subtotal | currencyAr }}</span>
-            <span class="flex items-center gap-2">
-              <label class="opacity-60">Copago</label>
-              <span class="font-medium">{{ p.copayment | currencyAr }}</span>
-            </span>
-            <span class="font-semibold text-base"><span class="opacity-60 font-normal">Total</span> {{ p.total | currencyAr }}</span>
-          </section>
-        } @else if (pricingLoading()) {
-          <section class="border-t pt-3">
-            <div class="text-sm opacity-60">Calculando precios…</div>
-          </section>
-        }
+        <div class="border border-surface-200 rounded-xl shadow-sm p-4 self-start">
+          <div class="text-xs font-medium uppercase tracking-wide text-surface-400 mb-3">Resumen</div>
+          @if (pricing(); as p) {
+            <div class="flex items-center justify-between text-sm mb-2">
+              <span class="text-surface-500">Subtotal</span>
+              <span class="font-semibold">{{ p.subtotal | currencyAr }}</span>
+            </div>
+            @if (p.copayment > 0) {
+              <div class="flex items-center justify-between text-sm mb-2">
+                <span class="text-surface-500">Copago</span>
+                <span class="font-semibold">{{ p.copayment | currencyAr }}</span>
+              </div>
+            }
+            <div class="border-t pt-3 mt-1" style="border-color: var(--brand-primary);">
+              <div class="text-xs text-surface-500 mb-1">Total</div>
+              <div class="text-2xl font-bold" style="color: var(--brand-primary);">{{ p.total | currencyAr }}</div>
+            </div>
+          } @else if (pricingLoading()) {
+            <div class="text-sm text-surface-400">Calculando…</div>
+          }
+        </div>
       }
-
-      <!-- Item 1: el footer (Volver fase / Finalizar atención) lo provee el contenedor
-           (ui-wizard-shell). El step solo conserva el modal de finalización. -->
     </div>
+
+    <!-- Item 1: el footer (Volver fase / Finalizar atención) lo provee el contenedor
+         (ui-wizard-shell). El step solo conserva el modal de finalización. -->
 
     <!-- Fuera del contenedor flex con space-y-4 para no dejar un hueco bajo el footer. -->
     <lab-finalize-attention-modal
@@ -189,6 +205,10 @@ export class ResumenStepComponent implements OnInit {
 
   /** Si FINANCIERO está apagado, el resumen no muestra nada financiero (KAN-246). */
   readonly financieroActive = computed(() => this.moduleRegistry.isActive(ModuleKey.Financiero));
+  /** Sin FINANCIERO no hay card "Resumen" → cae a una sola columna (sin gutter vacío). */
+  readonly gridClass = computed(() => this.financieroActive()
+    ? 'grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 h-full min-h-0'
+    : 'grid grid-cols-1 gap-6 h-full min-h-0');
 
   readonly atencion = input.required<AttentionResponse>();
   readonly finished = output<void>();
