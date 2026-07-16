@@ -10,11 +10,12 @@ import { CajaContextService } from '../../services/caja-context.service';
 import { MetodoChipComponent } from '../metodo-chip.component';
 import { ComprobanteCardComponent } from '../comprobante-card.component';
 import { METHOD_META, PaymentMethod } from '../../models/financiero.model';
+import { isDownloadBlockedByPendingEmission } from '../../pages/cobros/cobro-detalle.page';
 import {
-  registerPayment, resetCobro, loadOpenSession,
+  registerPayment, resetCobro, loadOpenSession, downloadComprobante,
 } from '../../store/financiero.actions';
 import {
-  selectIsCajaOpen, selectCobroSubmitting, selectCobroResult,
+  selectIsCajaOpen, selectCobroSubmitting, selectCobroResult, selectDownloadingComprobante,
 } from '../../store/financiero.selectors';
 import {
   loadAtencion, loadPricing, endBilling,
@@ -43,6 +44,9 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
           <fin-comprobante-card [ref]="r.fiscalReference" />
           <div class="fin-cobro__exito-actions">
             <p-button label="Imprimir" icon="pi pi-print" severity="secondary" [outlined]="true" (onClick)="imprimir()" />
+            <p-button label="Descargar comprobante" icon="pi pi-download" severity="secondary" [outlined]="true"
+                      [loading]="downloadingComprobante()" [disabled]="downloadingComprobante() || downloadBlockedByPending()"
+                      (onClick)="descargarComprobante()" />
             @if (embedded) {
               <p-button label="Continuar" icon="pi pi-arrow-right" (onClick)="continuarTrasExito()" />
             } @else {
@@ -164,6 +168,18 @@ export class CobroAtencionComponent {
   protected readonly cajaAbierta = this.store.selectSignal(selectIsCajaOpen);
   protected readonly submitting = this.store.selectSignal(selectCobroSubmitting);
   protected readonly result = this.store.selectSignal(selectCobroResult);
+  protected readonly downloadingComprobante = this.store.selectSignal(selectDownloadingComprobante);
+
+  /**
+   * Mismo criterio de gating que financiero/cobros (cobro-detalle.page): con ARCA,
+   * descargar en PENDING da 409 (el PDF todavía no existe). Reusamos la función pura
+   * de allá en vez de duplicarla.
+   */
+  protected readonly downloadBlockedByPending = computed(() => {
+    const r = this.result();
+    if (!r) return false;
+    return isDownloadBlockedByPendingEmission(r.fiscalReference?.emissionStatus ?? null, r.payment.status);
+  });
 
   /**
    * Monto a cobrar al paciente = pricing.total (= subtotal de estudios no cubiertos + copago).
@@ -315,6 +331,13 @@ export class CobroAtencionComponent {
   }
   protected irACaja(): void { this.router.navigate(['/financiero/caja']); }
   protected imprimir(): void { window.print(); }
+
+  /** Reusa la descarga de comprobante fiscal de financiero (mismo endpoint/effect que cobro-detalle.page). */
+  protected descargarComprobante(): void {
+    const paymentId = this.result()?.payment.id;
+    if (paymentId == null) return;
+    this.store.dispatch(downloadComprobante({ paymentId }));
+  }
 }
 
 function round2(n: number): number { return Math.round(n * 100) / 100; }

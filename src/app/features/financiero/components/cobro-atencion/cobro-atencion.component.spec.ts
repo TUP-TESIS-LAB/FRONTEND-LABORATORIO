@@ -5,9 +5,9 @@ import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { CobroAtencionComponent } from './cobro-atencion.component';
-import { selectIsCajaOpen, selectCobroSubmitting, selectCobroResult } from '../../store/financiero.selectors';
+import { selectIsCajaOpen, selectCobroSubmitting, selectCobroResult, selectDownloadingComprobante } from '../../store/financiero.selectors';
 import { selectDetail, selectPricing } from '@features/analitica/store/atencion/atencion.selectors';
-import { registerPayment } from '../../store/financiero.actions';
+import { registerPayment, downloadComprobante } from '../../store/financiero.actions';
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { CajaContextService } from '../../services/caja-context.service';
 
@@ -71,6 +71,7 @@ function setupWithTemplate(
           { selector: selectIsCajaOpen, value: overrides.cajaAbierta ?? true },
           { selector: selectCobroSubmitting, value: false },
           { selector: selectCobroResult, value: overrides.result ?? null },
+          { selector: selectDownloadingComprobante, value: false },
           { selector: selectDetail, value: overrides.detail ?? DEFAULT_DETAIL },
           { selector: selectPricing, value: overrides.pricing ?? DEFAULT_PRICING },
         ],
@@ -156,6 +157,38 @@ describe('CobroAtencionComponent — smoke tests', () => {
       },
     });
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="cobro-exito"]')).toBeTruthy();
+  });
+
+  it('descargarComprobante despacha downloadComprobante con el paymentId del cobro', () => {
+    const fixture = setupWithTemplate(null, {
+      result: {
+        payment: { id: 99, totalAmount: 1500, status: 'PROCESSED' },
+        fiscalReference: {
+          id: 1, paymentId: 99, provider: 'NONE', comprobanteTipo: 'FACTURA_X',
+          internalReference: 'R-0001', externalInvoiceId: null, electronic: false,
+          isVoid: false, emittedAt: '2026-06-19T10:00:00Z',
+        },
+      },
+    });
+    const store = TestBed.inject(MockStore);
+    const spy = vi.spyOn(store, 'dispatch');
+    (fixture.componentInstance as any).descargarComprobante();
+    expect(spy).toHaveBeenCalledWith(downloadComprobante({ paymentId: 99 }));
+  });
+
+  it('descarga bloqueada mientras la emisión ARCA está PENDING (no bloquea si CANCELLED)', () => {
+    const fixture = setupWithTemplate(null, {
+      result: {
+        payment: { id: 100, totalAmount: 1500, status: 'PROCESSED' },
+        fiscalReference: {
+          id: 2, paymentId: 100, provider: 'ARCA', comprobanteTipo: 'FACTURA_B',
+          internalReference: null, externalInvoiceId: null, electronic: true,
+          isVoid: false, emittedAt: null, emissionStatus: 'PENDING',
+        },
+      },
+    });
+    const cmp = fixture.componentInstance as any;
+    expect(cmp.downloadBlockedByPending()).toBe(true);
   });
 });
 
