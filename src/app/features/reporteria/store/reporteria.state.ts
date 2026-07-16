@@ -8,6 +8,8 @@ export interface ReporteriaState {
   content: readonly unknown[];
   totalElements: number;
   totalPages: number;
+  /** Suma de la métrica por columna (D5) — null cuando el reporte no la calcula. */
+  totals: Record<string, unknown> | null;
   loading: boolean;
   error: string | null;
   /** HTTP status del último error de carga (ej. 403) — null si no aplica o no hubo error. */
@@ -22,6 +24,7 @@ export const initialReporteriaState: ReporteriaState = {
   content: [],
   totalElements: 0,
   totalPages: 0,
+  totals: null,
   loading: false,
   error: null,
   errorStatus: null,

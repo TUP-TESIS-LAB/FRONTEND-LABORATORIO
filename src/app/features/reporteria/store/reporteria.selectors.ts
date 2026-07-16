@@ -7,6 +7,7 @@ export const selectReportId = createSelector(selectReporteriaState, (s) => s.rep
 export const selectReportQuery = createSelector(selectReporteriaState, (s) => s.query);
 export const selectReportContent = createSelector(selectReporteriaState, (s) => s.content);
 export const selectReportTotalElements = createSelector(selectReporteriaState, (s) => s.totalElements);
+export const selectReportTotals = createSelector(selectReporteriaState, (s) => s.totals);
 export const selectReportLoading = createSelector(selectReporteriaState, (s) => s.loading);
 export const selectReportError = createSelector(selectReporteriaState, (s) => s.error);
 export const selectReportErrorStatus = createSelector(selectReporteriaState, (s) => s.errorStatus);

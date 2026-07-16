@@ -43,6 +43,7 @@ export const reporteriaReducer = createReducer(
     content: page.content,
     totalElements: page.totalElements,
     totalPages: page.totalPages,
+    totals: page.totals ?? null,
     query: { ...state.query, page: page.page, size: page.size },
     loading: false,
     error: null,
@@ -50,7 +51,7 @@ export const reporteriaReducer = createReducer(
   })),
 
   on(loadReportListFailure, (state, { error, status }) => ({
-    ...state, loading: false, error, errorStatus: status ?? null, content: [],
+    ...state, loading: false, error, errorStatus: status ?? null, content: [], totals: null,
   })),
 
   on(exportReport, (state) => ({ ...state, exporting: true, exportError: null })),

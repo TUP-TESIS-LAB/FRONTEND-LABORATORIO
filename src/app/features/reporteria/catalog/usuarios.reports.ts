@@ -5,43 +5,14 @@ const BASE = '/api/v1/empresa/reportes/usuarios';
 
 export const USUARIOS_REPORTS: ReportDef[] = [
   {
-    id: 'R-USR-01',
-    title: 'Usuarios externos',
-    description: 'Listado de usuarios externos (portal de pacientes) del tenant.',
-    endpoint: `${BASE}/externos`,
-    roles: ROLES,
-    sortableFields: [
-      'id', 'nombre', 'apellido', 'username', 'email', 'documento',
-      'emailVerificado', 'primerLoginPendiente', 'ultimoAcceso', 'fechaAlta',
-    ],
-    defaultSort: { field: 'apellido', direction: 'ASC' },
-    filters: [
-      { key: 'emailVerified', label: 'Email verificado', type: 'boolean' },
-      { key: 'firstLoginPending', label: 'Primer login pendiente', type: 'boolean' },
-    ],
-    columns: withSortableColumns(
-      [
-        { field: 'apellido', header: 'Apellido' },
-        { field: 'nombre', header: 'Nombre' },
-        { field: 'username', header: 'Usuario' },
-        { field: 'email', header: 'Email' },
-        { field: 'documento', header: 'Documento' },
-        { field: 'emailVerificado', header: 'Email verificado' },
-        { field: 'primerLoginPendiente', header: 'Primer login pendiente' },
-        { field: 'ultimoAcceso', header: 'Último acceso' },
-        { field: 'fechaAlta', header: 'Fecha de alta' },
-      ],
-      ['id', 'nombre', 'apellido', 'username', 'email', 'documento',
-        'emailVerificado', 'primerLoginPendiente', 'ultimoAcceso', 'fechaAlta'],
-    ),
-  },
-  {
     id: 'R-USR-02',
     title: 'Vínculos usuario-paciente',
     description: 'Vínculos entre usuarios externos y los pacientes que administran.',
     endpoint: `${BASE}/vinculos`,
     roles: ROLES,
-    sortableFields: ['id', 'pacienteId', 'vinculo', 'titular', 'estado', 'fechaAlta'],
+    // 'pacienteId' salió de sortableFields junto con la columna (D6) — no le sirve a
+    // un operario, y sin columna no tiene sentido dejarlo ordenable.
+    sortableFields: ['id', 'vinculo', 'titular', 'estado', 'fechaAlta'],
     defaultSort: { field: 'fechaAlta', direction: 'DESC' },
     filters: [
       {
@@ -72,13 +43,12 @@ export const USUARIOS_REPORTS: ReportDef[] = [
       [
         { field: 'username', header: 'Usuario' },
         { field: 'email', header: 'Email' },
-        { field: 'pacienteId', header: 'ID de paciente' },
         { field: 'vinculo', header: 'Vínculo' },
-        { field: 'titular', header: 'Titular' },
+        { field: 'titular', header: 'Titular', type: 'boolean' },
         { field: 'estado', header: 'Estado' },
-        { field: 'fechaAlta', header: 'Fecha de vínculo' },
+        { field: 'fechaAlta', header: 'Fecha de vínculo', type: 'date' },
       ],
-      ['id', 'pacienteId', 'vinculo', 'titular', 'estado', 'fechaAlta'],
+      ['id', 'vinculo', 'titular', 'estado', 'fechaAlta'],
     ),
   },
   {
@@ -109,5 +79,11 @@ export const USUARIOS_REPORTS: ReportDef[] = [
       ],
       ['periodo', 'altasInternas', 'altasExternas', 'total'],
     ),
+    // Serie temporal (D3/D4). Tres métricas por fila (internas/externas/total) → tres columnas.
+    variation: [
+      { field: 'variacionInternas', header: 'Var. internas' },
+      { field: 'variacionExternas', header: 'Var. externas' },
+      { field: 'variacionTotal', header: 'Var. total' },
+    ],
   },
 ];

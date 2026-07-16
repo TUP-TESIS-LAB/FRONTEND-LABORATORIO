@@ -4,15 +4,17 @@ import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { ToastModule } from 'primeng/toast';
 import { ReportViewerComponent } from '../components/report-viewer.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { SucursalesService } from '@features/sucursales/services/sucursales.service';
+import { ObraSocialService } from '@features/obras-sociales/services/obra-social.service';
 import { findReportById } from '../catalog';
-import { ExportFormat, ReportQuery } from '../models/report.model';
+import { ExportFormat, ReportFilterOption, ReportQuery } from '../models/report.model';
 import { enterReport, leaveReport, setReportQuery, exportReport, loadReportList } from '../store/reporteria.actions';
 import {
   selectReportContent, selectReportError, selectReportErrorStatus, selectReportExporting,
-  selectReportLoading, selectReportQuery, selectReportTotalElements,
+  selectReportLoading, selectReportQuery, selectReportTotalElements, selectReportTotals,
 } from '../store/reporteria.selectors';
 
 /**
@@ -24,8 +26,9 @@ import {
   selector: 'rpt-report-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReportViewerComponent, EmptyStateComponent],
+  imports: [ReportViewerComponent, EmptyStateComponent, ToastModule],
   template: `
+    <p-toast />
     @if (def(); as reportDef) {
       <rpt-report-viewer
         [def]="reportDef"
@@ -36,7 +39,9 @@ import {
         [exporting]="exporting()"
         [error]="error()"
         [errorStatus]="errorStatus()"
-        [branchOptions]="branchOptions()"
+        [branchOptions]="effectiveBranchOptions()"
+        [dynamicOptions]="dynamicOptions()"
+        [totals]="totals()"
         (queryPatch)="onQueryPatch($event)"
         (exportFormat)="onExport($event)"
         (retry)="onRetry()" />
@@ -53,6 +58,7 @@ export class ReportPage {
   private readonly store = inject(Store);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sucursalesService = inject(SucursalesService);
+  private readonly obraSocialService = inject(ObraSocialService);
 
   private readonly reportId = toSignal(
     this.route.paramMap.pipe(map((p) => p.get('reportId') ?? '')),
@@ -68,6 +74,7 @@ export class ReportPage {
   protected readonly error = this.store.selectSignal(selectReportError);
   protected readonly errorStatus = this.store.selectSignal(selectReportErrorStatus);
   protected readonly exporting = this.store.selectSignal(selectReportExporting);
+  protected readonly totals = this.store.selectSignal(selectReportTotals);
 
   protected readonly branchOptions = toSignal(
     this.sucursalesService.listBranchesForSelector().pipe(
@@ -75,6 +82,32 @@ export class ReportPage {
     ),
     { initialValue: [] as { id: number; name: string }[] },
   );
+
+  /**
+   * Opt-in (D2.1): el selector de sucursal solo aparece donde el backend acepta `branchId`.
+   * Sin el flag no se muestra — un selector que el backend ignora le hace creer al usuario
+   * que filtró cuando no filtró nada.
+   */
+  protected readonly effectiveBranchOptions = computed(() =>
+    this.def()?.branchFilterable === true ? this.branchOptions() : [],
+  );
+
+  protected readonly planOptions = toSignal(
+    this.obraSocialService.listPlansForSelector().pipe(
+      catchError(() => of([] as { id: number; name: string }[])),
+    ),
+    { initialValue: [] as { id: number; name: string }[] },
+  );
+
+  /**
+   * Opciones dinámicas por `dynamicOptionsKey` (ver `ReportFilterDef`/T5). El filtro
+   * "plan" de R-PAC-04 se arma acá con `GET /coverages/plans` (mismo patrón que
+   * `branchOptions`). Si viene vacío, `ReportFiltersComponent.hasResolvedOptions`
+   * esconde el filtro en vez de mostrar un select sin opciones.
+   */
+  protected readonly dynamicOptions = computed<Record<string, readonly ReportFilterOption[]>>(() => ({
+    planes: this.planOptions().map((p) => ({ value: p.id, label: p.name })),
+  }));
 
   constructor() {
     // effect (no ngOnInit): si el usuario navega de un reporte a otro sin salir

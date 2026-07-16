@@ -5,75 +5,6 @@ const BASE = '/api/v1/analitica/reportes/pacientes';
 
 export const PACIENTES_REPORTS: ReportDef[] = [
   {
-    id: 'R-PAC-01',
-    title: 'Listado de pacientes',
-    description: 'Listado general de pacientes con sus datos de contacto y cobertura.',
-    endpoint: BASE,
-    roles: ROLES,
-    sortableFields: ['dni', 'apellido', 'fechaNacimiento', 'fechaAlta'],
-    defaultSort: { field: 'apellido', direction: 'ASC' },
-    filters: [
-      {
-        key: 'sexo', label: 'Sexo', type: 'select',
-        options: [
-          { label: 'Masculino', value: 'MALE' },
-          { label: 'Femenino', value: 'FEMALE' },
-          { label: 'Otro', value: 'OTHER' },
-        ],
-      },
-      {
-        key: 'grupoEtario', label: 'Grupo etario', type: 'select',
-        options: [
-          { label: '0-9', value: '0-9' },
-          { label: '10-19', value: '10-19' },
-          { label: '20-29', value: '20-29' },
-          { label: '30-39', value: '30-39' },
-          { label: '40-49', value: '40-49' },
-          { label: '50-59', value: '50-59' },
-          { label: '60-69', value: '60-69' },
-          { label: '70+', value: '70+' },
-        ],
-      },
-      {
-        key: 'cobertura', label: 'Cobertura', type: 'select',
-        options: [
-          { label: 'Con cobertura', value: 'con-cobertura' },
-          { label: 'Sin cobertura', value: 'sin-cobertura' },
-        ],
-      },
-      {
-        key: 'estado', label: 'Estado', type: 'select',
-        options: [
-          { label: 'Datos mínimos', value: 'MIN' },
-          { label: 'Datos completos', value: 'COMPLETE' },
-          { label: 'Verificado', value: 'VERIFIED' },
-        ],
-      },
-      {
-        key: 'origen', label: 'Origen', type: 'select',
-        options: [
-          { label: 'Personal', value: 'STAFF' },
-          { label: 'Portal', value: 'PORTAL' },
-        ],
-      },
-      { key: 'datosIncompletos', label: 'Datos incompletos', type: 'boolean' },
-    ],
-    columns: withSortableColumns(
-      [
-        { field: 'dni', header: 'DNI' },
-        { field: 'apellido', header: 'Apellido' },
-        { field: 'nombre', header: 'Nombre' },
-        { field: 'fechaNacimiento', header: 'Nacimiento' },
-        { field: 'sexo', header: 'Sexo' },
-        { field: 'sexoAlNacer', header: 'Sexo al nacer' },
-        { field: 'estado', header: 'Estado' },
-        { field: 'origen', header: 'Origen' },
-        { field: 'fechaAlta', header: 'Fecha de alta' },
-      ],
-      ['dni', 'apellido', 'fechaNacimiento', 'fechaAlta'],
-    ),
-  },
-  {
     id: 'R-PAC-02',
     title: 'Altas de pacientes por período',
     description: 'Pacientes dados de alta en el rango de fechas elegido.',
@@ -98,6 +29,9 @@ export const PACIENTES_REPORTS: ReportDef[] = [
       ],
       ['periodo'],
     ),
+    // Serie temporal (D3/D4). Join contra atención (D2.1): el backend YA acepta branchId.
+    branchFilterable: true,
+    variation: [{ field: 'variacion' }],
   },
   {
     id: 'R-PAC-03',
@@ -117,6 +51,8 @@ export const PACIENTES_REPORTS: ReportDef[] = [
       ],
       ['grupoEtario', 'sexo', 'cantidad'],
     ),
+    // Pacientes vía atención: el backend YA acepta branchId acá (REP-KIT-06, verificado).
+    branchFilterable: true,
   },
   {
     id: 'R-PAC-04',
@@ -135,7 +71,11 @@ export const PACIENTES_REPORTS: ReportDef[] = [
           { label: 'Sin cobertura', value: 'sin-cobertura' },
         ],
       },
-      { key: 'plan', label: 'Plan (ID)', type: 'number' },
+      // Antes pedía escribir a mano el ID numérico del plan (indefendible para un
+      // gerente). Selector por nombre — opciones resueltas en runtime por ReportPage
+      // vía GET /api/v1/coverages/plans (ObraSocialService.listPlansForSelector). El
+      // filtro sigue siendo el mismo Long — solo cambia cómo el front obtiene el valor.
+      { key: 'plan', label: 'Plan', type: 'select', dynamicOptionsKey: 'planes', options: [] },
     ],
     columns: withSortableColumns(
       [
@@ -144,6 +84,8 @@ export const PACIENTES_REPORTS: ReportDef[] = [
       ],
       ['cobertura', 'cantidadPacientes'],
     ),
+    // Join contra atención (D2.1): el backend YA acepta branchId acá.
+    branchFilterable: true,
   },
   {
     id: 'R-PAC-05',
@@ -163,5 +105,7 @@ export const PACIENTES_REPORTS: ReportDef[] = [
       ],
       ['campo', 'cantidadPacientes'],
     ),
+    // Join contra atención (D2.1): el backend YA acepta branchId acá.
+    branchFilterable: true,
   },
 ];

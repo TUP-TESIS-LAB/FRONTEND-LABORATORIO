@@ -5,38 +5,10 @@ const BASE = '/api/v1/sucursales/reportes/empleados';
 
 export const EMPLEADOS_REPORTS: ReportDef[] = [
   {
-    id: 'R-EMP-01',
-    title: 'Listado de empleados',
-    description: 'Listado general de empleados con su cuenta de usuario asociada.',
-    endpoint: BASE,
-    roles: ROLES,
-    searchKey: 'busqueda',
-    sortableFields: ['apellido', 'documento'],
-    defaultSort: { field: 'apellido', direction: 'ASC' },
-    filters: [
-      { key: 'estado', label: 'Activo', type: 'boolean' },
-      { key: 'rol', label: 'Rol', type: 'text' },
-      { key: 'bioquimico', label: 'Es bioquímico', type: 'boolean' },
-      { key: 'emailVerificado', label: 'Email verificado', type: 'boolean' },
-    ],
-    columns: withSortableColumns(
-      [
-        { field: 'apellido', header: 'Apellido' },
-        { field: 'nombre', header: 'Nombre' },
-        { field: 'documento', header: 'Documento' },
-        { field: 'esBioquimico', header: 'Es bioquímico' },
-        { field: 'matricula', header: 'Matrícula' },
-        { field: 'estado', header: 'Estado' },
-        { field: 'rol', header: 'Rol' },
-        { field: 'emailVerificado', header: 'Email verificado' },
-        { field: 'primerLoginPendiente', header: 'Primer login pendiente' },
-        { field: 'ultimoAcceso', header: 'Último acceso' },
-      ],
-      ['apellido', 'documento'],
-    ),
-  },
-  {
     id: 'R-EMP-02',
+    // D2.2: REP-KIT-06 pedía branchId acá, pero es irrealizable — UserBranchAccessPort
+    // resuelve user→branches, no branch→users, y la vía inversa cruzaría JPA entre
+    // módulos (prohibido). branchFilterable queda ausente/false a propósito.
     title: 'Altas y bajas de empleados',
     description: 'Movimientos de alta y baja de empleados en el rango de fechas elegido.',
     endpoint: `${BASE}/altas-bajas-por-periodo`,
@@ -61,9 +33,15 @@ export const EMPLEADOS_REPORTS: ReportDef[] = [
       ],
       ['periodo'],
     ),
+    // Serie temporal (D3/D4). Dos métricas por fila (altas Y bajas) → dos columnas.
+    variation: [
+      { field: 'variacionAltas', header: 'Var. altas' },
+      { field: 'variacionBajas', header: 'Var. bajas' },
+    ],
   },
   {
     id: 'R-EMP-03',
+    // D2.2: mismo motivo que R-EMP-02 — branchFilterable ausente/false a propósito.
     title: 'Higiene de cuentas de empleados',
     description: 'Empleados con cuentas inactivas hace más de N días u otros problemas de higiene.',
     endpoint: `${BASE}/higiene-cuentas`,
@@ -81,9 +59,9 @@ export const EMPLEADOS_REPORTS: ReportDef[] = [
         { field: 'apellido', header: 'Apellido' },
         { field: 'nombre', header: 'Nombre' },
         { field: 'rol', header: 'Rol' },
-        { field: 'emailVerificado', header: 'Email verificado' },
-        { field: 'primerLoginPendiente', header: 'Primer login pendiente' },
-        { field: 'ultimoAcceso', header: 'Último acceso' },
+        { field: 'emailVerificado', header: 'Email verificado', type: 'boolean' },
+        { field: 'primerLoginPendiente', header: 'Primer login pendiente', type: 'boolean' },
+        { field: 'ultimoAcceso', header: 'Último acceso', type: 'date' },
         { field: 'diasSinAcceso', header: 'Días sin acceso', align: 'right' },
       ],
       ['apellido', 'diasSinAcceso'],

@@ -5,39 +5,6 @@ const BASE = '/api/v1/sucursales/reportes/sucursales';
 
 export const SUCURSALES_REPORTS: ReportDef[] = [
   {
-    id: 'R-SUC-01',
-    title: 'Listado de sucursales',
-    description: 'Listado general de sucursales del tenant.',
-    endpoint: BASE,
-    roles: ROLES,
-    searchKey: 'busqueda',
-    sortableFields: ['codigo', 'descripcion', 'estado'],
-    defaultSort: { field: 'codigo', direction: 'ASC' },
-    filters: [
-      {
-        key: 'estado', label: 'Estado', type: 'select',
-        options: [
-          { label: 'Activa', value: 'ACTIVE' },
-          { label: 'Inactiva', value: 'INACTIVE' },
-        ],
-      },
-      { key: 'provincia', label: 'Provincia', type: 'text' },
-      { key: 'ciudad', label: 'Ciudad', type: 'text' },
-      { key: 'horarios', label: 'Tiene horarios', type: 'boolean' },
-    ],
-    columns: withSortableColumns(
-      [
-        { field: 'codigo', header: 'Código' },
-        { field: 'descripcion', header: 'Nombre' },
-        { field: 'estado', header: 'Estado' },
-        { field: 'provincia', header: 'Provincia' },
-        { field: 'ciudad', header: 'Ciudad' },
-        { field: 'tieneHorarios', header: 'Tiene horarios' },
-      ],
-      ['codigo', 'descripcion', 'estado'],
-    ),
-  },
-  {
     id: 'R-SUC-02',
     title: 'Sucursales por estado y provincia',
     description: 'Cantidad de sucursales agrupadas por estado y provincia.',
@@ -71,7 +38,7 @@ export const SUCURSALES_REPORTS: ReportDef[] = [
         { field: 'codigo', header: 'Código' },
         { field: 'descripcion', header: 'Nombre' },
         { field: 'estado', header: 'Estado' },
-        { field: 'fechaAlta', header: 'Fecha de alta' },
+        { field: 'fechaAlta', header: 'Fecha de alta', type: 'date' },
       ],
       ['codigo', 'descripcion', 'fechaAlta'],
     ),

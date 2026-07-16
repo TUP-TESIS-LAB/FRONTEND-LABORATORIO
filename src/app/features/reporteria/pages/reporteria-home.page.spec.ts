@@ -29,15 +29,15 @@ describe('ReporteriaHomePage', () => {
     const visibleIds = groups.flatMap((g) => g.reports.map((r) => r.id));
 
     // pacientes y usuarios externos incluyen RESPONSABLE_SECRETARIA
-    expect(visibleIds).toContain('R-PAC-01');
-    expect(visibleIds).toContain('R-USR-01');
+    expect(visibleIds).toContain('R-PAC-02');
+    expect(visibleIds).toContain('R-USR-02');
     // médicos/empleados/sucursales son ADMINISTRADOR-only
-    expect(visibleIds).not.toContain('R-MED-01');
-    expect(visibleIds).not.toContain('R-EMP-01');
-    expect(visibleIds).not.toContain('R-SUC-01');
+    expect(visibleIds).not.toContain('R-MED-02');
+    expect(visibleIds).not.toContain('R-EMP-02');
+    expect(visibleIds).not.toContain('R-SUC-02');
   });
 
-  it('ADMINISTRADOR ve los 17 reportes', () => {
+  it('ADMINISTRADOR ve los 12 reportes', () => {
     const cmp = create(['ADMINISTRADOR']);
     const groups = cmp['visibleGroups']();
     const visibleIds = groups.flatMap((g) => g.reports.map((r) => r.id));

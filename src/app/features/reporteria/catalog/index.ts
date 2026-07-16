@@ -5,7 +5,7 @@ import { EMPLEADOS_REPORTS } from './empleados.reports';
 import { SUCURSALES_REPORTS } from './sucursales.reports';
 import { USUARIOS_REPORTS } from './usuarios.reports';
 
-/** Catálogo de los 17 reportes (KAN-244), agrupados por módulo del negocio. */
+/** Catálogo de los 12 reportes (KAN-244), agrupados por módulo del negocio. */
 export const REPORT_GROUPS: ReportGroup[] = [
   { key: 'pacientes', label: 'Pacientes', reports: PACIENTES_REPORTS },
   { key: 'medicos', label: 'Médicos derivantes', reports: MEDICOS_REPORTS },

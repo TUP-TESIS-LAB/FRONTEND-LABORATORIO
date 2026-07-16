@@ -5,42 +5,6 @@ const BASE = '/api/v1/sucursales/reportes/medicos';
 
 export const MEDICOS_REPORTS: ReportDef[] = [
   {
-    id: 'R-MED-01',
-    title: 'Listado de médicos derivantes',
-    description: 'Listado general de médicos derivantes con matrícula y especialidad.',
-    endpoint: BASE,
-    roles: ROLES,
-    searchKey: 'busqueda',
-    sortableFields: ['apellido', 'matricula', 'especialidad'],
-    defaultSort: { field: 'apellido', direction: 'ASC' },
-    filters: [
-      { key: 'estado', label: 'Activo', type: 'boolean' },
-      { key: 'especialidad', label: 'Especialidad', type: 'text' },
-      {
-        key: 'tipoMatricula', label: 'Tipo de matrícula', type: 'select',
-        options: [
-          { label: 'Nacional', value: 'NACIONAL' },
-          { label: 'Provincial', value: 'PROVINCIAL' },
-        ],
-      },
-      { key: 'institucion', label: 'Institución', type: 'text' },
-    ],
-    columns: withSortableColumns(
-      [
-        { field: 'apellido', header: 'Apellido' },
-        { field: 'nombre', header: 'Nombre' },
-        { field: 'matricula', header: 'Matrícula' },
-        { field: 'tipoMatricula', header: 'Tipo de matrícula' },
-        { field: 'especialidad', header: 'Especialidad' },
-        { field: 'institucion', header: 'Institución' },
-        { field: 'email', header: 'Email' },
-        { field: 'telefono', header: 'Teléfono' },
-        { field: 'estado', header: 'Estado' },
-      ],
-      ['apellido', 'matricula', 'especialidad'],
-    ),
-  },
-  {
     id: 'R-MED-02',
     title: 'Altas de médicos por período',
     description: 'Médicos derivantes dados de alta en el rango de fechas elegido.',
@@ -65,6 +29,9 @@ export const MEDICOS_REPORTS: ReportDef[] = [
       ],
       ['periodo'],
     ),
+    // Serie temporal (D3/D4). Médicos NO acepta branchId (D2.1: DoctorJpaEntity no
+    // tiene sucursal) — branchFilterable queda ausente/false a propósito.
+    variation: [{ field: 'variacion' }],
   },
   {
     id: 'R-MED-03',

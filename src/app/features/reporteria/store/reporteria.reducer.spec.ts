@@ -11,14 +11,14 @@ describe('reporteriaReducer', () => {
   it('enterReport resetea el estado y arranca con la query default del reporte', () => {
     const state = reporteriaReducer(
       { ...initialReporteriaState, content: [{ old: true }], error: 'algo viejo' },
-      enterReport({ reportId: 'R-PAC-01' }),
+      enterReport({ reportId: 'R-PAC-02' }),
     );
-    expect(state.reportId).toBe('R-PAC-01');
+    expect(state.reportId).toBe('R-PAC-02');
     expect(state.content).toEqual([]);
     expect(state.error).toBeNull();
     expect(state.query.page).toBe(0);
-    expect(state.query.sortField).toBe('apellido');
-    expect(state.query.sortDir).toBe('ASC');
+    expect(state.query.sortField).toBe('periodo');
+    expect(state.query.sortDir).toBe('DESC');
     expect(state.loading).toBe(true);
   });
 
@@ -63,6 +63,13 @@ describe('reporteriaReducer', () => {
     expect(state.query.page).toBe(2);
     expect(state.query.size).toBe(10);
     expect(state.loading).toBe(false);
+    expect(state.totals).toBeNull();
+  });
+
+  it('loadReportListSuccess carga totals cuando el reporte los agrega (D5)', () => {
+    const page = { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0, totals: { cantidadAltas: 150 } };
+    const state = reporteriaReducer(initialReporteriaState, loadReportListSuccess({ page }));
+    expect(state.totals).toEqual({ cantidadAltas: 150 });
   });
 
   it('loadReportListFailure limpia content y setea error', () => {

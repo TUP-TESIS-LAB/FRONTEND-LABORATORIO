@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   selectReportId, selectReportQuery, selectReportContent, selectReportTotalElements,
   selectReportLoading, selectReportError, selectReportErrorStatus, selectReportExporting, selectReportExportError,
+  selectReportTotals,
 } from './reporteria.selectors';
 import { REPORTERIA_FEATURE_KEY, initialReporteriaState } from './reporteria.state';
 
@@ -17,6 +18,7 @@ describe('reporteria selectors', () => {
       errorStatus: 403,
       exporting: true,
       exportError: 'y',
+      totals: { cantidadAltas: 150 },
     },
   };
 
@@ -30,5 +32,6 @@ describe('reporteria selectors', () => {
     expect(selectReportErrorStatus(state)).toBe(403);
     expect(selectReportExporting(state)).toBe(true);
     expect(selectReportExportError(state)).toBe('y');
+    expect(selectReportTotals(state)).toEqual({ cantidadAltas: 150 });
   });
 });

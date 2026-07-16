@@ -41,11 +41,11 @@ describe('ReporteriaEffects', () => {
   it('loadOnQueryChange$ carga el reporte usando la query vigente en el store', async () => {
     const page = { content: [{ id: 1 }], page: 0, size: 20, totalElements: 1, totalPages: 1 };
     api.list.mockReturnValue(of(page));
-    const eff = make(enterReport({ reportId: 'R-PAC-01' }), { reportId: 'R-PAC-01' });
+    const eff = make(enterReport({ reportId: 'R-PAC-02' }), { reportId: 'R-PAC-02' });
     const out = await new Promise((r) => eff.loadOnQueryChange$.subscribe(r));
     expect(out).toEqual(loadReportListSuccess({ page }));
     expect(api.list).toHaveBeenCalledTimes(1);
-    expect(api.list.mock.calls[0][0]).toMatchObject({ id: 'R-PAC-01' });
+    expect(api.list.mock.calls[0][0]).toMatchObject({ id: 'R-PAC-02' });
   });
 
   it('loadOnQueryChange$ emite Failure si el reportId no existe en el catálogo', async () => {
@@ -58,7 +58,7 @@ describe('ReporteriaEffects', () => {
   it('loadOnQueryChange$ emite Failure en español si la API falla', async () => {
     api.list.mockReturnValue(throwError(() => new Error('boom')));
     const eff = make(setReportQuery({ patch: { page: 1 } }), {
-      reportId: 'R-PAC-01',
+      reportId: 'R-PAC-02',
       query: { ...initialReporteriaState.query, page: 1 },
     });
     const out = await new Promise((r) => eff.loadOnQueryChange$.subscribe(r));
@@ -83,14 +83,14 @@ describe('ReporteriaEffects', () => {
 
     const filters = { search: 'juan', dateFrom: '2026-01-01' };
     const eff = make(exportReport({ format: 'csv' }), {
-      reportId: 'R-PAC-01',
+      reportId: 'R-PAC-02',
       query: { ...initialReporteriaState.query, filters },
     });
     const out = await new Promise((r) => eff.export$.subscribe(r));
 
     expect(out).toEqual(exportReportSuccess());
     expect(api.export).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'R-PAC-01' }),
+      expect.objectContaining({ id: 'R-PAC-02' }),
       'csv',
       expect.objectContaining({ filters }),
     );
@@ -101,14 +101,14 @@ describe('ReporteriaEffects', () => {
 
   it('export$ emite Failure en español si la API falla', async () => {
     api.export.mockReturnValue(throwError(() => new Error('boom')));
-    const eff = make(exportReport({ format: 'pdf' }), { reportId: 'R-PAC-01' });
+    const eff = make(exportReport({ format: 'pdf' }), { reportId: 'R-PAC-02' });
     const out = await new Promise((r) => eff.export$.subscribe(r));
     expect(out).toEqual(exportReportFailure({ error: 'No se pudo exportar el reporte. Probá de nuevo.' }));
   });
 
   it('loadOnQueryChange$ mapea un 403 del back a un mensaje de permiso, con status', async () => {
     api.list.mockReturnValue(throwError(() => ({ status: 403, error: { message: 'Access Denied' } })));
-    const eff = make(enterReport({ reportId: 'R-PAC-01' }), { reportId: 'R-PAC-01' });
+    const eff = make(enterReport({ reportId: 'R-PAC-02' }), { reportId: 'R-PAC-02' });
     const out = await new Promise((r) => eff.loadOnQueryChange$.subscribe(r));
     expect(out).toEqual(loadReportListFailure({ error: 'No tenés permiso para ver este reporte.', status: 403 }));
   });

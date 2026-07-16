@@ -8,7 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { CheckboxModule } from 'primeng/checkbox';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
-import { ReportDef, ReportFilterDef } from '../models/report.model';
+import { ReportDef, ReportFilterDef, ReportFilterOption } from '../models/report.model';
 
 export interface ReportBranchOption { id: number; name: string; }
 
@@ -94,6 +94,13 @@ function toIsoDate(d: Date): string {
 export class ReportFiltersComponent {
   readonly def = input.required<ReportDef>();
   readonly branchOptions = input<readonly ReportBranchOption[]>([]);
+  /**
+   * Opciones resueltas en runtime para filtros `select` cuyo catálogo no las conoce en
+   * build-time (`ReportFilterDef.dynamicOptionsKey`, ej. "plan" — depende del tenant).
+   * Clave = `dynamicOptionsKey`, mismo patrón que `branchOptions` pero genérico para
+   * más de un filtro. `ReportPage` la resuelve y la pasa hacia abajo.
+   */
+  readonly dynamicOptions = input<Record<string, readonly ReportFilterOption[]>>({});
   readonly filtersChange = output<Record<string, unknown>>();
 
   protected readonly dateFrom = signal<Date | null>(null);
@@ -105,8 +112,14 @@ export class ReportFiltersComponent {
   protected readonly numberValues = signal<Record<string, number | null>>({});
   protected readonly textValues = signal<Record<string, string>>({});
 
+  /**
+   * Filtros `select` a mostrar. Uno con `dynamicOptionsKey` (ej. "plan") se ESCONDE
+   * mientras `dynamicOptions[key]` esté vacío/ausente — un select sin opciones es peor
+   * que el filtro anterior (el usuario lo abre, no ve nada, y no entiende por qué).
+   * Cuando exista el endpoint real, aparece solo con options no vacías, sin tocar nada más.
+   */
   protected readonly selectFilters = computed<ReportFilterDef[]>(() =>
-    this.def().filters.filter((f) => f.type === 'select'));
+    this.def().filters.filter((f) => f.type === 'select' && this.hasResolvedOptions(f)));
 
   // 'dateRange' no tiene UI propia acá — ver comentario en ReportFilterType (report.model.ts).
   protected readonly extraFilters = computed<ReportFilterDef[]>(() =>
@@ -119,7 +132,12 @@ export class ReportFiltersComponent {
         ? [{ key: 'branchId', label: 'Sucursal', options: this.branchOptions().map((b) => ({ value: b.id, label: b.name })) }]
         : []),
       ...this.selectFilters().map((f) => ({
-        key: f.key, label: f.label, options: (f.options ?? []).map((o) => ({ value: o.value, label: o.label })),
+        key: f.key,
+        label: f.label,
+        // dynamicOptionsKey (resuelto en runtime, ej. plan/cobertura) tiene prioridad
+        // sobre options (estático, fijado en el catálogo) cuando ambos están presentes.
+        options: (f.dynamicOptionsKey ? (this.dynamicOptions()[f.dynamicOptionsKey] ?? []) : (f.options ?? []))
+          .map((o) => ({ value: o.value, label: o.label })),
       })),
     ],
   }));
@@ -180,6 +198,12 @@ export class ReportFiltersComponent {
   protected onTextChange(key: string, value: string): void {
     this.textValues.update((m) => ({ ...m, [key]: value }));
     this.debouncedEmit$.next();
+  }
+
+  /** `true` si el filtro tiene opciones estáticas, o si sus `dynamicOptions` ya llegaron. */
+  private hasResolvedOptions(f: ReportFilterDef): boolean {
+    if (!f.dynamicOptionsKey) return true;
+    return (this.dynamicOptions()[f.dynamicOptionsKey]?.length ?? 0) > 0;
   }
 
   /** Arma el bag plano de filtros (universales + propios) y lo emite completo. */

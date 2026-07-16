@@ -4,7 +4,7 @@ import { TableColumn } from '@shared/ui/models/table-column.model';
  * Tipos de filtro soportados por `ReportFiltersComponent`. `dateRange` se deja
  * declarado por si algún reporte futuro necesita un SEGUNDO rango de fechas
  * propio (ej. "fecha de resultado" además del rango universal) — ningún
- * reporte del catálogo actual lo usa: los 17 reportes cubren su filtro de
+ * reporte del catálogo actual lo usa: los 12 reportes cubren su filtro de
  * fecha con el rango universal (`dateFrom`/`dateTo`, ver `ReportQuery`).
  */
 export type ReportFilterType = 'text' | 'select' | 'boolean' | 'number' | 'dateRange';
@@ -19,8 +19,39 @@ export interface ReportFilterDef {
   key: string;
   label: string;
   type: ReportFilterType;
-  /** Solo aplica a type: 'select'. */
+  /** Solo aplica a type: 'select'. Estático, fijado en el catálogo (ej. sexo, estado). */
   options?: ReportFilterOption[];
+  /**
+   * Solo aplica a type: 'select'. Cuando las opciones no se conocen en build-time (ej.
+   * "plan" — depende del tenant), el catálogo declara esta clave y el contenedor
+   * (`ReportPage`) resuelve las opciones reales en runtime (mismo patrón que
+   * `branchOptions`) y las pasa como `dynamicOptions[dynamicOptionsKey]`. Tiene
+   * prioridad sobre `options` cuando ambos están presentes.
+   */
+  dynamicOptionsKey?: string;
+}
+
+/** Tipo semántico de una columna — determina qué template `uiCell` usa `ReportViewerComponent`. */
+export type ReportColumnType = 'boolean' | 'date' | 'variation';
+
+export interface ReportColumn extends TableColumn {
+  /** Sin declarar, se trata como texto/número plano (guión si el valor es null/undefined/''). */
+  type?: ReportColumnType;
+}
+
+/**
+ * Columna de variación sintetizada por `ReportViewerComponent` (no vive en `columns`)
+ * para los reportes de serie temporal (D3/D4 del spec). El backend calcula la variación
+ * % de cada fila contra el bucket anterior y la agrega como campo plano en cada row.
+ *
+ * Un reporte puede tener MÁS DE UNA (ej. R-EMP-02 trae `variacionAltas` y
+ * `variacionBajas` porque cuenta dos métricas, no una) — por eso `ReportDef.variation`
+ * es un array, no un objeto único.
+ */
+export interface ReportVariationDef {
+  /** Nombre del campo que trae la variación en cada fila del content. */
+  field: string;
+  header?: string;
 }
 
 export interface ReportDef {
@@ -32,7 +63,7 @@ export interface ReportDef {
   endpoint: string;
   /** Roles habilitados — espeja el @PreAuthorize del backend. */
   roles: string[];
-  columns: readonly TableColumn[];
+  columns: readonly ReportColumn[];
   /** Whitelist de campos ordenables — espeja la whitelist del backend. */
   sortableFields: readonly string[];
   defaultSort?: { field: string; direction: 'ASC' | 'DESC' };
@@ -54,6 +85,26 @@ export interface ReportDef {
    * `branchId` (sucursal) que resuelve `ReportFiltersComponent` cuando hay sucursales.
    */
   filters: readonly ReportFilterDef[];
+  /**
+   * Opt-in: `true` SOLO en los reportes cuyo backend acepta `branchId` (D2.1/D2.3 del
+   * spec). Hoy son cuatro: R-PAC-02, R-PAC-03, R-PAC-04, R-PAC-05 — todos vía join
+   * contra `AttentionJpaEntity` (`patientId` + `branchId`).
+   *
+   * El default es ausente/`false` a propósito. El padrón no está atado a sucursales —
+   * `Doctor`, `Employee` y `User` no tienen `branch_id` ni relación indirecta viable
+   * (D2.2: el puerto `UserBranchAccessPort` resuelve user→branches, no branch→users, y
+   * construir la vía inversa cruzaría entidades JPA entre módulos) — así que un selector
+   * de sucursal en cualquier otro reporte se renderiza, filtra, y el backend lo ignora:
+   * el usuario cree que filtró y no filtró nada. Olvidarse de este flag tiene que dejar
+   * el filtro ESCONDIDO, no mintiendo.
+   */
+  branchFilterable?: boolean;
+  /**
+   * Solo en la familia "serie temporal" (D3/D4): agrega una columna de variación % por
+   * cada entrada. La mayoría de los reportes trae una sola métrica (un elemento); R-EMP-02
+   * y R-USR-03 traen más de una porque cuentan varios eventos en la misma fila.
+   */
+  variation?: readonly ReportVariationDef[];
 }
 
 export interface ReportGroup {
@@ -68,6 +119,12 @@ export interface ReportPageResponse<T = Record<string, unknown>> {
   size: number;
   totalElements: number;
   totalPages: number;
+  /**
+   * Suma de la métrica (no el conteo de filas) para los reportes agregados (D5 del
+   * spec). `null`/ausente en los reportes que no la calculan — la UI no renderiza
+   * la fila de totales en ese caso.
+   */
+  totals?: Record<string, unknown> | null;
 }
 
 export type ExportFormat = 'csv' | 'xlsx' | 'pdf';
@@ -99,9 +156,9 @@ export function defaultReportQuery(def: ReportDef): ReportQuery {
 }
 
 /** Marca como `sortable` las columnas cuyo `field` está en la whitelist del reporte. */
-export function withSortableColumns(
-  columns: readonly TableColumn[],
+export function withSortableColumns<T extends TableColumn>(
+  columns: readonly T[],
   sortableFields: readonly string[],
-): TableColumn[] {
+): T[] {
   return columns.map((c) => (sortableFields.includes(c.field) ? { ...c, sortable: true } : c));
 }
