@@ -259,13 +259,17 @@ export class TenantFiscalTabComponent {
   // vacíos. `buildFiscalConfigRequest` mandaría los 6 en null → el backend lo interpreta como
   // "preservar" → no-op silencioso con toast de éxito falso. Se bloquea el submit en vez de
   // dejarlo pasar.
-  protected readonly identityBlocked = computed(() => identityWouldBeSilentlyDiscarded(this.current(), this.formValue()));
+  protected readonly identityBlocked = computed(() => {
+    this.formValue(); // dependencia reactiva; el valor tipado estricto sale de getRawValue()
+    return identityWouldBeSilentlyDiscarded(this.current(), this.form.getRawValue());
+  });
 
   // Hallazgo #1 (review Pertusati, 🔴): con ARCA ya configurado, cambiar solo el ambiente o el
   // IVA sin volver a tipear ambos PEM también se descarta en silencio (mismo contrato atómico
   // del bloque ARCA que documenta `buildArcaBlock`).
   protected readonly arcaEnvChangeBlocked = computed(() => {
-    const v = this.formValue();
+    this.formValue(); // dependencia reactiva; el valor tipado estricto sale de getRawValue()
+    const v = this.form.getRawValue();
     return arcaEnvOrIvaChangeRequiresNewCredentials(this.current(), {
       provider: v.provider,
       arcaEnvironment: v.arcaEnvironment,
