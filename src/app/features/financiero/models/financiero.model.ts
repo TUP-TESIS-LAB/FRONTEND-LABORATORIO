@@ -28,6 +28,7 @@ export interface Payment {
   totalAmount: number; copaymentAmount: number; status: PaymentStatus;
   cashTransactionId: number | null; cancelledAt: string | null; cancelReason: string | null;
   collections: Collection[]; details: PaymentDetail[];
+  fiscalReference?: FiscalInvoiceReference;
 }
 export interface PaymentListItem {
   id: number; attentionId: number; branchId: number; totalAmount: number; copaymentAmount: number;

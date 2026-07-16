@@ -4,7 +4,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { provideMockStore } from '@ngrx/store/testing';
 import { Observable, of, throwError, firstValueFrom } from 'rxjs';
 import { Action } from '@ngrx/store';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { FinancieroEffects } from './financiero.effects';
 import { FinancieroApiService } from '../services/financiero-api.service';
 import { NotificationService } from '@core/services/notification.service';
@@ -25,6 +25,7 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure,
   loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
   saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
@@ -47,6 +48,7 @@ describe('FinancieroEffects', () => {
     getBranchOtherMedia: Fn; registerBranchMovement: Fn;
     listBankAccounts: Fn; createBankAccount: Fn; updateBankAccount: Fn; deactivateBankAccount: Fn;
     listPayments: Fn; getPayment: Fn; cancelPayment: Fn; createPayment: Fn;
+    getComprobantePdf: Fn;
     getFiscalConfig: Fn; saveFiscalConfig: Fn;
   };
   let notif: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
@@ -71,6 +73,7 @@ describe('FinancieroEffects', () => {
       getPayment: vi.fn(),
       cancelPayment: vi.fn(),
       createPayment: vi.fn(),
+      getComprobantePdf: vi.fn(),
       getFiscalConfig: vi.fn(),
       saveFiscalConfig: vi.fn(),
     };
@@ -304,6 +307,63 @@ describe('FinancieroEffects', () => {
     const effects = TestBed.inject(FinancieroEffects);
     const action = await firstValueFrom(effects.reloadPaymentAfterCancel$);
     expect(action).toEqual(loadPayment({ id: 9 }));
+  });
+
+  // ── downloadComprobante$ ───────────────────────────────────────────────────
+
+  it('downloadComprobante$ dispara la descarga con el filename del Content-Disposition y emite Success', async () => {
+    const createUrl = vi.fn(() => 'blob:url');
+    const revokeUrl = vi.fn();
+    (globalThis as unknown as { URL: { createObjectURL: unknown; revokeObjectURL: unknown } }).URL.createObjectURL = createUrl;
+    (globalThis as unknown as { URL: { createObjectURL: unknown; revokeObjectURL: unknown } }).URL.revokeObjectURL = revokeUrl;
+    const click = vi.fn();
+    const anchor = { href: '', download: '', click, remove: vi.fn() } as unknown as HTMLAnchorElement;
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((n) => n);
+
+    const res = new HttpResponse<Blob>({
+      body: new Blob(['x']),
+      headers: new HttpHeaders({ 'Content-Disposition': 'attachment; filename="comprobante-9.pdf"' }),
+    });
+    api.getComprobantePdf.mockReturnValue(of(res));
+    actions$ = of(downloadComprobante({ paymentId: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.downloadComprobante$);
+
+    expect(api.getComprobantePdf).toHaveBeenCalledWith(9);
+    expect(action).toEqual(downloadComprobanteSuccess());
+    expect(click).toHaveBeenCalled();
+    expect(anchor.download).toBe('comprobante-9.pdf');
+    vi.restoreAllMocks();
+  });
+
+  it('downloadComprobante$ ante 404 emite Failure con mensaje en español, sin leak de internals', async () => {
+    api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    actions$ = of(downloadComprobante({ paymentId: 99 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
+
+    expect(action.type).toBe(downloadComprobanteFailure.type);
+    expect(action.error).toBe('No existe un comprobante emitido para este pago.');
+    expect(action.error).not.toContain('lab.laboratorio.');
+    expect(action.error).not.toContain('java.');
+    expect(notif.error).toHaveBeenCalledWith('No existe un comprobante emitido para este pago.');
+  });
+
+  it('downloadComprobante$ ante 409 emite Failure con mensaje de configuración fiscal incompleta', async () => {
+    api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    actions$ = of(downloadComprobante({ paymentId: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
+    expect(action.error).toBe('La configuración fiscal del emisor está incompleta. Contactá al administrador.');
+  });
+
+  it('downloadComprobante$ ante error genérico emite Failure con mensaje default', async () => {
+    api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    actions$ = of(downloadComprobante({ paymentId: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
+    expect(action.error).toBe('No se pudo descargar el comprobante. Probá de nuevo.');
   });
 
   // ── loadFiscalConfig$ ──────────────────────────────────────────────────────

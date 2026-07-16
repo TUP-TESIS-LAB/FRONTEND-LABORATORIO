@@ -6,6 +6,7 @@ import { catchError, concatMap, debounceTime, map, switchMap } from 'rxjs/operat
 import { HttpErrorResponse } from '@angular/common/http';
 import { isNotModified } from '@core/refresh';
 import { NotificationService } from '@core/services/notification.service';
+import { triggerDownload } from '@shared/utils/blob-download';
 import { LiquidacionesApiService } from '../services/liquidaciones-api.service';
 import { ObraSocialService } from '@features/obras-sociales/services/obra-social.service';
 import {
@@ -21,7 +22,6 @@ import {
   loadPreviewDetail, loadPreviewDetailSuccess, loadPreviewDetailFailure,
   exportSettlement, exportSettlementSuccess, exportSettlementFailure,
 } from './financiero.actions';
-import { HttpResponse } from '@angular/common/http';
 
 function mapLoadError(): string {
   return 'No se pudieron cargar las liquidaciones. Probá de nuevo.';
@@ -228,7 +228,7 @@ export class LiquidacionesEffects {
       concatMap(({ id, settlementNumber }) =>
         this.api.exportSettlement(id).pipe(
           map(res => {
-            this.triggerDownload(res, settlementNumber);
+            triggerDownload(res, `liquidacion-${settlementNumber}.xlsx`);
             return exportSettlementSuccess();
           }),
           catchError(() => {
@@ -240,31 +240,6 @@ export class LiquidacionesEffects {
       ),
     ),
   );
-
-  /** Lee el nombre de archivo del Content-Disposition (o cae a un default) y descarga el blob. */
-  private triggerDownload(res: HttpResponse<Blob>, settlementNumber: number): void {
-    const body = res.body;
-    if (!body) throw new Error('empty body');
-    const disposition = res.headers.get('Content-Disposition') ?? '';
-    const filename = this.filenameFromDisposition(disposition)
-      ?? `liquidacion-${settlementNumber}.xlsx`;
-    const url = URL.createObjectURL(body);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  private filenameFromDisposition(disposition: string): string | null {
-    // Soporta filename*=UTF-8''... y filename="...".
-    const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(disposition);
-    if (star?.[1]) return decodeURIComponent(star[1].replace(/['"]/g, '').trim());
-    const plain = /filename="?([^";]+)"?/i.exec(disposition);
-    return plain?.[1]?.trim() ?? null;
-  }
 
   /** Preview detallado: switchMap → cada toggle cancela el preview anterior en vuelo. */
   loadPreviewDetail$ = createEffect(() =>

@@ -7,6 +7,7 @@ export const selectTenantsList               = createSelector(selectSaasAdmin, (
 export const selectSelectedTenant            = createSelector(selectSaasAdmin, (s) => s.selectedTenant);
 export const selectSelectedTenantModules     = createSelector(selectSaasAdmin, (s) => s.selectedTenantModules);
 export const selectSelectedTenantWhiteLabel  = createSelector(selectSaasAdmin, (s) => s.selectedTenantWhiteLabel);
+export const selectSelectedTenantFiscalConfig = createSelector(selectSaasAdmin, (s) => s.selectedTenantFiscalConfig);
 export const selectSaasAdminPending          = createSelector(selectSaasAdmin, (s) => s.pending);
 export const selectSaasAdminError            = createSelector(selectSaasAdmin, (s) => s.error);
 

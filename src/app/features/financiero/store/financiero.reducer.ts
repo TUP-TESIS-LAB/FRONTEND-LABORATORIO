@@ -19,6 +19,7 @@ import {
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
   loadPayment, loadPaymentSuccess, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
+  downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure, resetCobro,
   loadFiscalConfig, loadFiscalConfigSuccess, loadFiscalConfigFailure,
   saveFiscalConfig, saveFiscalConfigSuccess, saveFiscalConfigFailure,
@@ -256,6 +257,16 @@ export const financieroReducer = createReducer(
   on(cancelPaymentFailure, (state, { error }): FinancieroState => ({
     ...state,
     cobros: { ...state.cobros, loading: false, error },
+  })),
+
+  // ── cobros: descargar comprobante PDF ──────────────────────────────────────
+  on(downloadComprobante, (state): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, downloadingComprobante: true },
+  })),
+  on(downloadComprobanteSuccess, downloadComprobanteFailure, (state): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, downloadingComprobante: false },
   })),
 
   // ── cobro: registrar pago ─────────────────────────────────────────────────

@@ -6,8 +6,12 @@ import { ModuleCode } from '../models/module-code';
 import { CreateTenantRequest, CreateTenantResponse, Tenant, UpdateTenantRequest } from '../models/tenant.model';
 import { TenantModule } from '../models/tenant-module.model';
 import { TenantWhiteLabel, UpsertTenantWhiteLabelRequest } from '../models/tenant-white-label.model';
+import { TenantFiscalConfig, UpsertTenantFiscalConfigRequest } from '../models/tenant-fiscal-config.model';
 
 const BASE = '/api/v1/saas-admin';
+// La identidad fiscal vive en el módulo financiero, no en saas-admin: la URL es de
+// financiero, el código (y el rol SAAS_ADMIN que la protege) es de esta feature.
+const FISCAL_CONFIG_BASE = '/api/v1/financiero/tenant/fiscal-config';
 
 @Injectable({ providedIn: 'root' })
 export class SaasAdminApiService {
@@ -47,5 +51,12 @@ export class SaasAdminApiService {
   }
   upsertTenantWhiteLabel(id: number, req: UpsertTenantWhiteLabelRequest): Promise<TenantWhiteLabel> {
     return firstValueFrom(this.http.put<TenantWhiteLabel>(`${BASE}/tenants/${id}/white-label`, req));
+  }
+
+  getTenantFiscalConfig(tenantId: number): Promise<TenantFiscalConfig> {
+    return firstValueFrom(this.http.get<TenantFiscalConfig>(`${FISCAL_CONFIG_BASE}/${tenantId}`));
+  }
+  upsertTenantFiscalConfig(req: UpsertTenantFiscalConfigRequest): Promise<TenantFiscalConfig> {
+    return firstValueFrom(this.http.post<TenantFiscalConfig>(FISCAL_CONFIG_BASE, req));
   }
 }

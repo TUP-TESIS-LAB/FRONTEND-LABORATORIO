@@ -108,4 +108,31 @@ export class SaasAdminEffects {
       catchError((e) => of(A.upsertTenantWhiteLabelFailure({ error: toErr(e) }))),
     )),
   ));
+
+  loadTenantFiscalConfig$ = createEffect(() => this.actions$.pipe(
+    ofType(A.loadTenantFiscalConfig),
+    switchMap(({ tenantId }) => from(this.api.getTenantFiscalConfig(tenantId)).pipe(
+      map((fiscalConfig) => A.loadTenantFiscalConfigSuccess({ fiscalConfig })),
+      catchError((e) => of(A.loadTenantFiscalConfigFailure({ error: toErr(e) }))),
+    )),
+  ));
+
+  upsertTenantFiscalConfig$ = createEffect(() => this.actions$.pipe(
+    ofType(A.upsertTenantFiscalConfig),
+    concatMap(({ req }) => from(this.api.upsertTenantFiscalConfig(req)).pipe(
+      map((fiscalConfig) => {
+        this.notification.success('Identidad fiscal guardada');
+        return A.upsertTenantFiscalConfigSuccess({ fiscalConfig });
+      }),
+      catchError((e) => {
+        const error = toErr(e);
+        this.notification.error(
+          error.status === 400
+            ? 'Los datos fiscales son inválidos. Revisá el CUIT y la condición de IVA.'
+            : 'No se pudo guardar la identidad fiscal. Probá de nuevo.',
+        );
+        return of(A.upsertTenantFiscalConfigFailure({ error }));
+      }),
+    )),
+  ));
 }

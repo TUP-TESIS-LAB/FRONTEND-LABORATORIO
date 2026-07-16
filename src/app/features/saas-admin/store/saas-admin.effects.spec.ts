@@ -4,6 +4,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { Observable, ReplaySubject, firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { Action } from '@ngrx/store';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NotificationService } from '@core/services/notification.service';
 import { SaasAdminApiService } from '../services/saas-admin-api.service';
 import { SaasAdminEffects } from './saas-admin.effects';
@@ -29,6 +30,8 @@ describe('SaasAdminEffects', () => {
       toggleTenantModule: vi.fn(),
       getTenantWhiteLabel: vi.fn(),
       upsertTenantWhiteLabel: vi.fn(),
+      getTenantFiscalConfig: vi.fn(),
+      upsertTenantFiscalConfig: vi.fn(),
     };
     notification = { success: vi.fn(), error: vi.fn() };
     TestBed.configureTestingModule({
@@ -103,5 +106,66 @@ describe('SaasAdminEffects', () => {
     }));
     const out = await expectEmits(effects.createTenant$);
     expect(out.type).toBe(A.createTenantFailure.type);
+  });
+
+  it('loadTenantFiscalConfig$ → loadTenantFiscalConfigSuccess', async () => {
+    const fiscalConfig = {
+      targetTenantId: 1, provider: 'NONE' as const, invoicePointOfSale: null,
+      razonSocial: null, cuit: null, ingresosBrutos: null, domicilioComercial: null,
+      condicionIva: null, inicioActividades: null,
+    };
+    api.getTenantFiscalConfig!.mockResolvedValue(fiscalConfig);
+    actions$.next(A.loadTenantFiscalConfig({ tenantId: 1 }));
+    const out = await expectEmits(effects.loadTenantFiscalConfig$);
+    expect(out).toEqual(A.loadTenantFiscalConfigSuccess({ fiscalConfig }));
+  });
+
+  it('upsertTenantFiscalConfig$ → upsertTenantFiscalConfigSuccess + toast de éxito', async () => {
+    const fiscalConfig = {
+      targetTenantId: 1, provider: 'NONE' as const, invoicePointOfSale: '0001',
+      razonSocial: 'Demo SA', cuit: '20-12345678-9', ingresosBrutos: '901-1',
+      domicilioComercial: 'Calle Falsa 123', condicionIva: 'RESPONSABLE_INSCRIPTO' as const,
+      inicioActividades: '2020-01-01',
+    };
+    api.upsertTenantFiscalConfig!.mockResolvedValue(fiscalConfig);
+    actions$.next(A.upsertTenantFiscalConfig({
+      req: {
+        targetTenantId: 1, provider: 'NONE', invoicePointOfSale: '0001',
+        razonSocial: 'Demo SA', cuit: '20-12345678-9', ingresosBrutos: '901-1',
+        domicilioComercial: 'Calle Falsa 123', condicionIva: 'RESPONSABLE_INSCRIPTO',
+        inicioActividades: '2020-01-01',
+      },
+    }));
+    const out = await expectEmits(effects.upsertTenantFiscalConfig$);
+    expect(out).toEqual(A.upsertTenantFiscalConfigSuccess({ fiscalConfig }));
+    expect(notification.success).toHaveBeenCalledWith('Identidad fiscal guardada');
+  });
+
+  it('upsertTenantFiscalConfig$ → 400 → toast específico de validación + failure', async () => {
+    api.upsertTenantFiscalConfig!.mockRejectedValue(new HttpErrorResponse({ status: 400 }));
+    actions$.next(A.upsertTenantFiscalConfig({
+      req: {
+        targetTenantId: 1, provider: 'NONE', invoicePointOfSale: null,
+        razonSocial: null, cuit: 'invalido', ingresosBrutos: null,
+        domicilioComercial: null, condicionIva: null, inicioActividades: null,
+      },
+    }));
+    const out = await expectEmits(effects.upsertTenantFiscalConfig$);
+    expect(out.type).toBe(A.upsertTenantFiscalConfigFailure.type);
+    expect(notification.error).toHaveBeenCalledWith('Los datos fiscales son inválidos. Revisá el CUIT y la condición de IVA.');
+  });
+
+  it('upsertTenantFiscalConfig$ → error genérico → toast genérico + failure', async () => {
+    api.upsertTenantFiscalConfig!.mockRejectedValue(new HttpErrorResponse({ status: 500 }));
+    actions$.next(A.upsertTenantFiscalConfig({
+      req: {
+        targetTenantId: 1, provider: 'NONE', invoicePointOfSale: null,
+        razonSocial: null, cuit: null, ingresosBrutos: null,
+        domicilioComercial: null, condicionIva: null, inicioActividades: null,
+      },
+    }));
+    const out = await expectEmits(effects.upsertTenantFiscalConfig$);
+    expect(out.type).toBe(A.upsertTenantFiscalConfigFailure.type);
+    expect(notification.error).toHaveBeenCalledWith('No se pudo guardar la identidad fiscal. Probá de nuevo.');
   });
 });

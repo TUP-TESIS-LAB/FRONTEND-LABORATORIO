@@ -17,8 +17,9 @@ import {
   selectCobroSelected,
   selectCobrosLoading,
   selectCobrosError,
+  selectDownloadingComprobante,
 } from '../../store/financiero.selectors';
-import { loadPayment, cancelPayment } from '../../store/financiero.actions';
+import { loadPayment, cancelPayment, downloadComprobante } from '../../store/financiero.actions';
 
 import { MetodoChipComponent } from '../../components/metodo-chip.component';
 import { EstadoPagoPillComponent } from '../../components/estado-pago-pill.component';
@@ -175,8 +176,12 @@ import { METHOD_META } from '../../models/financiero.model';
               <button class="fin-action-btn" type="button" (click)="imprimir()">
                 <i class="pi pi-print"></i> Imprimir ticket
               </button>
-              <button class="fin-action-btn" type="button" (click)="descargar()">
-                <i class="pi pi-download"></i> Descargar PDF
+              <button class="fin-action-btn" type="button" [disabled]="downloadingComprobante()" (click)="descargar(p.id)">
+                @if (downloadingComprobante()) {
+                  <i class="pi pi-spin pi-spinner"></i> Descargando...
+                } @else {
+                  <i class="pi pi-download"></i> Descargar PDF
+                }
               </button>
               @if (p.status === 'PROCESSED') {
                 <button class="fin-action-btn fin-action-btn--danger" type="button" (click)="abrirCancelar()">
@@ -324,6 +329,7 @@ export class CobroDetallePage implements OnInit {
   protected readonly payment = this.store.selectSignal(selectCobroSelected);
   protected readonly loading = this.store.selectSignal(selectCobrosLoading);
   protected readonly error   = this.store.selectSignal(selectCobrosError);
+  protected readonly downloadingComprobante = this.store.selectSignal(selectDownloadingComprobante);
 
   protected readonly cancelModalOpen = signal(false);
 
@@ -334,14 +340,7 @@ export class CobroDetallePage implements OnInit {
       METHOD_META[col.method]?.esEfectivo ? sum + col.amount : sum, 0);
   });
 
-  /**
-   * El backend retorna el Payment pero FiscalInvoiceReference viene como propiedad extendida.
-   * Por ahora el modelo base no la incluye, se accede por cast.
-   */
-  protected readonly fiscalRef = computed(() => {
-    const p = this.payment() as any;
-    return p?.fiscalReference ?? null;
-  });
+  protected readonly fiscalRef = computed(() => this.payment()?.fiscalReference ?? null);
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -371,9 +370,8 @@ export class CobroDetallePage implements OnInit {
     window.print();
   }
 
-  protected descargar(): void {
-    // PDF download — funcionalidad futura
-    window.print();
+  protected descargar(paymentId: number): void {
+    this.store.dispatch(downloadComprobante({ paymentId }));
   }
 
   protected isEfectivo(method: string): boolean {

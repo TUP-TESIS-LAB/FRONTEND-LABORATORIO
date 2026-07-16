@@ -5,19 +5,24 @@ import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import {
-  clearSelectedTenant, loadTenant, loadTenantModules, loadTenantWhiteLabel,
+  clearSelectedTenant, loadTenant, loadTenantFiscalConfig, loadTenantModules, loadTenantWhiteLabel,
 } from '../../store/saas-admin.actions';
 import { selectSaasAdminPending, selectSelectedTenant } from '../../store/saas-admin.selectors';
 import { TenantInfoTabComponent } from './tabs/tenant-info-tab.component';
 import { TenantModulesTabComponent } from './tabs/tenant-modules-tab.component';
 import { TenantWhiteLabelTabComponent } from './tabs/tenant-white-label-tab.component';
+import { TenantFiscalTabComponent } from './tabs/tenant-fiscal-tab.component';
 import { TenantStatusPipe } from '../../models/tenant-status.pipe';
 
 @Component({
   selector: 'saas-tenant-detail-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonModule, TabsModule, TagModule, TenantInfoTabComponent, TenantModulesTabComponent, TenantWhiteLabelTabComponent, TenantStatusPipe],
+  imports: [
+    RouterLink, ButtonModule, TabsModule, TagModule,
+    TenantInfoTabComponent, TenantModulesTabComponent, TenantWhiteLabelTabComponent, TenantFiscalTabComponent,
+    TenantStatusPipe,
+  ],
   template: `
     <header class="detail-header">
       <a routerLink="/saas/tenants" class="back">
@@ -43,6 +48,7 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
           <p-tab value="info">Información</p-tab>
           <p-tab value="modules">Módulos</p-tab>
           <p-tab value="white-label">White label</p-tab>
+          <p-tab value="fiscal">Identidad fiscal</p-tab>
         </p-tablist>
         <p-tabpanels>
           <p-tabpanel value="info">
@@ -53,6 +59,9 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
           </p-tabpanel>
           <p-tabpanel value="white-label">
             <tenant-white-label-tab [tenantId]="numericId()" />
+          </p-tabpanel>
+          <p-tabpanel value="fiscal">
+            <tenant-fiscal-tab [tenantId]="numericId()" />
           </p-tabpanel>
         </p-tabpanels>
       </p-tabs>
@@ -82,6 +91,7 @@ export class TenantDetailPage implements OnInit, OnDestroy {
     this.store.dispatch(loadTenant({ id: numericId }));
     this.store.dispatch(loadTenantModules({ tenantId: numericId }));
     this.store.dispatch(loadTenantWhiteLabel({ tenantId: numericId }));
+    this.store.dispatch(loadTenantFiscalConfig({ tenantId: numericId }));
   }
 
   ngOnDestroy(): void {

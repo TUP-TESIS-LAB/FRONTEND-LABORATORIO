@@ -60,6 +60,7 @@ export const selectCobrosList = createSelector(selectCobrosSlice, c => c.list);
 export const selectCobrosLoading = createSelector(selectCobrosSlice, c => c.loading);
 export const selectCobrosError = createSelector(selectCobrosSlice, c => c.error);
 export const selectCobroSelected = createSelector(selectCobrosSlice, c => c.selected);
+export const selectDownloadingComprobante = createSelector(selectCobrosSlice, c => c.downloadingComprobante);
 
 // ── Cobro (registrar pago) ────────────────────────────────────────────────────
 export const selectCobroSlice = createSelector(selectFinancieroState, s => s.cobro);
