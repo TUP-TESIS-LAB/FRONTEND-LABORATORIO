@@ -377,12 +377,15 @@ export class ExtractionEffects {
         return;
       case A.assignExtractorFailure.type: {
         const err = (action as ReturnType<typeof A.assignExtractorFailure>).error;
+        // 409 NO se hardcodea: el backend distingue el motivo real y ya manda el mensaje
+        // correcto en español (ej. "Ya tenés una extracción en curso..." por capacidad del
+        // extractor, vs "box ocupado"). humanizeBackendError deja pasar ese mensaje del body
+        // (sanitizado). Antes se pisaba todo 409 con "box ocupado", que era engañoso.
         const msg = humanizeBackendError(err, {
           fallback: 'No pudimos tomar la extracción. Probá de nuevo.',
           byStatus: {
             403: 'No tenés permiso para tomar extracciones.',
             404: 'No encontramos la atención solicitada.',
-            409: 'El box que elegiste está ocupado por otro extractor. Cambiá de box.',
           },
         });
         this.notifier.error(msg);

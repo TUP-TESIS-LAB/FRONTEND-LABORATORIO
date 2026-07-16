@@ -212,7 +212,6 @@ describe('QueueEffects — attendWalkin$', () => {
 
   it('attendWalkin$: on success dispatches attendWalkinEntrySuccess with queueEntryId = entryId', () => {
     return new Promise<void>((resolve) => {
-      queueService.updateStatus.mockReturnValue(of(undefined));
       actions$ = of(attendWalkinEntry({ entryId: 77, dni: '30000001' }));
 
       TestBed.inject(QueueEffects).attendWalkin$.subscribe((action) => {
@@ -222,11 +221,27 @@ describe('QueueEffects — attendWalkin$', () => {
     });
   });
 
-  it('refreshAndNavigateAfterAttendWalkin$: navigates to /analitica/atencion/nueva with queueEntryId and dni', () => {
+  // REGRESION (KAN-249): el bug de perdida del turno.
+  // "Atender" NO debe completar la entry: la atencion recien se crea en el paso 1 del wizard.
+  // Si se completa aca, entre el click y el guardado del paso 1 el turno no esta ni en la cola
+  // (COMPLETED) ni tiene atencion que retomar — cualquier salida (back, F5, cerrar) lo destruye.
+  // La entry queda PENDING y la completa el backend cuando la atencion existe de verdad.
+  it('attendWalkin$: NO completa la entry — si la atencion nunca se crea, sigue PENDING y retomable', () => {
+    return new Promise<void>((resolve) => {
+      actions$ = of(attendWalkinEntry({ entryId: 77, dni: '30000001' }));
+
+      TestBed.inject(QueueEffects).attendWalkin$.subscribe(() => {
+        expect(queueService.updateStatus).not.toHaveBeenCalled();
+        resolve();
+      });
+    });
+  });
+
+  it('navigateAfterAttendWalkin$: navigates to /analitica/atencion/nueva with queueEntryId and dni', () => {
     return new Promise<void>((resolve) => {
       actions$ = of(attendWalkinEntrySuccess({ dni: '30000001', queueEntryId: 77 }));
 
-      TestBed.inject(QueueEffects).refreshAndNavigateAfterAttendWalkin$.subscribe(() => {
+      TestBed.inject(QueueEffects).navigateAfterAttendWalkin$.subscribe(() => {
         expect(router.navigate).toHaveBeenCalledWith(
           ['/analitica/atencion/nueva'],
           { queryParams: { queueEntryId: 77, dni: '30000001' } },
@@ -236,11 +251,11 @@ describe('QueueEffects — attendWalkin$', () => {
     });
   });
 
-  it('refreshAndNavigateAfterAttendWalkin$: navigates with only queueEntryId when dni is null', () => {
+  it('navigateAfterAttendWalkin$: navigates with only queueEntryId when dni is null', () => {
     return new Promise<void>((resolve) => {
       actions$ = of(attendWalkinEntrySuccess({ dni: null, queueEntryId: 42 }));
 
-      TestBed.inject(QueueEffects).refreshAndNavigateAfterAttendWalkin$.subscribe(() => {
+      TestBed.inject(QueueEffects).navigateAfterAttendWalkin$.subscribe(() => {
         expect(router.navigate).toHaveBeenCalledWith(
           ['/analitica/atencion/nueva'],
           { queryParams: { queueEntryId: 42 } },

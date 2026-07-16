@@ -6,6 +6,8 @@ import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '..
 import { CoverageCatalogService } from '../../../../services/coverage-catalog.service';
 import { AgePipe } from '@shared/pipes/age.pipe';
 import { signal } from '@angular/core';
+import { SEX_LABEL } from '@features/pacientes/models/patient-labels';
+import { SexAtBirth } from '@features/pacientes/models/patient.model';
 
 export interface SummaryAddressView {
   street?: string; streetNumber?: string; apartment?: string;
@@ -36,9 +38,6 @@ export interface SummaryView {
 
 const GENDER_LABEL: Record<string, string> = {
   FEMALE: 'Femenino', MALE: 'Masculino', OTHER: 'Otro', NOT_SPECIFIED: 'No especificado',
-};
-const SEX_LABEL: Record<string, string> = {
-  FEMALE: 'Femenino', MALE: 'Masculino', INTERSEX: 'Intersex',
 };
 @Component({
   selector: 'pat-summary-step',
@@ -151,7 +150,10 @@ export class SummaryStepComponent implements OnInit {
   });
 
   readonly genderLabel = computed(() => GENDER_LABEL[this.data().gender ?? ''] ?? '—');
-  readonly sexLabel = computed(() => SEX_LABEL[this.data().sexAtBirth ?? ''] ?? '');
+  // SEX_LABEL (compartido) sólo tipa MALE/FEMALE; sexAtBirth acá es un string
+  // suelto (vista de resumen), de ahí el cast — el fallback '' cubre cualquier
+  // valor no mapeado.
+  readonly sexLabel = computed(() => SEX_LABEL[(this.data().sexAtBirth ?? '') as SexAtBirth] ?? '');
 
   readonly addressLine = computed(() => {
     const a = this.data().address;

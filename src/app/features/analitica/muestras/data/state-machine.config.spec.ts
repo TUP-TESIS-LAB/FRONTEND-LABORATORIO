@@ -14,7 +14,9 @@ describe('SCREENS state machine config', () => {
     const ks = s.targets.map(t => t.key);
     expect(ks).toEqual<TransitionKey[]>(['transito', 'rejected', 'lost']);
     expect(s.targets[0].fields).toEqual([]);
-    expect(s.targets[0].reco).toBe('CAMINO FELIZ');
+    // El badge "CAMINO FELIZ" se saco: era jerga interna en una pantalla de uso
+    // clinico. El resto de los `reco` (RECEPCION, DESCARTE) si dicen algo al usuario.
+    expect(s.targets[0].reco).toBeUndefined();
   });
 
   it('Traslado lista source=transito y target "area" exige areaFixed', () => {
@@ -41,7 +43,7 @@ describe('SCREENS state machine config', () => {
     const rb = s.targets.find(t => t.key === 'rollback');
     expect(rb!.toState).toBe('transito');
     const completed = s.targets.find(t => t.key === 'completed');
-    expect(completed!.reco).toBe('CAMINO FELIZ');
+    expect(completed!.reco).toBeUndefined();
   });
 
   it('Descarte lista source=completed y discard va a discarded', () => {

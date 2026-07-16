@@ -105,8 +105,20 @@ export class FinancieroApiService {
     return this.http.get<PaymentListItem[]>(`${this.base}/payments`, { params });
   }
 
+  /**
+   * Carga SIEMPRE fresca (sin `If-None-Match`) — la usan la carga inicial del
+   * detalle y la recarga post-cancelación. Nunca debe volver un 304: si lo
+   * hiciera, no hay ninguna representación previa cacheada del `Payment` en el
+   * cliente (solo se cachea el ETag) y no habría nada válido para mostrar
+   * (KAN-245: eso dejaba `selected` mostrando el pago de una visita anterior).
+   */
   getPayment(id: number): Observable<Payment> {
     return this.http.get<Payment>(`${this.base}/payments/${id}`);
+  }
+
+  /** Tick de polling mientras el comprobante está PENDING — este sí es condicional. */
+  pollPayment(id: number): Observable<Payment | NotModified> {
+    return this.http.get<Payment | NotModified>(`${this.base}/payments/${id}`, { context: withPolling() });
   }
 
   cancelPayment(id: number, reason: string): Observable<Payment> {

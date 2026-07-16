@@ -15,25 +15,24 @@
     <main class="cola-section">
       @if (!firstAttemptDone()) {
         <div class="loading">Cargando...</div>
+      } @else if (calledEntries().length === 0) {
+        <!-- Mismo tratamiento que la TV de sala de espera: título grande centrado,
+             no un empty state chico dentro del panel de la lista. -->
+        <app-empty-state
+          title="Esperando pacientes para extracción"
+          [branchName]="snapshot()?.branchName ?? ''" />
       } @else {
         <div class="layout">
           <div class="proximos">
             <h2>Últimos llamados para extracción:</h2>
-            @if (calledEntries().length === 0) {
-              <div class="empty-state">
-                <i class="pi pi-info-circle"></i>
-                <span>Aún no se llamó a ningún paciente hoy</span>
-              </div>
-            } @else {
-              <ul>
-                @for (e of calledEntries().slice(0, 5); track e.publicCode) {
-                  <li>
-                    <span class="code">{{ e.publicCode }}</span>
-                    <span class="box">→ Box {{ e.boxNumber ?? '?' }}</span>
-                  </li>
-                }
-              </ul>
-            }
+            <ul>
+              @for (e of calledEntries().slice(0, 5); track e.publicCode) {
+                <li>
+                  <span class="code">{{ e.publicCode }}</span>
+                  <span class="box">→ Box {{ e.boxNumber ?? '—' }}</span>
+                </li>
+              }
+            </ul>
           </div>
         </div>
       }

@@ -29,7 +29,12 @@ import {
   generateSettlement, generateSettlementSuccess,
 } from '../../store/financiero.actions';
 import { InsurerSummary } from '@features/obras-sociales/models/insurer.model';
-import { PreviewItem, PreviewGroup, ExcludedAnalysisIdsByPs } from '../../models/liquidaciones.model';
+import { insurerDisplayLabel } from '@shared/utils/insurer-display.util';
+import {
+  PreviewItem, PreviewGroup, PreviewAnalysis, ExcludedAnalysisIdsByPs, SpecialRule, FixedAmountsByPlan,
+} from '../../models/liquidaciones.model';
+import { TramosEditorComponent, TramoRow, tramosToRules, copyTramosFrom } from './components/tramos-editor.component';
+import { FijosEditorComponent, FixedAmountRow, validateFijos, fijosToMap } from './components/fijos-editor.component';
 
 const STEPS: FormStep[] = [
   { key: 'datos', title: 'Datos', subtitle: 'Obra social, período y planes' },
@@ -51,6 +56,21 @@ function norm(s: string | null | undefined): string {
   return (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+const currencyPipe = new CurrencyArPipe();
+
+/**
+ * Etiqueta del detalle de un análisis en el desglose del preview del paso Revisar:
+ * "$X fijo" si tiene un valor fijo asignado (Task 5), si no el detalle por U.B.
+ * ("{ubUnits} U.B. × {valor unitario}").
+ */
+export function analysisLabel(a: PreviewAnalysis): string {
+  if (a.fixedAmount != null) {
+    return `${currencyPipe.transform(a.fixedAmount)} fijo`;
+  }
+  const unitValue = a.ubUnits > 0 ? a.amount / a.ubUnits : a.amount;
+  return `${a.ubUnits} U.B. × ${currencyPipe.transform(unitValue)}`;
+}
+
 @Component({
   selector: 'fin-generar-liquidacion-page',
   standalone: true,
@@ -58,11 +78,12 @@ function norm(s: string | null | undefined): string {
   imports: [
     DatePipe, CurrencyArPipe, FormsModule, SelectModule, MultiSelectModule, DatePickerModule,
     WizardShellComponent, DataTableComponent, UiCellDirective, UiRowExpansionDirective, FilterBarComponent,
+    TramosEditorComponent, FijosEditorComponent,
   ],
   template: `
     <ui-wizard-shell
       heading="Generar liquidación"
-      [steps]="steps"
+      [steps]="steps()"
       [currentIndex]="step()"
       [visited]="visited()"
       [continueDisabled]="continueDisabled()"
@@ -73,16 +94,29 @@ function norm(s: string | null | undefined): string {
       (next)="next()"
       (back)="back()"
       (cancel)="cancelar()"
-      (finish)="generar()">
+      (finish)="generar()"
+      (stepSelected)="goToStep($event)">
 
-      @if (step() === 0) {
+      @if (stepKey() === 'datos') {
         <div class="step">
           <p class="muted">Elegí la obra social, el período y los planes a liquidar.</p>
 
           <div class="form-field">
             <label for="os">Obra Social <span class="pat-form__req" aria-hidden="true">*</span></label>
-            <p-select inputId="os" [options]="insurers()" optionLabel="name" [filter]="true"
-                      appendTo="body" [ngModel]="os()" (ngModelChange)="onOsChange($event)" data-testid="sel-os" />
+            <p-select inputId="os" [options]="insurers()" optionLabel="name" [filter]="true" filterBy="name,acronym"
+                      appendTo="body" [ngModel]="os()" (ngModelChange)="onOsChange($event)" data-testid="sel-os">
+              <ng-template let-i pTemplate="selectedItem">{{ insurerDisplayLabel(i) }}</ng-template>
+              <ng-template let-i pTemplate="item">{{ insurerDisplayLabel(i) }}</ng-template>
+            </p-select>
+          </div>
+
+          <div class="form-field">
+            <label>Tipo de liquidación</label>
+            <div class="tipo-sel">
+              <label><input type="radio" name="tipo" [checked]="tipo() === 'SIMPLE'" (change)="setTipo('SIMPLE')"> Simple</label>
+              <label><input type="radio" name="tipo" [checked]="tipo() === 'ESPECIAL'" (change)="setTipo('ESPECIAL')"> Especial</label>
+            </div>
+            @if (tipo() === 'ESPECIAL') { <p class="muted">Definís el valor de la UB por tramos de cantidad, para cada plan.</p> }
           </div>
 
           <div class="form-row">
@@ -142,7 +176,38 @@ function norm(s: string | null | undefined): string {
             }
           }
         </div>
-      } @else if (step() === 1) {
+      } @else if (stepKey() === 'tramos') {
+        <div class="step">
+          <p class="muted">Definí el valor de la U.B. por tramos de cantidad de estudios, para cada plan.</p>
+          <div class="liq-tabs" role="tablist">
+            @for (p of selectedPlans(); track p.id) {
+              <button type="button" class="liq-tab" [class.liq-tab--active]="activeTramoPlan() === p.id"
+                      (click)="activeTramoPlan.set(p.id)">
+                {{ p.name }} {{ tramosValidos()[p.id] ? '✓' : '' }}
+              </button>
+            }
+          </div>
+          @for (p of selectedPlans(); track p.id) {
+            @if (activeTramoPlan() === p.id) {
+              @if (tramoCopySources(p.id).length) {
+                <div class="liq-tramos-copy">
+                  <label for="copiar-tramos-{{ p.id }}">Copiar tramos de otro plan</label>
+                  <p-select inputId="copiar-tramos-{{ p.id }}"
+                            [options]="tramoCopySources(p.id)" optionLabel="name" optionValue="id"
+                            appendTo="body" placeholder="Elegí un plan"
+                            [ngModel]="null" (ngModelChange)="onCopyTramos(p.id, $event)"
+                            [attr.data-testid]="'sel-copiar-tramos-' + p.id" />
+                </div>
+              }
+              <fin-tramos-editor [rows]="tramosPorPlan()[p.id] ?? []"
+                                 (rowsChange)="onTramosChange(p.id, $event)"
+                                 (validChange)="onTramosValid(p.id, $event)" />
+              <fin-fijos-editor [rows]="fijosPorPlan()[p.id] ?? []"
+                                (rowsChange)="onFijosChange(p.id, $event)" />
+            }
+          }
+        </div>
+      } @else if (stepKey() === 'revisar') {
         <div class="step">
           <p class="muted">Revisá las prestaciones agrupadas por plan y elegí cuáles incluir. Podés excluir prestaciones enteras, análisis individuales, o usar la selección múltiple para excluir/incluir en lote; los montos se recalculan solos.</p>
 
@@ -188,6 +253,15 @@ function norm(s: string | null | undefined): string {
 
               <ui-filter-bar [config]="reviewFilterConfig" (valueChange)="onReviewSearch($event)" />
 
+              @if (activePlanTab() === null && plansWithoutPrestaciones().length) {
+                @for (p of plansWithoutPrestaciones(); track p.id) {
+                  <div class="liq-empty liq-empty--plan" [attr.data-testid]="'sin-prestaciones-' + p.id">
+                    <i class="pi pi-info-circle"></i>
+                    <span><strong>{{ p.name }}</strong> — No se encontraron prestaciones para este plan en el período.</span>
+                  </div>
+                }
+              }
+
               @if (!visibleGroups().length) {
                 <div class="liq-empty" data-testid="sin-resultados-busqueda">
                   <i class="pi pi-search"></i><span>No hay prestaciones que coincidan con la búsqueda.</span>
@@ -223,7 +297,7 @@ function norm(s: string | null | undefined): string {
 
                   <ui-table
                     [value]="g.items"
-                    [columns]="itemColumns"
+                    [columns]="itemColumns()"
                     dataKey="providedServiceId"
                     [selectable]="true"
                     [selection]="selectionFor(g)"
@@ -256,6 +330,10 @@ function norm(s: string | null | undefined): string {
                       <span class="liq-cell-covered" [class.liq-cell--excluded]="it.fullyExcluded">{{ it.coveredAmount | currencyAr }}</span>
                     </ng-template>
 
+                    <ng-template uiCell="appliedUbValue" let-it>
+                      {{ it.appliedUbValue != null ? (it.appliedUbValue | currencyAr) : '—' }}
+                    </ng-template>
+
                     <ng-template uiRowExpansion let-it>
                       <div class="liq-analyses">
                         @for (a of it.analyses; track a.analysisId) {
@@ -272,8 +350,9 @@ function norm(s: string | null | undefined): string {
                                 <span class="liq-tag-unauth">No cubierto por OS</span>
                               }
                             </span>
-                            <span class="liq-analysis__ub">{{ a.ubUnits }} UB</span>
-                            <span class="liq-analysis__amount">{{ a.amount | currencyAr }}</span>
+                            <span class="liq-analysis__detail" [class.liq-analysis__detail--fixed]="a.fixedAmount != null">
+                              {{ analysisLabel(a) }}
+                            </span>
                           </label>
                         }
                       </div>
@@ -339,6 +418,10 @@ function norm(s: string | null | undefined): string {
     :host ::ng-deep .form-field .p-multiselect { display: flex; width: 100%; }
     :host ::ng-deep .form-field .p-select .p-select-label { flex: 1 1 auto; min-width: 0; text-overflow: ellipsis; }
     .field-error { color: #d83a3a; font-size: 12.5px; }
+    .tipo-sel { display: flex; gap: 20px; }
+    .tipo-sel label { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 400;
+                       color: var(--ds-text, #1a1a2e); cursor: pointer; }
+    .tipo-sel input[type="radio"] { accent-color: #0f8a55; cursor: pointer; }
 
     .liq-warn { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 10px 14px; border-radius: 9px; font-size: 13px; }
     .liq-summary { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e8edf3; border-radius: 10px; }
@@ -365,6 +448,12 @@ function norm(s: string | null | undefined): string {
     .liq-confirm__plan-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
 
     .liq-empty { display: flex; align-items: center; gap: 8px; background: #fcf1dd; color: #b5740c; padding: 12px 14px; border-radius: 9px; font-size: 13.5px; }
+    /* Aviso discreto por plan sin prestaciones en el período (paso Revisar, Item 3 KAN-237). */
+    .liq-empty--plan { margin-bottom: 2px; }
+    /* Control "Copiar tramos de otro plan" (paso Tramos, Item 2 KAN-237). */
+    .liq-tramos-copy { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .liq-tramos-copy label { font-size: 12.5px; font-weight: 500; color: var(--ds-text-muted, #64748b); white-space: nowrap; }
+    .liq-tramos-copy p-select { display: flex; min-width: 220px; }
     .liq-loading { color: #7c8092; font-size: 13.5px; display: flex; align-items: center; gap: 8px; padding: 12px; }
     /* Loading grande centrado mientras se buscan las prestaciones (antes de renderizar el paso). */
     .liq-loading--full { flex-direction: column; justify-content: center; align-items: center; gap: 12px;
@@ -427,16 +516,16 @@ function norm(s: string | null | undefined): string {
     .liq-cell--excluded { opacity: .55; text-decoration: line-through; }
 
     .liq-analyses { display: flex; flex-direction: column; }
-    .liq-analysis { display: grid; grid-template-columns: 22px 70px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 4px; font-size: 12.5px; cursor: pointer; }
+    .liq-analysis { display: grid; grid-template-columns: 22px 70px 1fr auto; align-items: center; gap: 10px; padding: 7px 4px; font-size: 12.5px; cursor: pointer; }
     .liq-analysis + .liq-analysis { border-top: 1px solid #eef2f7; }
     .liq-analysis input { accent-color: #0f8a55; }
     .liq-analysis--excluded { color: #94a3b8; }
-    .liq-analysis--excluded .liq-analysis__amount { text-decoration: line-through; }
+    .liq-analysis--excluded .liq-analysis__detail { text-decoration: line-through; }
     .liq-analysis--unauth { color: #94a3b8; cursor: not-allowed; }
     .liq-analysis__code { font-family: 'Roboto Mono', monospace; color: #64748b; }
     .liq-analysis__name { display: flex; align-items: center; gap: 8px; }
-    .liq-analysis__ub { color: #94a3b8; font-size: 11.5px; }
-    .liq-analysis__amount { font-weight: 500; }
+    .liq-analysis__detail { font-weight: 500; white-space: nowrap; }
+    .liq-analysis__detail--fixed { color: #0f8a55; }
     .liq-tag-unauth { font-size: 10.5px; background: #fbeaea; color: #b5740c; padding: 1px 7px; border-radius: 20px; white-space: nowrap; }
   `],
 })
@@ -446,7 +535,18 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   private readonly actions$ = inject(Actions);
   private readonly destroy = inject(DestroyRef);
 
-  protected readonly steps = STEPS;
+  /** Etiqueta del desglose por análisis (valor fijo o U.B. × valor). */
+  protected readonly analysisLabel = analysisLabel;
+
+  /** Steps dinámicos: ESPECIAL inserta el paso "Tramos por plan" entre Datos y Revisar. */
+  protected readonly steps = computed<FormStep[]>(() => this.tipo() === 'ESPECIAL'
+    ? [{ key: 'datos', title: 'Datos y tipo', subtitle: 'Obra social, período y tipo' },
+       { key: 'tramos', title: 'Tramos por plan', subtitle: 'Valor U.B. por cantidad' },
+       { key: 'revisar', title: 'Revisar', subtitle: 'Prestaciones a liquidar' },
+       { key: 'confirmar', title: 'Confirmar', subtitle: 'Resumen y generación' }]
+    : STEPS);
+  /** Key del paso actual, para no keyear la navegación por índice fijo (el paso "tramos" corre los índices). */
+  protected readonly stepKey = computed(() => this.steps()[this.step()]?.key);
   /** Tope de fecha: hoy — no se pueden liquidar períodos futuros. */
   protected readonly hoy = new Date();
   protected readonly step = signal(0);
@@ -458,6 +558,16 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   protected readonly to = signal<Date | null>(null);
   /** Planes tildados de la OS (ids). Por defecto todos; se re-tildan al cambiar de OS. */
   protected readonly selectedPlanIds = signal<number[]>([]);
+  /** SIMPLE (arancel del convenio) o ESPECIAL (tramos por plan, valor U.B. por cantidad). */
+  protected readonly tipo = signal<'SIMPLE' | 'ESPECIAL'>('SIMPLE');
+  /** Filas de tramos por plan: { planId: TramoRow[] }. */
+  protected readonly tramosPorPlan = signal<Record<number, TramoRow[]>>({});
+  /** Validez de tramos por plan: { planId: boolean }. */
+  protected readonly tramosValidos = signal<Record<number, boolean>>({});
+  /** Tab de plan activo en el paso Tramos. */
+  protected readonly activeTramoPlan = signal<number | null>(null);
+  /** Filas de valores fijos por análisis, por plan: { planId: FixedAmountRow[] }. Opcional, solo en ESPECIAL. */
+  protected readonly fijosPorPlan = signal<Record<number, FixedAmountRow[]>>({});
 
   // ── Paso Revisar: tab de plan activo + búsqueda client-side ──
   /** Plan activo del tab en el paso Revisar; null = "Todos". */
@@ -472,12 +582,20 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   private readonly excluded = signal<ExcludedAnalysisIdsByPs>({});
 
   protected readonly rowsPerPage = 10;
-  protected readonly itemColumns: readonly TableColumn[] = [
-    { field: 'patientName', header: 'Paciente' },
-    { field: 'serviceDate', header: 'Fecha' },
-    { field: 'copaymentAmount', header: 'Copago', align: 'right' },
-    { field: 'coveredAmount', header: 'Cubierto', align: 'right' },
-  ];
+  /** En ESPECIAL se agrega la columna del valor U.B. de tramo aplicado a cada prestación. */
+  protected readonly itemColumns = computed<readonly TableColumn[]>(() => {
+    const cols: TableColumn[] = [
+      { field: 'patientName', header: 'Paciente' },
+      { field: 'serviceDate', header: 'Fecha' },
+      { field: 'copaymentAmount', header: 'Copago', align: 'right' },
+      { field: 'coveredAmount', header: 'Cubierto', align: 'right' },
+    ];
+    if (this.tipo() === 'ESPECIAL') cols.push({ field: 'appliedUbValue', header: 'Valor U.B.', align: 'right' });
+    return cols;
+  });
+
+  /** "SIGLA — Nombre" para el select de obra social (KAN-246). */
+  protected readonly insurerDisplayLabel = insurerDisplayLabel;
 
   protected readonly insurers = this.store.selectSignal(selectLiqInsurers);
   protected readonly insurerPlans = this.store.selectSignal(selectLiqInsurerPlans);
@@ -504,6 +622,32 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     !!this.os() && !!this.from() && !!this.to() && !this.rangoInvalido()
     && this.selectedPlanIds().length > 0 && !this.noPlanConvenio());
 
+  /**
+   * En ESPECIAL, todos los planes tildados deben tener sus tramos completos y válidos,
+   * y si tienen filas de valores fijos cargadas, esas filas también deben ser válidas
+   * (análisis elegido, monto > 0, sin repetidos).
+   */
+  protected readonly tramosTodosValidos = computed(() => {
+    if (this.tipo() !== 'ESPECIAL') return true;
+    const v = this.tramosValidos();
+    const fijos = this.fijosPorPlan();
+    return this.selectedPlans().every(p =>
+      v[p.id] === true && validateFijos(fijos[p.id] ?? []) === null);
+  });
+
+  /**
+   * Planes tildados SIN prestaciones pendientes en el período (KAN-237, Item 3): el
+   * backend solo devuelve grupo para los planes con al menos una prestación, así que
+   * un plan tildado que no aparece en `pv.groups` (o aparece con `items` vacío) quedaba
+   * mudo en el paso Revisar. Se resuelve mostrando un aviso explícito por plan.
+   */
+  protected readonly plansWithoutPrestaciones = computed(() => {
+    const pv = this.preview();
+    if (!pv) return [];
+    const withData = new Set(pv.groups.filter(g => g.items.length > 0).map(g => g.planId));
+    return this.selectedPlans().filter(p => !withData.has(p.id));
+  });
+
   /** Todas las prestaciones de todos los grupos, aplanadas. */
   private readonly allItems = computed(() =>
     (this.preview()?.groups ?? []).flatMap(g => g.items));
@@ -513,9 +657,14 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
   protected readonly excluidasCount = computed(() => this.totalPrestaciones() - this.incluidas());
   protected readonly canGenerate = computed(() => this.incluidas() > 0);
 
-  /** Botón "Continuar": paso Datos exige form válido; paso Revisar exige ≥1 incluida. */
-  protected readonly continueDisabled = computed(() =>
-    this.step() === 0 ? !this.paso1Valido() : !this.canGenerate());
+  /** Botón "Continuar": por paso — Datos exige form válido, Tramos exige tramos completos, Revisar exige ≥1 incluida. */
+  protected readonly continueDisabled = computed(() => {
+    const k = this.stepKey();
+    if (k === 'datos') return !this.paso1Valido();
+    if (k === 'tramos') return !this.tramosTodosValidos();
+    if (k === 'revisar') return !this.canGenerate();
+    return false;
+  });
 
   /** Nombres de los planes elegidos, para el resumen del paso Confirmar. */
   protected readonly selectedPlanNames = computed(() => {
@@ -592,6 +741,68 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
     if (insurer) this.store.dispatch(loadInsurerPlans({ insurerId: insurer.id }));
   }
 
+  /** Cambia SIMPLE/ESPECIAL; al pasar a ESPECIAL, asegura el tramo inicial de cada plan tildado. */
+  protected setTipo(t: 'SIMPLE' | 'ESPECIAL'): void {
+    this.tipo.set(t);
+    if (t === 'ESPECIAL') this.ensureTramoDefaults();
+  }
+
+  /**
+   * Garantiza que cada plan tildado tenga al menos un tramo (`desde: 1, hasta: null,
+   * valorUb: null` = "en adelante") apenas se entra al paso Tramos o se activa ESPECIAL
+   * (KAN-237, Item 1) — antes el editor podía arrancar vacío. También arregla el tab
+   * activo si quedó en `null` o apuntando a un plan que ya no está tildado.
+   */
+  private ensureTramoDefaults(): void {
+    const cur = this.tramosPorPlan();
+    const next = { ...cur };
+    let changed = false;
+    for (const p of this.selectedPlans()) {
+      if (!next[p.id]?.length) {
+        next[p.id] = [{ desde: 1, hasta: null, valorUb: null }];
+        changed = true;
+      }
+    }
+    if (changed) this.tramosPorPlan.set(next);
+
+    const ids = this.selectedPlans().map(p => p.id);
+    const active = this.activeTramoPlan();
+    if (active == null || !ids.includes(active)) this.activeTramoPlan.set(ids[0] ?? null);
+  }
+
+  protected onTramosChange(planId: number, rows: TramoRow[]): void {
+    this.tramosPorPlan.update(m => ({ ...m, [planId]: rows }));
+  }
+
+  protected onTramosValid(planId: number, valid: boolean): void {
+    this.tramosValidos.update(m => ({ ...m, [planId]: valid }));
+  }
+
+  protected onFijosChange(planId: number, rows: FixedAmountRow[]): void {
+    this.fijosPorPlan.update(m => ({ ...m, [planId]: rows }));
+  }
+
+  /** Otros planes tildados que ya tienen tramos cargados — fuentes válidas para "Copiar tramos de…". */
+  protected tramoCopySources(planId: number): Array<{ id: number; name: string }> {
+    const tp = this.tramosPorPlan();
+    return this.selectedPlans()
+      .filter(p => p.id !== planId && (tp[p.id]?.length ?? 0) > 0)
+      .map(p => ({ id: p.id, name: p.name }));
+  }
+
+  /**
+   * Copia SOLO los tramos del plan `sourcePlanId` al plan `targetPlanId`, reemplazando
+   * los que tuviera (KAN-237, Item 2). Deep copy — no comparte referencias entre planes.
+   * NO copia los valores fijos: son montos por análisis que inciden en la facturación y
+   * el control dice explícitamente "tramos", así que un swap de fijos sería inesperado.
+   */
+  protected onCopyTramos(targetPlanId: number, sourcePlanId: number | null): void {
+    if (sourcePlanId == null) return;
+    const sourceTramos = this.tramosPorPlan()[sourcePlanId];
+    if (!sourceTramos?.length) return;
+    this.tramosPorPlan.update(m => ({ ...m, [targetPlanId]: copyTramosFrom(sourceTramos) }));
+  }
+
   protected toggleAnalysis(psId: number, analysisId: number): void {
     const cur = { ...this.excluded() };
     const set = new Set(cur[psId] ?? []);
@@ -661,28 +872,84 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
         period: { from: toIso(this.from()), to: toIso(this.to()) },
         excludedAnalysisIdsByPs: Object.keys(excl).length ? excl : null,
         planIds: this.selectedPlanIds(),
+        specialRulesByPlan: this.buildRulesByPlan(),
+        fixedAmountsByPlan: this.buildFixedByPlan(),
       },
     }));
   }
 
-  protected next(): void {
-    if (this.step() === 0) {
-      if (!this.paso1Valido()) return;
-      this.excluded.set({});
-      this.activePlanTab.set(null);
-      this.reviewSearch.set('');
-      this.step.set(1);
-      this.visited.update(s => new Set(s).add(1));
-      this.reloadPreview();
-    } else if (this.step() === 1) {
-      if (!this.canGenerate()) return;
-      this.step.set(2);
-      this.visited.update(s => new Set(s).add(2));
+  /** Reglas especiales por plan para el body de preview/generate; null fuera de ESPECIAL. */
+  private buildRulesByPlan(): Record<number, SpecialRule[]> | null {
+    if (this.tipo() !== 'ESPECIAL') return null;
+    const out: Record<number, SpecialRule[]> = {};
+    for (const p of this.selectedPlans()) out[p.id] = tramosToRules(this.tramosPorPlan()[p.id] ?? []);
+    return out;
+  }
+
+  /**
+   * Valores fijos por plan para el body de preview/generate: solo incluye planes con
+   * al menos una fila válida cargada. null si no hay ninguno (o fuera de ESPECIAL).
+   */
+  private buildFixedByPlan(): FixedAmountsByPlan | null {
+    if (this.tipo() !== 'ESPECIAL') return null;
+    const out: FixedAmountsByPlan = {};
+    for (const p of this.selectedPlans()) {
+      const map = fijosToMap(this.fijosPorPlan()[p.id] ?? []);
+      if (Object.keys(map).length) out[p.id] = map;
     }
+    return Object.keys(out).length ? out : null;
+  }
+
+  /**
+   * Navega al paso siguiente keyeando por la KEY del paso actual (no por índice fijo):
+   * el paso "tramos" solo existe en ESPECIAL, así que los índices se corren según el tipo.
+   */
+  protected next(): void {
+    const k = this.stepKey();
+    if (k === 'datos') {
+      if (!this.paso1Valido()) return;
+      this.goTo(this.step() + 1);
+      if (this.stepKey() === 'tramos') this.ensureTramoDefaults();
+      if (this.stepKey() === 'revisar') this.enterRevisar();
+    } else if (k === 'tramos') {
+      if (!this.tramosTodosValidos()) return;
+      this.goTo(this.step() + 1);
+      this.enterRevisar();
+    } else if (k === 'revisar') {
+      if (!this.canGenerate()) return;
+      this.goTo(this.step() + 1);
+    }
+  }
+
+  private goTo(i: number): void {
+    this.step.set(i);
+    this.visited.update(s => new Set(s).add(i));
+  }
+
+  /** Al entrar al paso Revisar (desde Datos en SIMPLE, o desde Tramos en ESPECIAL): reset de filtros + preview. */
+  private enterRevisar(): void {
+    this.excluded.set({});
+    this.activePlanTab.set(null);
+    this.reviewSearch.set('');
+    this.reloadPreview();
   }
 
   protected back(): void {
     this.step.update(s => Math.max(0, s - 1));
+  }
+
+  /**
+   * Click en el header del stepper (KAN-237, Item A): navega directo a un paso YA
+   * VISITADO, sin tocar ningún otro estado (OS, tramos, fijos, exclusiones quedan
+   * intactos — a diferencia de `next()`, que dispara side-effects como `enterRevisar()`
+   * o `ensureTramoDefaults()`). El guard es cinturón-y-tiradores: `ui-form-stepper-header`
+   * ya sólo emite `stepSelected` para pasos visitados (nunca hacia adelante a uno no
+   * completado), igual que el resto de los wizards del repo (`goToStep` en paciente,
+   * médico, empleado, obra social, agenda, sucursal).
+   */
+  protected goToStep(i: number): void {
+    if (!this.visited().has(i)) return;
+    this.step.set(i);
   }
 
   protected generar(): void {
@@ -693,9 +960,10 @@ export class GenerarLiquidacionPage implements OnInit, OnDestroy {
       body: {
         insurerId: insurer.id,
         period: { from: toIso(this.from()), to: toIso(this.to()) },
-        specialRules: [],
+        specialRulesByPlan: this.buildRulesByPlan(),
         excludedAnalysisIdsByPs: Object.keys(excl).length ? excl : null,
         planIds: this.selectedPlanIds(),
+        fixedAmountsByPlan: this.buildFixedByPlan(),
       },
     }));
   }

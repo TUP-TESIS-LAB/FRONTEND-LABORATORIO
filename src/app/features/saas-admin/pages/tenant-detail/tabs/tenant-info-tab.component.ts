@@ -51,7 +51,7 @@ import {
           }
         </div>
       </form>
-      <p-confirmDialog styleClass="saas-themed" />
+      <p-confirmDialog styleClass="saas-themed" [draggable]="false" />
       </div>
     }
   `,

@@ -6,6 +6,8 @@ import { ReplaySubject, of } from 'rxjs';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { EMPTY_CATALOG } from '@features/pacientes/models/coverage-catalog.model';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 import { ResumenStepComponent } from './resumen-step.component';
 import { NbuConfigApiService } from '../../../../../services/nbu-config-api.service';
 import { ResultTicketPdfService } from '../../../../../services/result-ticket-pdf.service';
@@ -79,15 +81,17 @@ const coverageCatalogStub = {
   getCatalog: vi.fn().mockReturnValue(of(EMPTY_CATALOG)),
 };
 
+/** Stub de ModuleRegistry para no depender del feature `tenant` en el MockStore. */
+function moduleRegistryStub(financieroActive: boolean) {
+  return { isActive: (key: ModuleKey) => key === ModuleKey.Financiero ? financieroActive : true };
+}
+
 describe('ResumenStepComponent', () => {
   let store: MockStore;
   let actions$: ReplaySubject<Action>;
 
-  beforeEach(async () => {
-    sessionStorage.clear();
-    doctorServiceStub.getById.mockClear();
-    actions$ = new ReplaySubject<Action>(1);
-
+  /** FINANCIERO activo por defecto: preserva el comportamiento que ya cubren los tests existentes. */
+  async function configure(financieroActive = true): Promise<void> {
     await TestBed.configureTestingModule({
       imports: [ResumenStepComponent],
       providers: [
@@ -97,10 +101,18 @@ describe('ResumenStepComponent', () => {
         { provide: CoverageCatalogService, useValue: coverageCatalogStub },
         { provide: NbuConfigApiService, useValue: { listTenantAnalyses: () => of([]) } },
         { provide: ResultTicketPdfService, useValue: { printTicket: () => {} } },
+        { provide: ModuleRegistry, useValue: moduleRegistryStub(financieroActive) },
       ],
     }).compileComponents();
 
     store = TestBed.inject(MockStore);
+  }
+
+  beforeEach(async () => {
+    sessionStorage.clear();
+    doctorServiceStub.getById.mockClear();
+    actions$ = new ReplaySubject<Action>(1);
+    await configure(true);
   });
 
   // ── nuevos tests: carga de datos ─────────────────────────────────────────
@@ -250,7 +262,11 @@ describe('ResumenStepComponent', () => {
     expect(deleteBtn).toBeNull();
   });
 
-  it('C1: la acción de quitar fila despacha removeAnalysisFromResumen', () => {
+  // El tachito solo existe sin FINANCIERO (KAN-246: con FINANCIERO ya se cobró
+  // al llegar a Confirmar), así que hay que reconfigurar para poder clickearlo.
+  it('C1: la acción de quitar fila despacha removeAnalysisFromResumen', async () => {
+    TestBed.resetTestingModule();
+    await configure(false);
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', attn()); // analysisId 3
     f.detectChanges();
@@ -491,5 +507,69 @@ describe('ResumenStepComponent', () => {
     expect(action.payload.items).toEqual([]);
     expect(action.payload.isUrgent).toBe(true);
     expect(action.payload.authorizationNumber).toBe('AUTH-1');
+  });
+
+  // ── KAN-246: sin FINANCIERO no se muestra nada financiero ────────────────
+  describe('con FINANCIERO apagado', () => {
+    beforeEach(async () => {
+      // El beforeEach de afuera ya configuró (y compiló) el TestBed con
+      // financieroActive=true; hay que resetearlo antes de reconfigurar con
+      // otro valor o Angular tira "already instantiated".
+      TestBed.resetTestingModule();
+      await configure(false);
+    });
+
+    it('no incluye la columna "Precio" ni "Autorizado" (aunque haya obra social)', () => {
+      const f = TestBed.createComponent(ResumenStepComponent);
+      f.componentRef.setInput('atencion', { ...attn(), insurancePlanId: 7 }); // OS
+      f.detectChanges();
+      const headers = Array.from((f.nativeElement as HTMLElement).querySelectorAll('th')).map((th) => th.textContent?.trim() ?? '');
+      expect(headers.some((h) => h.includes('Precio'))).toBe(false);
+      expect(headers.some((h) => h.includes('Autorizado'))).toBe(false);
+    });
+
+    it('no muestra el bloque de totales (Subtotal/Copago/Total)', () => {
+      const f = TestBed.createComponent(ResumenStepComponent);
+      f.componentRef.setInput('atencion', attn());
+      f.detectChanges();
+      const text = (f.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).not.toContain('Subtotal');
+      expect(text).not.toContain('Copago');
+    });
+
+    // Sin FINANCIERO no hay cobro → quitar un análisis en Confirmar es inofensivo.
+    it('SÍ ofrece la acción de quitar análisis (no hay cobro que desincronizar)', () => {
+      const f = TestBed.createComponent(ResumenStepComponent);
+      f.componentRef.setInput('atencion', attn());
+      f.detectChanges();
+      const deleteBtn = (f.nativeElement as HTMLElement).querySelector('button[aria-label="Eliminar"]');
+      expect(deleteBtn).not.toBeNull();
+    });
+
+    it('en readOnly no ofrece la acción de quitar, aunque FINANCIERO esté apagado', () => {
+      const f = TestBed.createComponent(ResumenStepComponent);
+      f.componentRef.setInput('atencion', attn());
+      f.componentRef.setInput('readOnly', true);
+      f.detectChanges();
+      const deleteBtn = (f.nativeElement as HTMLElement).querySelector('button[aria-label="Eliminar"]');
+      expect(deleteBtn).toBeNull();
+    });
+
+    it('financieroActive() es false', () => {
+      const f = TestBed.createComponent(ResumenStepComponent);
+      f.componentRef.setInput('atencion', attn());
+      f.detectChanges();
+      expect(f.componentInstance.financieroActive()).toBe(false);
+    });
+  });
+
+  // Con FINANCIERO activo, al llegar a Confirmar ya se pasó por Cobro/Facturación
+  // → la atención ya se cobró y borrar un análisis desincronizaría la plata.
+  it('KAN-246: con FINANCIERO activo NO ofrece la acción de quitar análisis (ya cobrado)', () => {
+    const f = TestBed.createComponent(ResumenStepComponent);
+    f.componentRef.setInput('atencion', attn());
+    f.detectChanges();
+    const deleteBtn = (f.nativeElement as HTMLElement).querySelector('button[aria-label="Eliminar"]');
+    expect(deleteBtn).toBeNull();
   });
 });
