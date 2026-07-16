@@ -4,7 +4,7 @@ const transitoTarget: Transition = {
   key: 'transito', label: 'En tránsito', toLabel: 'En tránsito', toState: 'transito',
   color: 'green', icon: 'pi-truck',
   desc: 'Marcar como en tránsito hacia recepción.',
-  reco: 'CAMINO FELIZ', fields: [],
+  fields: [],
 };
 
 const rejectedTarget: Transition = {
@@ -83,7 +83,6 @@ const PROCESAMIENTO: ScreenConfig = {
       key: 'completed', label: 'Completar', toLabel: 'Completada', toState: 'completed',
       color: 'green', icon: 'pi-check-circle',
       desc: 'Finalizar el procesamiento.',
-      reco: 'CAMINO FELIZ',
       fields: [],
     },
     rejectedTarget,

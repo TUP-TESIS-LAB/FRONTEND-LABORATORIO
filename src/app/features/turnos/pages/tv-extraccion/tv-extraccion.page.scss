@@ -256,19 +256,8 @@ $extraccion-bg: #ffffff;
   to { opacity: 1; transform: translateY(0); }
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 16px;
-  color: #64748b;
-  gap: 12px;
-  flex: 1;
-
-  i { font-size: 32px; }
-  span { font-size: 1.25rem; }
-}
+// El estado vacío lo aporta <app-empty-state> (compartido con la TV de sala de
+// espera), así que acá no hay estilos propios para él.
 
 // ─── Audio overlay ───────────────────────────────────────────────────────────
 .audio-overlay {

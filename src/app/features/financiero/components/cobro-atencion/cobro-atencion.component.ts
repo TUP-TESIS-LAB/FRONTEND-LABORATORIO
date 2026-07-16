@@ -108,7 +108,10 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
                     <p-select [ngModel]="l.method" (ngModelChange)="setMethod(l.id, $event)"
                               [options]="metodoOptions" optionLabel="label" optionValue="value"
                               appendTo="body" styleClass="w-full" data-testid="linea-metodo" />
+                    <!-- onFocus → select(): el campo viene precargado con el monto a cobrar,
+                         así se puede tipear otro encima directamente, sin borrar primero. -->
                     <p-inputNumber [ngModel]="l.amount" (ngModelChange)="setAmount(l.id, $event)"
+                                   (onFocus)="selectAllText($event)"
                                    mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [min]="0"
                                    inputStyleClass="w-full text-right" placeholder="0,00" data-testid="linea-monto" />
                     <input pInputText [ngModel]="l.reference" (ngModelChange)="setReference(l.id, $event)"
@@ -244,12 +247,23 @@ export class CobroAtencionComponent {
   /** Opciones del selector de método de pago (p-select). */
   protected readonly metodoOptions = this.metodos.map((m) => ({ label: METHOD_META[m].label, value: m }));
 
+  /**
+   * El prefill del monto ya corrió. Sin este flag el effect es RE-ENTRANTE: lee `lineas()`,
+   * así que al vaciar el campo (p-inputNumber emite null → setAmount lo normaliza a 0) se
+   * volvía a disparar y lo re-rellenaba con el total. El operador no podía escribir un monto
+   * de cero: el campo "revivía" solo (KAN-249).
+   */
+  private prefilled = false;
+
   constructor() {
-    // Prefill: la primera (y única) línea, todavía en 0, arranca con el monto a cobrar.
+    // Prefill (one-shot): la primera (y única) línea, todavía en 0, arranca con el monto a
+    // cobrar. Corre cuando llega el pricing (aCobrar pasa de 0 a >0) y no vuelve a correr.
     effect(() => {
       const target = this.aCobrar();
       const ls = this.lineas();
+      if (this.prefilled) return;
       if (target > 0 && ls.length === 1 && ls[0].amount === 0) {
+        this.prefilled = true;
         this.lineas.set([{ ...ls[0], amount: target }]);
       }
     });
@@ -283,6 +297,11 @@ export class CobroAtencionComponent {
   protected setMethod(id: number, method: PaymentMethod): void {
     this.lineas.update(ls => ls.map(l => l.id === id ? { ...l, method } : l));
   }
+  /** Selecciona todo el texto al enfocar para poder tipear encima del monto precargado. */
+  protected selectAllText(event: Event): void {
+    (event.target as HTMLInputElement | null)?.select();
+  }
+
   protected setAmount(id: number, raw: number | null): void {
     // Sin tope superior: pagar de más es válido (vuelto en efectivo, redondeo, etc.)
     // y se avisa mostrando "Restante" en amarillo — no se bloquea la carga.

@@ -23,7 +23,10 @@ export interface PickerRow extends Analysis {
     <div class="flex flex-col gap-3">
       @if (!readOnly()) {
         <div class="flex gap-2 items-end">
-          <div class="flex-1">
+          <!-- Con [compactSearch] el buscador NO crece: deja de empujar el campo proyectado
+               contra el borde derecho y los dos quedan pegados, arrancando desde el borde
+               izquierdo de la tabla. Sin proyectar nada al lado, sigue ocupando la fila. -->
+          <div [class]="compactSearch() ? 'w-[26rem] shrink-0' : 'flex-1'">
             <label class="block text-sm font-medium mb-1">Código o nombre del análisis</label>
             <p-autocomplete
               #auto
@@ -105,6 +108,17 @@ export class AnalysisPickerComponent implements AfterViewInit {
 
   /** Modo solo-lectura: oculta el buscador y las acciones de agregar/quitar/togglear. */
   readonly readOnly = input<boolean>(false);
+
+  /**
+   * `true` = el buscador toma un ancho fijo en vez de estirarse a toda la fila.
+   *
+   * Activalo cuando proyectes un campo al lado (`<ng-content />`): con el buscador
+   * estirado, ese campo queda empujado contra el borde derecho, alineado a nada. Con
+   * ancho fijo, los dos arrancan desde el borde izquierdo de la tabla, uno al lado del
+   * otro. Default `false` = buscador a todo el ancho (el picker sin campo proyectado,
+   * p.ej. el de Domicilio).
+   */
+  readonly compactSearch = input<boolean>(false);
 
   /**
    * Cobertura Particular (sin obra social). Cuando es `true`:

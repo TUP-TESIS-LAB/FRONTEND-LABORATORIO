@@ -159,6 +159,47 @@ describe('CobroAtencionComponent — smoke tests', () => {
   });
 });
 
+describe('CobroAtencionComponent — poder tipear el monto de una (KAN-249)', () => {
+  function buildFixture(total: number) {
+    return setupWithTemplate(MINIMAL_FORM_TEMPLATE, {
+      pricing: { items: [], subtotal: total, copayment: 0, total },
+    });
+  }
+
+  it('la única línea arranca precargada con el monto a cobrar', () => {
+    const c = buildFixture(1500).componentInstance as any;
+    expect(c.lineas()[0].amount).toBe(1500);
+  });
+
+  it('vaciar el campo NO lo re-rellena solo con el total (se puede tipear otro monto)', () => {
+    // El operador borra el monto precargado para escribir otro. p-inputNumber emite null
+    // al vaciarse → setAmount lo normaliza a 0. El prefill NO debe volver a dispararse:
+    // si lo hace, el campo "revive" con el total y es imposible escribir de cero.
+    const fixture = buildFixture(1500);
+    const c = fixture.componentInstance as any;
+    expect(c.lineas()[0].amount).toBe(1500);
+
+    c.setAmount(c.lineas()[0].id, null);
+    fixture.detectChanges();
+
+    expect(c.lineas()[0].amount).toBe(0);
+  });
+
+  it('el prefill es one-shot: no revive al cambiar el pricing tras haber vaciado el campo', () => {
+    const fixture = buildFixture(1500);
+    const c = fixture.componentInstance as any;
+    c.setAmount(c.lineas()[0].id, null);
+    fixture.detectChanges();
+
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectPricing, { items: [], subtotal: 900, copayment: 0, total: 900 });
+    store.refreshState();
+    fixture.detectChanges();
+
+    expect(c.lineas()[0].amount).toBe(0);
+  });
+});
+
 describe('CobroAtencionComponent — excedente permitido, sin clamp ni re-sync', () => {
   // Reusa el harness setupWithTemplate (Store + Router + contexto de sucursal/caja mockeados)
   // en vez del build() minimalista del brief: el componente inyecta OperatorBranchContextService
