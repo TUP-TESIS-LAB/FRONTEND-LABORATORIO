@@ -24,7 +24,7 @@ import {
   updateBankAccount, updateBankAccountSuccess, updateBankAccountFailure,
   deactivateBankAccount, deactivateBankAccountSuccess, deactivateBankAccountFailure,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
-  loadPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
+  loadPayment, pollPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
   downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure,
@@ -436,14 +436,32 @@ export class FinancieroEffects {
     ),
   );
 
-  // ── cobros: detalle de pago (polleado mientras el comprobante está PENDING) ─
+  // ── cobros: detalle de pago — carga inicial, SIEMPRE fresca (sin ETag) ──────
+  // KAN-245: si esta carga fuera condicional, un 304 devuelto para el id recién
+  // pedido podía dejar `selected` mostrando el pago de una visita anterior.
   loadPayment$ = createEffect(() =>
     this.actions$.pipe(
       ofType(loadPayment),
       switchMap(({ id }) =>
         this.api.getPayment(id).pipe(
+          map(payment => loadPaymentSuccess({ payment })),
+          catchError((e: HttpErrorResponse) => {
+            const error = mapCobrosError(e);
+            return of(loadPaymentFailure({ error }));
+          }),
+        ),
+      ),
+    ),
+  );
+
+  // ── cobros: detalle de pago — tick de polling mientras está PENDING ────────
+  pollPayment$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(pollPayment),
+      switchMap(({ id }) =>
+        this.api.pollPayment(id).pipe(
           map(res => isNotModified(res)
-            ? loadPaymentNotModified()
+            ? loadPaymentNotModified({ id })
             : loadPaymentSuccess({ payment: res })),
           catchError((e: HttpErrorResponse) => {
             const error = mapCobrosError(e);

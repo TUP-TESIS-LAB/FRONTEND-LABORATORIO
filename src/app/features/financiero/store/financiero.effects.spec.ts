@@ -23,7 +23,7 @@ import {
   createBankAccount, createBankAccountFailure,
   deactivateBankAccountSuccess,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
-  loadPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
+  loadPayment, pollPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
   downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure,
@@ -47,7 +47,7 @@ describe('FinancieroEffects', () => {
     listCashRegisters: Fn; createCashRegister: Fn; deactivateCashRegister: Fn;
     getBranchOtherMedia: Fn; registerBranchMovement: Fn;
     listBankAccounts: Fn; createBankAccount: Fn; updateBankAccount: Fn; deactivateBankAccount: Fn;
-    listPayments: Fn; getPayment: Fn; cancelPayment: Fn; createPayment: Fn;
+    listPayments: Fn; getPayment: Fn; pollPayment: Fn; cancelPayment: Fn; createPayment: Fn;
     getComprobantePdf: Fn;
     getFiscalConfig: Fn; saveFiscalConfig: Fn;
   };
@@ -71,6 +71,7 @@ describe('FinancieroEffects', () => {
       deactivateBankAccount: vi.fn(),
       listPayments: vi.fn(),
       getPayment: vi.fn(),
+      pollPayment: vi.fn(),
       cancelPayment: vi.fn(),
       createPayment: vi.fn(),
       getComprobantePdf: vi.fn(),
@@ -269,19 +270,39 @@ describe('FinancieroEffects', () => {
     expect(action).toEqual(loadPaymentSuccess({ payment }));
   });
 
-  it('loadPayment$ emite loadPaymentNotModified ante 304 (polling sin cambios)', async () => {
-    api.getPayment.mockReturnValue(of(NOT_MODIFIED));
-    actions$ = of(loadPayment({ id: 9 }));
-    const effects = TestBed.inject(FinancieroEffects);
-    const action = await firstValueFrom(effects.loadPayment$);
-    expect(action).toEqual(loadPaymentNotModified());
-  });
-
   it('loadPayment$ mapea errores a loadPaymentFailure', async () => {
     api.getPayment.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
     actions$ = of(loadPayment({ id: 99 }));
     const effects = TestBed.inject(FinancieroEffects);
     const action = await firstValueFrom(effects.loadPayment$);
+    expect(action.type).toBe('[Financiero Cobros API] Load Payment Failure');
+  });
+
+  // ── pollPayment$ (KAN-245: solo el tick de polling usa el GET condicional) ──
+
+  it('pollPayment$ emite loadPaymentSuccess con el pago devuelto', async () => {
+    const payment = { id: 9, status: 'PROCESSED', totalAmount: 5000 } as any;
+    api.pollPayment.mockReturnValue(of(payment));
+    actions$ = of(pollPayment({ id: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.pollPayment$);
+    expect(api.pollPayment).toHaveBeenCalledWith(9);
+    expect(action).toEqual(loadPaymentSuccess({ payment }));
+  });
+
+  it('pollPayment$ emite loadPaymentNotModified con el id ante 304 (polling sin cambios)', async () => {
+    api.pollPayment.mockReturnValue(of(NOT_MODIFIED));
+    actions$ = of(pollPayment({ id: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.pollPayment$);
+    expect(action).toEqual(loadPaymentNotModified({ id: 9 }));
+  });
+
+  it('pollPayment$ mapea errores a loadPaymentFailure', async () => {
+    api.pollPayment.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    actions$ = of(pollPayment({ id: 99 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.pollPayment$);
     expect(action.type).toBe('[Financiero Cobros API] Load Payment Failure');
   });
 

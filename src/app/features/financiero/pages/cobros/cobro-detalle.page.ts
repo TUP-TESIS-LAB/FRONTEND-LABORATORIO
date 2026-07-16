@@ -23,7 +23,7 @@ import {
   selectCobrosError,
   selectDownloadingComprobante,
 } from '../../store/financiero.selectors';
-import { loadPayment, cancelPayment, downloadComprobante } from '../../store/financiero.actions';
+import { loadPayment, pollPayment, cancelPayment, downloadComprobante } from '../../store/financiero.actions';
 
 import { MetodoChipComponent } from '../../components/metodo-chip.component';
 import { EstadoPagoPillComponent } from '../../components/estado-pago-pill.component';
@@ -414,7 +414,7 @@ export class CobroDetallePage implements OnInit {
             intervalMs: 5000,
             poll: () => {
               const p = this.payment();
-              if (p) this.store.dispatch(loadPayment({ id: p.id }));
+              if (p) this.store.dispatch(pollPayment({ id: p.id }));
               return of(null);
             },
           });

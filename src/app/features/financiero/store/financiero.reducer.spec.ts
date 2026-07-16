@@ -199,15 +199,39 @@ describe('financiero reducer — cobros', () => {
     expect(s.cobros.error).toBe('No encontrado');
   });
 
-  it('loadPaymentNotModified (304 del polling) solo baja loading, no toca selected', () => {
+  it('loadPaymentNotModified (304 del polling) solo baja loading, no toca selected, cuando el id coincide', () => {
     const withSelected = financieroReducer(
       initialState,
       A.loadPaymentSuccess({ payment: { id: 9, status: 'PROCESSED' } as any }),
     );
     const loading = { ...withSelected, cobros: { ...withSelected.cobros, loading: true } };
-    const s = financieroReducer(loading, A.loadPaymentNotModified());
+    const s = financieroReducer(loading, A.loadPaymentNotModified({ id: 9 }));
     expect(s.cobros.loading).toBe(false);
     expect(s.cobros.selected).toBe(withSelected.cobros.selected);
+  });
+
+  // KAN-245 (CRÍTICO, confirmado por QA): entrar al detalle del pago 9 (cachea ETag),
+  // volver a la lista, entrar al 42 (selected=42), volver a entrar al 9 — si la carga
+  // inicial fuera condicional, un 304 dejaba `loading` en false sin tocar `selected`,
+  // y la pantalla en /cobros/9 mostraba importes/CAE del pago 42. Con la separación de
+  // acciones (loadPayment fresco vs pollPayment condicional) este 304 mal encaminado no
+  // debería ocurrir nunca en producción, pero el reducer se blinda igual: un
+  // loadPaymentNotModified cuyo id no coincide con el `selected` actual se ignora — no
+  // pisa nada y no reporta "al día" un pago que en realidad seguía sin cargarse.
+  it('loadPaymentNotModified con id distinto al seleccionado no debe reportarse como "al día" (KAN-245)', () => {
+    const withSelected42 = financieroReducer(
+      initialState,
+      A.loadPaymentSuccess({ payment: { id: 42, status: 'PROCESSED' } as any }),
+    );
+    const loading = { ...withSelected42, cobros: { ...withSelected42.cobros, loading: true } };
+
+    const s = financieroReducer(loading, A.loadPaymentNotModified({ id: 9 }));
+
+    // El pago mostrado NO puede quedar siendo el 42 disfrazado de "ya está al día" para el 9.
+    expect(s.cobros.selected?.id).not.toBe(9);
+    expect(s.cobros.selected).toBe(withSelected42.cobros.selected);
+    // Y no se da por resuelta la carga real del 9: el loading no se pisa a false a ciegas.
+    expect(s.cobros.loading).toBe(true);
   });
 
   it('cancelPaymentSuccess actualiza el seleccionado a CANCELLED', () => {

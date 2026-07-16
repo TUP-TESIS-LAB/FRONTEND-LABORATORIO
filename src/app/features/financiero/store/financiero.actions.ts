@@ -229,8 +229,18 @@ export const loadPaymentsFailure = createAction(
 );
 
 // ── Cobros: obtener detalle de pago ──────────────────────────────────────────
+// `loadPayment` es SIEMPRE una carga fresca (sin ETag condicional) — la usan la
+// carga inicial (ngOnInit) y la recarga post-cancelación. `pollPayment` es la
+// única acción que usa el GET condicional (If-None-Match), y solo la dispara el
+// tick de polling mientras el comprobante está PENDING (ver KAN-245: si la carga
+// inicial usara ETag, un 304 podía dejar `selected` mostrando el pago de una
+// visita anterior en la URL del pago recién pedido).
 export const loadPayment = createAction(
   '[Financiero Cobros] Load Payment',
+  props<{ id: number }>(),
+);
+export const pollPayment = createAction(
+  '[Financiero Cobros] Poll Payment',
   props<{ id: number }>(),
 );
 export const loadPaymentSuccess = createAction(
@@ -239,6 +249,7 @@ export const loadPaymentSuccess = createAction(
 );
 export const loadPaymentNotModified = createAction(
   '[Financiero Cobros API] Load Payment Not Modified',
+  props<{ id: number }>(),
 );
 export const loadPaymentFailure = createAction(
   '[Financiero Cobros API] Load Payment Failure',
