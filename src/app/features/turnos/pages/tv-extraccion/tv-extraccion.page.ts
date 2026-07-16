@@ -15,11 +15,12 @@ import { PublicDisplayService, PublicBranch } from '../../services/public-displa
 import { ExtractionDisplaySnapshot } from '../../models/extraction-display.model';
 import { PollingService, PollingHandle, isNotModified } from '@core/refresh';
 import { AdCarouselComponent } from '../sala-espera/ad-carousel.component';
+import { EmptyStateComponent } from '../sala-espera/empty-state.component';
 
 @Component({
   selector: 'app-tv-extraccion-page',
   standalone: true,
-  imports: [DialogModule, AdCarouselComponent],
+  imports: [DialogModule, AdCarouselComponent, EmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tv-extraccion.page.html',
   styleUrl: './tv-extraccion.page.scss',

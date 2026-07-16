@@ -164,7 +164,7 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
                       </div>
                     </div>
                     @if (row.reportAvailable) {
-                      <div class="mb-2 flex items-center gap-2">
+                      <div class="mb-2 flex items-center justify-end gap-2">
                         <p-button
                           size="small"
                           icon="pi pi-print"
@@ -202,7 +202,7 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
           </p-tabpanels>
         </p-tabs>
 
-        <p-confirmDialog />
+        <p-confirmDialog [draggable]="false" />
       </div>
     } @else {
       <div class="p-6">{{ pending() ? 'Cargando…' : 'Paciente no encontrado.' }}</div>

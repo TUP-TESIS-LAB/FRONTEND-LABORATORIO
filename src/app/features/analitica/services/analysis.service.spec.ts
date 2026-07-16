@@ -58,4 +58,20 @@ describe('AnalysisService', () => {
     expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis', { params: { shortCodePrefix: '100', limit: '5' } });
     expect(r).toHaveLength(1);
   });
+
+  // ── KAN-246: búsqueda unificada (nombre / código interno / código NBU) ────
+  it('search calls /api/v1/analitica/analysis?q=...&limit=10 (default limit)', async () => {
+    http.get.mockReturnValue(of([
+      { id: 5, shortCode: '1001', name: 'Hemograma', familyName: null, ubCount: 3, nbuCode: 'NBU-123' },
+    ]));
+    const r = await firstValueFrom(service.search('001'));
+    expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis', { params: { q: '001', limit: '10' } });
+    expect(r).toHaveLength(1);
+  });
+
+  it('search respeta el limit explícito', async () => {
+    http.get.mockReturnValue(of([]));
+    await firstValueFrom(service.search('hem', 5));
+    expect(http.get).toHaveBeenCalledWith('/api/v1/analitica/analysis', { params: { q: 'hem', limit: '5' } });
+  });
 });

@@ -487,6 +487,36 @@ describe('AtencionEffects', () => {
     expect(out).toEqual(A.removeAnalysisFromResumenFailure({ error }));
   });
 
+  // ── returnPhase$ ──────────────────────────────────────────────────────────
+
+  it('returnPhase$ → rechazo del backend (cobro ya registrado) → toast con el motivo + atencionMutationFailure', async () => {
+    const error = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'No se puede retroceder una atención con el cobro ya registrado' },
+    });
+    (api.returnPhase as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.returnPhase({ id: 42 }));
+    const out = await firstValueFrom(effects.returnPhase$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se puede retroceder una atención con el cobro ya registrado'
+    );
+    expect(out).toEqual(A.atencionMutationFailure({ error }));
+  });
+
+  it('returnPhase$ → mensaje del backend con leak → toast genérico (regla #4)', async () => {
+    const error = new HttpErrorResponse({
+      status: 500,
+      error: { message: 'java.lang.NullPointerException at lab.laboratorio.modules.Foo' },
+    });
+    (api.returnPhase as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+    actions$.next(A.returnPhase({ id: 42 }));
+    const out = await firstValueFrom(effects.returnPhase$.pipe(take(1)));
+    expect(notification.error).toHaveBeenCalledWith(
+      'No se pudo volver al paso anterior.'
+    );
+    expect(out).toEqual(A.atencionMutationFailure({ error }));
+  });
+
   // ── verifyPatient$ ────────────────────────────────────────────────────────
 
   it('verifyPatient$ → verify OK → verifyPatientSuccess', async () => {

@@ -55,8 +55,9 @@ export const cancelQueueEntryFailure = createAction(
   props<{ error: unknown }>()
 );
 
-// Walk-in (ST) sin appointment — Atender solo marca el entry COMPLETED y
-// navega. Para CT que tienen appointmentId usamos callAppointmentForAttention.
+// Walk-in (ST) sin appointment — Atender solo navega al wizard; la entry queda
+// PENDING y la completa el backend al crear la atención (KAN-249).
+// Para CT que tienen appointmentId usamos callAppointmentForAttention.
 export const attendWalkinEntry = createAction(
   '[Queue] Attend Walkin Entry',
   props<{ entryId: number; dni: string | null }>()
@@ -64,8 +65,4 @@ export const attendWalkinEntry = createAction(
 export const attendWalkinEntrySuccess = createAction(
   '[Queue] Attend Walkin Entry Success',
   props<{ dni: string | null; queueEntryId: number }>()
-);
-export const attendWalkinEntryFailure = createAction(
-  '[Queue] Attend Walkin Entry Failure',
-  props<{ error: unknown }>()
 );

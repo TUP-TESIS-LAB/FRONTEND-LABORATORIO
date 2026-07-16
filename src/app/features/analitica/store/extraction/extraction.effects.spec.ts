@@ -204,8 +204,14 @@ describe('ExtractionEffects', () => {
       expect(api.assignExtractor).toHaveBeenCalledWith(10, 2, 7);
     });
 
-    it('assignExtractor$ Failure 409 triggers error toast with the friendly message', async () => {
-      const error = new HttpErrorResponse({ status: 409 });
+    it('assignExtractor$ Failure 409 surfaces the backend message (no lo pisa)', async () => {
+      // El backend distingue el motivo real del 409 (capacidad del extractor vs box ocupado)
+      // y manda el mensaje correcto en español. El effect ya NO hardcodea el 409: deja pasar
+      // el mensaje del body (sanitizado por humanizeBackendError).
+      const error = new HttpErrorResponse({
+        status: 409,
+        error: { message: 'Ya tenés una extracción en curso. Finalizala o cancelala antes de tomar otra.' },
+      });
       (api.assignExtractor as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
 
       const failurePromise = firstValueFrom(effects.assignExtractor$.pipe(take(1)));
@@ -217,8 +223,22 @@ describe('ExtractionEffects', () => {
       actions$.next(failure);
       await toastPromise;
       expect(notifier.error).toHaveBeenCalledWith(
-        'El box que elegiste está ocupado por otro extractor. Cambiá de box.',
+        'Ya tenés una extracción en curso. Finalizala o cancelala antes de tomar otra.',
       );
+    });
+
+    it('assignExtractor$ Failure 409 sin body cae al fallback genérico', async () => {
+      const error = new HttpErrorResponse({ status: 409 });
+      (api.assignExtractor as ReturnType<typeof vi.fn>).mockReturnValue(throwError(() => error));
+
+      const failurePromise = firstValueFrom(effects.assignExtractor$.pipe(take(1)));
+      const toastPromise = firstValueFrom(effects.mutationToasts$.pipe(take(1)));
+      actions$.next(A.assignExtractor({ id: 10, boxNumber: 2, branchId: 7 }));
+
+      const failure = await failurePromise;
+      actions$.next(failure);
+      await toastPromise;
+      expect(notifier.error).toHaveBeenCalledWith('No pudimos tomar la extracción. Probá de nuevo.');
     });
 
     it('unassignExtraction$ Success emits unassignExtractionSuccess', async () => {

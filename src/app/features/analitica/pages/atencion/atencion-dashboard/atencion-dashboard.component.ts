@@ -48,65 +48,65 @@ import {
          "Atenciones" de Recepción. El header (título + "Nueva atención") y el "Turnos del
          día" viven en el header global de Recepción, no acá. -->
     <div class="py-2">
-      <section class="bg-white rounded-lg shadow-sm p-4">
-        <div class="mb-3">
-          <ui-filter-bar
-            [config]="filterConfig()"
-            (valueChange)="onFilterChange($event)" />
-        </div>
+      <!-- Sin card blanca: la tabla vive sobre el fondo de la página, igual que el
+           listado de Pacientes. El p-tabpanel de Recepción ya es transparente. -->
+      <div class="mb-3">
+        <ui-filter-bar
+          [config]="filterConfig()"
+          (valueChange)="onFilterChange($event)" />
+      </div>
 
-        <ui-table
-          [value]="rows()"
-          [loading]="loading()"
-          [columns]="columns"
-          [paginator]="true"
-          [rows]="20"
-          [rowsPerPageOptions]="[10, 20, 50, 100]"
-          [entityLabel]="'atenciones'"
-          [actions]="rowActions"
-          emptyHeading="Sin atenciones para los filtros aplicados"
-          emptyIcon="pi-inbox"
-          (action)="onAction($event)">
+      <ui-table
+        [value]="rows()"
+        [loading]="loading()"
+        [columns]="columns"
+        [paginator]="true"
+        [rows]="20"
+        [rowsPerPageOptions]="[10, 20, 50, 100]"
+        [entityLabel]="'atenciones'"
+        [actions]="rowActions"
+        emptyHeading="Sin atenciones para los filtros aplicados"
+        emptyIcon="pi-inbox"
+        (action)="onAction($event)">
 
-          <ng-template uiCell="fecha" let-row>
-            {{ $any(row).createdAt ? ($any(row).createdAt | date: 'dd/MM/yy HH:mm') : '—' }}
-          </ng-template>
+        <ng-template uiCell="fecha" let-row>
+          {{ $any(row).createdAt ? ($any(row).createdAt | date: 'dd/MM/yy HH:mm') : '—' }}
+        </ng-template>
 
-          <ng-template uiCell="paciente" let-row>
-            <div class="font-medium">{{ $any(row).patientFullName ?? '—' }}</div>
-            <div class="text-xs text-[var(--ds-text-muted)]">{{ $any(row).patientDni ?? '—' }}</div>
-          </ng-template>
+        <ng-template uiCell="paciente" let-row>
+          <div class="font-medium">{{ $any(row).patientFullName ?? '—' }}</div>
+          <div class="text-xs text-[var(--ds-text-muted)]">{{ $any(row).patientDni ?? '—' }}</div>
+        </ng-template>
 
-          <ng-template uiCell="doctorId" let-row>
-            {{ doctorName($any(row).doctorId) }}
-          </ng-template>
+        <ng-template uiCell="doctorId" let-row>
+          {{ doctorName($any(row).doctorId) }}
+        </ng-template>
 
-          <ng-template uiCell="estado" let-row>
-            @if (cancellationTooltip($any(row)); as motivo) {
-              <!-- El motivo se muestra en el hover del tag; la pista visual (ícono info)
-                   vive en el header de la columna "Estado", no en la fila. -->
-              <span class="inline-flex items-center"
-                    [pTooltip]="motivo" tooltipPosition="top"
-                    tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
-                <p-tag
-                  [value]="listLabel($any(row).attentionState, $any(row).cancelledAtState)"
-                  [severity]="groupSeverity($any(row).attentionState)" />
-              </span>
-            } @else {
+        <ng-template uiCell="estado" let-row>
+          @if (cancellationTooltip($any(row)); as motivo) {
+            <!-- El motivo se muestra en el hover del tag; la pista visual (ícono info)
+                 vive en el header de la columna "Estado", no en la fila. -->
+            <span class="inline-flex items-center"
+                  [pTooltip]="motivo" tooltipPosition="top"
+                  tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
               <p-tag
-                [value]="groupLabel($any(row).attentionState)"
+                [value]="listLabel($any(row).attentionState, $any(row).cancelledAtState)"
                 [severity]="groupSeverity($any(row).attentionState)" />
-            }
-          </ng-template>
+            </span>
+          } @else {
+            <p-tag
+              [value]="groupLabel($any(row).attentionState)"
+              [severity]="groupSeverity($any(row).attentionState)" />
+          }
+        </ng-template>
 
-          <ng-template uiCell="urgente" let-row>
-            @if ($any(row).isUrgent) {
-              <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i>
-            }
-          </ng-template>
+        <ng-template uiCell="urgente" let-row>
+          @if ($any(row).isUrgent) {
+            <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i>
+          }
+        </ng-template>
 
-        </ui-table>
-      </section>
+      </ui-table>
 
       <!-- Resumen del día: bloque colapsable con las métricas rápidas del listado. -->
       <section class="bg-white rounded-lg shadow-sm mt-5">
@@ -125,7 +125,7 @@ import {
         }
       </section>
 
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </div>
   `,
   styles: [`

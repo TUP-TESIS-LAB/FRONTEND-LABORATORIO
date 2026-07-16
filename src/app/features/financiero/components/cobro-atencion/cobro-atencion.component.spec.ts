@@ -192,10 +192,56 @@ describe('CobroAtencionComponent — smoke tests', () => {
   });
 });
 
-describe('CobroAtencionComponent — restante nunca negativo', () => {
+describe('CobroAtencionComponent — poder tipear el monto de una (KAN-249)', () => {
+  function buildFixture(total: number) {
+    return setupWithTemplate(MINIMAL_FORM_TEMPLATE, {
+      pricing: { items: [], subtotal: total, copayment: 0, total },
+    });
+  }
+
+  it('la única línea arranca precargada con el monto a cobrar', () => {
+    const c = buildFixture(1500).componentInstance as any;
+    expect(c.lineas()[0].amount).toBe(1500);
+  });
+
+  it('vaciar el campo NO lo re-rellena solo con el total (se puede tipear otro monto)', () => {
+    // El operador borra el monto precargado para escribir otro. p-inputNumber emite null
+    // al vaciarse → setAmount lo normaliza a 0. El prefill NO debe volver a dispararse:
+    // si lo hace, el campo "revive" con el total y es imposible escribir de cero.
+    const fixture = buildFixture(1500);
+    const c = fixture.componentInstance as any;
+    expect(c.lineas()[0].amount).toBe(1500);
+
+    c.setAmount(c.lineas()[0].id, null);
+    fixture.detectChanges();
+
+    expect(c.lineas()[0].amount).toBe(0);
+  });
+
+  it('el prefill es one-shot: no revive al cambiar el pricing tras haber vaciado el campo', () => {
+    const fixture = buildFixture(1500);
+    const c = fixture.componentInstance as any;
+    c.setAmount(c.lineas()[0].id, null);
+    fixture.detectChanges();
+
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectPricing, { items: [], subtotal: 900, copayment: 0, total: 900 });
+    store.refreshState();
+    fixture.detectChanges();
+
+    expect(c.lineas()[0].amount).toBe(0);
+  });
+});
+
+describe('CobroAtencionComponent — excedente permitido, sin clamp ni re-sync', () => {
   // Reusa el harness setupWithTemplate (Store + Router + contexto de sucursal/caja mockeados)
   // en vez del build() minimalista del brief: el componente inyecta OperatorBranchContextService
   // y CajaContextService, no sólo el Store, así que provideMockStore solo no alcanza para montar.
+  //
+  // NOTA: el clamp de setAmount() y el re-sync waterfall del constructor se sacaron a propósito
+  // (pedido explícito del usuario) para permitir pagar de más — el "Restante" negativo se muestra
+  // como "Excedente" en ámbar en vez de bloquearse. Estos tests reemplazan a los viejos que
+  // verificaban el clamp/waterfall, que ya no existen.
   function build(total: number) {
     const fixture = setupWithTemplate(MINIMAL_FORM_TEMPLATE, {
       pricing: { items: [], subtotal: total, copayment: 0, total },
@@ -203,80 +249,65 @@ describe('CobroAtencionComponent — restante nunca negativo', () => {
     return fixture.componentInstance as any;
   }
 
-  it('clampa el monto de una línea para no superar A cobrar', () => {
+  it('setAmount ya no clampea: una línea puede superar A cobrar (excedente)', () => {
     const c = build(100);
     const lineId = c.lineas()[0].id;
-    c.setAmount(lineId, '500');           // intento sobre-asignar
-    expect(c.asignado()).toBe(100);        // clampeado al total
-    expect(c.restante()).toBe(0);          // nunca negativo
+    c.setAmount(lineId, 500);
+    expect(c.asignado()).toBe(500);
+    expect(c.restante()).toBe(-400);       // negativo = excedente, ya no se fuerza a 0
   });
 
-  it('con dos líneas, la segunda no puede empujar el asignado sobre el total', () => {
+  it('con dos líneas, la suma puede superar el total sin clampearse', () => {
     const c = build(100);
     const first = c.lineas()[0].id;
-    c.setAmount(first, '60');
+    c.setAmount(first, 60);
     c.agregarLinea();
     const second = c.lineas()[1].id;
-    c.setAmount(second, '80');             // 60 + 80 = 140 > 100
-    expect(c.asignado()).toBe(100);        // la 2da se clampa a 40
-    expect(c.restante()).toBe(0);
+    c.setAmount(second, 80);               // 60 + 80 = 140 > 100
+    expect(c.asignado()).toBe(140);
+    expect(c.restante()).toBe(-40);
   });
 
-  // Step 4: re-sync del prefill cuando el total baja (p. ej. se editó el copago
-  // en el paso anterior). Simulamos el cambio de pricing con overrideSelector +
-  // refreshState + detectChanges, para que el effect vuelva a correr.
-  function retarget(fixture: any, total: number) {
+  it('si el total baja después de cargar montos, las líneas NO se reajustan solas', () => {
+    const fixture = setupWithTemplate(MINIMAL_FORM_TEMPLATE, {
+      pricing: { items: [], subtotal: 100, copayment: 0, total: 100 },
+    });
+    const c = fixture.componentInstance as any;
+    const first = c.lineas()[0].id;
+    c.setAmount(first, 60);
+    c.agregarLinea();
+    const second = c.lineas()[1].id;
+    c.setAmount(second, 40);
+    expect(c.asignado()).toBe(100);
+
+    // el total baja a 80: sin el waterfall viejo, las líneas quedan como estaban
+    // (60 + 40 = 100) y el excedente de 20 se refleja en restante(), no se absorbe solo.
     const store = TestBed.inject(MockStore);
-    store.overrideSelector(selectPricing, { items: [], subtotal: total, copayment: 0, total });
+    store.overrideSelector(selectPricing, { items: [], subtotal: 80, copayment: 0, total: 80 });
     store.refreshState();
     fixture.detectChanges();
-  }
 
-  it('re-sync convergente: el total baja y la última línea se achica (restante 0)', () => {
-    const fixture = setupWithTemplate(MINIMAL_FORM_TEMPLATE, {
-      pricing: { items: [], subtotal: 100, copayment: 0, total: 100 },
-    });
-    const c = fixture.componentInstance as any;
-    // dos líneas 60 + 40 = 100 (asignado == total)
-    const first = c.lineas()[0].id;
-    c.setAmount(first, '60');
-    c.agregarLinea();
-    const second = c.lineas()[1].id;
-    c.setAmount(second, '40');
-    expect(c.asignado()).toBe(100);
-
-    // el total baja a 80: exceso = 20 <= 40 (última línea) → última pasa a 20
-    retarget(fixture, 80);
     expect(c.aCobrar()).toBe(80);
-    expect(c.lineas()[0].amount).toBe(60);   // la primera intacta
-    expect(c.lineas()[1].amount).toBe(20);   // la última absorbió el exceso
-    expect(c.asignado()).toBe(80);
-    expect(c.restante()).toBe(0);
+    expect(c.lineas()[0].amount).toBe(60);
+    expect(c.lineas()[1].amount).toBe(40);
+    expect(c.asignado()).toBe(100);
+    expect(c.restante()).toBe(-20);
   });
 
-  it('re-sync patológico: exceso > última línea → waterfall, sin loop, restante >= 0', () => {
-    const fixture = setupWithTemplate(MINIMAL_FORM_TEMPLATE, {
-      pricing: { items: [], subtotal: 100, copayment: 0, total: 100 },
-    });
-    const c = fixture.componentInstance as any;
-    // dos líneas 50 + 50 = 100
-    const first = c.lineas()[0].id;
-    c.setAmount(first, '50');
-    c.agregarLinea();
-    const second = c.lineas()[1].id;
-    c.setAmount(second, '50');
-    expect(c.asignado()).toBe(100);
+  it('restanteColor: verde exacto, rojo si falta plata, ámbar si hay excedente', () => {
+    const c = build(100);
+    const lineId = c.lineas()[0].id;
 
-    // el total baja a 10: exceso = 90 > 50 (última) → última a 0, la primera absorbe 40
-    // (sin el waterfall + guard, este caso quedaba asignado=50>10 y loopeaba el effect).
-    retarget(fixture, 10);
-    expect(c.aCobrar()).toBe(10);
-    expect(c.asignado()).toBeLessThanOrEqual(c.aCobrar());
-    expect(c.restante()).toBeGreaterThanOrEqual(0);
-    expect(c.asignado()).toBe(10);
+    c.setAmount(lineId, 100);
     expect(c.restante()).toBe(0);
-    // valores concretos del waterfall: última a 0, primera recortada a 10
-    expect(c.lineas()[1].amount).toBe(0);
-    expect(c.lineas()[0].amount).toBe(10);
+    expect(c.restanteColor()).toBe('var(--ds-success)');
+
+    c.setAmount(lineId, 40);
+    expect(c.restante()).toBe(60);
+    expect(c.restanteColor()).toBe('var(--ds-danger)');
+
+    c.setAmount(lineId, 150);
+    expect(c.restante()).toBe(-50);
+    expect(c.restanteColor()).toBe('var(--ds-warning)');
   });
 });

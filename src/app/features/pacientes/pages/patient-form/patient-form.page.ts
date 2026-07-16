@@ -111,7 +111,7 @@ function isAddressFilled(a: Partial<Address>): boolean {
           </div>
         </ng-container>
       </ui-wizard-shell>
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </form>
   `,
 })

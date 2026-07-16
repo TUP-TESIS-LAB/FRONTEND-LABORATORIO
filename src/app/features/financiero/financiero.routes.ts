@@ -42,14 +42,6 @@ export const FINANCIERO_ROUTES: Routes = [
           ),
       },
       {
-        path: 'cobrar/:attentionId',
-        data: { breadcrumb: 'Cobrar' },
-        loadComponent: () =>
-          import('./components/cobro-atencion/cobro-atencion.component').then(
-            (m) => m.CobroAtencionComponent,
-          ),
-      },
-      {
         path: 'sucursales',
         data: { breadcrumb: 'Sucursales' },
         loadComponent: () =>

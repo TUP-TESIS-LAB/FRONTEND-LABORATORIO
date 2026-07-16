@@ -22,7 +22,9 @@ import {
   loadSettlement, informSettlement, cancelSettlement, loadInsurersIndex, loadInsurerPlans, exportSettlement,
   informSettlementSuccess, cancelSettlementSuccess, registerSettlementCollection,
 } from '../../store/financiero.actions';
-import { InformSettlementBody, CancelSettlementBody, RegisterCollectionBody, SettlementStatus } from '../../models/liquidaciones.model';
+import {
+  InformSettlementBody, CancelSettlementBody, RegisterCollectionBody, SettlementStatus, SettlementPlanRuleDetail,
+} from '../../models/liquidaciones.model';
 import { EstadoLiquidacionPillComponent } from '../../components/estado-liquidacion-pill.component';
 import { InformarLiquidacionModalComponent } from './components/informar-liquidacion-modal.component';
 import { AnularLiquidacionModalComponent } from './components/anular-liquidacion-modal.component';
@@ -31,6 +33,33 @@ import { RegistrarCobroLiquidacionModalComponent } from './components/registrar-
 type Modal = 'informar' | 'anular' | 'cobro' | null;
 type TlState = 'done' | 'current' | 'future';
 interface TimelineStep { label: string; date: string | null; amount: number | null; state: TlState; }
+
+/** Fila de tramo ya formateada para la tabla de "Reglas usadas" del detalle (Task 7, KAN-234). */
+interface TramoDisplayRow { desde: number; hastaLabel: string; open: boolean; amount: number; count: number; subtotal: number; }
+/** Reglas usadas de un plan: tramos formateados + valores fijos (vacíos = no se muestra ese bloque). */
+interface PlanRulesDisplay {
+  planId: number;
+  name: string;
+  rules: TramoDisplayRow[];
+  fixedAmounts: { analysisId: number; analysisName: string; amount: number; appliedCount: number; subtotal: number }[];
+}
+
+/**
+ * Desde N° mostrado en la tabla de tramos del detalle. El backend guarda el tramo abierto
+ * (GREATER_THAN) con `fromCount = N-1` (matchea `count > fromCount`), así que el "desde"
+ * real que ve el usuario es `fromCount + 1`. Los tramos BETWEEN usan `fromCount` tal cual.
+ */
+export function tramoDesde(rule: SettlementPlanRuleDetail): number {
+  return rule.ruleType === 'GREATER_THAN' ? (rule.fromCount ?? 0) + 1 : (rule.fromCount ?? 0);
+}
+
+/**
+ * Hasta N° mostrado en la tabla de tramos: el tramo abierto se etiqueta "N+ / en adelante"
+ * (mirror del chip de resumen de `tramos-editor`); el resto muestra el `toCount` tal cual.
+ */
+export function tramoHastaLabel(rule: SettlementPlanRuleDetail): string {
+  return rule.ruleType === 'GREATER_THAN' ? `${tramoDesde(rule)}+ / en adelante` : `${rule.toCount ?? ''}`;
+}
 
 @Component({
   selector: 'fin-liquidacion-detalle-page',
@@ -181,6 +210,91 @@ interface TimelineStep { label: string; date: string | null; amount: number | nu
             }
           </section>
         </div>
+
+        @if (l.type === 'ESPECIAL' && reglasPorPlan().length) {
+          <section class="liq-card liq-rules" data-testid="reglas-usadas">
+            <header class="liq-rules__head">
+              <h2>Reglas usadas</h2>
+              <span class="liq-rules__count">{{ reglasPorPlan().length }} plan{{ reglasPorPlan().length === 1 ? '' : 'es' }}</span>
+            </header>
+
+            @if (reglasPorPlan().length > 1) {
+              <div class="flex gap-1 flex-wrap border-b border-[var(--ds-border)] mb-3" role="tablist" data-testid="reglas-plan-tabs">
+                <button type="button" [class]="rulesTabClass(activeRulesPlan() === null)"
+                        (click)="activeRulesPlan.set(null)" data-testid="reglas-tab-todos">Todos</button>
+                @for (rp of reglasPorPlan(); track rp.planId) {
+                  <button type="button" [class]="rulesTabClass(activeRulesPlan() === rp.planId)"
+                          (click)="activeRulesPlan.set(rp.planId)" [attr.data-testid]="'reglas-tab-' + rp.planId">{{ rp.name }}</button>
+                }
+              </div>
+            }
+
+            @for (rp of visibleReglas(); track rp.planId) {
+              <div class="liq-rules__plan" [attr.data-testid]="'reglas-plan-' + rp.planId">
+                <h3 class="liq-rules__plan-name"><i class="pi pi-file"></i>{{ rp.name }}</h3>
+
+                @if (rp.rules.length) {
+                  <div class="liq-rules__block">
+                    <span class="liq-rules__block-title">Tramos</span>
+                    <div class="liq-rules__scroll">
+                      <table class="liq-rules__table" aria-label="Tramos aplicados en {{ rp.name }}">
+                        <thead>
+                          <tr>
+                            <th scope="col">Desde N°</th>
+                            <th scope="col">Hasta N°</th>
+                            <th scope="col" class="num">Valor U.B.</th>
+                            <th scope="col" class="num">Prestaciones</th>
+                            <th scope="col" class="num">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (r of rp.rules; track $index) {
+                            <tr>
+                              <td>{{ r.desde }}</td>
+                              <td [class.liq-rules__open]="r.open">{{ r.hastaLabel }}</td>
+                              <td class="num">{{ r.amount | currencyAr }}</td>
+                              <td class="num">{{ r.count }}</td>
+                              <td class="num">{{ r.subtotal | currencyAr }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+
+                @if (rp.fixedAmounts.length) {
+                  <div class="liq-rules__block">
+                    <span class="liq-rules__block-title">Valores fijos</span>
+                    <p class="liq-rules__note">Estos valores ya están incluidos en el subtotal del tramo.</p>
+                    <div class="liq-rules__scroll">
+                      <table class="liq-rules__table" aria-label="Valores fijos aplicados en {{ rp.name }}">
+                        <thead>
+                          <tr>
+                            <th scope="col">Análisis</th>
+                            <th scope="col" class="num">Monto</th>
+                            <th scope="col" class="num">Prestaciones</th>
+                            <th scope="col" class="num">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (f of rp.fixedAmounts; track f.analysisId) {
+                            <tr>
+                              <td>{{ f.analysisName }}</td>
+                              <td class="num">{{ f.amount | currencyAr }}</td>
+                              <td class="num">{{ f.appliedCount }}</td>
+                              <td class="num">{{ f.subtotal | currencyAr }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        }
       } @else {
         <!-- Skeleton de carga (replica el layout) -->
         <div class="liq-card liq-sk" style="height: 96px"></div>
@@ -311,6 +425,37 @@ interface TimelineStep { label: string; date: string | null; amount: number | nu
     .liq-prow--total .num { color: var(--ds-text); }
     .liq-prow .num[data-label]::before { content: ''; }
 
+    /* Reglas usadas (tramos + fijos), agrupado por plan — solo ESPECIAL. Task 7 (KAN-234) */
+    .liq-rules { margin-top: var(--space-4); }
+    .liq-rules__head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
+    .liq-rules__head h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--ds-text); }
+    .liq-rules__count { font-size: 12px; color: var(--ds-text-muted); }
+    .liq-rules__plan { padding: var(--space-4) 0; border-top: 1px solid var(--ds-surface); }
+    .liq-rules__plan:first-of-type { padding-top: 0; border-top: none; }
+    .liq-rules__plan-name {
+      display: flex; align-items: center; gap: 7px; margin: 0 0 var(--space-3);
+      font-size: 13px; font-weight: 700; color: var(--ds-text);
+    }
+    .liq-rules__plan-name i { color: var(--brand-primary); font-size: 12px; }
+    .liq-rules__block { margin-bottom: var(--space-4); }
+    .liq-rules__block:last-child { margin-bottom: 0; }
+    .liq-rules__block-title {
+      display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+      color: var(--ds-text-muted); font-weight: 600; margin-bottom: 6px;
+    }
+    .liq-rules__note { font-size: 12px; color: var(--ds-text-muted); font-style: italic; margin: 0 0 var(--space-2); }
+    .liq-rules__scroll { overflow-x: auto; }
+    .liq-rules__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .liq-rules__table th {
+      text-align: left; font-size: 11px; font-weight: 500; color: var(--ds-text-muted);
+      text-transform: uppercase; letter-spacing: .4px; padding: 0 var(--space-2) 6px;
+      border-bottom: 1px solid var(--ds-surface); white-space: nowrap;
+    }
+    .liq-rules__table td { padding: 6px var(--space-2); color: var(--ds-text); border-bottom: 1px solid var(--ds-surface); }
+    .liq-rules__table tbody tr:last-child td { border-bottom: none; }
+    .liq-rules__table th.num, .liq-rules__table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .liq-rules__open { color: var(--ds-text-muted); font-style: italic; }
+
     /* Vacío */
     .liq-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--space-6) 0; color: var(--ds-text-muted); }
     .liq-empty i { font-size: 24px; }
@@ -382,6 +527,56 @@ export class LiquidacionDetallePage implements OnInit {
     }));
   protected readonly totalIva = computed(() => this.planesResumen().reduce((s, p) => s + p.iva, 0));
   protected readonly totalConIva = computed(() => this.total() + this.totalIva());
+
+  /**
+   * Reglas usadas por plan — solo ESPECIAL (Task 7, KAN-234). Cada plan trae sus tramos
+   * (ya formateados para la tabla) y sus valores fijos con nombre de análisis resuelto.
+   * Un plan sin ninguno de los dos se descarta (nada que mostrar).
+   */
+  protected readonly reglasPorPlan = computed<PlanRulesDisplay[]>(() => {
+    const l = this.liq();
+    if (!l || l.type !== 'ESPECIAL') return [];
+    return l.plans
+      .map(plan => ({
+        planId: plan.planId,
+        name: this.planInfo().get(plan.planId)?.name ?? 'Plan',
+        rules: (plan.rules ?? []).map(r => ({
+          desde: tramoDesde(r),
+          hastaLabel: tramoHastaLabel(r),
+          open: r.ruleType === 'GREATER_THAN',
+          amount: r.amount,
+          count: r.count,
+          subtotal: r.subtotal,
+        })),
+        fixedAmounts: plan.fixedAmounts ?? [],
+      }))
+      .filter(p => p.rules.length > 0 || p.fixedAmounts.length > 0);
+  });
+
+  /**
+   * Filtro por plan de "Reglas usadas" (KAN-237, Item B): con varios planes, las tablas de
+   * tramos/fijos apiladas ocupan mucho — se agregan tabs para ver un plan a la vez.
+   * `null` = "Todos" (comportamiento previo, todos los planes apilados).
+   */
+  protected readonly activeRulesPlan = signal<number | null>(null);
+
+  /** `reglasPorPlan()` recortado al plan del tab activo; sin filtrar cuando es "Todos". */
+  protected readonly visibleReglas = computed<PlanRulesDisplay[]>(() => {
+    const tab = this.activeRulesPlan();
+    const all = this.reglasPorPlan();
+    return tab === null ? all : all.filter(p => p.planId === tab);
+  });
+
+  /**
+   * Clases Tailwind del tab de plan (activo/inactivo) — utility classes en vez de agrandar
+   * el `styles: []` del componente, que ya está cerca del budget de 8kB por-componente.
+   */
+  protected rulesTabClass(active: boolean): string {
+    const base = 'px-3 py-1.5 text-xs cursor-pointer bg-transparent border-0 border-b-2';
+    return active
+      ? `${base} border-[var(--brand-primary)] text-[var(--brand-primary)] font-bold`
+      : `${base} border-transparent text-[var(--ds-text-muted)] font-medium`;
+  }
 
   /** El monto informado a la OS difiere del total calculado (chequeo del administrador). */
   protected readonly informedDiffiere = computed(() => {

@@ -76,7 +76,7 @@ function emptyToNull(v: string | null | undefined): string | null {
           </div>
         </ng-container>
       </ui-wizard-shell>
-      <p-confirmDialog />
+      <p-confirmDialog [draggable]="false" />
     </form>
   `,
 })

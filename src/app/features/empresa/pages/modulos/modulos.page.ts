@@ -15,7 +15,7 @@ import { ModuloCardComponent } from './components/modulo-card.component';
   providers: [ConfirmationService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-confirmDialog />
+    <p-confirmDialog [draggable]="false" />
     @for (m of modulos(); track m.moduleCode) {
       <emp-modulo-card
         [meta]="metaFor(m.moduleCode)"

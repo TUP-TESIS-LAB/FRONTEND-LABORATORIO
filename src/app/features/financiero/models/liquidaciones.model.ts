@@ -3,6 +3,22 @@
 export type SettlementStatus = 'PENDING' | 'INFORMED' | 'BILLED' | 'CANCELLED';
 export type SettlementType = 'SIMPLE' | 'ESPECIAL';
 
+/** Regla de tramo especial (mapea a SpecialRuleDto del backend). */
+export interface SpecialRule {
+  ruleType: 'BETWEEN' | 'GREATER_THAN';
+  fromCount?: number | null;
+  toCount?: number | null;
+  amount: number;
+}
+/** Reglas por plan: { planId: SpecialRule[] }. Vacío → SIMPLE. */
+export type SpecialRulesByPlan = Record<number, SpecialRule[]>;
+
+/**
+ * Valores fijos en $ por análisis, por plan: { planId: { analysisId: monto } }.
+ * Un análisis con valor fijo ignora el cálculo por tramo/U.B. — se factura ese monto plano.
+ */
+export type FixedAmountsByPlan = Record<number, Record<number, number>>;
+
 /**
  * Fila del listado: GET /settlements. OJO: el DTO de listado usa `settlementId`
  * y trae `totalAmount` (no `createdAt`) — distinto del detalle, que usa `id`.
@@ -22,12 +38,39 @@ export interface SettlementAgreement {
   agreementId: number;
   agreementSubtotal: number;
   providedServiceIds: number[];
-  rules: unknown[];
+}
+
+/**
+ * Tramo aplicado en el detalle de la liquidación (KAN-234 Fase 2, BE-3). Es la regla ya
+ * resuelta contra las prestaciones reales — `subtotal`/`count` son lo efectivamente
+ * facturado en ese tramo, no la configuración cruda que se mandó a generar.
+ * El último tramo es siempre GREATER_THAN con `fromCount = N-1` (matchea count > fromCount).
+ */
+export interface SettlementPlanRuleDetail {
+  ruleType: 'BETWEEN' | 'GREATER_THAN';
+  fromCount: number | null;
+  toCount: number | null;
+  amount: number;
+  subtotal: number;
+  count: number;
+}
+
+/** Valor fijo aplicado a un análisis dentro del plan, en el detalle (KAN-234 Fase 2, BE-3). */
+export interface SettlementPlanFixedAmountDetail {
+  analysisId: number;
+  analysisName: string;
+  amount: number;
+  appliedCount: number;
+  subtotal: number;
 }
 
 export interface SettlementPlan {
   planId: number;
   agreements: SettlementAgreement[];
+  /** Tramos aplicados en este plan. Vacío/ausente en SIMPLE. */
+  rules?: SettlementPlanRuleDetail[];
+  /** Valores fijos aplicados por análisis en este plan. Vacío/ausente si no hay. */
+  fixedAmounts?: SettlementPlanFixedAmountDetail[];
 }
 
 /** Detalle: GET /settlements/{id}. */
@@ -83,10 +126,11 @@ export interface SettlementPlanResponse {
 export interface GenerateSettlementBody {
   insurerId: number;
   period: { from: string; to: string };
-  specialRules: [];
+  specialRulesByPlan?: SpecialRulesByPlan | null;
   excludedAnalysisIdsByPs: Record<number, number[]> | null;
   /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
   planIds?: number[] | null;
+  fixedAmountsByPlan?: FixedAmountsByPlan | null;
 }
 
 export interface InformSettlementBody {
@@ -126,8 +170,10 @@ export interface PreviewDetailBody {
   insurerId: number;
   period: { from: string; to: string };
   excludedAnalysisIdsByPs?: ExcludedAnalysisIdsByPs | null;
+  specialRulesByPlan?: SpecialRulesByPlan | null;
   /** Planes a liquidar. Si no viene / vacío → todos los de la OS (compat). */
   planIds?: number[] | null;
+  fixedAmountsByPlan?: FixedAmountsByPlan | null;
 }
 
 export interface PreviewAnalysis {
@@ -139,6 +185,8 @@ export interface PreviewAnalysis {
   excluded: boolean;
   /** false = el análisis no está cubierto por la OS (no suma al monto cubierto). */
   authorized: boolean;
+  /** Valor fijo asignado en $ (Task 5). Si viene seteado, ignora el cálculo por U.B. */
+  fixedAmount?: number | null;
 }
 
 export interface PreviewItem {
@@ -156,6 +204,10 @@ export interface PreviewItem {
   coveredAmount: number;
   fullyExcluded: boolean;
   analyses: PreviewAnalysis[];
+  /** Tramo especial aplicado (null en SIMPLE). */
+  appliedFrom?: number | null;
+  appliedTo?: number | null;
+  appliedUbValue?: number | null;
 }
 
 /** Grupo por plan (estilo OSSACRA): subtotales neto/IVA/bruto + sus prestaciones. */

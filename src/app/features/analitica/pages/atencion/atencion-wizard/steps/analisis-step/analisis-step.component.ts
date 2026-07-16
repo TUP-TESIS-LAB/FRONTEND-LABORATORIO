@@ -6,7 +6,6 @@ import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { race, take } from 'rxjs';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
@@ -30,7 +29,7 @@ import {
   selector: 'lab-analisis-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, InputTextModule, ToggleSwitchModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
+  imports: [FormsModule, InputTextModule, AnalysisPickerComponent, AnalysisDetailModalComponent],
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
@@ -38,26 +37,22 @@ import {
         [initialItems]="initialItems()"
         [readOnly]="readOnly()"
         [isParticular]="isParticular()"
+        [compactSearch]="showAuthorizationInput()"
         (analysisAdded)="onAnalysisAdded($event)"
         (analysisRemoved)="onAnalysisRemoved($event)"
         (itemsChanged)="onItemsChanged($event)"
         (detailRequested)="onDetailRequested($event)">
-        <!-- Proyectado a la derecha del buscador; la tabla del picker queda a todo el ancho. -->
-        @if (!readOnly()) {
-          <div class="flex items-end gap-3">
-            @if (detail()?.insurancePlanId != null) {
-              <label class="flex flex-col gap-1 text-sm">
-                <span class="font-semibold">Código de autorización de obra social</span>
-                <input pInputText type="text" [ngModel]="authorizationValue()"
-                       (ngModelChange)="authorizationValue.set($event)" (blur)="onAuthorizationBlur()"
-                       [disabled]="authorizationMutating()" class="w-56" placeholder="" />
-              </label>
-            }
-            <label class="flex items-center gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 cursor-pointer select-none whitespace-nowrap">
-              <p-toggleswitch [(ngModel)]="isUrgentValue" (ngModelChange)="onUrgentChange()" inputId="urgente-toggle" />
-              <span class="text-sm font-semibold">Urgente</span>
-            </label>
-          </div>
+        <!-- Proyectado JUSTO a la derecha del buscador (ver [compactSearch]): los dos campos
+             arrancan desde el borde izquierdo de la tabla, uno al lado del otro, en vez de
+             quedar este empujado contra el borde derecho.
+             La urgencia se marca en el paso 1 (Datos generales) — acá no se repite (KAN-237). -->
+        @if (showAuthorizationInput()) {
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-semibold">Código de autorización de obra social</span>
+            <input pInputText type="text" [ngModel]="authorizationValue()"
+                   (ngModelChange)="authorizationValue.set($event)" (blur)="onAuthorizationBlur()"
+                   [disabled]="authorizationMutating()" class="w-56" placeholder="" />
+          </label>
         }
       </lab-analysis-picker>
 
@@ -113,6 +108,13 @@ export class AnalisisStepComponent implements OnInit {
    * Items 2 y 3: gatea la columna "Autorizado" y el default de autorización del picker.
    */
   readonly isParticular = computed(() => this.detail()?.insurancePlanId == null);
+
+  /**
+   * El input de autorización solo aplica con obra social y en modo editable.
+   * Doble uso: gatea el propio input Y el [compactSearch] del picker, así el buscador
+   * solo se acorta cuando hay de verdad un campo al lado (sin OS sigue a todo el ancho).
+   */
+  readonly showAuthorizationInput = computed(() => !this.readOnly() && !this.isParticular());
 
   /**
    * Modo express urgente (KAN-140): la atención es urgente Y el módulo URGENCIAS está activo.
@@ -206,8 +208,6 @@ export class AnalisisStepComponent implements OnInit {
   onItemsChanged(rows: PickerRow[]): void { this.items.set(rows); }
   onDetailRequested(id: number): void { this.detailId.set(id); this.detailOpen.set(true); }
   closeDetail(): void { this.detailOpen.set(false); }
-  /** Re-persistir el borrador al togglear urgente (el effect depende de items(), no de isUrgentValue). */
-  onUrgentChange(): void { this.items.update((arr) => [...arr]); }
 
   /**
    * Persiste el código de autorización de obra social vía el endpoint dedicado.

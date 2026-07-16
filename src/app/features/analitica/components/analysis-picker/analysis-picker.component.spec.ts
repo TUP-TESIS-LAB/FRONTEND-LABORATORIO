@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { AnalysisPickerComponent, PickerRow } from './analysis-picker.component';
 import { AnalysisService } from '../../services/analysis.service';
 import { Analysis } from '../../models/atencion.model';
@@ -14,10 +14,16 @@ describe('AnalysisPickerComponent', () => {
     findByShortCode: ReturnType<typeof vi.fn>;
     searchByShortCodePrefix: ReturnType<typeof vi.fn>;
     searchByName: ReturnType<typeof vi.fn>;
+    search: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
-    api = { findByShortCode: vi.fn(), searchByShortCodePrefix: vi.fn(), searchByName: vi.fn() };
+    api = {
+      findByShortCode: vi.fn(),
+      searchByShortCodePrefix: vi.fn(),
+      searchByName: vi.fn(),
+      search: vi.fn(),
+    };
     await TestBed.configureTestingModule({
       imports: [AnalysisPickerComponent],
       providers: [{ provide: AnalysisService, useValue: api }],
@@ -74,19 +80,37 @@ describe('AnalysisPickerComponent', () => {
     expect(fixture.componentInstance.items()).toHaveLength(1);
   });
 
-  it('text input → uses searchByName for suggestions', () => {
-    api.searchByName.mockReturnValue(of([a({ id: 5 }), a({ id: 6, shortCode: '1002', name: 'Glucemia' })]));
+  // ── KAN-246: el buscador del picker usa siempre la búsqueda unificada ─────
+  // (nombre / código interno / código NBU, match "contiene") — sin heurística
+  // por tipo de caracter de la query.
+  it('texto → usa search() (búsqueda unificada) para las sugerencias', () => {
+    api.search.mockReturnValue(of([a({ id: 5 }), a({ id: 6, shortCode: '1002', name: 'Glucemia' })]));
     fixture.componentInstance.onAutoCompleteSearch({ query: 'gluc' } as any);
-    expect(api.searchByName).toHaveBeenCalledWith('gluc');
+    expect(api.search).toHaveBeenCalledWith('gluc');
+    expect(api.searchByName).not.toHaveBeenCalled();
+    expect(api.searchByShortCodePrefix).not.toHaveBeenCalled();
     expect(fixture.componentInstance.suggestions().length).toBe(2);
   });
 
-  it('numeric input → uses searchByShortCodePrefix for suggestions (autocomplete by code)', () => {
-    api.searchByShortCodePrefix.mockReturnValue(of([a({ id: 5, shortCode: '1001' }), a({ id: 6, shortCode: '1002' })]));
+  it('numérico → también usa search() (antes usaba searchByShortCodePrefix por heurística)', () => {
+    api.search.mockReturnValue(of([a({ id: 5, shortCode: '1001' }), a({ id: 6, shortCode: '1002' })]));
     fixture.componentInstance.onAutoCompleteSearch({ query: '100' } as any);
-    expect(api.searchByShortCodePrefix).toHaveBeenCalledWith('100');
+    expect(api.search).toHaveBeenCalledWith('100');
+    expect(api.searchByShortCodePrefix).not.toHaveBeenCalled();
     expect(api.searchByName).not.toHaveBeenCalled();
     expect(fixture.componentInstance.suggestions().length).toBe(2);
+  });
+
+  it('query vacía → limpia sugerencias sin llamar a search()', () => {
+    fixture.componentInstance.onAutoCompleteSearch({ query: '  ' } as any);
+    expect(api.search).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.suggestions()).toEqual([]);
+  });
+
+  it('error en search() → sugerencias vacías (no rompe el picker)', () => {
+    api.search.mockReturnValue(new Observable((sub) => sub.error(new Error('boom'))));
+    fixture.componentInstance.onAutoCompleteSearch({ query: 'xx' } as any);
+    expect(fixture.componentInstance.suggestions()).toEqual([]);
   });
 
   it('addAnalysis blocks duplicates by shortCode', () => {
