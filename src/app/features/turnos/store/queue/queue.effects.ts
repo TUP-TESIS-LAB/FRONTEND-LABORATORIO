@@ -5,7 +5,6 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { QueueService } from '../../services/queue.service';
 import { OperatorBranchContextService } from '../../services/operator-branch.context';
-import { QueueStatus } from '../../models/queue-status.enum';
 import * as A from './queue.actions';
 
 @Injectable()
@@ -111,32 +110,24 @@ export class QueueEffects {
     )),
   ));
 
+  // "Atender" NO completa la entry (KAN-249). La atención recién se crea en el paso 1 del wizard:
+  // si completáramos acá, entre el click y ese guardado el turno no estaría ni en la cola
+  // (COMPLETED) ni tendría atención que retomar — un back, un F5 o un click errado lo destruían.
+  // La entry queda PENDING (sigue en la cola, sigue retomable) y el backend la completa en la
+  // misma transacción en la que crea la atención. Consecuencia aceptada: mientras se carga el
+  // paso 1 el turno sigue visible y otra secretaria podría tomarlo — esa carrera es recuperable,
+  // perder el turno no lo era.
   attendWalkin$ = createEffect(() => this.actions$.pipe(
     ofType(A.attendWalkinEntry),
-    switchMap(({ entryId, dni }) =>
-      this.service.updateStatus(entryId, QueueStatus.COMPLETED).pipe(
-        map(() => A.attendWalkinEntrySuccess({ dni, queueEntryId: entryId })),
-        catchError(error => of(A.attendWalkinEntryFailure({ error }))),
-      ),
-    ),
+    map(({ entryId, dni }) => A.attendWalkinEntrySuccess({ dni, queueEntryId: entryId })),
   ));
 
-  refreshAndNavigateAfterAttendWalkin$ = createEffect(() => this.actions$.pipe(
+  navigateAfterAttendWalkin$ = createEffect(() => this.actions$.pipe(
     ofType(A.attendWalkinEntrySuccess),
     tap(({ dni, queueEntryId }) => {
       const queryParams: Record<string, string | number> = { queueEntryId };
       if (dni) queryParams['dni'] = dni;
       this.router.navigate(['/analitica/atencion/nueva'], { queryParams });
     }),
-    map(() => A.loadQueue({ silent: true })),
-  ));
-
-  showWalkinErrorToast$ = createEffect(() => this.actions$.pipe(
-    ofType(A.attendWalkinEntryFailure),
-    tap(() => this.toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudo iniciar la atención. Intentá de nuevo.',
-    })),
   ), { dispatch: false });
 }
