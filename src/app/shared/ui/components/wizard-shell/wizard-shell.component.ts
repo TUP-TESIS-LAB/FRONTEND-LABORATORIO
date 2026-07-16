@@ -48,8 +48,20 @@ import { FormStep } from '@shared/ui/models/form-step';
       <!-- Banner opcional bajo el stepper (p.ej. read-only + descargar rótulos). -->
       <ng-content select="[wizardBanner]" />
 
-      <div class="flex-1 overflow-y-auto px-8 py-6">
-        <div class="w-full mx-auto" [style.max-width]="maxWidth()">
+      <!-- Body del paso. Por defecto scrollea el shell (comportamiento histórico, correcto
+           para pasos tipo formulario que crecen en vertical). Con [bodyFill]=true el body
+           NO scrollea: le da alto definido al contenido proyectado para que el paso pueda
+           armar su propio scroll interno (p.ej. una ui-table con scrollHeight="flex").
+           Sin el h-full de acá, el height:100% del step resuelve contra un contenedor de
+           alto automático y toda la cadena flex-scroll se cae al scroll del shell. -->
+      <div class="flex-1 px-8 py-6"
+           [class.overflow-y-auto]="!bodyFill()"
+           [class.overflow-hidden]="bodyFill()"
+           [class.min-h-0]="bodyFill()">
+        <div class="w-full mx-auto"
+             [style.max-width]="maxWidth()"
+             [class.h-full]="bodyFill()"
+             [class.min-h-0]="bodyFill()">
           <ng-content />
         </div>
       </div>
@@ -146,6 +158,17 @@ export class WizardShellComponent {
 
   /** Ancho máximo del contenido centrado. Default 720px (estándar del DS). */
   readonly maxWidth = input<string>('720px');
+
+  /**
+   * `true` = el body del shell NO scrollea y le pasa su alto al contenido proyectado,
+   * que se hace cargo de su propio scroll interno (p.ej. una `ui-table` con
+   * `scrollHeight="flex"`).
+   *
+   * Default `false` = scroll del shell, el comportamiento histórico y correcto para los
+   * pasos tipo formulario que crecen en vertical. Es opt-in a propósito: se activa por
+   * paso, no por wizard, para no tocar el resto de los wizards del portal.
+   */
+  readonly bodyFill = input<boolean>(false);
 
   /**
    * Cuando es `true`, el footer NO renderiza los botones por defecto y en su

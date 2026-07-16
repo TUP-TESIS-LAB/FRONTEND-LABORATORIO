@@ -6,6 +6,9 @@ import { TagModule } from 'primeng/tag';
 import { EMPTY } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
 import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '@features/pacientes/models/coverage-catalog.model';
 import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { loadAttentionAnalyses, loadPricing, setCopayment } from '@features/analitica/store/atencion/atencion.actions';
@@ -18,48 +21,45 @@ import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencio
   selector: 'lab-cobro-step',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyArPipe, FormsModule, InputNumberModule, TagModule],
+  imports: [CurrencyArPipe, FormsModule, InputNumberModule, TagModule, DataTableComponent, UiCellDirective],
   template: `
-    <div class="p-2">
+    <div class="flex flex-col h-full min-h-0 p-2">
       <p class="text-sm text-surface-500 mb-4">Cargá el copago del paciente. Al continuar, pasás a la facturación y el registro del cobro.</p>
 
       <!-- Dos columnas: tabla desglosada por análisis a la izquierda (ancho flexible)
            y card de resumen fija a la derecha, en vez de filas de cierre apiladas
-           debajo de la tabla — evita que el card crezca en alto y fuerce scroll. -->
-      <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
-        <div class="border border-surface-200 rounded-xl overflow-hidden shadow-sm">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="text-left text-xs font-medium uppercase tracking-wide text-surface-400">
-                <th class="px-4 py-2">Ítem</th>
-                <th class="px-4 py-2 text-center">Estado</th>
-                <th class="px-4 py-2 text-right">A cargo</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of itemRows(); track row.analysisId; let i = $index) {
-                <tr [style.background]="i % 2 === 1 ? 'var(--ds-surface)' : null">
-                  <td class="px-4 py-3">
-                    <div class="font-medium">{{ row.name ?? ('#' + row.analysisId) }}</div>
-                    <div class="text-xs text-surface-500">{{ coverageLabel() }}</div>
-                  </td>
-                  <td class="px-4 py-3 text-center">
-                    @if (row.authorized) {
-                      <p-tag value="Autorizado" severity="success" styleClass="cobro-tag" />
-                    } @else {
-                      <p-tag value="Particular" severity="warn" styleClass="cobro-tag" />
-                    }
-                  </td>
-                  <td class="px-4 py-3 text-right font-semibold">{{ row.precioPaciente | currencyAr }}</td>
-                </tr>
-              } @empty {
-                <tr><td colspan="3" class="px-4 py-6 text-center text-surface-400">Calculando…</td></tr>
+           debajo de la tabla — evita que el card crezca en alto y fuerce scroll.
+           La tabla lleva su propio scroll interno (scrollHeight="flex") para que la
+           lista de ítems no empuje el alto del paso al scroll del shell. -->
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 flex-1 min-h-0">
+        <div class="flex flex-col min-h-0">
+          <ui-table
+            [value]="itemRows()"
+            [columns]="itemColumns"
+            [scrollHeight]="'flex'"
+            dataKey="analysisId"
+            emptyHeading="Calculando…"
+            emptyIcon="pi-wallet">
+
+            <ng-template uiCell="item" let-row>
+              <span class="font-medium">{{ $any(row).name ?? ('#' + $any(row).analysisId) }}</span>
+            </ng-template>
+
+            <ng-template uiCell="estado" let-row>
+              @if ($any(row).authorized) {
+                <p-tag value="Autorizado" severity="success" styleClass="cobro-tag" />
+              } @else {
+                <p-tag value="Particular" severity="warn" styleClass="cobro-tag" />
               }
-            </tbody>
-          </table>
+            </ng-template>
+
+            <ng-template uiCell="acargo" let-row>
+              <span class="font-semibold">{{ $any(row).precioPaciente | currencyAr }}</span>
+            </ng-template>
+          </ui-table>
         </div>
 
-        <div class="border border-surface-200 rounded-xl shadow-sm p-4 sticky top-0">
+        <div class="border border-surface-200 rounded-xl shadow-sm p-4 self-start">
           <div class="text-xs font-medium uppercase tracking-wide text-surface-400 mb-3">Resumen</div>
           <div class="flex items-center justify-between text-sm mb-2">
             <span class="text-surface-500">Estudios a cargo</span>
@@ -86,6 +86,9 @@ import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencio
     </div>
   `,
   styles: [`
+    /* El paso llena el alto que le da el shell ([bodyFill]) para que el scroll caiga
+       dentro de la tabla y no en el stepper. */
+    :host { display: block; height: 100%; }
     ::ng-deep .cobro-tag.p-tag {
       font-size: 0.7rem;
       padding: 0.15rem 0.5rem;
@@ -93,6 +96,13 @@ import { AnalysisDetail, AttentionResponse } from '../../../../../models/atencio
   `],
 })
 export class CobroStepComponent implements OnInit {
+  /** Columnas del desglose por análisis. "A cargo" no envuelve: ui-table ya aplica nowrap en los th. */
+  protected readonly itemColumns: readonly TableColumn[] = [
+    { field: 'item',   header: 'Ítem' },
+    { field: 'estado', header: 'Estado', align: 'center' },
+    { field: 'acargo', header: 'A cargo', align: 'right' },
+  ];
+
   private readonly store = inject(Store);
   private readonly coverageCatalogApi = inject(CoverageCatalogService);
 

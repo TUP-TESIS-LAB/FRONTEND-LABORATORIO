@@ -144,6 +144,7 @@ const ALL_STEPS: WizardStepDef[] = [
           [clickable]="readOnly()"
           [customFooter]="true"
           [maxWidth]="'1040px'"
+          [bodyFill]="bodyFill()"
           (stepSelected)="goToStep($event)">
 
           @if (detail()!.isUrgent) {
@@ -332,6 +333,19 @@ export class AtencionWizardComponent {
 
   /** Cantidad de análisis cargados en el paso 2 (lo emite el step). Gate de "Continuar". */
   protected readonly analysisCount = signal(0);
+
+  /**
+   * Pasos cuyo contenido se hace cargo de su propio scroll interno (la lista de análisis
+   * scrollea adentro de la tabla, no el shell). Solo Cobro y Confirmar: el resto de los
+   * pasos son formularios que crecen en vertical y siguen usando el scroll del shell.
+   */
+  private static readonly BODY_FILL_STEPS: ReadonlySet<StepKey> = new Set<StepKey>(['cobro', 'confirmar']);
+
+  /** Ver BODY_FILL_STEPS — gatea el [bodyFill] del ui-wizard-shell paso por paso. */
+  protected readonly bodyFill = computed<boolean>(() => {
+    const key = this.uiStep()?.key;
+    return key != null && AtencionWizardComponent.BODY_FILL_STEPS.has(key);
+  });
 
   /**
    * "Confirmar y seguir" del paso 1: habilitado con un paciente resuelto y sin una
