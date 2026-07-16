@@ -51,8 +51,8 @@ export class QueueEffects {
   callAppointmentForAttention$ = createEffect(() => this.actions$.pipe(
     ofType(A.callAppointmentForAttention),
     switchMap(({ appointmentId, dni, queueEntryId }) =>
-      // attendByAppointment: registra el call + transiciona queue_entry
-      // a COMPLETED para que salga de la cola inmediatamente.
+      // attendByAppointment: registra el call. NO completa el entry — queda PENDING y lo
+      // completa el backend al crear la atención (KAN-249, mismo criterio que el walk-in).
       // El response.id es el queueEntryId real (creado o recuperado por el BE).
       this.service.attendByAppointment(appointmentId).pipe(
         map(response => A.callAppointmentForAttentionSuccess({
@@ -66,8 +66,8 @@ export class QueueEffects {
     ),
   ));
 
-  // Tras Atender exitoso, refrescar la cola silently para que el entry
-  // recien COMPLETED desaparezca de la lista sin esperar el polling.
+  // Tras Atender exitoso, refrescar la cola silently: el call muta el entry (lastCalledAt,
+  // callCount) y puede haberlo creado. El entry sigue en la cola hasta que exista la atención.
   refreshAfterAttend$ = createEffect(() => this.actions$.pipe(
     ofType(A.callAppointmentForAttentionSuccess),
     map(() => A.loadQueue({ silent: true })),
