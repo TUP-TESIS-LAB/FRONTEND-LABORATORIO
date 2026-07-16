@@ -22,8 +22,8 @@ function makePatient(overrides: Partial<AwaitingExtractionItem> = {}): AwaitingE
     waitMinutes: 5,
     samples: [
       // Valores crudos del enum backend (SampleType). La UI los traduce.
-      { sampleType: 'BLOOD', count: 2 },
-      { sampleType: 'URINE', count: 1 },
+      { sampleType: 'BLOOD', count: 2, tubeCount: 1 },
+      { sampleType: 'URINE', count: 1, tubeCount: 1 },
     ],
     ...overrides,
   };
@@ -274,7 +274,7 @@ describe('TakePatientModalComponent', () => {
   describe('Sección muestras', () => {
     it('patient con muestras expone los samples en boxRows context (smoke)', () => {
       const fixture = TestBed.createComponent(TakePatientModalComponent);
-      const patient = makePatient({ samples: [{ sampleType: 'BLOOD', count: 2 }] });
+      const patient = makePatient({ samples: [{ sampleType: 'BLOOD', count: 2, tubeCount: 1 }] });
       fixture.componentRef.setInput('patient', patient);
       fixture.componentRef.setInput('visible', true);
       fixture.detectChanges();
@@ -285,7 +285,7 @@ describe('TakePatientModalComponent', () => {
 
     it('renderiza el tipo de muestra traducido al español, nunca el enum crudo', () => {
       const fixture = TestBed.createComponent(TakePatientModalComponent);
-      const patient = makePatient({ samples: [{ sampleType: 'BLOOD', count: 3 }] });
+      const patient = makePatient({ samples: [{ sampleType: 'BLOOD', count: 3, tubeCount: 1 }] });
       fixture.componentRef.setInput('patient', patient);
       fixture.componentRef.setInput('visible', true);
       fixture.detectChanges();

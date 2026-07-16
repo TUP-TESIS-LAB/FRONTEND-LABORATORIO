@@ -1,7 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { InExtractionItem } from '../../models/extraction.model';
-import { FinishExtractionModalComponent } from './finish-extraction-modal.component';
+import {
+  FinishExtractionModalComponent,
+  containerRows,
+  pluralize,
+  totalContainers,
+} from './finish-extraction-modal.component';
 
 function mineItem(over: Partial<InExtractionItem> = {}): InExtractionItem {
   return {
@@ -14,6 +19,40 @@ function mineItem(over: Partial<InExtractionItem> = {}): InExtractionItem {
     ...over,
   };
 }
+
+describe('resumen de recipientes (lógica pura)', () => {
+  // Caso realista: 4 análisis de sangre que comparten 1 tubo + 1 de orina en 1 frasco.
+  // `count` cuenta análisis (4 y 1); `tubeCount` cuenta recipientes (1 y 1).
+  const samples = [
+    { sampleType: 'BLOOD', count: 4, tubeCount: 1 },
+    { sampleType: 'URINE', count: 1, tubeCount: 1 },
+  ];
+
+  it('totalContainers suma tubeCount, no count', () => {
+    expect(totalContainers(samples)).toBe(2);
+  });
+
+  it('totalContainers refleja los tubos configurados por el laboratorio', () => {
+    expect(totalContainers([{ sampleType: 'BLOOD', count: 4, tubeCount: 3 }])).toBe(3);
+  });
+
+  it('totalContainers es 0 sin muestras', () => {
+    expect(totalContainers([])).toBe(0);
+    expect(totalContainers(null)).toBe(0);
+    expect(totalContainers(undefined)).toBe(0);
+  });
+
+  it('containerRows descarta los tipos que no aportan recipientes', () => {
+    const rows = containerRows([...samples, { sampleType: 'SALIVA', count: 2, tubeCount: 0 }]);
+    expect(rows.map((r) => r.sampleType)).toEqual(['BLOOD', 'URINE']);
+  });
+
+  it('pluralize singulariza en 1 y pluraliza en el resto', () => {
+    expect(pluralize(1, 'recipiente', 'recipientes')).toBe('1 recipiente');
+    expect(pluralize(2, 'recipiente', 'recipientes')).toBe('2 recipientes');
+    expect(pluralize(0, 'recipiente', 'recipientes')).toBe('0 recipientes');
+  });
+});
 
 describe('FinishExtractionModalComponent', () => {
   beforeEach(() => {
@@ -33,33 +72,6 @@ describe('FinishExtractionModalComponent', () => {
     const fixture = TestBed.createComponent(FinishExtractionModalComponent);
     fixture.detectChanges();
     expect(fixture.componentInstance.headerText()).toBe('Finalizar extracción');
-  });
-
-  it('analysisLabel uses analysisCount when there are no samples', () => {
-    const fixture = TestBed.createComponent(FinishExtractionModalComponent);
-    fixture.componentRef.setInput('patient', mineItem({ analysisCount: 3, samples: [] }));
-    fixture.detectChanges();
-    expect(fixture.componentInstance.analysisLabel()).toBe('3 análisis');
-  });
-
-  it('analysisLabel sums sample counts when present', () => {
-    const fixture = TestBed.createComponent(FinishExtractionModalComponent);
-    fixture.componentRef.setInput('patient', mineItem({
-      analysisCount: 3,
-      samples: [
-        { sampleType: 'SUERO', count: 2 },
-        { sampleType: 'ORINA', count: 1 },
-      ],
-    }));
-    fixture.detectChanges();
-    expect(fixture.componentInstance.analysisLabel()).toBe('3 análisis');
-  });
-
-  it('analysisLabel singularizes for one analysis', () => {
-    const fixture = TestBed.createComponent(FinishExtractionModalComponent);
-    fixture.componentRef.setInput('patient', mineItem({ analysisCount: 1, samples: [] }));
-    fixture.detectChanges();
-    expect(fixture.componentInstance.analysisLabel()).toBe('1 análisis');
   });
 
   it('confirmed emits the trimmed observation', () => {
