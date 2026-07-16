@@ -70,60 +70,72 @@ const ALL_STEPS: WizardStepDef[] = [
     CancelAttentionModalComponent, CobroStepComponent, CobroAtencionComponent,
   ],
   // T8: el wizard ocupa el alto del viewport (menos el topbar) y es una columna flex,
-  // así el contenido del paso flexiona y el footer (Volver/Confirmar) queda abajo, sin
-  // que la página tenga scroll vertical propio.
+  // así el contenido del paso flexiona y el footer (Volver/Confirmar) queda pegado abajo,
+  // sin que la página tenga scroll vertical propio. Sin padding/max-width propios (eso
+  // rompía el full-bleed de ui-wizard-shell) — solo establece el alto definido que
+  // ui-wizard-shell necesita para su propio truco de margin negativo.
   styles: [`
     :host { display: block; }
     .aw-shell {
-      /* topbar (64) + padding vertical del content-area del shell (3rem) → la pantalla
-         entra completa sin scroll vertical de página. (T8) */
       height: calc(100dvh - var(--ds-topbar-h, 64px) - 3rem);
       display: flex;
       flex-direction: column;
       min-height: 0;
     }
-    .aw-step { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   `],
   template: `
-    <div class="aw-shell p-6 max-w-4xl mx-auto w-full">
-      @if (loading() && !detail()) {
-        <!-- Solo en la carga INICIAL (sin detail). Durante un refresh con detail ya
-             cargado NO se gatea: si no, loadAtencion() del resumen-step (ngOnInit)
-             desmonta el step → al re-montar re-dispatcha loadAtencion → loop infinito
-             que deja la pantalla colgada en "Cargando atención…". -->
-        <div class="text-center py-12 opacity-70">Cargando atención…</div>
-      } @else if (creating()) {
-        <!-- Modo "crear nueva atención" — sin detail todavía, solo el paso 1.
-             El footer (Confirmar y seguir) lo provee el contenedor: el step ya no
-             pinta su propio footer (item 1 — navegación centralizada). -->
-        <header class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-xl font-semibold">Nueva atención</h2>
-            <div class="text-sm opacity-70">Buscá el paciente para empezar</div>
-          </div>
+    <div class="aw-shell">
+    @if (loading() && !detail()) {
+      <!-- Solo en la carga INICIAL (sin detail). Durante un refresh con detail ya
+           cargado NO se gatea: si no, loadAtencion() del resumen-step (ngOnInit)
+           desmonta el step → al re-montar re-dispatcha loadAtencion → loop infinito
+           que deja la pantalla colgada en "Cargando atención…". -->
+      <div class="p-6 max-w-4xl mx-auto w-full text-center py-12 opacity-70">Cargando atención…</div>
+    } @else if (creating()) {
+      <!-- Modo "crear nueva atención" — sin detail todavía, solo el paso 1. Mismo
+           shell que el resto del wizard (U1, KAN-246): antes esto era markup ad-hoc
+           sin stepper, así que al crear la atención el usuario "saltaba" de golpe al
+           paso 2 sin haber visto nunca el paso 1 resaltado. Con el shell acá, el
+           stepper ya arranca marcando "1 Datos generales" activo. -->
+      <ui-wizard-shell
+        heading="Nueva atención"
+        [steps]="stepperSteps()"
+        [currentIndex]="0"
+        [visited]="emptySet"
+        [clickable]="false"
+        [customFooter]="true"
+        [maxWidth]="'1040px'">
+
+        <div headerActions>
           <p-button label="Volver al listado" severity="secondary" [text]="true"
                     (onClick)="backToList()" />
-        </header>
-        <div class="aw-step">
-          <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
         </div>
-        <div class="flex justify-end pt-3">
+
+        <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
+
+        <div wizardFooter>
           <p-button label="Confirmar y seguir" [disabled]="!datosCanConfirm()"
                     (onClick)="advanceCurrent()" />
         </div>
-      } @else if (mutating() && !detail()) {
-        <!-- Caso: createPreFilledAtencion en vuelo (?appointmentId=X). Mientras la
-             creación va, detail() es null pero mutating() es true. Mostramos un
-             estado neutro de "Creando…" en lugar del empty-state engañoso. -->
-        <div class="text-center py-12 opacity-70">Creando atención…</div>
-      } @else if (!detail()) {
+      </ui-wizard-shell>
+    } @else if (mutating() && !detail()) {
+      <!-- Caso: createPreFilledAtencion en vuelo (?appointmentId=X). Mientras la
+           creación va, detail() es null pero mutating() es true. Mostramos un
+           estado neutro de "Creando…" en lugar del empty-state engañoso. -->
+      <div class="p-6 max-w-4xl mx-auto w-full text-center py-12 opacity-70">Creando atención…</div>
+    } @else if (!detail()) {
+      <div class="p-6 max-w-4xl mx-auto w-full">
         <ui-empty-state heading="Atención no encontrada" icon="pi-exclamation-circle" />
-      } @else {
-        <!-- Item 1+5: el wizard de atención usa el shell estándar (ui-wizard-shell).
-             URGENTE va inline al lado del título ([headingBadge]); las acciones de
-             header (Volver al listado / Cancelar) en [headerActions]; el banner de
-             solo-lectura + Descargar rótulos en [wizardBanner]; y los botones de
-             navegación de cada paso suben al footer del shell ([wizardFooter]). -->
+      </div>
+    } @else {
+      <!-- Item 1+5: el wizard de atención usa el shell estándar (ui-wizard-shell), sin
+           padding/max-width propios encima (el wrapper .aw-shell solo aporta el alto
+           fijo del viewport para el footer pegado abajo) — mismo look full-bleed que
+           el resto de los wizards del laboratorio (sacar-turno, sucursal, agenda, domicilio).
+           URGENTE va inline al lado del título ([headingBadge]); las acciones de
+           header (Volver al listado / Cancelar) en [headerActions]; el banner de
+           solo-lectura + Descargar rótulos en [wizardBanner]; y los botones de
+           navegación de cada paso suben al footer del shell ([wizardFooter]). -->
         <ui-wizard-shell
           [heading]="'Atención ' + headerTitle()"
           [steps]="stepperSteps()"
@@ -139,10 +151,10 @@ const ALL_STEPS: WizardStepDef[] = [
           }
 
           <div headerActions class="flex items-center gap-2">
-            <p-button label="Volver al listado" severity="secondary" [text]="true"
+            <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
                       (onClick)="backToList()" />
             @if (canCancel()) {
-              <p-button label="Cancelar atención" severity="danger" [text]="true" (onClick)="onCancel()" />
+              <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
             }
           </div>
 
@@ -200,10 +212,10 @@ const ALL_STEPS: WizardStepDef[] = [
                                  (stepAdvanced)="onAnalysisAdvanced()" />
             }
             @case ('cobro') {
-              <lab-cobro-step [atencionId]="detail()!.id" />
+              <lab-cobro-step [atencion]="detail()!" />
             }
             @case ('facturacion') {
-              <fin-cobro-atencion [attentionId]="detail()!.id" [embedded]="true" />
+              <fin-cobro-atencion [attentionId]="detail()!.id" />
             }
             @case ('confirmar') {
               <lab-resumen-step [atencion]="detail()!" [readOnly]="readOnly()"
@@ -224,7 +236,17 @@ const ALL_STEPS: WizardStepDef[] = [
                             (onClick)="advanceCurrent()" />
                 }
                 @case ('facturacion') {
-                  <!-- El botón "Confirmar cobro" lo provee fin-cobro-atencion. Sin botón en el footer. -->
+                  <!-- U4 (KAN-246): antes el botón vivía dentro de fin-cobro-atencion, inconsistente
+                       con el resto de los pasos. Ahora sube al footer del shell vía viewChild; tras
+                       el pago exitoso el propio componente muestra su pantalla de éxito con
+                       Imprimir/Continuar inline, así que acá no mostramos nada. -->
+                  @if (!cobroAtencionRef()?.result()) {
+                    <p-button label="Confirmar cobro" icon="pi pi-check"
+                              [loading]="cobroAtencionRef()?.submitting() ?? false"
+                              [disabled]="!(cobroAtencionRef()?.puedeConfirmar() ?? false)"
+                              (onClick)="cobroAtencionRef()?.confirmar()"
+                              data-testid="cobro-confirmar" />
+                  }
                 }
                 @case ('analisis') {
                   @if (modoExpress()) {
@@ -245,7 +267,7 @@ const ALL_STEPS: WizardStepDef[] = [
             </div>
           }
         </ui-wizard-shell>
-      }
+    }
     </div>
 
     <lab-cancel-attention-modal [visible]="cancelModalOpen()"
@@ -276,6 +298,9 @@ export class AtencionWizardComponent {
     return path.endsWith('/atencion/nueva');
   });
 
+  /** Set vacío estable para el `[visited]` del shell en modo "creating" (nada completado aún). */
+  protected readonly emptySet: ReadonlySet<number> = new Set();
+
   protected readonly detail   = this.store.selectSignal(selectDetail);
   protected readonly loading  = this.store.selectSignal(selectDetailLoading);
   protected readonly mutating = this.store.selectSignal(selectMutating);
@@ -289,6 +314,12 @@ export class AtencionWizardComponent {
   private readonly datosRef    = viewChild(DatosGeneralesStepComponent);
   private readonly analisisRef = viewChild(AnalisisStepComponent);
   private readonly resumenRef  = viewChild(ResumenStepComponent);
+  /**
+   * U4 (KAN-246): "Confirmar cobro" ahora vive en el [wizardFooter], igual que el resto de los pasos.
+   * `protected` (no `private`): a diferencia de datosRef/analisisRef/resumenRef —que solo se leen
+   * desde métodos de la clase—, este se referencia directo en el template.
+   */
+  protected readonly cobroAtencionRef = viewChild(CobroAtencionComponent);
 
   /** Cantidad de análisis cargados en el paso 2 (lo emite el step). Gate de "Continuar". */
   protected readonly analysisCount = signal(0);
@@ -326,8 +357,10 @@ export class AtencionWizardComponent {
       case 'datos':     this.datosRef()?.onConfirm(); break;
       case 'analisis':  this.analisisRef()?.onContinue(); break;
       case 'cobro':     {
-        // endCollection: ON_COLLECTION_PROCESS -> ON_BILLING_PROCESS. Limpiamos el override
-        // de UI para que el wizard siga el estado real del backend hacia 'facturación'
+        // endCollection: ON_COLLECTION_PROCESS -> ON_BILLING_PROCESS (o directo a
+        // AWAITING_CONFIRMATION si no hay nada que cobrar — EndCollectionPhaseUseCase
+        // decide el salto server-side, KAN-246 B5). Limpiamos el override de UI para
+        // que el wizard siga el estado real del backend hacia donde haya aterrizado
         // (si no, el override 'cobro' dejaba la UI clavada en el paso Cobro tras avanzar).
         const d = this.detail();
         if (d) { this.store.dispatch(endCollection({ id: d.id })); this.uiStepOverride.set(null); }
@@ -511,7 +544,9 @@ export class AtencionWizardComponent {
       this.uiStepOverride.set(null);
       return;
     }
-    // Estamos en el paso real → retroceder de verdad en el backend.
+    // Estamos en el paso real → retroceder de verdad en el backend. ReturnPhaseUseCase ya
+    // hace el doble salto server-side cuando corresponde (KAN-246 B5, simétrico al bypass
+    // de EndCollectionPhaseUseCase) — no hay nada más que orquestar acá.
     this.store.dispatch(returnPhase({ id: d.id }));
   }
   onCancel(): void {
@@ -523,8 +558,8 @@ export class AtencionWizardComponent {
     if (!d) return;
     this.cancelModalOpen.set(false);
     this.store.dispatch(cancelAtencion({ id: d.id, payload: { cancellationReason: reason } }));
-    this.waitForMutation((ok) => {
-      if (ok) {
+    this.waitForMutation((success) => {
+      if (success) {
         clearAtencionSession();
         clearAnalisisDraft(d.id);
         this.store.dispatch(resetAtencionWizard());
@@ -533,13 +568,18 @@ export class AtencionWizardComponent {
     });
   }
 
-  private waitForMutation(cb: (ok: boolean) => void): void {
+  /**
+   * `success` trae el `item` (atención actualizada) tal cual vino del backend — no depender
+   * de leer `this.detail()` acá adentro, que puede no estar sincronizado todavía según el
+   * orden de suscripción interno de NgRx entre el reducer y este subscriber del componente.
+   */
+  private waitForMutation(cb: (success: ReturnType<typeof atencionMutationSuccess> | null) => void): void {
     race(
       this.actions$.pipe(ofType(atencionMutationSuccess), take(1)),
       this.actions$.pipe(ofType(atencionMutationFailure), take(1)),
     )
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((action) => cb(action.type === atencionMutationSuccess.type));
+      .subscribe((action) => cb(action.type === atencionMutationSuccess.type ? action as ReturnType<typeof atencionMutationSuccess> : null));
   }
   onAnalysisAdvanced(): void {
     const steps = this.visibleSteps();
