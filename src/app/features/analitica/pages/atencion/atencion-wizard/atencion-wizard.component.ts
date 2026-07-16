@@ -533,11 +533,11 @@ export class AtencionWizardComponent {
 
   canReturn(): boolean {
     const s = this.detail()?.attentionState;
-    // KAN-246 B4: una vez registrado el cobro (paymentId != null) no se puede retroceder —
-    // el backend rechaza el intento igual (ReturnPhaseUseCase), pero ocultamos el botón para
-    // no mostrar una acción que va a fallar. Sin escape hatch: la salida es cancelar.
-    return s != null && s !== AttentionState.REGISTERING_GENERAL_DATA && !isTerminal(s)
-      && this.detail()?.paymentId == null;
+    // KAN-246: el gate por paymentId se sacó — el detail del store no se refresca cuando
+    // financiero registra el pago, así que el valor estaba siempre stale en null y la
+    // condición nunca aplicaba. El backend (ReturnPhaseUseCase) es la fuente de verdad y
+    // su rechazo ahora se muestra como toast (ver returnPhase$ en atencion.effects.ts).
+    return s != null && s !== AttentionState.REGISTERING_GENERAL_DATA && !isTerminal(s);
   }
   onReturnPhase(): void {
     const d = this.detail();

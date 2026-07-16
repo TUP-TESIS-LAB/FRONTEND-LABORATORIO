@@ -10,6 +10,7 @@ import { AnalysisService } from '../../services/analysis.service';
 import { LabelsService } from '../../services/labels.service';
 import { RotuloPdfService } from '../../services/rotulo-pdf.service';
 import { NotificationService } from '@core/services/notification.service';
+import { humanizeBackendError } from '@shared/utils/error-messages';
 import { Analysis } from '../../models/atencion.model';
 import { FamilyLinkService } from '../../services/family-link.service';
 import {
@@ -218,7 +219,12 @@ export class AtencionEffects {
       ofType(returnPhase),
       exhaustMap(({ id }) => this.api.returnPhase(id).pipe(
         map(item => atencionMutationSuccess({ item })),
-        catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
+        catchError((error: HttpErrorResponse) => {
+          // KAN-246: el rechazo del backend (p. ej. cobro ya registrado) fallaba en
+          // silencio — el botón seguía ahí y el click no hacía nada visible.
+          this.notification.error(this.returnPhaseErrorMessage(error));
+          return of(atencionMutationFailure({ error }));
+        })
       ))
     )
   );
@@ -484,6 +490,22 @@ export class AtencionEffects {
       map(({ patientId }) => loadPatientGuardians({ patientId })),
     ),
   );
+
+  /**
+   * Mensaje de error al intentar volver de fase, mapeado desde el body del backend.
+   *
+   * A diferencia de `verifyErrorMessage` (bespoke, mapea sólo por código HTTP), acá el
+   * texto que arma `InvalidAttentionStateException` (p. ej. "cobro ya registrado") ya es
+   * español y user-friendly y queremos mostrarlo tal cual — así que reusamos el sanitizador
+   * compartido `humanizeBackendError` (regla #4) en vez de duplicar la lógica anti-leak: deja
+   * pasar el mensaje del backend sólo si no matchea ningún patrón de leak (FQCN, stack trace,
+   * `NullPointerException`, etc.), y si no, cae al genérico.
+   */
+  private returnPhaseErrorMessage(error: HttpErrorResponse): string {
+    return humanizeBackendError(error, {
+      fallback: 'No se pudo volver al paso anterior.',
+    });
+  }
 
   /** Mensaje de error de verificación de paciente, mapeado por código HTTP. Sin leak de internals. */
   private verifyErrorMessage(error: HttpErrorResponse): string {
