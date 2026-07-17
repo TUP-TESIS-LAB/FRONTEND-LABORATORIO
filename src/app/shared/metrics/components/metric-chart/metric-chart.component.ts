@@ -2,11 +2,24 @@ import { ChangeDetectionStrategy, Component, Input, computed, input } from '@ang
 import { ChartModule } from 'primeng/chart';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { MetricBreakdown, MetricSeries } from '../../models/metric-envelopes.model';
-import { unitFormat } from '../../util/metric-format.util';
-import { buildYAxisScale, mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
+import { buildChartOptions, mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
 
 /** Tipo de gráfico soportado por el wrapper (subconjunto de los que expone `p-chart`). */
 export type MetricChartType = 'line' | 'bar' | 'pie' | 'doughnut';
+
+/** `horizontal` sólo aplica a `type="bar"` — `indexAxis:'y'` de Chart.js, para
+ * dimensiones de cardinalidad no acotada (KAN-252: turnos por sucursal, carga por
+ * extractor) donde el eje Y necesita ancho para las etiquetas de categoría. */
+export type MetricChartOrientation = 'vertical' | 'horizontal';
+
+/**
+ * `categorical` (default): paleta nominal de 8 colores, un color por serie/slice.
+ * `single`: un solo color (slot 1) para TODOS los datos — barra horizontal de dimensión
+ * no acotada, donde el largo de la barra ya codifica la magnitud.
+ * `ordinal`: rampa de 4 pasos de un solo hue (`--ordinal-1..4`) para dimensiones
+ * ORDENADAS, no nominales (buckets de re-llamados, pipeline de estados).
+ */
+export type MetricChartColorMode = 'categorical' | 'single' | 'ordinal';
 
 /**
  * Paleta categórica FIJA de 8 colores (`tokens.scss`), expuesta como CSS vars
@@ -28,6 +41,17 @@ function resolvePalette(): string[] {
   const styles = getComputedStyle(document.documentElement);
   const palette = PALETTE_VARS.map(v => styles.getPropertyValue(v).trim()).filter(Boolean);
   return palette.length ? palette : FALLBACK_PALETTE;
+}
+
+const ORDINAL_PALETTE_VARS = Array.from({ length: 4 }, (_, i) => `--ordinal-${i + 1}`);
+const FALLBACK_ORDINAL_PALETTE = ['#5598e7', '#2a78d6', '#1c5cab', '#104281'];
+
+/** Rampa ordinal de 4 pasos (`--ordinal-1..4`, `tokens.scss`) — ver `MetricChartColorMode`. */
+function resolveOrdinalPalette(): string[] {
+  if (typeof document === 'undefined') return FALLBACK_ORDINAL_PALETTE;
+  const styles = getComputedStyle(document.documentElement);
+  const palette = ORDINAL_PALETTE_VARS.map(v => styles.getPropertyValue(v).trim()).filter(Boolean);
+  return palette.length ? palette : FALLBACK_ORDINAL_PALETTE;
 }
 
 /** Lee una única CSS var del `:root` (con fallback si no está definida o no hay `document`). */
@@ -101,11 +125,24 @@ export class MetricChartComponent {
    * sale del propio envelope primero: `series()?.unit ?? breakdown()?.unit ?? unit()`.
    */
   readonly unit = input<string>('count');
+  /** Sólo aplica a `type="bar"` — ver `MetricChartOrientation`. */
+  readonly orientation = input<MetricChartOrientation>('vertical');
+  /** Ver `MetricChartColorMode`. */
+  readonly colorMode = input<MetricChartColorMode>('categorical');
 
   /** `true` para pie/doughnut, que consumen `breakdown` en vez de `series`. */
   protected readonly isCategorical = computed(() => {
     return this.type === 'pie' || this.type === 'doughnut';
   });
+
+  /** `true` cuando el chart consume `breakdown` en vez de `series`: pie/doughnut siempre,
+   * y también `bar` horizontal — conversión doughnut→barra (KAN-252) para dimensiones de
+   * cardinalidad no acotada (turnos por sucursal, carga por extractor, etc). A diferencia
+   * de `isCategorical()` (que además decide si el chart tiene ejes), esto sólo decide la
+   * FUENTE de datos y cómo se arma el tooltip/leyenda. */
+  protected readonly breakdownDriven = computed(() =>
+    this.isCategorical() || (this.type === 'bar' && this.orientation() === 'horizontal'),
+  );
 
   protected readonly effectiveUnit = computed(() => this.series()?.unit ?? this.breakdown()?.unit ?? this.unit());
 
@@ -114,54 +151,31 @@ export class MetricChartComponent {
    * El mapeo en sí vive en `chart-data.mapper.ts` (función pura, testeada sin TestBed).
    */
   protected readonly chartData = computed(() => {
-    const palette = resolvePalette();
-
-    if (this.isCategorical()) {
+    if (this.breakdownDriven()) {
       const breakdown = this.breakdown();
-      return breakdown ? mapMetricBreakdownToChartData(breakdown, palette) : null;
+      if (!breakdown) return null;
+      const mode = this.colorMode();
+      const palette = mode === 'ordinal' ? resolveOrdinalPalette() : resolvePalette();
+      return mapMetricBreakdownToChartData(breakdown, palette, mode === 'single' ? 'single' : 'categorical');
     }
 
     const series = this.series();
-    return series ? mapMetricSeriesToChartData(series, this.type, palette) : null;
+    return series ? mapMetricSeriesToChartData(series, this.type, resolvePalette()) : null;
   });
 
   /**
    * Opciones de Chart.js: leyenda, ejes y colores de texto/grilla según el tema activo.
-   * `unit` deriva TODO el formato numérico — un solo input, cuatro comportamientos
-   * consistentes: precisión/`beginAtZero` del eje Y, tick del eje Y, y tooltip.
-   * Sólo `unit: 'count'` fuerza eje entero (KAN-252) — el resto tolera decimales.
+   * La construcción en sí vive en `buildChartOptions` (`chart-data.mapper.ts`, función
+   * pura) — mismo motivo que `chartData`/`buildYAxisScale`: `setInput()` sobre inputs no
+   * confiable en este entorno de vitest (ver nota en `metric-chart.component.spec.ts`).
    */
-  protected readonly chartOptions = computed(() => {
-    const textColor = resolveVar('--ds-text', '#1a1a2e');
-    const gridColor = resolveVar('--ds-border', '#e6e8ef');
-    const categorical = this.isCategorical();
-    const datasetCount = this.series()?.datasets.length ?? 0;
-    const fmt = unitFormat(this.effectiveUnit());
-    const yAxis = buildYAxisScale(this.effectiveUnit(), textColor, gridColor);
-
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: categorical || datasetCount > 1,
-          position: this.legendPosition(),
-          labels: { color: textColor },
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx: { label: string; parsed: number | { y: number }; dataset: { label?: string } }) => {
-              const raw = categorical ? ctx.parsed : (ctx.parsed as { y: number }).y;
-              const seriesLabel = categorical ? ctx.label : ctx.dataset.label;
-              return `${seriesLabel}: ${fmt.format(Number(raw))}`;
-            },
-          },
-        },
-      },
-      scales: categorical ? undefined : {
-        x: { ticks: { color: textColor }, grid: { color: gridColor } },
-        y: yAxis,
-      },
-    };
-  });
+  protected readonly chartOptions = computed(() => buildChartOptions({
+    type: this.type,
+    orientation: this.orientation(),
+    unit: this.effectiveUnit(),
+    datasetCount: this.series()?.datasets.length ?? 0,
+    legendPosition: this.legendPosition(),
+    textColor: resolveVar('--ds-text', '#1a1a2e'),
+    gridColor: resolveVar('--ds-border', '#e6e8ef'),
+  }));
 }

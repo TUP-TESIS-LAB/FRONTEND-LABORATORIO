@@ -4,12 +4,21 @@ import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.direct
 import { TableColumn } from '@shared/ui/models/table-column.model';
 import { MetricBreakdown, MetricSeries } from '../../models/metric-envelopes.model';
 import { unitFormat } from '../../util/metric-format.util';
-import { MetricChartComponent, MetricChartType } from '../metric-chart/metric-chart.component';
+import {
+  MetricChartColorMode, MetricChartComponent, MetricChartOrientation, MetricChartType,
+} from '../metric-chart/metric-chart.component';
 
 /** Fila de la tabla gemela: mismo dato del gráfico, en números. */
 export interface ChartCardRow {
   label: string;
   value: number;
+}
+
+/** `true` cuando el chart consume `breakdown` en vez de `series` — mismo criterio que
+ * `MetricChartComponent.breakdownDriven`: pie/doughnut siempre, y `bar` horizontal
+ * (turnos por sucursal, carga por extractor, KAN-252). */
+export function isBreakdownDriven(type: MetricChartType, orientation: MetricChartOrientation): boolean {
+  return type === 'pie' || type === 'doughnut' || (type === 'bar' && orientation === 'horizontal');
 }
 
 /**
@@ -23,10 +32,11 @@ export interface ChartCardRow {
  */
 export function toChartCardRows(
   type: MetricChartType,
+  orientation: MetricChartOrientation,
   series: MetricSeries | undefined,
   breakdown: MetricBreakdown | undefined,
 ): ChartCardRow[] {
-  if (type === 'pie' || type === 'doughnut') {
+  if (isBreakdownDriven(type, orientation)) {
     return breakdown?.slices.map(s => ({ label: s.label, value: s.value })) ?? [];
   }
   if (!series || series.datasets.length === 0) return [];
@@ -87,7 +97,9 @@ const BREAKDOWN_COLUMNS: TableColumn[] = [
           [breakdown]="breakdown()"
           [loading]="loading()"
           [legendPosition]="legendPosition()"
-          [height]="height()" />
+          [height]="height()"
+          [orientation]="orientation()"
+          [colorMode]="colorMode()" />
       }
     </div>
   `,
@@ -139,12 +151,14 @@ export class MetricChartCardComponent {
   readonly title = input<string | null>(null);
   readonly legendPosition = input<'top' | 'right' | 'bottom' | 'left'>('top');
   readonly height = input('320px');
+  readonly orientation = input<MetricChartOrientation>('vertical');
+  readonly colorMode = input<MetricChartColorMode>('categorical');
 
   protected readonly showTable = signal(false);
 
-  protected readonly rows = computed(() => toChartCardRows(this.type, this.series(), this.breakdown()));
+  protected readonly rows = computed(() => toChartCardRows(this.type, this.orientation(), this.series(), this.breakdown()));
   protected readonly columns = computed<TableColumn[]>(() =>
-    this.type === 'pie' || this.type === 'doughnut' ? BREAKDOWN_COLUMNS : SERIES_COLUMNS,
+    isBreakdownDriven(this.type, this.orientation()) ? BREAKDOWN_COLUMNS : SERIES_COLUMNS,
   );
   private readonly fmt = computed(() => unitFormat(resolveCardUnit(this.series(), this.breakdown())));
 

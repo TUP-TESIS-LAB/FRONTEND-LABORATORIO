@@ -1,6 +1,6 @@
 import { MetricBreakdown, MetricSeries } from '../../models/metric-envelopes.model';
 import { unitFormat } from '../../util/metric-format.util';
-import { MetricChartType } from './metric-chart.component';
+import { MetricChartOrientation, MetricChartType } from './metric-chart.component';
 
 /** Forma mínima de dataset que espera Chart.js vía `p-chart`. */
 export interface ChartJsData {
@@ -51,30 +51,45 @@ export function mapMetricSeriesToChartData(
 }
 
 /**
- * Mapea un `MetricBreakdown` (pie/doughnut) al formato de Chart.js.
- * `null` cuando no hay slices — el componente lo interpreta como empty-state.
+ * `categorical` (default): `palette[i]`, sin ciclar (ver `colorAt`) — identidad nominal,
+ * un color por slice. `single`: TODOS los slices usan `palette[0]` (slot 1) — dimensión de
+ * cardinalidad no acotada convertida a barra horizontal (KAN-252): la longitud de la barra
+ * ya codifica la magnitud, pintar categorías nominales con N hues no agrega información.
+ * Para rampa ordinal (buckets/pipeline ordenados) no hace falta un modo nuevo: el caller
+ * pasa la rampa de 4 pasos como `palette` con `colorMode: 'categorical'` — el índice mapea
+ * 1:1 a cada paso mientras alcance.
+ */
+export type MetricChartColorMode = 'categorical' | 'single';
+
+/**
+ * Mapea un `MetricBreakdown` (pie/doughnut, o barra con datos de breakdown) al formato de
+ * Chart.js. `null` cuando no hay slices — el componente lo interpreta como empty-state.
  */
 export function mapMetricBreakdownToChartData(
   breakdown: MetricBreakdown,
   palette: string[],
+  colorMode: MetricChartColorMode = 'categorical',
 ): ChartJsData | null {
   if (breakdown.slices.length === 0) return null;
+  const colorForIndex = (i: number) => (colorMode === 'single' ? palette[0] : colorAt(palette, i));
   return {
     labels: breakdown.slices.map(s => s.label),
     datasets: [{
       data: breakdown.slices.map(s => s.value),
-      backgroundColor: breakdown.slices.map((_, i) => colorAt(palette, i)),
+      backgroundColor: breakdown.slices.map((_, i) => colorForIndex(i)),
       borderWidth: 0,
     }],
   };
 }
 
-/** Config del eje Y de Chart.js. */
-export interface YAxisScale {
+/** Config de un eje de Chart.js. */
+export interface AxisScale {
   ticks: Record<string, unknown>;
   grid: { color: string };
-  beginAtZero: boolean;
+  beginAtZero?: boolean;
 }
+/** Alias histórico — el eje de valor no siempre es "Y" (ver `orientation: 'horizontal'`). */
+export type YAxisScale = AxisScale;
 
 /**
  * Construye la config del eje Y (ticks, `precision`/`stepSize`/`beginAtZero`) a partir del
@@ -98,4 +113,65 @@ export function buildYAxisScale(unit: string | undefined, textColor: string, gri
     ticks['stepSize'] = 1;
   }
   return { ticks, grid: { color: gridColor }, beginAtZero: fmt.integer };
+}
+
+/** Params de `buildChartOptions` — todo lo que `MetricChartComponent.chartOptions()` ya no
+ * calcula él mismo (ver la nota de `buildYAxisScale` sobre por qué esta lógica vive acá,
+ * como función pura, en vez de en el `computed()` del componente). */
+export interface ChartOptionsParams {
+  type: MetricChartType;
+  orientation: MetricChartOrientation;
+  unit: string | undefined;
+  /** Cantidad de datasets de la serie (irrelevante si el chart es breakdown-driven). */
+  datasetCount: number;
+  legendPosition: 'top' | 'right' | 'bottom' | 'left';
+  textColor: string;
+  gridColor: string;
+}
+
+/**
+ * Opciones completas de Chart.js: leyenda, tooltip formateado por `unit`, y ejes — con el
+ * swap de eje que pide `orientation: 'horizontal'` (`indexAxis: 'y'`, el eje de VALOR pasa
+ * de Y a X). `categorical` (pie/doughnut) no tiene `scales` en absoluto. `breakdownDriven`
+ * (pie/doughnut o `bar` horizontal) arma el tooltip con `ctx.label` (nombre de categoría) en
+ * vez de `ctx.dataset.label` (nombre de serie) — ver `MetricChartComponent.breakdownDriven`.
+ */
+export function buildChartOptions(params: ChartOptionsParams): Record<string, unknown> {
+  const { type, orientation, unit, datasetCount, legendPosition, textColor, gridColor } = params;
+  const categorical = type === 'pie' || type === 'doughnut';
+  const breakdownDriven = categorical || (type === 'bar' && orientation === 'horizontal');
+  const horizontal = orientation === 'horizontal';
+  const fmt = unitFormat(unit);
+  const valueAxis = buildYAxisScale(unit, textColor, gridColor);
+  const categoryAxis: AxisScale = { ticks: { color: textColor }, grid: { color: gridColor } };
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: horizontal ? 'y' : 'x',
+    plugins: {
+      legend: {
+        display: categorical || datasetCount > 1,
+        position: legendPosition,
+        labels: { color: textColor },
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { label: string; parsed: number | { x: number; y: number }; dataset: { label?: string } }) => {
+            if (categorical) {
+              return `${ctx.label}: ${fmt.format(Number(ctx.parsed))}`;
+            }
+            const parsed = ctx.parsed as { x: number; y: number };
+            const raw = horizontal ? parsed.x : parsed.y;
+            const name = breakdownDriven ? ctx.label : ctx.dataset.label;
+            return `${name}: ${fmt.format(Number(raw))}`;
+          },
+        },
+      },
+    },
+    scales: categorical ? undefined : {
+      x: horizontal ? valueAxis : categoryAxis,
+      y: horizontal ? categoryAxis : valueAxis,
+    },
+  };
 }

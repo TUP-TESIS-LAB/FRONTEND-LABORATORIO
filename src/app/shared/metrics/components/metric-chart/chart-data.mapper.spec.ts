@@ -1,4 +1,4 @@
-import { buildYAxisScale, mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
+import { buildChartOptions, buildYAxisScale, mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
 import { MetricSeries, MetricBreakdown } from '../../models/metric-envelopes.model';
 
 const PALETTE = ['#2563eb', '#0ea5a4', '#f97316'];
@@ -71,6 +71,28 @@ describe('mapMetricBreakdownToChartData', () => {
     expect(colors[8]).toBe('#6b7280');
     expect(new Set(colors.slice(0, 8)).size).toBe(8);
   });
+
+  it('colorMode "single": TODOS los slices usan el slot 1, sin importar cardinalidad — barra horizontal', () => {
+    const breakdown: MetricBreakdown = {
+      dimension: 'sucursal',
+      slices: Array.from({ length: 5 }, (_, i) => ({ key: `s${i}`, label: `Sucursal ${i}`, value: i + 1 })),
+    };
+
+    const data = mapMetricBreakdownToChartData(breakdown, PALETTE, 'single');
+    const colors = data!.datasets[0]['backgroundColor'] as string[];
+
+    expect(colors).toEqual(colors.map(() => PALETTE[0]));
+  });
+
+  it('colorMode "categorical" (default) sigue asignando un color por slice', () => {
+    const breakdown: MetricBreakdown = {
+      dimension: 'metodo',
+      slices: [{ key: 'a', label: 'A', value: 1 }, { key: 'b', label: 'B', value: 2 }],
+    };
+    const data = mapMetricBreakdownToChartData(breakdown, PALETTE, 'categorical');
+    const colors = data!.datasets[0]['backgroundColor'] as string[];
+    expect(colors).toEqual([PALETTE[0], PALETTE[1]]);
+  });
 });
 
 describe('buildYAxisScale', () => {
@@ -100,5 +122,45 @@ describe('buildYAxisScale', () => {
     const scale = buildYAxisScale('currency', '#111', '#ccc');
     const callback = scale.ticks['callback'] as (v: number) => string;
     expect(callback(1234.5)).toContain('$');
+  });
+});
+
+describe('buildChartOptions', () => {
+  const base = { unit: 'count', datasetCount: 1, legendPosition: 'top' as const, textColor: '#111', gridColor: '#ccc' };
+
+  it('doughnut/pie: sin scales, tooltip usa ctx.label', () => {
+    const options = buildChartOptions({ ...base, type: 'doughnut', orientation: 'vertical' });
+    expect(options['scales']).toBeUndefined();
+  });
+
+  it('bar vertical: indexAxis "x", el eje de valor es Y', () => {
+    const options = buildChartOptions({ ...base, type: 'bar', orientation: 'vertical' }) as any;
+    expect(options.indexAxis).toBe('x');
+    expect(options.scales.y.ticks['precision']).toBe(0); // unit count → eje entero
+    expect(options.scales.x.ticks['precision']).toBeUndefined();
+  });
+
+  it('bar horizontal: indexAxis "y", el eje de valor pasa a X (KAN-252)', () => {
+    const options = buildChartOptions({ ...base, type: 'bar', orientation: 'horizontal' }) as any;
+    expect(options.indexAxis).toBe('y');
+    expect(options.scales.x.ticks['precision']).toBe(0);
+    expect(options.scales.y.ticks['precision']).toBeUndefined();
+  });
+
+  it('bar horizontal: sin leyenda (breakdown de 1 dataset, el eje ya nombra las categorías)', () => {
+    const options = buildChartOptions({ ...base, type: 'bar', orientation: 'horizontal', datasetCount: 0 }) as any;
+    expect(options.plugins.legend.display).toBe(false);
+  });
+
+  it('tooltip de bar vertical (serie): usa ctx.parsed.y y ctx.dataset.label', () => {
+    const options = buildChartOptions({ ...base, type: 'bar', orientation: 'vertical' }) as any;
+    const label = options.plugins.tooltip.callbacks.label({ label: 'ignored', parsed: { x: 1, y: 42 }, dataset: { label: 'Serie A' } });
+    expect(label).toBe('Serie A: 42');
+  });
+
+  it('tooltip de bar horizontal (breakdown): usa ctx.parsed.x y ctx.label (no ctx.dataset.label)', () => {
+    const options = buildChartOptions({ ...base, type: 'bar', orientation: 'horizontal' }) as any;
+    const label = options.plugins.tooltip.callbacks.label({ label: 'Sede Centro', parsed: { x: 30, y: 0 }, dataset: {} });
+    expect(label).toBe('Sede Centro: 30');
   });
 });
