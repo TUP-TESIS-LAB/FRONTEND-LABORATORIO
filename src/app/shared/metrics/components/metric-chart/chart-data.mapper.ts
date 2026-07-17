@@ -85,22 +85,45 @@ export interface AxisScale {
   ticks: Record<string, unknown>;
   grid: { color: string };
   beginAtZero?: boolean;
+  suggestedMax?: number;
 }
 /** Alias histórico — el eje de valor no siempre es "Y" (ver `orientation: 'horizontal'`). */
 export type YAxisScale = AxisScale;
 
+/** Margen sobre el máximo del eje de valor — headroom para que el datalabel del punto/
+ * barra máximo no se clippee contra el borde del canvas (KAN-252, QA: "el pico es justo
+ * el que no se ve"). 12% es un término medio dentro del rango pedido (10-15%). */
+const AXIS_HEADROOM_RATIO = 0.12;
+
 /**
- * Construye la config del eje Y (ticks, `precision`/`stepSize`/`beginAtZero`) a partir del
- * `unit` (format-kind) del envelope — sólo `count` fuerza eje entero (KAN-252). Extraída
- * como función pura, testeada sin pasar por `TestBed`/`setInput()`: este entorno de vitest
- * tiene un problema conocido donde `componentRef.setInput()` sobre un signal input no
- * required NO se aplica de forma confiable (`series()` sigue leyendo el valor previo/
- * default) — el mismo problema documentado para `input.required()` en
- * `metric-chart.component.spec.ts`, pero también reproducido acá con inputs opcionales.
- * Por eso el componente delega la lógica real acá y el spec del componente sólo cubre el
- * smoke test de `chartData()` sin inputs.
+ * `suggestedMax` del eje de valor: `max(values) * (1 + AXIS_HEADROOM_RATIO)`. Sin headroom
+ * (`undefined`, Chart.js autoescala) cuando no hay valores o el máximo es `<= 0` — no tiene
+ * sentido "agrandar" un eje que ya está vacío o en cero.
  */
-export function buildYAxisScale(unit: string | undefined, textColor: string, gridColor: string): YAxisScale {
+export function computeSuggestedMax(values: number[]): number | undefined {
+  if (values.length === 0) return undefined;
+  const max = Math.max(...values);
+  if (max <= 0) return undefined;
+  return max * (1 + AXIS_HEADROOM_RATIO);
+}
+
+/**
+ * Construye la config del eje de valor (ticks, `precision`/`stepSize`/`beginAtZero`,
+ * `suggestedMax`) a partir del `unit` (format-kind) del envelope — sólo `count` fuerza eje
+ * entero (KAN-252). Extraída como función pura, testeada sin pasar por `TestBed`/
+ * `setInput()`: este entorno de vitest tiene un problema conocido donde
+ * `componentRef.setInput()` sobre un signal input no required NO se aplica de forma
+ * confiable (`series()` sigue leyendo el valor previo/default) — el mismo problema
+ * documentado para `input.required()` en `metric-chart.component.spec.ts`, pero también
+ * reproducido acá con inputs opcionales. Por eso el componente delega la lógica real acá y
+ * el spec del componente sólo cubre el smoke test de `chartData()` sin inputs.
+ */
+export function buildYAxisScale(
+  unit: string | undefined,
+  textColor: string,
+  gridColor: string,
+  values: number[] = [],
+): YAxisScale {
   const fmt = unitFormat(unit);
   const ticks: Record<string, unknown> = {
     color: textColor,
@@ -110,7 +133,10 @@ export function buildYAxisScale(unit: string | undefined, textColor: string, gri
     ticks['precision'] = 0;
     ticks['stepSize'] = 1;
   }
-  return { ticks, grid: { color: gridColor }, beginAtZero: fmt.integer };
+  const suggestedMax = computeSuggestedMax(values);
+  const scale: YAxisScale = { ticks, grid: { color: gridColor }, beginAtZero: fmt.integer };
+  if (suggestedMax !== undefined) scale.suggestedMax = suggestedMax;
+  return scale;
 }
 
 /** Params de `buildChartOptions` — todo lo que `MetricChartComponent.chartOptions()` ya no
@@ -125,6 +151,11 @@ export interface ChartOptionsParams {
   legendPosition: 'top' | 'right' | 'bottom' | 'left';
   textColor: string;
   gridColor: string;
+  /** Valores del eje de VALOR (no de categoría) — para el headroom (`suggestedMax`) que
+   * evita que el datalabel del máximo se clippee. Todos los datasets de la serie
+   * aplanados, o los valores del breakdown si es `bar` horizontal. Ignorado en pie/
+   * doughnut (sin `scales`). */
+  values?: number[];
 }
 
 /**
@@ -135,12 +166,12 @@ export interface ChartOptionsParams {
  * vez de `ctx.dataset.label` (nombre de serie) — ver `MetricChartComponent.breakdownDriven`.
  */
 export function buildChartOptions(params: ChartOptionsParams): Record<string, unknown> {
-  const { type, orientation, unit, datasetCount, legendPosition, textColor, gridColor } = params;
+  const { type, orientation, unit, datasetCount, legendPosition, textColor, gridColor, values } = params;
   const categorical = type === 'pie' || type === 'doughnut';
   const breakdownDriven = categorical || (type === 'bar' && orientation === 'horizontal');
   const horizontal = orientation === 'horizontal';
   const fmt = unitFormat(unit);
-  const valueAxis = buildYAxisScale(unit, textColor, gridColor);
+  const valueAxis = buildYAxisScale(unit, textColor, gridColor, values);
   const categoryAxis: AxisScale = { ticks: { color: textColor }, grid: { color: gridColor } };
 
   return {

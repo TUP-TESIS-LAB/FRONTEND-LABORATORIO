@@ -229,6 +229,18 @@ export class MetricChartComponent {
 
   protected readonly effectiveUnit = computed(() => this.series()?.unit ?? this.breakdown()?.unit ?? this.unit());
 
+  /** Valores del eje de VALOR — headroom del máximo (ver `computeSuggestedMax`). Breakdown
+   * (bar horizontal) usa los valores de los slices; serie (line/bar vertical) aplana TODOS
+   * los datasets (una `ocupación de agenda` con 2 datasets necesita el máximo global, no
+   * el de un solo dataset). Irrelevante para pie/doughnut — `buildChartOptions` ni arma
+   * `scales` para esos tipos, así que da igual que este computed corra para todos. */
+  protected readonly valueAxisValues = computed(() => {
+    if (this.breakdownDriven()) {
+      return this.isCategorical() ? [] : (this.breakdown()?.slices.map(s => s.value) ?? []);
+    }
+    return this.series()?.datasets.flatMap(d => d.values) ?? [];
+  });
+
   /**
    * Datos ya mapeados al formato de Chart.js, o `null` cuando no hay datos (empty-state).
    * El mapeo en sí vive en `chart-data.mapper.ts` (función pura, testeada sin TestBed).
@@ -262,6 +274,7 @@ export class MetricChartComponent {
     legendPosition: this.legendPosition(),
     textColor: resolveVar('--ds-text', '#1a1a2e'),
     gridColor: resolveVar('--ds-border', '#e6e8ef'),
+    values: this.valueAxisValues(),
   }));
 
   /** Ver `buildDirectLabelsPlugin`. Un solo plugin en el array — `p-chart` acepta varios,

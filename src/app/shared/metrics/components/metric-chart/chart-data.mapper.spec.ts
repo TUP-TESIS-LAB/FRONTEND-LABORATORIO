@@ -1,5 +1,5 @@
 import {
-  buildChartOptions, buildYAxisScale, mapMetricBreakdownToChartData, mapMetricSeriesToChartData,
+  buildChartOptions, buildYAxisScale, computeSuggestedMax, mapMetricBreakdownToChartData, mapMetricSeriesToChartData,
   selectBarLabels, selectDoughnutLabels, selectSeriesLabels,
 } from './chart-data.mapper';
 import { MetricSeries, MetricBreakdown } from '../../models/metric-envelopes.model';
@@ -136,6 +136,35 @@ describe('buildYAxisScale', () => {
     const callback = scale.ticks['callback'] as (v: number) => string;
     expect(callback(1234.5)).toContain('$');
   });
+
+  it('con values, agrega headroom (suggestedMax) para que el datalabel del máximo no se clippee', () => {
+    const scale = buildYAxisScale('count', '#111', '#ccc', [10, 30, 20]);
+    expect(scale.suggestedMax).toBeCloseTo(30 * 1.12, 5);
+  });
+
+  it('sin values (default []), no agrega suggestedMax', () => {
+    expect(buildYAxisScale('count', '#111', '#ccc').suggestedMax).toBeUndefined();
+  });
+});
+
+describe('computeSuggestedMax', () => {
+  it('agrega ~12% de margen sobre el máximo (dentro del rango 10-15% pedido)', () => {
+    const suggested = computeSuggestedMax([10, 30, 20])!;
+    expect(suggested).toBeGreaterThan(30 * 1.10);
+    expect(suggested).toBeLessThan(30 * 1.15);
+  });
+
+  it('array vacío: undefined (Chart.js autoescala)', () => {
+    expect(computeSuggestedMax([])).toBeUndefined();
+  });
+
+  it('máximo 0: undefined (no tiene sentido agrandar un eje vacío)', () => {
+    expect(computeSuggestedMax([0, 0])).toBeUndefined();
+  });
+
+  it('un solo valor: headroom igual sobre ese valor', () => {
+    expect(computeSuggestedMax([1001])).toBeCloseTo(1001 * 1.12, 5);
+  });
 });
 
 describe('buildChartOptions', () => {
@@ -163,6 +192,18 @@ describe('buildChartOptions', () => {
   it('bar horizontal: sin leyenda (breakdown de 1 dataset, el eje ya nombra las categorías)', () => {
     const options = buildChartOptions({ ...base, type: 'bar', orientation: 'horizontal', datasetCount: 0 }) as any;
     expect(options.plugins.legend.display).toBe(false);
+  });
+
+  it('bar vertical: el headroom (suggestedMax) va en el eje Y — ahí vive el valor', () => {
+    const options = buildChartOptions({ ...base, type: 'bar', orientation: 'vertical', values: [10, 30, 20] }) as any;
+    expect(options.scales.y.suggestedMax).toBeCloseTo(30 * 1.12, 5);
+    expect(options.scales.x.suggestedMax).toBeUndefined();
+  });
+
+  it('bar horizontal: el headroom (suggestedMax) va en el eje X — ahí vive el valor con indexAxis:y (KAN-252)', () => {
+    const options = buildChartOptions({ ...base, type: 'bar', orientation: 'horizontal', values: [1001, 300] }) as any;
+    expect(options.scales.x.suggestedMax).toBeCloseTo(1001 * 1.12, 5);
+    expect(options.scales.y.suggestedMax).toBeUndefined();
   });
 
   it('tooltip de bar vertical (serie): usa ctx.parsed.y y ctx.dataset.label', () => {
