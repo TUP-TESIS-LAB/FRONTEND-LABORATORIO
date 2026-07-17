@@ -34,4 +34,5 @@ export * from './util/metric-format.util';
 
 // ── Componentes ──────────────────────────────────────────────────────────────
 export * from './components/metric-chart/metric-chart.component';
+export * from './components/metric-chart-card/metric-chart-card.component';
 export * from './components/metric-filter-bar/metric-filter-bar.component';
