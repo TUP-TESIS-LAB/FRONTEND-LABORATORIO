@@ -12,7 +12,7 @@ export const submitTotemEntrySuccess = createAction(
 
 export const submitTotemEntryFailure = createAction(
   '[Totem] Submit Entry Failure',
-  props<{ reason: 'UNKNOWN' }>()
+  props<{ message: string }>()
 );
 
 export const resetTotemView = createAction('[Totem] Reset View');
