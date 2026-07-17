@@ -30,6 +30,7 @@ export * from './models/metric-envelopes.model';
 export * from './util/build-metric-params';
 export * from './util/metric-kpi.util';
 export * from './util/metric-label.util';
+export * from './util/metric-format.util';
 
 // ── Componentes ──────────────────────────────────────────────────────────────
 export * from './components/metric-chart/metric-chart.component';
