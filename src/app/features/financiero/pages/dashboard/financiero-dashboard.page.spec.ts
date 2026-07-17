@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toIsoDate, defaultFilter, toKpiCard, toBreakdownRows } from './financiero-dashboard.page';
+import { toIsoDate, defaultFilter, toKpiCard, toBreakdownRows, toParticularVsCoberturaStat } from './financiero-dashboard.page';
 import { MetricKpi, MetricBreakdown } from '@shared/metrics/models/metric-envelopes.model';
 
 // Funciones puras del dashboard financiero — testeadas sin TestBed (bug conocido NG0950
@@ -72,5 +72,34 @@ describe('toBreakdownRows', () => {
 
   it('breakdown undefined (todavía no cargó) → []', () => {
     expect(toBreakdownRows(undefined)).toEqual([]);
+  });
+});
+
+describe('toParticularVsCoberturaStat', () => {
+  it('formatea el monto de "particular" y el % que representa del total', () => {
+    const breakdown: MetricBreakdown = {
+      unit: 'currency',
+      dimension: 'cobertura',
+      slices: [
+        { key: 'particular', label: 'Particular', value: 25 },
+        { key: 'cobertura', label: 'Cobertura', value: 75 },
+      ],
+    };
+    const stat = toParticularVsCoberturaStat(breakdown);
+    expect(stat).not.toBeNull();
+    expect(stat!.value).toContain('$');
+    expect(stat!.sub).toBe('25.0% del total facturado');
+  });
+
+  it('sin breakdown (todavía no cargó) → null', () => {
+    expect(toParticularVsCoberturaStat(undefined)).toBeNull();
+  });
+
+  it('sin slice "particular" en el breakdown → null', () => {
+    const breakdown: MetricBreakdown = {
+      dimension: 'cobertura',
+      slices: [{ key: 'cobertura', label: 'Cobertura', value: 100 }],
+    };
+    expect(toParticularVsCoberturaStat(breakdown)).toBeNull();
   });
 });

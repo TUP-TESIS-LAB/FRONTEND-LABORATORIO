@@ -93,6 +93,15 @@ const BREAKDOWN_COLUMNS: TableColumn[] = [
   `,
   styles: [`
     :host { display: block; }
+    /* Superficie de card propia (el componente es autocontenido — los dashboards no
+       necesitan envolverlo en su propia clase ".fin-card"/".tur-card"/".an-card"). */
+    .mcc {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e8e9f0;
+      box-shadow: 0 1px 2px rgba(28,30,55,.06), 0 1px 1px rgba(28,30,55,.04);
+      padding: 16px 18px;
+    }
     .mcc__header {
       display: flex;
       align-items: center;
