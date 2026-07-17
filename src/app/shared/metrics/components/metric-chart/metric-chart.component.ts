@@ -1,8 +1,12 @@
 import { ChangeDetectionStrategy, Component, Input, computed, input } from '@angular/core';
 import { ChartModule } from 'primeng/chart';
+import type { Plugin } from 'chart.js';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { MetricBreakdown, MetricSeries } from '../../models/metric-envelopes.model';
-import { buildChartOptions, mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
+import {
+  buildChartOptions, mapMetricBreakdownToChartData, mapMetricSeriesToChartData,
+  selectBarLabels, selectDoughnutLabels, selectSeriesLabels,
+} from './chart-data.mapper';
 
 /** Tipo de gráfico soportado por el wrapper (subconjunto de los que expone `p-chart`). */
 export type MetricChartType = 'line' | 'bar' | 'pie' | 'doughnut';
@@ -61,6 +65,85 @@ function resolveVar(name: string, fallback: string): string {
   return value || fallback;
 }
 
+/** Forma mínima de un elemento posicionado de Chart.js (`PointElement`/`BarElement`) que
+ * necesita el plugin de etiquetas — evita acoplarse a los tipos internos de cada elemento. */
+interface PositionedElement {
+  x: number;
+  y: number;
+  tooltipPosition?(useFinalPosition?: boolean): { x: number; y: number };
+}
+
+/** Config del plugin de etiquetas directas — ver `buildDirectLabelsPlugin`. */
+interface DirectLabelsConfig {
+  type: MetricChartType;
+  orientation: MetricChartOrientation;
+  unit: string | undefined;
+  textColor: string;
+}
+
+/**
+ * Plugin INLINE de Chart.js (`afterDraw`) — etiquetas directas selectivas (KAN-252: "los
+ * valores no se ven a simple vista"). NO es una dependencia nueva: Chart.js ya expone la
+ * API de plugins nativamente, esto es un objeto plano registrado vía el input `[plugins]`
+ * de `p-chart` — se evita a propósito sumar `chartjs-plugin-datalabels` (spec: "preferir
+ * etiquetas nativas... salvo que sea la única vía razonable"; acá SÍ hace falta un plugin
+ * porque Chart.js no dibuja etiquetas permanentes por sí solo, pero no hace falta una lib).
+ *
+ * Sólo DIBUJA — qué punto/barra/gajo etiquetar y con qué texto es responsabilidad de
+ * `selectSeriesLabels`/`selectBarLabels`/`selectDoughnutLabels` (`chart-data.mapper.ts`,
+ * funciones puras, testeadas sin canvas ni TestBed). El color de texto es el ink del
+ * design system (`--ds-text`), NUNCA el color de la serie/slice — la etiqueta es
+ * información, no parte de la identidad visual del dato.
+ */
+function buildDirectLabelsPlugin(config: DirectLabelsConfig): Plugin {
+  return {
+    id: 'ui-metric-chart-direct-labels',
+    afterDraw(chart) {
+      const dataset = chart.data.datasets[0];
+      if (!dataset) return;
+
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.fillStyle = config.textColor;
+      ctx.font = '11px sans-serif';
+
+      if (config.type === 'line') {
+        chart.data.datasets.forEach((ds, datasetIndex) => {
+          const values = (ds.data as number[]) ?? [];
+          const meta = chart.getDatasetMeta(datasetIndex);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          for (const { index, text } of selectSeriesLabels(values, config.unit)) {
+            const point = meta.data[index] as unknown as PositionedElement | undefined;
+            if (point) ctx.fillText(text, point.x, point.y - 6);
+          }
+        });
+      } else if (config.type === 'bar' && config.orientation === 'horizontal') {
+        const values = (dataset.data as number[]) ?? [];
+        const meta = chart.getDatasetMeta(0);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        for (const { index, text } of selectBarLabels(values, config.unit)) {
+          const bar = meta.data[index] as unknown as PositionedElement | undefined;
+          if (bar) ctx.fillText(text, bar.x + 6, bar.y);
+        }
+      } else if (config.type === 'doughnut' || config.type === 'pie') {
+        const values = (dataset.data as number[]) ?? [];
+        const meta = chart.getDatasetMeta(0);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (const { index, text } of selectDoughnutLabels(values, config.unit)) {
+          const arc = meta.data[index] as unknown as PositionedElement | undefined;
+          const pos = arc?.tooltipPosition?.() ?? arc;
+          if (pos) ctx.fillText(text, pos.x, pos.y);
+        }
+      }
+
+      ctx.restore();
+    },
+  };
+}
+
 /**
  * Wrapper único de `p-chart` (Chart.js) del kit de métricas. Ningún otro archivo del
  * proyecto debe importar Chart.js directamente — todo pasa por este componente.
@@ -81,7 +164,7 @@ function resolveVar(name: string, fallback: string): string {
     @if (loading() && !chartData()) {
       <div class="ui-metric-chart__skeleton" [style.height]="height()"></div>
     } @else if (chartData(); as data) {
-      <p-chart [type]="type" [data]="data" [options]="chartOptions()" [height]="height()" />
+      <p-chart [type]="type" [data]="data" [options]="chartOptions()" [plugins]="chartPlugins()" [height]="height()" />
     } @else {
       <div [style.height]="height()" class="ui-metric-chart__empty">
         <ui-empty-state icon="pi-chart-bar" heading="Sin datos para el período seleccionado" />
@@ -151,16 +234,18 @@ export class MetricChartComponent {
    * El mapeo en sí vive en `chart-data.mapper.ts` (función pura, testeada sin TestBed).
    */
   protected readonly chartData = computed(() => {
+    const overflowColor = resolveVar('--ds-text-muted', '#6b7280');
+
     if (this.breakdownDriven()) {
       const breakdown = this.breakdown();
       if (!breakdown) return null;
       const mode = this.colorMode();
       const palette = mode === 'ordinal' ? resolveOrdinalPalette() : resolvePalette();
-      return mapMetricBreakdownToChartData(breakdown, palette, mode === 'single' ? 'single' : 'categorical');
+      return mapMetricBreakdownToChartData(breakdown, palette, mode, overflowColor);
     }
 
     const series = this.series();
-    return series ? mapMetricSeriesToChartData(series, this.type, resolvePalette()) : null;
+    return series ? mapMetricSeriesToChartData(series, this.type, resolvePalette(), overflowColor) : null;
   });
 
   /**
@@ -178,4 +263,13 @@ export class MetricChartComponent {
     textColor: resolveVar('--ds-text', '#1a1a2e'),
     gridColor: resolveVar('--ds-border', '#e6e8ef'),
   }));
+
+  /** Ver `buildDirectLabelsPlugin`. Un solo plugin en el array — `p-chart` acepta varios,
+   * este kit sólo necesita el de etiquetas directas. */
+  protected readonly chartPlugins = computed(() => [buildDirectLabelsPlugin({
+    type: this.type,
+    orientation: this.orientation(),
+    unit: this.effectiveUnit(),
+    textColor: resolveVar('--ds-text', '#1a1a2e'),
+  })]);
 }

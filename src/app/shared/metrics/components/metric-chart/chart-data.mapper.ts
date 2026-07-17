@@ -1,6 +1,6 @@
 import { MetricBreakdown, MetricSeries } from '../../models/metric-envelopes.model';
 import { unitFormat } from '../../util/metric-format.util';
-import { MetricChartOrientation, MetricChartType } from './metric-chart.component';
+import { MetricChartColorMode, MetricChartOrientation, MetricChartType } from './metric-chart.component';
 
 /** Forma mínima de dataset que espera Chart.js vía `p-chart`. */
 export interface ChartJsData {
@@ -9,16 +9,19 @@ export interface ChartJsData {
 }
 
 /**
- * Color de overflow (`--ds-text-muted`) para el slot 9+ de un breakdown. La paleta tiene
- * 8 slots fijos y NUNCA se cicla — ciclar repetiría identidad de serie con otro slice
- * (KAN-252). El backend ya acota con `OTHERS_KEY`/top-N; esto es la red de seguridad del
- * front si de todos modos llega un breakdown más largo que la paleta.
+ * Fallback del color de overflow para el slot 9+ de un breakdown, usado sólo si no hay
+ * `document` (SSR/tests) o no está definida la CSS var — en la app real el caller
+ * (`metric-chart.component.ts`) resuelve `--ds-text-muted` vía `getComputedStyle` y lo pasa
+ * como parámetro, mismo patrón que la paleta (`resolvePalette`/`FALLBACK_PALETTE`). La
+ * paleta tiene 8 slots fijos y NUNCA se cicla — ciclar repetiría identidad de serie con
+ * otro slice (KAN-252). El backend ya acota con `OTHERS_KEY`/top-N; esto es la red de
+ * seguridad del front si de todos modos llega un breakdown más largo que la paleta.
  */
-const OVERFLOW_COLOR = '#6b7280';
+const FALLBACK_OVERFLOW_COLOR = '#6b7280';
 
 /** Color de un slot por índice: `palette[i]` mientras alcance, gris de overflow después. */
-function colorAt(palette: string[], i: number): string {
-  return i < palette.length ? palette[i] : OVERFLOW_COLOR;
+function colorAt(palette: string[], i: number, overflowColor: string): string {
+  return i < palette.length ? palette[i] : overflowColor;
 }
 
 /**
@@ -31,12 +34,13 @@ export function mapMetricSeriesToChartData(
   series: MetricSeries,
   type: MetricChartType,
   palette: string[],
+  overflowColor: string = FALLBACK_OVERFLOW_COLOR,
 ): ChartJsData | null {
   if (series.datasets.length === 0) return null;
   return {
     labels: series.labels,
     datasets: series.datasets.map((ds, i) => {
-      const color = colorAt(palette, i);
+      const color = colorAt(palette, i, overflowColor);
       return {
         label: ds.label,
         data: ds.values,
@@ -51,27 +55,21 @@ export function mapMetricSeriesToChartData(
 }
 
 /**
- * `categorical` (default): `palette[i]`, sin ciclar (ver `colorAt`) — identidad nominal,
- * un color por slice. `single`: TODOS los slices usan `palette[0]` (slot 1) — dimensión de
- * cardinalidad no acotada convertida a barra horizontal (KAN-252): la longitud de la barra
- * ya codifica la magnitud, pintar categorías nominales con N hues no agrega información.
- * Para rampa ordinal (buckets/pipeline ordenados) no hace falta un modo nuevo: el caller
- * pasa la rampa de 4 pasos como `palette` con `colorMode: 'categorical'` — el índice mapea
- * 1:1 a cada paso mientras alcance.
- */
-export type MetricChartColorMode = 'categorical' | 'single';
-
-/**
  * Mapea un `MetricBreakdown` (pie/doughnut, o barra con datos de breakdown) al formato de
  * Chart.js. `null` cuando no hay slices — el componente lo interpreta como empty-state.
+ * `colorMode` (ver `MetricChartColorMode`, único tipo — declarado en
+ * `metric-chart.component.ts`): `single` pinta TODOS los slices con `palette[0]` (slot 1);
+ * `categorical`/`ordinal` usan `palette[i]` sin ciclar (`ordinal` ya llega con la rampa de
+ * 4 pasos como `palette` — el índice mapea 1:1 a cada paso, no hace falta una rama propia).
  */
 export function mapMetricBreakdownToChartData(
   breakdown: MetricBreakdown,
   palette: string[],
   colorMode: MetricChartColorMode = 'categorical',
+  overflowColor: string = FALLBACK_OVERFLOW_COLOR,
 ): ChartJsData | null {
   if (breakdown.slices.length === 0) return null;
-  const colorForIndex = (i: number) => (colorMode === 'single' ? palette[0] : colorAt(palette, i));
+  const colorForIndex = (i: number) => (colorMode === 'single' ? palette[0] : colorAt(palette, i, overflowColor));
   return {
     labels: breakdown.slices.map(s => s.label),
     datasets: [{
@@ -174,4 +172,60 @@ export function buildChartOptions(params: ChartOptionsParams): Record<string, un
       y: horizontal ? categoryAxis : valueAxis,
     },
   };
+}
+
+// ── Etiquetas directas selectivas ───────────────────────────────────────────────────────
+// Un número sobre cada punto es ruido, no se lee (ver design.md "Etiquetas") — estas
+// funciones deciden QUÉ índice etiquetar y CON QUÉ texto, puras y testeadas sin canvas ni
+// TestBed. El plugin de Chart.js que las consume (`metric-chart.component.ts`, único
+// archivo que importa `chart.js`) sólo dibuja lo que estas funciones devuelven.
+
+/** Un punto a etiquetar: `index` dentro del array de labels/valores, `text` ya formateado. */
+export interface DirectLabel {
+  index: number;
+  text: string;
+}
+
+/**
+ * Serie temporal (line): etiqueta sólo el último punto + el máximo + el mínimo — nunca
+ * todos los puntos. Sin duplicados si el último punto coincide con el máximo o el mínimo
+ * (`Set` sobre los 3 índices candidatos).
+ */
+export function selectSeriesLabels(values: number[], unit: string | undefined): DirectLabel[] {
+  if (values.length === 0) return [];
+  const fmt = unitFormat(unit);
+  const lastIndex = values.length - 1;
+  let maxIndex = 0;
+  let minIndex = 0;
+  values.forEach((v, i) => {
+    if (v > values[maxIndex]) maxIndex = i;
+    if (v < values[minIndex]) minIndex = i;
+  });
+  const indices = Array.from(new Set([lastIndex, maxIndex, minIndex])).sort((a, b) => a - b);
+  return indices.map(index => ({ index, text: fmt.format(values[index]) }));
+}
+
+/**
+ * Barra horizontal: valor al final de CADA barra — a diferencia de una serie temporal, acá
+ * no hay ruido de "un número por punto": cada fila es una categoría distinta, no un tramo
+ * de la misma tendencia.
+ */
+export function selectBarLabels(values: number[], unit: string | undefined): DirectLabel[] {
+  const fmt = unitFormat(unit);
+  return values.map((v, index) => ({ index, text: fmt.format(v) }));
+}
+
+/**
+ * Doughnut/pie: valor + % del total en cada gajo — SÓLO hasta 4 gajos. De 5 en adelante
+ * el propio gajo es demasiado angosto para un texto legible; esos casos se quedan sólo con
+ * la leyenda (ver design.md "Etiquetas": "Doughnut 5–6 gajos: sólo leyenda con valores").
+ */
+export function selectDoughnutLabels(values: number[], unit: string | undefined): DirectLabel[] {
+  if (values.length === 0 || values.length > 4) return [];
+  const fmt = unitFormat(unit);
+  const total = values.reduce((sum, v) => sum + v, 0);
+  return values.map((v, index) => {
+    const pct = total > 0 ? Math.round((v / total) * 100) : 0;
+    return { index, text: `${fmt.format(v)} (${pct}%)` };
+  });
 }

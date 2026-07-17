@@ -9,7 +9,6 @@ import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.com
 import {
   MetricBranchOption,
   MetricChartCardComponent,
-  MetricChartComponent,
   MetricFilter,
   MetricFilterBarComponent,
   MetricKpi,
@@ -74,7 +73,6 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
     RefreshIndicatorComponent,
     StatCardComponent,
     MetricFilterBarComponent,
-    MetricChartComponent,
     MetricChartCardComponent,
   ],
   template: `
@@ -153,15 +151,9 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
             <ui-stat-card label="Cola de extracción" [value]="kpiValue(colaExtraccionVivo())" />
             <ui-stat-card label="Ocupación de boxes" [value]="kpiValue(ocupacionBoxesVivo())" />
           </div>
-          <div class="flu-card flu-card--inset">
-            <h4>Urgentes por estado</h4>
-            <ui-metric-chart
-              type="doughnut"
-              height="140px"
-              legendPosition="right"
-              [breakdown]="urgentesBreakdown()"
-              [loading]="enVivoLoading()" />
-          </div>
+          <ui-metric-chart-card
+            type="doughnut" title="Urgentes por estado" height="140px" legendPosition="right"
+            [breakdown]="urgentesBreakdown()" [loading]="enVivoLoading()" />
         </div>
       </div>
     </div>
@@ -175,9 +167,7 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
       border: 1px solid #e8e9f0;
       padding: 16px 18px;
     }
-    .flu-card--inset { box-shadow: none; border-style: dashed; }
     .flu-card h3 { margin: 0 0 12px; font-size: 15px; font-weight: 700; color: #1a1a2e; }
-    .flu-card h4 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #1a1a2e; }
 
     .flu-filters { padding: 12px 18px; }
 

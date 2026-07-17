@@ -3,7 +3,7 @@ import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { PollingHandle, PollingService } from '@core/refresh';
 import {
-  MetricChartCardComponent, MetricChartComponent, MetricFilter, createBreakdownTranslator, formatKpiValue,
+  MetricChartCardComponent, MetricFilter, createBreakdownTranslator, formatKpiValue,
 } from '@shared/metrics';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { PanelCardComponent } from '@shared/ui/components/panel-card/panel-card.component';
@@ -25,7 +25,7 @@ import { selectVolumenTabData, selectVolumenTabLoading } from '../../../store/an
   selector: 'lab-analitica-volumen-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MetricChartComponent, MetricChartCardComponent, StatCardComponent, DataTableComponent, PanelCardComponent],
+  imports: [MetricChartCardComponent, StatCardComponent, DataTableComponent, PanelCardComponent],
   template: `
     <div class="metrics-tab">
       <section class="metrics-tab__stats">
@@ -48,9 +48,9 @@ import { selectVolumenTabData, selectVolumenTabLoading } from '../../../store/an
 
       <!-- Demografía por género: part-to-whole real, ≤6 gajos — mantiene doughnut. -->
       <div class="metrics-tab__bounded">
-        <ui-panel-card title="Demografía por género">
-          <ui-metric-chart type="doughnut" legendPosition="right" [breakdown]="demografiaPorGenero()" [loading]="loading()" />
-        </ui-panel-card>
+        <ui-metric-chart-card
+          type="doughnut" title="Demografía por género" legendPosition="right"
+          [breakdown]="demografiaPorGenero()" [loading]="loading()" />
       </div>
 
       <ui-panel-card title="Sub-estados analíticos en vivo">

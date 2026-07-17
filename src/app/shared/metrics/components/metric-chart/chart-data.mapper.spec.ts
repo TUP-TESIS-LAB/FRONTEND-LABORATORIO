@@ -1,4 +1,7 @@
-import { buildChartOptions, buildYAxisScale, mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
+import {
+  buildChartOptions, buildYAxisScale, mapMetricBreakdownToChartData, mapMetricSeriesToChartData,
+  selectBarLabels, selectDoughnutLabels, selectSeriesLabels,
+} from './chart-data.mapper';
 import { MetricSeries, MetricBreakdown } from '../../models/metric-envelopes.model';
 
 const PALETTE = ['#2563eb', '#0ea5a4', '#f97316'];
@@ -93,6 +96,16 @@ describe('mapMetricBreakdownToChartData', () => {
     const colors = data!.datasets[0]['backgroundColor'] as string[];
     expect(colors).toEqual([PALETTE[0], PALETTE[1]]);
   });
+
+  it('acepta un overflowColor explícito (el componente resuelve --ds-text-muted y lo pasa acá)', () => {
+    const breakdown: MetricBreakdown = {
+      dimension: 'sucursal',
+      slices: Array.from({ length: 9 }, (_, i) => ({ key: `s${i}`, label: `S${i}`, value: i })),
+    };
+    const data = mapMetricBreakdownToChartData(breakdown, PALETTE, 'categorical', '#123456');
+    const colors = data!.datasets[0]['backgroundColor'] as string[];
+    expect(colors[8]).toBe('#123456');
+  });
 });
 
 describe('buildYAxisScale', () => {
@@ -162,5 +175,82 @@ describe('buildChartOptions', () => {
     const options = buildChartOptions({ ...base, type: 'bar', orientation: 'horizontal' }) as any;
     const label = options.plugins.tooltip.callbacks.label({ label: 'Sede Centro', parsed: { x: 30, y: 0 }, dataset: {} });
     expect(label).toBe('Sede Centro: 30');
+  });
+});
+
+describe('selectSeriesLabels', () => {
+  it('etiqueta último punto + máximo + mínimo, ordenados por índice', () => {
+    const labels = selectSeriesLabels([10, 30, 5, 20], 'count');
+    expect(labels.map(l => l.index)).toEqual([1, 2, 3]); // max=1, min=2, last=3
+    expect(labels.find(l => l.index === 1)!.text).toBe('30');
+    expect(labels.find(l => l.index === 2)!.text).toBe('5');
+    expect(labels.find(l => l.index === 3)!.text).toBe('20');
+  });
+
+  it('sin duplicados cuando el último punto ES el máximo', () => {
+    const labels = selectSeriesLabels([5, 10, 30], 'count');
+    expect(labels.map(l => l.index)).toEqual([0, 2]); // min=0, max=last=2 (no duplicado)
+  });
+
+  it('un solo valor: un solo label (los 3 candidatos coinciden)', () => {
+    const labels = selectSeriesLabels([42], 'count');
+    expect(labels).toEqual([{ index: 0, text: '42' }]);
+  });
+
+  it('todos los valores iguales: max/min quedan en el índice 0 (primer empate), más el último punto', () => {
+    const labels = selectSeriesLabels([7, 7, 7], 'count');
+    expect(labels.map(l => l.index)).toEqual([0, 2]); // max=min=0 (primer empate), last=2
+  });
+
+  it('array vacío: sin labels', () => {
+    expect(selectSeriesLabels([], 'count')).toEqual([]);
+  });
+
+  it('formatea con la unidad recibida (currency)', () => {
+    const labels = selectSeriesLabels([1000], 'currency');
+    expect(labels[0].text).toContain('$');
+  });
+});
+
+describe('selectBarLabels', () => {
+  it('etiqueta CADA valor, en orden, formateado', () => {
+    const labels = selectBarLabels([10, 20, 30], 'count');
+    expect(labels).toEqual([
+      { index: 0, text: '10' },
+      { index: 1, text: '20' },
+      { index: 2, text: '30' },
+    ]);
+  });
+
+  it('array vacío: sin labels', () => {
+    expect(selectBarLabels([], 'count')).toEqual([]);
+  });
+});
+
+describe('selectDoughnutLabels', () => {
+  it('hasta 4 gajos: valor + % del total en cada uno', () => {
+    const labels = selectDoughnutLabels([60, 40], 'count');
+    expect(labels).toEqual([
+      { index: 0, text: '60 (60%)' },
+      { index: 1, text: '40 (40%)' },
+    ]);
+  });
+
+  it('exactamente 4 gajos: sigue etiquetando', () => {
+    const labels = selectDoughnutLabels([1, 1, 1, 1], 'count');
+    expect(labels).toHaveLength(4);
+  });
+
+  it('5 gajos o más: sin etiquetas (sólo leyenda)', () => {
+    expect(selectDoughnutLabels([1, 1, 1, 1, 1], 'count')).toEqual([]);
+  });
+
+  it('sin gajos: sin etiquetas', () => {
+    expect(selectDoughnutLabels([], 'count')).toEqual([]);
+  });
+
+  it('total 0: % es 0 en vez de NaN/Infinity', () => {
+    const labels = selectDoughnutLabels([0, 0], 'count');
+    expect(labels[0].text).toBe('0 (0%)');
   });
 });
