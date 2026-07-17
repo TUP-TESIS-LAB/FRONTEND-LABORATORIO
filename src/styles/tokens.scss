@@ -35,18 +35,21 @@
   --space-12: 48px;
 }
 
-// ─── Paleta de gráficos (ui-metric-chart), derivada por colorimetría de la marca.
-// Defaults acá = deriveChartPalette(--brand-primary, --brand-secondary) default;
-// TenantThemeService la recalcula y sobreescribe al aplicar el tenant activo. ───
+// ─── Paleta de gráficos (ui-metric-chart) — FIJA, validada con scripts/validate_palette.js
+// contra la superficie real del proyecto (--ds-surface: #eef0f4). El orden es el mecanismo
+// de seguridad CVD (peor ΔE adyacente 19.6 en visión normal) — NO reordenar sin re-validar.
+// A diferencia de --brand-*, esta paleta NO se deriva de la marca del tenant: el color de
+// un gráfico codifica identidad de serie, es funcional, no decorativo. La marca sigue
+// mandando en el chrome (headers, botones, KPIs), no en el dato. ───
 :root {
-  --chart-1: #5a84d7;
-  --chart-2: #009e9e;
-  --chart-3: #db7d16;
-  --chart-4: #2aa064;
-  --chart-5: #c3608c;
-  --chart-6: #b1ac00;
-  --chart-7: #a16cc0;
-  --chart-8: #ca6353;
+  --chart-1: #2a78d6;
+  --chart-2: #008300;
+  --chart-3: #e87ba4;
+  --chart-4: #eda100;
+  --chart-5: #1baf7a;
+  --chart-6: #eb6834;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
 }
 
 // ─── Overrides PrimeNG ───

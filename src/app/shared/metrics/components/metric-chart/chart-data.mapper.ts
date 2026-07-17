@@ -8,6 +8,19 @@ export interface ChartJsData {
 }
 
 /**
+ * Color de overflow (`--ds-text-muted`) para el slot 9+ de un breakdown. La paleta tiene
+ * 8 slots fijos y NUNCA se cicla — ciclar repetiría identidad de serie con otro slice
+ * (KAN-252). El backend ya acota con `OTHERS_KEY`/top-N; esto es la red de seguridad del
+ * front si de todos modos llega un breakdown más largo que la paleta.
+ */
+const OVERFLOW_COLOR = '#6b7280';
+
+/** Color de un slot por índice: `palette[i]` mientras alcance, gris de overflow después. */
+function colorAt(palette: string[], i: number): string {
+  return i < palette.length ? palette[i] : OVERFLOW_COLOR;
+}
+
+/**
  * Mapea un `MetricSeries` (line/bar) al formato de Chart.js.
  * `null` cuando no hay datasets — el componente lo interpreta como empty-state.
  * Extraído como función pura (en vez de vivir solo dentro del `computed` del componente)
@@ -22,7 +35,7 @@ export function mapMetricSeriesToChartData(
   return {
     labels: series.labels,
     datasets: series.datasets.map((ds, i) => {
-      const color = palette[i % palette.length];
+      const color = colorAt(palette, i);
       return {
         label: ds.label,
         data: ds.values,
@@ -48,7 +61,7 @@ export function mapMetricBreakdownToChartData(
     labels: breakdown.slices.map(s => s.label),
     datasets: [{
       data: breakdown.slices.map(s => s.value),
-      backgroundColor: breakdown.slices.map((_, i) => palette[i % palette.length]),
+      backgroundColor: breakdown.slices.map((_, i) => colorAt(palette, i)),
       borderWidth: 0,
     }],
   };

@@ -46,4 +46,20 @@ describe('mapMetricBreakdownToChartData', () => {
   it('devuelve null cuando el breakdown no tiene slices (empty-state)', () => {
     expect(mapMetricBreakdownToChartData({ dimension: 'metodo', slices: [] }, PALETTE)).toBeNull();
   });
+
+  it('con más slices que slots en la paleta, NUNCA cicla — el slot 9 usa el gris de overflow, no palette[0]', () => {
+    const EIGHT = ['#2a78d6', '#008300', '#e87ba4', '#eda100', '#1baf7a', '#eb6834', '#4a3aa7', '#e34948'];
+    const breakdown: MetricBreakdown = {
+      dimension: 'sucursal',
+      slices: Array.from({ length: 9 }, (_, i) => ({ key: `s${i}`, label: `Sucursal ${i}`, value: i + 1 })),
+    };
+
+    const data = mapMetricBreakdownToChartData(breakdown, EIGHT);
+    const colors = data!.datasets[0]['backgroundColor'] as string[];
+
+    expect(colors.slice(0, 8)).toEqual(EIGHT);
+    expect(colors[8]).not.toBe(EIGHT[0]);
+    expect(colors[8]).toBe('#6b7280');
+    expect(new Set(colors.slice(0, 8)).size).toBe(8);
+  });
 });
