@@ -1,4 +1,5 @@
 import { MetricBreakdown, MetricSeries } from '../../models/metric-envelopes.model';
+import { unitFormat } from '../../util/metric-format.util';
 import { MetricChartType } from './metric-chart.component';
 
 /** Forma mínima de dataset que espera Chart.js vía `p-chart`. */
@@ -41,7 +42,8 @@ export function mapMetricSeriesToChartData(
         data: ds.values,
         borderColor: color,
         backgroundColor: color,
-        tension: type === 'line' ? 0.35 : undefined,
+        // Sin `tension`: una spline interpola valores intermedios que no existen y
+        // puede curvar por debajo de cero sobre conteos — segmentos rectos, siempre.
         fill: false,
       };
     }),
@@ -65,4 +67,35 @@ export function mapMetricBreakdownToChartData(
       borderWidth: 0,
     }],
   };
+}
+
+/** Config del eje Y de Chart.js. */
+export interface YAxisScale {
+  ticks: Record<string, unknown>;
+  grid: { color: string };
+  beginAtZero: boolean;
+}
+
+/**
+ * Construye la config del eje Y (ticks, `precision`/`stepSize`/`beginAtZero`) a partir del
+ * `unit` (format-kind) del envelope — sólo `count` fuerza eje entero (KAN-252). Extraída
+ * como función pura, testeada sin pasar por `TestBed`/`setInput()`: este entorno de vitest
+ * tiene un problema conocido donde `componentRef.setInput()` sobre un signal input no
+ * required NO se aplica de forma confiable (`series()` sigue leyendo el valor previo/
+ * default) — el mismo problema documentado para `input.required()` en
+ * `metric-chart.component.spec.ts`, pero también reproducido acá con inputs opcionales.
+ * Por eso el componente delega la lógica real acá y el spec del componente sólo cubre el
+ * smoke test de `chartData()` sin inputs.
+ */
+export function buildYAxisScale(unit: string | undefined, textColor: string, gridColor: string): YAxisScale {
+  const fmt = unitFormat(unit);
+  const ticks: Record<string, unknown> = {
+    color: textColor,
+    callback: (value: number | string) => fmt.format(Number(value)),
+  };
+  if (fmt.integer) {
+    ticks['precision'] = 0;
+    ticks['stepSize'] = 1;
+  }
+  return { ticks, grid: { color: gridColor }, beginAtZero: fmt.integer };
 }

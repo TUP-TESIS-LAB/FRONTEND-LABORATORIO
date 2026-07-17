@@ -2,24 +2,25 @@ import { ChangeDetectionStrategy, Component, Input, computed, input } from '@ang
 import { ChartModule } from 'primeng/chart';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { MetricBreakdown, MetricSeries } from '../../models/metric-envelopes.model';
-import { mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
+import { unitFormat } from '../../util/metric-format.util';
+import { buildYAxisScale, mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
 
 /** Tipo de gráfico soportado por el wrapper (subconjunto de los que expone `p-chart`). */
 export type MetricChartType = 'line' | 'bar' | 'pie' | 'doughnut';
 
 /**
- * Paleta categórica de 8 colores, derivada por colorimetría de la marca del tenant
- * (`TenantThemeService.applyTheme` → `deriveChartPalette`) y expuesta como CSS vars
- * `--chart-1..--chart-8`. Nunca se usan acá los colores de estado (`--ds-success/
- * warning/danger/info`) como identidad de serie — están reservados para feedback.
+ * Paleta categórica FIJA de 8 colores (`tokens.scss`), expuesta como CSS vars
+ * `--chart-1..--chart-8`. Validada CVD, independiente de la marca del tenant (KAN-252) —
+ * ver comentario de `tokens.scss`. Nunca se usan acá los colores de estado
+ * (`--ds-success/warning/danger/info`) como identidad de serie — reservados para feedback.
  */
 const PALETTE_VARS = Array.from({ length: 8 }, (_, i) => `--chart-${i + 1}`);
 
 // Canvas (`CanvasRenderingContext2D.fillStyle`) no resuelve `var(--x)` — Chart.js necesita
-// un color ya resuelto. Estos valores son la paleta derivada de los brand tokens default
-// de `src/styles/tokens.scss`, usados solo si no hay `document` (SSR/tests) o las CSS vars
-// no están definidas; en la app real siempre se resuelve desde el token vía `getComputedStyle`.
-const FALLBACK_PALETTE = ['#5a84d7', '#009e9e', '#db7d16', '#2aa064', '#c3608c', '#b1ac00', '#a16cc0', '#ca6353'];
+// un color ya resuelto. Estos valores son la paleta fija default de `src/styles/tokens.scss`,
+// usados solo si no hay `document` (SSR/tests) o las CSS vars no están definidas; en la app
+// real siempre se resuelve desde el token vía `getComputedStyle`.
+const FALLBACK_PALETTE = ['#2a78d6', '#008300', '#e87ba4', '#eda100', '#1baf7a', '#eb6834', '#4a3aa7', '#e34948'];
 
 /** Lee la paleta de colores del tenant activo desde las CSS vars del `:root`. */
 function resolvePalette(): string[] {
@@ -93,11 +94,20 @@ export class MetricChartComponent {
   /** Posición de la leyenda (pie/doughnut). 'right' achica el alto total cuando el
    * gráfico convive con cards de poca altura (ej. sección "En vivo"). */
   readonly legendPosition = input<'top' | 'right' | 'bottom' | 'left'>('top');
+  /**
+   * Format-kind por defecto cuando el envelope no trae `unit` (ej. datos armados a mano
+   * en un test). `input<string>('count')` con default, NO `input.required()` — bug
+   * conocido NG0950 en vitest con `input.required()` + `setInput()`. El valor efectivo
+   * sale del propio envelope primero: `series()?.unit ?? breakdown()?.unit ?? unit()`.
+   */
+  readonly unit = input<string>('count');
 
   /** `true` para pie/doughnut, que consumen `breakdown` en vez de `series`. */
   protected readonly isCategorical = computed(() => {
     return this.type === 'pie' || this.type === 'doughnut';
   });
+
+  protected readonly effectiveUnit = computed(() => this.series()?.unit ?? this.breakdown()?.unit ?? this.unit());
 
   /**
    * Datos ya mapeados al formato de Chart.js, o `null` cuando no hay datos (empty-state).
@@ -115,12 +125,19 @@ export class MetricChartComponent {
     return series ? mapMetricSeriesToChartData(series, this.type, palette) : null;
   });
 
-  /** Opciones de Chart.js: leyenda, ejes y colores de texto/grilla según el tema activo. */
+  /**
+   * Opciones de Chart.js: leyenda, ejes y colores de texto/grilla según el tema activo.
+   * `unit` deriva TODO el formato numérico — un solo input, cuatro comportamientos
+   * consistentes: precisión/`beginAtZero` del eje Y, tick del eje Y, y tooltip.
+   * Sólo `unit: 'count'` fuerza eje entero (KAN-252) — el resto tolera decimales.
+   */
   protected readonly chartOptions = computed(() => {
     const textColor = resolveVar('--ds-text', '#1a1a2e');
     const gridColor = resolveVar('--ds-border', '#e6e8ef');
     const categorical = this.isCategorical();
     const datasetCount = this.series()?.datasets.length ?? 0;
+    const fmt = unitFormat(this.effectiveUnit());
+    const yAxis = buildYAxisScale(this.effectiveUnit(), textColor, gridColor);
 
     return {
       responsive: true,
@@ -131,10 +148,19 @@ export class MetricChartComponent {
           position: this.legendPosition(),
           labels: { color: textColor },
         },
+        tooltip: {
+          callbacks: {
+            label: (ctx: { label: string; parsed: number | { y: number }; dataset: { label?: string } }) => {
+              const raw = categorical ? ctx.parsed : (ctx.parsed as { y: number }).y;
+              const seriesLabel = categorical ? ctx.label : ctx.dataset.label;
+              return `${seriesLabel}: ${fmt.format(Number(raw))}`;
+            },
+          },
+        },
       },
       scales: categorical ? undefined : {
         x: { ticks: { color: textColor }, grid: { color: gridColor } },
-        y: { ticks: { color: textColor }, grid: { color: gridColor } },
+        y: yAxis,
       },
     };
   });

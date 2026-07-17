@@ -1,4 +1,4 @@
-import { mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
+import { buildYAxisScale, mapMetricBreakdownToChartData, mapMetricSeriesToChartData } from './chart-data.mapper';
 import { MetricSeries, MetricBreakdown } from '../../models/metric-envelopes.model';
 
 const PALETTE = ['#2563eb', '#0ea5a4', '#f97316'];
@@ -23,6 +23,15 @@ describe('mapMetricSeriesToChartData', () => {
   it('devuelve null cuando no hay datasets (empty-state)', () => {
     const series: MetricSeries = { labels: [], datasets: [] };
     expect(mapMetricSeriesToChartData(series, 'bar', PALETTE)).toBeNull();
+  });
+
+  it('ningún dataset de línea emite `tension` (segmentos rectos, sin interpolar)', () => {
+    const series: MetricSeries = {
+      labels: ['ene', 'feb'],
+      datasets: [{ key: 'recaudacion', label: 'Recaudación', values: [10, 20] }],
+    };
+    const data = mapMetricSeriesToChartData(series, 'line', PALETTE);
+    expect(data!.datasets[0]['tension']).toBeUndefined();
   });
 });
 
@@ -61,5 +70,35 @@ describe('mapMetricBreakdownToChartData', () => {
     expect(colors[8]).not.toBe(EIGHT[0]);
     expect(colors[8]).toBe('#6b7280');
     expect(new Set(colors.slice(0, 8)).size).toBe(8);
+  });
+});
+
+describe('buildYAxisScale', () => {
+  it('unit "count": eje entero — precision 0, stepSize 1, beginAtZero true', () => {
+    const scale = buildYAxisScale('count', '#111', '#ccc');
+    expect(scale.ticks['precision']).toBe(0);
+    expect(scale.ticks['stepSize']).toBe(1);
+    expect(scale.beginAtZero).toBe(true);
+  });
+
+  it('unit "currency": NO fuerza precision, beginAtZero false', () => {
+    const scale = buildYAxisScale('currency', '#111', '#ccc');
+    expect(scale.ticks['precision']).toBeUndefined();
+    expect(scale.ticks['stepSize']).toBeUndefined();
+    expect(scale.beginAtZero).toBe(false);
+  });
+
+  it('unit "percent": NO fuerza precision', () => {
+    expect(buildYAxisScale('percent', '#111', '#ccc').ticks['precision']).toBeUndefined();
+  });
+
+  it('unit undefined: cae a count (eje entero)', () => {
+    expect(buildYAxisScale(undefined, '#111', '#ccc').beginAtZero).toBe(true);
+  });
+
+  it('callback del tick formatea con la unidad recibida', () => {
+    const scale = buildYAxisScale('currency', '#111', '#ccc');
+    const callback = scale.ticks['callback'] as (v: number) => string;
+    expect(callback(1234.5)).toContain('$');
   });
 });
