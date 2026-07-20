@@ -37,14 +37,13 @@ import {
         [initialItems]="initialItems()"
         [readOnly]="readOnly()"
         [isParticular]="isParticular()"
-        [compactSearch]="showAuthorizationInput()"
         (analysisAdded)="onAnalysisAdded($event)"
         (analysisRemoved)="onAnalysisRemoved($event)"
         (itemsChanged)="onItemsChanged($event)"
         (detailRequested)="onDetailRequested($event)">
-        <!-- Proyectado JUSTO a la derecha del buscador (ver [compactSearch]): los dos campos
-             arrancan desde el borde izquierdo de la tabla, uno al lado del otro, en vez de
-             quedar este empujado contra el borde derecho.
+        <!-- Va en la esquina DERECHA de la fila, alineado con el borde derecho de la tabla:
+             el buscador crece (flex-1) y lo empuja hasta el final. La alineación con la tabla
+             es el punto — no acercarlo al buscador (se probó y no era lo pedido).
              La urgencia se marca en el paso 1 (Datos generales) — acá no se repite (KAN-237). -->
         @if (showAuthorizationInput()) {
           <label class="flex flex-col gap-1 text-sm">
@@ -109,11 +108,7 @@ export class AnalisisStepComponent implements OnInit {
    */
   readonly isParticular = computed(() => this.detail()?.insurancePlanId == null);
 
-  /**
-   * El input de autorización solo aplica con obra social y en modo editable.
-   * Doble uso: gatea el propio input Y el [compactSearch] del picker, así el buscador
-   * solo se acorta cuando hay de verdad un campo al lado (sin OS sigue a todo el ancho).
-   */
+  /** El input de autorización solo aplica con obra social y en modo editable. */
   readonly showAuthorizationInput = computed(() => !this.readOnly() && !this.isParticular());
 
   /**
