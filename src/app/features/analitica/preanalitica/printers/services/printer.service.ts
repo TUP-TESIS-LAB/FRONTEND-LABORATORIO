@@ -9,11 +9,11 @@ export class PrinterService {
   private readonly base = '/api/v1/analitica/preanalitica/printers';
 
   list(): Observable<Printer[]> {
-    return this.http.get<Printer[]>(`${this.base}/`);
+    return this.http.get<Printer[]>(this.base);
   }
 
   create(input: PrinterCreateInput): Observable<RegisteredPrinter> {
-    return this.http.post<RegisteredPrinter>(`${this.base}/`, input);
+    return this.http.post<RegisteredPrinter>(this.base, input);
   }
 
   delete(id: number): Observable<void> {
