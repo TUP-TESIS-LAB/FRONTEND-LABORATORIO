@@ -63,6 +63,7 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: 'Procesamiento', path: '/analitica/procesamiento', icon: 'pi pi-cog',          sectionKey: 'ANALITICA' },
           { label: 'Validación',    path: '/analitica/validacion',    icon: 'pi pi-check-circle', sectionKey: 'ANALITICA' },
           { label: 'Descarte',      path: '/analitica/descarte',      icon: 'pi pi-trash',        sectionKey: 'POSTANALITICA' },
+          { label: 'Impresoras',    path: '/analitica/impresoras',    icon: 'pi pi-print',        sectionKey: 'PREANALITICA', roleKey: 'ADMINISTRADOR' },
         ],
       },
       { kind: 'link', label: 'Cola de extracción', icon: 'pi pi-bolt', path: '/analitica/extraccion', sectionKey: 'EXTRACCIONES' },

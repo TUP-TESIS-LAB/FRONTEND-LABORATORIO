@@ -1,0 +1,76 @@
+<ui-page-header heading="Impresoras" subtitle="Impresoras Zebra registradas por sucursal para la etiqueta de muestras.">
+  <p-button label="Nueva impresora" (onClick)="openNew()" />
+</ui-page-header>
+
+<p-table [value]="printers()" [loading]="loading()" dataKey="id" [scrollable]="true" scrollHeight="500px">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Nombre</th>
+      <th>Sucursal</th>
+      <th>IP</th>
+      <th>Puerto</th>
+      <th style="width:4rem"></th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-printer>
+    <tr>
+      <td>{{ printer.name }}</td>
+      <td>{{ branchName(printer.branchId) }}</td>
+      <td>{{ printer.ipAddress }}</td>
+      <td>{{ printer.port }}</td>
+      <td class="actions">
+        <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small"
+                  (click)="remove(printer)" pTooltip="Eliminar" />
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td colspan="5" class="muted">Sin impresoras registradas. Creá la primera para empezar.</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [draggable]="false" header="Nueva impresora"
+          [style]="{ width: '28rem' }">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="dialog-form">
+    <div class="form-field">
+      <label for="printer-name">Nombre *</label>
+      <input id="printer-name" pInputText formControlName="name" placeholder="Ej: Zebra Recepción" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <small class="form-error">El nombre es requerido (máx 80 caracteres).</small>
+      }
+    </div>
+    <div class="form-field">
+      <label for="printer-branch">Sucursal *</label>
+      <p-select id="printer-branch" formControlName="branchId" [options]="branches()"
+                optionLabel="name" optionValue="id" appendTo="body" placeholder="Seleccioná una sucursal" />
+      @if (form.controls.branchId.invalid && form.controls.branchId.touched) {
+        <small class="form-error">La sucursal es requerida.</small>
+      }
+    </div>
+    <div class="form-field">
+      <label for="printer-ip">Dirección IP *</label>
+      <input id="printer-ip" pInputText formControlName="ipAddress" placeholder="Ej: 192.168.1.50" />
+      @if (form.controls.ipAddress.invalid && form.controls.ipAddress.touched) {
+        <small class="form-error">Ingresá una IP válida (ej: 192.168.1.50).</small>
+      }
+    </div>
+    <div class="form-field">
+      <label for="printer-port">Puerto *</label>
+      <p-inputNumber id="printer-port" formControlName="port" [useGrouping]="false" [min]="1" [max]="65535" />
+      @if (form.controls.port.invalid && form.controls.port.touched) {
+        <small class="form-error">Ingresá un puerto válido (1-65535).</small>
+      }
+    </div>
+    <div class="dialog-actions">
+      <p-button label="Cancelar" severity="secondary" (click)="dialogVisible.set(false)" type="button" />
+      <p-button label="Guardar" type="submit" [disabled]="form.invalid" />
+    </div>
+  </form>
+</p-dialog>
+
+<p-confirmDialog [draggable]="false" />
+<p-toast />
+
+<app-printer-token-dialog [token]="lastToken()" (close)="onTokenDialogClose()" />
