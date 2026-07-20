@@ -11,7 +11,7 @@
     (clearPressed)="clear()"
     (submitPressed)="submit()" />
 
-  @if (error() === 'UNKNOWN') {
-    <p-message severity="error" text="Hubo un error. Probá de nuevo en un momento." />
+  @if (error(); as errorMsg) {
+    <p-message severity="error" [text]="errorMsg" />
   }
 </div>

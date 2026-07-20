@@ -12,6 +12,6 @@ export const totemReducer = createReducer<typeof initialTotemState>(
     lastHasAppointment: hasAppointment,
     error: null,
   })),
-  on(A.submitTotemEntryFailure, (state, { reason }) => ({ ...state, submitting: false, error: reason })),
+  on(A.submitTotemEntryFailure, (state, { message }) => ({ ...state, submitting: false, error: message })),
   on(A.resetTotemView, () => initialTotemState),
 );

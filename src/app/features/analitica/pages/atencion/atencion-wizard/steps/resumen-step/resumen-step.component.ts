@@ -235,7 +235,12 @@ export class ResumenStepComponent implements OnInit {
     const cat = this.catalog();
     const cov = this.patient()?.coverages?.find((c) => c.planId === planId);
     const member = cov?.memberNumber ? ` · N° ${cov.memberNumber}` : '';
-    return `${insurerNameForPlan(cat, planId)} ${planName(cat, planId)}${member}`;
+    const insurer = insurerNameForPlan(cat, planId);
+    const plan = planName(cat, planId);
+    // El plan puede tener el mismo nombre que la obra social (p. ej. planes por defecto del
+    // seed): en ese caso no lo repetimos. Si el plan tiene nombre propio, se muestran ambos.
+    const coverage = plan === insurer ? insurer : `${insurer} ${plan}`;
+    return `${coverage}${member}`;
   });
 
   readonly finalizeModalOpen  = signal(false);
