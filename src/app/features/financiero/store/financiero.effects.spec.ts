@@ -23,7 +23,7 @@ import {
   createBankAccount, createBankAccountFailure,
   deactivateBankAccountSuccess,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
-  loadPayment, loadPaymentSuccess, loadPaymentFailure,
+  loadPayment, pollPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
   downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure,
@@ -47,7 +47,7 @@ describe('FinancieroEffects', () => {
     listCashRegisters: Fn; createCashRegister: Fn; deactivateCashRegister: Fn;
     getBranchOtherMedia: Fn; registerBranchMovement: Fn;
     listBankAccounts: Fn; createBankAccount: Fn; updateBankAccount: Fn; deactivateBankAccount: Fn;
-    listPayments: Fn; getPayment: Fn; cancelPayment: Fn; createPayment: Fn;
+    listPayments: Fn; getPayment: Fn; pollPayment: Fn; cancelPayment: Fn; createPayment: Fn;
     getComprobantePdf: Fn;
     getFiscalConfig: Fn; saveFiscalConfig: Fn;
   };
@@ -71,6 +71,7 @@ describe('FinancieroEffects', () => {
       deactivateBankAccount: vi.fn(),
       listPayments: vi.fn(),
       getPayment: vi.fn(),
+      pollPayment: vi.fn(),
       cancelPayment: vi.fn(),
       createPayment: vi.fn(),
       getComprobantePdf: vi.fn(),
@@ -277,6 +278,34 @@ describe('FinancieroEffects', () => {
     expect(action.type).toBe('[Financiero Cobros API] Load Payment Failure');
   });
 
+  // ── pollPayment$ (KAN-245: solo el tick de polling usa el GET condicional) ──
+
+  it('pollPayment$ emite loadPaymentSuccess con el pago devuelto', async () => {
+    const payment = { id: 9, status: 'PROCESSED', totalAmount: 5000 } as any;
+    api.pollPayment.mockReturnValue(of(payment));
+    actions$ = of(pollPayment({ id: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.pollPayment$);
+    expect(api.pollPayment).toHaveBeenCalledWith(9);
+    expect(action).toEqual(loadPaymentSuccess({ payment }));
+  });
+
+  it('pollPayment$ emite loadPaymentNotModified con el id ante 304 (polling sin cambios)', async () => {
+    api.pollPayment.mockReturnValue(of(NOT_MODIFIED));
+    actions$ = of(pollPayment({ id: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.pollPayment$);
+    expect(action).toEqual(loadPaymentNotModified({ id: 9 }));
+  });
+
+  it('pollPayment$ mapea errores a loadPaymentFailure', async () => {
+    api.pollPayment.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    actions$ = of(pollPayment({ id: 99 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.pollPayment$);
+    expect(action.type).toBe('[Financiero Cobros API] Load Payment Failure');
+  });
+
   // ── cancelPayment$ ─────────────────────────────────────────────────────────
 
   it('cancelPayment$ ante éxito muestra notif.success y emite cancelPaymentSuccess', async () => {
@@ -337,7 +366,7 @@ describe('FinancieroEffects', () => {
     vi.restoreAllMocks();
   });
 
-  it('downloadComprobante$ ante 404 emite Failure con mensaje en español, sin leak de internals', async () => {
+  it('downloadComprobante$ ante 404 sin body emite Failure con mensaje en español, sin leak de internals', async () => {
     api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
     actions$ = of(downloadComprobante({ paymentId: 99 }));
     const effects = TestBed.inject(FinancieroEffects);
@@ -350,12 +379,31 @@ describe('FinancieroEffects', () => {
     expect(notif.error).toHaveBeenCalledWith('No existe un comprobante emitido para este pago.');
   });
 
-  it('downloadComprobante$ ante 409 emite Failure con mensaje de configuración fiscal incompleta', async () => {
+  it('downloadComprobante$ ante 409 con body Blob parseable muestra el message del backend (ya en español y saneado)', async () => {
+    const body = new Blob([JSON.stringify({ message: 'El comprobante todavía está pendiente de emisión. Volvé a intentar en unos segundos.' })]);
+    api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409, error: body })));
+    actions$ = of(downloadComprobante({ paymentId: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
+    expect(action.error).toBe('El comprobante todavía está pendiente de emisión. Volvé a intentar en unos segundos.');
+    expect(notif.error).toHaveBeenCalledWith('El comprobante todavía está pendiente de emisión. Volvé a intentar en unos segundos.');
+  });
+
+  it('downloadComprobante$ ante 409 sin body (o no parseable) cae al fallback genérico — ya no asume "configuración incompleta"', async () => {
     api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
     actions$ = of(downloadComprobante({ paymentId: 9 }));
     const effects = TestBed.inject(FinancieroEffects);
     const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
-    expect(action.error).toBe('La configuración fiscal del emisor está incompleta. Contactá al administrador.');
+    expect(action.error).toBe('No se pudo descargar el comprobante. Probá de nuevo.');
+  });
+
+  it('downloadComprobante$ ante body Blob no parseable como JSON cae al fallback genérico', async () => {
+    const body = new Blob(['no es json']);
+    api.getComprobantePdf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409, error: body })));
+    actions$ = of(downloadComprobante({ paymentId: 9 }));
+    const effects = TestBed.inject(FinancieroEffects);
+    const action = await firstValueFrom(effects.downloadComprobante$) as ReturnType<typeof downloadComprobanteFailure>;
+    expect(action.error).toBe('No se pudo descargar el comprobante. Probá de nuevo.');
   });
 
   it('downloadComprobante$ ante error genérico emite Failure con mensaje default', async () => {

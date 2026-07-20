@@ -17,7 +17,7 @@ import {
   updateBankAccount, updateBankAccountSuccess, updateBankAccountFailure,
   deactivateBankAccountFailure,
   loadPayments, loadPaymentsSuccess, loadPaymentsFailure,
-  loadPayment, loadPaymentSuccess, loadPaymentFailure,
+  loadPayment, pollPayment, loadPaymentSuccess, loadPaymentNotModified, loadPaymentFailure,
   cancelPayment, cancelPaymentSuccess, cancelPaymentFailure,
   downloadComprobante, downloadComprobanteSuccess, downloadComprobanteFailure,
   registerPayment, registerPaymentSuccess, registerPaymentFailure, resetCobro,
@@ -232,7 +232,14 @@ export const financieroReducer = createReducer(
   })),
 
   // ── cobros: detalle de pago ────────────────────────────────────────────────
+  // `loadPayment` (carga inicial/fresca, sin ETag) y `pollPayment` (tick de
+  // polling, condicional) comparten el mismo manejo de `loading`/`error` — la
+  // diferencia entre ambas vive en el service/efecto (KAN-245).
   on(loadPayment, (state): FinancieroState => ({
+    ...state,
+    cobros: { ...state.cobros, loading: true, error: null },
+  })),
+  on(pollPayment, (state): FinancieroState => ({
     ...state,
     cobros: { ...state.cobros, loading: true, error: null },
   })),
@@ -240,6 +247,19 @@ export const financieroReducer = createReducer(
     ...state,
     cobros: { ...state.cobros, selected: payment, loading: false, error: null },
   })),
+  // Tick de polling sin cambios (304): solo baja el loading, sin tocar `selected`
+  // — mismo patrón que loadSettlementsNotModified. Blindaje KAN-245: si el id del
+  // 304 no coincide con el `selected` actual (carrera: se navegó a otro pago
+  // mientras un tick viejo seguía en vuelo), se ignora por completo — nunca hay
+  // que reportar como "al día" un pago que en realidad no es el que se está
+  // mostrando.
+  on(loadPaymentNotModified, (state, { id }): FinancieroState => {
+    if (state.cobros.selected?.id !== id) return state;
+    return {
+      ...state,
+      cobros: { ...state.cobros, loading: false },
+    };
+  }),
   on(loadPaymentFailure, (state, { error }): FinancieroState => ({
     ...state,
     cobros: { ...state.cobros, loading: false, error },

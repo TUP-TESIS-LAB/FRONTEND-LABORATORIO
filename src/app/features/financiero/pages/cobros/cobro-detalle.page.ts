@@ -1,17 +1,21 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { of } from 'rxjs';
 
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
+import { PollingHandle, PollingService } from '@core/refresh';
 
 import {
   selectCobroSelected,
@@ -19,13 +23,63 @@ import {
   selectCobrosError,
   selectDownloadingComprobante,
 } from '../../store/financiero.selectors';
-import { loadPayment, cancelPayment, downloadComprobante } from '../../store/financiero.actions';
+import { loadPayment, pollPayment, cancelPayment, downloadComprobante } from '../../store/financiero.actions';
 
 import { MetodoChipComponent } from '../../components/metodo-chip.component';
 import { EstadoPagoPillComponent } from '../../components/estado-pago-pill.component';
 import { ComprobanteCardComponent } from '../../components/comprobante-card.component';
 import { CancelarPagoModalComponent } from './components/cancelar-pago-modal.component';
-import { METHOD_META } from '../../models/financiero.model';
+import { METHOD_META, InvoiceEmissionStatus, PaymentStatus } from '../../models/financiero.model';
+
+/** true si el emissionStatus amerita seguir polleando el detalle del pago. */
+export function isPendingEmission(status: InvoiceEmissionStatus | null): boolean {
+  return status === 'PENDING';
+}
+
+/**
+ * true si corresponde ARRANCAR/MANTENER el polling del detalle del pago. Hallazgo #3 de la
+ * review (Pertusati): `isPendingEmission` sola no alcanza — un pago CANCELLED puede quedar con
+ * `emissionStatus` todavía en PENDING (la emisión nunca se completa porque ya no tiene sentido
+ * emitir un comprobante de un pago anulado, KAN-242) y el polling seguiría para siempre. Se
+ * corta apenas el pago pasa a CANCELLED, aunque el emissionStatus no haya llegado a un estado
+ * terminal propio (EMITTED/FAILED).
+ */
+export function shouldPollEmission(
+  emissionStatus: InvoiceEmissionStatus | null,
+  paymentStatus: PaymentStatus | undefined,
+): boolean {
+  return isPendingEmission(emissionStatus) && paymentStatus !== 'CANCELLED';
+}
+
+/**
+ * Tope de intentos de polling del detalle del pago antes de frenar y mostrar el fallback
+ * manual (hallazgo #3, segunda parte). A `intervalMs: 5000` son ~2 minutos — suficiente para
+ * que ARCA confirme el CAE en el caso normal sin dejar un poll infinito si algo se cuelga
+ * del lado del proveedor fiscal.
+ */
+export const EMISSION_POLL_MAX_ATTEMPTS = 24;
+
+/** true cuando se alcanzó (o superó) el tope de intentos sin que la emisión resuelva. */
+export function hasReachedEmissionPollCap(
+  attempts: number,
+  maxAttempts: number = EMISSION_POLL_MAX_ATTEMPTS,
+): boolean {
+  return attempts >= maxAttempts;
+}
+
+/**
+ * El botón "Descargar PDF" se bloquea mientras el comprobante ARCA está
+ * PENDING (el backend devuelve 409 — el PDF todavía no existe), salvo en
+ * pagos ya CANCELLED, que siempre se pueden descargar con watermark ANULADO
+ * (regresión de KAN-242 a evitar). Los comprobantes no electrónicos (Factura
+ * X) no tienen emissionStatus, así que nunca bloquean la descarga.
+ */
+export function isDownloadBlockedByPendingEmission(
+  emissionStatus: InvoiceEmissionStatus | null,
+  paymentStatus: PaymentStatus | undefined,
+): boolean {
+  return emissionStatus === 'PENDING' && paymentStatus !== 'CANCELLED';
+}
 
 @Component({
   selector: 'fin-cobro-detalle-page',
@@ -176,13 +230,32 @@ import { METHOD_META } from '../../models/financiero.model';
               <button class="fin-action-btn" type="button" (click)="imprimir()">
                 <i class="pi pi-print"></i> Imprimir ticket
               </button>
-              <button class="fin-action-btn" type="button" [disabled]="downloadingComprobante()" (click)="descargar(p.id)">
+              <button
+                class="fin-action-btn"
+                type="button"
+                [disabled]="downloadingComprobante() || downloadBlockedByPending()"
+                (click)="descargar(p.id)">
                 @if (downloadingComprobante()) {
                   <i class="pi pi-spin pi-spinner"></i> Descargando...
                 } @else {
                   <i class="pi pi-download"></i> Descargar PDF
                 }
               </button>
+              @if (downloadBlockedByPending()) {
+                <div class="fin-download-hint">
+                  <i class="pi pi-info-circle"></i>
+                  El comprobante todavía se está emitiendo. Vas a poder descargarlo apenas ARCA confirme el CAE.
+                </div>
+              }
+              @if (emissionPollTimedOut()) {
+                <div class="fin-download-hint fin-download-hint--warning">
+                  <i class="pi pi-exclamation-triangle"></i>
+                  <span>
+                    La emisión todavía no se resolvió. Actualizá manualmente para ver si ARCA ya confirmó el CAE.
+                    <button type="button" class="fin-inline-link" (click)="actualizarEmisionManualmente()">Actualizar</button>
+                  </span>
+                </div>
+              }
               @if (p.status === 'PROCESSED') {
                 <button class="fin-action-btn fin-action-btn--danger" type="button" (click)="abrirCancelar()">
                   <i class="pi pi-ban"></i> Cancelar pago
@@ -319,12 +392,26 @@ import { METHOD_META } from '../../models/financiero.model';
       border-color: #fca5a5; color: #b91c1c; background: #fff;
     }
     .fin-action-btn--danger:hover { background: #fdecea !important; }
+
+    .fin-download-hint {
+      display: flex; align-items: flex-start; gap: 6px;
+      font-size: 11.5px; color: var(--ds-text-muted, #6b7280);
+      padding: 0 2px;
+    }
+    .fin-download-hint i { margin-top: 1px; }
+    .fin-download-hint--warning { color: #b45309; }
+    .fin-inline-link {
+      display: inline; padding: 0; margin-left: 4px; border: none; background: none;
+      font: inherit; color: #2563eb; text-decoration: underline; cursor: pointer;
+    }
   `],
 })
 export class CobroDetallePage implements OnInit {
-  private readonly store  = inject(Store);
-  private readonly router = inject(Router);
-  private readonly route  = inject(ActivatedRoute);
+  private readonly store   = inject(Store);
+  private readonly router  = inject(Router);
+  private readonly route   = inject(ActivatedRoute);
+  private readonly polling = inject(PollingService);
+  private readonly destroy = inject(DestroyRef);
 
   protected readonly payment = this.store.selectSignal(selectCobroSelected);
   protected readonly loading = this.store.selectSignal(selectCobrosLoading);
@@ -341,12 +428,82 @@ export class CobroDetallePage implements OnInit {
   });
 
   protected readonly fiscalRef = computed(() => this.payment()?.fiscalReference ?? null);
+  protected readonly emissionStatus = computed(() => this.fiscalRef()?.emissionStatus ?? null);
+
+  /**
+   * Con ARCA, descargar en PENDING da 409 (el PDF todavía no existe). Los
+   * comprobantes no electrónicos (Factura X) no tienen emissionStatus — quedan
+   * disponibles al instante — y los pagos CANCELLED siempre se pueden
+   * descargar (con watermark ANULADO, KAN-242), aunque hayan quedado con la
+   * emisión pendiente al cancelarse.
+   */
+  protected readonly downloadBlockedByPending = computed(() =>
+    isDownloadBlockedByPendingEmission(this.emissionStatus(), this.payment()?.status));
+
+  /**
+   * Polling condicional: patrón nuevo en el repo (nada más pollea sobre estado
+   * de dominio hoy). El `effect()` arranca el handle recién cuando aparece
+   * PENDING y lo para (nuleándolo) al llegar a estado terminal, al cancelarse
+   * el pago (hallazgo #3) o al alcanzar `EMISSION_POLL_MAX_ATTEMPTS` (hallazgo
+   * #3, tope) — `stop()` completa los subjects del handle y no es reiniciable,
+   * así que no lo reusamos, creamos uno nuevo si hiciera falta.
+   */
+  private handle: PollingHandle | null = null;
+  private pollAttempts = 0;
+
+  /** true cuando el polling se frenó por tope de intentos sin que la emisión resuelva. */
+  protected readonly emissionPollTimedOut = signal(false);
+
+  constructor() {
+    effect(() => {
+      const status = this.emissionStatus();
+      const paymentStatus = this.payment()?.status;
+
+      if (shouldPollEmission(status, paymentStatus)) {
+        if (!this.handle) {
+          this.pollAttempts = 0;
+          this.emissionPollTimedOut.set(false);
+          this.handle = this.polling.startPolling({
+            key: 'cobro-detalle',
+            intervalMs: 5000,
+            poll: () => {
+              this.pollAttempts += 1;
+              if (hasReachedEmissionPollCap(this.pollAttempts)) {
+                this.handle?.stop();
+                this.handle = null;
+                this.emissionPollTimedOut.set(true);
+                return of(null);
+              }
+              const p = this.payment();
+              if (p) this.store.dispatch(pollPayment({ id: p.id }));
+              return of(null);
+            },
+          });
+        } else {
+          this.handle.setActive(true);
+        }
+      } else if (this.handle) {
+        this.handle.stop();
+        this.handle = null;
+      }
+    });
+  }
+
+  /** Reintento manual del fallback: un solo poll fuera del schedule automático (que ya frenó). */
+  protected actualizarEmisionManualmente(): void {
+    const p = this.payment();
+    if (!p) return;
+    this.pollAttempts = 0;
+    this.emissionPollTimedOut.set(false);
+    this.store.dispatch(pollPayment({ id: p.id }));
+  }
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       this.store.dispatch(loadPayment({ id: +idParam }));
     }
+    this.destroy.onDestroy(() => this.handle?.stop());
   }
 
   protected volver(): void {
