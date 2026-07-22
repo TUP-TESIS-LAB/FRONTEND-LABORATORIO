@@ -135,4 +135,51 @@ export class SaasAdminEffects {
       }),
     )),
   ));
+
+  // --- Catálogo NBU (KAN-257) ---
+  loadNbuCatalogSummary$ = createEffect(() => this.actions$.pipe(
+    ofType(A.loadNbuCatalogSummary),
+    switchMap(({ tenantId }) => from(this.api.nbuCatalogSummary(tenantId)).pipe(
+      map((summary) => A.loadNbuCatalogSummarySuccess({ summary })),
+      catchError((e) => of(A.loadNbuCatalogSummaryFailure({ error: toErr(e) }))),
+    )),
+  ));
+
+  activateAllNbuCatalog$ = createEffect(() => this.actions$.pipe(
+    ofType(A.activateAllNbuCatalog),
+    exhaustMap(({ tenantId }) => from(this.api.activateAllNbuCatalog(tenantId)).pipe(
+      map(({ count }) => {
+        this.notification.success(
+          count > 0 ? `Se activaron ${count} análisis del catálogo.` : 'El catálogo ya estaba activo por completo.',
+        );
+        return A.activateAllNbuCatalogSuccess({ tenantId, count });
+      }),
+      catchError((e) => {
+        this.notification.error('No se pudo activar el catálogo. Reintentá en un momento.');
+        return of(A.activateAllNbuCatalogFailure({ error: toErr(e) }));
+      }),
+    )),
+  ));
+
+  deactivateAllNbuCatalog$ = createEffect(() => this.actions$.pipe(
+    ofType(A.deactivateAllNbuCatalog),
+    exhaustMap(({ tenantId }) => from(this.api.deactivateAllNbuCatalog(tenantId)).pipe(
+      map(({ count }) => {
+        this.notification.success(
+          count > 0 ? `Se desactivaron ${count} análisis del catálogo.` : 'El catálogo ya estaba sin análisis activos.',
+        );
+        return A.deactivateAllNbuCatalogSuccess({ tenantId, count });
+      }),
+      catchError((e) => {
+        this.notification.error('No se pudo desactivar el catálogo. Reintentá en un momento.');
+        return of(A.deactivateAllNbuCatalogFailure({ error: toErr(e) }));
+      }),
+    )),
+  ));
+
+  // Tras cualquier acción masiva, refrescar el resumen (activos/total) con el valor real.
+  refreshNbuSummaryAfterBulk$ = createEffect(() => this.actions$.pipe(
+    ofType(A.activateAllNbuCatalogSuccess, A.deactivateAllNbuCatalogSuccess),
+    map(({ tenantId }) => A.loadNbuCatalogSummary({ tenantId })),
+  ));
 }

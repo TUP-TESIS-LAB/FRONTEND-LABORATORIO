@@ -32,6 +32,9 @@ describe('SaasAdminEffects', () => {
       upsertTenantWhiteLabel: vi.fn(),
       getTenantFiscalConfig: vi.fn(),
       upsertTenantFiscalConfig: vi.fn(),
+      nbuCatalogSummary: vi.fn(),
+      activateAllNbuCatalog: vi.fn(),
+      deactivateAllNbuCatalog: vi.fn(),
     };
     notification = { success: vi.fn(), error: vi.fn() };
     TestBed.configureTestingModule({
@@ -167,5 +170,44 @@ describe('SaasAdminEffects', () => {
     const out = await expectEmits(effects.upsertTenantFiscalConfig$);
     expect(out.type).toBe(A.upsertTenantFiscalConfigFailure.type);
     expect(notification.error).toHaveBeenCalledWith('No se pudo guardar la identidad fiscal. Probá de nuevo.');
+  });
+
+  // --- Catálogo NBU (KAN-257) ---
+  it('loadNbuCatalogSummary$ → loadNbuCatalogSummarySuccess', async () => {
+    const summary = { activeCount: 12, catalogTotal: 1268 };
+    api.nbuCatalogSummary!.mockResolvedValue(summary);
+    actions$.next(A.loadNbuCatalogSummary({ tenantId: 1 }));
+    const out = await expectEmits(effects.loadNbuCatalogSummary$);
+    expect(out).toEqual(A.loadNbuCatalogSummarySuccess({ summary }));
+  });
+
+  it('activateAllNbuCatalog$ → success + toast con el conteo', async () => {
+    api.activateAllNbuCatalog!.mockResolvedValue({ count: 1256 });
+    actions$.next(A.activateAllNbuCatalog({ tenantId: 1 }));
+    const out = await expectEmits(effects.activateAllNbuCatalog$);
+    expect(out).toEqual(A.activateAllNbuCatalogSuccess({ tenantId: 1, count: 1256 }));
+    expect(notification.success).toHaveBeenCalledWith('Se activaron 1256 análisis del catálogo.');
+  });
+
+  it('activateAllNbuCatalog$ → error → toast + failure', async () => {
+    api.activateAllNbuCatalog!.mockRejectedValue({ status: 500 });
+    actions$.next(A.activateAllNbuCatalog({ tenantId: 1 }));
+    const out = await expectEmits(effects.activateAllNbuCatalog$);
+    expect(out.type).toBe(A.activateAllNbuCatalogFailure.type);
+    expect(notification.error).toHaveBeenCalled();
+  });
+
+  it('deactivateAllNbuCatalog$ → success + toast con el conteo', async () => {
+    api.deactivateAllNbuCatalog!.mockResolvedValue({ count: 30 });
+    actions$.next(A.deactivateAllNbuCatalog({ tenantId: 1 }));
+    const out = await expectEmits(effects.deactivateAllNbuCatalog$);
+    expect(out).toEqual(A.deactivateAllNbuCatalogSuccess({ tenantId: 1, count: 30 }));
+    expect(notification.success).toHaveBeenCalledWith('Se desactivaron 30 análisis del catálogo.');
+  });
+
+  it('refreshNbuSummaryAfterBulk$ → recarga el resumen tras activar', async () => {
+    actions$.next(A.activateAllNbuCatalogSuccess({ tenantId: 5, count: 3 }));
+    const out = await expectEmits(effects.refreshNbuSummaryAfterBulk$);
+    expect(out).toEqual(A.loadNbuCatalogSummary({ tenantId: 5 }));
   });
 });

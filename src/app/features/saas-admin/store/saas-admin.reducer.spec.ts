@@ -92,4 +92,19 @@ describe('saasAdminReducer', () => {
     expect(next.pending).toBe(false);
     expect(next.error).toBe(error);
   });
+
+  it('loadNbuCatalogSummarySuccess stores the summary (KAN-257)', () => {
+    const summary = { activeCount: 12, catalogTotal: 1268 };
+    const next = saasAdminReducer({ ...initialSaasAdminState, pending: true }, A.loadNbuCatalogSummarySuccess({ summary }));
+    expect(next.selectedTenantNbuSummary).toEqual(summary);
+    expect(next.pending).toBe(false);
+  });
+
+  it('clearSelectedTenant también limpia el resumen NBU (KAN-257)', () => {
+    const next = saasAdminReducer(
+      { ...initialSaasAdminState, selectedTenantNbuSummary: { activeCount: 5, catalogTotal: 10 } },
+      A.clearSelectedTenant(),
+    );
+    expect(next.selectedTenantNbuSummary).toBeNull();
+  });
 });

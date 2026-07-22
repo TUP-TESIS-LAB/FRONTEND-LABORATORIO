@@ -24,6 +24,7 @@ export const saasAdminReducer = createReducer<SaasAdminState>(
     selectedTenantModules: null,
     selectedTenantWhiteLabel: null,
     selectedTenantFiscalConfig: null,
+    selectedTenantNbuSummary: null,
   })),
 
   // Create
@@ -106,4 +107,17 @@ export const saasAdminReducer = createReducer<SaasAdminState>(
   on(A.upsertTenantFiscalConfig, pendingOn),
   on(A.upsertTenantFiscalConfigSuccess, (state, { fiscalConfig }) => ({ ...state, pending: false, selectedTenantFiscalConfig: fiscalConfig })),
   on(A.upsertTenantFiscalConfigFailure, (state, { error }) => ({ ...state, pending: false, error })),
+
+  // NBU catalog (KAN-257)
+  on(A.loadNbuCatalogSummary, pendingOn),
+  on(A.loadNbuCatalogSummarySuccess, (state, { summary }) => ({ ...state, pending: false, selectedTenantNbuSummary: summary })),
+  on(A.loadNbuCatalogSummaryFailure, (state, { error }) => ({ ...state, pending: false, error })),
+
+  on(A.activateAllNbuCatalog, pendingOn),
+  on(A.activateAllNbuCatalogSuccess, (state) => ({ ...state, pending: false })),
+  on(A.activateAllNbuCatalogFailure, (state, { error }) => ({ ...state, pending: false, error })),
+
+  on(A.deactivateAllNbuCatalog, pendingOn),
+  on(A.deactivateAllNbuCatalogSuccess, (state) => ({ ...state, pending: false })),
+  on(A.deactivateAllNbuCatalogFailure, (state, { error }) => ({ ...state, pending: false, error })),
 );
