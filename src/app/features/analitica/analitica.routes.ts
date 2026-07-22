@@ -82,7 +82,20 @@ export const ANALITICA_ROUTES: Routes = [
         data: { screenKey: 'descarte', breadcrumb: 'Descarte' },
         title: 'Descarte',
       },
-      { path: 'nbu', data: { breadcrumb: 'Nomenclador NBU' }, loadComponent: () => import('./pages/nbu/nbu.component').then(m => m.NbuComponent) },
+      {
+        path: 'nbu',
+        data: { breadcrumb: 'Nomenclador NBU' },
+        children: [
+          { path: '', loadComponent: () => import('./pages/nbu/nbu.component').then(m => m.NbuComponent) },
+          {
+            path: ':catalogId/config',
+            canMatch: [hasRoleGuard(['ADMINISTRADOR'])],
+            loadComponent: () => import('./pages/nbu/nbu-config/nbu-config.page').then(m => m.NbuConfigPage),
+            title: 'Configurar análisis',
+            data: { breadcrumb: 'Configurar análisis' },
+          },
+        ],
+      },
       {
         path: 'metricas',
         canMatch: [hasRoleGuard(['BIOQUIMICO', 'ADMINISTRADOR'])],
