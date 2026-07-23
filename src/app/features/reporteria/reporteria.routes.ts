@@ -11,7 +11,7 @@ import { ReporteriaEffects } from './store/reporteria.effects';
 // ReportDef.roles en cada catalog/*.reports.ts). Es solo el gate de la SECCIÓN;
 // el gate fino por reporte lo hace ReporteriaHomePage al listar (y el backend,
 // que es la autoridad real vía @PreAuthorize).
-const REPORTERIA_ROLES = ['ADMINISTRADOR', 'RESPONSABLE_SECRETARIA'];
+const REPORTERIA_ROLES = ['ADMINISTRADOR', 'RESPONSABLE_SECRETARIA', 'BIOQUIMICO'];
 
 export const REPORTERIA_ROUTES: Routes = [
   {
