@@ -57,6 +57,8 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
           [scrollable]="scrollHeight() !== null"
           [scrollHeight]="scrollHeight() ?? undefined"
           [selection]="$any(selectable() ? selection() : null)"
+          [sortField]="sortField() ?? undefined"
+          [sortOrder]="sortOrder() ?? 1"
           (selectionChange)="onSelectionChange($any($event))"
           (onLazyLoad)="lazyLoad.emit($event)"
           (onRowExpand)="rowExpand.emit($event.data)">
@@ -70,15 +72,29 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
                 <th class="ut-expander-th"></th>
               }
               @for (col of columns(); track col.field) {
-                <th
-                  [class.ut-align-right]="col.align === 'right'"
-                  [class.ut-align-center]="col.align === 'center'">
-                  {{ col.header }}
-                  @if (col.headerInfo) {
-                    <i class="pi pi-info-circle ut-header-info"
-                       [pTooltip]="col.headerInfo" tooltipPosition="top"></i>
-                  }
-                </th>
+                @if (col.sortable) {
+                  <th
+                    [class.ut-align-right]="col.align === 'right'"
+                    [class.ut-align-center]="col.align === 'center'"
+                    [pSortableColumn]="col.field">
+                    {{ col.header }}
+                    <p-sortIcon [field]="col.field" />
+                    @if (col.headerInfo) {
+                      <i class="pi pi-info-circle ut-header-info"
+                         [pTooltip]="col.headerInfo" tooltipPosition="top"></i>
+                    }
+                  </th>
+                } @else {
+                  <th
+                    [class.ut-align-right]="col.align === 'right'"
+                    [class.ut-align-center]="col.align === 'center'">
+                    {{ col.header }}
+                    @if (col.headerInfo) {
+                      <i class="pi pi-info-circle ut-header-info"
+                         [pTooltip]="col.headerInfo" tooltipPosition="top"></i>
+                    }
+                  </th>
+                }
               }
               @if (hasActions()) {
                 <th class="ut-actions-th"></th>
@@ -376,6 +392,9 @@ export class DataTableComponent {
   readonly rowsPerPageOptions = input<readonly number[]>([]);
   readonly totalRecords       = input<number>(0);
   readonly first              = input<number>(0);
+  /** Campo/orden inicial reflejado en el ícono de sort (columnas con `sortable: true`). */
+  readonly sortField          = input<string | null>(null);
+  readonly sortOrder          = input<number | null>(null);
   /** Etiqueta de la entidad para el resumen del paginador (ej. "pacientes"). */
   readonly entityLabel        = input<string>('registros');
 

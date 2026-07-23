@@ -4,10 +4,12 @@ import {
   ElementRef,
   HostListener,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -289,6 +291,14 @@ interface ActiveChip {
 })
 export class FilterBarComponent {
   readonly config = input.required<FilterBarConfig>();
+  /**
+   * Opcional: cuando este valor cambia de identidad, resetea búsqueda/selección/panel.
+   * Pensado para consumidores que reusan la misma instancia del componente para
+   * "entidades" distintas (ej. `ReportFiltersComponent` al navegar entre reportes, donde
+   * Angular reutiliza la instancia porque el `@if` del padre sigue siendo truthy). Los
+   * consumidores que no lo pasan no ven ningún cambio de comportamiento.
+   */
+  readonly resetKey = input<unknown>(undefined);
   readonly valueChange = output<FilterBarValue>();
 
   protected readonly search    = signal('');
@@ -296,6 +306,17 @@ export class FilterBarComponent {
   protected readonly panelOpen = signal(false);
 
   private readonly elRef = inject(ElementRef);
+
+  constructor() {
+    effect(() => {
+      this.resetKey(); // trackea el cambio
+      untracked(() => {
+        this.search.set('');
+        this.selected.set({});
+        this.panelOpen.set(false);
+      });
+    });
+  }
 
   protected readonly chips = computed<ActiveChip[]>(() => {
     const result: ActiveChip[] = [];

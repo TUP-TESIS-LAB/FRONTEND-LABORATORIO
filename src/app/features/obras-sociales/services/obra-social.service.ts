@@ -41,6 +41,13 @@ interface InsurerCompleteResponse extends InsurerResponse {
   plans: PlanResponse[];
 }
 
+// Shape de GET /coverages/plans (PlanController.search) — endpoint distinto del
+// nested de /insurers/{id}/complete de arriba; acá solo tomamos id+name.
+interface PlanSearchResponse { id: number; name: string; }
+interface PagedPlanSearchResponse {
+  content: PlanSearchResponse[]; totalElements: number; totalPages: number; page: number; size: number;
+}
+
 /**
  * Servicio de Obras Sociales — conectado al backend (módulo coverages).
  *
@@ -99,6 +106,19 @@ export class ObraSocialService {
 
   /** Sin endpoint de versiones NBU todavía: catálogo fijo. */
   getNbuVersions(): Observable<NbuVersion[]> { return of(NBU_VERSIONS.map((x) => ({ ...x }))); }
+
+  /**
+   * Planes activos, id+nombre, para selectores (ej. filtro "plan" de reportería —
+   * antes pedía escribir el ID a mano). GET /coverages/plans es un listado plano de
+   * TODOS los planes del tenant, distinto del nested de `getCompleteById`. Igual que
+   * `SucursalesService.listBranchesForSelector`: size alto para traer todo en un page.
+   */
+  listPlansForSelector(): Observable<{ id: number; name: string }[]> {
+    const params = new HttpParams().set('state', 'active').set('page', 0).set('size', 200);
+    return this.http.get<PagedPlanSearchResponse>(`${this.base}/plans`, { params }).pipe(
+      map((p) => p.content.map((pl) => ({ id: pl.id, name: pl.name }))),
+    );
+  }
 
   // ── alta por wizard (backend real: POST /coverages/wizard) ─────────────────
 
