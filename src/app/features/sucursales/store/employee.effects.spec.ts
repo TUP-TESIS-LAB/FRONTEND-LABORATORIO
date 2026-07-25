@@ -14,7 +14,7 @@ import {
 } from './employee.actions';
 import { Employee } from '../models/employee.model';
 
-const emp: Employee = { id: 1, firstName: 'a', lastName: 'b', document: '1', isBiochemist: false, registration: null, userId: null, active: true };
+const emp: Employee = { id: 1, firstName: 'a', lastName: 'b', document: '1', isBiochemist: false, registration: null, userId: null, active: true, hasSignature: false };
 
 describe('EmployeeEffects', () => {
   let actions$: Observable<Action>;

@@ -1,4 +1,6 @@
-import type { ScreenConfig, ScreenKey, Transition } from '../models/transition.model';
+import type { RowAction, RowActionKey, ScreenConfig, ScreenKey, Transition } from '../models/transition.model';
+
+const ROW_ACTION_KEYS: ReadonlySet<string> = new Set<RowActionKey>(['rollback', 'rejected', 'lost', 'derived', 'reinjectRequest']);
 
 const transitoTarget: Transition = {
   key: 'transito', label: 'En tránsito', toLabel: 'En tránsito', toState: 'transito',
@@ -13,6 +15,7 @@ const rejectedTarget: Transition = {
   desc: 'La muestra no cumple criterios de calidad.',
   fields: [],
   reason: 'Motivo del rechazo (opcional)',
+  rowMenu: { label: 'Rechazar' },
 };
 
 const lostTarget: Transition = {
@@ -21,6 +24,7 @@ const lostTarget: Transition = {
   desc: 'Se reporta pérdida del material.',
   fields: [],
   reason: 'Detalle de la pérdida (opcional)',
+  rowMenu: { label: 'Perder' },
 };
 
 const RECOLECCION: ScreenConfig = {
@@ -59,7 +63,10 @@ const TRASLADO: ScreenConfig = {
       color: 'purple', icon: 'pi-building',
       desc: 'Enviar al laboratorio de referencia.',
       fields: ['lab'],
+      rowMenu: { label: 'Derivar', icon: 'pi-building' },
     },
+    rejectedTarget,
+    lostTarget,
     {
       key: 'rollback', label: 'Volver a estado anterior', toLabel: 'Recolectada', toState: 'collected',
       color: 'slate', icon: 'pi-undo',
@@ -67,6 +74,7 @@ const TRASLADO: ScreenConfig = {
       sep: true,
       fields: [],
       reason: 'Motivo del rollback',
+      rowMenu: { label: 'Volver a estado anterior' },
     },
   ],
 };
@@ -94,6 +102,7 @@ const PROCESAMIENTO: ScreenConfig = {
       sep: true,
       fields: [],
       reason: 'Motivo del rollback',
+      rowMenu: { label: 'Volver a estado anterior' },
     },
   ],
 };
@@ -122,6 +131,18 @@ const DESCARTE: ScreenConfig = {
       fields: [],
       reason: 'Motivo del rollback',
     },
+    // Re-inyección: acción por-fila para labels REJECTED/LOST. NO transiciona el estado real de la
+    // label (queda Rechazada/Perdida); solo dispara POST request-reinjection con la observación.
+    // `toState` no se usa (la acción no cambia estado); `toLabel` es el texto de confirmación de la
+    // acción ("Re-inyección solicitada"), no un estado destino — así el toast "N tubo(s) → …" no miente.
+    {
+      key: 'reinjectRequest', label: 'Pedir de nuevo', toLabel: 'Re-inyección solicitada', toState: 'rejected',
+      color: 'blue', icon: 'pi-replay',
+      desc: 'Solicitar re-inyección de una nueva muestra para esta orden.',
+      fields: [],
+      reason: 'Motivo / observación de la re-inyección',
+      rowMenu: { label: 'Pedir de nuevo', icon: 'pi-replay' },
+    },
   ],
 };
 
@@ -131,3 +152,20 @@ export const SCREENS: Record<ScreenKey, ScreenConfig> = {
   procesamiento: PROCESAMIENTO,
   descarte: DESCARTE,
 };
+
+/**
+ * Acciones del menú kebab por-fila de una pantalla, derivadas de la config.
+ * Única fuente de verdad: un target aparece en el menú sii declara `rowMenu`.
+ * Garantiza que lo que el menú muestra == lo que `onRowAction` puede resolver.
+ */
+export function rowActionsFor(screen: ScreenKey): RowAction[] {
+  return SCREENS[screen].targets
+    .filter((t): t is Transition & { rowMenu: NonNullable<Transition['rowMenu']> } =>
+      !!t.rowMenu && ROW_ACTION_KEYS.has(t.key),
+    )
+    .map((t) => ({
+      key: t.key as RowActionKey,
+      label: t.rowMenu.label,
+      icon: t.rowMenu.icon ?? t.icon,
+    }));
+}

@@ -16,6 +16,13 @@
       <input [value]="query()" (input)="setQuery($any($event.target).value)"
              placeholder="Escaneá o buscá una muestra…" aria-label="Buscar muestra" />
     </div>
+    <div class="seg">
+      @for (f of FILTROS; track f.id) {
+        <button type="button" class="seg-btn" [class.is-on]="filtro() === f.id" (click)="setFiltro(f.id)">
+          {{ f.label }}
+        </button>
+      }
+    </div>
     <button type="button" class="btn-ghost" [disabled]="selectedCount() === 0" (click)="clearSelection()">Limpiar</button>
     <button type="button" class="btn-orange" (click)="openPlanillas()">
       <i class="pi pi-table"></i> Planillas
@@ -29,7 +36,7 @@
     <label class="cell-chk" (click)="$event.stopPropagation()">
       <input type="checkbox" [checked]="allVisibleSelected()" (change)="toggleAll()" aria-label="Seleccionar todas" />
     </label>
-    <span>MUESTRA</span><span>ESTUDIO</span><span>SUCURSAL/SEDE</span><span>TOMA</span><span>ESTADO</span>
+    <span>MUESTRA</span><span>ESTUDIO</span><span>SUCURSAL/SEDE</span><span>TOMA</span><span>ESTADO</span><span></span>
   </div>
 
   <section class="grp-card">
@@ -68,6 +75,9 @@
                 @case ('PARCIAL') { <span class="badge-st st-parcial"><span class="dot"></span>Carga parcial</span> }
                 @default { <span class="badge-st st-proc"><span class="dot"></span>En proceso</span> }
               }
+            </div>
+            <div class="cell-actions" (click)="$event.stopPropagation()">
+              <app-row-actions-menu [actions]="rowMenuActions" (accion)="onRowAction($event, t)" />
             </div>
           </div>
 
@@ -111,6 +121,15 @@
 
   <app-marcar-completadas-modal [visible]="completadasOpen()" [items]="resumenItems()"
     (marcar)="onMarcarCompletadas($event)" (closed)="cerrarCompletadas()" />
+
+  @if (rowDialog.activeTransition(); as tr) {
+    <app-muestras-transition-dialog
+      [transition]="tr"
+      [samples]="rowDialog.samples()"
+      (confirm)="rowDialog.confirm($event)"
+      (cancel)="rowDialog.cancel()"
+    />
+  }
 
   <p-toast position="bottom-right" />
 </section>

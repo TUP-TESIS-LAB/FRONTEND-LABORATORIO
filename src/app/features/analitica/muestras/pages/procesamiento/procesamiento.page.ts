@@ -10,8 +10,14 @@ import { PageHeaderComponent } from '@shared/ui/components/page-header/page-head
 import { humanizeBackendError, type BackendErrorShape } from '@shared/utils/error-messages';
 import { CURRENT_BRANCH } from '../../data/catalogs';
 import { groupTubes, type Tube } from '../../models/tube.model';
+import type { LabelWorklistItem } from '../../models/label-worklist.model';
+import { rowActionsFor } from '../../data/state-machine.config';
+import { createRowTransitionDialog } from '../row-transition-dialog';
+import type { RowActionKey } from '../../models/transition.model';
+import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
+import { RowActionsMenuComponent } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 import { initMuestras, loadProcesamiento } from '../../store/muestras.actions';
-import { selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { selectProcesamientoItems, selectDerivadosItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { loadTemplates } from '../../store/worksheet-templates/worksheet-templates.actions';
 import { selectTemplates, selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
@@ -20,6 +26,11 @@ import { MarcarCompletadasModalComponent, type ResumenMuestra } from '../../comp
 import { ProcesamientoProgresoService } from '../../services/procesamiento-progreso.service';
 import { ResultadosApiService } from '../../services/resultados-api.service';
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
+
+const FILTROS: ReadonlyArray<{ id: 'todos' | 'derivados'; label: string }> = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'derivados', label: 'Derivados' },
+];
 
 /**
  * Pantalla de Procesamiento (propia, separada del worklist genérico — GAP-P7).
@@ -32,7 +43,7 @@ import { DateEsPipe } from '@shared/pipes/date-es.pipe';
   selector: 'app-procesamiento',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeaderComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent, MarcarCompletadasModalComponent, DateEsPipe],
+  imports: [PageHeaderComponent, ToastModule, PlanillasModalComponent, WorksheetConfigModalComponent, MarcarCompletadasModalComponent, DateEsPipe, TransitionDialogComponent, RowActionsMenuComponent],
   providers: [MessageService],
   templateUrl: './procesamiento.page.html',
   styleUrl: './procesamiento.page.scss',
@@ -46,11 +57,20 @@ export class ProcesamientoPage implements OnInit {
   private readonly progresoSvc = inject(ProcesamientoProgresoService);
   private readonly resultados = inject(ResultadosApiService);
 
-  private readonly items = this.store.selectSignal(selectProcesamientoItems);
+  // Slices separados por status: el tab y la lista leen el mismo criterio (filtro), imposible desalinear.
+  private readonly procesamientoItems = this.store.selectSignal(selectProcesamientoItems);
+  private readonly derivadosItems = this.store.selectSignal(selectDerivadosItems);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
   private readonly templatesError = this.store.selectSignal(selectTemplatesError);
   readonly templates = this.store.selectSignal(selectTemplates);
+
+  readonly FILTROS = FILTROS;
+  readonly filtro = signal<'todos' | 'derivados'>('todos');
+
+  /** La lista renderizada sale del slice que corresponde al tab activo. */
+  private readonly items = computed<LabelWorklistItem[]>(() =>
+    this.filtro() === 'derivados' ? this.derivadosItems() : this.procesamientoItems());
 
   readonly query = signal('');
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());
@@ -100,6 +120,17 @@ export class ProcesamientoPage implements OnInit {
   readonly completadasOpen = signal(false);
   readonly resumenItems = signal<ResumenMuestra[]>([]);
 
+  // --- menú por-fila (KAN-208): Rollback / Rechazar / Perder ---
+  /** Andamiaje del diálogo de transición del menú kebab por-fila. */
+  readonly rowDialog = createRowTransitionDialog(this.store, 'procesamiento');
+
+  /** Acciones del menú por-fila, derivadas de la config. */
+  readonly rowMenuActions = rowActionsFor('procesamiento');
+
+  onRowAction(key: string, row: Tube): void {
+    this.rowDialog.open(key as RowActionKey, row);
+  }
+
   constructor() {
     let lastSig: string | null = null;
     effect(() => {
@@ -118,9 +149,25 @@ export class ProcesamientoPage implements OnInit {
     const handle = this.polling.startPolling({
       key: 'procesamiento-page',
       intervalMs: 5000,
-      poll: () => { this.store.dispatch(loadProcesamiento()); return of(null); },
+      poll: () => { this.store.dispatch(loadProcesamiento({ status: this.currentStatus() })); return of(null); },
     });
     this.destroyRef.onDestroy(() => handle.stop());
+  }
+
+  setFiltro(id: 'todos' | 'derivados'): void {
+    if (this.filtro() === id) return;
+    this.filtro.set(id);
+    // La selección de un tab no significa nada en el otro: limpiarla evita que el contador
+    // "N seleccionadas" y los botones de lote queden sobre tubos que ya no están en la grilla.
+    this.clearSelection();
+    // PROCESSING y DERIVED tienen slices separados en el store (muestras.state: procesamiento /
+    // derivados) y los ETags se cachean por urlWithParams (status va en los params), así que un 304
+    // de un tab nunca pisa al otro. No hace falta invalidar el ETag al cambiar de tab.
+    this.store.dispatch(loadProcesamiento({ status: this.currentStatus() }));
+  }
+
+  private currentStatus(): 'PROCESSING' | 'DERIVED' {
+    return this.filtro() === 'derivados' ? 'DERIVED' : 'PROCESSING';
   }
 
   setQuery(q: string): void { this.query.set(q); }

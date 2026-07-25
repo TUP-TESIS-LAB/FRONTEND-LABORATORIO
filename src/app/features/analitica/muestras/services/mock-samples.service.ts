@@ -94,7 +94,7 @@ export class MockSamplesService {
       case 'reroute':
         return { ...base, destino: `${dest.sucursal ?? ''} · ${dest.area ?? ''}`.trim() };
       case 'derived':
-        return { ...base, destino: dest.lab };
+        return { ...base, destino: dest.lab != null ? String(dest.lab) : undefined };
       default:
         // rejected, lost, completed, discard, rollback → solo cambia state
         return base;

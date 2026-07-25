@@ -5,4 +5,6 @@ export enum ModuleKey {
   Stock      = 'stock',
   Domicilio  = 'domicilio',
   Urgencias  = 'urgencias',
+  Derivaciones = 'derivaciones',
+  Autovalidacion = 'autovalidacion',
 }

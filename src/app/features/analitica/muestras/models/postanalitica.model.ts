@@ -132,12 +132,17 @@ export function toValidationListRow(r: StudyListItemResponse): ValidationListRow
   };
 }
 
+export type AnalyticalType = 'QUANTITATIVE' | 'QUALITATIVE' | 'SEMI_QUALITATIVE';
+
 export interface DetalleDeterminacion {
   determinationId: number; name: string; value: string;
   unit: string; referenceRange: string;
   aggregateOutcome: ValidationOutcome | null;
   manualOutcome: ValidationOutcome | null;
   outOfRange: boolean;
+  /** Valor esperado cuando la determinación es cualitativa (ej. "NEGATIVO"); null si cuantitativa. */
+  expectedQualitativeValue?: string | null;
+  analyticalType?: AnalyticalType;
 }
 export interface DetalleResultado {
   resultId: number; status: ResultStatus; sectionId: number | null;

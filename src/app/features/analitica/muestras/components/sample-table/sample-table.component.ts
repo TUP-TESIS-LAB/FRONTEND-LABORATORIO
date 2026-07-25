@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { Sample } from '../../models/sample.model';
-import type { ScreenKey } from '../../models/transition.model';
+import type { RowAction, RowActionKey, ScreenKey } from '../../models/transition.model';
 import type { Tube } from '../../models/tube.model';
+import { rowActionsFor } from '../../data/state-machine.config';
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
+import { RowActionsMenuComponent } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 
 const STATE_LABELS: Record<Sample['state'], string> = {
   collected: 'Recolectada',
@@ -29,7 +31,7 @@ const STATE_COLORS: Record<Sample['state'], string> = {
 @Component({
   selector: 'app-muestras-sample-table',
   standalone: true,
-  imports: [DateEsPipe],
+  imports: [DateEsPipe, RowActionsMenuComponent],
   templateUrl: './sample-table.component.html',
   styleUrl: './sample-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +45,25 @@ export class SampleTableComponent {
 
   readonly toggleRow = output<string>();
   readonly toggleAll = output<void>();
+  readonly rowAction = output<{ key: RowActionKey; row: Sample }>();
+
+  /** Acciones del menú por-fila, derivadas de la config de la pantalla. */
+  readonly rowMenuActions = computed(() => rowActionsFor(this.screenKey()));
+
+  /**
+   * Acciones del kebab válidas para UNA fila. La mayoría son screen-level, pero algunas dependen
+   * del estado de la fila:
+   * - 'reinjectRequest' (Pedir de nuevo) solo aplica a labels Rechazadas/Perdidas.
+   */
+  actionsForRow(row: Sample): ReadonlyArray<RowAction> {
+    return this.rowMenuActions().filter((a) =>
+      a.key === 'reinjectRequest' ? row.state === 'rejected' || row.state === 'lost' : true,
+    );
+  }
+
+  emitRowAction(key: string, row: Sample): void {
+    this.rowAction.emit({ key: key as RowActionKey, row });
+  }
 
   /** Ids de filas con el panel de análisis abierto. */
   readonly expandedIds = signal<ReadonlySet<string>>(new Set());

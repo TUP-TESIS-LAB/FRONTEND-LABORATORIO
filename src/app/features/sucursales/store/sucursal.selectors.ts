@@ -28,9 +28,3 @@ export const selectAreas = createSelector(selectSucursalState, s => s.areas);
 export const selectSections = createSelector(selectSucursalState, s => s.sections);
 export const selectLoadingCatalog = createSelector(selectSucursalState, s => s.loadingCatalog);
 export const selectSelectedAreaId = createSelector(selectSucursalState, s => s.selectedAreaId);
-
-/** Sections filtered by a specific area id. */
-export const selectSectionsByArea = (areaId: number) => createSelector(
-  selectSections,
-  sections => sections.filter(sc => sc.areaId === areaId),
-);

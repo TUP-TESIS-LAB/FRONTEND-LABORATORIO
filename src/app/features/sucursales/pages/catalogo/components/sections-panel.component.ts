@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -16,11 +16,10 @@ import {
 } from '../../../store/sucursal.selectors';
 import {
   loadSections,
-  addSection,
   updateSection,
-  toggleSectionStatus,
+  deleteSection,
 } from '../../../store/sucursal.actions';
-import { Section, SectionCreateInput } from '../../../models/section.model';
+import { Section } from '../../../models/section.model';
 
 @Component({
   selector: 'app-sections-panel',
@@ -47,10 +46,7 @@ export class SectionsPanelComponent {
   private readonly allSections = this.store.selectSignal(selectSections);
   private readonly allAreas = this.store.selectSignal(selectAreas);
 
-  protected readonly sections = computed(() => {
-    const areaId = this.selectedAreaId();
-    return areaId == null ? [] : this.allSections().filter(s => s.areaId === areaId);
-  });
+  protected readonly sections = computed(() => this.allSections());
 
   protected readonly selectedAreaName = computed(() => {
     const id = this.selectedAreaId();
@@ -66,22 +62,8 @@ export class SectionsPanelComponent {
   });
 
   constructor() {
-    // Reload sections for the selected area each time it changes.
-    // This ensures freshly created areas (with 0 sections) still trigger a load,
-    // and switching areas always fetches fresh data from the server.
-    effect(() => {
-      const areaId = this.selectedAreaId();
-      if (areaId != null) {
-        this.store.dispatch(loadSections({ areaId }));
-      }
-    });
-  }
-
-  openNew() {
-    if (this.selectedAreaId() == null) return;
-    this.editing.set(null);
-    this.form.reset({ name: '' });
-    this.dialogVisible.set(true);
+    // Las secciones ya no pertenecen a un área: se cargan todas las del tenant una sola vez.
+    this.store.dispatch(loadSections());
   }
 
   openEdit(section: Section) {
@@ -95,12 +77,7 @@ export class SectionsPanelComponent {
     const name = this.form.value.name!.trim();
     const e = this.editing();
     if (e) {
-      this.store.dispatch(updateSection({ id: e.id, input: { name, areaId: e.areaId } }));
-    } else {
-      const areaId = this.selectedAreaId();
-      if (areaId == null) return;
-      const input: SectionCreateInput = { name, areaId };
-      this.store.dispatch(addSection({ input }));
+      this.store.dispatch(updateSection({ id: e.id, input: { name } }));
     }
     this.dialogVisible.set(false);
   }
@@ -113,7 +90,7 @@ export class SectionsPanelComponent {
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
       acceptButtonStyleClass: 'p-button-danger',
-      accept: () => this.store.dispatch(toggleSectionStatus({ id: section.id })),
+      accept: () => this.store.dispatch(deleteSection({ id: section.id })),
     });
   }
 }

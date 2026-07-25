@@ -21,7 +21,7 @@ import {
   selectAreas, selectSections, selectWorkspaces,
 } from '../../../../store/sucursal.selectors';
 import {
-  addArea, addAreaSuccess, addSection, addSectionSuccess,
+  addArea, addAreaSuccess,
   loadAreas, loadSections, loadWorkspaces, syncWorkspaces,
 } from '../../../../store/sucursal.actions';
 import { BranchWorkspaceCreateInput } from '../../../../models/branch-workspace.model';
@@ -68,11 +68,8 @@ export class WorkspacesStepComponent implements OnInit {
   protected readonly areaOptions = computed(() =>
     this.areas().map((a) => ({ label: a.name, value: a.id })),
   );
-  /** Secciones del área elegida (la checklist). */
-  protected readonly sectionsForArea = computed(() => {
-    const areaId = this.selectedAreaId();
-    return areaId == null ? [] : this.allSections().filter((s) => s.areaId === areaId);
-  });
+  /** Todas las secciones del tenant (la checklist). Una sección ya no pertenece a un área. */
+  protected readonly sectionsForArea = computed(() => this.allSections());
   protected readonly canAdd = computed(() =>
     this.selectedAreaId() != null && this.selectedSectionIds().size > 0,
   );
@@ -103,9 +100,6 @@ export class WorkspacesStepComponent implements OnInit {
   protected readonly areaModalOpen = signal(false);
   protected newAreaName = '';
 
-  protected readonly sectionModalOpen = signal(false);
-  protected newSectionName = '';
-
   constructor() {
     // Al crear un área nueva la dejamos seleccionada (y limpiamos la checklist).
     this.actions$.pipe(ofType(addAreaSuccess), takeUntilDestroyed(this.destroyRef))
@@ -115,18 +109,11 @@ export class WorkspacesStepComponent implements OnInit {
         this.areaModalOpen.set(false);
         this.newAreaName = '';
       });
-    // Al crear una sección nueva la dejamos tildada.
-    this.actions$.pipe(ofType(addSectionSuccess), takeUntilDestroyed(this.destroyRef))
-      .subscribe(({ section }) => {
-        this.selectedSectionIds.update((s) => new Set(s).add(section.id));
-        this.sectionModalOpen.set(false);
-        this.newSectionName = '';
-      });
   }
 
   ngOnInit(): void {
     this.store.dispatch(loadAreas());
-    this.store.dispatch(loadSections({}));
+    this.store.dispatch(loadSections());
     this.store.dispatch(loadWorkspaces({ branchId: this.branchId }));
   }
 
@@ -197,17 +184,6 @@ export class WorkspacesStepComponent implements OnInit {
       areaType: 'OTRO',
       externalLabName: null,
     } }));
-  }
-
-  openSectionModal(): void {
-    this.newSectionName = '';
-    this.sectionModalOpen.set(true);
-  }
-  saveSection(): void {
-    const name = this.newSectionName.trim();
-    const areaId = this.selectedAreaId();
-    if (!name || areaId == null) return;
-    this.store.dispatch(addSection({ input: { name, areaId } }));
   }
 
   areaName(areaId: number): string {

@@ -7,7 +7,7 @@ import { EMPLOYEE_FEATURE_KEY, initialEmployeeState } from '../../store/employee
 import { loadEmployees } from '../../store/employee.actions';
 import { Employee } from '../../models/employee.model';
 
-const emp: Employee = { id: 8, firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: true, registration: 'B-1', userId: null, active: true };
+const emp: Employee = { id: 8, firstName: 'Eva', lastName: 'Ruiz', document: '30111222', isBiochemist: true, registration: 'B-1', userId: null, active: true, hasSignature: false };
 
 describe('EmpleadosListPage (smoke)', () => {
   let store: MockStore;

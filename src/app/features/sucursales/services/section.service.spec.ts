@@ -29,15 +29,8 @@ describe('SectionService', () => {
     req.flush(emptyPage);
   });
 
-  it('list appends areaId query param when provided', () => {
-    service.list({ areaId: 9 }).subscribe();
-    const req = httpMock.expectOne(r => r.url === '/api/v1/sucursales/sections');
-    expect(req.request.params.get('areaId')).toBe('9');
-    req.flush(emptyPage);
-  });
-
   it('create posts the input body', () => {
-    const input = { name: 'Hematología', areaId: 2 };
+    const input = { name: 'Hematología' };
     service.create(input).subscribe();
     const req = httpMock.expectOne('/api/v1/sucursales/sections');
     expect(req.request.method).toBe('POST');
@@ -46,7 +39,7 @@ describe('SectionService', () => {
   });
 
   it('update sends PUT with body to sections/{id}', () => {
-    const input = { name: 'Hematología actualizada', areaId: 2 };
+    const input = { name: 'Hematología actualizada' };
     service.update(1, input).subscribe();
     const req = httpMock.expectOne('/api/v1/sucursales/sections/1');
     expect(req.request.method).toBe('PUT');
@@ -58,6 +51,29 @@ describe('SectionService', () => {
     service.toggleStatus(1).subscribe();
     const req = httpMock.expectOne('/api/v1/sucursales/sections/1/status');
     expect(req.request.method).toBe('PATCH');
-    req.flush({ id: 1, name: 'Hematología', areaId: 2, active: false });
+    req.flush({ id: 1, name: 'Hematología', active: false });
+  });
+
+  it('delete sends DELETE to sections/{id}', () => {
+    service.delete(1).subscribe();
+    const req = httpMock.expectOne('/api/v1/sucursales/sections/1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null);
+  });
+
+  it('listWithBranches calls GET /sections and returns items with branches (KAN-218)', () => {
+    let received: unknown;
+    service.listWithBranches({ page: 0, size: 100 }).subscribe((page) => (received = page));
+    const req = httpMock.expectOne((r) => r.url === '/api/v1/sucursales/sections');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('page')).toBe('0');
+    expect(req.request.params.get('size')).toBe('100');
+    const body = {
+      ...emptyPage,
+      content: [{ id: 1, name: 'Hematología', active: true, branches: [{ id: 9, code: 'B1', name: 'Central' }] }],
+      totalElements: 1,
+    };
+    req.flush(body);
+    expect(received).toEqual(body);
   });
 });

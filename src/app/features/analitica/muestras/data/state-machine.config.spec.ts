@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SCREENS } from './state-machine.config';
+import { SCREENS, rowActionsFor } from './state-machine.config';
 import type { ScreenKey, TransitionKey } from '../models/transition.model';
 
 describe('SCREENS state machine config', () => {
@@ -66,5 +66,64 @@ describe('SCREENS state machine config', () => {
         expect(valid.has(t.color)).toBe(true);
       }
     }
+  });
+});
+
+describe('state-machine.config — screen traslado', () => {
+  it('expone rejected, lost y rollback', () => {
+    const keys = SCREENS.traslado.targets.map((t) => t.key);
+    expect(keys).toContain('rejected');
+    expect(keys).toContain('lost');
+    expect(keys).toContain('rollback');
+  });
+
+  it('rejected/lost apuntan a los estados correctos', () => {
+    const byKey = new Map(SCREENS.traslado.targets.map((t) => [t.key, t]));
+    expect(byKey.get('rejected')!.toState).toBe('rejected');
+    expect(byKey.get('lost')!.toState).toBe('lost');
+  });
+});
+
+describe('rowActionsFor — menú kebab derivado de la config', () => {
+  it('Recolección: {Rechazar, Perder}, sin rollback (estado inicial)', () => {
+    const actions = rowActionsFor('recoleccion');
+    expect(actions.map((a) => a.key)).toEqual(['rejected', 'lost']);
+    expect(actions.map((a) => a.label)).toEqual(['Rechazar', 'Perder']);
+  });
+
+  it('Procesamiento: {Rollback, Rechazar, Perder} — sin Derivar', () => {
+    const actions = rowActionsFor('procesamiento');
+    expect(actions.map((a) => a.key).sort()).toEqual(['lost', 'rejected', 'rollback']);
+    expect(actions.map((a) => a.key)).not.toContain('derived');
+  });
+
+  it('Traslado: {Derivar, Rollback, Rechazar, Perder}', () => {
+    const actions = rowActionsFor('traslado');
+    expect(actions.map((a) => a.key).sort()).toEqual(['derived', 'lost', 'rejected', 'rollback']);
+  });
+
+  it('Traslado: incluye acción derived con label "Derivar" (KAN-226)', () => {
+    const derived = rowActionsFor('traslado').find((a) => a.key === 'derived');
+    expect(derived).toBeDefined();
+    expect(derived!.label).toBe('Derivar');
+  });
+
+  it('Descarte: incluye acción reinjectRequest "Pedir de nuevo" (KAN-239)', () => {
+    // La re-inyección agrega el kebab "Pedir de nuevo" a Descarte (para las labels REJECTED/LOST).
+    expect(rowActionsFor('descarte').map((a) => a.key)).toEqual(['reinjectRequest']);
+  });
+
+  it('cada acción del menú corresponde a un target resoluble por onRowAction (anti-desincronización)', () => {
+    for (const screen of ['recoleccion', 'procesamiento', 'traslado', 'descarte'] as const) {
+      const targetKeys = new Set(SCREENS[screen].targets.map((t) => t.key));
+      for (const a of rowActionsFor(screen)) {
+        expect(targetKeys.has(a.key)).toBe(true);
+      }
+    }
+  });
+
+  it('el icon del menú cae al icon del target cuando rowMenu no lo especifica', () => {
+    const rejected = rowActionsFor('recoleccion').find((a) => a.key === 'rejected')!;
+    expect(rejected.icon).toBe('pi-ban');
   });
 });

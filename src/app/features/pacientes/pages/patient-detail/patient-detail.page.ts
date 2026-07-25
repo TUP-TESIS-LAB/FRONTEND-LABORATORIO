@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
@@ -30,7 +31,7 @@ import { PatientPermissionsService } from '../../services/patient-permissions.se
 import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '../../models/coverage-catalog.model';
 import { CoverageCatalogService } from '../../services/coverage-catalog.service';
 import { PatientHistoryService } from '../../services/patient-history.service';
-import { PatientHistoryItem, deliveryStatusLabel, deliveryStatusSeverity } from '../../models/patient-history.model';
+import { PatientHistoryAnalysis, PatientHistoryItem, deliveryStatusLabel, deliveryStatusSeverity } from '../../models/patient-history.model';
 import { genderLabel, sexLabel, statusLabel } from '../../models/patient-labels';
 import { Address, ContactType, Patient } from '../../models/patient.model';
 
@@ -181,7 +182,7 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
                     }
                     <table class="hist-detail">
                       <thead>
-                        <tr><th>Análisis</th><th class="cv-center">Importe cobrado</th><th>Estado</th></tr>
+                        <tr><th>Análisis</th><th class="cv-center">Importe cobrado</th><th>Estado</th><th class="cv-center">Acción</th></tr>
                       </thead>
                       <tbody>
                         @for (a of row.analyses; track a.analysisId) {
@@ -190,6 +191,19 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
                             <td class="cv-center">{{ a.chargedPrice != null ? (a.chargedPrice | currencyAr) : '—' }}</td>
                             <td>
                               <p-tag [severity]="deliverySeverity(a.deliveryStatus)" [value]="deliveryLabel(a.deliveryStatus)" />
+                            </td>
+                            <td class="cv-center">
+                              @if (a.pendingReinjection) {
+                                <p-button
+                                  icon="pi pi-replay"
+                                  severity="info"
+                                  [text]="true"
+                                  size="small"
+                                  pTooltip="Reinyectar muestra"
+                                  [loading]="isReinjecting(a.analysisOrderId)"
+                                  [disabled]="isReinjecting(a.analysisOrderId)"
+                                  (onClick)="confirmReinject(a)" />
+                              }
                             </td>
                           </tr>
                         }
@@ -262,6 +276,9 @@ export class PatientDetailPage implements OnInit, OnDestroy {
 
   // ── Historial de atenciones ──
   readonly history = signal<PatientHistoryItem[]>([]);
+  /** analysisOrderIds con una re-inyección en vuelo (deshabilita el botón para evitar doble disparo). */
+  readonly reinjecting = signal<ReadonlySet<number>>(new Set());
+  isReinjecting(orderId: number): boolean { return this.reinjecting().has(orderId); }
   readonly historyColumns: readonly TableColumn[] = [
     { field: 'attentionNumber', header: 'N° atención' },
     { field: 'fecha',           header: 'Fecha' },
@@ -315,6 +332,43 @@ export class PatientDetailPage implements OnInit, OnDestroy {
     } else {
       this.downloadAndOpenReport(patientId, row.protocolId);
     }
+  }
+
+  /** Confirma y dispara la re-inyección de una muestra pendiente de re-pedido. */
+  confirmReinject(a: PatientHistoryAnalysis): void {
+    const patientId = this.patient()?.id;
+    if (patientId == null) return;
+    this.confirm.confirm({
+      header: 'Reinyectar muestra',
+      message: a.reinjectionObservation
+        ? `Motivo del re-pedido: "${a.reinjectionObservation}". Se generará una nueva muestra y el paciente volverá a la cola de extracción. ¿Confirmar?`
+        : 'Se generará una nueva muestra y el paciente volverá a la cola de extracción. ¿Confirmar?',
+      acceptLabel: 'Reinyectar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        // Guard de doble-disparo: mientras el POST está en vuelo, el botón queda deshabilitado.
+        if (this.isReinjecting(a.analysisOrderId)) return;
+        this.reinjecting.update(s => new Set(s).add(a.analysisOrderId));
+        const clearInFlight = () =>
+          this.reinjecting.update(s => { const n = new Set(s); n.delete(a.analysisOrderId); return n; });
+        this.historyService.reinject(a.analysisOrderId).subscribe({
+          next: () => {
+            clearInFlight();
+            this.notifications.success('Muestra reinyectada. El paciente volvió a la cola de extracción.');
+            this.loadHistory(patientId);
+          },
+          error: (err: HttpErrorResponse) => {
+            clearInFlight();
+            // 409/422 = la orden ya no está pendiente (probable doble click): la re-inyección ya se hizo.
+            if (err.status === 409 || err.status === 422) {
+              this.notifications.error('Esta muestra ya fue reinyectada.');
+            } else {
+              this.notifications.error('No se pudo reinyectar la muestra. Intentá de nuevo en unos minutos.');
+            }
+          },
+        });
+      },
+    });
   }
 
   private downloadAndOpenReport(patientId: number, protocolId: number): void {

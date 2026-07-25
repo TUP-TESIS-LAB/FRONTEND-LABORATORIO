@@ -20,9 +20,9 @@ function setup() {
             { id: 2, name: 'Microbiología', areaType: 'MICROBIOLOGIA', externalLabName: null, active: true },
           ] },
           { selector: selectSections, value: [
-            { id: 10, name: 'Hematología', areaId: 1, active: true },
-            { id: 11, name: 'Coagulación', areaId: 1, active: true },
-            { id: 20, name: 'Cultivos', areaId: 2, active: true },
+            { id: 10, name: 'Hematología', active: true },
+            { id: 11, name: 'Coagulación', active: true },
+            { id: 20, name: 'Cultivos', active: true },
           ] },
           { selector: selectWorkspaces, value: [
             { id: 100, branchId: 5, areaId: 1, sectionId: 10 },
@@ -53,10 +53,10 @@ describe('WorkspacesStepComponent (Mockup A)', () => {
     expect(quimica.sections.map((s: any) => s.sectionName)).toEqual(['Hematología', 'Coagulación']);
   });
 
-  it('sectionsForArea filtra por el área elegida (checklist)', () => {
+  it('sectionsForArea ofrece TODAS las secciones del tenant (la sección ya no pertenece a un área)', () => {
     const { cmp } = setup();
     (cmp as any).selectedAreaId.set(1);
-    expect((cmp as any).sectionsForArea().map((s: any) => s.id)).toEqual([10, 11]);
+    expect((cmp as any).sectionsForArea().map((s: any) => s.id)).toEqual([10, 11, 20]);
   });
 
   it('add() sincroniza existentes + secciones tildadas nuevas (sin duplicar)', () => {

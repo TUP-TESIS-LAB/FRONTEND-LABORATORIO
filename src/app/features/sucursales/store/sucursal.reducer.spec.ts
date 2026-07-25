@@ -79,7 +79,6 @@ const mockArea: Area = {
 const mockSection: Section = {
   id: 200,
   name: 'Sección A',
-  areaId: 100,
   active: true,
 };
 
@@ -292,6 +291,11 @@ describe('sucursalReducer — areas', () => {
     const state = reduce(withAreas, A.toggleAreaStatusSuccess({ area: toggled }));
     expect(state.areas[0].active).toBe(false);
   });
+
+  it('deleteAreaSuccess removes the area from the list', () => {
+    const state = reduce(withAreas, A.deleteAreaSuccess({ id: mockArea.id }));
+    expect(state.areas.find(a => a.id === mockArea.id)).toBeUndefined();
+  });
 });
 
 // ── Sections ──────────────────────────────────────────────────────────────────
@@ -305,17 +309,17 @@ describe('sucursalReducer — sections', () => {
     expect(state.loadingCatalog).toBe(false);
   });
 
-  it('loadSectionsSuccess replaces previous sections (per-area loading pattern)', () => {
-    // Simulates switching from area 100 to area 101: new sections must replace the old ones.
-    const sectionArea101: Section = { id: 300, name: 'Sección X', areaId: 101, active: true };
-    const withSectionsA100: SucursalState = { ...initialSucursalState, sections: [mockSection] };
-    const state = reduce(withSectionsA100, A.loadSectionsSuccess({ sections: [sectionArea101] }));
+  it('loadSectionsSuccess replaces previous sections', () => {
+    // A new load must replace the old list entirely, not merge.
+    const otherSection: Section = { id: 300, name: 'Sección X', active: true };
+    const withPrevSections: SucursalState = { ...initialSucursalState, sections: [mockSection] };
+    const state = reduce(withPrevSections, A.loadSectionsSuccess({ sections: [otherSection] }));
     expect(state.sections).toHaveLength(1);
-    expect(state.sections[0].areaId).toBe(101);
+    expect(state.sections[0].id).toBe(300);
   });
 
   it('addSectionSuccess appends section', () => {
-    const newSection: Section = { id: 201, name: 'Sección B', areaId: 100, active: true };
+    const newSection: Section = { id: 201, name: 'Sección B', active: true };
     const state = reduce(withSections, A.addSectionSuccess({ section: newSection }));
     expect(state.sections).toHaveLength(2);
   });
@@ -330,6 +334,11 @@ describe('sucursalReducer — sections', () => {
     const toggled: Section = { ...mockSection, active: false };
     const state = reduce(withSections, A.toggleSectionStatusSuccess({ section: toggled }));
     expect(state.sections[0].active).toBe(false);
+  });
+
+  it('deleteSectionSuccess removes the section from the list', () => {
+    const state = reduce(withSections, A.deleteSectionSuccess({ id: mockSection.id }));
+    expect(state.sections.find(s => s.id === mockSection.id)).toBeUndefined();
   });
 });
 

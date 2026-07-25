@@ -16,12 +16,10 @@
     @if (selectedAreaId() != null) {
       <div class="sections-block">
         <div class="sections-head">
-          <span class="sections-title">Secciones de esta área</span>
-          <p-button label="Nueva sección" severity="secondary" [text]="true" size="small"
-                    (onClick)="openSectionModal()" />
+          <span class="sections-title">Secciones</span>
         </div>
         @if (sectionsForArea().length === 0) {
-          <p class="muted">Esta área no tiene secciones. Creá una con "Nueva sección".</p>
+          <p class="muted">No hay secciones para asociar.</p>
         } @else {
           <div class="sections-grid">
             @for (s of sectionsForArea(); track s.id) {
@@ -80,22 +78,6 @@
     <ng-template pTemplate="footer">
       <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="areaModalOpen.set(false)" />
       <p-button label="Crear área" (onClick)="saveArea()" [disabled]="!newAreaName.trim()" />
-    </ng-template>
-  </p-dialog>
-
-  <!-- Modal: nueva sección -->
-  <p-dialog [visible]="sectionModalOpen()" (visibleChange)="sectionModalOpen.set($event)"
-            [modal]="true" [draggable]="false" header="Nueva sección" [style]="{ width: '420px' }">
-    <div class="modal-form">
-      <div class="form-field">
-        <label>Nombre <span class="pat-form__req">*</span></label>
-        <input pInputText [(ngModel)]="newSectionName" class="w-full" />
-      </div>
-      <p class="muted">Se creará dentro del área <strong>{{ selectedAreaId() != null ? areaName(selectedAreaId()!) : '' }}</strong>.</p>
-    </div>
-    <ng-template pTemplate="footer">
-      <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="sectionModalOpen.set(false)" />
-      <p-button label="Crear sección" (onClick)="saveSection()" [disabled]="!newSectionName.trim()" />
     </ng-template>
   </p-dialog>
 </div>

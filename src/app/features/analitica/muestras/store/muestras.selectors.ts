@@ -17,4 +17,6 @@ export const selectWorkspaces = createSelector(selectMuestrasState, s => s.works
 export const selectDispatchPending = createSelector(selectMuestrasState, s => s.dispatchPending);
 export const selectDescarteItems = createSelector(selectMuestrasState, s => s.descarte);
 export const selectDescartadasItems = createSelector(selectMuestrasState, s => s.descartadas);
+export const selectRechazadasItems = createSelector(selectMuestrasState, s => s.rechazadas);
 export const selectProcesamientoItems = createSelector(selectMuestrasState, s => s.procesamiento);
+export const selectDerivadosItems = createSelector(selectMuestrasState, s => s.derivados);

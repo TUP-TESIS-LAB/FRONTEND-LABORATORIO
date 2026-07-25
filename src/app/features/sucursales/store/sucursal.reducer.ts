@@ -187,6 +187,14 @@ export const sucursalReducer = createReducer(
   })),
   on(A.toggleAreaStatusFailure, (state, { error }): SucursalState => ({ ...state, saving: false, error })),
 
+  on(A.deleteArea, (state): SucursalState => ({ ...state, saving: true, error: null })),
+  on(A.deleteAreaSuccess, (state, { id }): SucursalState => ({
+    ...state,
+    saving: false,
+    areas: state.areas.filter(a => a.id !== id),
+  })),
+  on(A.deleteAreaFailure, (state, { error }): SucursalState => ({ ...state, saving: false, error })),
+
   // ──────────────────────────────────────────────────────────────────────────
   // Sections
   // ──────────────────────────────────────────────────────────────────────────
@@ -217,6 +225,14 @@ export const sucursalReducer = createReducer(
     sections: state.sections.map(s => s.id === section.id ? section : s),
   })),
   on(A.toggleSectionStatusFailure, (state, { error }): SucursalState => ({ ...state, saving: false, error })),
+
+  on(A.deleteSection, (state): SucursalState => ({ ...state, saving: true, error: null })),
+  on(A.deleteSectionSuccess, (state, { id }): SucursalState => ({
+    ...state,
+    saving: false,
+    sections: state.sections.filter(s => s.id !== id),
+  })),
+  on(A.deleteSectionFailure, (state, { error }): SucursalState => ({ ...state, saving: false, error })),
 
   // ──────────────────────────────────────────────────────────────────────────
   // UI state

@@ -13,12 +13,14 @@ import { SectionService } from '@features/sucursales/services/section.service';
 import type { Section } from '@features/sucursales/models/section.model';
 import type { Sample } from '../../models/sample.model';
 import type { LoteDestPatch, SectionOption } from '../../models/transito.model';
+import type { RowActionKey } from '../../models/transition.model';
 import { TransitoLotesService, NO_SAMPLE_LINK_TEXT } from '../../services/transito-lotes.service';
 import { TransitoScanBarComponent } from '../../components/transito/transito-scan-bar/transito-scan-bar.component';
 import { BulkActionsBarComponent } from '../../components/transito/bulk-actions-bar/bulk-actions-bar.component';
 import { LoteCardComponent } from '../../components/transito/lote-card/lote-card.component';
 import { RecommendedGroupCardComponent } from '../../components/transito/recommended-group-card/recommended-group-card.component';
 import { ConfirmSendAllDialogComponent } from '../../components/transito/confirm-send-all-dialog/confirm-send-all-dialog.component';
+import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
 import {
   deriveTubesSuccess, dispatchTubesSuccess, initMuestras, loadTransito, loadWorkspaces,
 } from '../../store/muestras.actions';
@@ -26,7 +28,12 @@ import {
   selectMuestrasBranchId, selectMuestrasBranchName, selectMuestrasBranches, selectMuestrasError,
   selectRouting, selectTransitoItems, selectWorkspaces,
 } from '../../store/muestras.selectors';
-import { groupTubes } from '../../models/tube.model';
+import { groupTubes, type Tube } from '../../models/tube.model';
+import { rowActionsFor } from '../../data/state-machine.config';
+import { createRowTransitionDialog } from '../row-transition-dialog';
+import { MuestrasApiService } from '../../services/muestras-api.service';
+import { ModuleRegistry } from '@core/tenant/module-registry';
+import { ModuleKey } from '@core/models/module-key.enum';
 
 @Component({
   selector: 'app-transito-page',
@@ -34,6 +41,7 @@ import { groupTubes } from '../../models/tube.model';
   imports: [
     ToastModule, PageHeaderComponent, TransitoScanBarComponent, BulkActionsBarComponent,
     LoteCardComponent, RecommendedGroupCardComponent, ConfirmSendAllDialogComponent,
+    TransitionDialogComponent,
   ],
   providers: [MessageService],
   templateUrl: './transito.page.html',
@@ -48,9 +56,23 @@ export class TransitoPage {
   private readonly polling = inject(PollingService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sectionService = inject(SectionService);
+  private readonly registry = inject(ModuleRegistry);
+  private readonly api = inject(MuestrasApiService);
+
+  readonly externalLabs = signal<Array<{ id: number; name: string }>>([]);
 
   protected readonly flashId = signal<string | null>(null);
   protected readonly confirmOpen = signal(false);
+
+  /** Andamiaje del diálogo de transición del menú kebab por-fila. */
+  readonly rowDialog = createRowTransitionDialog(this.store, 'traslado');
+  /** Acciones del menú por-fila, derivadas de la config. Oculta 'derived' si el módulo está off. */
+  readonly rowMenuActions = computed(() => {
+    const all = rowActionsFor('traslado');
+    return this.registry.isActive(ModuleKey.Derivaciones)
+      ? all
+      : all.filter((a) => a.key !== 'derived');
+  });
 
   // ── Fuente real: store NgRx (mochila) ──
   private readonly transitoItems = this.store.selectSignal(selectTransitoItems);
@@ -126,6 +148,25 @@ export class TransitoPage {
   constructor() {
     this.store.dispatch(initMuestras());
 
+    // Catálogo de laboratorios externos para el modal de derivación (solo si el módulo está activo).
+    if (this.registry.isActive(ModuleKey.Derivaciones)) {
+      this.api.activeExternalLabs()
+        .pipe(
+          catchError((err) => {
+            // Sin esto, un fallo dejaba el select vacío sin explicación (callejón sin salida al derivar).
+            this.messages.add({
+              severity: 'error',
+              summary: 'No se pudieron cargar los laboratorios externos',
+              detail: humanizeBackendError(err, { fallback: 'Reintentá en unos minutos.' }),
+              life: 4000,
+            });
+            return of([] as Array<{ id: number; name: string }>);
+          }),
+          takeUntilDestroyed(),
+        )
+        .subscribe((labs) => this.externalLabs.set(labs));
+    }
+
     const handle = this.polling.startPolling({
       key: 'muestras-transito',
       intervalMs: 5000,
@@ -195,6 +236,13 @@ export class TransitoPage {
     const all = this.tubes();
     const set = new Set(ids);
     return all.filter(s => set.has(s.id));
+  }
+
+  /** Abre el diálogo de transición para UNA fila (kebab). Resuelve el tube desde el id. */
+  onRowAction(key: string, id: string): void {
+    const tube = this.samplesOf([id])[0] as Tube | undefined;
+    if (!tube) return;
+    this.rowDialog.open(key as RowActionKey, tube);
   }
 
   loteNumber(loteId: string): number {

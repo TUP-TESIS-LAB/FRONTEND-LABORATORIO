@@ -14,7 +14,7 @@ import { selectAreas } from '../../../store/sucursal.selectors';
 import {
   addArea,
   updateArea,
-  toggleAreaStatus,
+  deleteArea,
   selectAreaForSections,
 } from '../../../store/sucursal.actions';
 import { Area, AreaType, AreaCreateInput } from '../../../models/sucursal.model';
@@ -105,7 +105,7 @@ export class AreasPanelComponent {
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
       acceptButtonStyleClass: 'p-button-danger',
-      accept: () => this.store.dispatch(toggleAreaStatus({ id: area.id })),
+      accept: () => this.store.dispatch(deleteArea({ id: area.id })),
     });
   }
 

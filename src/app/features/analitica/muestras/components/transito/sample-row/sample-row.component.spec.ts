@@ -65,4 +65,18 @@ describe('SampleRowComponent', () => {
     fixture.debugElement.query(By.css('.row')).nativeElement.click();
     expect(count).toBe(1);
   });
+
+  it('re-emite rowAction cuando el menú kebab dispara una acción', () => {
+    fixture.componentRef.setInput('sample', SAMPLE);
+    fixture.componentRef.setInput('selected', false);
+    fixture.componentRef.setInput('flashing', false);
+    fixture.componentRef.setInput('leaving', false);
+    fixture.detectChanges();
+    const emitted: string[] = [];
+    fixture.componentInstance.rowAction.subscribe((k) => emitted.push(k));
+    // El menú hijo (RowActionsMenuComponent) emite 'accion'; el row la re-emite como rowAction.
+    const menu = fixture.debugElement.query(By.css('app-row-actions-menu'));
+    menu.componentInstance.accion.emit('rollback');
+    expect(emitted).toEqual(['rollback']);
+  });
 });

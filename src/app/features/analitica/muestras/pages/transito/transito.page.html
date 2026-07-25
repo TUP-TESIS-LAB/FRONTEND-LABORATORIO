@@ -42,7 +42,9 @@
       [branchOptions]="branchOptions()"
       [sectionOptions]="sectionOptions()"
       [currentBranchName]="branchName()"
+      [rowActions]="rowMenuActions()"
       (toggleSample)="onToggleSample($event)"
+      (rowAction)="onRowAction($event.key, $event.id)"
       (toggleAll)="onToggleAllLote(lote.id, $event)"
       (destChange)="onUpdateDestLote(lote.id, $event)"
       (setActive)="onSetActiveLote(lote.id)"
@@ -62,7 +64,9 @@
       [sectionOptions]="sectionOptions()"
       [reasons]="service.reasons()"
       [assignedSectionId]="service.sectionIdOf(group.id)"
+      [rowActions]="rowMenuActions()"
       (toggleSample)="onToggleSample($event)"
+      (rowAction)="onRowAction($event.key, $event.id)"
       (toggleAll)="onToggleAllGroup(group.id, $event)"
       (toggleEditing)="onToggleEditing(group.id)"
       (assignSection)="onAssignSection(group.id, $event)"
@@ -77,6 +81,16 @@
     </div>
   }
 </section>
+
+@if (rowDialog.activeTransition(); as tr) {
+  <app-muestras-transition-dialog
+    [transition]="tr"
+    [samples]="rowDialog.samples()"
+    [labs]="externalLabs()"
+    (confirm)="rowDialog.confirm($event)"
+    (cancel)="rowDialog.cancel()"
+  />
+}
 
 <p-toast position="bottom-right" />
 <app-confirm-send-all-dialog

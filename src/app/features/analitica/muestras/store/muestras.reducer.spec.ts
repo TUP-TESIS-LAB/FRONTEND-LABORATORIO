@@ -224,15 +224,23 @@ describe('muestrasReducer', () => {
     patientName: 'Marta Gómez', urgent: false, status: 'PROCESSING', updatedAt: '2026-06-13T08:00:00Z',
   };
 
-  it('loadProcesamientoSuccess reemplaza procesamiento items', () => {
-    const s = muestrasReducer(initialMuestrasState, loadProcesamientoSuccess({ items: [procItem] }));
+  it('loadProcesamientoSuccess con PROCESSING escribe el slice procesamiento', () => {
+    const s = muestrasReducer(initialMuestrasState, loadProcesamientoSuccess({ status: 'PROCESSING', items: [procItem] }));
     expect(s.procesamiento).toEqual([procItem]);
+    expect(s.derivados).toEqual([]); // no toca el slice de derivados
     expect(s.error).toBeNull();
   });
 
-  it('loadProcesamientoNotModified no muta procesamiento items', () => {
+  it('loadProcesamientoSuccess con DERIVED escribe el slice derivados (no pisa procesamiento)', () => {
     const before = { ...initialMuestrasState, procesamiento: [procItem] };
-    const s = muestrasReducer(before, loadProcesamientoNotModified());
+    const s = muestrasReducer(before, loadProcesamientoSuccess({ status: 'DERIVED', items: [procItem] }));
+    expect(s.derivados).toEqual([procItem]);
+    expect(s.procesamiento).toBe(before.procesamiento); // PROCESSING intacto: no se desalinean
+  });
+
+  it('loadProcesamientoNotModified no muta los slices', () => {
+    const before = { ...initialMuestrasState, procesamiento: [procItem] };
+    const s = muestrasReducer(before, loadProcesamientoNotModified({ status: 'PROCESSING' }));
     expect(s.procesamiento).toBe(before.procesamiento);
   });
 

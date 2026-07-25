@@ -64,7 +64,7 @@ const mockTotemConfig: BranchTotemConfig = {
 
 const mockArea: Area = { id: 100, name: 'Química Clínica', areaType: 'QUIMICA_CLINICA', externalLabName: null, active: true };
 
-const mockSection: Section = { id: 200, name: 'Sección A', areaId: 100, active: true };
+const mockSection: Section = { id: 200, name: 'Sección A', active: true };
 
 // ────── setup ──────
 
@@ -104,12 +104,14 @@ describe('SucursalEffects', () => {
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
     toggleStatus: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
   };
   let sectionService: {
     list: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
     toggleStatus: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
   };
   let messageService: { add: ReturnType<typeof vi.fn> };
 
@@ -126,8 +128,8 @@ describe('SucursalEffects', () => {
     contactService = { list: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() };
     workspaceService = { list: vi.fn(), sync: vi.fn() };
     totemConfigService = { get: vi.fn(), upsert: vi.fn() };
-    areaService = { list: vi.fn(), create: vi.fn(), update: vi.fn(), toggleStatus: vi.fn() };
-    sectionService = { list: vi.fn(), create: vi.fn(), update: vi.fn(), toggleStatus: vi.fn() };
+    areaService = { list: vi.fn(), create: vi.fn(), update: vi.fn(), toggleStatus: vi.fn(), delete: vi.fn() };
+    sectionService = { list: vi.fn(), create: vi.fn(), update: vi.fn(), toggleStatus: vi.fn(), delete: vi.fn() };
     messageService = { add: vi.fn() };
 
     TestBed.configureTestingModule({
@@ -403,24 +405,41 @@ describe('SucursalEffects', () => {
     it('success: dispatches loadSectionsSuccess with page content', () => {
       return new Promise<void>((resolve) => {
         sectionService.list.mockReturnValue(of({ content: [mockSection], totalElements: 1, totalPages: 1, page: 0, size: 100 }));
-        actions$ = of(A.loadSections({ areaId: 100 }));
+        actions$ = of(A.loadSections());
 
         effects.loadSections$.subscribe((action) => {
           expect(action).toEqual(A.loadSectionsSuccess({ sections: [mockSection] }));
-          expect(sectionService.list).toHaveBeenCalledWith({ areaId: 100, page: 0, size: 100 });
+          expect(sectionService.list).toHaveBeenCalledWith({ page: 0, size: 100 });
           resolve();
         });
       });
     });
+  });
 
-    it('success without areaId: passes undefined to service', () => {
+  // ── deleteSection$ ────────────────────────────────────────────────────────
+
+  describe('deleteSection$', () => {
+    it('success: dispatches deleteSectionSuccess with id', () => {
       return new Promise<void>((resolve) => {
-        sectionService.list.mockReturnValue(of({ content: [], totalElements: 0, totalPages: 0, page: 0, size: 100 }));
-        actions$ = of(A.loadSections({}));
+        sectionService.delete.mockReturnValue(of(void 0));
+        actions$ = of(A.deleteSection({ id: 20 }));
+        effects.deleteSection$.subscribe((action) => {
+          expect(action).toEqual(A.deleteSectionSuccess({ id: 20 }));
+          resolve();
+        });
+      });
+    });
+  });
 
-        effects.loadSections$.subscribe((action) => {
-          expect(action.type).toBe('[Sucursal] Load Sections Success');
-          expect(sectionService.list).toHaveBeenCalledWith({ areaId: undefined, page: 0, size: 100 });
+  // ── deleteArea$ ───────────────────────────────────────────────────────────
+
+  describe('deleteArea$', () => {
+    it('success: dispatches deleteAreaSuccess with id', () => {
+      return new Promise<void>((resolve) => {
+        areaService.delete.mockReturnValue(of(void 0));
+        actions$ = of(A.deleteArea({ id: 10 }));
+        effects.deleteArea$.subscribe((action) => {
+          expect(action).toEqual(A.deleteAreaSuccess({ id: 10 }));
           resolve();
         });
       });

@@ -239,12 +239,20 @@ export class SucursalEffects {
     )),
   ));
 
+  deleteArea$ = createEffect(() => this.actions$.pipe(
+    ofType(A.deleteArea),
+    mergeMap(({ id }) => this.areaService.delete(id).pipe(
+      map(() => A.deleteAreaSuccess({ id })),
+      catchError(err => of(A.deleteAreaFailure({ error: this.errorMessage(err) }))),
+    )),
+  ));
+
   // ──────────────────────────────────────────────────────────────────────────
   // Sections
   // ──────────────────────────────────────────────────────────────────────────
   loadSections$ = createEffect(() => this.actions$.pipe(
     ofType(A.loadSections),
-    switchMap(({ areaId }) => this.sectionService.list({ areaId, page: 0, size: 100 }).pipe(
+    switchMap(() => this.sectionService.list({ page: 0, size: 100 }).pipe(
       map(page => A.loadSectionsSuccess({ sections: page.content })),
       catchError(err => of(A.loadSectionsFailure({ error: this.errorMessage(err) }))),
     )),
@@ -275,6 +283,14 @@ export class SucursalEffects {
     )),
   ));
 
+  deleteSection$ = createEffect(() => this.actions$.pipe(
+    ofType(A.deleteSection),
+    mergeMap(({ id }) => this.sectionService.delete(id).pipe(
+      map(() => A.deleteSectionSuccess({ id })),
+      catchError(err => of(A.deleteSectionFailure({ error: this.errorMessage(err) }))),
+    )),
+  ));
+
   // ──────────────────────────────────────────────────────────────────────────
   // Error toast
   // ──────────────────────────────────────────────────────────────────────────
@@ -302,10 +318,12 @@ export class SucursalEffects {
       A.addAreaFailure,
       A.updateAreaFailure,
       A.toggleAreaStatusFailure,
+      A.deleteAreaFailure,
       A.loadSectionsFailure,
       A.addSectionFailure,
       A.updateSectionFailure,
       A.toggleSectionStatusFailure,
+      A.deleteSectionFailure,
     ),
     tap(() => this.messageService.add({
       severity: 'error', summary: 'Error', detail: 'Operación de sucursales falló.',

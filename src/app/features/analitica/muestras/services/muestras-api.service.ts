@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { withPolling, NotModified } from '@core/refresh';
+import { EtagCacheService } from '@core/refresh/etag-cache.service';
 import type { BranchOption } from '@features/analitica/models/extraction.model';
 import type { BackendLabelStatus, LabelWorklistItem } from '../models/label-worklist.model';
 import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.model';
@@ -9,6 +10,7 @@ import type { BranchWorkspace, RoutingResolveResponse } from '../models/routing.
 @Injectable({ providedIn: 'root' })
 export class MuestrasApiService {
   private readonly http = inject(HttpClient);
+  private readonly etagCache = inject(EtagCacheService);
   private readonly base = '/api/v1/analitica/preanalitica/labels';
 
   /**
@@ -20,6 +22,17 @@ export class MuestrasApiService {
       context: withPolling(),
       params: new HttpParams().set('status', status).set('branchId', branchId),
     });
+  }
+
+  /**
+   * Invalida el ETag cacheado del worklist para (status, branchId), forzando que el próximo
+   * getWorklist traiga 200 con datos en vez de 304. Necesario al alternar tabs que comparten el
+   * mismo slice del store (PROCESSING/DERIVED): sin esto, volver a un tab ya visitado daría 304 y
+   * el slice quedaría con los datos del otro tab.
+   */
+  invalidateWorklistEtag(status: string, branchId: number): void {
+    const url = `${this.base}/worklist?${new HttpParams().set('status', status).set('branchId', branchId)}`;
+    this.etagCache.clear(EtagCacheService.buildKey('GET', url));
   }
 
   getMyBranches(): Observable<BranchOption[]> {
@@ -67,5 +80,19 @@ export class MuestrasApiService {
 
   getBranchWorkspaces(branchId: number): Observable<BranchWorkspace[]> {
     return this.http.get<BranchWorkspace[]>(`/api/v1/sucursales/branches/${branchId}/workspaces`);
+  }
+
+  /** Derivación real: label a un laboratorio externo (queda DERIVED). */
+  markAsDerived(labelIds: number[], externalLabId: number, protocolId?: number): Observable<unknown> {
+    return this.http.post(`${this.base}/mark-as-derived`, { labelIds, externalLabId, protocolId });
+  }
+
+  /** backend: POST /labels/{labelId}/request-reinjection { observation } → 204. Solicita re-inyección. */
+  requestReinjection(labelId: number, observation: string): Observable<unknown> {
+    return this.http.post(`${this.base}/${labelId}/request-reinjection`, { observation });
+  }
+
+  activeExternalLabs(): Observable<Array<{ id: number; name: string }>> {
+    return this.http.get<Array<{ id: number; name: string }>>(`${this.base}/external-labs/active`);
   }
 }

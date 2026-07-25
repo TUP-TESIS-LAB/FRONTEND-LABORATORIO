@@ -103,17 +103,18 @@
               </p>
             </div>
           } @else {
-          <div class="anx-body">
+          <div class="anx-body" [class.no-auto-col]="!autoValidacionActiva()">
             <div class="vt-head vt-grid">
               <span>DETERMINACIÓN</span><span>VALOR</span><span>UNIDAD</span><span>REFERENCIA</span>
-              <span>VALIDACIÓN MANUAL</span><span>VALIDACIÓN AUTOMÁTICA</span>
+              <span>VALIDACIÓN MANUAL</span>
+              @if (autoValidacionActiva()) { <span>VALIDACIÓN AUTOMÁTICA</span> }
             </div>
             @for (d of r.determinations; track d.determinationId) {
               <div class="vt-row vt-grid" [class.is-flag]="outOf(d)">
                 <span class="vt-n">{{ d.name }}</span>
                 <span class="vt-v" [class.flag-h]="outOf(d)">{{ d.value }}</span>
                 <span class="vt-u">{{ d.unit }}</span>
-                <span class="vt-ref">{{ d.referenceRange }}</span>
+                <span class="vt-ref">{{ (d.analyticalType === 'QUALITATIVE' || d.analyticalType === 'SEMI_QUALITATIVE') ? (d.expectedQualitativeValue || '') : (d.referenceRange || '') }}</span>
                 <span class="vt-cell">
                   @if (d.manualOutcome) {
                     <span class="vb vb-ok"><i class="pi pi-check"></i> {{ outcomeLabel(d.manualOutcome) }}</span>
@@ -121,6 +122,7 @@
                     <span class="vb vb-no">—</span>
                   }
                 </span>
+                @if (autoValidacionActiva()) {
                 <span class="vt-cell">
                   @if (d.aggregateOutcome) {
                     @if (outOf(d)) {
@@ -134,6 +136,7 @@
                     <span class="vb vb-no">—</span>
                   }
                 </span>
+                }
               </div>
             }
           </div>

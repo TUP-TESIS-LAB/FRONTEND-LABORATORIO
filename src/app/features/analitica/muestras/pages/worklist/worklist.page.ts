@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Store } from '@ngrx/store';
+import { Store, type Action } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
@@ -18,13 +18,18 @@ import { ScanBarComponent } from '../../components/scan-bar/scan-bar.component';
 import { BatchMenuComponent } from '../../components/batch-menu/batch-menu.component';
 import { SampleTableComponent } from '../../components/sample-table/sample-table.component';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
-import { initMuestras, loadRecoleccion, loadDescarte, loadDescartadas, loadProcesamiento, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
-import { selectRecoleccionItems, selectDescarteItems, selectDescartadasItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
+import { initMuestras, loadRecoleccion, loadDescarte, loadDescartadas, loadRechazadas, loadProcesamiento, transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
+import { selectRecoleccionItems, selectDescarteItems, selectDescartadasItems, selectRechazadasItems, selectProcesamientoItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { groupTubes, type Tube } from '../../models/tube.model';
 import { loadTemplates } from '../../store/worksheet-templates/worksheet-templates.actions';
 import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
 import { WorksheetConfigModalComponent } from '../../components/planillas/worksheet-config-modal.component';
+import type { RowActionKey } from '../../models/transition.model';
+import type { LabelWorklistItem } from '../../models/label-worklist.model';
+
+/** Vistas del switch de la pantalla Descarte. */
+type DescarteView = 'pendientes' | 'descartadas' | 'rechazadas';
 
 @Component({
   selector: 'app-muestras-worklist',
@@ -48,7 +53,9 @@ export class WorklistPage {
   readonly currentBranch = CURRENT_BRANCH;
   readonly branches = BRANCHES;
   readonly areas = AREAS;
-  readonly labs = LABS;
+  // Pantalla demo con catálogo mock; el modal ahora espera {id,name}. La derivación real
+  // (a ExternalLab con id de verdad) vive en la pantalla de Traslado, no acá.
+  readonly labs = LABS.map((name, i) => ({ id: i, name }));
 
   readonly config = computed<ScreenConfig>(() => {
     const key = this.route.snapshot.data['screenKey'] as ScreenKey;
@@ -62,21 +69,27 @@ export class WorklistPage {
     || this.config().key === 'procesamiento',
   );
 
-  /** Switch de la pantalla Descarte: 'pendientes' (COMPLETED, a descartar) | 'descartadas' (DISCARDED). */
-  readonly descarteView = signal<'pendientes' | 'descartadas'>('pendientes');
+  /**
+   * Switch de la pantalla Descarte:
+   * - 'pendientes' (COMPLETED, a descartar)
+   * - 'descartadas' (DISCARDED)
+   * - 'rechazadas' (REJECTED/LOST, candidatas a re-inyección por-fila)
+   */
+  readonly descarteView = signal<DescarteView>('pendientes');
 
   /** Etiqueta del KPI de conteo (dinámica en descarte según la vista del switch). */
-  readonly countLabelText = computed(() => {
-    if (this.config().key === 'descarte') {
-      return this.descarteView() === 'pendientes' ? 'a descartar' : 'descartadas';
-    }
-    return this.config().countLabel;
-  });
+  readonly countLabelText = computed(() =>
+    this.config().key === 'descarte'
+      ? this.DESCARTE_VIEWS[this.descarteView()].countLabel
+      : this.config().countLabel,
+  );
 
-  setDescarteView(v: 'pendientes' | 'descartadas'): void {
+  setDescarteView(v: DescarteView): void {
     if (v === this.descarteView()) return;
     this.descarteView.set(v);
     this.clearSelection();
+    // Refresco inmediato de la vista recién activada (no esperar al próximo tick de polling).
+    this.store.dispatch(this.DESCARTE_VIEWS[v].load());
   }
 
   /**
@@ -114,17 +127,28 @@ export class WorklistPage {
   private readonly recoleccionItems = this.store.selectSignal(selectRecoleccionItems);
   private readonly descarteItems = this.store.selectSignal(selectDescarteItems);
   private readonly descartadasItems = this.store.selectSignal(selectDescartadasItems);
+  private readonly rechazadasItems = this.store.selectSignal(selectRechazadasItems);
   private readonly procesamientoItems = this.store.selectSignal(selectProcesamientoItems);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
   private readonly templatesError = this.store.selectSignal(selectTemplatesError);
 
+  /**
+   * Config por sub-vista de Descarte: etiqueta del KPI, items del slice y la action de recarga.
+   * Fuente única — countLabelText, sourceRows y el polling la consumen (evita enumerar las 3 vistas
+   * en cada método por separado).
+   */
+  private readonly DESCARTE_VIEWS: Record<DescarteView, { countLabel: string; items: () => LabelWorklistItem[]; load: () => Action }> = {
+    pendientes:  { countLabel: 'a descartar',         items: () => this.descarteItems(),    load: loadDescarte },
+    descartadas: { countLabel: 'descartadas',         items: () => this.descartadasItems(), load: loadDescartadas },
+    rechazadas:  { countLabel: 'rechazadas/perdidas', items: () => this.rechazadasItems(),  load: loadRechazadas },
+  };
+
   private readonly sourceRows = computed<Sample[]>(() => {
     const key = this.config().key;
     if (key === 'recoleccion') return groupTubes(this.recoleccionItems(), this.branchName());
     if (key === 'descarte') {
-      const items = this.descarteView() === 'pendientes' ? this.descarteItems() : this.descartadasItems();
-      return groupTubes(items, this.branchName());
+      return groupTubes(this.DESCARTE_VIEWS[this.descarteView()].items(), this.branchName());
     }
     if (key === 'procesamiento') return groupTubes(this.procesamientoItems(), this.branchName());
     return this.samples.byState(this.config().source)();
@@ -155,6 +179,22 @@ export class WorklistPage {
 
   constructor() {
     const screenKey = this.route.snapshot.data['screenKey'] as ScreenKey;
+
+    // Toast de éxito NO optimista, común a TODAS las pantallas backend (recolección, descarte, …):
+    // se muestra cuando el backend confirma la transición. Antes vivía dentro del bloque de
+    // recolección, así que "Pedir de nuevo" en Descarte no daba ningún feedback (KAN-239, review).
+    this.actions.pipe(ofType(transitionLabelsSuccess), takeUntilDestroyed()).subscribe(() => {
+      if (this.pendingToast) {
+        const { count, toLabel, detail } = this.pendingToast;
+        this.pendingToast = null;
+        this.messages.add({
+          severity: 'success',
+          summary: `${count} tubo(s) → ${toLabel}`,
+          detail,
+          life: 3800,
+        });
+      }
+    });
 
     if (screenKey === 'recoleccion') {
       this.store.dispatch(initMuestras());
@@ -187,19 +227,6 @@ export class WorklistPage {
         }
       });
 
-      // Toast de éxito NO optimista: se muestra solo cuando el backend confirma.
-      this.actions.pipe(ofType(transitionLabelsSuccess), takeUntilDestroyed()).subscribe(() => {
-        if (this.pendingToast) {
-          const { count, toLabel, detail } = this.pendingToast;
-          this.pendingToast = null;
-          this.messages.add({
-            severity: 'success',
-            summary: `${count} tubo(s) → ${toLabel}`,
-            detail,
-            life: 3800,
-          });
-        }
-      });
     }
 
     if (screenKey === 'descarte') {
@@ -208,8 +235,9 @@ export class WorklistPage {
         key: 'muestras-descarte',
         intervalMs: 5000,
         poll: () => {
-          this.store.dispatch(loadDescarte());     // COMPLETED (a descartar)
-          this.store.dispatch(loadDescartadas());  // DISCARDED (descartadas)
+          // Solo la vista visible: las 3 sub-vistas son mutuamente excluyentes, no tiene sentido
+          // pollear las ocultas (eran 3 requests/tick, ahora 1).
+          this.store.dispatch(this.DESCARTE_VIEWS[this.descarteView()].load());
           return of(null);
         },
       });
@@ -239,7 +267,7 @@ export class WorklistPage {
         key: 'muestras-procesamiento',
         intervalMs: 5000,
         poll: () => {
-          this.store.dispatch(loadProcesamiento());
+          this.store.dispatch(loadProcesamiento({ status: 'PROCESSING' }));
           return of(null);
         },
       });
@@ -305,6 +333,13 @@ export class WorklistPage {
 
   readonly menuOpen = signal(false);
   readonly activeTransition = signal<Transition | null>(null);
+  /** Samples del menú por-fila (kebab). Vacío = el diálogo usa la selección masiva. */
+  readonly rowMenuSamples = signal<Sample[]>([]);
+  /** Muestras objetivo del diálogo: las del kebab si hay, si no la selección masiva. */
+  readonly dialogSamples = computed<Sample[]>(() => {
+    const row = this.rowMenuSamples();
+    return row.length ? row : this.selectedSamples();
+  });
   readonly flashId = signal<string | null>(null);
   readonly leavingIds = this.samples.leavingIds;
 
@@ -366,16 +401,32 @@ export class WorklistPage {
     this.activeTransition.set(t);
   }
 
-  cancelDialog(): void { this.activeTransition.set(null); }
+  cancelDialog(): void {
+    this.activeTransition.set(null);
+    this.rowMenuSamples.set([]);
+  }
+
+  /** Abre el diálogo de transición para UNA fila (kebab), sin tocar la selección masiva. */
+  onRowAction(key: RowActionKey, row: Sample): void {
+    const t = this.config().targets.find((tt) => tt.key === key);
+    if (!t) return;
+    this.rowMenuSamples.set([row]);
+    this.activeTransition.set(t);
+  }
 
   async confirmDialog(payload: { dest: TransitionDest; note: string }): Promise<void> {
     const t = this.activeTransition();
     if (!t) return;
+    const targetSamples = this.dialogSamples();
     const ids = Array.from(this.selectedIds());
+    // ¿La acción salió del kebab por-fila o de la barra de selección masiva? Se captura ANTES de
+    // resetear rowMenuSamples: si vino del kebab, la selección masiva del operador no debe tocarse.
+    const fromRow = this.rowMenuSamples().length > 0;
     this.activeTransition.set(null);
+    this.rowMenuSamples.set([]);
 
     if (this.isBackendScreen()) {
-      const tubes = this.selectedSamples() as Tube[];
+      const tubes = targetSamples as Tube[];
       const labelIds = tubes.flatMap(tube => tube.labelIds ?? []);
       if (labelIds.length === 0) return;
       const detail = this.formatDestDetail(t, payload.dest);
@@ -385,10 +436,10 @@ export class WorklistPage {
         transitionKey: t.key,
         reason: payload.note || undefined,
       }));
-      this.clearSelection();
+      if (!fromRow) this.clearSelection();
     } else {
       await this.samples.transition(ids, t, payload.dest);
-      this.clearSelection();
+      if (!fromRow) this.clearSelection();
       const detail = this.formatDestDetail(t, payload.dest);
       this.messages.add({
         severity: 'success',
@@ -402,7 +453,7 @@ export class WorklistPage {
   private formatDestDetail(t: Transition, dest: TransitionDest): string {
     if (t.key === 'reroute') return `${dest.sucursal ?? ''} · ${dest.area ?? ''}`.trim();
     if (t.key === 'area') return dest.area ?? '';
-    if (t.key === 'derived') return dest.lab ?? '';
+    if (t.key === 'derived') return dest.lab != null ? String(dest.lab) : '';
     return '';
   }
 }

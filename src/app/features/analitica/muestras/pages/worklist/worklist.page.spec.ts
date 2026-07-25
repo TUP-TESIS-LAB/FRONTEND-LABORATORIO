@@ -14,6 +14,7 @@ import { selectRecoleccionItems, selectDescarteItems, selectDescartadasItems, se
 import { selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import type { LabelWorklistItem } from '../../models/label-worklist.model';
 import { transitionLabels, transitionLabelsSuccess } from '../../store/muestras.actions';
+import type { Tube } from '../../models/tube.model';
 
 /**
  * Minimal test template: includes only the header (h1 + counters).
@@ -375,6 +376,40 @@ describe('WorklistPage (smoke)', () => {
     const cmp = fx.componentInstance;
     cmp.toggleRow(cmp.rows()[0].id); cmp.toggleRow(cmp.rows()[1].id); cmp.toggleRow(cmp.rows()[2].id);
     expect(cmp.selectedProtocolIds().sort((a, b) => a - b)).toEqual([88, 99]);
+  });
+
+  it('onRowAction abre el diálogo con la transición y el sample de la fila', () => {
+    const fx = setup('recoleccion');
+    const component = fx.componentInstance;
+    const tube = { id: 't1', labelIds: [10, 11], state: 'collected' } as unknown as Tube;
+    component.onRowAction('rejected', tube);
+    expect(component.activeTransition()?.key).toBe('rejected');
+    expect(component.rowMenuSamples()).toEqual([tube]);
+  });
+
+  it('confirmDialog usa el sample del menú por-fila (no la selección masiva)', async () => {
+    const items: LabelWorklistItem[] = [
+      {
+        labelId: 60050, analysisTypeId: 60050, sampleId: 50050, barcode: '60050', protocolId: 50001,
+        analysisName: 'Hemograma', patientName: 'Ana García', urgent: false,
+        status: 'COLLECTED', updatedAt: '2026-06-12T10:00:00Z',
+      },
+    ];
+    const fx = setup('recoleccion', items);
+    const cmp = fx.componentInstance;
+    const store = getStore(fx);
+    const dispatched: unknown[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (store as any).dispatch = (action: unknown) => { dispatched.push(action); };
+
+    const rowTube = { id: 'row1', labelIds: [777], state: 'collected' } as unknown as Tube;
+    cmp.onRowAction('rejected', rowTube);
+    await cmp.confirmDialog({ dest: {}, note: '' });
+
+    expect(dispatched).toHaveLength(1);
+    const action = dispatched[0] as ReturnType<typeof transitionLabels>;
+    expect(action.labelIds).toEqual([777]);
+    expect(cmp.rowMenuSamples()).toEqual([]);
   });
 
   it('Procesamiento: cargarResultados navega con query param protocols (CSV distinto)', () => {

@@ -67,6 +67,18 @@ export const loadDescarteFailure = createAction(
   props<{ error: HttpErrorResponse }>()
 );
 
+// Worklist "Rechazadas/Perdidas" (REJECTED,LOST) — polleada; permite re-inyección por-fila
+export const loadRechazadas = createAction('[Muestras Page] Load Rechazadas');
+export const loadRechazadasSuccess = createAction(
+  '[Muestras API] Load Rechazadas Success',
+  props<{ items: LabelWorklistItem[] }>()
+);
+export const loadRechazadasNotModified = createAction('[Muestras API] Load Rechazadas Not Modified');
+export const loadRechazadasFailure = createAction(
+  '[Muestras API] Load Rechazadas Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
 // Worklist "Descartadas" (DISCARDED) — polleada, solo lectura (historial)
 export const loadDescartadas = createAction('[Muestras Page] Load Descartadas');
 export const loadDescartadasSuccess = createAction(
@@ -79,13 +91,21 @@ export const loadDescartadasFailure = createAction(
   props<{ error: HttpErrorResponse }>()
 );
 
-// Worklist Procesamiento (PROCESSING) — polleada, solo lectura (Arco 1)
-export const loadProcesamiento = createAction('[Muestras Page] Load Procesamiento');
+// Worklist Procesamiento (PROCESSING) y Derivados (DERIVED) — polleada, solo lectura (Arco 1).
+// El `status` viaja de punta a punta (action → effect → reducer) para rutear a slices separados
+// (procesamiento vs derivados) y que el tab y la lista nunca se desalineen.
+export const loadProcesamiento = createAction(
+  '[Muestras Page] Load Procesamiento',
+  props<{ status: 'PROCESSING' | 'DERIVED' }>(),
+);
 export const loadProcesamientoSuccess = createAction(
   '[Muestras API] Load Procesamiento Success',
-  props<{ items: LabelWorklistItem[] }>()
+  props<{ status: 'PROCESSING' | 'DERIVED'; items: LabelWorklistItem[] }>()
 );
-export const loadProcesamientoNotModified = createAction('[Muestras API] Load Procesamiento Not Modified');
+export const loadProcesamientoNotModified = createAction(
+  '[Muestras API] Load Procesamiento Not Modified',
+  props<{ status: 'PROCESSING' | 'DERIVED' }>()
+);
 export const loadProcesamientoFailure = createAction(
   '[Muestras API] Load Procesamiento Failure',
   props<{ error: HttpErrorResponse }>()
@@ -138,5 +158,19 @@ export const deriveTubesSuccess = createAction(
 );
 export const deriveTubesFailure = createAction(
   '[Muestras API] Derive Tubes Failure',
+  props<{ error: HttpErrorResponse }>()
+);
+
+// Derivación real a laboratorio externo (label → DERIVED con externalLabId)
+export const deriveToExternalLab = createAction(
+  '[Muestras Page] Derive To External Lab',
+  props<{ labelIds: number[]; externalLabId: number; protocolId?: number }>()
+);
+export const deriveToExternalLabSuccess = createAction(
+  '[Muestras API] Derive To External Lab Success',
+  props<{ labelIds: number[] }>()
+);
+export const deriveToExternalLabFailure = createAction(
+  '[Muestras API] Derive To External Lab Failure',
   props<{ error: HttpErrorResponse }>()
 );
