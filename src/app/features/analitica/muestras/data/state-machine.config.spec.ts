@@ -108,12 +108,13 @@ describe('rowActionsFor — menú kebab derivado de la config', () => {
     expect(derived!.label).toBe('Derivar');
   });
 
-  it('Descarte: sin menú kebab (ningún target declara rowMenu)', () => {
-    expect(rowActionsFor('descarte')).toEqual([]);
+  it('Descarte: incluye acción reinjectRequest "Pedir de nuevo" (KAN-239)', () => {
+    // La re-inyección agrega el kebab "Pedir de nuevo" a Descarte (para las labels REJECTED/LOST).
+    expect(rowActionsFor('descarte').map((a) => a.key)).toEqual(['reinjectRequest']);
   });
 
   it('cada acción del menú corresponde a un target resoluble por onRowAction (anti-desincronización)', () => {
-    for (const screen of ['recoleccion', 'procesamiento', 'traslado'] as const) {
+    for (const screen of ['recoleccion', 'procesamiento', 'traslado', 'descarte'] as const) {
       const targetKeys = new Set(SCREENS[screen].targets.map((t) => t.key));
       for (const a of rowActionsFor(screen)) {
         expect(targetKeys.has(a.key)).toBe(true);

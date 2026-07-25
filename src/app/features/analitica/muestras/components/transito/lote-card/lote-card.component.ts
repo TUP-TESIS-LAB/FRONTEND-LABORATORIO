@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 import type { Sample } from '../../../models/sample.model';
 import type { LoteDestPatch, SectionOption, TemporalLote } from '../../../models/transito.model';
 import { SampleRowComponent } from '../sample-row/sample-row.component';
-import type { RowActionKey } from '../../../models/transition.model';
+import type { RowAction, RowActionKey } from '../../../models/transition.model';
 
 @Component({
   selector: 'app-lote-card',
@@ -64,6 +64,7 @@ import type { RowActionKey } from '../../../models/transition.model';
         [selected]="isSelected(s.id)"
         [flashing]="isFlashing(s.id)"
         [leaving]="isLeaving(s.id)"
+        [rowActions]="rowActions"
         (toggle)="toggleSample.emit(s.id)"
         (rowAction)="rowAction.emit({ id: s.id, key: $event })"
       />
@@ -82,6 +83,8 @@ export class LoteCardComponent {
   @Input({ required: true }) isActive!: boolean;
   @Input({ required: true }) leavingIds!: ReadonlySet<string>;
   @Input({ required: true }) flashId!: string | null;
+  /** Acciones del kebab ya filtradas por módulo (bajan de la page hacia sample-row). */
+  @Input() rowActions: RowAction[] | null = null;
   /** Sucursales reales del operador (destinos posibles). */
   @Input() branchOptions: { id: number; name: string }[] = [];
   /** Workspaces reales de la sucursal actual (para despacho local). */

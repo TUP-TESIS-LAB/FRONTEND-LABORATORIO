@@ -5,6 +5,7 @@ import { Store } from '@ngrx/store';
 import { catchError, concatMap, exhaustMap, map, mergeMap, of, switchMap, withLatestFrom } from 'rxjs';
 
 import { NotificationService } from '@core/services/notification.service';
+import { humanizeBackendError } from '@shared/utils/error-messages';
 
 import { ExternalLabService } from '../../services/external-lab.service';
 import {
@@ -13,8 +14,12 @@ import {
 } from './derivaciones.actions';
 import { selectState } from './derivaciones.selectors';
 
-const errorMessage = (error: HttpErrorResponse): string =>
-  error.error?.message ?? 'No se pudieron cargar los laboratorios derivados.';
+// Regla #4: nunca mostrar el mensaje crudo del backend (podría filtrar SQL/FQCN). Pasa por
+// humanizeBackendError, con fallbacks distintos para lectura vs mutación.
+const readError = (error: HttpErrorResponse): string =>
+  humanizeBackendError(error, { fallback: 'No se pudieron cargar los laboratorios derivados.' });
+const mutateError = (error: HttpErrorResponse): string =>
+  humanizeBackendError(error, { fallback: 'No se pudo guardar el laboratorio externo.' });
 
 /** Store de la tab "Derivaciones" de Empresa (KAN-219) — mutación pesimista, sin polling. */
 @Injectable()
@@ -34,7 +39,7 @@ export class DerivacionesEffects {
       switchMap(([, state]) =>
         this.service.list(state).pipe(
           map((labs) => loadSuccess({ labs })),
-          catchError((error: HttpErrorResponse) => of(loadFailure({ error: errorMessage(error) }))),
+          catchError((error: HttpErrorResponse) => of(loadFailure({ error: readError(error) }))),
         ),
       ),
     ),
@@ -48,7 +53,7 @@ export class DerivacionesEffects {
       exhaustMap(({ req }) =>
         this.service.create(req).pipe(
           map(() => mutateSuccess()),
-          catchError((error: HttpErrorResponse) => of(mutateFailure({ error: errorMessage(error) }))),
+          catchError((error: HttpErrorResponse) => of(mutateFailure({ error: mutateError(error) }))),
         ),
       ),
     ),
@@ -60,7 +65,7 @@ export class DerivacionesEffects {
       concatMap(({ id, req }) =>
         this.service.update(id, req).pipe(
           map(() => mutateSuccess()),
-          catchError((error: HttpErrorResponse) => of(mutateFailure({ error: errorMessage(error) }))),
+          catchError((error: HttpErrorResponse) => of(mutateFailure({ error: mutateError(error) }))),
         ),
       ),
     ),
@@ -72,7 +77,7 @@ export class DerivacionesEffects {
       mergeMap(({ id, deleted }) =>
         this.service.toggle(id, deleted).pipe(
           map(() => mutateSuccess()),
-          catchError((error: HttpErrorResponse) => of(mutateFailure({ error: errorMessage(error) }))),
+          catchError((error: HttpErrorResponse) => of(mutateFailure({ error: mutateError(error) }))),
         ),
       ),
     ),

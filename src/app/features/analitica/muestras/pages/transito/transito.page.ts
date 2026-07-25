@@ -151,7 +151,19 @@ export class TransitoPage {
     // Catálogo de laboratorios externos para el modal de derivación (solo si el módulo está activo).
     if (this.registry.isActive(ModuleKey.Derivaciones)) {
       this.api.activeExternalLabs()
-        .pipe(takeUntilDestroyed())
+        .pipe(
+          catchError((err) => {
+            // Sin esto, un fallo dejaba el select vacío sin explicación (callejón sin salida al derivar).
+            this.messages.add({
+              severity: 'error',
+              summary: 'No se pudieron cargar los laboratorios externos',
+              detail: humanizeBackendError(err, { fallback: 'Reintentá en unos minutos.' }),
+              life: 4000,
+            });
+            return of([] as Array<{ id: number; name: string }>);
+          }),
+          takeUntilDestroyed(),
+        )
         .subscribe((labs) => this.externalLabs.set(labs));
     }
 

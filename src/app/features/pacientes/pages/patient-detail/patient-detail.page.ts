@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
@@ -199,6 +200,8 @@ import { Address, ContactType, Patient } from '../../models/patient.model';
                                   [text]="true"
                                   size="small"
                                   pTooltip="Reinyectar muestra"
+                                  [loading]="isReinjecting(a.analysisOrderId)"
+                                  [disabled]="isReinjecting(a.analysisOrderId)"
                                   (onClick)="confirmReinject(a)" />
                               }
                             </td>
@@ -273,6 +276,9 @@ export class PatientDetailPage implements OnInit, OnDestroy {
 
   // ── Historial de atenciones ──
   readonly history = signal<PatientHistoryItem[]>([]);
+  /** analysisOrderIds con una re-inyección en vuelo (deshabilita el botón para evitar doble disparo). */
+  readonly reinjecting = signal<ReadonlySet<number>>(new Set());
+  isReinjecting(orderId: number): boolean { return this.reinjecting().has(orderId); }
   readonly historyColumns: readonly TableColumn[] = [
     { field: 'attentionNumber', header: 'N° atención' },
     { field: 'fecha',           header: 'Fecha' },
@@ -340,12 +346,26 @@ export class PatientDetailPage implements OnInit, OnDestroy {
       acceptLabel: 'Reinyectar',
       rejectLabel: 'Cancelar',
       accept: () => {
+        // Guard de doble-disparo: mientras el POST está en vuelo, el botón queda deshabilitado.
+        if (this.isReinjecting(a.analysisOrderId)) return;
+        this.reinjecting.update(s => new Set(s).add(a.analysisOrderId));
+        const clearInFlight = () =>
+          this.reinjecting.update(s => { const n = new Set(s); n.delete(a.analysisOrderId); return n; });
         this.historyService.reinject(a.analysisOrderId).subscribe({
           next: () => {
+            clearInFlight();
             this.notifications.success('Muestra reinyectada. El paciente volvió a la cola de extracción.');
             this.loadHistory(patientId);
           },
-          error: () => this.notifications.error('No se pudo reinyectar la muestra. Intentá de nuevo en unos minutos.'),
+          error: (err: HttpErrorResponse) => {
+            clearInFlight();
+            // 409/422 = la orden ya no está pendiente (probable doble click): la re-inyección ya se hizo.
+            if (err.status === 409 || err.status === 422) {
+              this.notifications.error('Esta muestra ya fue reinyectada.');
+            } else {
+              this.notifications.error('No se pudo reinyectar la muestra. Intentá de nuevo en unos minutos.');
+            }
+          },
         });
       },
     });

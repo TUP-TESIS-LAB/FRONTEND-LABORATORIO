@@ -18,15 +18,18 @@ export interface RowMenuAction<K extends string = string> {
   standalone: true,
   imports: [MenuModule],
   template: `
-    <button
-      type="button"
-      class="row-kebab"
-      aria-label="Acciones de la fila"
-      (click)="$event.stopPropagation(); menu.toggle($event)"
-    >
-      <i class="pi pi-ellipsis-v"></i>
-    </button>
-    <p-menu #menu [popup]="true" [model]="items()" appendTo="body" />
+    <!-- Sin acciones no se pinta el botón: evita un kebab que abre un popup vacío. -->
+    @if (actions().length) {
+      <button
+        type="button"
+        class="row-kebab"
+        aria-label="Acciones de la fila"
+        (click)="$event.stopPropagation(); menu.toggle($event)"
+      >
+        <i class="pi pi-ellipsis-v"></i>
+      </button>
+      <p-menu #menu [popup]="true" [model]="items()" appendTo="body" />
+    }
   `,
   styles: [`
     .row-kebab {

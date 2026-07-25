@@ -117,7 +117,7 @@ describe('MockSamplesService', () => {
       color: 'purple' as const, icon: 'pi-building', desc: '', fields: ['lab' as const],
     };
 
-    const p = svc.transition([id], target, { lab: 'CIBIC — Alta complejidad' });
+    const p = svc.transition([id], target, { lab: 7 });
     await vi.advanceTimersByTimeAsync(360);
     await p;
 

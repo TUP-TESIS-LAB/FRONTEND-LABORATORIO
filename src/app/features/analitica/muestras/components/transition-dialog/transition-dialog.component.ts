@@ -357,7 +357,8 @@ export class TransitionDialogComponent {
     return fields.every(f => {
       if (f === 'sucursal') return !!d.sucursal;
       if (f === 'area' || f === 'areaFixed') return !!d.area;
-      if (f === 'lab') return !!d.lab;
+      // lab es un id numérico (KAN-226/227): != null en vez de !! para no descartar el id 0.
+      if (f === 'lab') return d.lab != null;
       return true;
     });
   });

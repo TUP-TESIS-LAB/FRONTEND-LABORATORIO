@@ -5,7 +5,7 @@
 // sample-row.component.scss are kept as separate files for reference by other tasks.
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import type { Sample } from '../../../models/sample.model';
-import type { RowActionKey } from '../../../models/transition.model';
+import type { RowAction, RowActionKey } from '../../../models/transition.model';
 import { rowActionsFor } from '../../../data/state-machine.config';
 import { DateEsPipe } from '@shared/pipes/date-es.pipe';
 import { RowActionsMenuComponent } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
@@ -50,12 +50,19 @@ export class SampleRowComponent {
   @Input({ required: true }) selected!: boolean;
   @Input({ required: true }) flashing!: boolean;
   @Input({ required: true }) leaving!: boolean;
+  /**
+   * Acciones del kebab, provistas por la page (que ya filtró por módulo activo — p.ej. oculta
+   * "Derivar" si Derivaciones está apagado). Si no se pasan, cae a la config completa de Traslado.
+   */
+  @Input() rowActions: RowAction[] | null = null;
 
   readonly toggle = output<void>();
   readonly rowAction = output<RowActionKey>();
 
-  /** Menú por-fila de Traslado, derivado de la config. */
-  readonly rowMenuActions = rowActionsFor('traslado');
+  /** Menú por-fila: el que baja de la page (filtrado por módulo) o, en su defecto, la config de Traslado. */
+  get rowMenuActions(): RowAction[] {
+    return this.rowActions ?? rowActionsFor('traslado');
+  }
 
   branchShort(): string {
     return (this.sample?.branch || '').split(' — ')[0];

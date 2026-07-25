@@ -83,18 +83,19 @@ describe('TransitionDialogComponent', () => {
     fixture.componentRef.setInput('currentBranch', 'CENTRAL — Sede Central');
     fixture.componentRef.setInput('branches', []);
     fixture.componentRef.setInput('areas', []);
-    fixture.componentRef.setInput('labs', ['CIBIC — Alta complejidad']);
+    fixture.componentRef.setInput('labs', [{ id: 7, name: 'CIBIC — Alta complejidad' }]);
     fixture.detectChanges();
 
-    let payload: { dest: { lab?: string }; note: string } | null = null;
+    // TransitionDest.lab es el ID numérico del laboratorio externo (KAN-226/227), no su nombre.
+    let payload: { dest: { lab?: number }; note: string } | null = null;
     component.confirm.subscribe(p => { payload = p; });
 
-    component.dest.update(d => ({ ...d, lab: 'CIBIC — Alta complejidad' }));
+    component.dest.update(d => ({ ...d, lab: 7 }));
     component.note.set('observación de prueba');
     component.onConfirm();
 
     expect(payload).not.toBeNull();
-    expect(payload!.dest.lab).toBe('CIBIC — Alta complejidad');
+    expect(payload!.dest.lab).toBe(7);
     expect(payload!.note).toBe('observación de prueba');
   });
 });

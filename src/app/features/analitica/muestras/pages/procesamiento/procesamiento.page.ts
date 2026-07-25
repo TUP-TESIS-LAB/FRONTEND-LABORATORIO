@@ -17,8 +17,7 @@ import type { RowActionKey } from '../../models/transition.model';
 import { TransitionDialogComponent } from '../../components/transition-dialog/transition-dialog.component';
 import { RowActionsMenuComponent } from '@shared/ui/components/row-actions-menu/row-actions-menu.component';
 import { initMuestras, loadProcesamiento } from '../../store/muestras.actions';
-import { selectProcesamientoItems, selectDerivadosItems, selectMuestrasBranchName, selectMuestrasError, selectMuestrasBranchId } from '../../store/muestras.selectors';
-import { MuestrasApiService } from '../../services/muestras-api.service';
+import { selectProcesamientoItems, selectDerivadosItems, selectMuestrasBranchName, selectMuestrasError } from '../../store/muestras.selectors';
 import { loadTemplates } from '../../store/worksheet-templates/worksheet-templates.actions';
 import { selectTemplates, selectTemplatesError } from '../../store/worksheet-templates/worksheet-templates.selectors';
 import { PlanillasModalComponent } from '../../components/planillas/planillas-modal.component';
@@ -57,12 +56,10 @@ export class ProcesamientoPage implements OnInit {
   private readonly messages = inject(MessageService);
   private readonly progresoSvc = inject(ProcesamientoProgresoService);
   private readonly resultados = inject(ResultadosApiService);
-  private readonly muestrasApi = inject(MuestrasApiService);
 
   // Slices separados por status: el tab y la lista leen el mismo criterio (filtro), imposible desalinear.
   private readonly procesamientoItems = this.store.selectSignal(selectProcesamientoItems);
   private readonly derivadosItems = this.store.selectSignal(selectDerivadosItems);
-  private readonly branchId = this.store.selectSignal(selectMuestrasBranchId);
   private readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
   private readonly templatesError = this.store.selectSignal(selectTemplatesError);
@@ -160,13 +157,13 @@ export class ProcesamientoPage implements OnInit {
   setFiltro(id: 'todos' | 'derivados'): void {
     if (this.filtro() === id) return;
     this.filtro.set(id);
-    const status = this.currentStatus();
-    // PROCESSING y DERIVED comparten el slice 'procesamiento' del store pero cachean ETags por
-    // separado. Sin invalidar, volver a un tab ya visitado daría 304 y el slice quedaría con los
-    // datos del otro tab. Invalidamos el ETag del status destino → la recarga trae 200 con datos.
-    const branchId = this.branchId();
-    if (branchId != null) this.muestrasApi.invalidateWorklistEtag(status, branchId);
-    this.store.dispatch(loadProcesamiento({ status }));
+    // La selección de un tab no significa nada en el otro: limpiarla evita que el contador
+    // "N seleccionadas" y los botones de lote queden sobre tubos que ya no están en la grilla.
+    this.clearSelection();
+    // PROCESSING y DERIVED tienen slices separados en el store (muestras.state: procesamiento /
+    // derivados) y los ETags se cachean por urlWithParams (status va en los params), así que un 304
+    // de un tab nunca pisa al otro. No hace falta invalidar el ETag al cambiar de tab.
+    this.store.dispatch(loadProcesamiento({ status: this.currentStatus() }));
   }
 
   private currentStatus(): 'PROCESSING' | 'DERIVED' {

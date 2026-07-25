@@ -180,6 +180,22 @@ export class WorklistPage {
   constructor() {
     const screenKey = this.route.snapshot.data['screenKey'] as ScreenKey;
 
+    // Toast de éxito NO optimista, común a TODAS las pantallas backend (recolección, descarte, …):
+    // se muestra cuando el backend confirma la transición. Antes vivía dentro del bloque de
+    // recolección, así que "Pedir de nuevo" en Descarte no daba ningún feedback (KAN-239, review).
+    this.actions.pipe(ofType(transitionLabelsSuccess), takeUntilDestroyed()).subscribe(() => {
+      if (this.pendingToast) {
+        const { count, toLabel, detail } = this.pendingToast;
+        this.pendingToast = null;
+        this.messages.add({
+          severity: 'success',
+          summary: `${count} tubo(s) → ${toLabel}`,
+          detail,
+          life: 3800,
+        });
+      }
+    });
+
     if (screenKey === 'recoleccion') {
       this.store.dispatch(initMuestras());
       const handle = this.polling.startPolling({
@@ -211,19 +227,6 @@ export class WorklistPage {
         }
       });
 
-      // Toast de éxito NO optimista: se muestra solo cuando el backend confirma.
-      this.actions.pipe(ofType(transitionLabelsSuccess), takeUntilDestroyed()).subscribe(() => {
-        if (this.pendingToast) {
-          const { count, toLabel, detail } = this.pendingToast;
-          this.pendingToast = null;
-          this.messages.add({
-            severity: 'success',
-            summary: `${count} tubo(s) → ${toLabel}`,
-            detail,
-            life: 3800,
-          });
-        }
-      });
     }
 
     if (screenKey === 'descarte') {
@@ -416,6 +419,9 @@ export class WorklistPage {
     if (!t) return;
     const targetSamples = this.dialogSamples();
     const ids = Array.from(this.selectedIds());
+    // ¿La acción salió del kebab por-fila o de la barra de selección masiva? Se captura ANTES de
+    // resetear rowMenuSamples: si vino del kebab, la selección masiva del operador no debe tocarse.
+    const fromRow = this.rowMenuSamples().length > 0;
     this.activeTransition.set(null);
     this.rowMenuSamples.set([]);
 
@@ -430,10 +436,10 @@ export class WorklistPage {
         transitionKey: t.key,
         reason: payload.note || undefined,
       }));
-      this.clearSelection();
+      if (!fromRow) this.clearSelection();
     } else {
       await this.samples.transition(ids, t, payload.dest);
-      this.clearSelection();
+      if (!fromRow) this.clearSelection();
       const detail = this.formatDestDetail(t, payload.dest);
       this.messages.add({
         severity: 'success',
