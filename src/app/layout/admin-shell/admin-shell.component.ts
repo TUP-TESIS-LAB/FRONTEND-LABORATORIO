@@ -6,13 +6,12 @@ import { SidebarComponent } from '@layout/sidebar/sidebar.component';
 import { ChangePasswordDrawerComponent } from '@features/profile/components/change-password-drawer/change-password-drawer.component';
 import { LogoutConfirmComponent } from '@features/profile/components/logout-confirm/logout-confirm.component';
 import { NotificationHostComponent } from '@core/components/notification-host/notification-host.component';
-import { AsistenteAyudaComponent } from '@shared/asistente-ayuda/asistente-ayuda.component';
 
 @Component({
   selector: 'ui-admin-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent, ChangePasswordDrawerComponent, LogoutConfirmComponent, NotificationHostComponent, AsistenteAyudaComponent],
+  imports: [RouterOutlet, DrawerModule, TopbarComponent, SidebarComponent, ChangePasswordDrawerComponent, LogoutConfirmComponent, NotificationHostComponent],
   template: `
     <div class="ui-admin-shell">
       <ui-sidebar class="ui-admin-shell__sidebar"
@@ -37,7 +36,6 @@ import { AsistenteAyudaComponent } from '@shared/asistente-ayuda/asistente-ayuda
       <ui-change-password-drawer />
       <ui-logout-confirm />
       <app-notification-host />
-      <app-asistente-ayuda />
     </div>
   `,
   styles: [`
