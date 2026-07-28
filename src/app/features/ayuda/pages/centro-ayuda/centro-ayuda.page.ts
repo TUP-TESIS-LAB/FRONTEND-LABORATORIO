@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
-import { TabsModule } from 'primeng/tabs';
 import { SkeletonModule } from 'primeng/skeleton';
 
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
@@ -39,7 +38,6 @@ interface CapituloFiltrado extends Omit<ManualChapter, 'sections'> {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    TabsModule,
     SkeletonModule,
     PageHeaderComponent,
     EmptyStateComponent,

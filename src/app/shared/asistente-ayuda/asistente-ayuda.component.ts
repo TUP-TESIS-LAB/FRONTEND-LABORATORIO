@@ -127,10 +127,14 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
     :host(.aa-embebido) {
       position: static;
       display: block;
+      height: 100%;
     }
+    /* Llena la columna cuando el contenedor le da alto (desktop, panel fijo al
+       costado del manual); si no, cae al min-height y no colapsa. */
     :host(.aa-embebido) .aa-panel {
       width: 100%;
-      height: min(560px, 62dvh);
+      height: 100%;
+      min-height: min(520px, 60dvh);
       box-shadow: none;
       animation: none;
       transform-origin: initial;

@@ -3,152 +3,152 @@
     heading="Centro de ayuda"
     subtitle="El manual de uso del sistema y el asistente, en un solo lugar." />
 
-  <p-tabs value="manual">
-    <p-tablist>
-      <p-tab value="manual">Manual</p-tab>
-      <p-tab value="asistente">Asistente</p-tab>
-    </p-tablist>
+  <div class="ayuda__layout">
 
-    <p-tabpanels>
-      <!-- ── Manual ─────────────────────────────────────────────────────── -->
-      <p-tabpanel value="manual">
+    <!-- ── Manual ───────────────────────────────────────────────────────── -->
+    <div class="ayuda__manual">
 
-        <div class="ayuda__buscador">
-          <i class="pi pi-search" aria-hidden="true"></i>
-          <input
-            type="search"
-            class="ayuda__buscador-input"
-            placeholder="Buscar en el manual (por ejemplo: ayuno, caja, firmar)"
-            aria-label="Buscar en el manual"
-            [ngModel]="busqueda()"
-            (ngModelChange)="busqueda.set($event)" />
-          @if (busqueda()) {
+      <div class="ayuda__buscador">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          type="search"
+          class="ayuda__buscador-input"
+          placeholder="Buscar en el manual (por ejemplo: ayuno, caja, firmar)"
+          aria-label="Buscar en el manual"
+          [ngModel]="busqueda()"
+          (ngModelChange)="busqueda.set($event)" />
+        @if (busqueda()) {
+          <button
+            type="button"
+            class="ayuda__buscador-limpiar"
+            aria-label="Limpiar búsqueda"
+            (click)="limpiarBusqueda()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+
+      @if (loading()) {
+        <p-skeleton height="3rem" styleClass="mb-3" />
+        <p-skeleton height="3rem" styleClass="mb-3" />
+        <p-skeleton height="3rem" />
+      } @else if (error()) {
+        <ui-empty-state
+          icon="pi-exclamation-triangle"
+          heading="No se pudo cargar el manual"
+          description="Revisá la conexión e intentá de nuevo en unos minutos." />
+      } @else if (!hayResultados()) {
+        @if (busqueda()) {
+          <ui-empty-state
+            icon="pi-search"
+            heading="Sin resultados"
+            description="No encontramos ningún tema con ese texto. Probá con otras palabras, o preguntale al asistente." />
+        } @else {
+          <ui-empty-state
+            icon="pi-book"
+            heading="Manual no disponible"
+            description="Todavía no hay contenido de ayuda para los módulos activos del laboratorio." />
+        }
+      } @else {
+
+        @if (busqueda()) {
+          <p class="ayuda__contador">
+            {{ totalTemas() }} {{ totalTemas() === 1 ? 'tema encontrado' : 'temas encontrados' }}
+          </p>
+        }
+
+        @for (chapter of resultados(); track chapter.id) {
+          <section class="ayuda__capitulo">
             <button
               type="button"
-              class="ayuda__buscador-limpiar"
-              aria-label="Limpiar búsqueda"
-              (click)="limpiarBusqueda()">
-              <i class="pi pi-times" aria-hidden="true"></i>
+              class="ayuda__capitulo-titulo"
+              [attr.aria-expanded]="estaAbierto(chapter.id)"
+              (click)="alternarCapitulo(chapter.id)">
+              <i
+                class="pi"
+                [class.pi-chevron-down]="estaAbierto(chapter.id)"
+                [class.pi-chevron-right]="!estaAbierto(chapter.id)"
+                aria-hidden="true"></i>
+              <span>{{ chapter.title }}</span>
             </button>
-          }
-        </div>
 
-        @if (loading()) {
-          <p-skeleton height="3rem" styleClass="mb-3" />
-          <p-skeleton height="3rem" styleClass="mb-3" />
-          <p-skeleton height="3rem" />
-        } @else if (error()) {
-          <ui-empty-state
-            icon="pi-exclamation-triangle"
-            heading="No se pudo cargar el manual"
-            description="Revisá la conexión e intentá de nuevo en unos minutos." />
-        } @else if (!hayResultados()) {
-          @if (busqueda()) {
-            <ui-empty-state
-              icon="pi-search"
-              heading="Sin resultados"
-              description="No encontramos ningún tema con ese texto. Probá con otras palabras, o preguntale al asistente." />
-          } @else {
-            <ui-empty-state
-              icon="pi-book"
-              heading="Manual no disponible"
-              description="Todavía no hay contenido de ayuda para los módulos activos del laboratorio." />
-          }
-        } @else {
+            @if (estaAbierto(chapter.id)) {
+              @for (section of chapter.sections; track section.id) {
+                <div class="ayuda__seccion">
+                  <h2 class="ayuda__seccion-titulo">{{ section.title }}</h2>
 
-          @if (busqueda()) {
-            <p class="ayuda__contador">
-              {{ totalTemas() }} {{ totalTemas() === 1 ? 'tema encontrado' : 'temas encontrados' }}
-            </p>
-          }
+                  @for (topic of section.topics; track topic.id; let ultimoTema = $last) {
+                    <article class="ayuda__tema" [id]="topic.id">
+                      <h3 class="ayuda__tema-titulo">{{ topic.title }}</h3>
 
-          @for (chapter of resultados(); track chapter.id) {
-            <section class="ayuda__capitulo">
-              <button
-                type="button"
-                class="ayuda__capitulo-titulo"
-                [attr.aria-expanded]="estaAbierto(chapter.id)"
-                (click)="alternarCapitulo(chapter.id)">
-                <i
-                  class="pi"
-                  [class.pi-chevron-down]="estaAbierto(chapter.id)"
-                  [class.pi-chevron-right]="!estaAbierto(chapter.id)"
-                  aria-hidden="true"></i>
-                <span>{{ chapter.title }}</span>
-              </button>
-
-              @if (estaAbierto(chapter.id)) {
-                @for (section of chapter.sections; track section.id) {
-                  <div class="ayuda__seccion">
-                    <h2 class="ayuda__seccion-titulo">{{ section.title }}</h2>
-
-                    @for (topic of section.topics; track topic.id) {
-                      <article class="ayuda__tema" [id]="topic.id">
-                        <h3 class="ayuda__tema-titulo">{{ topic.title }}</h3>
-
-                        @for (block of topic.blocks; track $index) {
-                          @switch (block.type) {
-                            @case ('paragraph') {
-                              <p class="ayuda__parrafo">
-                                @for (tramo of block.text | negrita; track $index) {
-                                  @if (tramo.fuerte) {
-                                    <strong>{{ tramo.texto }}</strong>
-                                  } @else {
-                                    {{ tramo.texto }}
+                      @for (block of topic.blocks; track $index) {
+                        @switch (block.type) {
+                          @case ('paragraph') {
+                            <p class="ayuda__parrafo">
+                              @for (tramo of block.text | negrita; track $index) {
+                                @if (tramo.fuerte) {
+                                  <strong>{{ tramo.texto }}</strong>
+                                } @else {
+                                  {{ tramo.texto }}
+                                }
+                              }
+                            </p>
+                          }
+                          @case ('steps') {
+                            <ol class="ayuda__pasos">
+                              @for (item of block.items; track $index) {
+                                <li>
+                                  @for (tramo of item | negrita; track $index) {
+                                    @if (tramo.fuerte) {
+                                      <strong>{{ tramo.texto }}</strong>
+                                    } @else {
+                                      {{ tramo.texto }}
+                                    }
                                   }
-                                }
-                              </p>
-                            }
-                            @case ('steps') {
-                              <ol class="ayuda__pasos">
-                                @for (item of block.items; track $index) {
-                                  <li>
-                                    @for (tramo of item | negrita; track $index) {
-                                      @if (tramo.fuerte) {
-                                        <strong>{{ tramo.texto }}</strong>
-                                      } @else {
-                                        {{ tramo.texto }}
-                                      }
+                                </li>
+                              }
+                            </ol>
+                          }
+                          @case ('list') {
+                            <ul class="ayuda__lista">
+                              @for (item of block.items; track $index) {
+                                <li>
+                                  @for (tramo of item | negrita; track $index) {
+                                    @if (tramo.fuerte) {
+                                      <strong>{{ tramo.texto }}</strong>
+                                    } @else {
+                                      {{ tramo.texto }}
                                     }
-                                  </li>
-                                }
-                              </ol>
-                            }
-                            @case ('list') {
-                              <ul class="ayuda__lista">
-                                @for (item of block.items; track $index) {
-                                  <li>
-                                    @for (tramo of item | negrita; track $index) {
-                                      @if (tramo.fuerte) {
-                                        <strong>{{ tramo.texto }}</strong>
-                                      } @else {
-                                        {{ tramo.texto }}
-                                      }
-                                    }
-                                  </li>
-                                }
-                              </ul>
-                            }
+                                  }
+                                </li>
+                              }
+                            </ul>
                           }
                         }
-                      </article>
-                    }
-                  </div>
-                }
-              }
-            </section>
-          }
-        }
-      </p-tabpanel>
+                      }
+                    </article>
 
-      <!-- ── Asistente ──────────────────────────────────────────────────── -->
-      <p-tabpanel value="asistente">
-        <p class="ayuda__asistente-intro">
-          Preguntale al asistente con tus palabras. Responde solo sobre los módulos
-          que tiene activos el laboratorio, usando este mismo manual.
-        </p>
-        <app-asistente-ayuda [embebido]="true" />
-      </p-tabpanel>
-    </p-tabpanels>
-  </p-tabs>
+                    <!-- Separador entre temas: sin esto los flujos se leen de corrido. -->
+                    @if (!ultimoTema) {
+                      <hr class="ayuda__separador" />
+                    }
+                  }
+                </div>
+              }
+            }
+          </section>
+        }
+      }
+    </div>
+
+    <!-- ── Asistente ────────────────────────────────────────────────────── -->
+    <aside class="ayuda__asistente" aria-label="Asistente de ayuda">
+      <p class="ayuda__asistente-intro">
+        ¿No encontrás algo? Preguntale al asistente con tus palabras. Responde
+        usando este mismo manual, solo sobre los módulos activos del laboratorio.
+      </p>
+      <app-asistente-ayuda [embebido]="true" />
+    </aside>
+
+  </div>
 </div>
