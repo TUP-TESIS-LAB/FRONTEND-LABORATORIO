@@ -119,6 +119,14 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/reporteria/reporteria.routes').then((m) => m.REPORTERIA_ROUTES),
       },
+      {
+        // Sin gating: todo el staff tiene que poder leer el manual. El backend
+        // ya recorta los capítulos a los módulos activos del laboratorio.
+        path: 'ayuda',
+        data: { breadcrumb: 'Ayuda' },
+        loadChildren: () =>
+          import('./features/ayuda/ayuda.routes').then((m) => m.AYUDA_ROUTES),
+      },
 
       { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
