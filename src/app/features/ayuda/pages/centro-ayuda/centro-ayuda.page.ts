@@ -7,8 +7,8 @@ import { AccessRegistry } from '@core/access/access-registry';
 import { AccessSection } from '@core/access/access.model';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
+import { TextoManualComponent } from '../../components/texto-manual.component';
 import { ManualChapter, ManualSection, ManualTopic } from '../../models/manual.model';
-import { NegritaPipe } from '../../pipes/negrita.pipe';
 import { contarOcultas, filtrarPorAcceso } from '../../services/filtrar-por-acceso';
 import { loadManual } from '../../store/manual.actions';
 import {
@@ -47,7 +47,7 @@ interface CapituloFiltrado extends Omit<ManualChapter, 'sections'> {
     SkeletonModule,
     PageHeaderComponent,
     EmptyStateComponent,
-    NegritaPipe,
+    TextoManualComponent,
   ],
   templateUrl: './centro-ayuda.page.html',
   styleUrl: './centro-ayuda.page.scss',

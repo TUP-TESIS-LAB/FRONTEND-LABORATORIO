@@ -94,43 +94,19 @@
                     @for (block of topic.blocks; track $index) {
                       @switch (block.type) {
                         @case ('paragraph') {
-                          <p class="ayuda__parrafo">
-                            @for (tramo of block.text | negrita; track $index) {
-                              @if (tramo.fuerte) {
-                                <strong>{{ tramo.texto }}</strong>
-                              } @else {
-                                {{ tramo.texto }}
-                              }
-                            }
-                          </p>
+                          <p class="ayuda__parrafo"><lab-texto-manual [texto]="block.text" /></p>
                         }
                         @case ('steps') {
                           <ol class="ayuda__pasos">
                             @for (item of block.items; track $index) {
-                              <li>
-                                @for (tramo of item | negrita; track $index) {
-                                  @if (tramo.fuerte) {
-                                    <strong>{{ tramo.texto }}</strong>
-                                  } @else {
-                                    {{ tramo.texto }}
-                                  }
-                                }
-                              </li>
+                              <li><lab-texto-manual [texto]="item" /></li>
                             }
                           </ol>
                         }
                         @case ('list') {
                           <ul class="ayuda__lista">
                             @for (item of block.items; track $index) {
-                              <li>
-                                @for (tramo of item | negrita; track $index) {
-                                  @if (tramo.fuerte) {
-                                    <strong>{{ tramo.texto }}</strong>
-                                  } @else {
-                                    {{ tramo.texto }}
-                                  }
-                                }
-                              </li>
+                              <li><lab-texto-manual [texto]="item" /></li>
                             }
                           </ul>
                         }
