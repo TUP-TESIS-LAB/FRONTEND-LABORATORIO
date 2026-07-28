@@ -38,6 +38,9 @@
 .ayuda__asistente-intro {
   display: flex;
   align-items: center;
+  // Centrado sobre el ancho del panel del chat, que es el de esta columna.
+  justify-content: center;
+  text-align: center;
   min-height: 43px;
   margin: 0 0 var(--space-5, 1.25rem);
   color: var(--ds-text-muted, #667085);
