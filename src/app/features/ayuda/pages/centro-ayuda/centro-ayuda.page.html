@@ -28,6 +28,19 @@
         }
       </div>
 
+      @if (!loading() && !error() && seccionesOcultas() > 0) {
+        <label class="ayuda__ver-todo">
+          <input
+            type="checkbox"
+            [checked]="verTodo()"
+            (change)="verTodo.set(!verTodo())" />
+          <span>
+            Ver el manual completo
+            <em>({{ seccionesOcultas() }} {{ seccionesOcultas() === 1 ? 'sección' : 'secciones' }} de otras áreas)</em>
+          </span>
+        </label>
+      }
+
       @if (loading()) {
         <p-skeleton height="3rem" styleClass="mb-3" />
         <p-skeleton height="3rem" styleClass="mb-3" />

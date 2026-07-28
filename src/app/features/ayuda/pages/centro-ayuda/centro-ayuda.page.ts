@@ -3,11 +3,14 @@ import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { SkeletonModule } from 'primeng/skeleton';
 
+import { AccessRegistry } from '@core/access/access-registry';
+import { AccessSection } from '@core/access/access.model';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { AsistenteAyudaComponent } from '@shared/asistente-ayuda/asistente-ayuda.component';
 import { ManualChapter, ManualSection, ManualTopic } from '../../models/manual.model';
 import { NegritaPipe } from '../../pipes/negrita.pipe';
+import { contarOcultas, filtrarPorAcceso } from '../../services/filtrar-por-acceso';
 import { loadManual } from '../../store/manual.actions';
 import {
   selectManualChapters,
@@ -49,6 +52,7 @@ interface CapituloFiltrado extends Omit<ManualChapter, 'sections'> {
 })
 export class CentroAyudaPage {
   private readonly store = inject(Store);
+  private readonly access = inject(AccessRegistry);
 
   readonly loading  = this.store.selectSignal(selectManualLoading);
   readonly error    = this.store.selectSignal(selectManualError);
@@ -57,15 +61,34 @@ export class CentroAyudaPage {
   /** Texto del buscador. Con ~90 temas, encontrar sin buscar es inviable. */
   readonly busqueda = signal('');
 
+  /**
+   * Escape del recorte por rol. Por defecto el manual muestra lo que la persona
+   * puede hacer, pero un manual también sirve para aprender o para entender el
+   * trabajo de al lado, así que se puede abrir entero.
+   */
+  readonly verTodo = signal(false);
+
   /** Capítulo abierto en el índice. Vacío = ninguno desplegado todavía. */
   readonly capituloAbierto = signal<string | null>(null);
 
+  /**
+   * Manual acotado a lo que la persona puede hacer. Una sección sin códigos es
+   * transversal; con varios, alcanza con tener uno — misma regla que el sidebar.
+   */
+  private readonly deMiRol = computed(() =>
+    filtrarPorAcceso(this.chapters(), (codigo) => this.access.has(codigo as AccessSection)),
+  );
+
+  /** Cuánto contenido queda afuera del recorte por rol (0 = no hay nada que mostrar de más). */
+  readonly seccionesOcultas = computed(() => contarOcultas(this.chapters(), this.deMiRol()));
+
   readonly resultados = computed<CapituloFiltrado[]>(() => {
+    const base = this.verTodo() ? this.chapters() : this.deMiRol();
     const termino = this.busqueda().trim().toLowerCase();
     if (!termino) {
-      return this.chapters();
+      return base;
     }
-    return this.chapters()
+    return base
       .map((chapter) => ({
         ...chapter,
         sections: chapter.sections

@@ -28,6 +28,12 @@ export interface ManualTopic {
 export interface ManualSection {
   id: string;
   title: string;
+  /**
+   * Códigos de sección de acceso que habilitan este contenido. Vacío =
+   * transversal, lo ve todo el staff. Con varios, alcanza con tener uno
+   * (misma semántica que el sidebar).
+   */
+  accessSections: string[];
   topics: ManualTopic[];
 }
 
