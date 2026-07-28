@@ -4,7 +4,6 @@ import {
   ElementRef,
   effect,
   inject,
-  input,
   signal,
   viewChild,
 } from '@angular/core';
@@ -19,14 +18,20 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
  * la derecha. El estado de apertura y la conversación viven en
  * {@link AsistenteAyudaService}; este componente es solo UI.
  *
- * Se monta una vez en el shell autenticado (`admin-shell`).
+ * Se monta una vez en el shell autenticado (`admin-shell`), así está disponible
+ * en cualquier pantalla sin navegar.
+ *
+ * Decisión de producto: el asistente y el manual de uso (`/ayuda`) son piezas
+ * **separadas**. El asistente flota sobre la app para preguntar sin perder el
+ * contexto de lo que estabas haciendo; el manual es una pantalla que se lee. Se
+ * probó unificarlos en una sola pantalla y se volvió atrás: obligaba a
+ * abandonar la pantalla en la que estabas para poder preguntar.
  */
 @Component({
   selector: 'app-asistente-ayuda',
   standalone: true,
   imports: [FormsModule, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.aa-embebido]': 'embebido()' },
   template: `
     <!-- Mascota: tubo de ensayo con carita + signo de pregunta -->
     <ng-template #mascot>
@@ -43,23 +48,20 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
       </svg>
     </ng-template>
 
-    @if (embebido() || open() || closing()) {
-      <section class="aa-panel" [class.aa-panel--closing]="closing() && !embebido()"
-               [attr.role]="embebido() ? null : 'dialog'"
-               [attr.aria-label]="embebido() ? null : 'Asistente de ayuda'">
+    @if (open() || closing()) {
+      <section class="aa-panel" [class.aa-panel--closing]="closing()"
+               role="dialog" aria-label="Asistente de ayuda">
         <header class="aa-panel__head">
           <span class="aa-panel__brand">
             <ng-container [ngTemplateOutlet]="mascot" />
             <span class="aa-panel__title">Asistente de ayuda</span>
           </span>
-          @if (!embebido()) {
-            <button type="button" class="aa-close" (click)="close()" aria-label="Cerrar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" aria-hidden="true">
-                <path d="M6 6 L18 18 M18 6 L6 18" />
-              </svg>
-            </button>
-          }
+          <button type="button" class="aa-close" (click)="close()" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" aria-hidden="true">
+              <path d="M6 6 L18 18 M18 6 L6 18" />
+            </svg>
+          </button>
         </header>
 
         <div class="aa-panel__body" #scrollBox>
@@ -120,24 +122,6 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
       right: var(--space-6, 1.5rem);
       bottom: var(--space-6, 1.5rem);
       z-index: 1200;
-    }
-
-    /* Embebido en el centro de ayuda: deja de ser un panel flotante y ocupa
-       el ancho de su contenedor, sin sombra ni anclaje a la esquina. */
-    :host(.aa-embebido) {
-      position: static;
-      display: block;
-      height: 100%;
-    }
-    /* Llena la columna cuando el contenedor le da alto (desktop, panel fijo al
-       costado del manual); si no, cae al min-height y no colapsa. */
-    :host(.aa-embebido) .aa-panel {
-      width: 100%;
-      height: 100%;
-      min-height: min(520px, 60dvh);
-      box-shadow: none;
-      animation: none;
-      transform-origin: initial;
     }
 
     .aa-mascot { width: 100%; height: 100%; display: block; }
@@ -310,13 +294,6 @@ import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 })
 export class AsistenteAyudaComponent {
   private readonly service = inject(AsistenteAyudaService);
-
-  /**
-   * Modo embebido: el chat se dibuja dentro de una pantalla (la pestaña
-   * "Asistente" del centro de ayuda) en vez de flotar sobre la app. Siempre
-   * visible, sin botón de cerrar y sin animación de entrada.
-   */
-  readonly embebido = input(false);
 
   /** Apertura compartida con el botón del topbar (vive en el servicio). */
   readonly open = this.service.open;

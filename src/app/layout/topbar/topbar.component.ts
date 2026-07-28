@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, output, signal } 
 import { Router } from '@angular/router';
 import { Popover } from 'primeng/popover';
 import { AutoCompleteModule, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
+import { AsistenteAyudaService } from '@core/services/asistente-ayuda.service';
 import { TokenService } from '@core/auth/token.service';
 import { NavAccessService, NavSearchEntry } from '@core/nav/nav-access.service';
 import { UserSessionService } from '@features/profile/services/user-session.service';
@@ -60,9 +61,11 @@ import { BreadcrumbComponent } from '@shared/ui/components/breadcrumb/breadcrumb
         <button
           type="button"
           class="ui-topbar__icon-btn"
-          aria-label="Centro de ayuda"
-          (click)="abrirCentroDeAyuda()">
-          <i class="pi pi-question-circle"></i>
+          [class.ui-topbar__icon-btn--active]="assistant.open()"
+          aria-label="Asistente de ayuda"
+          [attr.aria-pressed]="assistant.open()"
+          (click)="assistant.toggle()">
+          <i class="pi pi-comments"></i>
         </button>
         <button
           type="button"
@@ -223,14 +226,7 @@ export class TopbarComponent {
   private readonly tokens = inject(TokenService);
   private readonly navAccess = inject(NavAccessService);
   private readonly router = inject(Router);
-
-  /**
-   * El chat dejó de ser un panel flotante: vive como pestaña del centro de
-   * ayuda, junto al manual de uso. El botón del topbar lleva ahí.
-   */
-  protected abrirCentroDeAyuda(): void {
-    void this.router.navigateByUrl('/ayuda');
-  }
+  protected readonly assistant = inject(AsistenteAyudaService);
 
   protected readonly userInitials = computed(() => {
     const u = this.userSession.currentUser();

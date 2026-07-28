@@ -109,6 +109,9 @@ export const NAV_SECTIONS: NavSection[] = [
       // reporteria.routes.ts REPORTERIA_ROLES); el gate fino por reporte lo hace
       // la propia página de índice al listar solo los reportes del rol del usuario.
       { kind: 'link', label: 'Reportes', icon: 'pi pi-chart-line', path: '/reporteria', roleKey: ['ADMINISTRADOR', 'RESPONSABLE_SECRETARIA'] },
+      // Sin sectionKey ni roleKey: todo el staff tiene que poder leer el manual.
+      // El recorte por secciones lo hace la propia pantalla sobre su contenido.
+      { kind: 'link', label: 'Manual de uso', icon: 'pi pi-book', path: '/ayuda' },
     ],
   },
 ];
