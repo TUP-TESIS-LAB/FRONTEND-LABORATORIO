@@ -1,9 +1,9 @@
 import {
-  ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges,
-  inject, signal,
+  ChangeDetectionStrategy, Component, computed, effect, inject, input, signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { DrawerModule } from 'primeng/drawer';
+import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -17,11 +17,14 @@ import { MessageService } from 'primeng/api';
 import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
+import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import {
   DeterminationCatalogItem, DeterminationOverride, NbuConfigApiService,
   PreparationTypeOption, QualitativeCategory, ReferenceValueItem, TenantAnalysisRow,
 } from '../../../services/nbu-config-api.service';
 import { CatalogRow } from '../../../models/nomenclador.model';
+import { loadConfigResumen, loadNomenclador } from '../../../store/nomenclador/nomenclador.actions';
+import { selectCatalogRows } from '../../../store/nomenclador/nomenclador.selectors';
 
 interface GenderOption { label: string; value: 'MALE' | 'FEMALE' | null; }
 
@@ -69,105 +72,123 @@ function monthsToYears(months: number | null): number | null {
 }
 
 /**
- * Drawer de configuración por tenant de un análisis del Nomenclador NBU (KAN-130).
+ * Pantalla de configuración por tenant de un análisis del Nomenclador NBU (KAN-258).
  *
- * Diseño orientado al admin de laboratorio (no volcado 1:1 del DTO):
- * - General: código interno (requerido) y nombre propio (opcional) editables, con estado
- *   y contexto NBU/familia read-only. La sección se configura en otra pantalla.
- * - Preparación del paciente: por determinación — checkboxes de tipos + horas de ayuno
- *   (condicional) + observaciones libres.
- * - Valores de referencia: por determinación, en años (se convierten a meses para la API),
- *   con la unidad de la determinación como contexto read-only.
- * - Tipo de resultado: selector QUANTITATIVE / QUALITATIVE / SEMI_QUALITATIVE. En modo
- *   no-numérico, se elige categoría cualitativa y por fila el valor esperado de esa categoría.
+ * Reemplaza al drawer `lab-nbu-config-drawer`: la configuración tenía demasiadas secciones
+ * para el ancho de medio drawer, así que ahora vive en una pantalla propia a la que se
+ * navega desde el catálogo (`/analitica/nbu/:catalogId/config`). Aprovecha el ancho completo:
+ * General y Estado/contexto en dos columnas arriba, y Valores de referencia + preparación
+ * a lo ancho abajo, con la tabla de cada determinación desplegada.
  *
- * Patrón de drawer del repo (`medico-form-drawer`): `p-drawer position="right"
- * styleClass="ui-drawer-half"`, footer sticky Cancelar/Guardar, `ngOnChanges` abre/cierra.
- * Editor aislado: carga y guarda vía services directos con signals locales (no NgRx).
- * Solo opera ADMINISTRADOR (gating BE + el botón "Configurar" se oculta a no-admin).
+ * El `catalogId` (analysis_catalog.id) llega por ruta (withComponentInputBinding). La lógica
+ * de carga y guardado es idéntica a la del ex-drawer: services directos + signals locales
+ * (no NgRx para el editor). El nombre/código NBU/familia del encabezado salen del catálogo
+ * del store (se dispara `loadNomenclador()` para soportar navegación directa por URL).
+ * Solo opera ADMINISTRADOR (gating BE + la acción "Configurar" se oculta a no-admin).
  */
 @Component({
-  selector: 'lab-nbu-config-drawer',
+  selector: 'lab-nbu-config-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MessageService],
   imports: [
-    FormsModule, ReactiveFormsModule, DrawerModule, ButtonModule, InputTextModule, InputNumberModule,
+    FormsModule, ReactiveFormsModule, ButtonModule, InputTextModule, InputNumberModule,
     TextareaModule, SelectModule, AccordionModule, ToastModule, ToggleSwitchModule, CheckboxModule,
+    PageHeaderComponent,
   ],
   template: `
-    <p-drawer
-      [visible]="visibleInternal"
-      (visibleChange)="onVisibleChange($event)"
-      position="right"
-      styleClass="ui-drawer-half"
-      [modal]="true"
-      [dismissible]="true"
-      [header]="headerLabel()">
+    <div class="p-4 flex flex-col gap-4">
       <p-toast position="top-right" />
 
-      <div class="flex flex-col h-full">
-        <div class="pat-form" style="flex:1; overflow-y:auto;">
-          @if (loading()) {
-            <span class="text-sm text-[var(--ds-text-muted)] italic px-2">Cargando configuración…</span>
-          } @else if (loadError()) {
-            <span class="text-sm text-[var(--ds-danger)] px-2">{{ loadError() }}</span>
-          } @else {
-            <!-- General — código interno y nombre propio editables + contexto read-only -->
-            <section class="pat-form__card" [formGroup]="generalForm">
-              <div class="pat-form__card-header"><span>General</span></div>
-              <div class="pat-form__grid">
-                <div class="pat-form__field">
-                  <label class="pat-form__label" for="nbu-short-code">
-                    Código interno <span class="text-[var(--ds-danger)]">*</span>
-                  </label>
-                  <input id="nbu-short-code" pInputText type="text" autocomplete="off"
-                         class="pat-form__input" formControlName="shortCode"
-                         placeholder="Ej: GLUC" />
-                </div>
-                <div class="pat-form__field">
-                  <label class="pat-form__label" for="nbu-custom-name">Nombre propio</label>
-                  <input id="nbu-custom-name" pInputText type="text" autocomplete="off"
-                         class="pat-form__input" formControlName="customName" />
-                </div>
-                <div class="pat-form__field">
-                  <label class="pat-form__label" for="nbu-handling-time">Tiempo estimado de resultado</label>
-                  <div class="flex gap-2">
-                    <p-inputnumber inputId="nbu-handling-time" formControlName="handlingTimeValue"
-                                   [min]="1" [useGrouping]="false" inputStyleClass="pat-form__input w-24"
-                                   placeholder="—" />
-                    <p-select [options]="handlingTimeUnitOptions" optionLabel="label" optionValue="value"
-                              formControlName="handlingTimeUnit" appendTo="body" styleClass="w-32"
-                              placeholder="Unidad" [showClear]="true" />
-                  </div>
-                  <span class="text-xs text-[var(--ds-text-muted)]">Se muestra en el comprobante del paciente.</span>
-                </div>
-                <div class="pat-form__field flex items-center gap-2" style="grid-column: 1 / -1;">
-                  <p-toggleswitch [ngModel]="active()" [ngModelOptions]="{ standalone: true }"
-                                  (ngModelChange)="onToggleActive($event)" inputId="nbu-active" />
-                  <label for="nbu-active" class="pat-form__label" style="margin:0;">
-                    {{ active() ? 'Análisis activo' : 'Análisis inactivo' }}
-                  </label>
-                  <span class="text-xs text-[var(--ds-text-muted)]">
-                    · Cód. NBU: {{ analysis?.nbuCode ?? '—' }} · Familia: {{ analysis?.familyName ?? '—' }}
-                  </span>
-                </div>
-              </div>
-            </section>
+      <ui-page-header [heading]="headerLabel()" [subtitle]="headerSubtitle()">
+        <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" [outlined]="true"
+                  type="button" (onClick)="onCancel()" />
+        <p-button label="Guardar cambios" icon="pi pi-check" severity="primary" type="button"
+                  [disabled]="loading() || !!loadError() || saving()" [loading]="saving()"
+                  (onClick)="onSave()" />
+      </ui-page-header>
 
-            <!-- Valores de referencia + preparación — por determinación -->
-            <section class="pat-form__card">
-              <div class="pat-form__card-header"><span>Valores de referencia</span></div>
-              @if (detForms.length === 0) {
-                <span class="text-sm text-[var(--ds-text-muted)] px-2">Este análisis no tiene determinaciones.</span>
-              } @else {
-                <p-accordion [multiple]="true">
-                  @for (det of detForms; track det.detId) {
-                    <p-accordion-panel [value]="det.detId">
-                      <p-accordion-header>{{ det.detName }}</p-accordion-header>
-                      <p-accordion-content>
-                        <!-- Preparación del paciente — por determinación -->
-                        <div class="mb-3">
+      @if (loading()) {
+        <span class="text-sm text-[var(--ds-text-muted)] italic px-1">Cargando configuración…</span>
+      } @else if (loadError()) {
+        <div class="pat-form__card">
+          <span class="text-sm text-[var(--ds-danger)]">{{ loadError() }}</span>
+        </div>
+      } @else {
+        <!-- Fila superior: General + Estado/contexto en dos columnas (aprovecha el ancho) -->
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] items-start">
+          <!-- General — código interno y nombre propio editables + tiempo estimado -->
+          <section class="pat-form__card" [formGroup]="generalForm">
+            <div class="pat-form__card-header"><span>General</span></div>
+            <div class="pat-form__grid">
+              <div class="pat-form__field">
+                <label class="pat-form__label" for="nbu-short-code">
+                  Código interno <span class="pat-form__req">*</span>
+                </label>
+                <input id="nbu-short-code" pInputText type="text" autocomplete="off"
+                       class="pat-form__input" formControlName="shortCode"
+                       placeholder="Ej: GLUC" />
+              </div>
+              <div class="pat-form__field">
+                <label class="pat-form__label" for="nbu-custom-name">Nombre propio</label>
+                <input id="nbu-custom-name" pInputText type="text" autocomplete="off"
+                       class="pat-form__input" formControlName="customName" />
+              </div>
+              <div class="pat-form__field" style="grid-column: 1 / -1;">
+                <label class="pat-form__label" for="nbu-handling-time">Tiempo estimado de resultado</label>
+                <div class="flex gap-2">
+                  <p-inputnumber inputId="nbu-handling-time" formControlName="handlingTimeValue"
+                                 [min]="1" [useGrouping]="false" inputStyleClass="pat-form__input w-24"
+                                 placeholder="—" />
+                  <p-select [options]="handlingTimeUnitOptions" optionLabel="label" optionValue="value"
+                            formControlName="handlingTimeUnit" appendTo="body" styleClass="w-32"
+                            placeholder="Unidad" [showClear]="true" />
+                </div>
+                <span class="text-xs text-[var(--ds-text-muted)]">Se muestra en el comprobante del paciente.</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Estado y contexto -->
+          <section class="pat-form__card">
+            <div class="pat-form__card-header"><span>Estado y contexto</span></div>
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-2">
+                <p-toggleswitch [ngModel]="active()" [ngModelOptions]="{ standalone: true }"
+                                (ngModelChange)="onToggleActive($event)" inputId="nbu-active" />
+                <label for="nbu-active" class="pat-form__label" style="margin:0;">
+                  {{ active() ? 'Análisis activo' : 'Análisis inactivo' }}
+                </label>
+              </div>
+              <dl class="text-xs text-[var(--ds-text-muted)] flex flex-col gap-1 m-0">
+                <div class="flex justify-between gap-2">
+                  <dt>Código NBU</dt>
+                  <dd class="font-mono text-[var(--ds-text)] m-0">{{ analysisRow()?.nbuCode ?? '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt>Familia</dt>
+                  <dd class="text-[var(--ds-text)] m-0">{{ analysisRow()?.familyName ?? '—' }}</dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+        </div>
+
+        <!-- Valores de referencia + preparación — por determinación, a lo ancho -->
+        <section class="pat-form__card">
+          <div class="pat-form__card-header"><span>Valores de referencia y preparación</span></div>
+          @if (detForms.length === 0) {
+            <span class="text-sm text-[var(--ds-text-muted)] px-1">Este análisis no tiene determinaciones.</span>
+          } @else {
+            <p-accordion [multiple]="true" [value]="defaultOpenPanels">
+              @for (det of detForms; track det.detId) {
+                <p-accordion-panel [value]="det.detId">
+                  <p-accordion-header>{{ det.detName }}</p-accordion-header>
+                  <p-accordion-content>
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] items-start pt-2">
+                      <!-- Preparación del paciente + tipo de resultado -->
+                      <div class="flex flex-col gap-3">
+                        <div>
                           <span class="text-xs font-medium text-[var(--ds-text-muted)] block mb-1">Preparación del paciente</span>
                           <div class="flex flex-wrap gap-3">
                             @for (opt of prepTypeOptions(); track opt.code) {
@@ -196,8 +217,7 @@ function monthsToYears(months: number | null): number | null {
                           </div>
                         </div>
 
-                        <!-- Tipo de resultado -->
-                        <div class="mb-3">
+                        <div>
                           <label class="text-xs font-medium text-[var(--ds-text-muted)] block mb-1">Tipo de resultado</label>
                           <p-select
                             [options]="analyticalTypeOptions"
@@ -209,10 +229,13 @@ function monthsToYears(months: number | null): number | null {
                             appendTo="body"
                             styleClass="w-full" />
                         </div>
+                      </div>
 
+                      <!-- Tabla de valores de referencia -->
+                      <div>
                         @if (det.valueType !== 'QUANTITATIVE') {
                           <!-- Editor cualitativo / semicuantitativo -->
-                          <div class="mb-3">
+                          <div>
                             <label class="text-xs font-medium text-[var(--ds-text-muted)] block mb-1">Categoría de valores</label>
                             <div class="flex gap-2 items-center">
                               <p-select
@@ -236,7 +259,7 @@ function monthsToYears(months: number | null): number | null {
 
                             @if (openCategoryFormDetId() === det.detId) {
                               <!-- Mini-form para crear una nueva categoría -->
-                              <div class="mt-2 p-3 border border-[var(--ds-border)] rounded-lg bg-[var(--ds-surface-alt)]">
+                              <div class="mt-2 p-3 border border-[var(--ds-border)] rounded-lg bg-[var(--ds-surface,#f1f5f9)]">
                                 <span class="text-xs font-medium block mb-2">Nueva categoría</span>
                                 <div class="flex flex-col gap-2">
                                   <div class="pat-form__field">
@@ -390,24 +413,25 @@ function monthsToYears(months: number | null): number | null {
                             </div>
                           }
                         }
-                      </p-accordion-content>
-                    </p-accordion-panel>
-                  }
-                </p-accordion>
+                      </div>
+                    </div>
+                  </p-accordion-content>
+                </p-accordion-panel>
               }
-            </section>
+            </p-accordion>
           }
-        </div>
+        </section>
 
-        <div class="pat-form__footer">
+        <!-- Barra de acciones inferior (pegajosa) para formularios largos -->
+        <div class="pat-form__footer" style="border-radius: 10px;">
           <p-button label="Cancelar" severity="secondary" text type="button"
                     [disabled]="saving()" (onClick)="onCancel()" />
-          <p-button label="Guardar" severity="primary" type="button"
+          <p-button label="Guardar cambios" severity="primary" type="button"
                     [disabled]="loading() || !!loadError() || saving()" [loading]="saving()"
                     (onClick)="onSave()" />
         </div>
-      </div>
-    </p-drawer>
+      }
+    </div>
   `,
   styles: [`
     .nbu-rv-row--invalid {
@@ -415,19 +439,28 @@ function monthsToYears(months: number | null): number | null {
     }
   `],
 })
-export class NbuConfigDrawerComponent implements OnChanges {
+export class NbuConfigPage {
   private readonly fb = inject(FormBuilder);
   private readonly nbuConfig = inject(NbuConfigApiService);
   private readonly messageService = inject(MessageService);
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
 
-  @Input() visible = false;
-  @Input() analysis: CatalogRow | null = null;
+  /** analysis_catalog.id, provisto por la ruta `nbu/:catalogId/config` (withComponentInputBinding). */
+  readonly catalogId = input.required<string>();
 
-  /** Emite el analysisId al guardar con éxito (el parent refresca el resumen). */
-  @Output() saved = new EventEmitter<number>();
-  @Output() cancel = new EventEmitter<void>();
+  /** Id numérico del análisis (NaN si la ruta trae algo inválido). */
+  protected readonly numericId = computed(() => Number(this.catalogId()));
 
-  protected visibleInternal = false;
+  /** Filas del catálogo del store — para resolver nombre/código NBU/familia del encabezado. */
+  private readonly catalogRows = this.store.selectSignal(selectCatalogRows);
+
+  /** Fila del catálogo del análisis actual (para el encabezado). Puede ser null en navegación directa. */
+  protected readonly analysisRow = computed<CatalogRow | null>(() => {
+    const id = this.numericId();
+    if (Number.isNaN(id)) return null;
+    return this.catalogRows().find((r) => r.id === id) ?? null;
+  });
 
   protected readonly loading = signal(false);
   protected readonly loadError = signal<string | null>(null);
@@ -481,7 +514,8 @@ export class NbuConfigDrawerComponent implements OnChanges {
   /** Forms por determinación (ref-values + preparación + override existente). */
   protected detForms: DetForm[] = [];
 
-  private wasVisible = false;
+  /** detIds a abrir por defecto en el accordion (todos, para aprovechar el ancho). */
+  protected defaultOpenPanels: number[] = [];
 
   /** tenant_analysis.id de la fila (destino del PATCH de shortCode/customName). */
   private tenantAnalysisId: number | null = null;
@@ -492,8 +526,31 @@ export class NbuConfigDrawerComponent implements OnChanges {
   private originalHandlingTimeValue: number | null = null;
   private originalHandlingTimeUnit: 'HOURS' | 'DAYS' | null = null;
 
+  constructor() {
+    // Asegura que el catálogo esté en el store para el encabezado (soporta URL directa).
+    this.store.dispatch(loadNomenclador());
+    // Carga la configuración cuando cambia el id de ruta.
+    effect(() => {
+      const id = this.numericId();
+      if (Number.isNaN(id)) {
+        this.loadError.set('No se pudo identificar el análisis a configurar.');
+        return;
+      }
+      this.loadConfig(id);
+    });
+  }
+
   protected headerLabel(): string {
-    return this.analysis ? `Configurar — ${this.analysis.name}` : 'Configurar análisis';
+    const row = this.analysisRow();
+    return row ? `Configurar — ${row.name}` : 'Configurar análisis';
+  }
+
+  protected headerSubtitle(): string {
+    const row = this.analysisRow();
+    if (!row) return 'Configuración del análisis del Nomenclador NBU.';
+    const nbu = row.nbuCode ?? '—';
+    const fam = row.familyName ?? '—';
+    return `Cód. NBU ${nbu} · Familia ${fam}`;
   }
 
   /** Opciones para el selector de categoría (label = nombre, value = id). */
@@ -507,28 +564,13 @@ export class NbuConfigDrawerComponent implements OnChanges {
     return this.qualitativeCategories().find((c) => c.id === det.qualitativeCategoryId) ?? null;
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if ('visible' in changes) {
-      this.visibleInternal = this.visible;
-      if (this.visible && !this.wasVisible && this.analysis) {
-        this.loadConfig(this.analysis);
-      }
-      this.wasVisible = this.visible;
-    }
-  }
-
-  protected onVisibleChange(open: boolean): void {
-    this.visibleInternal = open;
-    if (!open) this.cancel.emit();
-  }
-
   protected onCancel(): void {
-    this.visibleInternal = false;
-    this.cancel.emit();
+    this.router.navigate(['/analitica/nbu']);
   }
 
   protected onToggleActive(next: boolean): void {
-    if (!this.analysis) return;
+    const id = this.numericId();
+    if (Number.isNaN(id)) return;
     const shortCode = (this.generalForm.controls.shortCode.value ?? '').trim();
     if (next && shortCode.length === 0) {
       this.messageService.add({
@@ -540,7 +582,7 @@ export class NbuConfigDrawerComponent implements OnChanges {
     const customName = (this.generalForm.controls.customName.value ?? '').trim() || null;
     const prev = this.active();
     this.active.set(next);
-    this.nbuConfig.setActivation(this.analysis.id, next, shortCode, customName).subscribe({
+    this.nbuConfig.setActivation(id, next, shortCode, customName).subscribe({
       next: () => this.messageService.add({
         severity: 'success', summary: next ? 'Análisis activado' : 'Análisis desactivado',
         detail: 'El cambio se guardó correctamente.',
@@ -631,10 +673,11 @@ export class NbuConfigDrawerComponent implements OnChanges {
 
   // ── Carga ────────────────────────────────────────────────────────────────────
 
-  private loadConfig(analysis: CatalogRow): void {
+  private loadConfig(catalogId: number): void {
     this.loading.set(true);
     this.loadError.set(null);
     this.detForms = [];
+    this.defaultOpenPanels = [];
     this.active.set(false);
     this.tenantAnalysisId = null;
     this.originalShortCode = '';
@@ -644,7 +687,7 @@ export class NbuConfigDrawerComponent implements OnChanges {
     this.generalForm.reset({ shortCode: '', customName: null, handlingTimeValue: null, handlingTimeUnit: null });
 
     forkJoin({
-      determinations: this.nbuConfig.getCatalogDeterminations(analysis.id).pipe(
+      determinations: this.nbuConfig.getCatalogDeterminations(catalogId).pipe(
         catchError(() => of([] as DeterminationCatalogItem[])),
       ),
       tenantRows: this.nbuConfig.listTenantAnalyses().pipe(catchError(() => of([] as TenantAnalysisRow[]))),
@@ -655,7 +698,7 @@ export class NbuConfigDrawerComponent implements OnChanges {
         this.prepTypeOptions.set(prepTypes);
         this.qualitativeCategories.set(qualCategories);
 
-        const tenantRow = tenantRows.find((r) => r.catalogId === analysis.id) ?? null;
+        const tenantRow = tenantRows.find((r) => r.catalogId === catalogId) ?? null;
         this.active.set(tenantRow?.active ?? false);
 
         this.tenantAnalysisId = tenantRow?.id ?? null;
@@ -704,6 +747,7 @@ export class NbuConfigDrawerComponent implements OnChanges {
         this.detForms = results.map(({ det, override, refValues, preparation }) =>
           this.buildDetForm(det, override, refValues, preparation.items),
         );
+        this.defaultOpenPanels = this.detForms.map((d) => d.detId);
         this.loading.set(false);
       },
       error: () => {
@@ -831,7 +875,8 @@ export class NbuConfigDrawerComponent implements OnChanges {
   // ── Guardado ───────────────────────────────────────────────────────────────────
 
   protected onSave(): void {
-    if (!this.analysis || this.saving()) return;
+    const id = this.numericId();
+    if (Number.isNaN(id) || this.saving()) return;
 
     const shortCodeNuevo = (this.generalForm.controls.shortCode.value ?? '').trim();
     if (shortCodeNuevo.length === 0) {
@@ -984,8 +1029,7 @@ export class NbuConfigDrawerComponent implements OnChanges {
 
     if (calls.length === 0) {
       this.messageService.add({ severity: 'info', summary: 'Sin cambios', detail: 'No hay cambios para guardar.' });
-      this.saved.emit(this.analysis.id);
-      this.visibleInternal = false;
+      this.finishSave(id);
       return;
     }
 
@@ -994,13 +1038,23 @@ export class NbuConfigDrawerComponent implements OnChanges {
       next: () => {
         this.saving.set(false);
         this.messageService.add({ severity: 'success', summary: 'Configuración guardada', detail: 'Los cambios se guardaron correctamente.' });
-        this.saved.emit(this.analysis!.id);
-        this.visibleInternal = false;
+        this.finishSave(id);
       },
       error: () => {
         this.saving.set(false);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la configuración. Intentá de nuevo.' });
       },
     });
+  }
+
+  /**
+   * Refresca el resumen de config del análisis y el catálogo (para que las columnas
+   * Código/Análisis reflejen el alias nuevo), y vuelve al catálogo NBU. Mismo efecto
+   * que antes disparaba el `saved` del ex-drawer.
+   */
+  private finishSave(analysisId: number): void {
+    this.store.dispatch(loadConfigResumen({ analysisId }));
+    this.store.dispatch(loadNomenclador());
+    this.router.navigate(['/analitica/nbu']);
   }
 }

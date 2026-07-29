@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { TokenService } from '@core/auth/token.service';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
@@ -6,10 +7,9 @@ import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.direct
 import { UiRowExpansionDirective } from '@shared/ui/components/data-table/ui-row-expansion.directive';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
 import { CatalogRow, ConfigResumen, Determination } from '../../../models/nomenclador.model';
-import { loadConfigResumen, loadDeterminations, loadNomenclador } from '../../../store/nomenclador/nomenclador.actions';
+import { loadConfigResumen, loadDeterminations } from '../../../store/nomenclador/nomenclador.actions';
 import { selectCatalogRows, selectConfigResumen, selectDeterminations } from '../../../store/nomenclador/nomenclador.selectors';
 import { matchesFilter } from '../nbu-filter';
-import { NbuConfigDrawerComponent } from '../nbu-config-drawer/nbu-config-drawer.component';
 
 /**
  * Tab "Catálogo de análisis" de la pantalla NBU (KAN-118).
@@ -22,7 +22,7 @@ import { NbuConfigDrawerComponent } from '../nbu-config-drawer/nbu-config-drawer
   selector: 'lab-nbu-catalogo-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableComponent, UiCellDirective, UiRowExpansionDirective, NbuConfigDrawerComponent],
+  imports: [DataTableComponent, UiCellDirective, UiRowExpansionDirective],
   template: `
     <ui-table
       [value]="filteredRows()"
@@ -97,17 +97,12 @@ import { NbuConfigDrawerComponent } from '../nbu-config-drawer/nbu-config-drawer
         </div>
       </ng-template>
     </ui-table>
-
-    <lab-nbu-config-drawer
-      [visible]="drawerVisible()"
-      [analysis]="drawerRow()"
-      (cancel)="drawerVisible.set(false)"
-      (saved)="onConfigSaved($event)" />
   `,
 })
 export class NbuCatalogoTabComponent {
   private readonly store = inject(Store);
   private readonly tokens = inject(TokenService);
+  private readonly router = inject(Router);
 
   /** Solo ADMINISTRADOR ve/opera la configuración por tenant (gating FE; el BE también gatea). */
   protected readonly isAdmin = signal(this.tokens.getRoles().includes('ADMINISTRADOR'));
@@ -118,37 +113,25 @@ export class NbuCatalogoTabComponent {
 
   /**
    * Solicitud de configuración de una fila. Se mantiene como output para consumidores
-   * externos, pero el propio tab abre el drawer (F5): el drawer es un editor aislado.
+   * externos, aunque el tab ahora navega a la pantalla de configuración dedicada (KAN-258).
    */
   readonly configRequested = output<CatalogRow>();
-
-  /** Estado del drawer de configuración por análisis (F5). */
-  protected readonly drawerVisible = signal(false);
-  protected readonly drawerRow = signal<CatalogRow | null>(null);
 
   /** Acciones por fila del ui-table. "Configurar" se oculta a no-admin. */
   protected readonly rowActions: readonly TableAction[] = [
     { key: 'config', icon: 'pi-pencil', label: 'Configurar', hidden: () => !this.isAdmin() },
   ];
 
-  /** Maneja el click en una acción de fila: abre el drawer de config y notifica al exterior. */
+  /**
+   * Maneja el click en una acción de fila: navega a la pantalla de configuración del análisis
+   * (`/analitica/nbu/:catalogId/config`, KAN-258) y notifica al exterior.
+   */
   protected onAction(e: { key: string; row: unknown }): void {
     if (e.key === 'config') {
       const row = e.row as CatalogRow;
-      this.drawerRow.set(row);
-      this.drawerVisible.set(true);
       this.configRequested.emit(row);
+      this.router.navigate(['/analitica/nbu', row.id, 'config']);
     }
-  }
-
-  /**
-   * El drawer guardó: cerrar, refrescar el resumen de config de ese análisis y recargar
-   * el catálogo para que las columnas Código/Análisis reflejen el alias nuevo (shortCode/customName).
-   */
-  protected onConfigSaved(analysisId: number): void {
-    this.drawerVisible.set(false);
-    this.store.dispatch(loadConfigResumen({ analysisId }));
-    this.store.dispatch(loadNomenclador());
   }
 
   /** Filas del catálogo con cantidadUb resuelta para la versión seleccionada. */
