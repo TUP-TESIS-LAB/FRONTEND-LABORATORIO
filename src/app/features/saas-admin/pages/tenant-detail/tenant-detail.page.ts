@@ -12,6 +12,7 @@ import { TenantInfoTabComponent } from './tabs/tenant-info-tab.component';
 import { TenantModulesTabComponent } from './tabs/tenant-modules-tab.component';
 import { TenantWhiteLabelTabComponent } from './tabs/tenant-white-label-tab.component';
 import { TenantFiscalTabComponent } from './tabs/tenant-fiscal-tab.component';
+import { TenantNbuTabComponent } from './tabs/tenant-nbu-tab.component';
 import { TenantStatusPipe } from '../../models/tenant-status.pipe';
 
 @Component({
@@ -21,6 +22,7 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
   imports: [
     RouterLink, ButtonModule, TabsModule, TagModule,
     TenantInfoTabComponent, TenantModulesTabComponent, TenantWhiteLabelTabComponent, TenantFiscalTabComponent,
+    TenantNbuTabComponent,
     TenantStatusPipe,
   ],
   template: `
@@ -49,6 +51,7 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
           <p-tab value="modules">Módulos</p-tab>
           <p-tab value="white-label">White label</p-tab>
           <p-tab value="fiscal">Identidad fiscal</p-tab>
+          <p-tab value="nbu">Catálogo NBU</p-tab>
         </p-tablist>
         <p-tabpanels>
           <p-tabpanel value="info">
@@ -62,6 +65,9 @@ import { TenantStatusPipe } from '../../models/tenant-status.pipe';
           </p-tabpanel>
           <p-tabpanel value="fiscal">
             <tenant-fiscal-tab [tenantId]="numericId()" />
+          </p-tabpanel>
+          <p-tabpanel value="nbu">
+            <tenant-nbu-tab [tenantId]="numericId()" />
           </p-tabpanel>
         </p-tabpanels>
       </p-tabs>

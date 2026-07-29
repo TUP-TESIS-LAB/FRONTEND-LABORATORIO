@@ -5,6 +5,7 @@ import { TenantModule } from '../models/tenant-module.model';
 import { TenantWhiteLabel, UpsertTenantWhiteLabelRequest } from '../models/tenant-white-label.model';
 import { TenantFiscalConfig, UpsertTenantFiscalConfigRequest } from '../models/tenant-fiscal-config.model';
 import { ModuleCode } from '../models/module-code';
+import { NbuCatalogSummary } from '../models/nbu-catalog.model';
 
 // --- Tenants list ---
 export const loadTenants = createAction('[SaaS Admin] Load Tenants');
@@ -70,3 +71,16 @@ export const loadTenantFiscalConfigFailure = createAction('[SaaS Admin API] Load
 export const upsertTenantFiscalConfig = createAction('[SaaS Admin] Upsert Tenant Fiscal Config', props<{ req: UpsertTenantFiscalConfigRequest }>());
 export const upsertTenantFiscalConfigSuccess = createAction('[SaaS Admin API] Upsert Tenant Fiscal Config Success', props<{ fiscalConfig: TenantFiscalConfig }>());
 export const upsertTenantFiscalConfigFailure = createAction('[SaaS Admin API] Upsert Tenant Fiscal Config Failure', props<{ error: HttpErrorResponse }>());
+
+// --- Catálogo NBU (KAN-257) ---
+export const loadNbuCatalogSummary = createAction('[SaaS Admin] Load NBU Catalog Summary', props<{ tenantId: number }>());
+export const loadNbuCatalogSummarySuccess = createAction('[SaaS Admin API] Load NBU Catalog Summary Success', props<{ summary: NbuCatalogSummary }>());
+export const loadNbuCatalogSummaryFailure = createAction('[SaaS Admin API] Load NBU Catalog Summary Failure', props<{ error: HttpErrorResponse }>());
+
+export const activateAllNbuCatalog = createAction('[SaaS Admin] Activate All NBU Catalog', props<{ tenantId: number }>());
+export const activateAllNbuCatalogSuccess = createAction('[SaaS Admin API] Activate All NBU Catalog Success', props<{ tenantId: number; count: number }>());
+export const activateAllNbuCatalogFailure = createAction('[SaaS Admin API] Activate All NBU Catalog Failure', props<{ error: HttpErrorResponse }>());
+
+export const deactivateAllNbuCatalog = createAction('[SaaS Admin] Deactivate All NBU Catalog', props<{ tenantId: number }>());
+export const deactivateAllNbuCatalogSuccess = createAction('[SaaS Admin API] Deactivate All NBU Catalog Success', props<{ tenantId: number; count: number }>());
+export const deactivateAllNbuCatalogFailure = createAction('[SaaS Admin API] Deactivate All NBU Catalog Failure', props<{ error: HttpErrorResponse }>());

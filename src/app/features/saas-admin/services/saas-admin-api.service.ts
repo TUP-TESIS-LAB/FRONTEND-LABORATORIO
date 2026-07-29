@@ -7,6 +7,7 @@ import { CreateTenantRequest, CreateTenantResponse, Tenant, UpdateTenantRequest 
 import { TenantModule } from '../models/tenant-module.model';
 import { TenantWhiteLabel, UpsertTenantWhiteLabelRequest } from '../models/tenant-white-label.model';
 import { TenantFiscalConfig, UpsertTenantFiscalConfigRequest } from '../models/tenant-fiscal-config.model';
+import { NbuCatalogBulkResult, NbuCatalogSummary } from '../models/nbu-catalog.model';
 
 const BASE = '/api/v1/saas-admin';
 // La identidad fiscal vive en el módulo financiero, no en saas-admin: la URL es de
@@ -58,5 +59,16 @@ export class SaasAdminApiService {
   }
   upsertTenantFiscalConfig(req: UpsertTenantFiscalConfigRequest): Promise<TenantFiscalConfig> {
     return firstValueFrom(this.http.post<TenantFiscalConfig>(FISCAL_CONFIG_BASE, req));
+  }
+
+  // --- Catálogo NBU (KAN-257) ---
+  nbuCatalogSummary(tenantId: number): Promise<NbuCatalogSummary> {
+    return firstValueFrom(this.http.get<NbuCatalogSummary>(`${BASE}/tenants/${tenantId}/nbu-catalog/summary`));
+  }
+  activateAllNbuCatalog(tenantId: number): Promise<NbuCatalogBulkResult> {
+    return firstValueFrom(this.http.post<NbuCatalogBulkResult>(`${BASE}/tenants/${tenantId}/nbu-catalog/activate-all`, {}));
+  }
+  deactivateAllNbuCatalog(tenantId: number): Promise<NbuCatalogBulkResult> {
+    return firstValueFrom(this.http.post<NbuCatalogBulkResult>(`${BASE}/tenants/${tenantId}/nbu-catalog/deactivate-all`, {}));
   }
 }
