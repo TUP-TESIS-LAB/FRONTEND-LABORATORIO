@@ -7,9 +7,8 @@ import { AccessRegistry } from '@core/access/access-registry';
 import { AccessSection } from '@core/access/access.model';
 import { PageHeaderComponent } from '@shared/ui/components/page-header/page-header.component';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
-import { AsistenteAyudaComponent } from '@shared/asistente-ayuda/asistente-ayuda.component';
+import { TextoManualComponent } from '../../components/texto-manual.component';
 import { ManualChapter, ManualSection, ManualTopic } from '../../models/manual.model';
-import { NegritaPipe } from '../../pipes/negrita.pipe';
 import { contarOcultas, filtrarPorAcceso } from '../../services/filtrar-por-acceso';
 import { loadManual } from '../../store/manual.actions';
 import {
@@ -29,11 +28,15 @@ interface CapituloFiltrado extends Omit<ManualChapter, 'sections'> {
 }
 
 /**
- * Centro de ayuda del laboratorio: el manual de uso y el asistente, juntos.
+ * Manual de uso del sistema.
  *
- * El manual sale del mismo corpus que responde el asistente, servido ya
- * estructurado por el backend y filtrado por los módulos activos del
- * laboratorio: acá no se decide qué mostrar, solo cómo.
+ * Sale del mismo corpus que responde el asistente, servido ya estructurado por
+ * el backend y filtrado por los módulos activos del laboratorio: acá no se
+ * decide qué mostrar, solo cómo.
+ *
+ * El asistente es una pieza aparte: vive como panel flotante en el shell y se
+ * abre desde el topbar, disponible en cualquier pantalla. Esta pantalla no lo
+ * embebe a propósito.
  */
 @Component({
   selector: 'lab-centro-ayuda',
@@ -44,8 +47,7 @@ interface CapituloFiltrado extends Omit<ManualChapter, 'sections'> {
     SkeletonModule,
     PageHeaderComponent,
     EmptyStateComponent,
-    AsistenteAyudaComponent,
-    NegritaPipe,
+    TextoManualComponent,
   ],
   templateUrl: './centro-ayuda.page.html',
   styleUrl: './centro-ayuda.page.scss',

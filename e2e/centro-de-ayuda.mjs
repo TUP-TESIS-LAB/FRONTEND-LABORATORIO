@@ -7,10 +7,11 @@
 //   API  3) no se filtra plomería del RAG al contenido: ni "El usuario pregunta", ni comentarios
 //           HTML, ni el marcador "acceso:".
 //   API  4) cada sección declara accessSections, salvo las transversales conocidas.
-//   UI   5) /ayuda rinde manual a la izquierda y asistente a la derecha (dos columnas en desktop).
+//   UI   5) /ayuda es SOLO el manual: el chat no se embebe en la pantalla.
 //   UI   6) los temas quedan separados por <hr> y la negrita se resuelve (no quedan ** crudos).
 //   UI   7) el buscador filtra sobre el contenido, no solo sobre los títulos.
-//   UI   8) el botón de ayuda del topbar navega a /ayuda y no queda panel flotante de chat.
+//   UI   8) el asistente vuelve a ser un panel flotante disponible en cualquier pantalla: el botón
+//           del topbar lo abre y lo cierra sin navegar, y el manual se alcanza desde el sidebar.
 //
 // El recorte por rol NO se puede probar acá: admin@test.com tiene todas las secciones, así que no
 // se le esconde nada. Esa regla está cubierta por unit tests en
@@ -115,7 +116,7 @@ async function pruebasUi(manual) {
     await page.waitForSelector('.ayuda__capitulo-titulo', { timeout: 20000 });
 
     const titulo = await page.textContent('.ui-page-header__title');
-    check(titulo?.trim() === 'Centro de ayuda', `el header dice "Centro de ayuda" (dijo "${titulo?.trim()}")`);
+    check(titulo?.trim() === 'Manual de uso', `el header dice "Manual de uso" (dijo "${titulo?.trim()}")`);
 
     const capitulosUi = await page.$$eval('.ayuda__capitulo-titulo', (els) => els.length);
     check(
@@ -123,20 +124,14 @@ async function pruebasUi(manual) {
       `rinde los ${manual.chapters.length} capítulos del endpoint (rindió ${capitulosUi})`,
     );
 
-    // Dos columnas: el asistente arranca a la derecha de donde termina el manual.
-    const layout = await page.evaluate(() => {
-      const m = document.querySelector('.ayuda__manual').getBoundingClientRect();
-      const a = document.querySelector('.ayuda__asistente').getBoundingClientRect();
-      return {
-        dosColumnas: a.left >= m.right - 5,
-        sticky: getComputedStyle(document.querySelector('.ayuda__asistente')).position === 'sticky',
-        chat: !!document.querySelector('.ayuda__asistente .aa-panel .aa-input'),
-        overflowH: document.documentElement.scrollWidth > document.documentElement.clientWidth,
-      };
-    });
-    check(layout.dosColumnas, 'el asistente queda a la derecha del manual');
-    check(layout.sticky, 'el asistente queda fijo al scrollear');
-    check(layout.chat, 'el chat está embebido y usable en la columna');
+    // El manual y el chat son piezas separadas: la pantalla no embebe el chat.
+    const layout = await page.evaluate(() => ({
+      chatEnLaPantalla: !!document.querySelector('.ayuda .aa-panel'),
+      manual: !!document.querySelector('.ayuda__manual'),
+      overflowH: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    }));
+    check(layout.manual, 'la pantalla rinde el manual');
+    check(!layout.chatEnLaPantalla, 'la pantalla NO embebe el chat (son piezas separadas)');
     check(!layout.overflowH, 'la pantalla no scrollea en horizontal');
 
     // Expandir un capítulo: separadores + negrita resuelta.
@@ -175,15 +170,32 @@ async function pruebasUi(manual) {
     );
     check(busqueda.contador !== null, `muestra el contador de resultados ("${busqueda.contador}")`);
 
-    // El botón del topbar lleva al centro de ayuda, y no hay panel flotante suelto.
+    // El asistente es una pieza aparte: panel flotante disponible en cualquier pantalla.
     await page.goto(`${LAB}/home`);
-    await page.waitForSelector('.ui-topbar__icon-btn[aria-label="Centro de ayuda"]', { timeout: 15000 });
-    const flotante = await page.$$eval('app-asistente-ayuda', (els) => els.length);
-    check(flotante === 0, `fuera de /ayuda no queda panel de chat montado (encontró ${flotante})`);
+    await page.waitForSelector('.ui-topbar__icon-btn[aria-label="Asistente de ayuda"]', { timeout: 15000 });
 
-    await page.click('.ui-topbar__icon-btn[aria-label="Centro de ayuda"]');
-    await page.waitForURL(/\/ayuda$/, { timeout: 10000 });
-    check(true, 'el botón de ayuda del topbar navega a /ayuda');
+    const montado = await page.$$eval('app-asistente-ayuda', (els) => els.length);
+    check(montado === 1, `el asistente está montado en el shell, fuera de /ayuda (encontró ${montado})`);
+    check(
+      (await page.$$eval('.aa-panel', (els) => els.length)) === 0,
+      'arranca cerrado: el panel no se dibuja hasta abrirlo',
+    );
+
+    await page.click('.ui-topbar__icon-btn[aria-label="Asistente de ayuda"]');
+    await page.waitForSelector('.aa-panel .aa-input', { timeout: 10000 });
+    check(new URL(page.url()).pathname === '/home', 'abrir el chat no navega: se queda en la pantalla');
+    check(
+      await page.evaluate(() => getComputedStyle(document.querySelector('app-asistente-ayuda')).position === 'fixed'),
+      'el chat flota sobre la aplicación',
+    );
+
+    await page.click('.aa-close');
+    await page.waitForSelector('.aa-panel', { state: 'detached', timeout: 10000 });
+    check(true, 'el botón de cerrar vuelve a ocultar el panel');
+
+    // El manual se alcanza desde el sidebar, no desde el botón del chat.
+    const enSidebar = await page.$$eval('a[href="/ayuda"]', (els) => els.map((e) => e.textContent.trim()));
+    check(enSidebar.length > 0, `el sidebar linkea al manual (${enSidebar.join(', ') || 'no está'})`);
   } finally {
     await browser.close();
   }

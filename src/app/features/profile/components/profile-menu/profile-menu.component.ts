@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { AccessRegistry } from '@core/access/access-registry';
 import { TokenService } from '@core/auth/token.service';
 import { selectTenantConfig } from '@core/tenant/store/tenant.selectors';
 import { UserSessionService } from '@features/profile/services/user-session.service';
@@ -36,32 +38,17 @@ import { ProfileMenuService } from '@features/profile/services/profile-menu.serv
 
       <div class="ui-pm__divider"></div>
 
-      <button type="button" class="ui-pm__item" disabled>
-        <i class="pi pi-user"></i>
-        <span>Mi perfil</span>
-        <span class="ui-pm__coming">Próximamente</span>
-      </button>
-
       <button type="button" class="ui-pm__item" (click)="onChangePasswordClick()">
         <i class="pi pi-lock"></i>
         <span>Cambiar contraseña</span>
       </button>
 
-      <button type="button" class="ui-pm__item" disabled>
-        <i class="pi pi-cog"></i>
-        <span>Configuración de empresa</span>
-        <span class="ui-pm__coming">Próximamente</span>
-      </button>
-
-      <div class="ui-pm__divider"></div>
-
-      <div class="ui-pm__section-label">Cambiar sucursal</div>
-      <button type="button" class="ui-pm__item ui-pm__item--branch" disabled>
-        <i class="pi pi-map-marker"></i>
-        <span>{{ tenantName() || 'Sucursal principal' }}</span>
-        <i class="pi pi-check ui-pm__check"></i>
-      </button>
-      <div class="ui-pm__hint">Más sucursales próximamente</div>
+      @if (puedeConfigurarEmpresa()) {
+        <button type="button" class="ui-pm__item" (click)="onEmpresaClick()">
+          <i class="pi pi-cog"></i>
+          <span>Configuración de empresa</span>
+        </button>
+      }
 
       <div class="ui-pm__divider"></div>
 
@@ -152,15 +139,6 @@ import { ProfileMenuService } from '@features/profile/services/profile-menu.serv
 
     .ui-pm__divider { height: 1px; background: #f1f5f9; margin: 3px 0; }
 
-    .ui-pm__section-label {
-      padding: 4px 14px 2px;
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: #94a3b8;
-    }
-
     .ui-pm__item {
       display: flex;
       align-items: center;
@@ -181,27 +159,6 @@ import { ProfileMenuService } from '@features/profile/services/profile-menu.serv
     .ui-pm__item:hover:not(:disabled) .pi { color: var(--brand-primary); }
     .ui-pm__item:disabled { opacity: .55; cursor: default; }
 
-    .ui-pm__coming {
-      margin-left: auto;
-      font-size: 8px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: #94a3b8;
-      background: #f1f5f9;
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-
-    .ui-pm__item--branch .ui-pm__check { margin-left: auto; color: #10b981; }
-
-    .ui-pm__hint {
-      padding: 2px 14px 8px;
-      font-size: 10px;
-      color: #94a3b8;
-      font-style: italic;
-    }
-
     .ui-pm__item--danger { color: #dc2626; }
     .ui-pm__item--danger .pi { color: #dc2626; }
     .ui-pm__item--danger:hover:not(:disabled) {
@@ -216,6 +173,8 @@ export class ProfileMenuComponent {
 
   private readonly userSession = inject(UserSessionService);
   private readonly tokens = inject(TokenService);
+  private readonly access = inject(AccessRegistry);
+  private readonly router = inject(Router);
   private readonly tenantCfg = inject(Store).selectSignal(selectTenantConfig);
   private readonly profileMenu = inject(ProfileMenuService);
 
@@ -243,6 +202,18 @@ export class ProfileMenuComponent {
   });
 
   protected readonly tenantName = computed(() => this.tenantCfg()?.name ?? '');
+
+  /**
+   * La configuración de empresa vive detrás del `sectionGuard('EMPRESA')`: si el
+   * usuario no la tiene concedida, el ítem no se ofrece en vez de mandarlo a una
+   * pantalla que lo va a rebotar.
+   */
+  protected readonly puedeConfigurarEmpresa = computed(() => this.access.has('EMPRESA'));
+
+  protected onEmpresaClick(): void {
+    void this.router.navigateByUrl('/empresa');
+    this.close.emit();
+  }
 
   protected onChangePasswordClick(): void {
     this.profileMenu.openPasswordDrawer();
