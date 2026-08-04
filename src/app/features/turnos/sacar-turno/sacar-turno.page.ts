@@ -91,10 +91,9 @@ export class SacarTurnoPage {
 
   protected readonly currentKey = computed(() => this.steps[this.currentStep()]?.key);
 
-  // El backend exige fecha >= hoy + 2 días.
+  // El backend exige fecha >= hoy: se puede sacar turno para el mismo día, no para el pasado.
   protected readonly minBookingDate = (() => {
     const d = new Date();
-    d.setDate(d.getDate() + 2);
     d.setHours(0, 0, 0, 0);
     return d;
   })();
