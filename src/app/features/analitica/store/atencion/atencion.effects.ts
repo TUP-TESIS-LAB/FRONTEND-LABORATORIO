@@ -166,7 +166,15 @@ export class AtencionEffects {
       ofType(addAnalysisList),
       concatMap(({ id, payload }) => this.api.addAnalysis(id, payload).pipe(
         map(item => atencionMutationSuccess({ item })),
-        catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
+        catchError((error: HttpErrorResponse) => {
+          // Sin esto el fallo es invisible: el wizard no avanza y el operador no sabe
+          // por qué. Pasa de verdad — escribir el nro. de autorización y hacer clic en
+          // "Continuar" encola el PATCH del blur junto con éste sobre la misma atención,
+          // y el segundo vuelve 409 ("Otra persona modificó este registro...").
+          this.notification.error(
+            error?.error?.message ?? 'No se pudieron guardar los análisis. Volvé a intentarlo.');
+          return of(atencionMutationFailure({ error }));
+        })
       ))
     )
   );
