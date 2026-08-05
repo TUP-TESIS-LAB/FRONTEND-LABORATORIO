@@ -3,7 +3,7 @@ import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { PollingHandle, PollingService } from '@core/refresh';
 import {
-  MetricChartComponent, MetricFilter, createBreakdownTranslator, formatKpiValue,
+  MetricChartCardComponent, MetricFilter, createBreakdownTranslator, formatKpiValue,
 } from '@shared/metrics';
 import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
 import { PanelCardComponent } from '@shared/ui/components/panel-card/panel-card.component';
@@ -25,7 +25,7 @@ import { selectVolumenTabData, selectVolumenTabLoading } from '../../../store/an
   selector: 'lab-analitica-volumen-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MetricChartComponent, StatCardComponent, DataTableComponent, PanelCardComponent],
+  imports: [MetricChartCardComponent, StatCardComponent, DataTableComponent, PanelCardComponent],
   template: `
     <div class="metrics-tab">
       <section class="metrics-tab__stats">
@@ -37,18 +37,21 @@ import { selectVolumenTabData, selectVolumenTabLoading } from '../../../store/an
         }
       </section>
 
-      <ui-panel-card title="Volumen de determinaciones">
-        <ui-metric-chart type="line" [series]="volumenSeries()" [loading]="loading()" />
-      </ui-panel-card>
+      <!-- Serie temporal a ancho completo: el eje X es tiempo, comprimirla destruye la
+           tendencia (KAN-252). -->
+      <ui-metric-chart-card type="line" title="Volumen de determinaciones" [series]="volumenSeries()" [loading]="loading()" />
 
-      <section class="metrics-tab__charts">
-        <ui-panel-card title="Volumen por sección">
-          <ui-metric-chart type="doughnut" legendPosition="right" [breakdown]="volumenPorSeccion()" [loading]="loading()" />
-        </ui-panel-card>
-        <ui-panel-card title="Demografía por género">
-          <ui-metric-chart type="doughnut" legendPosition="right" [breakdown]="demografiaPorGenero()" [loading]="loading()" />
-        </ui-panel-card>
-      </section>
+      <!-- Volumen por sección: cardinalidad no acotada → barra horizontal, ancho completo. -->
+      <ui-metric-chart-card
+        type="bar" orientation="horizontal" colorMode="single" title="Volumen por sección"
+        [breakdown]="volumenPorSeccion()" [loading]="loading()" />
+
+      <!-- Demografía por género: part-to-whole real, ≤6 gajos — mantiene doughnut. -->
+      <div class="metrics-tab__bounded">
+        <ui-metric-chart-card
+          type="doughnut" title="Demografía por género" legendPosition="right"
+          [breakdown]="demografiaPorGenero()" [loading]="loading()" />
+      </div>
 
       <ui-panel-card title="Sub-estados analíticos en vivo">
         <ui-table
@@ -73,13 +76,11 @@ import { selectVolumenTabData, selectVolumenTabLoading } from '../../../store/an
       gap: var(--space-4, 16px);
     }
 
-    /* Los 2 donuts van lado a lado, cada uno con su leyenda a la derecha (en vez de
-       arriba) — antes los 3 charts (línea + 2 donuts) convivían en una sola fila y las
-       leyendas quedaban apretadas. El de línea queda en su propia fila arriba porque
-       necesita ancho para el eje de fechas.  */
-    .metrics-tab__charts {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: var(--space-4, 16px);
+    /* Demografía (doughnut, part-to-whole real): compacto, no necesita el ancho completo
+       que sí piden la serie y la barra horizontal de arriba. */
+    .metrics-tab__bounded { max-width: 480px; }
+    @media (max-width: 900px) {
+      .metrics-tab__bounded { max-width: none; }
     }
   `],
 })

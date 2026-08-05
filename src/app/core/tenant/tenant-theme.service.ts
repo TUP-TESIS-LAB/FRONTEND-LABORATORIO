@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { TenantConfig } from '@core/models/tenant.model';
-import { deriveChartPalette, hexToHsl, hslToHex } from '@shared/utils/color.util';
+import { hexToHsl, hslToHex } from '@shared/utils/color.util';
 import { resolveTenantIcon, mimeTypeForIcon } from './tenant-icon.util';
 
 @Injectable({ providedIn: 'root' })
@@ -12,10 +12,9 @@ export class TenantThemeService {
     root.style.setProperty('--brand-secondary', config.secondaryColor);
     root.style.setProperty('--p-primary-color', primary);
 
-    // Paleta categórica de los gráficos (ui-metric-chart), derivada por colorimetría de
-    // la marca del tenant en vez de mezclar --brand-* con colores de estado semántico.
-    const chartPalette = deriveChartPalette(primary, config.secondaryColor);
-    chartPalette.forEach((color, i) => root.style.setProperty(`--chart-${i + 1}`, color));
+    // La paleta categórica de los gráficos (--chart-1..8) NO se sobreescribe acá — es fija
+    // y validada (`tokens.scss`), independiente de la marca del tenant. Ver `deriveChartPalette`
+    // en `color.util.ts`: queda viva para el resto del chrome, pero sin este side-effect.
 
     // Favicon por tenant: su logo propio si subió uno, si no el default
     // (círculo con su color + tubo de ensayo). Misma regla que el sidebar.

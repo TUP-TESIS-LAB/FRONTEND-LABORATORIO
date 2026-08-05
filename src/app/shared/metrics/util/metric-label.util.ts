@@ -101,3 +101,37 @@ export function createBreakdownTranslator(): (breakdown: MetricBreakdown | null 
     return lastOutput;
   };
 }
+
+/** Índice de `key` en `order`; claves no listadas quedan al final, en el orden en que llegaron. */
+function rankInOrder(key: string, order: readonly string[]): number {
+  const i = order.indexOf(key);
+  return i === -1 ? order.length : i;
+}
+
+/**
+ * Fábrica de un ordenador de `MetricBreakdown` por una secuencia canónica de `key`s,
+ * memoizada por referencia de entrada — mismo motivo que `createBreakdownTranslator`: un
+ * `computed()` que devuelve un objeto NUEVO en cada evaluación (aunque el dato de entrada
+ * sea idéntico) rompe la igualdad de Angular y dispara un re-render/re-animación del
+ * gráfico en cada poll (KAN-220), aunque el poll haya sido un 304.
+ *
+ * Usar cuando el backend NO garantiza el orden de los slices pero el chart consumidor sí
+ * necesita orden estable — el caso típico es `colorMode="ordinal"` de `ui-metric-chart`:
+ * el slice 0 tiene que ser el primer paso del pipeline para que la rampa claro→oscuro
+ * tenga sentido semántico (ej. `GetEstudiosPorEstadoUseCase` arma el breakdown iterando
+ * filas de la DB en el orden que devuelve la query, no en orden de pipeline).
+ */
+export function createBreakdownSorter(
+  order: readonly string[],
+): (breakdown: MetricBreakdown | null | undefined) => MetricBreakdown | undefined {
+  let lastInput: MetricBreakdown | null | undefined;
+  let lastOutput: MetricBreakdown | undefined;
+  return (breakdown) => {
+    if (breakdown === lastInput) return lastOutput;
+    lastInput = breakdown;
+    lastOutput = breakdown
+      ? { ...breakdown, slices: [...breakdown.slices].sort((a, b) => rankInOrder(a.key, order) - rankInOrder(b.key, order)) }
+      : undefined;
+    return lastOutput;
+  };
+}

@@ -1,4 +1,4 @@
-import { createBreakdownTranslator, translateMetricLabel } from './metric-label.util';
+import { createBreakdownSorter, createBreakdownTranslator, translateMetricLabel } from './metric-label.util';
 
 describe('translateMetricLabel', () => {
   const KNOWN_TRANSLATIONS: Record<string, string> = {
@@ -69,5 +69,52 @@ describe('createBreakdownTranslator', () => {
     const translate = createBreakdownTranslator();
     expect(translate(undefined)).toBeUndefined();
     expect(translate(null)).toBeUndefined();
+  });
+});
+
+describe('createBreakdownSorter', () => {
+  const PIPELINE = ['PENDING', 'PARTIALLY_SIGNED', 'READY_FOR_SIGNATURE', 'CLOSED'];
+
+  it('reordena los slices según la secuencia dada, sin importar el orden de llegada', () => {
+    const breakdown = {
+      dimension: 'estado',
+      slices: [
+        { key: 'CLOSED', label: 'Cerrado', value: 4 },
+        { key: 'PENDING', label: 'Pendiente', value: 1 },
+        { key: 'READY_FOR_SIGNATURE', label: 'Listo para firmar', value: 3 },
+        { key: 'PARTIALLY_SIGNED', label: 'Firmado parcialmente', value: 2 },
+      ],
+    };
+
+    const sort = createBreakdownSorter(PIPELINE);
+    const sorted = sort(breakdown);
+
+    expect(sorted?.slices.map(s => s.key)).toEqual(['PENDING', 'PARTIALLY_SIGNED', 'READY_FOR_SIGNATURE', 'CLOSED']);
+  });
+
+  it('claves no listadas en el orden quedan al final', () => {
+    const breakdown = {
+      dimension: 'estado',
+      slices: [
+        { key: 'UNKNOWN_STATUS', label: 'Unknown status', value: 1 },
+        { key: 'PENDING', label: 'Pendiente', value: 2 },
+      ],
+    };
+    const sort = createBreakdownSorter(PIPELINE);
+    expect(sort(breakdown)?.slices.map(s => s.key)).toEqual(['PENDING', 'UNKNOWN_STATUS']);
+  });
+
+  it('devuelve la MISMA referencia de salida si la entrada no cambió (evita re-render espurio)', () => {
+    const breakdown = { dimension: 'estado', slices: [{ key: 'PENDING', label: 'Pendiente', value: 1 }] };
+    const sort = createBreakdownSorter(PIPELINE);
+    const first = sort(breakdown);
+    const second = sort(breakdown);
+    expect(second).toBe(first);
+  });
+
+  it('undefined/null entra y sale sin romper', () => {
+    const sort = createBreakdownSorter(PIPELINE);
+    expect(sort(undefined)).toBeUndefined();
+    expect(sort(null)).toBeUndefined();
   });
 });
