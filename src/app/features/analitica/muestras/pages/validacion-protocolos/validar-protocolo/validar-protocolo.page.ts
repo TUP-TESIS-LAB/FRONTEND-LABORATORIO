@@ -178,6 +178,13 @@ export class ValidarProtocoloPage implements OnInit {
   }
   outOf(d: DetalleDeterminacion): boolean { return d.outOfRange; }
 
+  /**
+   * Valor critico (panic value): el motor lo marca FAIL, no WARNING. No es lo mismo que "alterado"
+   * — un potasio de 6.2 con riesgo de arritmia y uno de 5.2 no pueden verse igual. Se distingue en
+   * rojo pleno para que salte a la vista antes de firmar.
+   */
+  esCritico(d: DetalleDeterminacion): boolean { return d.aggregateOutcome === 'FAIL'; }
+
   /** GAP-9: "Validar" deja el resultado VALIDATED (validate-all con PASS). */
   validar(r: DetalleResultado, ev?: Event): void {
     ev?.stopPropagation();
