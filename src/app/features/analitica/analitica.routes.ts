@@ -1,6 +1,13 @@
 import { Routes } from '@angular/router';
+import { provideState } from '@ngrx/store';
+import { provideEffects } from '@ngrx/effects';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { hasRoleGuard } from '@core/guards/has-role.guard';
+import { roleGuard } from '@core/guards/role.guard';
 import { sectionGuard } from '@core/guards/section.guard';
+import { PRINTER_FEATURE_KEY } from './preanalitica/printers/store/printer.state';
+import { printerReducer } from './preanalitica/printers/store/printer.reducer';
+import { PrinterEffects } from './preanalitica/printers/store/printer.effects';
 
 export const ANALITICA_ROUTES: Routes = [
   {
@@ -94,6 +101,18 @@ export const ANALITICA_ROUTES: Routes = [
             title: 'Configurar análisis',
             data: { breadcrumb: 'Configurar análisis' },
           },
+        ],
+      },
+      {
+        path: 'impresoras',
+        canMatch: [roleGuard('ADMINISTRADOR')],
+        data: { breadcrumb: 'Impresoras' },
+        loadComponent: () => import('./preanalitica/printers/pages/printers-list/printers-list.page').then(m => m.PrintersListPage),
+        providers: [
+          provideState(PRINTER_FEATURE_KEY, printerReducer),
+          provideEffects([PrinterEffects]),
+          MessageService,
+          ConfirmationService,
         ],
       },
       {
