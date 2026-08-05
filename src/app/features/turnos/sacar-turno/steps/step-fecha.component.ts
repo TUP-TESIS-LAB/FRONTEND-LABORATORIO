@@ -13,7 +13,7 @@ import { SlotDisponible } from '../models/sacar-turno.model';
   template: `
     <div class="flex items-baseline gap-2 mb-2">
       <label class="text-sm font-medium text-surface-600">Fecha y horario</label>
-      <span class="text-xs text-surface-400">mínimo 2 días de anticipación</span>
+      <span class="text-xs text-surface-400">desde hoy en adelante</span>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6">
