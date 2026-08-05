@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, comput
 import { FormsModule } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
 import { AccessSection, SectionResponse } from '@core/access/access.model';
-import { SECTION_GROUPS } from '../models/access-section-groups';
+import { GROUPED_SECTIONS, SECTION_GROUPS } from '../models/access-section-groups';
 
 interface RenderRow { code: AccessSection; label: string; }
 interface RenderGroup { label: string; rows: RenderRow[]; }
@@ -64,12 +64,21 @@ export class SeccionesChecklistComponent {
 
   readonly groups = computed<RenderGroup[]>(() => {
     const byCode = new Map(this._catalog().map((s) => [s.code, s.label]));
-    return SECTION_GROUPS
+    const grouped = SECTION_GROUPS
       .map((g) => ({
         label: g.label,
         rows: g.sections.filter((c) => byCode.has(c)).map((c) => ({ code: c, label: byCode.get(c)! })),
       }))
       .filter((g) => g.rows.length > 0);
+
+    // El backend es la fuente de verdad de qué se puede conceder. Si agrega una
+    // sección que todavía no está en SECTION_GROUPS, va a "Otros" en vez de
+    // desaparecer: una sección invisible es un permiso que nadie puede otorgar.
+    const rest = this._catalog()
+      .filter((s) => !GROUPED_SECTIONS.has(s.code))
+      .map((s) => ({ code: s.code, label: s.label }));
+
+    return rest.length ? [...grouped, { label: 'Otros', rows: rest }] : grouped;
   });
 
   isChecked(code: AccessSection): boolean {
