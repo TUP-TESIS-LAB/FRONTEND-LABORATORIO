@@ -48,9 +48,23 @@ export class ValidarProtocoloPage implements OnInit {
   readonly results = computed<DetalleResultado[]>(() => this.detalle()?.results ?? []);
   readonly studyStatus = computed(() => this.detalle()?.study.currentStatus ?? 'PENDING');
   readonly isClosed = computed(() => this.studyStatus() === 'CLOSED');
-  /** Puede firmar el estudio mientras no esté cerrado y haya al menos un resultado validado. */
+  /**
+   * Habilita "Firmar estudio" mientras el estudio no esté cerrado y quede algo que firmar.
+   *
+   * Hay dos casos distintos y antes sólo se contemplaba el primero:
+   *  1. Quedan resultados en VALIDATED → el modal los firma uno a uno.
+   *  2. Ya están TODOS los resultados firmados y falta sólo la firma del estudio, que es
+   *     exactamente el estado READY_FOR_SIGNATURE. Acá no hay ningún VALIDATED, así que la
+   *     condición vieja apagaba el botón justo en el estado donde más se lo necesita: el
+   *     estudio quedaba sin poder cerrarse y sin informe final para el paciente.
+   *
+   * El effect de firma ya resolvía bien el caso 2 (calcula `quedanTodosFirmados` y agrega
+   * `signStudy`), pero el guard no dejaba llegar hasta él.
+   */
   readonly canOpenFirmaModal = computed(() =>
-    !this.isClosed() && this.results().some(r => r.status === 'VALIDATED'));
+    !this.isClosed()
+    && (this.results().some(r => r.status === 'VALIDATED')
+        || this.studyStatus() === 'READY_FOR_SIGNATURE'));
   readonly firmaBadge = computed(() => badgeFirma(this.studyStatus()));
   /**
    * El estudio tiene al menos un informe firmado disponible (parcial o cerrado).
