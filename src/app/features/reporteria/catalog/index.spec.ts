@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { ALL_REPORTS, REPORT_GROUPS, findReportById } from './index';
 
 describe('catálogo de reportes', () => {
-  it('tiene los 12 reportes de KAN-244 (parte 1 — se borraron los 5 listados, D1)', () => {
-    expect(ALL_REPORTS).toHaveLength(12);
+  it('tiene los 14 reportes (12 de KAN-244 + 2 de la adaptación analítica)', () => {
+    expect(ALL_REPORTS).toHaveLength(14);
   });
 
   it('cada id de reporte es único', () => {
@@ -43,8 +43,8 @@ describe('catálogo de reportes', () => {
     }
   });
 
-  it('REPORT_GROUPS agrupa los 5 módulos', () => {
-    expect(REPORT_GROUPS.map((g) => g.key)).toEqual(['pacientes', 'medicos', 'empleados', 'sucursales', 'usuarios']);
+  it('REPORT_GROUPS agrupa los 6 módulos', () => {
+    expect(REPORT_GROUPS.map((g) => g.key)).toEqual(['pacientes', 'medicos', 'empleados', 'sucursales', 'usuarios', 'analitica']);
   });
 
   it('branchFilterable es opt-in: SOLO R-PAC-02/03/04/05 lo tienen en true (D2.1/D2.2)', () => {
@@ -53,7 +53,7 @@ describe('catálogo de reportes', () => {
     // pero es irrealizable sin un puerto branch→users nuevo — no se fuerza. Médicos y
     // usuarios no tienen ninguna relación a sucursal en el modelo. El default (ausente)
     // tiene que fallar hacia lo seguro: filtro escondido, no un filtro que miente.
-    const expectedTrue = ['R-PAC-02', 'R-PAC-03', 'R-PAC-04', 'R-PAC-05'];
+    const expectedTrue = ['R-PAC-02', 'R-PAC-03', 'R-PAC-04', 'R-PAC-05', 'R-ANA-01', 'R-ANA-02'];
     for (const r of ALL_REPORTS) {
       if (expectedTrue.includes(r.id)) expect(r.branchFilterable).toBe(true);
       else expect(r.branchFilterable).not.toBe(true);
