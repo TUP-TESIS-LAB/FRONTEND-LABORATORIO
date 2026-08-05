@@ -110,9 +110,9 @@
               @if (autoValidacionActiva()) { <span>VALIDACIÓN AUTOMÁTICA</span> }
             </div>
             @for (d of r.determinations; track d.determinationId) {
-              <div class="vt-row vt-grid" [class.is-flag]="outOf(d)">
+              <div class="vt-row vt-grid" [class.is-flag]="outOf(d) && !esCritico(d)" [class.is-critical]="esCritico(d)">
                 <span class="vt-n">{{ d.name }}</span>
-                <span class="vt-v" [class.flag-h]="outOf(d)">{{ d.value }}</span>
+                <span class="vt-v" [class.flag-h]="outOf(d) && !esCritico(d)" [class.critical-h]="esCritico(d)">{{ d.value }}</span>
                 <span class="vt-u">{{ d.unit }}</span>
                 <span class="vt-ref">{{ (d.analyticalType === 'QUALITATIVE' || d.analyticalType === 'SEMI_QUALITATIVE') ? (d.expectedQualitativeValue || '') : (d.referenceRange || '') }}</span>
                 <span class="vt-cell">
@@ -125,7 +125,9 @@
                 @if (autoValidacionActiva()) {
                 <span class="vt-cell">
                   @if (d.aggregateOutcome) {
-                    @if (outOf(d)) {
+                    @if (esCritico(d)) {
+                      <span class="vb vb-critical"><i class="pi pi-exclamation-circle"></i> Crítico</span>
+                    } @else if (outOf(d)) {
                       <span class="vb vb-warn"><i class="pi pi-exclamation-triangle"></i> {{ outcomeLabel(d.aggregateOutcome) }}</span>
                     } @else {
                       <span class="vb vb-ok"><i class="pi pi-check"></i> {{ outcomeLabel(d.aggregateOutcome) }}</span>

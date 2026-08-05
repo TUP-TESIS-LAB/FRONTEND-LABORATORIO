@@ -157,10 +157,14 @@
   padding: 11px 20px; border-bottom: 1px solid #f4f5f8;
   &:last-child { border-bottom: none; }
   &.is-flag { background: #fffbf3; }
+  // Critico (panic value): rojo pleno + borde izquierdo. Tiene que distinguirse de "alterado",
+  // que es el amarillo de arriba — no es una diferencia estetica, es de conducta clinica.
+  &.is-critical { background: #fef2f2; box-shadow: inset 3px 0 0 #dc2626; }
 }
 .vt-n { font-size: 13.5px; color: var(--ink); font-weight: 500; }
 .vt-v { font-family: var(--mono); font-size: 14px; font-weight: 600; color: #1a2140; }
 .vt-v.flag-h { color: #c2410c; }
+.vt-v.critical-h { color: #b91c1c; font-weight: 700; }
 .vt-v.flag-l { color: #1d4ed8; }
 .vt-u { font-size: 12.5px; color: var(--muted); }
 .vt-ref { font-size: 12.5px; color: var(--ink-2); }
@@ -172,6 +176,7 @@
 .vb-ok { color: #15803d; background: #dcfce7; }
 .vb-no { color: var(--ink-2); background: #eef0f5; }
 .vb-warn { color: #b45309; background: #fef3c7; }
+.vb-critical { color: #b91c1c; background: #fee2e2; font-weight: 700; }
 
 /* Análisis pendiente (sin resultado todavía): mensaje en vez de la tabla de determinaciones. */
 .anx-body--pending { padding: 16px 18px; }
