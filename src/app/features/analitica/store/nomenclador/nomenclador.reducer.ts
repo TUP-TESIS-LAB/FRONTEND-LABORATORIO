@@ -1,4 +1,5 @@
 import { createReducer, on } from '@ngrx/store';
+import { resolveDefaultVersionId } from '../../models/nomenclador.model';
 import { initialNomencladorState, NomencladorFeatureState } from './nomenclador.state';
 import {
   loadNomenclador,
@@ -25,9 +26,9 @@ export const nomencladorReducer = createReducer(
     nbuVersions: versions,
     catalog,
     particular: pricing,
-    // Mantener la versión seleccionada si ya hay una; si no, tomar la vigente.
-    selectedVersionId: state.selectedVersionId
-      ?? (versions.find(v => v.vigente)?.id ?? versions[0]?.id ?? null),
+    // Mantener la versión seleccionada si ya hay una (ej. recarga tras haber elegido a mano);
+    // si no, resolver el default: la vigente. Ver resolveDefaultVersionId para los casos borde.
+    selectedVersionId: state.selectedVersionId ?? resolveDefaultVersionId(versions),
   })),
   on(loadNomencladorFailure, (state, { error }): NomencladorFeatureState => ({
     ...state, pending: false, error,

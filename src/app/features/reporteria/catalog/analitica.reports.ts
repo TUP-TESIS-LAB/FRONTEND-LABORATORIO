@@ -17,8 +17,11 @@ export const ANALITICA_REPORTS: ReportDef[] = [
     filters: [],
     columns: withSortableColumns(
       [
-        { field: 'analysisTypeId', header: 'Análisis (catálogo)', align: 'right' },
-        { field: 'planId', header: 'Plan de cobertura', align: 'right' },
+        // Se muestra el NOMBRE, no el id: un reporte gerencial que dice "90013" es ilegible
+        // para quien lo lee. El backend resuelve ambos nombres en batch y sigue enviando
+        // analysisTypeId/planId para quien los necesite.
+        { field: 'analysisTypeName', header: 'Análisis', align: 'left' },
+        { field: 'planName', header: 'Plan de cobertura', align: 'left' },
         { field: 'year', header: 'Año', align: 'right' },
         { field: 'month', header: 'Mes', align: 'right' },
         { field: 'count', header: 'Cantidad', align: 'right' },
@@ -40,7 +43,9 @@ export const ANALITICA_REPORTS: ReportDef[] = [
     filters: [],
     columns: withSortableColumns(
       [
-        { field: 'determinationId', header: 'Determinación', align: 'right' },
+        // Nombre en vez de id, por el mismo motivo que en R-ANA-01: el backend ya envía
+        // `determinacion` resuelto y el id queda disponible para quien lo necesite.
+        { field: 'determinacion', header: 'Determinación', align: 'left' },
         { field: 'analyticalResultId', header: 'Resultado analítico', align: 'right' },
         { field: 'cantidadCargas', header: 'Cantidad de cargas', align: 'right' },
         { field: 'primeraCarga', header: 'Primera carga', type: 'date' },

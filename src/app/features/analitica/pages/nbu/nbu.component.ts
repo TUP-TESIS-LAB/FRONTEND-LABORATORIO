@@ -16,7 +16,7 @@ type NbuTab = 'catalogo' | 'particular';
 
 /**
  * Pantalla NBU (KAN-118).
- * Shell: header con eyebrow + selector de versión, tabs "Catálogo de análisis" / "Precio particular".
+ * Shell: header con título + selector de versión, tabs "Catálogo de análisis" / "Precio particular".
  * Task 5: tab "Catálogo de análisis" con tabla expandible de determinaciones.
  * Task 6: tab "Precio particular" con valor U.B. editable y override inline.
  */
@@ -31,15 +31,25 @@ type NbuTab = 'catalogo' | 'particular';
         <!-- Selector de versión NBU (caja visible) -->
         <div class="flex items-center gap-2 border border-[var(--ds-border,#e4e4e7)] rounded-lg bg-white px-3 py-2 shadow-sm">
           <span class="text-[11px] font-semibold uppercase tracking-wide text-[var(--ds-text-muted,#71717a)]">Versión</span>
+          <!--
+            La selección se marca con [selected] en cada <option>, NO con [value] en el <select>.
+            No es cosmético: con [value] en el select, Angular escribe select.value en el mismo
+            ciclo de detección en que el @for todavía no creó las <option>. El navegador descarta
+            un value que no matchea ninguna opción, y cuando las opciones aparecen se autoselecciona
+            la primera. Como el valor bindeado no volvió a cambiar, Angular ya no lo reaplica y el
+            selector queda clavado en la versión MÁS VIEJA del nomenclador.
+            [selected] se evalúa dentro de la vista embebida, es decir con la <option> ya en el DOM.
+          -->
           <select
             id="nbu-version-select"
             data-testid="version-select"
             class="bg-transparent text-sm font-semibold text-[var(--brand-primary,#2563eb)] cursor-pointer pr-1 focus:outline-none"
-            [value]="selectedVersionId()"
             (change)="onVersionChange($event)"
           >
             @for (v of versions(); track v.id) {
-              <option [value]="v.id">{{ v.label }}</option>
+              <option [value]="v.id" [selected]="v.id === selectedVersionId()">{{ v.label }}</option>
+            } @empty {
+              <option value="" disabled selected>Sin versiones disponibles</option>
             }
           </select>
         </div>
@@ -125,6 +135,9 @@ export class NbuComponent implements OnInit {
 
   protected onVersionChange(event: Event): void {
     const versionId = (event.target as HTMLSelectElement).value;
+    // El placeholder de lista vacía tiene value="" y está disabled; ignorarlo evita
+    // dejar el store con una versión inexistente si el navegador llegara a emitir el change.
+    if (!versionId) return;
     this.store.dispatch(selectNbuVersion({ versionId }));
   }
 }
