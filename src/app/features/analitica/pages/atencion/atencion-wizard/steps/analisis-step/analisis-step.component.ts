@@ -43,7 +43,7 @@ import {
         <span class="opacity-60">Cobertura de la atención:</span>
         <span class="font-medium">{{ coverageLabel() }}</span>
         @if (isParticular()) {
-          <span class="opacity-60">— sin obra social no se autorizan análisis, por eso no hay columna “Autorizado”.</span>
+          <span class="opacity-60">— sin obra social no se autorizan análisis.</span>
         }
       </div>
 
