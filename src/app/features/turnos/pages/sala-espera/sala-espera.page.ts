@@ -151,7 +151,7 @@ export class SalaEsperaPage implements OnInit, OnDestroy {
   }
 
   unlockAudio(): void {
-    const a = new Audio('/assets/audio/beep.mp3');
+    const a = new Audio('/assets/audio/beep.wav');
     a.volume = 0;
     a.play().then(() => {
       this.audioUnlocked.set(true);
@@ -174,7 +174,7 @@ export class SalaEsperaPage implements OnInit, OnDestroy {
 
   private playBeep(): void {
     try {
-      const audio = new Audio('/assets/audio/beep.mp3');
+      const audio = new Audio('/assets/audio/beep.wav');
       audio.play().catch(err => console.warn('[sala-espera] beep blocked:', err));
     } catch (e) {
       console.warn('[sala-espera] beep error:', e);
