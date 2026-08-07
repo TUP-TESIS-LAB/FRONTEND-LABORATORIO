@@ -137,7 +137,7 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
           [series]="recaudacionSerie()" [loading]="loading()" />
         <div class="fin-viz-grid fin-viz-grid--2col">
           <ui-metric-chart-card
-            type="doughnut" title="Por método de pago"
+            type="doughnut" title="Por método de pago" legendPosition="right"
             [breakdown]="recaudacionPorMetodo()" [loading]="loading()" />
           <div class="fin-card fin-card--table">
             <h3 class="fin-viz-card__title">Por sucursal</h3>
@@ -237,13 +237,6 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
             <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
           }
         </div>
-        <!-- Table-view del propio card reemplaza al "Detalle" manual — mismo dato, sin
-             duplicar la tabla acá afuera. -->
-        <div class="fin-viz-bounded">
-          <ui-metric-chart-card
-            type="doughnut" title="Por método" legendPosition="right"
-            [breakdown]="conciliacionPorMetodo()" [loading]="loading()" />
-        </div>
       </section>
 
       <!-- ── Tesorería (MFI-06) ── -->
@@ -254,9 +247,32 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
             <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
           }
         </div>
-        <div class="fin-viz-bounded">
+      </section>
+
+      <!-- ── Desgloses de conciliación + tesorería: cada uno vivía solo en su sección,
+           acotado a 480px con 2/3 de la fila en blanco al lado (ninguno tiene tabla
+           manual con la que compartir fila, a diferencia de 'Por método de pago' arriba).
+           Comparten UNA grilla responsive (ver .fin-viz-grid--auto): auto-fit en vez de
+           2 columnas fijas, crece a 3+ si se suma otro breakdown acá el día de mañana,
+           sin quedar una tarjeta angosta huérfana en el medio.
+
+           BARRA horizontal, no dona: los dos traen montos CON SIGNO, no conteos.
+           'Por método' es diferencia esperado-vs-real (por definición puede dar negativo).
+           'Por origen' confirmado contra el backend (GetTreasuryByOriginUseCase /
+           OriginAmount.signedTotal): EGRESS viaja negativo, INGRESS positivo. Una dona sólo
+           tiene sentido para magnitudes que suman un todo ≥ 0 — con signo, el gajo más
+           "grande" puede representar justo lo contrario de "más". Una barra horizontal
+           extiende nativamente hacia la izquierda del cero para los negativos. -->
+      <section class="fin-section">
+        <div class="fin-viz-grid--auto">
+          <!-- height más bajo que el default (320px, pensado para donas): PaymentMethod (6
+               valores) y TreasuryEntrySource (7) son sets acotados — a esa altura una barra
+               horizontal con tan pocas categorías queda con espacio vacío de sobra. -->
           <ui-metric-chart-card
-            type="doughnut" title="Por origen" legendPosition="right"
+            type="bar" orientation="horizontal" title="Por método" height="240px"
+            [breakdown]="conciliacionPorMetodo()" [loading]="loading()" />
+          <ui-metric-chart-card
+            type="bar" orientation="horizontal" title="Por origen" height="240px"
             [breakdown]="tesoreriaPorOrigen()" [loading]="loading()" />
         </div>
       </section>
@@ -287,13 +303,12 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
       .fin-viz-grid--2col { grid-template-columns: 1fr; }
     }
 
-    /* Secciones con un único breakdown y sin par al lado (Conciliación/Tesorería) — el
-       card ya trae su propia table-view (toggle interno), así que no hay una tabla manual
-       de al lado para llenar el resto de la fila. Se acota el ancho en vez de estirarlo. */
-    .fin-viz-bounded { max-width: 480px; }
-    @media (max-width: 900px) {
-      .fin-viz-bounded { max-width: none; }
-    }
+    /* Breakdowns sin tabla manual al lado (Conciliación 'Por método' + Tesorería 'Por
+       origen') — auto-fit en vez de columnas fijas: 2 columnas en la mayoría de los
+       anchos, 3 si el viewport es lo bastante ancho y se suma otro breakdown más adelante.
+       minmax(280px, 1fr) evita que una tarjeta sola quede angosta con espacio muerto al
+       lado (antes: max-width fijo de 480px dejando 2/3 de la fila en blanco). */
+    .fin-viz-grid--auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
 
     .fin-viz-card__title { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #475569; }
   `],

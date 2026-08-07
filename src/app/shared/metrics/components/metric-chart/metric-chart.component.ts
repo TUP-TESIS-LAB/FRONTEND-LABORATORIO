@@ -4,8 +4,8 @@ import type { Plugin } from 'chart.js';
 import { EmptyStateComponent } from '@shared/ui/components/empty-state/empty-state.component';
 import { MetricBreakdown, MetricSeries } from '../../models/metric-envelopes.model';
 import {
-  buildChartOptions, mapMetricBreakdownToChartData, mapMetricSeriesToChartData,
-  selectBarLabels, selectDoughnutLabels, selectSeriesLabels,
+  buildChartOptions, formatDoughnutCenterTotal, mapMetricBreakdownToChartData, mapMetricSeriesToChartData,
+  selectBarLabels, selectSeriesLabels,
 } from './chart-data.mapper';
 
 /** Tipo de gráfico soportado por el wrapper (subconjunto de los que expone `p-chart`). */
@@ -82,18 +82,24 @@ interface DirectLabelsConfig {
 }
 
 /**
- * Plugin INLINE de Chart.js (`afterDraw`) — etiquetas directas selectivas (KAN-252: "los
- * valores no se ven a simple vista"). NO es una dependencia nueva: Chart.js ya expone la
- * API de plugins nativamente, esto es un objeto plano registrado vía el input `[plugins]`
- * de `p-chart` — se evita a propósito sumar `chartjs-plugin-datalabels` (spec: "preferir
- * etiquetas nativas... salvo que sea la única vía razonable"; acá SÍ hace falta un plugin
- * porque Chart.js no dibuja etiquetas permanentes por sí solo, pero no hace falta una lib).
+ * Plugin INLINE de Chart.js (`afterDraw`) — etiquetas directas selectivas para line/bar
+ * horizontal (KAN-252: "los valores no se ven a simple vista"). NO es una dependencia
+ * nueva: Chart.js ya expone la API de plugins nativamente, esto es un objeto plano
+ * registrado vía el input `[plugins]` de `p-chart` — se evita a propósito sumar
+ * `chartjs-plugin-datalabels` (spec: "preferir etiquetas nativas... salvo que sea la única
+ * vía razonable"; acá SÍ hace falta un plugin porque Chart.js no dibuja etiquetas
+ * permanentes por sí solo, pero no hace falta una lib).
  *
- * Sólo DIBUJA — qué punto/barra/gajo etiquetar y con qué texto es responsabilidad de
- * `selectSeriesLabels`/`selectBarLabels`/`selectDoughnutLabels` (`chart-data.mapper.ts`,
- * funciones puras, testeadas sin canvas ni TestBed). El color de texto es el ink del
- * design system (`--ds-text`), NUNCA el color de la serie/slice — la etiqueta es
- * información, no parte de la identidad visual del dato.
+ * Doughnut/pie NO pasa por acá — ver `buildDoughnutCenterTextPlugin` y la leyenda
+ * enriquecida de `buildChartOptions` (`chart-data.mapper.ts`): un texto flotante dibujado
+ * a mano sobre el gajo era justo lo que se pisaba con la leyenda y consigo mismo (KAN-252
+ * QA), una leyenda con layout real de Chart.js no tiene ese problema.
+ *
+ * Sólo DIBUJA — qué punto/barra etiquetar y con qué texto es responsabilidad de
+ * `selectSeriesLabels`/`selectBarLabels` (`chart-data.mapper.ts`, funciones puras, testeadas
+ * sin canvas ni TestBed). El color de texto es el ink del design system (`--ds-text`),
+ * NUNCA el color de la serie/slice — la etiqueta es información, no parte de la identidad
+ * visual del dato.
  */
 function buildDirectLabelsPlugin(config: DirectLabelsConfig): Plugin {
   return {
@@ -121,24 +127,83 @@ function buildDirectLabelsPlugin(config: DirectLabelsConfig): Plugin {
       } else if (config.type === 'bar' && config.orientation === 'horizontal') {
         const values = (dataset.data as number[]) ?? [];
         const meta = chart.getDatasetMeta(0);
-        ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         for (const { index, text } of selectBarLabels(values, config.unit)) {
           const bar = meta.data[index] as unknown as PositionedElement | undefined;
-          if (bar) ctx.fillText(text, bar.x + 6, bar.y);
-        }
-      } else if (config.type === 'doughnut' || config.type === 'pie') {
-        const values = (dataset.data as number[]) ?? [];
-        const meta = chart.getDatasetMeta(0);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        for (const { index, text } of selectDoughnutLabels(values, config.unit)) {
-          const arc = meta.data[index] as unknown as PositionedElement | undefined;
-          const pos = arc?.tooltipPosition?.() ?? arc;
-          if (pos) ctx.fillText(text, pos.x, pos.y);
+          if (!bar) continue;
+          // `bar.x` es la punta de la barra (el valor), no un extremo fijo — con datos que
+          // pueden ser negativos (KAN-252: "Por método"/"Por origen" en tesorería, montos
+          // con signo) la punta cae a la IZQUIERDA del cero. Sin este chequeo, "+6" corría
+          // el texto hacia adentro de la barra (hacia el cero) en vez de al espacio libre
+          // más allá de la punta — se leía mal sólo para barras negativas.
+          const negative = (values[index] ?? 0) < 0;
+          ctx.textAlign = negative ? 'right' : 'left';
+          ctx.fillText(text, bar.x + (negative ? -6 : 6), bar.y);
         }
       }
 
+      ctx.restore();
+    },
+  };
+}
+
+/** Config del plugin del total central — ver `buildDoughnutCenterTextPlugin`. */
+interface DoughnutCenterTextConfig {
+  unit: string | undefined;
+  textColor: string;
+  mutedColor: string;
+}
+
+/** `arc` con `innerRadius` — Chart.js lo calcula en cada redibujo (`ArcElement.innerRadius`,
+ * ver `node_modules/chart.js/dist/chart.cjs`) a partir del `cutout` real, que ya tiene en
+ * cuenta alto/ancho del card, leyenda y todo lo demás. Es la fuente de verdad del hueco
+ * disponible — más confiable que inferirlo a mano desde el `height` que pasó el caller. */
+interface DoughnutArc extends PositionedElement {
+  innerRadius?: number;
+}
+
+/** Radio mínimo del hueco (px) para que el total + "Total" entren sin clipping: 15px bold
+ * (línea ~18px) + 10px muted (línea ~12px) + separación entre ambas ≈ 32px de alto de
+ * texto, apoyado sobre el centro vertical del hueco → hace falta al menos la mitad de eso
+ * de radio, más margen para que no quede pegado al borde interno del anillo. Con este piso,
+ * "Urgentes por estado" (140px de alto, cutout 50%) entra bien; una card angosta que baje el
+ * hueco por debajo de esto simplemente NO dibuja el total en vez de clippearlo (KAN-252 QA:
+ * "no entregues un cambio compartido sin mirar todos sus consumidores"). */
+const MIN_CENTER_TEXT_RADIUS = 24;
+
+/**
+ * Plugin INLINE de Chart.js (`afterDraw`) — total con signo en el hueco central del anillo
+ * (KAN-252 QA: "no muestran info al menos que pases el mouse", el centro hoy está vacío y
+ * desperdiciado). Sólo aplica a `doughnut` — un `pie` no tiene agujero central donde
+ * dibujar sin taparse con los gajos. El texto sale de `formatDoughnutCenterTotal`
+ * (`chart-data.mapper.ts`, función pura) — este plugin sólo dibuja.
+ */
+function buildDoughnutCenterTextPlugin(config: DoughnutCenterTextConfig): Plugin {
+  return {
+    id: 'ui-metric-chart-doughnut-center',
+    afterDraw(chart) {
+      const dataset = chart.data.datasets[0];
+      if (!dataset) return;
+      const values = (dataset.data as number[]) ?? [];
+      if (values.length === 0) return;
+
+      // Centro geométrico del anillo: `arc.x/arc.y` (NO `tooltipPosition()`, que da el
+      // punto medio de CADA gajo desplazado hacia su arco — acá se necesita el centro del
+      // círculo completo, el mismo para los N gajos).
+      const arc = chart.getDatasetMeta(0).data[0] as unknown as DoughnutArc | undefined;
+      if (!arc) return;
+      if ((arc.innerRadius ?? 0) < MIN_CENTER_TEXT_RADIUS) return;
+
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = config.textColor;
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText(formatDoughnutCenterTotal(values, config.unit), arc.x, arc.y - 8);
+      ctx.fillStyle = config.mutedColor;
+      ctx.font = '10px sans-serif';
+      ctx.fillText('Total', arc.x, arc.y + 10);
       ctx.restore();
     },
   };
@@ -277,12 +342,22 @@ export class MetricChartComponent {
     values: this.valueAxisValues(),
   }));
 
-  /** Ver `buildDirectLabelsPlugin`. Un solo plugin en el array — `p-chart` acepta varios,
-   * este kit sólo necesita el de etiquetas directas. */
-  protected readonly chartPlugins = computed(() => [buildDirectLabelsPlugin({
-    type: this.type,
-    orientation: this.orientation(),
-    unit: this.effectiveUnit(),
-    textColor: resolveVar('--ds-text', '#1a1a2e'),
-  })]);
+  /** Ver `buildDirectLabelsPlugin`/`buildDoughnutCenterTextPlugin`. El del total central
+   * sólo se agrega para `doughnut` — `p-chart` acepta varios plugins en el array. */
+  protected readonly chartPlugins = computed(() => {
+    const plugins = [buildDirectLabelsPlugin({
+      type: this.type,
+      orientation: this.orientation(),
+      unit: this.effectiveUnit(),
+      textColor: resolveVar('--ds-text', '#1a1a2e'),
+    })];
+    if (this.type === 'doughnut') {
+      plugins.push(buildDoughnutCenterTextPlugin({
+        unit: this.effectiveUnit(),
+        textColor: resolveVar('--ds-text', '#1a1a2e'),
+        mutedColor: resolveVar('--ds-text-muted', '#6b7280'),
+      }));
+    }
+    return plugins;
+  });
 }

@@ -6,9 +6,12 @@ import { FormsModule } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { InputTextModule } from 'primeng/inputtext';
-import { race, take } from 'rxjs';
+import { EMPTY, race, take } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
+import { CoverageCatalog, EMPTY_CATALOG, insurerNameForPlan, planName } from '@features/pacientes/models/coverage-catalog.model';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { Analysis } from '../../../../../models/atencion.model';
 import { AnalysisDetailModalComponent } from '../../../../../components/analysis-detail-modal/analysis-detail-modal.component';
 import { AnalysisPickerComponent, PickerRow } from '../../../../../components/analysis-picker/analysis-picker.component';
@@ -33,6 +36,17 @@ import {
   styles: [`:host { display: block; height: 100%; }`],
   template: `
     <div class="flex flex-col h-full min-h-0 space-y-4">
+      <!-- Cobertura en uso: la columna "Autorizado" solo existe con obra social. Sin este
+           cartel el operador que atiende a un Particular cree que la columna se rompió,
+           en vez de entender que no aplica (se reportó exactamente ese malentendido). -->
+      <div class="flex items-center gap-2 text-sm">
+        <span class="opacity-60">Cobertura de la atención:</span>
+        <span class="font-medium">{{ coverageLabel() }}</span>
+        @if (isParticular()) {
+          <span class="opacity-60">— sin obra social no se autorizan análisis.</span>
+        }
+      </div>
+
       <lab-analysis-picker
         [initialItems]="initialItems()"
         [readOnly]="readOnly()"
@@ -74,6 +88,7 @@ export class AnalisisStepComponent implements OnInit {
   private readonly actions$   = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
   private readonly registry   = inject(ModuleRegistry);
+  private readonly coverageCatalogApi = inject(CoverageCatalogService);
 
   readonly atencionId   = input.required<number>();
   readonly stepAdvanced = output<void>();
@@ -110,6 +125,24 @@ export class AnalisisStepComponent implements OnInit {
 
   /** El input de autorización solo aplica con obra social y en modo editable. */
   readonly showAuthorizationInput = computed(() => !this.readOnly() && !this.isParticular());
+
+  /** Catálogo de coberturas para resolver el nombre de obra social + plan de la atención. */
+  private readonly catalog = signal<CoverageCatalog>(EMPTY_CATALOG);
+
+  /**
+   * Cobertura usada por la atención: "Particular" o "Obra social Plan".
+   * Mismo criterio que la fila "Cobertura" del resumen (paso Confirmar).
+   */
+  readonly coverageLabel = computed<string>(() => {
+    const planId = this.detail()?.insurancePlanId ?? null;
+    if (planId == null) return 'Particular';
+    const cat = this.catalog();
+    const insurer = insurerNameForPlan(cat, planId);
+    const plan = planName(cat, planId);
+    // El plan puede llamarse igual que la obra social (planes por defecto del seed):
+    // en ese caso no repetimos el nombre.
+    return plan === insurer ? insurer : `${insurer} ${plan}`;
+  });
 
   /**
    * Modo express urgente (KAN-140): la atención es urgente Y el módulo URGENCIAS está activo.
@@ -184,6 +217,12 @@ export class AnalisisStepComponent implements OnInit {
       .map((x) => x.analysisId);
 
     this.authorizationValue.set(d?.authorizationNumber ?? null);
+
+    // Catálogo de coberturas para el cartel de cobertura. Errores silenciados
+    // (catchError → EMPTY): sin catálogo el label cae a "—", el paso sigue usable.
+    this.coverageCatalogApi.getCatalog().pipe(
+      catchError(() => EMPTY),
+    ).subscribe((cat) => this.catalog.set(cat));
 
     if (analysisIds.length > 0) {
       // Backend manda — hidratamos urgente desde lo persistido y traemos el catálogo.

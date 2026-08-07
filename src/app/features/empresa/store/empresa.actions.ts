@@ -16,6 +16,7 @@ import { SmtpConfig, GuardarSmtpConfigPayload, EnviarTestEmailPayload, TestEmail
 import {
   ReportTemplate, GuardarReportTemplateTextPayload, AuthorizerCandidate,
 } from '../models/report-template.model';
+import { FiscalStatus } from '../models/fiscal-status.model';
 
 // =========================
 // Usuarios — search/list
@@ -289,6 +290,19 @@ export const deleteReportImageSuccess = createAction(
 );
 export const deleteReportImageFailure = createAction(
   '[Empresa API] Delete Report Image Failure',
+  props<{ error: HttpErrorResponse }>(),
+);
+
+// =========================
+// Estado fiscal — load (solo lectura; se edita desde el panel de SaaS Admin)
+// =========================
+export const loadFiscalStatus = createAction('[Empresa Fiscal Page] Load FiscalStatus');
+export const loadFiscalStatusSuccess = createAction(
+  '[Empresa API] Load FiscalStatus Success',
+  props<{ status: FiscalStatus }>(),
+);
+export const loadFiscalStatusFailure = createAction(
+  '[Empresa API] Load FiscalStatus Failure',
   props<{ error: HttpErrorResponse }>(),
 );
 

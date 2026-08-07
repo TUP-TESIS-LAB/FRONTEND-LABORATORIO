@@ -45,7 +45,7 @@ export const EMPRESA_ROUTES: Routes = [
           provideEffects(DerivacionesEffects),
         ],
       },
-      { path: 'white-label', data: { breadcrumb: 'White label' },  loadComponent: () => import('./pages/white-label/white-label.page').then(m => m.WhiteLabelPage) },
+      { path: 'white-label', data: { breadcrumb: 'Personalización' }, loadComponent: () => import('./pages/white-label/white-label.page').then(m => m.WhiteLabelPage) },
       { path: 'fiscal',      data: { breadcrumb: 'Facturación' },  loadComponent: () => import('./pages/fiscal/fiscal.page').then(m => m.FiscalPage) },
       { path: 'email',       data: { breadcrumb: 'Email' },        loadComponent: () => import('./pages/email/email.page').then(m => m.EmailPage) },
       { path: 'informe-pdf', data: { breadcrumb: 'Informe PDF' },  loadComponent: () => import('./pages/informe-pdf/informe-pdf.page').then(m => m.InformePdfPage) },

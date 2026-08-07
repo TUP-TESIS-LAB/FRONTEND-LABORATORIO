@@ -24,7 +24,7 @@ import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicat
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { CurrencyArPipe } from '@shared/pipes/currency-ar.pipe';
 
-import { PollingService, PollingHandle } from '@core/refresh';
+import { PollingService, PollingHandle, EtagCacheService } from '@core/refresh';
 
 import { OperatorBranchContextService } from '@features/turnos/services/operator-branch.context';
 import { CajaContextService } from '../../services/caja-context.service';
@@ -471,6 +471,7 @@ export class CajaPage implements OnInit {
   private readonly branchCtx = inject(OperatorBranchContextService);
   private readonly cajaCtx   = inject(CajaContextService);
   private readonly tokens    = inject(TokenService);
+  private readonly etagCache = inject(EtagCacheService);
 
   readonly isAdmin = signal(this.tokens.getRoles().includes('ADMINISTRADOR'));
 
@@ -545,7 +546,14 @@ export class CajaPage implements OnInit {
       intervalMs: 5000,
       poll: () => {
         const sess = this.session();
-        if (sess?.status === 'OPEN') {
+        // Solo polleamos la actividad de una sesión ya resuelta y perteneciente a la subcaja
+        // seleccionada. `applySelection` despacha `loadOpenSession` y hace `pokeNow()` en el
+        // mismo tick, así que sin este guard el poke leía la sesión vieja y disparaba un
+        // `loadActivity` que `loadActivityOnSession$` cancelaba un instante después
+        // (el XHR `activity` en estado "canceled" del Network).
+        const settledForSelectedRegister =
+          !this.loading() && sess?.cashRegisterId === this.selectedRegisterId();
+        if (sess?.status === 'OPEN' && settledForSelectedRegister) {
           this.store.dispatch(loadActivity({ sessionId: sess.id }));
         }
         const b = this.branchCtx.branchId();
@@ -566,6 +574,13 @@ export class CajaPage implements OnInit {
     const branchId = this.branchCtx.branchId();
     if (id != null) {
       if (branchId != null) this.cajaCtx.select(branchId, id);
+      // `loadOpenSession` limpia `activity` en el reducer, pero el cache de ETags vive en el
+      // root injector y sobrevive a la navegación. Sin invalidar acá, al volver a la pantalla
+      // el primer GET de actividad manda `If-None-Match`, el server contesta 304 con toda la
+      // razón, y como no hay reducer para el NotModified el slice queda en null para siempre:
+      // el card "Efectivo de la sesión" se queda en skeleton hasta que un F5 borra el cache.
+      // Una pantalla que resetea su estado tiene que resetear también su ETag.
+      this.etagCache.clearMatching('/financiero/cash-sessions/');
       this.store.dispatch(loadOpenSession({ cashRegisterId: id }));
     } else {
       this.store.dispatch(sessionNotFound());

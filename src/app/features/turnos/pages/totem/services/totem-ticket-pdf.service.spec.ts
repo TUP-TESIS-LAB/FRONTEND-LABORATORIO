@@ -18,6 +18,7 @@ function makeDocMock() {
     // Ancho chico => nunca dispara el auto-reduce del callNumber.
     getTextWidth: vi.fn().mockReturnValue(10),
     autoPrint: vi.fn(),
+    save: vi.fn(),
     output: vi.fn().mockReturnValue('blob:url'),
   };
   return doc;
@@ -27,8 +28,9 @@ function build() {
   const doc = makeDocMock();
   const svc = new TotemTicketPdfService();
   (svc as any).createDoc = vi.fn(() => doc);
-  (svc as any).openInWindow = vi.fn();
-  return { doc, svc, createDoc: (svc as any).createDoc };
+  const openInWindow = vi.fn();
+  (svc as any).openInWindow = openInWindow;
+  return { doc, svc, openInWindow, createDoc: (svc as any).createDoc };
 }
 
 const DATA: TotemTicketData = {
@@ -54,7 +56,16 @@ describe('TotemTicketPdfService', () => {
     expect(texts.indexOf('Sucursal Centro')).toBeLessThan(texts.indexOf('07/06/2026 14:30'));
     expect(texts.indexOf('07/06/2026 14:30')).toBeLessThan(texts.indexOf('ST-001'));
     expect(texts.indexOf('ST-001')).toBeLessThan(texts.indexOf('Conserve este ticket'));
-    expect(doc.autoPrint).toHaveBeenCalled();
+  });
+
+  it('descarga el ticket sin abrir el diálogo de impresión ni una pestaña', () => {
+    const { doc, svc, openInWindow } = build();
+    svc.printTicket(DATA);
+
+    expect(doc.save).toHaveBeenCalledWith('ticket-turno.pdf');
+    // El tótem es un kiosco desatendido: nada de autoPrint ni pestañas nuevas.
+    expect(doc.autoPrint).not.toHaveBeenCalled();
+    expect(openInWindow).not.toHaveBeenCalled();
   });
 
   it('centers every line horizontally (x = 40mm, align center)', () => {

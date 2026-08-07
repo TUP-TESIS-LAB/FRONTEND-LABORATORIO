@@ -69,9 +69,12 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
             </div>
 
             <!-- U4 (KAN-246): "Continuar" subió al [wizardFooter] del shell (mismo patrón que
-                 "Confirmar cobro") — acá queda solo "Imprimir" + la descarga del comprobante (KAN-245). -->
+                 "Confirmar cobro") — acá queda solo la descarga del comprobante (KAN-245).
+                 Había también un botón "Imprimir" que llamaba a window.print(): eso imprime
+                 la página del navegador (shell, nav y wizard incluidos), nunca el comprobante.
+                 El PDF real se baja por el endpoint fiscal, así que el botón se quitó en vez de
+                 duplicar la descarga con otro nombre. -->
             <div class="fin-cobro__exito-actions">
-              <p-button label="Imprimir" icon="pi pi-print" severity="secondary" [outlined]="true" (onClick)="imprimir()" />
               <p-button label="Descargar comprobante" icon="pi pi-download" severity="secondary" [outlined]="true"
                         [loading]="downloadingComprobante()" [disabled]="downloadingComprobante() || downloadBlockedByPending()"
                         (onClick)="descargarComprobante()" />
@@ -370,7 +373,6 @@ export class CobroAtencionComponent {
     this.store.dispatch(endBilling({ id: this.attentionId }));
   }
   protected irACaja(): void { this.router.navigate(['/financiero/caja']); }
-  protected imprimir(): void { window.print(); }
 
   /** Reusa la descarga de comprobante fiscal de financiero (mismo endpoint/effect que cobro-detalle.page). */
   protected descargarComprobante(): void {

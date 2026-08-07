@@ -3,6 +3,7 @@ import { createAction, props } from '@ngrx/store';
 import { CreatePatientRequest, Patient, UpdatePatientRequest } from '../../../pacientes/models/patient.model';
 import { PatientGuardian } from '../../models/patient-guardian.model';
 import { RegisterGuardianBody } from '../../services/family-link.service';
+import { RotuloOutput } from '../../services/rotulo-pdf.service';
 import {
   AddAnalysisListRequest,
   AddObservationsRequest,
@@ -66,7 +67,9 @@ export const verifyPatientSuccess = createAction('[Atencion API] Verify Patient 
 export const verifyPatientFailure = createAction('[Atencion API] Verify Patient Failure',    props<{ error: HttpErrorResponse }>());
 
 // Rotulos -----------------------------------------------------------------------
-export const downloadProtocolLabels = createAction('[Atencion Rotulos] Download Protocol Labels', props<{ protocolId: number; protocolNumber: string }>());
+// `output` opcional: sin especificar imprime (botón "Rótulos" del operador). Los disparos
+// automáticos mandan 'download' para no abrir el diálogo de impresión por su cuenta.
+export const downloadProtocolLabels = createAction('[Atencion Rotulos] Download Protocol Labels', props<{ protocolId: number; protocolNumber: string; output?: RotuloOutput }>());
 
 // Resumen -----------------------------------------------------------------------
 export const loadAttentionPatient = createAction('[Atencion Resumen] Load Patient', props<{ patientId: number }>());

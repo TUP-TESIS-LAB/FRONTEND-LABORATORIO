@@ -297,7 +297,10 @@ export class AtencionDashboardComponent implements OnInit {
     if (protocolId == null) return;
     this.confirm.confirm({
       header: '¿Reimprimir los rótulos?',
-      message: 'Se volverá a descargar el PDF de rótulos de esta atención.',
+      // El texto decía "se volverá a descargar": describía mal lo que hace este botón, que abre
+      // el PDF para imprimirlo. La confusión se volvió costosa desde que el cierre de atención
+      // SÍ descarga los rótulos — dos acciones distintas no pueden anunciarse igual.
+      message: 'Se abrirá el PDF de rótulos de esta atención para imprimirlo.',
       icon: 'pi pi-tag',
       acceptLabel: 'Reimprimir',
       rejectLabel: 'Cancelar',

@@ -13,6 +13,7 @@ export const selectMuestrasError = createSelector(selectMuestrasState, s => s.er
 
 export const selectTransitoItems = createSelector(selectMuestrasState, s => s.transito);
 export const selectRouting = createSelector(selectMuestrasState, s => s.routing);
+export const selectRoutingError = createSelector(selectMuestrasState, s => s.routingError);
 export const selectWorkspaces = createSelector(selectMuestrasState, s => s.workspaces);
 export const selectDispatchPending = createSelector(selectMuestrasState, s => s.dispatchPending);
 export const selectDescarteItems = createSelector(selectMuestrasState, s => s.descarte);

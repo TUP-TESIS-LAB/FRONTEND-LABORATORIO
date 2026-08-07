@@ -1,8 +1,14 @@
 import {
-  buildChartOptions, buildYAxisScale, computeSuggestedMax, mapMetricBreakdownToChartData, mapMetricSeriesToChartData,
-  selectBarLabels, selectDoughnutLabels, selectSeriesLabels,
+  buildChartOptions, buildYAxisScale, computeSuggestedMax, formatBreakdownEntry, formatDoughnutCenterTotal,
+  mapMetricBreakdownToChartData, mapMetricSeriesToChartData, selectBarLabels, selectSeriesLabels, sumAbsoluteValues,
 } from './chart-data.mapper';
 import { MetricSeries, MetricBreakdown } from '../../models/metric-envelopes.model';
+import { unitFormat } from '../../util/metric-format.util';
+
+// `Intl.NumberFormat('es-AR', {style:'currency'})` separa el símbolo con un NBSP (U+00A0),
+// no un espacio común — formatear acá con el mismo `unitFormat` (en vez de hardcodear el
+// string) evita que el test dependa a ciegas de ese carácter invisible.
+const currency = unitFormat('currency').format;
 
 const PALETTE = ['#2563eb', '#0ea5a4', '#f97316'];
 
@@ -217,6 +223,26 @@ describe('buildChartOptions', () => {
     const label = options.plugins.tooltip.callbacks.label({ label: 'Sede Centro', parsed: { x: 30, y: 0 }, dataset: {} });
     expect(label).toBe('Sede Centro: 30');
   });
+
+  it('doughnut/pie: la leyenda tiene generateLabels — "Etiqueta: valor (pct%)" por gajo, sin cap de '
+    + 'cantidad (reemplaza al viejo texto flotante que se pisaba, KAN-252 QA)', () => {
+    const options = buildChartOptions({ ...base, type: 'doughnut', orientation: 'vertical', unit: 'count' }) as any;
+    const generateLabels = options.plugins.legend.labels.generateLabels as (chart: unknown) => { text: string }[];
+    const fakeChart = {
+      data: {
+        labels: ['Efectivo', 'Tarjeta', 'Transferencia'],
+        datasets: [{ data: [60, 40, 0], backgroundColor: ['#111', '#222', '#333'] }],
+      },
+      getDataVisibility: () => true,
+    };
+    const entries = generateLabels(fakeChart);
+    expect(entries.map(e => e.text)).toEqual(['Efectivo: 60 (60%)', 'Tarjeta: 40 (40%)', 'Transferencia: 0']);
+  });
+
+  it('bar/line: la leyenda NO trae generateLabels propio (Chart.js usa el default de la serie)', () => {
+    const options = buildChartOptions({ ...base, type: 'bar', orientation: 'vertical', datasetCount: 2 }) as any;
+    expect(options.plugins.legend.labels.generateLabels).toBeUndefined();
+  });
 });
 
 describe('selectSeriesLabels', () => {
@@ -268,30 +294,47 @@ describe('selectBarLabels', () => {
   });
 });
 
-describe('selectDoughnutLabels', () => {
-  it('hasta 4 gajos: valor + % del total en cada uno', () => {
-    const labels = selectDoughnutLabels([60, 40], 'count');
-    expect(labels).toEqual([
-      { index: 0, text: '60 (60%)' },
-      { index: 1, text: '40 (40%)' },
-    ]);
+describe('sumAbsoluteValues', () => {
+  it('suma magnitudes, no valores con signo', () => {
+    expect(sumAbsoluteValues([0, -120, 220])).toBe(340);
   });
 
-  it('exactamente 4 gajos: sigue etiquetando', () => {
-    const labels = selectDoughnutLabels([1, 1, 1, 1], 'count');
-    expect(labels).toHaveLength(4);
+  it('array vacío: 0', () => {
+    expect(sumAbsoluteValues([])).toBe(0);
+  });
+});
+
+describe('formatBreakdownEntry', () => {
+  it('gajo positivo: "Etiqueta: valor (pct%)"', () => {
+    expect(formatBreakdownEntry('Efectivo', 60, 100, 'count')).toBe('Efectivo: 60 (60%)');
   });
 
-  it('5 gajos o más: sin etiquetas (sólo leyenda)', () => {
-    expect(selectDoughnutLabels([1, 1, 1, 1, 1], 'count')).toEqual([]);
+  it('valores negativos (neto de tesorería): % SIEMPRE sobre magnitud, nunca negativo ni > 100 '
+    + '(bug real KAN-252 QA: sumar con signo daba "-120%"/"220%")', () => {
+    const totalAbs = sumAbsoluteValues([0, -120, 220]); // 340
+    expect(formatBreakdownEntry('Egresos', -120, totalAbs, 'currency')).toBe(`Egresos: ${currency(-120)} (35%)`);
+    expect(formatBreakdownEntry('Ingresos', 220, totalAbs, 'currency')).toBe(`Ingresos: ${currency(220)} (65%)`);
   });
 
-  it('sin gajos: sin etiquetas', () => {
-    expect(selectDoughnutLabels([], 'count')).toEqual([]);
+  it('gajo en 0: sin sufijo "(0%)" — no aporta info y ensucia la leyenda', () => {
+    expect(formatBreakdownEntry('Transferencia', 0, 340, 'currency')).toBe(`Transferencia: ${currency(0)}`);
   });
 
   it('total 0: % es 0 en vez de NaN/Infinity', () => {
-    const labels = selectDoughnutLabels([0, 0], 'count');
-    expect(labels[0].text).toBe('0 (0%)');
+    expect(formatBreakdownEntry('A', 0, 0, 'count')).toBe('A: 0');
+  });
+});
+
+describe('formatDoughnutCenterTotal', () => {
+  it('suma CON signo (el número real de negocio, no la magnitud del %)', () => {
+    expect(formatDoughnutCenterTotal([60, 40], 'count')).toBe('100');
+  });
+
+  it('neto negativo de tesorería: el total central lo muestra negativo', () => {
+    expect(formatDoughnutCenterTotal([0, -120, 220], 'currency')).toBe(currency(100));
+  });
+
+  it('array vacío: formatea 0', () => {
+    expect(formatDoughnutCenterTotal([], 'count')).toBe('0');
   });
 });

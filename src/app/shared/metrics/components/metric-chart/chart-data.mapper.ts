@@ -182,7 +182,15 @@ export function buildChartOptions(params: ChartOptionsParams): Record<string, un
       legend: {
         display: categorical || datasetCount > 1,
         position: legendPosition,
-        labels: { color: textColor },
+        labels: {
+          color: textColor,
+          // Sólo doughnut/pie: "Etiqueta: valor (pct%)" por cada gajo, sin cap de cantidad.
+          // Reemplaza al viejo texto flotante dibujado sobre el gajo (`selectDoughnutLabels`,
+          // sólo hasta 4 gajos, se pisaba con la leyenda y entre sí — KAN-252 QA). La leyenda
+          // de Chart.js es una lista con layout real (no píxeles a mano): crece sin romperse
+          // de 2 a 8+ categorías, que es exactamente el problema que el dibujo a mano tenía.
+          ...(categorical ? { generateLabels: (chart: LegendSourceChart) => buildDoughnutLegendLabels(chart, unit, textColor) } : {}),
+        },
       },
       tooltip: {
         callbacks: {
@@ -205,11 +213,14 @@ export function buildChartOptions(params: ChartOptionsParams): Record<string, un
   };
 }
 
-// ── Etiquetas directas selectivas ───────────────────────────────────────────────────────
+// ── Etiquetas directas selectivas (line / bar horizontal) ──────────────────────────────
 // Un número sobre cada punto es ruido, no se lee (ver design.md "Etiquetas") — estas
 // funciones deciden QUÉ índice etiquetar y CON QUÉ texto, puras y testeadas sin canvas ni
 // TestBed. El plugin de Chart.js que las consume (`metric-chart.component.ts`, único
-// archivo que importa `chart.js`) sólo dibuja lo que estas funciones devuelven.
+// archivo que importa `chart.js`) sólo dibuja lo que estas funciones devuelven. Doughnut/pie
+// NO pasa por acá — su "de un vistazo" sale de la leyenda enriquecida + el total central
+// (`formatBreakdownEntry`/`formatDoughnutCenterTotal`, arriba), no de texto flotando sobre
+// el gajo (KAN-252 QA: eso era justamente lo que se pisaba).
 
 /** Un punto a etiquetar: `index` dentro del array de labels/valores, `text` ya formateado. */
 export interface DirectLabel {
@@ -246,17 +257,91 @@ export function selectBarLabels(values: number[], unit: string | undefined): Dir
   return values.map((v, index) => ({ index, text: fmt.format(v) }));
 }
 
+// ── Doughnut/pie: leyenda enriquecida + total central ──────────────────────────────────
+// Reemplazan a la vieja `selectDoughnutLabels` (texto flotante dibujado sobre el gajo, sólo
+// hasta 4 gajos — KAN-252 QA: se pisaba con la leyenda y consigo mismo, y de 5 gajos en
+// adelante ("Por método de pago") no quedaba ningún valor visible sin hacer hover).
+
 /**
- * Doughnut/pie: valor + % del total en cada gajo — SÓLO hasta 4 gajos. De 5 en adelante
- * el propio gajo es demasiado angosto para un texto legible; esos casos se quedan sólo con
- * la leyenda (ver design.md "Etiquetas": "Doughnut 5–6 gajos: sólo leyenda con valores").
+ * Suma de MAGNITUDES (valores absolutos) — base del % de cada gajo. Un doughnut dibuja el
+ * ángulo de cada arco proporcional a `|valor|`, NUNCA al valor con signo: sumar con signo
+ * (bug real, KAN-252 QA) con valores tipo `[0, -120, 220]` da total=100 y porcentajes
+ * imposibles como "-120%"/"220%". El % SIEMPRE tiene que coincidir con lo que el ojo ve
+ * dibujado.
  */
-export function selectDoughnutLabels(values: number[], unit: string | undefined): DirectLabel[] {
-  if (values.length === 0 || values.length > 4) return [];
+export function sumAbsoluteValues(values: number[]): number {
+  return values.reduce((sum, v) => sum + Math.abs(v), 0);
+}
+
+/**
+ * Texto de una entrada de leyenda: `"Etiqueta: valor (pct%)"`. `pct` sobre `totalAbs`
+ * (ver `sumAbsoluteValues`) — nunca negativo, nunca > 100. Gajos en 0 se listan sin `(0%)`:
+ * no aporta información y ensucia la leyenda (siguen apareciendo por identidad de color,
+ * ver comentario de `PALETTE_VARS` sobre nunca ciclar colores).
+ */
+export function formatBreakdownEntry(label: string, value: number, totalAbs: number, unit: string | undefined): string {
+  const fmt = unitFormat(unit);
+  if (value === 0) return `${label}: ${fmt.format(value)}`;
+  const pct = totalAbs > 0 ? Math.round((Math.abs(value) / totalAbs) * 100) : 0;
+  return `${label}: ${fmt.format(value)} (${pct}%)`;
+}
+
+/**
+ * Texto del total en el centro del anillo — el headline "de un vistazo" que hoy el hueco
+ * vacío desperdicia (KAN-252 QA: "no muestran info al menos que pases el mouse"). A
+ * diferencia del %, que es sobre magnitud (así se dibuja el arco), el centro suma CON
+ * signo: es el número real de negocio, y un neto de tesorería negativo tiene que leerse
+ * como negativo ahí. Sólo se usa para `type="doughnut"` — un pie no tiene agujero central.
+ */
+export function formatDoughnutCenterTotal(values: number[], unit: string | undefined): string {
   const fmt = unitFormat(unit);
   const total = values.reduce((sum, v) => sum + v, 0);
-  return values.map((v, index) => {
-    const pct = total > 0 ? Math.round((v / total) * 100) : 0;
-    return { index, text: `${fmt.format(v)} (${pct}%)` };
-  });
+  return fmt.format(total);
+}
+
+/** Forma mínima del `Chart` de Chart.js que necesita `generateLabels` — duck-typed a
+ * propósito: este archivo no importa `chart.js` en runtime (única excepción del proyecto es
+ * `metric-chart.component.ts`), sólo la forma que hace falta leer al armar las opciones. */
+interface LegendSourceChart {
+  data: { labels?: unknown[]; datasets: { data?: unknown[]; backgroundColor?: unknown[] }[] };
+  getDataVisibility(index: number): boolean;
+}
+
+/** Entrada de leyenda de Chart.js — subconjunto de `LegendItem` que el plugin de leyenda
+ * necesita para dibujar el swatch de color y soportar el click-to-hide nativo. `fontColor`
+ * es OBLIGATORIO acá — sin él, Chart.js hace `ctx.fillStyle = legendItem.fontColor`
+ * (`undefined`, asignación inválida de canvas: no-op) y el texto queda pintado con el
+ * `fillStyle` del swatch que se dibujó antes en el mismo contexto — el texto terminaría con
+ * el color de la serie, exactamente lo que el design system prohíbe (el ink es siempre
+ * neutro, el color identifica sólo al swatch). `lineWidth: 0` replica el `generateLabels`
+ * default de Chart.js para este dataset (`borderWidth: 0` en `mapMetricBreakdownToChartData`)
+ * — sin esto, Chart.js cae a su propio default (`valueOrDefault(..., 1)`) y le agrega al
+ * swatch un borde de 1px que hoy no tiene. */
+interface LegendEntry {
+  text: string;
+  fillStyle: string;
+  fontColor: string;
+  lineWidth: number;
+  hidden: boolean;
+  index: number;
+}
+
+/** `generateLabels` de la leyenda de doughnut/pie: lee labels/valores/colores directo del
+ * `chart` (siempre al día — un poll de background puede cambiar los datos sin recrear el
+ * componente) y arma el texto vía `formatBreakdownEntry`. Preserva `hidden`/`index` del
+ * comportamiento default de Chart.js para no romper el click-to-hide del gajo. */
+function buildDoughnutLegendLabels(chart: LegendSourceChart, unit: string | undefined, fontColor: string): LegendEntry[] {
+  const labels = (chart.data.labels as string[] | undefined) ?? [];
+  const dataset = chart.data.datasets[0];
+  const values = (dataset?.data as number[] | undefined) ?? [];
+  const colors = (dataset?.backgroundColor as string[] | undefined) ?? [];
+  const totalAbs = sumAbsoluteValues(values);
+  return labels.map((label, index) => ({
+    text: formatBreakdownEntry(label, values[index] ?? 0, totalAbs, unit),
+    fillStyle: colors[index] ?? '#000',
+    fontColor,
+    lineWidth: 0,
+    hidden: !chart.getDataVisibility(index),
+    index,
+  }));
 }
