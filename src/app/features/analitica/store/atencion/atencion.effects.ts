@@ -357,17 +357,21 @@ export class AtencionEffects {
    * comparten tubo → un solo rótulo), ese agrupamiento se resuelve en la
    * generación de labels del backend; el front sigue renderizando 1:1 lo que recibe.
    * Ver pregunta abierta en el PR.
+   *
+   * `output` decide la salida (imprimir vs bajar el archivo) y lo elige quien despacha la
+   * acción, no el effect: el mismo PDF sirve para el click explícito del operador y para
+   * el disparo automático al finalizar la atención.
    */
   downloadProtocolLabels$ = createEffect(() =>
     this.actions$.pipe(
       ofType(downloadProtocolLabels),
-      switchMap(({ protocolId, protocolNumber }) =>
+      switchMap(({ protocolId, protocolNumber, output }) =>
         this.labels.getByProtocol(protocolId).pipe(
           tap(ls => {
             if (ls.length === 0) {
               this.notification.error('Sin rótulos', 'Este protocolo todavía no tiene rótulos generados.');
             } else {
-              this.rotuloPdf.generate(protocolNumber, ls).catch(() =>
+              this.rotuloPdf.generate(protocolNumber, ls, output).catch(() =>
                 this.notification.error('No se pudieron generar los rótulos', 'Reintentá en un momento.'),
               );
             }

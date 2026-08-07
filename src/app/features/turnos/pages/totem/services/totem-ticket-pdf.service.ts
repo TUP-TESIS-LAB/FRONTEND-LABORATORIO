@@ -23,13 +23,16 @@ const PT_TO_MM = 0.352778;
 const LINE_FACTOR = 1.15;
 
 /**
- * Arma e imprime el ticket del tótem (PDF client-side). Mínimo de datos, sin PII.
+ * Arma el ticket del tótem (PDF client-side). Mínimo de datos, sin PII.
  * Formato angosto (80mm) tipo comanda, con alto dinámico según el contenido.
  *
  * El layout se calcula en dos pasadas: la primera mide el alto real del contenido
  * (con wrap real de jsPDF) y la segunda dibuja sobre un documento del alto exacto.
- * Así el texto nunca se clipea ni queda papel en blanco de más. Fuerza el diálogo
- * de impresión (autoPrint).
+ * Así el texto nunca se clipea ni queda papel en blanco de más.
+ *
+ * El ticket se DESCARGA como archivo. Antes abría una pestaña con autoPrint, pero el
+ * tótem es un kiosco desatendido: el diálogo de impresión saltaba solo apenas el paciente
+ * sacaba número y quedaba bloqueando la pantalla hasta que alguien lo cerrara a mano.
  */
 @Injectable({ providedIn: 'root' })
 export class TotemTicketPdfService {
@@ -44,8 +47,14 @@ export class TotemTicketPdfService {
     const doc = this.createDoc(pageHeight);
     this.renderTicket(doc, data);
 
-    doc.autoPrint();
-    this.openInWindow(doc);
+    // Impresión automática desactivada a pedido del usuario (2026-08-07): el tótem
+    // abría el diálogo del navegador sin que nadie lo pidiera. El PDF se sigue
+    // generando igual, sólo cambia la salida.
+    // Para volver a imprimir automáticamente: descomentar estas dos líneas y borrar
+    // el `this.saveDoc(doc)` de abajo. `openInWindow` queda vivo justamente para eso.
+    // doc.autoPrint();
+    // this.openInWindow(doc);
+    this.saveDoc(doc);
   }
 
   /** Dibuja el ticket y devuelve la coordenada Y (mm) donde termina el contenido. */
@@ -111,6 +120,11 @@ export class TotemTicketPdfService {
     return new jsPDF({ orientation, unit: 'mm', format: [WIDTH, heightMm] });
   }
 
+  protected saveDoc(doc: jsPDF): void {
+    doc.save('ticket-turno.pdf');
+  }
+
+  /** Salida por impresión. Sin uso hoy — ver el comentario en `printTicket`. */
   protected openInWindow(doc: jsPDF): void {
     const url = doc.output('bloburl') as unknown as string;
     window.open(url, '_blank');

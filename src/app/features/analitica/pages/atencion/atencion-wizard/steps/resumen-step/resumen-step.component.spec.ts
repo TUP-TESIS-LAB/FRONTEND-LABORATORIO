@@ -319,6 +319,8 @@ describe('ResumenStepComponent', () => {
     expect(readAtencionSession()).toBeNull();
   });
 
+  // `output: 'download'` es parte del contrato: el cierre automático no debe abrir el
+  // diálogo de impresión. Si alguien lo saca, vuelve la pestaña encima del wizard.
   it('auto-descarga los rótulos tras finalizar OK (downloadProtocolLabels con el protocolId del success)', () => {
     const f = TestBed.createComponent(ResumenStepComponent);
     f.componentRef.setInput('atencion', fullAttn());
@@ -328,7 +330,7 @@ describe('ResumenStepComponent', () => {
     f.componentInstance.onFinalize();
     // El success trae el protocolId recién asignado al cerrar la fase.
     actions$.next(atencionMutationSuccess({ item: { protocolId: 77 } as any }));
-    expect(dispatched).toContainEqual(downloadProtocolLabels({ protocolId: 77, protocolNumber: 'P-77' }));
+    expect(dispatched).toContainEqual(downloadProtocolLabels({ protocolId: 77, protocolNumber: 'P-77', output: 'download' }));
   });
 
   it('si el success no trae protocolId no dispara la descarga de rótulos', () => {

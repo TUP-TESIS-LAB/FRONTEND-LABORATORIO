@@ -226,10 +226,11 @@ export function isDownloadBlockedByPendingEmission(
             </div>
 
             <!-- Acciones -->
+            <!-- Hubo un botón "Imprimir ticket" que llamaba a window.print(): imprimía la
+                 página del navegador, no el comprobante. El comprobante real es el PDF fiscal
+                 que baja "Descargar PDF" (con su gating por emisión PENDING), así que se quitó
+                 en vez de dejar dos acciones con el mismo efecto y distinto nombre. -->
             <div class="fin-card fin-pad fin-actions-col">
-              <button class="fin-action-btn" type="button" (click)="imprimir()">
-                <i class="pi pi-print"></i> Imprimir ticket
-              </button>
               <button
                 class="fin-action-btn"
                 type="button"
@@ -521,10 +522,6 @@ export class CobroDetallePage implements OnInit {
   protected onCancelConfirmed(reason: string, id: number): void {
     this.store.dispatch(cancelPayment({ id, reason }));
     this.cancelModalOpen.set(false);
-  }
-
-  protected imprimir(): void {
-    window.print();
   }
 
   protected descargar(paymentId: number): void {

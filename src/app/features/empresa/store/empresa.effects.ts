@@ -18,6 +18,7 @@ import { WhiteLabelApiService } from '../services/white-label-api.service';
 import { ModulosApiService } from '../services/modulos-api.service';
 import { SmtpConfigApiService } from '../services/smtp-config-api.service';
 import { ReportTemplateApiService } from '../services/report-template-api.service';
+import { FiscalStatusApiService } from '../services/fiscal-status-api.service';
 
 import {
   loadUsuarios, loadUsuariosSuccess, loadUsuariosFailure,
@@ -41,6 +42,7 @@ import {
   uploadReportImage, uploadReportImageSuccess, uploadReportImageFailure,
   deleteReportImage, deleteReportImageSuccess, deleteReportImageFailure,
   loadAuthorizerCandidates, loadAuthorizerCandidatesSuccess, loadAuthorizerCandidatesFailure,
+  loadFiscalStatus, loadFiscalStatusSuccess, loadFiscalStatusFailure,
 } from './empresa.actions';
 
 @Injectable()
@@ -57,6 +59,7 @@ export class EmpresaEffects {
   private readonly modulosApi = inject(ModulosApiService);
   private readonly smtpApi = inject(SmtpConfigApiService);
   private readonly reportTemplateApi = inject(ReportTemplateApiService);
+  private readonly fiscalStatusApi = inject(FiscalStatusApiService);
 
   // ---- Usuarios ----
   loadUsuarios$ = createEffect(() =>
@@ -384,8 +387,23 @@ export class EmpresaEffects {
     ),
   );
 
+  // ---- Estado fiscal (solo lectura) ----
+  // El fallo no dispara toast: la pantalla es informativa y ya muestra su propio texto. Un toast
+  // rojo al abrir una pestaña que el usuario no accionó solo haría pensar que algo se rompió.
+  loadFiscalStatus$ = createEffect(() => this.actions$.pipe(
+    ofType(loadFiscalStatus),
+    switchMap(() => this.fiscalStatusApi.get().pipe(
+      map((status) => loadFiscalStatusSuccess({ status })),
+      catchError((error: HttpErrorResponse) => of(loadFiscalStatusFailure({ error }))),
+    )),
+  ));
+
   // ---- Global error toast ----
-  /** Cualquier *Failure del feature dispara un toast con el mensaje del back. */
+  /**
+   * Toast con el mensaje del back para los *Failure de acciones que el usuario disparó.
+   * La lista es explícita a propósito: las cargas automáticas que ya muestran su propio
+   * estado de error en pantalla quedan afuera (ver loadFiscalStatusFailure).
+   */
   globalFailureToast$ = createEffect(
     () =>
       this.actions$.pipe(

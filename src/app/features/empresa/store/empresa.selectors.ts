@@ -94,3 +94,14 @@ export const selectSmtpTestError = createSelector(
 export const selectLastFirstLoginToken = createSelector(
   selectEmpresaState, (s) => s.lastFirstLoginToken,
 );
+
+// Estado fiscal (solo lectura)
+export const selectFiscalStatus = createSelector(
+  selectEmpresaState, (s) => s.fiscalStatus,
+);
+export const selectFiscalPending = createSelector(
+  selectEmpresaState, (s) => s.fiscalPending,
+);
+export const selectFiscalUnavailable = createSelector(
+  selectEmpresaState, (s) => s.fiscalUnavailable,
+);

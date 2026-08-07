@@ -347,8 +347,17 @@ describe('AtencionEffects', () => {
     effects.downloadProtocolLabels$.subscribe();
     actions$.next(A.downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9' }));
     expect(labels.getByProtocol).toHaveBeenCalledWith(9);
-    expect(rotuloPdf.generate).toHaveBeenCalledWith('P-9', ls);
+    // Sin `output` el servicio decide, y su default es imprimir (botón "Rótulos").
+    expect(rotuloPdf.generate).toHaveBeenCalledWith('P-9', ls, undefined);
     expect(notification.error).not.toHaveBeenCalled();
+  });
+
+  it('downloadProtocolLabels$ propaga el output al servicio (disparo automático → descarga)', () => {
+    const ls = [{ id: 1, protocolId: 9, analysisId: 3 }];
+    (labels.getByProtocol as ReturnType<typeof vi.fn>).mockReturnValue(of(ls));
+    effects.downloadProtocolLabels$.subscribe();
+    actions$.next(A.downloadProtocolLabels({ protocolId: 9, protocolNumber: 'P-9', output: 'download' }));
+    expect(rotuloPdf.generate).toHaveBeenCalledWith('P-9', ls, 'download');
   });
 
   it('downloadProtocolLabels$ sin labels → notifica, no genera', () => {
