@@ -57,8 +57,10 @@ export const muestrasReducer = createReducer(
   on(loadProcesamientoNotModified, (state): MuestrasState => ({ ...state })),
   on(loadProcesamientoFailure, (state, { error }): MuestrasState => ({ ...state, error })),
 
-  on(resolveRoutingSuccess, (state, { routing }): MuestrasState => ({ ...state, routing, error: null })),
-  on(resolveRoutingFailure, (state, { error }): MuestrasState => ({ ...state, error })),
+  // resolveRouting corre solo (tras loadTransitoSuccess, sin acción del operador) — su fallo va a
+  // routingError, NO a error, para no disparar el toast rojo genérico de acciones del usuario.
+  on(resolveRoutingSuccess, (state, { routing }): MuestrasState => ({ ...state, routing, routingError: null })),
+  on(resolveRoutingFailure, (state, { error }): MuestrasState => ({ ...state, routingError: error })),
 
   on(loadWorkspacesSuccess, (state, { workspaces }): MuestrasState => ({ ...state, workspaces, error: null })),
   on(loadWorkspacesFailure, (state, { error }): MuestrasState => ({ ...state, error })),

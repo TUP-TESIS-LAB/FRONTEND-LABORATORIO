@@ -14,6 +14,12 @@ export interface MuestrasState {
   error: HttpErrorResponse | null;
   transito: LabelWorklistItem[];
   routing: RoutingResolveResponse | null;
+  /**
+   * Error del resolve de routing, separado de `error`. Resolve corre solo (automático, tras
+   * cargar tránsito) — no lo disparó el operador, así que no puede compartir el pipe de toast
+   * rojo de `error` (transito.page.ts trata este campo distinto, con severidad 'warn').
+   */
+  routingError: HttpErrorResponse | null;
   workspaces: BranchWorkspace[];
   dispatchPending: boolean;
   /** "A descartar": tubos COMPLETED listos para descarte físico. */
@@ -39,6 +45,7 @@ export const initialMuestrasState: MuestrasState = {
   error: null,
   transito: [],
   routing: null,
+  routingError: null,
   workspaces: [],
   dispatchPending: false,
   descarte: [],
