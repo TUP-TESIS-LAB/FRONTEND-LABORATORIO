@@ -13,7 +13,7 @@ import { SectionService } from '@features/sucursales/services/section.service';
 import { TransitoPage } from './transito.page';
 import {
   selectMuestrasBranchId, selectMuestrasBranchName, selectMuestrasBranches, selectMuestrasError,
-  selectRouting, selectTransitoItems, selectWorkspaces,
+  selectRouting, selectRoutingError, selectTransitoItems, selectWorkspaces,
 } from '../../store/muestras.selectors';
 import {
   deriveTubesSuccess, dispatchTubesSuccess, initMuestras, loadTransito, loadWorkspaces,
@@ -64,6 +64,7 @@ describe('TransitoPage (store-driven)', () => {
             { selector: selectMuestrasBranchName, value: 'CENTRAL' },
             { selector: selectMuestrasBranches, value: [{ id: 1001, code: 'C', name: 'CENTRAL' }] },
             { selector: selectMuestrasError, value: null },
+            { selector: selectRoutingError, value: null },
           ],
         }),
         {
@@ -199,6 +200,43 @@ describe('TransitoPage (store-driven)', () => {
     fixture.detectChanges();
     TestBed.flushEffects();
     expect(add).toHaveBeenCalledTimes(2);
+  });
+
+  it('routingError muestra toast warn (no rojo) sin exponer el mensaje interno del backend', () => {
+    const { store } = setup();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    const add = vi.spyOn(messagesOf(fixture), 'add');
+
+    // ej: 422 "El protocolo 50003 no está en etapa de distribución" — dato desincronizado en
+    // esta muestra/protocolo, no algo que el operador haya provocado al entrar a la pantalla.
+    store.overrideSelector(selectRoutingError, new HttpErrorResponse({
+      status: 422,
+      error: { message: 'El protocolo 50003 no está en etapa de distribución' },
+    }));
+    store.refreshState();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+
+    expect(add).toHaveBeenCalledTimes(1);
+    const msg = add.mock.calls[0][0];
+    expect(msg.severity).toBe('warn');
+    expect(msg.detail).not.toContain('50003');
+    expect(msg.detail).not.toMatch(/distribución|protocolo/i);
+  });
+
+  it('routingError no dispara el toast rojo genérico (error del store queda sin tocar)', () => {
+    const { store } = setup();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    const add = vi.spyOn(messagesOf(fixture), 'add');
+
+    store.overrideSelector(selectRoutingError, new HttpErrorResponse({ status: 422 }));
+    store.refreshState();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+
+    expect(add).not.toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
   });
 
   it('detiene el polling al destruirse', () => {

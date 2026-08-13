@@ -26,7 +26,7 @@ import {
 } from '../../store/muestras.actions';
 import {
   selectMuestrasBranchId, selectMuestrasBranchName, selectMuestrasBranches, selectMuestrasError,
-  selectRouting, selectTransitoItems, selectWorkspaces,
+  selectRouting, selectRoutingError, selectTransitoItems, selectWorkspaces,
 } from '../../store/muestras.selectors';
 import { groupTubes, type Tube } from '../../models/tube.model';
 import { rowActionsFor } from '../../data/state-machine.config';
@@ -82,6 +82,7 @@ export class TransitoPage {
   protected readonly branchName = this.store.selectSignal(selectMuestrasBranchName);
   private readonly myBranches = this.store.selectSignal(selectMuestrasBranches);
   private readonly backendError = this.store.selectSignal(selectMuestrasError);
+  private readonly routingError = this.store.selectSignal(selectRoutingError);
 
   protected readonly tubes = computed(() => groupTubes(this.transitoItems(), this.branchName()));
 
@@ -211,6 +212,27 @@ export class TransitoPage {
             fallback: 'No pudimos completar la operación. Probá de nuevo.',
           }),
           life: 5000,
+        });
+      }
+    });
+
+    // El resolve de routing corre solo (dispara automático al cargar tránsito, sin que el
+    // operador toque nada) para sugerir destino por sección. Si falla, la tabla de tránsito
+    // sigue andando igual (viene de transitoItems, no de routing) — solo se pierde la sugerencia
+    // automática. Por eso NO es un toast rojo de "Error": el operador no rompió nada, y el
+    // mensaje del backend describe un estado interno del protocolo (no algo accionable para
+    // él), así que no se muestra tal cual — se avisa en tono neutro con una salida concreta.
+    let lastRoutingErrSig: string | null = null;
+    effect(() => {
+      const err = this.routingError();
+      const sig = err ? `${(err as { status?: unknown }).status}:${(err as { message?: unknown }).message}` : null;
+      if (sig && sig !== lastRoutingErrSig) {
+        lastRoutingErrSig = sig;
+        this.messages.add({
+          severity: 'warn',
+          summary: 'Sugerencias de destino no disponibles',
+          detail: 'No pudimos calcular el destino automático de algunas muestras. Asignalo manualmente desde "Editar destino" o avisá a soporte si se repite.',
+          life: 6000,
         });
       }
     });

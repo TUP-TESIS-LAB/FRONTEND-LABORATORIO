@@ -26,7 +26,7 @@ describe('RotuloPdfService', () => {
     service = new RotuloPdfService();
   });
 
-  it('genera N etiquetas con el nº de protocolo y abre/imprime el pdf en una pestaña nueva (igual que el ticket del tótem)', async () => {
+  it('por defecto genera N etiquetas con el nº de protocolo y abre/imprime el pdf en una pestaña nueva (botón "Rótulos")', async () => {
     await service.generate('P-5', [{ id: 1 }, { id: 2 }]);
     expect(mockDoc.addImage).toHaveBeenCalledTimes(2);
     expect(mockDoc.text).toHaveBeenCalledWith('P-5', expect.any(Number), expect.any(Number), { align: 'center' });
@@ -36,6 +36,14 @@ describe('RotuloPdfService', () => {
     expect(windowOpen).toHaveBeenCalledWith('blob:rotulos', '_blank');
     // No usamos doc.save() (que baja un archivo en vez de imprimir).
     expect(mockDoc.save).not.toHaveBeenCalled();
+  });
+
+  it("con output 'download' baja el archivo y no abre pestaña ni diálogo de impresión", async () => {
+    await service.generate('P-5', [{ id: 1 }], 'download');
+    expect(mockDoc.addImage).toHaveBeenCalledTimes(1);
+    expect(mockDoc.save).toHaveBeenCalledWith('rotulos-P-5.pdf');
+    expect(mockDoc.autoPrint).not.toHaveBeenCalled();
+    expect(windowOpen).not.toHaveBeenCalled();
   });
 
   it('con [] no genera ni abre nada', async () => {

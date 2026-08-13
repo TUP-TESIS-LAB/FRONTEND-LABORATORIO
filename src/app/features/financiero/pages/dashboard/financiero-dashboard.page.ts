@@ -17,8 +17,8 @@ import { PollingService, PollingHandle } from '@core/refresh';
 import { SucursalesService } from '@features/sucursales/services/sucursales.service';
 
 import {
-  MetricBreakdown, MetricChartComponent, MetricFilter, MetricFilterBarComponent, MetricKpi,
-  createBreakdownTranslator, formatKpiValue, kpiDeltaMeta,
+  MetricBreakdown, MetricChartCardComponent, MetricFilter, MetricFilterBarComponent, MetricKpi,
+  createBreakdownTranslator, formatKpiValue, kpiDeltaMeta, unitFormat,
 } from '@shared/metrics';
 
 import { loadFinancieroMetricsDashboard } from '../../store/metrics/actions';
@@ -71,6 +71,20 @@ export function toBreakdownRows(breakdown: MetricBreakdown | undefined): { label
   return breakdown?.slices.map(s => ({ label: s.label, value: s.value })) ?? [];
 }
 
+/** Props para el stat tile de "Particular vs. cobertura" (MFI-02) — reemplaza al doughnut
+ * de 2 gajos: un part-to-whole binario es un número disfrazado (KAN-252). `null` si no
+ * cargó el breakdown o no trae el slice `particular` (backend `GetBillingByCoverageUseCase`). */
+export function toParticularVsCoberturaStat(breakdown: MetricBreakdown | undefined): { value: string; sub: string } | null {
+  const particular = breakdown?.slices.find(s => s.key === 'particular');
+  if (!breakdown || !particular) return null;
+  const total = breakdown.slices.reduce((sum, s) => sum + s.value, 0);
+  const pct = total > 0 ? (particular.value / total) * 100 : 0;
+  return {
+    value: unitFormat(breakdown.unit).format(particular.value),
+    sub: `${pct.toFixed(1)}% del total facturado`,
+  };
+}
+
 const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
   { field: 'label', header: 'Concepto' },
   { field: 'value', header: 'Monto', align: 'right' },
@@ -83,7 +97,7 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
   imports: [
     PageHeaderComponent, StatCardComponent, DataTableComponent, UiCellDirective,
     RefreshIndicatorComponent, EmptyStateComponent, CurrencyArPipe,
-    MetricChartComponent, MetricFilterBarComponent,
+    MetricChartCardComponent, MetricFilterBarComponent,
   ],
   template: `
     <div class="fin-dash">
@@ -116,57 +130,56 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
             <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
           }
         </div>
-        <div class="fin-viz-grid">
-          <div class="fin-card fin-viz-card fin-viz-card--wide">
-            <h3 class="fin-viz-card__title">Evolución de la recaudación</h3>
-            <ui-metric-chart type="line" [series]="recaudacionSerie()" [loading]="loading()" />
+        <!-- Serie temporal a ancho completo: comprimirla en una grilla de 2 col destruye
+             la tendencia (KAN-252). -->
+        <ui-metric-chart-card
+          type="line" title="Evolución de la recaudación"
+          [series]="recaudacionSerie()" [loading]="loading()" />
+        <div class="fin-viz-grid fin-viz-grid--2col">
+          <ui-metric-chart-card
+            type="doughnut" title="Por método de pago" legendPosition="right"
+            [breakdown]="recaudacionPorMetodo()" [loading]="loading()" />
+          <div class="fin-card fin-card--table">
+            <h3 class="fin-viz-card__title">Por sucursal</h3>
+            <ui-table
+              [value]="recaudacionPorSucursalRows()"
+              [columns]="breakdownColumns"
+              [loading]="loading()"
+              dataKey="label"
+              emptyIcon="pi-inbox"
+              emptyHeading="Sin recaudación en el rango"
+              emptyDescription="No hay recaudación registrada para los filtros elegidos.">
+              <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
+            </ui-table>
           </div>
-          <div class="fin-card fin-viz-card">
-            <h3 class="fin-viz-card__title">Por método de pago</h3>
-            <ui-metric-chart type="doughnut" [breakdown]="recaudacionPorMetodo()" [loading]="loading()" />
-          </div>
-        </div>
-        <div class="fin-card fin-card--table">
-          <h3 class="fin-viz-card__title">Por sucursal</h3>
-          <ui-table
-            [value]="recaudacionPorSucursalRows()"
-            [columns]="breakdownColumns"
-            [loading]="loading()"
-            dataKey="label"
-            emptyIcon="pi-inbox"
-            emptyHeading="Sin recaudación en el rango"
-            emptyDescription="No hay recaudación registrada para los filtros elegidos.">
-            <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
-          </ui-table>
         </div>
       </section>
 
       <!-- ── Facturación (MFI-02) ── -->
       <section class="fin-section">
         <h2 class="fin-section__title">Facturación</h2>
-        <div class="fin-viz-grid fin-viz-grid--donut-table">
-          <div class="fin-card fin-viz-card">
-            <h3 class="fin-viz-card__title">Particular vs. cobertura</h3>
-            <ui-metric-chart type="doughnut" [breakdown]="facturacionPorCobertura()" [loading]="loading()" />
-          </div>
-          <div class="fin-viz-grid__table-col">
-            <div class="fin-card fin-viz-card fin-card--table">
-              <h3 class="fin-viz-card__title">Detalle</h3>
-              <ui-table
-                [value]="facturacionPorCoberturaRows()"
-                [columns]="breakdownColumns"
-                [loading]="loading()"
-                dataKey="label"
-                emptyIcon="pi-inbox"
-                emptyHeading="Sin facturación en el rango"
-                emptyDescription="No hay facturación registrada para los filtros elegidos.">
-                <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
-              </ui-table>
-            </div>
-            @for (kpi of facturacionKpiCards(); track kpi.label) {
-              <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
-            }
-          </div>
+        <div class="fin-kpi-grid">
+          @for (kpi of facturacionKpiCards(); track kpi.label) {
+            <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
+          }
+          <!-- Particular vs. cobertura: stat tile en vez de doughnut de 2 gajos — un
+               part-to-whole binario es un número disfrazado (KAN-252). -->
+          @if (particularVsCoberturaStat(); as stat) {
+            <ui-stat-card label="Particular vs. cobertura" [value]="stat.value" [sub]="stat.sub" />
+          }
+        </div>
+        <div class="fin-card fin-card--table">
+          <h3 class="fin-viz-card__title">Detalle por cobertura</h3>
+          <ui-table
+            [value]="facturacionPorCoberturaRows()"
+            [columns]="breakdownColumns"
+            [loading]="loading()"
+            dataKey="label"
+            emptyIcon="pi-inbox"
+            emptyHeading="Sin facturación en el rango"
+            emptyDescription="No hay facturación registrada para los filtros elegidos.">
+            <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
+          </ui-table>
         </div>
       </section>
 
@@ -219,29 +232,10 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
       <!-- ── Conciliación (MFI-05) ── -->
       <section class="fin-section">
         <h2 class="fin-section__title">Conciliación digital</h2>
-        <div class="fin-viz-grid fin-viz-grid--donut-table">
-          <div class="fin-card fin-viz-card">
-            <h3 class="fin-viz-card__title">Por método</h3>
-            <ui-metric-chart type="doughnut" legendPosition="right" [breakdown]="conciliacionPorMetodo()" [loading]="loading()" />
-          </div>
-          <div class="fin-viz-grid__table-col">
-            <div class="fin-card fin-viz-card fin-card--table">
-              <h3 class="fin-viz-card__title">Detalle</h3>
-              <ui-table
-                [value]="conciliacionPorMetodoRows()"
-                [columns]="breakdownColumns"
-                [loading]="loading()"
-                dataKey="label"
-                emptyIcon="pi-inbox"
-                emptyHeading="Sin conciliación en el rango"
-                emptyDescription="No hay lotes digitales conciliados para los filtros elegidos.">
-                <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
-              </ui-table>
-            </div>
-            @for (kpi of conciliacionKpiCards(); track kpi.label) {
-              <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
-            }
-          </div>
+        <div class="fin-kpi-grid">
+          @for (kpi of conciliacionKpiCards(); track kpi.label) {
+            <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
+          }
         </div>
       </section>
 
@@ -253,24 +247,33 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
             <ui-stat-card [label]="kpi.label" [value]="kpi.value" [sub]="kpi.sub" [icon]="kpi.icon" [accentColor]="kpi.accentColor" />
           }
         </div>
-        <div class="fin-viz-grid fin-viz-grid--donut-table">
-          <div class="fin-card fin-viz-card">
-            <h3 class="fin-viz-card__title">Por origen</h3>
-            <ui-metric-chart type="doughnut" legendPosition="right" [breakdown]="tesoreriaPorOrigen()" [loading]="loading()" />
-          </div>
-          <div class="fin-card fin-viz-card fin-card--table">
-            <h3 class="fin-viz-card__title">Detalle</h3>
-            <ui-table
-              [value]="tesoreriaPorOrigenRows()"
-              [columns]="breakdownColumns"
-              [loading]="loading()"
-              dataKey="label"
-              emptyIcon="pi-inbox"
-              emptyHeading="Sin movimientos en el rango"
-              emptyDescription="No hay movimientos de tesorería para los filtros elegidos.">
-              <ng-template uiCell="value" let-row>{{ row.value | currencyAr }}</ng-template>
-            </ui-table>
-          </div>
+      </section>
+
+      <!-- ── Desgloses de conciliación + tesorería: cada uno vivía solo en su sección,
+           acotado a 480px con 2/3 de la fila en blanco al lado (ninguno tiene tabla
+           manual con la que compartir fila, a diferencia de 'Por método de pago' arriba).
+           Comparten UNA grilla responsive (ver .fin-viz-grid--auto): auto-fit en vez de
+           2 columnas fijas, crece a 3+ si se suma otro breakdown acá el día de mañana,
+           sin quedar una tarjeta angosta huérfana en el medio.
+
+           BARRA horizontal, no dona: los dos traen montos CON SIGNO, no conteos.
+           'Por método' es diferencia esperado-vs-real (por definición puede dar negativo).
+           'Por origen' confirmado contra el backend (GetTreasuryByOriginUseCase /
+           OriginAmount.signedTotal): EGRESS viaja negativo, INGRESS positivo. Una dona sólo
+           tiene sentido para magnitudes que suman un todo ≥ 0 — con signo, el gajo más
+           "grande" puede representar justo lo contrario de "más". Una barra horizontal
+           extiende nativamente hacia la izquierda del cero para los negativos. -->
+      <section class="fin-section">
+        <div class="fin-viz-grid--auto">
+          <!-- height más bajo que el default (320px, pensado para donas): PaymentMethod (6
+               valores) y TreasuryEntrySource (7) son sets acotados — a esa altura una barra
+               horizontal con tan pocas categorías queda con espacio vacío de sobra. -->
+          <ui-metric-chart-card
+            type="bar" orientation="horizontal" title="Por método" height="240px"
+            [breakdown]="conciliacionPorMetodo()" [loading]="loading()" />
+          <ui-metric-chart-card
+            type="bar" orientation="horizontal" title="Por origen" height="240px"
+            [breakdown]="tesoreriaPorOrigen()" [loading]="loading()" />
         </div>
       </section>
     </div>
@@ -292,28 +295,21 @@ const BREAKDOWN_TABLE_COLUMNS: TableColumn[] = [
 
     .fin-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
 
-    .fin-viz-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
-    /* Secciones con un solo donut (Facturación/Conciliación/Tesorería): antes el donut
-       quedaba solo en la fila y "1fr" lo estiraba a todo el ancho de la sección — se
-       le agregó al lado una tabla de detalle (mismo dato, en números) para que ese
-       espacio se use en vez de quedar vacío. El donut queda acotado a un ancho cómodo,
-       la tabla se lleva el resto. */
-    .fin-viz-grid--donut-table { grid-template-columns: minmax(320px, 480px) 1fr; }
+    /* Breakdowns (doughnut + tabla) en 2 columnas parejas — compactos, se comparan bien
+       lado a lado. Las series temporales van directo en el flujo (ui-metric-chart-card
+       es block-level, ancho completo por default: sin comprimir la tendencia). */
+    .fin-viz-grid--2col { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
     @media (max-width: 900px) {
-      .fin-viz-grid { grid-template-columns: 1fr; }
-      .fin-viz-grid--donut-table { grid-template-columns: 1fr; }
+      .fin-viz-grid--2col { grid-template-columns: 1fr; }
     }
 
-    /* Columna derecha de Facturación/Conciliación: la tabla de detalle es corta (2-6 filas,
-       no crece) y sola dejaba hueco debajo — la KPI card (que antes iba sola arriba,
-       estirada a todo el ancho de la sección) baja acá para ocupar ese lugar. */
-    .fin-viz-grid__table-col { display: flex; flex-direction: column; gap: 14px; }
-    /* La tabla toma el alto disponible (empareja al donut de al lado); la KPI card
-       queda última, con su alto natural — no se estira. */
-    .fin-viz-grid__table-col > .fin-card--table { flex: 1; }
+    /* Breakdowns sin tabla manual al lado (Conciliación 'Por método' + Tesorería 'Por
+       origen') — auto-fit en vez de columnas fijas: 2 columnas en la mayoría de los
+       anchos, 3 si el viewport es lo bastante ancho y se suma otro breakdown más adelante.
+       minmax(280px, 1fr) evita que una tarjeta sola quede angosta con espacio muerto al
+       lado (antes: max-width fijo de 480px dejando 2/3 de la fila en blanco). */
+    .fin-viz-grid--auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
 
-    .fin-viz-card { padding: 16px 18px; }
-    .fin-viz-card--wide { min-width: 0; }
     .fin-viz-card__title { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #475569; }
   `],
 })
@@ -388,10 +384,12 @@ export class FinancieroDashboardPage implements OnInit {
   readonly liquidacionesPorObraSocialRows = computed(() => toBreakdownRows(this.liquidacionesPorObraSocial()));
   readonly cajaPorSucursalRows = computed(() => toBreakdownRows(this.cajaPorSucursal()));
 
-  // ── Mismos breakdowns de los donuts "solitarios", como tabla de detalle al lado ──
+  // ── Detalle por cobertura (Facturación): la única tabla manual que queda — Conciliación
+  // y Tesorería ahora usan la table-view interna de `ui-metric-chart-card`. ──
   readonly facturacionPorCoberturaRows = computed(() => toBreakdownRows(this.facturacionPorCobertura()));
-  readonly conciliacionPorMetodoRows = computed(() => toBreakdownRows(this.conciliacionPorMetodo()));
-  readonly tesoreriaPorOrigenRows = computed(() => toBreakdownRows(this.tesoreriaPorOrigen()));
+
+  /** Stat tile de "Particular vs. cobertura" — reemplaza al doughnut de 2 gajos. */
+  readonly particularVsCoberturaStat = computed(() => toParticularVsCoberturaStat(this.facturacionPorCobertura()));
 
   readonly breakdownColumns = BREAKDOWN_TABLE_COLUMNS;
 

@@ -8,7 +8,7 @@ import { RefreshIndicatorComponent } from '@shared/ui/components/refresh-indicat
 import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import {
   MetricBranchOption,
-  MetricChartComponent,
+  MetricChartCardComponent,
   MetricFilter,
   MetricFilterBarComponent,
   MetricKpi,
@@ -73,7 +73,7 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
     RefreshIndicatorComponent,
     StatCardComponent,
     MetricFilterBarComponent,
-    MetricChartComponent,
+    MetricChartCardComponent,
   ],
   template: `
     <div class="flu-dash">
@@ -109,34 +109,35 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
         <ui-stat-card label="Re-llamados (prom.)" [value]="kpiValue(reLlamados()?.promedio)" />
       </div>
 
-      <!-- ── Charts histórico ── -->
-      <div class="flu-chart-grid">
-        <div class="flu-card">
-          <h3>Volumen de turnos</h3>
-          <ui-metric-chart type="bar" [series]="volumenTurnosSeries()" [loading]="historicoLoading()" />
-        </div>
-        <div class="flu-card">
-          <h3>Volumen de cola</h3>
-          <ui-metric-chart type="bar" [series]="volumenColaSeries()" [loading]="historicoLoading()" />
-        </div>
-        <div class="flu-card">
-          <h3>Ocupación de agenda</h3>
-          <ui-metric-chart type="bar" [series]="ocupacionAgendaSeries()" [loading]="historicoLoading()" />
-        </div>
-        @if (volumenTurnosBreakdown(); as bd) {
-          <div class="flu-card">
-            <h3>Turnos por sucursal</h3>
-            <ui-metric-chart type="doughnut" [breakdown]="bd" [loading]="historicoLoading()" />
-          </div>
-        }
-        <div class="flu-card">
-          <h3>Re-llamados por turno</h3>
-          <ui-metric-chart type="doughnut" [breakdown]="reLlamadosBreakdown()" [loading]="historicoLoading()" />
-        </div>
-        <div class="flu-card">
-          <h3>Carga por extractor</h3>
-          <ui-metric-chart type="doughnut" [breakdown]="cargaExtractorBreakdown()" [loading]="historicoLoading()" />
-        </div>
+      <!-- ── Series temporales (ancho completo — comprimirlas destruye la tendencia) ── -->
+      <div class="flu-series-grid">
+        <ui-metric-chart-card
+          type="line" title="Volumen de turnos"
+          [series]="volumenTurnosSeries()" [loading]="historicoLoading()" />
+        <ui-metric-chart-card
+          type="line" title="Volumen de cola"
+          [series]="volumenColaSeries()" [loading]="historicoLoading()" />
+        <ui-metric-chart-card
+          type="bar" title="Ocupación de agenda"
+          [series]="ocupacionAgendaSeries()" [loading]="historicoLoading()" />
+      </div>
+
+      <!-- ── Barras horizontales (dimensión de cardinalidad no acotada, KAN-252) ── -->
+      @if (volumenTurnosBreakdown(); as bd) {
+        <ui-metric-chart-card
+          type="bar" orientation="horizontal" colorMode="single" title="Turnos por sucursal"
+          [breakdown]="bd" [loading]="historicoLoading()" />
+      }
+      <ui-metric-chart-card
+        type="bar" orientation="horizontal" colorMode="single" title="Carga por extractor"
+        [breakdown]="cargaExtractorBreakdown()" [loading]="historicoLoading()" />
+
+      <!-- ── Re-llamados: barra vertical con rampa ordinal — 0/1/2/3+ son categorías
+           ORDENADAS, no nominales. ── -->
+      <div class="flu-bounded">
+        <ui-metric-chart-card
+          type="bar" colorMode="ordinal" title="Re-llamados por turno"
+          [breakdown]="reLlamadosBreakdown()" [loading]="historicoLoading()" />
       </div>
 
       <!-- ── En vivo ── -->
@@ -150,15 +151,9 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
             <ui-stat-card label="Cola de extracción" [value]="kpiValue(colaExtraccionVivo())" />
             <ui-stat-card label="Ocupación de boxes" [value]="kpiValue(ocupacionBoxesVivo())" />
           </div>
-          <div class="flu-card flu-card--inset">
-            <h4>Urgentes por estado</h4>
-            <ui-metric-chart
-              type="doughnut"
-              height="140px"
-              legendPosition="right"
-              [breakdown]="urgentesBreakdown()"
-              [loading]="enVivoLoading()" />
-          </div>
+          <ui-metric-chart-card
+            type="doughnut" title="Urgentes por estado" height="140px" legendPosition="right"
+            [breakdown]="urgentesBreakdown()" [loading]="enVivoLoading()" />
         </div>
       </div>
     </div>
@@ -172,9 +167,7 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
       border: 1px solid #e8e9f0;
       padding: 16px 18px;
     }
-    .flu-card--inset { box-shadow: none; border-style: dashed; }
     .flu-card h3 { margin: 0 0 12px; font-size: 15px; font-weight: 700; color: #1a1a2e; }
-    .flu-card h4 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #1a1a2e; }
 
     .flu-filters { padding: 12px 18px; }
 
@@ -193,7 +186,16 @@ function kpiValue(kpi: MetricKpi | null | undefined): string {
       .flu-kpi-grid { grid-template-columns: repeat(3, 1fr); }
     }
 
-    .flu-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+    /* Series temporales: ancho completo, apiladas — el eje X es tiempo, comprimirlo
+       en columnas destruye la tendencia. */
+    .flu-series-grid { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Re-llamados (barra vertical, 4 categorías ordenadas): compacto, no necesita el
+       ancho completo que sí piden las barras horizontales de cardinalidad alta. */
+    .flu-bounded { max-width: 480px; }
+    @media (max-width: 900px) {
+      .flu-bounded { max-width: none; }
+    }
 
     .flu-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
     .flu-section-head h3 { margin: 0; }

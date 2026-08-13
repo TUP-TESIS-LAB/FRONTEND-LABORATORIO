@@ -49,7 +49,7 @@ import { esPendiente, type DetalleResultado } from '../../models/postanalitica.m
       <ng-template pTemplate="footer">
         <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="onClose()" />
         <p-button [label]="esTotal() ? 'Firmar y cerrar' : 'Firmar parcial'"
-                  [disabled]="firmablesCount() === 0" (onClick)="onConfirm()" />
+                  [disabled]="!puedeConfirmar()" (onClick)="onConfirm()" />
       </ng-template>
     </p-dialog>
   `,
@@ -97,6 +97,13 @@ export class FirmarEstudioModalComponent {
     const noPendientes = this.results().filter(r => !esPendiente(r));
     return noPendientes.length > 0 && noPendientes.every(r => this.esFirmable(r));
   });
+  /**
+   * Habilita el botón de confirmar. No alcanza con `firmablesCount() > 0`: cuando los resultados
+   * ya están todos en SIGNED y falta únicamente la firma del ESTUDIO (estado READY_FOR_SIGNATURE),
+   * no queda ningún VALIDATED y el botón quedaba muerto — el estudio no se podía cerrar ni emitir
+   * su informe final. `esTotal()` cubre ese caso porque `esFirmable()` acepta VALIDATED y SIGNED.
+   */
+  readonly puedeConfirmar = computed(() => this.firmablesCount() > 0 || this.esTotal());
 
   etiqueta(r: DetalleResultado): string {
     if (esPendiente(r)) return 'Sin resultado';

@@ -34,7 +34,8 @@ import { InformePdfSaveBus } from '../pages/informe-pdf/informe-pdf-save.bus';
       @if (derivacionesActiva()) {
         <a routerLink="derivaciones" routerLinkActive="is-active" role="tab">Derivaciones</a>
       }
-      <a routerLink="white-label" routerLinkActive="is-active" role="tab">White-label</a>
+      <!-- El path sigue siendo 'white-label' a propósito: renombrarlo rompería links guardados. -->
+      <a routerLink="white-label" routerLinkActive="is-active" role="tab">Personalización</a>
       <a routerLink="fiscal" routerLinkActive="is-active" role="tab">Fiscal</a>
       <a routerLink="email" routerLinkActive="is-active" role="tab">Email</a>
       <a routerLink="informe-pdf" routerLinkActive="is-active" role="tab">Informe PDF</a>

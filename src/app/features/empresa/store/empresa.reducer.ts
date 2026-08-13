@@ -24,6 +24,7 @@ import {
   uploadReportImage, uploadReportImageSuccess, uploadReportImageFailure,
   deleteReportImage, deleteReportImageSuccess, deleteReportImageFailure,
   loadAuthorizerCandidates, loadAuthorizerCandidatesSuccess, loadAuthorizerCandidatesFailure,
+  loadFiscalStatus, loadFiscalStatusSuccess, loadFiscalStatusFailure,
 } from './empresa.actions';
 
 const setPending = (state: EmpresaState): EmpresaState => ({
@@ -214,5 +215,18 @@ export const empresaReducer = createReducer(
   // ---- clear test result ----
   on(clearTestEmailResult, (state) => ({
     ...state, smtpTestResult: null, smtpTestError: null,
+  })),
+
+  // ---- Estado fiscal (solo lectura) ----
+  on(loadFiscalStatus, (state): EmpresaState => ({
+    ...state, fiscalPending: true, fiscalUnavailable: false,
+  })),
+  on(loadFiscalStatusSuccess, (state, { status }): EmpresaState => ({
+    ...state, fiscalStatus: status, fiscalPending: false, fiscalUnavailable: false,
+  })),
+  // No se guarda en `error`: ese campo alimenta el toast global de operaciones fallidas, y acá
+  // el usuario no intentó hacer nada — solo abrió una pantalla informativa.
+  on(loadFiscalStatusFailure, (state): EmpresaState => ({
+    ...state, fiscalStatus: null, fiscalPending: false, fiscalUnavailable: true,
   })),
 );

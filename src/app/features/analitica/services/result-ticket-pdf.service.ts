@@ -41,10 +41,10 @@ const LINE_FACTOR = 1.15;
  * análisis solicitados con su tiempo estimado de resultado. Dos pasadas (mide y dibuja)
  * para alto exacto.
  *
- * Se DESCARGA como archivo (no abre pestaña con autoPrint): al finalizar la atención el
- * flujo de rótulos ya abre una pestaña de impresión, y el navegador sólo permite un popup
- * por interacción — dos `window.open` se pisan (a veces salían los rótulos, a veces el
- * comprobante). La descarga no consume ese cupo, así que rótulos + comprobante salen siempre.
+ * Se DESCARGA como archivo (no abre pestaña con autoPrint). Originalmente fue para no
+ * competir por el único popup por interacción que permite el navegador contra la pestaña
+ * de rótulos; hoy los rótulos del cierre también se descargan, así que al finalizar una
+ * atención salen dos archivos y ninguna pestaña.
  */
 @Injectable({ providedIn: 'root' })
 export class ResultTicketPdfService {

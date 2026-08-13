@@ -5,6 +5,7 @@ import { WhiteLabel } from '../models/white-label.model';
 import { ModuloTenant } from '../models/modulo.model';
 import { SmtpConfig, TestEmailResult } from '../models/smtp-config.model';
 import { AuthorizerCandidate, ReportTemplate } from '../models/report-template.model';
+import { FiscalStatus } from '../models/fiscal-status.model';
 
 export interface EmpresaState {
   // Usuarios
@@ -37,6 +38,13 @@ export interface EmpresaState {
   smtpTestResult: TestEmailResult | null;
   smtpTestError: string | null;
 
+  // Estado de facturación electrónica (solo lectura)
+  fiscalStatus: FiscalStatus | null;
+  fiscalPending: boolean;
+  // La pantalla es informativa: si la consulta falla no hay nada que reintentar ni que corregir
+  // desde acá, así que se marca el fallo y se muestra un texto neutro en vez de un error técnico.
+  fiscalUnavailable: boolean;
+
   // Link de primer login a mostrar tras crear/regenerar (no se manda email aún).
   // El componente lo lee, arma el link y lo ofrece para copiar; null = sin dialog.
   lastFirstLoginToken: string | null;
@@ -66,6 +74,10 @@ export const initialEmpresaState: EmpresaState = {
   smtpTesting: false,
   smtpTestResult: null,
   smtpTestError: null,
+
+  fiscalStatus: null,
+  fiscalPending: false,
+  fiscalUnavailable: false,
 
   lastFirstLoginToken: null,
 

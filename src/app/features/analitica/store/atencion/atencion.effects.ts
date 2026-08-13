@@ -166,7 +166,15 @@ export class AtencionEffects {
       ofType(addAnalysisList),
       concatMap(({ id, payload }) => this.api.addAnalysis(id, payload).pipe(
         map(item => atencionMutationSuccess({ item })),
-        catchError((error: HttpErrorResponse) => of(atencionMutationFailure({ error })))
+        catchError((error: HttpErrorResponse) => {
+          // Sin esto el fallo es invisible: el wizard no avanza y el operador no sabe
+          // por qué. Pasa de verdad — escribir el nro. de autorización y hacer clic en
+          // "Continuar" encola el PATCH del blur junto con éste sobre la misma atención,
+          // y el segundo vuelve 409 ("Otra persona modificó este registro...").
+          this.notification.error(
+            error?.error?.message ?? 'No se pudieron guardar los análisis. Volvé a intentarlo.');
+          return of(atencionMutationFailure({ error }));
+        })
       ))
     )
   );
@@ -349,17 +357,21 @@ export class AtencionEffects {
    * comparten tubo → un solo rótulo), ese agrupamiento se resuelve en la
    * generación de labels del backend; el front sigue renderizando 1:1 lo que recibe.
    * Ver pregunta abierta en el PR.
+   *
+   * `output` decide la salida (imprimir vs bajar el archivo) y lo elige quien despacha la
+   * acción, no el effect: el mismo PDF sirve para el click explícito del operador y para
+   * el disparo automático al finalizar la atención.
    */
   downloadProtocolLabels$ = createEffect(() =>
     this.actions$.pipe(
       ofType(downloadProtocolLabels),
-      switchMap(({ protocolId, protocolNumber }) =>
+      switchMap(({ protocolId, protocolNumber, output }) =>
         this.labels.getByProtocol(protocolId).pipe(
           tap(ls => {
             if (ls.length === 0) {
               this.notification.error('Sin rótulos', 'Este protocolo todavía no tiene rótulos generados.');
             } else {
-              this.rotuloPdf.generate(protocolNumber, ls).catch(() =>
+              this.rotuloPdf.generate(protocolNumber, ls, output).catch(() =>
                 this.notification.error('No se pudieron generar los rótulos', 'Reintentá en un momento.'),
               );
             }

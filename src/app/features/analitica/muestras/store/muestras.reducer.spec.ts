@@ -139,10 +139,18 @@ describe('muestrasReducer', () => {
     expect(s.routing).toBe(routing);
   });
 
-  it('resolveRoutingFailure setea error', () => {
+  it('resolveRoutingFailure setea routingError, no error (no dispara el toast rojo genérico)', () => {
     const error = new HttpErrorResponse({ status: 422 });
     const s = muestrasReducer(initialMuestrasState, resolveRoutingFailure({ error }));
-    expect(s.error).toBe(error);
+    expect(s.routingError).toBe(error);
+    expect(s.error).toBeNull();
+  });
+
+  it('resolveRoutingSuccess limpia routingError', () => {
+    const error = new HttpErrorResponse({ status: 422 });
+    const withError = muestrasReducer(initialMuestrasState, resolveRoutingFailure({ error }));
+    const s = muestrasReducer(withError, resolveRoutingSuccess({ routing }));
+    expect(s.routingError).toBeNull();
   });
 
   // ── Workspaces ────────────────────────────────────────────────────────────

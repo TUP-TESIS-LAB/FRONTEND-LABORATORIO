@@ -402,9 +402,12 @@ export class ResumenStepComponent implements OnInit {
       // operador tenga que ir al listado y clickear "Rótulos" a mano.
       // El protocolId fresco viene en el item del success (recién se le asigna el
       // protocolo al cerrar la fase); caemos a la atención actual por si acaso.
+      // `output: 'download'` es deliberado: acá nadie pidió imprimir, sólo cerró la
+      // atención. Abrir una pestaña con el diálogo de impresión encima del wizard
+      // interrumpía el flujo. El botón "Rótulos" sigue imprimiendo como siempre.
       const protocolId = success.item.protocolId ?? this.atencion().protocolId;
       if (protocolId != null) {
-        this.store.dispatch(downloadProtocolLabels({ protocolId, protocolNumber: `P-${protocolId}` }));
+        this.store.dispatch(downloadProtocolLabels({ protocolId, protocolNumber: `P-${protocolId}`, output: 'download' }));
       }
       // Fire-and-forget: el comprobante nunca debe bloquear el cierre de la
       // atención (espera un HTTP round-trip). Cerramos sincrónicamente, exactamente

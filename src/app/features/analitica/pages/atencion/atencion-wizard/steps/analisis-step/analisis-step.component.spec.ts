@@ -6,6 +6,8 @@ import { ReplaySubject, of } from 'rxjs';
 import { AnalisisStepComponent } from './analisis-step.component';
 import { ModuleRegistry } from '@core/tenant/module-registry';
 import { ModuleKey } from '@core/models/module-key.enum';
+import { EMPTY_CATALOG } from '@features/pacientes/models/coverage-catalog.model';
+import { CoverageCatalogService } from '@features/pacientes/services/coverage-catalog.service';
 import { clearAnalisisDraft, writeAnalisisDraft } from '../../../../../utils/analisis-draft-store';
 import * as A from '../../../../../store/atencion/atencion.actions';
 import { selectMutating } from '../../../../../store/atencion/atencion.selectors';
@@ -33,6 +35,7 @@ describe('AnalisisStepComponent', () => {
         }),
         provideMockActions(() => actions$),
         { provide: ModuleRegistry, useValue: registry },
+        { provide: CoverageCatalogService, useValue: { getCatalog: () => of(EMPTY_CATALOG) } },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(AnalisisStepComponent);

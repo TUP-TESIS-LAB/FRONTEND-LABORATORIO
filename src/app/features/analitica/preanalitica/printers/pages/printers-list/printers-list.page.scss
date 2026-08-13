@@ -1,0 +1,40 @@
+.actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 24rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form-error {
+  color: var(--p-red-500);
+  font-size: 0.75rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.muted {
+  color: var(--p-text-muted-color);
+  text-align: center;
+  padding: 1rem;
+}

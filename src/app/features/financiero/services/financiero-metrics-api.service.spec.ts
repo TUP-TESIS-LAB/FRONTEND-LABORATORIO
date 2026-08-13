@@ -3,6 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { FinancieroMetricsApiService } from './financiero-metrics-api.service';
 import { MetricFilter } from '@shared/metrics/models/metric-filter.model';
+import { MetricSeries } from '@shared/metrics/models/metric-envelopes.model';
+import { NotModified } from '@core/refresh';
 
 const filter: MetricFilter = { dateFrom: '2026-06-01', dateTo: '2026-06-30', branchId: 3, granularity: 'DAY' };
 const filterNoBranch: MetricFilter = { dateFrom: '2026-06-01', dateTo: '2026-06-30', granularity: 'DAY' };
@@ -32,6 +34,16 @@ describe('FinancieroMetricsApiService', () => {
   it('getRevenueSeries pega a /recaudacion/serie', () => {
     svc.getRevenueSeries(filter).subscribe();
     http.expectOne(r => r.url === '/api/v1/financiero/metricas/recaudacion/serie').flush({ labels: [], datasets: [] });
+  });
+
+  it('getRevenueSeries preserva el campo `unit` del backend sin transformarlo (KAN-252 — el eje trata la serie como entero si esto se pierde)', () => {
+    let result: MetricSeries | NotModified | undefined;
+    svc.getRevenueSeries(filter).subscribe(res => { result = res; });
+
+    http.expectOne(r => r.url === '/api/v1/financiero/metricas/recaudacion/serie')
+      .flush({ unit: 'currency', labels: ['ene'], datasets: [{ key: 'recaudacion', label: 'Recaudación', values: [1000] }] });
+
+    expect((result as MetricSeries).unit).toBe('currency');
   });
 
   it('getRevenueByMethod pega a /recaudacion/por-metodo con branchId', () => {

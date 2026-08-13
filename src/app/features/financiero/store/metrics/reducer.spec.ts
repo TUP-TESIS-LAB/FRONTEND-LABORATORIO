@@ -5,7 +5,11 @@ import * as A from './actions';
 
 const kpis = [{ key: 'k', label: 'K', value: 1, unit: '$' }];
 const breakdown = { dimension: 'd', slices: [{ key: 's', label: 'S', value: 1 }] };
-const series = { labels: ['a'], datasets: [{ key: 'ds', label: 'DS', values: [1] }] };
+// `unit: 'currency'` acá a propósito (no sólo labels/datasets): el test parametrizado de
+// abajo hace `toEqual(c.data)` sobre el estado post-success/post-notModified — si el
+// reducer alguna vez reconstruyera el objeto en vez de guardarlo tal cual, este campo se
+// perdería y el `toEqual` lo detectaría (KAN-252, wiring de `unit` end-to-end).
+const series = { unit: 'currency', labels: ['a'], datasets: [{ key: 'ds', label: 'DS', values: [1] }] };
 
 /** Las 14 tuplas (key del state, load/success/notModified/failure) que cubre el reducer. */
 const cases: {

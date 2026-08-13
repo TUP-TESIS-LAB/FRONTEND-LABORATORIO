@@ -2,9 +2,9 @@ import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { EMPTY, forkJoin, Observable, of } from 'rxjs';
-import { catchError, concatMap, map, switchMap, withLatestFrom } from 'rxjs/operators';
+import { catchError, concatMap, map, switchMap, tap, withLatestFrom } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
-import { isNotModified } from '@core/refresh';
+import { EtagCacheService, isNotModified } from '@core/refresh';
 import { MuestrasApiService } from '../services/muestras-api.service';
 import {
   initMuestras, initMuestrasSuccess, initMuestrasFailure,
@@ -29,10 +29,20 @@ export class MuestrasEffects {
   private readonly actions$ = inject(Actions);
   private readonly store = inject(Store);
   private readonly api = inject(MuestrasApiService);
+  private readonly etagCache = inject(EtagCacheService);
 
   init$ = createEffect(() =>
     this.actions$.pipe(
       ofType(initMuestras),
+      tap(() => {
+        // Los slices de este feature (recoleccion/transito/procesamiento/...) arrancan
+        // vacíos en cada entrada, pero el cache de ETags vive en el root injector y
+        // sobrevive. Si otra pantalla ya cacheó el ETag del worklist, el primer poll de
+        // ésta recibe un 304 legítimo, el reducer conserva el array vacío y la lista
+        // queda en "no hay nada" para siempre. Invalidar acá fuerza un 200 completo por
+        // visita y deja los 304 siguientes intactos.
+        this.etagCache.clearMatching('/analitica/preanalitica/labels/worklist');
+      }),
       switchMap(() =>
         this.api.getMyBranches().pipe(
           map(branches => {

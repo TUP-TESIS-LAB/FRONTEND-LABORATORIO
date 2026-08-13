@@ -2,13 +2,17 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effec
 import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { PollingHandle, PollingService } from '@core/refresh';
-import { MetricChartComponent, MetricFilter, createBreakdownTranslator, formatKpiValue } from '@shared/metrics';
-import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { MetricChartCardComponent, MetricFilter, createBreakdownSorter, createBreakdownTranslator, formatKpiValue } from '@shared/metrics';
 import { PanelCardComponent } from '@shared/ui/components/panel-card/panel-card.component';
 import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
-import { TableColumn } from '@shared/ui/models/table-column.model';
 import { loadPostanaliticaTab } from '../../../store/analitica-metrics/analitica-metrics.actions';
 import { selectPostanaliticaTabData, selectPostanaliticaTabLoading } from '../../../store/analitica-metrics/analitica-metrics.selectors';
+
+/** Pipeline de estados de un estudio postanalítico (`StudyStatus`, backend) — el orden acá
+ * ES la rampa ordinal: `PENDING` (más claro) → `CLOSED` (más oscuro). El backend NO
+ * garantiza este orden en el breakdown (agrupa iterando filas de la DB), así que el front
+ * lo fuerza antes de pintarlo con `colorMode="ordinal"` — ver `createBreakdownSorter`. */
+export const ESTUDIOS_PIPELINE_ORDER = ['PENDING', 'PARTIALLY_SIGNED', 'READY_FOR_SIGNATURE', 'CLOSED'];
 
 /**
  * Tab "Postanalítica" del dashboard de métricas de Analítica (KAN-204): TAT de firma y
@@ -19,7 +23,7 @@ import { selectPostanaliticaTabData, selectPostanaliticaTabLoading } from '../..
   selector: 'lab-analitica-postanalitica-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MetricChartComponent, StatCardComponent, DataTableComponent, PanelCardComponent],
+  imports: [MetricChartCardComponent, StatCardComponent, PanelCardComponent],
   template: `
     <div class="metrics-tab">
       <section class="metrics-tab__stats">
@@ -31,24 +35,17 @@ import { selectPostanaliticaTabData, selectPostanaliticaTabLoading } from '../..
         }
       </section>
 
-      <section class="metrics-tab__charts">
-        <ui-panel-card title="TAT promedio en el tiempo">
-          <ui-metric-chart type="line" [series]="tatSerie()" [loading]="loading()" />
-        </ui-panel-card>
-        <ui-panel-card title="Estudios por estado">
-          <ui-metric-chart type="doughnut" [breakdown]="estudiosPorEstado()" [loading]="loading()" />
-        </ui-panel-card>
-      </section>
+      <!-- Serie temporal a ancho completo — el eje X es tiempo (KAN-252). -->
+      <ui-metric-chart-card type="line" title="TAT promedio en el tiempo" [series]="tatSerie()" [loading]="loading()" />
 
-      <ui-panel-card title="Estudios por estado — detalle">
-        <ui-table
-          [value]="estudiosPorEstadoRows()"
-          [columns]="columns"
-          [loading]="loading()"
-          dataKey="key"
-          emptyIcon="pi-inbox"
-          emptyHeading="Sin estudios en el rango" />
-      </ui-panel-card>
+      <!-- Estudios por estado: mantiene doughnut (4 gajos, pipeline ORDENADO, no nominal)
+           con rampa ordinal claro→oscuro = PENDING→CLOSED. Table-view del propio card
+           reemplaza al "detalle" manual que había acá. -->
+      <div class="metrics-tab__bounded">
+        <ui-metric-chart-card
+          type="doughnut" colorMode="ordinal" title="Estudios por estado" legendPosition="right"
+          [breakdown]="estudiosPorEstado()" [loading]="loading()" />
+      </div>
     </div>
   `,
   styles: [`
@@ -57,9 +54,9 @@ import { selectPostanaliticaTabData, selectPostanaliticaTabLoading } from '../..
       display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: var(--space-4, 16px);
     }
-    .metrics-tab__charts {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: var(--space-4, 16px);
+    .metrics-tab__bounded { max-width: 480px; }
+    @media (max-width: 900px) {
+      .metrics-tab__bounded { max-width: none; }
     }
   `],
 })
@@ -77,18 +74,17 @@ export class PostanaliticaTabComponent implements OnInit {
   protected readonly estudiosTotalKpi = computed(() => this.data().estudiosTotal ?? null);
   protected readonly tatSerie = computed(() => this.data().tatSerie ?? undefined);
 
-  // Memoizado por referencia de entrada — ver comentario en `createBreakdownTranslator`
+  // Memoizados por referencia de entrada — ver comentario en `createBreakdownTranslator`
   // (evita que el gráfico/tabla se re-rendericen en cada poll aunque el dato no cambie).
+  // El backend NO garantiza el orden PENDING→CLOSED (agrupa iterando filas de la DB) — el
+  // sorter lo fuerza antes de pintar con `colorMode="ordinal"` (slice 0 = color más claro).
   private readonly translateEstudiosPorEstado = createBreakdownTranslator();
-  protected readonly estudiosPorEstado = computed(() => this.translateEstudiosPorEstado(this.data().estudiosPorEstado));
-  protected readonly estudiosPorEstadoRows = computed(() => this.estudiosPorEstado()?.slices ?? []);
+  private readonly sortEstudiosPorEstado = createBreakdownSorter(ESTUDIOS_PIPELINE_ORDER);
+  protected readonly estudiosPorEstado = computed(() =>
+    this.sortEstudiosPorEstado(this.translateEstudiosPorEstado(this.data().estudiosPorEstado)),
+  );
 
   protected readonly formatKpiValue = formatKpiValue;
-
-  protected readonly columns: TableColumn[] = [
-    { field: 'label', header: 'Estado' },
-    { field: 'value', header: 'Cantidad', align: 'right' },
-  ];
 
   private pollHandle: PollingHandle | null = null;
 

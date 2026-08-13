@@ -31,4 +31,20 @@ export class EtagCacheService {
     if (key) this.store.delete(key);
     else this.store.clear();
   }
+
+  /**
+   * Descarta todos los ETags cuya clave contenga `fragment` (típicamente un path).
+   *
+   * Existe porque este cache vive en el root injector y sobrevive a la navegación,
+   * mientras que los slices de NgRx que guardan el payload arrancan vacíos en cada
+   * entrada a la pantalla. Sin invalidar, el primer poll manda `If-None-Match`, el
+   * server contesta 304 con toda la razón, el reducer deja el slice como estaba
+   * —vacío— y la pantalla queda en "no hay nada" de forma permanente.
+   * Una pantalla que resetea su estado tiene que resetear también su ETag.
+   */
+  clearMatching(fragment: string): void {
+    for (const key of [...this.store.keys()]) {
+      if (key.includes(fragment)) this.store.delete(key);
+    }
+  }
 }

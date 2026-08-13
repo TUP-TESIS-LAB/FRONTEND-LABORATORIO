@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -42,6 +43,21 @@ export class TvExtraccionPage implements OnInit, OnDestroy {
     () => this.snapshot()?.entries.filter(e => e.displayStatus === 'CALLED') ?? []
   );
 
+  /**
+   * El llamado mas reciente, para saber cuando suena el aviso. El entry de extraccion
+   * no trae id, asi que la identidad se arma con publicCode + calledAt: si vuelven a
+   * llamar al mismo paciente, cambia el timestamp y el beep suena de nuevo.
+   */
+  private readonly ultimoLlamado = computed<string | null>(() => {
+    const llamados = [...this.calledEntries()]
+      .filter(e => !!e.calledAt)
+      .sort((a, b) => (b.calledAt ?? '').localeCompare(a.calledAt ?? ''));
+    const primero = llamados[0];
+    return primero ? `${primero.publicCode}|${primero.calledAt}` : null;
+  });
+
+  private readonly llamadoAnterior = signal<string | null>(null);
+
   protected readonly audioUnlocked = signal<boolean>(
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tv-audio-unlocked') === '1',
   );
@@ -52,6 +68,28 @@ export class TvExtraccionPage implements OnInit, OnDestroy {
   protected readonly branchOptions = signal<PublicBranch[]>([]);
 
   private pollingHandle: PollingHandle | null = null;
+
+  constructor() {
+    // Esta pantalla tenia unlockAudio() pero nunca reproducia nada: el paciente veia
+    // aparecer su numero y su box en silencio. Mismo criterio que la TV de sala de
+    // espera — suena cuando cambia el llamado mas reciente, no en cada poll.
+    effect(() => {
+      const actual = this.ultimoLlamado();
+      if (actual && actual !== this.llamadoAnterior()) {
+        this.llamadoAnterior.set(actual);
+        this.playBeep();
+      }
+    });
+  }
+
+  private playBeep(): void {
+    try {
+      const audio = new Audio('/assets/audio/beep-extraccion.wav');
+      audio.play().catch(err => console.warn('[tv-extraccion] beep bloqueado:', err));
+    } catch (e) {
+      console.warn('[tv-extraccion] error de beep:', e);
+    }
+  }
 
   ngOnInit(): void {
     if (!this.tenantSlug || !this.branchId) return;
@@ -104,7 +142,7 @@ export class TvExtraccionPage implements OnInit, OnDestroy {
   }
 
   unlockAudio(): void {
-    const a = new Audio('/assets/audio/beep-extraccion.mp3');
+    const a = new Audio('/assets/audio/beep-extraccion.wav');
     a.volume = 0;
     a.play().then(() => {
       this.audioUnlocked.set(true);
