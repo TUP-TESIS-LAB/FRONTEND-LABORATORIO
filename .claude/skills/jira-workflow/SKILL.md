@@ -138,26 +138,27 @@ Probablemente la URL de Jira no es la del tenant del usuario. Pedile que verifiq
    ```
    No copiar el plan entero — el ticket es un puntero al plan, no un duplicado. La fuente de verdad sigue siendo el archivo en git.
 
-4. **Tipo de issue:**
-   - `Story` si es feature/funcionalidad nueva visible al usuario.
-   - `Task` si es refactor, infra, migración, deuda técnica.
-   - `Bug` solo si arregla un bug reportado (referenciá el ticket original o el report).
-   - `Spike` si es investigación con timebox.
+4. **Tipo de issue** — los nombres en el proyecto KAN están **en español**:
+   - `Historia` si es feature/funcionalidad nueva visible al usuario.
+   - `Tarea` si es refactor, infra, migración, deuda técnica.
+   - `Error` solo si arregla un bug reportado (referenciá el ticket original o el report).
 
-   > ⚠️ **Sobre `Spike`:** **no es un issue type universal**. Atlassian Cloud projects creados con templates default (Scrum, Kanban) solo incluyen `Task`, `Story`, `Bug`, `Epic`, `Subtask`. Si el proyecto no tiene `Spike` configurado, `jira issue create -t Spike` falla con `Invalid issue type`.
+   > ⚠️ **Los nombres en inglés no existen en KAN.** `-t Story`, `-t Task`, `-t Bug` y `-t Spike` fallan con `Invalid issue type`. Los únicos tipos del proyecto son `Epic`, `Subtask`, `Tarea`, `Historia`, `Error`.
    >
-   > **Fallback automático:** si necesitás crear un spike y el tipo no existe, usá `-t Task --label spike` en su lugar. Verificá los tipos disponibles con:
+   > **No hay tipo `Spike`.** Si necesitás timeboxear una investigación, usá `-t Tarea --label spike`.
+   >
+   > Verificá los tipos disponibles con:
    > ```bash
-   > jira issue list -t Story --paginate 1 --plain  # falla rápido si Story no existe
+   > jira issue list -t Historia --paginate 1 --plain  # falla rápido si el tipo no existe
    > ```
-   > o consultá en la UI de Jira: Project Settings → Issue Types.
+   > o en la UI: Project Settings → Issue Types.
 
 5. **Crear el issue** (auto-asignado al usuario actual del CLI):
    ```bash
    ASSIGNEE="$(jira me)"                  # email del autenticado; falla rápido si la auth está rota
    jira issue create \
      --project "<PROJECT_KEY>" \
-     --type "<Story|Task|Bug>" \
+     --type "<Historia|Tarea|Error>" \
      --summary "<summary>" \
      --body-from-file /tmp/jira-body.md \
      --assignee "$ASSIGNEE" \
