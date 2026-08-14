@@ -79,8 +79,16 @@ export class EmpleadosListPage implements OnInit {
     { field: 'active',        header: 'Estado' },
   ];
 
+  // Convención de activar/desactivar: ícono, label y severity dependen del estado de la
+  // fila, para que se lea qué va a pasar al hacer clic. Antes era un 'pi-refresh' genérico
+  // con label "Activar/Desactivar", que no distinguía entre las dos acciones opuestas.
   readonly extraActions: readonly TableAction[] = [
-    { key: 'toggle', icon: 'pi-refresh', label: 'Activar/Desactivar' },
+    {
+      key: 'toggle',
+      icon: (row) => ((row as Employee).active ? 'pi-ban' : 'pi-check'),
+      label: (row) => ((row as Employee).active ? 'Desactivar' : 'Activar'),
+      severity: (row) => ((row as Employee).active ? 'warn' : 'success'),
+    },
   ];
 
   ngOnInit(): void { this.store.dispatch(loadEmployees()); }
@@ -95,9 +103,12 @@ export class EmpleadosListPage implements OnInit {
 
   confirmToggle(e: Employee): void {
     const verb = e.active ? 'desactivar' : 'reactivar';
+    const verbCapitalizado = `${verb[0].toUpperCase()}${verb.slice(1)}`;
     this.confirm.confirm({
-      header: `¿${verb[0].toUpperCase()}${verb.slice(1)} empleado?`,
+      header: `¿${verbCapitalizado} empleado?`,
       message: `${e.lastName}, ${e.firstName}`,
+      // Sin acceptLabel/rejectLabel, PrimeNG cae a sus defaults en inglés ("Yes"/"No").
+      acceptLabel: verbCapitalizado, rejectLabel: 'Cancelar',
       accept: () => this.store.dispatch(toggleEmployeeStatus({ id: e.id })),
     });
   }

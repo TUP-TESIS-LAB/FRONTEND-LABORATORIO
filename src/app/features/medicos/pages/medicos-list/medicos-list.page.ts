@@ -107,8 +107,16 @@ export class MedicosListPage implements OnInit {
     { field: 'active',           header: 'Estado' },
   ];
 
+  // Convención de activar/desactivar: ícono, label y severity dependen del estado de la
+  // fila, para que se lea qué va a pasar al hacer clic. Antes era un 'pi-refresh' genérico
+  // con label "Activar/Desactivar", que no distinguía entre las dos acciones opuestas.
   readonly extraActions: readonly TableAction[] = [
-    { key: 'toggle', icon: 'pi-refresh', label: 'Activar/Desactivar' },
+    {
+      key: 'toggle',
+      icon: (row) => ((row as Doctor).active ? 'pi-ban' : 'pi-check'),
+      label: (row) => ((row as Doctor).active ? 'Desactivar' : 'Activar'),
+      severity: (row) => ((row as Doctor).active ? 'warn' : 'success'),
+    },
   ];
 
   constructor() {
