@@ -24,8 +24,10 @@ export interface PickerRow extends Analysis {
       @if (!readOnly()) {
         <div class="flex gap-2 items-end">
           <!-- El buscador crece y empuja lo proyectado (p. ej. el código de autorización)
-               contra el borde derecho, alineado con el borde derecho de la tabla. -->
-          <div class="flex-1">
+               contra el borde derecho, alineado con el borde derecho de la tabla.
+               KAN-294: min-w-0 es obligatorio — sin él, el min-width:auto del flex item hace
+               que un análisis de nombre largo ensanche el input y le robe ancho al vecino. -->
+          <div class="flex-1 min-w-0">
             <label class="block text-sm font-medium mb-1">Código o nombre del análisis</label>
             <p-autocomplete
               #auto
