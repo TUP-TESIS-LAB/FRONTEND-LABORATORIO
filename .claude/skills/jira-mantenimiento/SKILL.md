@@ -1,6 +1,6 @@
 ---
 name: jira-mantenimiento
-description: Espacio de trabajo de mantenimiento en Jira, separado del backlog de features. Usar cuando el usuario quiere (a) CARGAR hallazgos - "cargá estos hallazgos", "subí esta lista a mantenimiento", "anotá esto como pendiente", "esto es mantenimiento", pega una lista de relevamiento o apunta a un archivo de relevamiento; o (b) CONSULTAR pendientes - "qué tengo pendiente", "dame los pendientes de mantenimiento", "qué queda del relevamiento", "mostrame los críticos". NO usar después de escribir un plan o spec de implementación - eso es `jira-workflow`. NO usar para tickets de features nuevas planificadas.
+description: Espacio de trabajo de mantenimiento en Jira, separado del backlog de features. Usar cuando el usuario quiere (a) CARGAR hallazgos - "cargá estos hallazgos", "subí esta lista a mantenimiento", "anotá esto como pendiente", "esto es mantenimiento", pega una lista de relevamiento o apunta a un archivo de relevamiento; (b) CONSULTAR pendientes - "qué tengo pendiente", "dame los pendientes de mantenimiento", "qué queda del relevamiento", "mostrame los críticos"; o (c) TOMAR uno o varios hallazgos para resolverlos - "arrancá con estos", "hacé KAN-N", "resolvé los simples", "empezá por los críticos" - que exige pasarlos a En curso y asignarlos ANTES de tocar código. NO usar después de escribir un plan o spec de implementación - eso es `jira-workflow`. NO usar para tickets de features nuevas planificadas.
 ---
 
 # Jira — espacio de trabajo de mantenimiento
@@ -244,9 +244,55 @@ Si no hay resultados, decirlo en una línea: `Sin pendientes de mantenimiento co
 Para el detalle de un ticket puntual, `getJiraIssue` — no volcar descripciones completas en
 la tabla.
 
+## Flujo D — Tomar un hallazgo para trabajarlo
+
+Disparadores: "arrancá con estos", "hacé KAN-N", "resolvé los simples", o cuando el usuario
+confirma un subconjunto del backlog para implementar.
+
+**Antes de tocar una sola línea de código:**
+
+1. **Mover a `En curso` y asignar** a quien lo va a hacer. Un hallazgo que se está trabajando
+   pero sigue en `Por hacer` es invisible para el resto del equipo — dos personas pueden
+   agarrar el mismo. Esto va **primero**, no después del análisis.
+2. **Triage de código** — ubicar archivo y línea, y confirmar que el hallazgo sigue vigente
+   (puede haberse arreglado de rebote). El resultado del triage **se escribe en el ticket**,
+   no solo en el chat: comentario con la ruta `path/al/archivo.ts:42` y la causa raíz.
+3. **Si el triage contradice al ticket, corregir el ticket antes de seguir:**
+   - Resultó **más chico** de lo que decía → anotarlo igual; sirve para calibrar la próxima.
+   - Resultó **más grande** (toca N pantallas, arrastra store + specs, o esconde una decisión
+     de producto) → actualizar alcance/`priority` y **sacarlo del lote**. No convertir en
+     silencio un fix de una línea en una refactorización.
+   - **Ya no se reproduce** → `Finalizado` con comentario explicando por qué. No borrar.
+4. **Recién ahí, código.**
+
+Al terminar: `En revisión` cuando la PR queda abierta, `Finalizado` cuando mergea.
+
+### Lote de hallazgos
+
+Cuando se toman varios juntos: mover **todos** a `En curso` de una, una sola rama, una sola PR
+que los liste, y todos a `En revisión` al abrirla. Si uno se cae en el triage, vuelve a
+`Por hacer` y sale del lote — el resto del lote sigue.
+
+⚠️ **El triage es parte de tomar el ticket, no un paso previo.** Analizar el código de N
+hallazgos y recién después decidir cuáles se hacen deja el backlog mintiendo: los tickets
+dicen `Por hacer` mientras alguien ya los está mirando, y lo aprendido en el análisis
+(causa raíz, alcance real) se pierde en el chat.
+
+### IDs de transición — verificados en KAN
+
+| Estado | `transition.id` |
+|---|---|
+| `Por hacer` | `11` |
+| `En curso` | `21` |
+| `En revisión` | `31` |
+| `Finalizado` | `41` |
+
+Son globales y sin pantalla intermedia, así que alcanza con:
+`transitionJiraIssue` + `{ "transition": { "id": "21" } }`.
+
 ## Cerrar un hallazgo
 
-Cuando se resuelve, mover el estado. Por MCP: `transitionJiraIssue`. Por CLI:
+Cuando se resuelve, mover a `Finalizado`. Por MCP: `transitionJiraIssue`. Por CLI:
 
 ```bash
 jira issue move KAN-<n> "Finalizado"
@@ -267,6 +313,10 @@ por qué.
 - ❌ Mandar `priority` o `labels` como parámetros de primer nivel del MCP — van en
   `additional_fields` o se ignoran en silencio.
 - ❌ Crear en lote sin mostrar la tabla de preview primero.
+- ❌ Empezar a tocar código con el hallazgo todavía en `Por hacer` y sin assignee. Primero se
+  toma el ticket (Flujo D), después se programa.
+- ❌ Dejar el resultado del triage solo en el chat. Si descubriste la causa raíz o que el
+  alcance real es otro, va **al ticket**.
 - ❌ Escribir el diseño de la solución en `Fix propuesto`. Eso es un plan → `jira-workflow`.
 - ❌ Volcar descripciones completas en el Flujo C. La tabla es un índice, no un dump.
 - ❌ Interrumpir la tarea en curso para cargar un ticket que detectaste vos. Proponelo y seguí.
