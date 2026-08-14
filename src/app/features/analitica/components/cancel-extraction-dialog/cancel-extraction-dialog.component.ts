@@ -42,8 +42,7 @@ const MAX_REASON_LENGTH = 500;
     >
       <div class="body">
         <p class="info">
-          Vas a cancelar la atención. El paciente <strong>NO</strong> vuelve a la cola — el flujo termina.
-          Indicá el motivo: queda registrado para auditoría.
+          El paciente <strong>no</strong> vuelve a la cola: el flujo termina acá.
         </p>
         <div class="quick-reasons">
           <p-button
@@ -78,8 +77,6 @@ const MAX_REASON_LENGTH = 500;
           <div class="hint-row">
             @if (showError()) {
               <span class="error">Mínimo {{ minLength }} caracteres.</span>
-            } @else {
-              <span class="muted">El motivo se guarda en el registro de la atención.</span>
             }
             <span class="counter" [class.counter--ok]="canConfirm()">
               {{ trimmedLength() }}/{{ maxLength }}
@@ -121,6 +118,9 @@ const MAX_REASON_LENGTH = 500;
       border-radius: 6px;
       border: 1px solid #cbd5e1;
       resize: vertical;
+      /* KAN-307: sin tope, arrastrando el handle el textarea crece sin límite y estira
+         el modal fuera de la pantalla. */
+      max-height: 40vh;
     }
     .reason-input:focus {
       outline: 2px solid rgba(15,118,110,.18);
@@ -134,9 +134,10 @@ const MAX_REASON_LENGTH = 500;
       font-size: 11px;
       align-items: center;
     }
-    .muted { color: #64748b; }
     .error { color: #dc2626; font-weight: 500; }
-    .counter { color: #94a3b8; font-variant-numeric: tabular-nums; }
+    /* margin-left:auto ancla el contador a la derecha aunque sea el único hijo del
+       hint-row (el hint informativo se sacó en KAN-307 y el error solo aparece a veces). */
+    .counter { color: #94a3b8; font-variant-numeric: tabular-nums; margin-left: auto; }
     .counter--ok { color: #0f766e; }
   `],
 })

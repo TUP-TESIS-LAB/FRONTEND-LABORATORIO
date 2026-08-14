@@ -107,8 +107,16 @@ export class MedicosListPage implements OnInit {
     { field: 'active',           header: 'Estado' },
   ];
 
+  // Convención de activar/desactivar: ícono, label y severity dependen del estado de la
+  // fila, para que se lea qué va a pasar al hacer clic. Antes era un 'pi-refresh' genérico
+  // con label "Activar/Desactivar", que no distinguía entre las dos acciones opuestas.
   readonly extraActions: readonly TableAction[] = [
-    { key: 'toggle', icon: 'pi-refresh', label: 'Activar/Desactivar' },
+    {
+      key: 'toggle',
+      icon: (row) => ((row as Doctor).active ? 'pi-ban' : 'pi-check'),
+      label: (row) => ((row as Doctor).active ? 'Desactivar' : 'Activar'),
+      severity: (row) => ((row as Doctor).active ? 'warn' : 'success'),
+    },
   ];
 
   constructor() {
@@ -154,9 +162,13 @@ export class MedicosListPage implements OnInit {
 
   confirmToggle(d: Doctor): void {
     const verb = d.active ? 'desactivar' : 'reactivar';
+    const verbCapitalizado = `${verb[0].toUpperCase()}${verb.slice(1)}`;
     this.confirm.confirm({
-      header: `¿${verb[0].toUpperCase()}${verb.slice(1)} médico?`,
+      header: `¿${verbCapitalizado} médico?`,
       message: `${d.lastName}, ${d.firstName}`,
+      // KAN-314: sin acceptLabel/rejectLabel, PrimeNG cae a sus defaults en inglés ("Yes"/"No").
+      // confirmDelete() abajo ya los pasaba; por eso ese modal salía en español y este no.
+      acceptLabel: verbCapitalizado, rejectLabel: 'Cancelar',
       accept: () => this.store.dispatch(toggleDoctorStatus({ id: d.id })),
     });
   }
