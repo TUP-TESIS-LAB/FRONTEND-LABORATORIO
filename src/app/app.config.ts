@@ -208,6 +208,14 @@ export const appConfig: ApplicationConfig = {
         today: 'Hoy',
         clear: 'Limpiar',
         firstDayOfWeek: 1,
+        // Mensajes de "sin datos" de los overlays. Sin estos, PrimeNG cae a sus
+        // defaults en inglés: el autocomplete de análisis de la atención mostraba
+        // "No results found" al buscar algo que no existe. Van acá y no por
+        // [emptyMessage] en cada componente para que valga en toda la app.
+        emptyMessage: 'Sin opciones',
+        emptySearchMessage: 'Sin resultados',
+        emptyFilterMessage: 'Sin resultados',
+        emptySelectionMessage: 'Sin selección',
       },
       theme: {
         preset: Aura,
