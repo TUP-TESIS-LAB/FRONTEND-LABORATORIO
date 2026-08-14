@@ -154,9 +154,13 @@ export class MedicosListPage implements OnInit {
 
   confirmToggle(d: Doctor): void {
     const verb = d.active ? 'desactivar' : 'reactivar';
+    const verbCapitalizado = `${verb[0].toUpperCase()}${verb.slice(1)}`;
     this.confirm.confirm({
-      header: `¿${verb[0].toUpperCase()}${verb.slice(1)} médico?`,
+      header: `¿${verbCapitalizado} médico?`,
       message: `${d.lastName}, ${d.firstName}`,
+      // KAN-314: sin acceptLabel/rejectLabel, PrimeNG cae a sus defaults en inglés ("Yes"/"No").
+      // confirmDelete() abajo ya los pasaba; por eso ese modal salía en español y este no.
+      acceptLabel: verbCapitalizado, rejectLabel: 'Cancelar',
       accept: () => this.store.dispatch(toggleDoctorStatus({ id: d.id })),
     });
   }
