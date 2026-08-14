@@ -50,15 +50,10 @@ interface LineaCobro { id: number; method: PaymentMethod; amount: number; refere
            con las acciones abajo, fija a la derecha. -->
       @if (result(); as r) {
         <div data-testid="cobro-exito">
-          <!-- U5 (KAN-246): aviso de negocio — el comprobante no-electrónico no tiene
-               validez fiscal, y antes eso solo se insinuaba con un badge gris chiquito. -->
-          @if (!r.fiscalReference.electronic) {
-            <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800 flex items-center gap-2">
-              <i class="pi pi-exclamation-triangle"></i>
-              <span>Recibo interno — sin validez fiscal.</span>
-            </div>
-          }
-
+          <!-- KAN-301: el alert de "recibo interno — sin validez fiscal" que agregó KAN-246 (U5)
+               se sacó por pedido del relevamiento: ocupaba una banda fija arriba del comprobante.
+               El dato NO se pierde — fin-comprobante-card sigue mostrando "Electrónico" /
+               "Recibo interno" en la card, que es donde el operador mira el comprobante. -->
           <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
           <fin-comprobante-card [ref]="r.fiscalReference" />
 
