@@ -229,6 +229,9 @@ export function pluralize(count: number, singular: string, plural: string): stri
       border-radius: 6px;
       border: 1px solid #cbd5e1;
       resize: vertical;
+      /* KAN-307: mismo tope que el textarea de cancelación — sin él el modal se estira
+         fuera de la pantalla al arrastrar el handle. */
+      max-height: 40vh;
     }
     .observation-input:focus {
       outline: 2px solid rgba(15,118,110,.18);
