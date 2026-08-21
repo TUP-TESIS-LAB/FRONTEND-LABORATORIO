@@ -118,6 +118,24 @@ import { InformePdfSaveBus } from './informe-pdf-save.bus';
           </div>
         </section>
 
+        <!-- Director técnico -->
+        <section class="pat-form__card">
+          <div class="pat-form__card-header"><span>Director técnico</span></div>
+          <p class="ui-text-sm ui-text-muted" style="margin: 0 0 var(--space-4)">
+            Se imprime en el bloque de firmas de cada informe nuevo. La sucursal puede definir uno propio.
+          </p>
+          <div class="pat-form__field">
+            <label class="pat-form__label" for="rpt-director-name">Nombre y apellido</label>
+            <input pInputText id="rpt-director-name" class="pat-form__input" maxlength="150"
+                   [value]="directorName()" (input)="directorName.set(asValue($event))" />
+          </div>
+          <div class="pat-form__field">
+            <label class="pat-form__label" for="rpt-director-registration">Matrícula</label>
+            <input pInputText id="rpt-director-registration" class="pat-form__input" maxlength="60"
+                   [value]="directorRegistration()" (input)="directorRegistration.set(asValue($event))" />
+          </div>
+        </section>
+
         <!-- Firmante autorizante -->
         <section class="pat-form__card">
           <div class="pat-form__card-header"><span>Firmante autorizante</span></div>
@@ -230,6 +248,10 @@ export class InformePdfPage implements OnInit, OnDestroy {
   // antes de que el load traiga la config real. Un tenant sin config queda vacío (correcto).
   protected readonly footerLink = signal<string>('');
   protected readonly legend = signal<string>('');
+  // Director técnico por defecto del tenant (nombre + matrícula). Se hidrata del server junto
+  // con footer/legend y se persiste en el mismo PUT. Una sucursal puede sobreescribirlo.
+  protected readonly directorName = signal<string>('');
+  protected readonly directorRegistration = signal<string>('');
   // Firmante autorizante elegido (employeeId) o null = sin firmante. Se hidrata del server
   // junto con footer/legend y se persiste en el mismo PUT.
   protected readonly signerId = signal<number | null>(null);
@@ -299,17 +321,23 @@ export class InformePdfPage implements OnInit, OnDestroy {
         const serverFooter = rt.footerLink ?? '';
         const serverLegend = rt.accreditationLegend ?? '';
         const serverSigner = rt.authorizedSignerEmployeeId ?? null;
+        const serverDirectorName = rt.technicalDirectorName ?? '';
+        const serverDirectorRegistration = rt.technicalDirectorRegistration ?? '';
 
         if (firstLoad || !this.dirty()) {
           // Sin edición pendiente del usuario: seguro re-hidratar inputs desde el server.
           this.footerLink.set(serverFooter);
           this.legend.set(serverLegend);
           this.signerId.set(serverSigner);
+          this.directorName.set(serverDirectorName);
+          this.directorRegistration.set(serverDirectorRegistration);
           this.saved.set(this.textSnapshot());
         } else {
           // Edición en curso: no pisar los inputs. Solo actualizar el snapshot al valor del
           // server para que `dirty` siga reflejando si lo tipeado difiere de lo guardado.
-          this.saved.set(this.snapshotOf(serverFooter, serverLegend, serverSigner));
+          this.saved.set(this.snapshotOf(
+            serverFooter, serverLegend, serverSigner, serverDirectorName, serverDirectorRegistration,
+          ));
         }
       }
     });
@@ -393,6 +421,8 @@ export class InformePdfPage implements OnInit, OnDestroy {
           footerLink: this.footerLink() || null,
           accreditationLegend: this.legend() || null,
           authorizedSignerEmployeeId: this.signerId(),
+          technicalDirectorName: this.directorName().trim() || null,
+          technicalDirectorRegistration: this.directorRegistration().trim() || null,
         },
       }),
     );
@@ -427,10 +457,18 @@ export class InformePdfPage implements OnInit, OnDestroy {
   }
 
   private textSnapshot(): string {
-    return this.snapshotOf(this.footerLink(), this.legend(), this.signerId());
+    return this.snapshotOf(
+      this.footerLink(), this.legend(), this.signerId(),
+      this.directorName(), this.directorRegistration(),
+    );
   }
 
-  private snapshotOf(footer: string, legend: string, signerId: number | null): string {
-    return JSON.stringify({ f: footer, l: legend, s: signerId });
+  private snapshotOf(
+    footer: string, legend: string, signerId: number | null,
+    directorName: string, directorRegistration: string,
+  ): string {
+    return JSON.stringify({
+      f: footer, l: legend, s: signerId, dn: directorName, dr: directorRegistration,
+    });
   }
 }
