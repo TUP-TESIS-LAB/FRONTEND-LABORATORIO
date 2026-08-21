@@ -23,6 +23,29 @@
       }
     </div>
 
+    <fieldset class="address-fieldset">
+      <legend>Director técnico (opcional)</legend>
+      <p class="ui-text-sm ui-text-muted" style="margin: 0 0 var(--space-3)">
+        Si se completa, reemplaza al director técnico configurado en Empresa → Informe PDF.
+      </p>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="technicalDirectorName">Nombre y apellido</label>
+          <input id="technicalDirectorName" pInputText formControlName="technicalDirectorName" />
+          @if (form.controls.technicalDirectorName.invalid && form.controls.technicalDirectorName.touched) {
+            <small class="form-error">Máximo 150 caracteres.</small>
+          }
+        </div>
+        <div class="form-field">
+          <label for="technicalDirectorRegistration">Matrícula</label>
+          <input id="technicalDirectorRegistration" pInputText formControlName="technicalDirectorRegistration" />
+          @if (form.controls.technicalDirectorRegistration.invalid && form.controls.technicalDirectorRegistration.touched) {
+            <small class="form-error">Máximo 60 caracteres.</small>
+          }
+        </div>
+      </div>
+    </fieldset>
+
     <fieldset class="address-fieldset" formGroupName="address">
       <legend>Dirección</legend>
       <div class="form-row">
