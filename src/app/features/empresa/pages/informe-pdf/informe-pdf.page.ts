@@ -126,12 +126,12 @@ import { InformePdfSaveBus } from './informe-pdf-save.bus';
           </p>
           <div class="pat-form__field">
             <label class="pat-form__label" for="rpt-director-name">Nombre y apellido</label>
-            <input pInputText id="rpt-director-name" class="pat-form__input" maxlength="150"
+            <input pInputText id="rpt-director-name" class="pat-form__input"
                    [value]="directorName()" (input)="directorName.set(asValue($event))" />
           </div>
           <div class="pat-form__field">
             <label class="pat-form__label" for="rpt-director-registration">Matrícula</label>
-            <input pInputText id="rpt-director-registration" class="pat-form__input" maxlength="60"
+            <input pInputText id="rpt-director-registration" class="pat-form__input"
                    [value]="directorRegistration()" (input)="directorRegistration.set(asValue($event))" />
           </div>
         </section>
