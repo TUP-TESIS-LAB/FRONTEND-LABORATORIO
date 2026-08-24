@@ -14,12 +14,10 @@
 
   <section class="config-page__toolbar">
     <p-select
-      [options]="branches()"
+      [options]="branchFilterOptions()"
       optionLabel="name"
       optionValue="id"
-      placeholder="Todas las sucursales"
       [(ngModel)]="filterBranchId"
-      [showClear]="true"
     />
     <input
       pInputText

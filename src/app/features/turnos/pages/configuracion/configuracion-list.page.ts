@@ -84,6 +84,16 @@ export class ConfiguracionListPage implements OnInit {
     return Object.keys(map).map(id => ({ id: Number(id), name: `Sucursal ${id}` }));
   });
 
+  /**
+   * KAN-319: "Todas las sucursales" como opción real de la lista, en vez de
+   * resolver el "sin filtro" con el ícono X de showClear (confuso — no se
+   * elige como el resto de las opciones).
+   */
+  protected branchFilterOptions = computed<{ id: number | null; name: string }[]>(() => [
+    { id: null, name: 'Todas las sucursales' },
+    ...this.branches(),
+  ]);
+
   protected visibleBranches = computed(() => {
     const filter = this._filterBranchId();
     return filter == null ? this.branches() : this.branches().filter(b => b.id === filter);
