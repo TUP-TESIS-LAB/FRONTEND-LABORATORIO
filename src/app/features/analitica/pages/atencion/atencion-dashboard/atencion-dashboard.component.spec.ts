@@ -94,25 +94,11 @@ describe('AtencionDashboardComponent', () => {
     expect(fixture.nativeElement.querySelector('input[placeholder="Buscar por nombre o DNI"]')).not.toBeNull();
   });
 
-  it('010: el bloque "Resumen del día" arranca colapsado (sin ui-stat-card)', () => {
+  it('KAN-303: no muestra el bloque "Resumen del día" (no aportaba nada que la tabla no mostrara)', () => {
     const fixture = setup();
     fixture.detectChanges();
-    // El header del bloque siempre está presente; las cards no hasta expandir.
-    expect(fixture.nativeElement.textContent).toContain('Resumen del día');
-    expect(fixture.componentInstance['kpisExpanded']()).toBe(false);
+    expect(fixture.nativeElement.textContent).not.toContain('Resumen del día');
     expect(fixture.nativeElement.querySelector('ui-stat-card')).toBeNull();
-  });
-
-  it('010: toggleKpis() expande y renderiza 2 ui-stat-card ("Canceladas hoy" / "Finalizadas")', () => {
-    const fixture = setup();
-    fixture.detectChanges();
-    fixture.componentInstance.toggleKpis();
-    fixture.detectChanges();
-    expect(fixture.componentInstance['kpisExpanded']()).toBe(true);
-    const cards = fixture.nativeElement.querySelectorAll('ui-stat-card');
-    expect(cards.length).toBe(2);
-    expect(fixture.nativeElement.textContent).toContain('Canceladas hoy');
-    expect(fixture.nativeElement.textContent).toContain('Finalizadas');
   });
 
   it('B2/T6: el filtro ofrece GRUPOS de estado (5, sin "Fallida")', () => {

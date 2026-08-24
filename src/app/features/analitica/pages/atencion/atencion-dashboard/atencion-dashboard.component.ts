@@ -13,7 +13,6 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
-import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
@@ -26,7 +25,6 @@ import {
 import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
-  selectAtencionKpis,
   selectListLoading,
   selectTodayAtenciones,
 } from '../../../store/atencion/atencion.selectors';
@@ -41,7 +39,6 @@ import {
     TagModule, TooltipModule, ConfirmDialogModule,
     DataTableComponent, UiCellDirective,
     FilterBarComponent,
-    StatCardComponent,
   ],
   template: `
     <!-- Listado de atenciones SIN pantalla propia: se renderiza embebido en la tab
@@ -103,27 +100,12 @@ import {
         <ng-template uiCell="urgente" let-row>
           @if ($any(row).isUrgent) {
             <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i>
+          } @else {
+            <span class="text-[var(--ds-text-muted)]">—</span>
           }
         </ng-template>
 
       </ui-table>
-
-      <!-- Resumen del día: bloque colapsable con las métricas rápidas del listado. -->
-      <section class="bg-white rounded-lg shadow-sm mt-5">
-        <button type="button"
-                class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[var(--ds-text)]"
-                (click)="toggleKpis()"
-                [attr.aria-expanded]="kpisExpanded()">
-          <span>Resumen del día</span>
-          <i class="pi" [class.pi-chevron-down]="!kpisExpanded()" [class.pi-chevron-up]="kpisExpanded()"></i>
-        </button>
-        @if (kpisExpanded()) {
-          <div class="grid grid-cols-2 gap-3 px-4 pb-4">
-            <ui-stat-card label="Canceladas hoy" [value]="kpis().canceladasHoy" accentColor="#ef4444" />
-            <ui-stat-card label="Finalizadas" [value]="kpis().finalizadas" accentColor="#10b981" />
-          </div>
-        }
-      </section>
 
       <p-confirmDialog [draggable]="false" />
     </div>
@@ -146,10 +128,6 @@ export class AtencionDashboardComponent implements OnInit {
 
   protected readonly rows    = this.store.selectSignal(selectTodayAtenciones);
   protected readonly loading = this.store.selectSignal(selectListLoading);
-  protected readonly kpis    = this.store.selectSignal(selectAtencionKpis);
-
-  /** Bloque "Resumen del día": arranca colapsado para no robar foco a la lista. */
-  protected readonly kpisExpanded = signal(false);
 
   protected readonly groupLabel    = attentionGroupLabel;
   protected readonly listLabel     = attentionListLabel;
@@ -192,12 +170,13 @@ export class AtencionDashboardComponent implements OnInit {
     ],
   }));
 
+  // KAN-303: anchos fijos para que la tabla no se reacomode según el contenido de cada fila.
   readonly columns: readonly TableColumn[] = [
-    { field: 'fecha',    header: 'Fecha' },
-    { field: 'paciente', header: 'Paciente' },
-    { field: 'doctorId', header: 'Médico' },
-    { field: 'estado',   header: 'Estado', headerInfo: 'Pasá el cursor sobre un estado cancelado para ver el motivo.' },
-    { field: 'urgente',  header: 'Urg.', align: 'center' },
+    { field: 'fecha',    header: 'Fecha',    width: '130px' },
+    { field: 'paciente', header: 'Paciente', width: '260px' },
+    { field: 'doctorId', header: 'Médico',   width: '200px' },
+    { field: 'estado',   header: 'Estado',   headerInfo: 'Pasá el cursor sobre un estado cancelado para ver el motivo.', width: '160px' },
+    { field: 'urgente',  header: 'Urg.',     align: 'center', width: '70px' },
   ];
 
   readonly rowActions: readonly TableAction[] = [
@@ -243,11 +222,6 @@ export class AtencionDashboardComponent implements OnInit {
    */
   private canOpen(state: AttentionState): boolean {
     return state !== AttentionState.CANCELED && state !== AttentionState.FAILED;
-  }
-
-  /** Expande/colapsa el bloque "Resumen del día". */
-  toggleKpis(): void {
-    this.kpisExpanded.update(v => !v);
   }
 
   /**

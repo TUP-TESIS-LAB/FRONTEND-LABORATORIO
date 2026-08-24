@@ -76,6 +76,7 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
                   <th
                     [class.ut-align-right]="col.align === 'right'"
                     [class.ut-align-center]="col.align === 'center'"
+                    [style.width]="col.width"
                     [pSortableColumn]="col.field">
                     {{ col.header }}
                     <p-sortIcon [field]="col.field" />
@@ -87,7 +88,8 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
                 } @else {
                   <th
                     [class.ut-align-right]="col.align === 'right'"
-                    [class.ut-align-center]="col.align === 'center'">
+                    [class.ut-align-center]="col.align === 'center'"
+                    [style.width]="col.width">
                     {{ col.header }}
                     @if (col.headerInfo) {
                       <i class="pi pi-info-circle ut-header-info"

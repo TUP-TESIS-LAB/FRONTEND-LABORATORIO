@@ -5,6 +5,12 @@ export interface TableColumn {
   header: string;
   align?: 'left' | 'right' | 'center';
   /**
+   * Ancho fijo de la columna (p.ej. `'120px'`), aplicado como `style.width` sobre el
+   * `<th>`. Opcional — sin esto la columna sigue creciendo/achicándose según el
+   * contenido (comportamiento histórico, compatible con todo el código existente).
+   */
+  width?: string;
+  /**
    * Si está presente, se renderiza un ícono info junto al header con este texto como
    * tooltip. Útil para señalar que las celdas de esa columna tienen info en el hover.
    */
