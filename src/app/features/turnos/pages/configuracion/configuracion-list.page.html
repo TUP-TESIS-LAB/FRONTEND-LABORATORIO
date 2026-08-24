@@ -19,12 +19,6 @@
       optionValue="id"
       [(ngModel)]="filterBranchId"
     />
-    <input
-      pInputText
-      type="text"
-      placeholder="Buscar agenda..."
-      [(ngModel)]="searchTerm"
-    />
   </section>
 
   @if (error(); as err) {
@@ -59,7 +53,6 @@
               <app-agenda-branch-section
                 [branch]="branch"
                 [agendas]="configsByBranch()[branch.id] || []"
-                [searchTerm]="searchTerm"
                 [canWrite]="canWrite()"
                 (agregar)="onAgregarPara(branch.id)"
                 (editar)="onEditar($event)"

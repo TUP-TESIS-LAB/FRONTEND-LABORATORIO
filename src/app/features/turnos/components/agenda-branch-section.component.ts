@@ -3,7 +3,6 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnChanges,
   Output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -19,36 +18,14 @@ import { AgendaConfig } from '../models/agenda-config.model';
   templateUrl: './agenda-branch-section.component.html',
   styleUrl: './agenda-branch-section.component.scss',
 })
-export class AgendaBranchSectionComponent implements OnChanges {
+export class AgendaBranchSectionComponent {
   @Input({ required: true }) branch!: { id: number; name: string };
   @Input() agendas: AgendaConfig[] = [];
-  @Input() searchTerm = '';
   @Input() canWrite = false;
 
   @Output() agregar = new EventEmitter<void>();
   @Output() editar = new EventEmitter<number>();
   @Output() eliminar = new EventEmitter<{ id: number }>();
-
-  // Recalculado en ngOnChanges porque @Input no es signal — computed() no detecta cambios.
-  protected filtered: AgendaConfig[] = [];
-
-  // KAN-310: el filtro comparaba contra el valor crudo (startTime/endTime con
-  // segundos, días en inglés tipo "MONDAY,TUESDAY") en vez de contra lo que la
-  // fila realmente muestra ("09:00–17:00", "Lunes a Viernes") — buscar "lunes"
-  // nunca matcheaba nada. Ahora compara contra los mismos strings formateados
-  // que ve el usuario en la tabla.
-  ngOnChanges(): void {
-    const q = (this.searchTerm ?? '').trim().toLowerCase();
-    if (!q) {
-      this.filtered = this.agendas;
-      return;
-    }
-    this.filtered = this.agendas.filter(
-      a =>
-        this.formatRange(a).toLowerCase().includes(q) ||
-        this.formatDays(a.recurringDaysOfWeek).toLowerCase().includes(q),
-    );
-  }
 
   protected formatDays(daysCSV: string | null): string {
     if (!daysCSV) return '—';

@@ -14,7 +14,6 @@ import { Store } from '@ngrx/store';
 import { ButtonModule } from 'primeng/button';
 import { AccordionModule } from 'primeng/accordion';
 import { SelectModule } from 'primeng/select';
-import { InputTextModule } from 'primeng/inputtext';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -40,7 +39,6 @@ import { AgendaBranchSectionComponent } from '../../components/agenda-branch-sec
     ButtonModule,
     AccordionModule,
     SelectModule,
-    InputTextModule,
     ConfirmDialogModule,
     ToastModule,
     SkeletonModule,
@@ -66,15 +64,11 @@ export class ConfiguracionListPage implements OnInit {
   protected error = this.store.selectSignal(selectAgendasError);
   protected configsByBranch = this.store.selectSignal(selectAllConfigsByBranch);
 
-  // Señales para filtros — usadas con getter/setter para compatibilidad con ngModel
+  // Señal para el filtro de sucursal — usada con getter/setter para compatibilidad con ngModel
   private _filterBranchId = signal<number | null>(null);
-  private _searchTerm = signal<string>('');
 
   get filterBranchId(): number | null { return this._filterBranchId(); }
   set filterBranchId(v: number | null) { this._filterBranchId.set(v); }
-
-  get searchTerm(): string { return this._searchTerm(); }
-  set searchTerm(v: string) { this._searchTerm.set(v); }
 
   protected branches = computed(() => {
     const fromService = this.branchesFromService();
