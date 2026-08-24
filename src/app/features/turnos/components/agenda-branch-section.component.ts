@@ -32,17 +32,22 @@ export class AgendaBranchSectionComponent implements OnChanges {
   // Recalculado en ngOnChanges porque @Input no es signal — computed() no detecta cambios.
   protected filtered: AgendaConfig[] = [];
 
+  // KAN-310: el filtro comparaba contra el valor crudo (startTime/endTime con
+  // segundos, días en inglés tipo "MONDAY,TUESDAY") en vez de contra lo que la
+  // fila realmente muestra ("09:00–17:00", "Lunes a Viernes") — buscar "lunes"
+  // nunca matcheaba nada. Ahora compara contra los mismos strings formateados
+  // que ve el usuario en la tabla.
   ngOnChanges(): void {
     const q = (this.searchTerm ?? '').trim().toLowerCase();
     if (!q) {
       this.filtered = this.agendas;
-    } else {
-      this.filtered = this.agendas.filter(
-        a =>
-          `${a.startTime}-${a.endTime}`.includes(q) ||
-          (a.recurringDaysOfWeek?.toLowerCase().includes(q) ?? false),
-      );
+      return;
     }
+    this.filtered = this.agendas.filter(
+      a =>
+        this.formatRange(a).toLowerCase().includes(q) ||
+        this.formatDays(a.recurringDaysOfWeek).toLowerCase().includes(q),
+    );
   }
 
   protected formatDays(daysCSV: string | null): string {
