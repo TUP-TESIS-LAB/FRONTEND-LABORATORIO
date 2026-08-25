@@ -107,11 +107,12 @@ const ALL_STEPS: WizardStepDef[] = [
 
         <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
 
+        <div wizardFooterLeft>
+          <p-button label="Volver al listado" severity="secondary" [text]="true"
+                    (onClick)="backToList()" />
+        </div>
+
         <div wizardFooter>
-          <div wizardFooterLeft>
-            <p-button label="Volver al listado" severity="secondary" [text]="true"
-                      (onClick)="backToList()" />
-          </div>
           <p-button label="Confirmar y seguir" [disabled]="!datosCanConfirm()"
                     (onClick)="advanceCurrent()" />
         </div>
@@ -211,17 +212,20 @@ const ALL_STEPS: WizardStepDef[] = [
 
           <!-- Footer del shell: botones según el paso actual + la máquina de estados. -->
           @if (!readOnly()) {
-            <div wizardFooter class="flex items-center gap-2">
-              <div wizardFooterLeft class="flex items-center gap-2">
-                <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
-                          (onClick)="backToList()" />
-                @if (canCancel()) {
-                  <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
-                }
-              </div>
-              @if (detail()!.isUrgent) {
-                <p-tag wizardFooterCenter value="URGENTE" severity="danger" />
+            <div wizardFooterLeft class="flex items-center gap-2">
+              <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
+                        (onClick)="backToList()" />
+              @if (canCancel()) {
+                <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
               }
+            </div>
+          }
+          @if (detail()!.isUrgent) {
+            <p-tag wizardFooterCenter value="URGENTE" severity="danger" />
+          }
+
+          @if (!readOnly()) {
+            <div wizardFooter class="flex items-center gap-2">
               @if (canReturn()) {
                 <p-button label="Volver fase" severity="secondary" [outlined]="true"
                           [disabled]="mutating()" (onClick)="onReturnPhase()" />
