@@ -132,9 +132,11 @@ const ALL_STEPS: WizardStepDef[] = [
            fijo del viewport para el footer pegado abajo) — mismo look full-bleed que
            el resto de los wizards del laboratorio (sacar-turno, sucursal, agenda, domicilio).
            El badge URGENTE va en [wizardFooterCenter]; las acciones (Volver al listado /
-           Cancelar) en [wizardFooterLeft], ambas dentro del [wizardFooter] existente; el
-           banner de solo-lectura + Descargar rótulos en [wizardBanner]; y los botones de
-           navegación de cada paso quedan en el mismo footer del shell ([wizardFooter]). -->
+           Cancelar) en [wizardFooterLeft]; los slots wizardFooterLeft / wizardFooterCenter /
+           wizardFooter son hermanos, hijos directos de ui-wizard-shell — NUNCA anidar uno
+           dentro de otro; el banner de solo-lectura + Descargar rótulos en [wizardBanner]; y
+           los botones de navegación de cada paso quedan en el mismo footer del shell
+           ([wizardFooter]). -->
         <ui-wizard-shell
           [steps]="stepperSteps()"
           [currentIndex]="activeIndex()"
@@ -211,15 +213,13 @@ const ALL_STEPS: WizardStepDef[] = [
           }
 
           <!-- Footer del shell: botones según el paso actual + la máquina de estados. -->
-          @if (!readOnly()) {
-            <div wizardFooterLeft class="flex items-center gap-2">
-              <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
-                        (onClick)="backToList()" />
-              @if (canCancel()) {
-                <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
-              }
-            </div>
-          }
+          <div wizardFooterLeft class="flex items-center gap-2">
+            <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
+                      (onClick)="backToList()" />
+            @if (canCancel()) {
+              <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
+            }
+          </div>
           @if (detail()!.isUrgent) {
             <p-tag wizardFooterCenter value="URGENTE" severity="danger" />
           }

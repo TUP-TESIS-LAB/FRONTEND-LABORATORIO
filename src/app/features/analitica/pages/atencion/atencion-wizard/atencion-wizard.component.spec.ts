@@ -191,20 +191,22 @@ describe('AtencionWizardComponent (CORE flow)', () => {
   });
 
   // ── C2: el tag URGENTE vive centrado en el footer del wizard ────────────────
-  it('C2: con isUrgent el footer muestra el tag URGENTE', () => {
+  it('C2: con isUrgent el footer muestra el tag URGENTE en la zona centro', () => {
     setup(AttentionState.REGISTERING_ANALYSES);
     const store = TestBed.inject(MockStore);
     store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.REGISTERING_ANALYSES), isUrgent: true } as any);
     store.refreshState();
     fixture.detectChanges();
-    const footer = fixture.nativeElement.querySelector('footer') as HTMLElement;
-    expect(footer.textContent).toContain('URGENTE');
+    const el: HTMLElement = fixture.nativeElement;
+    const zoneCenter = el.querySelector('footer [data-testid="wizard-footer-center"]') as HTMLElement | null;
+    expect(zoneCenter?.textContent).toContain('URGENTE');
   });
 
-  it('C2: sin isUrgent el footer NO muestra el tag URGENTE', () => {
+  it('C2: sin isUrgent el footer NO muestra el tag URGENTE en la zona centro', () => {
     setup(AttentionState.REGISTERING_ANALYSES); // makeDetail → isUrgent: false
-    const footer = fixture.nativeElement.querySelector('footer') as HTMLElement;
-    expect(footer.textContent).not.toContain('URGENTE');
+    const el: HTMLElement = fixture.nativeElement;
+    const zoneCenter = el.querySelector('footer [data-testid="wizard-footer-center"]') as HTMLElement | null;
+    expect(zoneCenter?.textContent).not.toContain('URGENTE');
   });
 
   // ── NEW-D: Volver al listado ───────────────────────────────────────────────
@@ -250,6 +252,24 @@ describe('AtencionWizardComponent (CORE flow)', () => {
     (fixture.componentInstance as any).goToStep(2);
     fixture.detectChanges();
     expect((fixture.componentInstance as any).uiStep().key).toBe('confirmar');
+  });
+
+  // Bug del review final: un refactor envolvió [wizardFooterLeft] en un `@if (!readOnly())`
+  // que nunca existió antes — "Volver al listado" desaparecía por completo en solo-lectura
+  // (FINISHED, AWAITING_EXTRACTION, etc.), dejando el footer entero vacío. Este test cubre
+  // el caso combinado solo-lectura + urgente: el tag URGENTE debe seguir mostrándose y
+  // "Volver al listado" debe seguir presente, mientras "Cancelar atención" queda oculto.
+  it('NEW-E: en solo-lectura (FINISHED) + isUrgent, el footer muestra URGENTE y "Volver al listado", pero NO "Cancelar atención"', () => {
+    setup(AttentionState.FINISHED);
+    const store = TestBed.inject(MockStore);
+    store.overrideSelector(selectDetail, { ...makeDetail(AttentionState.FINISHED), isUrgent: true } as any);
+    store.refreshState();
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    const footer = el.querySelector('footer') as HTMLElement;
+    expect(footer.textContent).toContain('URGENTE');
+    expect(footer.textContent).toContain('Volver al listado');
+    expect(footer.textContent).not.toContain('Cancelar atención');
   });
 
   // ── KAN-140: modo express urgente ─────────────────────────────────────────

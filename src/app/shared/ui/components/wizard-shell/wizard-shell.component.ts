@@ -57,12 +57,12 @@ import { FormStep } from '@shared/ui/models/form-step';
       <footer class="wz-bar wz-bar--bottom flex items-center gap-3 px-8 py-4 bg-surface-0 sticky bottom-0">
         <!-- Zona izquierda: secundario/destructivo (p.ej. Volver al listado, Cancelar).
              Vacía y sin ocupar espacio visible en los wizards que no la usan. -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2" data-testid="wizard-footer-left">
           <ng-content select="[wizardFooterLeft]" />
         </div>
 
         <!-- Zona centro: badges (p.ej. URGENTE). flex-1 empuja la zona derecha al borde. -->
-        <div class="flex-1 flex items-center justify-center gap-2">
+        <div class="flex-1 flex items-center justify-center gap-2" data-testid="wizard-footer-center">
           <ng-content select="[wizardFooterCenter]" />
         </div>
 
@@ -131,7 +131,6 @@ import { FormStep } from '@shared/ui/models/form-step';
         height: calc(100% + var(--space-4) * 2);
       }
     }
-    .wz-bar--top { border-bottom: 1px solid var(--ds-border); }
     .wz-bar--bottom { border-top: 1px solid var(--ds-border); }
   `],
 })
@@ -165,8 +164,7 @@ export class WizardShellComponent {
    * Cuando es `true`, el footer NO renderiza los botones por defecto y en su
    * lugar proyecta el contenido marcado con `[wizardFooter]`. Úsalo en wizards
    * que envuelven el shell en un `<form>` con submit/Ctrl+S o que necesitan
-   * lógica de botones propia (alta vs edición). El contador "Paso X de Y" se
-   * mantiene siempre.
+   * lógica de botones propia (alta vs edición).
    */
   readonly customFooter = input<boolean>(false);
 

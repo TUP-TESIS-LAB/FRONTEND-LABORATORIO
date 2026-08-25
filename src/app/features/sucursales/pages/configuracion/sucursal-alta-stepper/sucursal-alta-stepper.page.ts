@@ -63,7 +63,6 @@ export class SucursalAltaStepperPage implements OnInit {
     this.editMode() ? SUCURSAL_FORM_STEPS.slice(0, TOTEM_STEP_INDEX + 1) : SUCURSAL_FORM_STEPS,
   );
 
-
   /**
    * currentStep es 0-indexed para alinearse con el `currentIndex` del
    * componente compartido `ui-form-stepper-header`. Antes era 1-indexed
