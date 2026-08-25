@@ -98,7 +98,6 @@ const ALL_STEPS: WizardStepDef[] = [
            paso 2 sin haber visto nunca el paso 1 resaltado. Con el shell acá, el
            stepper ya arranca marcando "1 Datos generales" activo. -->
       <ui-wizard-shell
-        heading="Nueva atención"
         [steps]="stepperSteps()"
         [currentIndex]="0"
         [visited]="emptySet"
@@ -106,14 +105,13 @@ const ALL_STEPS: WizardStepDef[] = [
         [customFooter]="true"
         [maxWidth]="'1040px'">
 
-        <div headerActions>
-          <p-button label="Volver al listado" severity="secondary" [text]="true"
-                    (onClick)="backToList()" />
-        </div>
-
         <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
 
         <div wizardFooter>
+          <div wizardFooterLeft>
+            <p-button label="Volver al listado" severity="secondary" [text]="true"
+                      (onClick)="backToList()" />
+          </div>
           <p-button label="Confirmar y seguir" [disabled]="!datosCanConfirm()"
                     (onClick)="advanceCurrent()" />
         </div>
@@ -132,12 +130,11 @@ const ALL_STEPS: WizardStepDef[] = [
            padding/max-width propios encima (el wrapper .aw-shell solo aporta el alto
            fijo del viewport para el footer pegado abajo) — mismo look full-bleed que
            el resto de los wizards del laboratorio (sacar-turno, sucursal, agenda, domicilio).
-           URGENTE va inline al lado del título ([headingBadge]); las acciones de
-           header (Volver al listado / Cancelar) en [headerActions]; el banner de
-           solo-lectura + Descargar rótulos en [wizardBanner]; y los botones de
-           navegación de cada paso suben al footer del shell ([wizardFooter]). -->
+           El badge URGENTE va en [wizardFooterCenter]; las acciones (Volver al listado /
+           Cancelar) en [wizardFooterLeft], ambas dentro del [wizardFooter] existente; el
+           banner de solo-lectura + Descargar rótulos en [wizardBanner]; y los botones de
+           navegación de cada paso quedan en el mismo footer del shell ([wizardFooter]). -->
         <ui-wizard-shell
-          [heading]="'Atención ' + headerTitle()"
           [steps]="stepperSteps()"
           [currentIndex]="activeIndex()"
           [visited]="completedSteps()"
@@ -146,18 +143,6 @@ const ALL_STEPS: WizardStepDef[] = [
           [maxWidth]="'1040px'"
           [bodyFill]="bodyFill()"
           (stepSelected)="goToStep($event)">
-
-          @if (detail()!.isUrgent) {
-            <p-tag headingBadge value="URGENTE" severity="danger" />
-          }
-
-          <div headerActions class="flex items-center gap-2">
-            <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
-                      (onClick)="backToList()" />
-            @if (canCancel()) {
-              <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
-            }
-          </div>
 
           <!-- KAN-140: badges de pendientes (cobro/autorización/datos) cuando la atención
                fue avanzada en modo express urgente y hay tareas administrativas por completar. -->
@@ -227,6 +212,16 @@ const ALL_STEPS: WizardStepDef[] = [
           <!-- Footer del shell: botones según el paso actual + la máquina de estados. -->
           @if (!readOnly()) {
             <div wizardFooter class="flex items-center gap-2">
+              <div wizardFooterLeft class="flex items-center gap-2">
+                <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
+                          (onClick)="backToList()" />
+                @if (canCancel()) {
+                  <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
+                }
+              </div>
+              @if (detail()!.isUrgent) {
+                <p-tag wizardFooterCenter value="URGENTE" severity="danger" />
+              }
               @if (canReturn()) {
                 <p-button label="Volver fase" severity="secondary" [outlined]="true"
                           [disabled]="mutating()" (onClick)="onReturnPhase()" />
@@ -393,26 +388,7 @@ export class AtencionWizardComponent {
     }
   }
 
-  /**
-   * Título grande del header (C6): el código público del turno (ST-/CT-…) si existe.
-   * Fallback al número interno de atención cuando publicCode es null/vacío.
-   */
-  /**
-   * Título del header. Prioridad:
-   * 1) publicCode del turno (ST-001 / CT-002) si la atención vino de un tótem.
-   * 2) Si NO hay publicCode (tenant sin tótem / walk-in) → N° de documento del paciente.
-   * 3) Fallback final → attentionNumber. (T4)
-   */
   protected readonly resolvedPatient = this.store.selectSignal(selectResolvedPatient);
-  protected readonly headerTitle = computed<string>(() => {
-    const d = this.detail();
-    if (!d) return '';
-    const code = d.publicCode?.trim();
-    if (code) return code;
-    // El detalle no siempre trae patientDni; usamos el DNI del paciente resuelto.
-    const dni = (d.patientDni ?? this.resolvedPatient()?.dni)?.trim();
-    return dni ? dni : d.attentionNumber;
-  });
 
   protected readonly cancelModalOpen = signal(false);
   protected canCancel(): boolean {
