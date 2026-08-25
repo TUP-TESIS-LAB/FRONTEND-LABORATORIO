@@ -7,41 +7,39 @@
       <span>No hay sucursal asignada. Avisá al administrador.</span>
     </div>
   } @else {
-    <p-table
+    <ui-table
       [value]="entries()"
       [loading]="loading()"
-      [rowTrackBy]="trackById">
-      <ng-template pTemplate="header">
-        <tr>
-          <th>Código</th>
-          <th>DNI</th>
-          <th>Esperando</th>
-          <th>Llamadas</th>
-          <th></th>
-        </tr>
+      [columns]="columns"
+      [rowClass]="rowClass"
+      emptyHeading="No hay pacientes en cola."
+      emptyIcon="pi-inbox">
+
+      <ng-template uiCell="publicCode" let-row>
+        {{ $any(row).publicCode }}
       </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr [class]="rowClass(row)">
-          <td>{{ row.publicCode }}</td>
-          <td>{{ row.nationalId }}</td>
-          <td class="waiting-cell">{{ row.createdAt | waitingTime }}</td>
-          <td>
-            @if (row.callCount > 0) {
-              <span class="call-count">{{ row.callCount }}</span>
-            }
-          </td>
-          <td>
-            <app-queue-row-actions
-              [entryId]="row.id"
-              (call)="onCall(row.id)"
-              (nuevaAtencion)="onNuevaAtencion(row.id)"
-              (cancel)="onCancel(row.id, row.publicCode)" />
-          </td>
-        </tr>
+
+      <ng-template uiCell="dni" let-row>
+        {{ $any(row).nationalId }}
       </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr><td colspan="5">No hay pacientes en cola.</td></tr>
+
+      <ng-template uiCell="esperando" let-row>
+        <span class="waiting-cell">{{ $any(row).createdAt | waitingTime }}</span>
       </ng-template>
-    </p-table>
+
+      <ng-template uiCell="llamadas" let-row>
+        @if ($any(row).callCount > 0) {
+          <span class="call-count">{{ $any(row).callCount }}</span>
+        }
+      </ng-template>
+
+      <ng-template uiCell="acciones" let-row>
+        <app-queue-row-actions
+          [entryId]="$any(row).id"
+          (call)="onCall($any(row).id)"
+          (nuevaAtencion)="onNuevaAtencion($any(row).id)"
+          (cancel)="onCancel($any(row).id, $any(row).publicCode)" />
+      </ng-template>
+    </ui-table>
   }
 </div>

@@ -1,5 +1,5 @@
 <p-toast />
-<p-confirmDialog [draggable]="false" />
+<p-confirmDialog [draggable]="false" styleClass="p-confirmdialog-ds-danger" />
 
 <div class="config-page">
   <ui-page-header heading="Configuración de agendas" subtitle="Definí horarios y capacidad por sucursal.">
@@ -14,18 +14,10 @@
 
   <section class="config-page__toolbar">
     <p-select
-      [options]="branches()"
+      [options]="branchFilterOptions()"
       optionLabel="name"
       optionValue="id"
-      placeholder="Todas las sucursales"
       [(ngModel)]="filterBranchId"
-      [showClear]="true"
-    />
-    <input
-      pInputText
-      type="text"
-      placeholder="Buscar agenda..."
-      [(ngModel)]="searchTerm"
     />
   </section>
 
@@ -61,7 +53,6 @@
               <app-agenda-branch-section
                 [branch]="branch"
                 [agendas]="configsByBranch()[branch.id] || []"
-                [searchTerm]="searchTerm"
                 [canWrite]="canWrite()"
                 (agregar)="onAgregarPara(branch.id)"
                 (editar)="onEditar($event)"

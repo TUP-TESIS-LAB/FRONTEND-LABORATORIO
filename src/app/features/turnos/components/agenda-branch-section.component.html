@@ -9,24 +9,20 @@
   </div>
 }
 
-@if (filtered.length === 0) {
+@if (agendas.length === 0) {
   <div class="branch-section__empty">
-    @if (agendas.length === 0) {
-      <span>Sin agendas configuradas.</span>
-      @if (canWrite) {
-        <p-button
-          label="Crear primera agenda"
-          severity="secondary"
-          size="small"
-          (onClick)="agregar.emit()"
-        />
-      }
-    } @else {
-      <span>Ninguna agenda coincide con tu búsqueda.</span>
+    <span>Sin agendas configuradas.</span>
+    @if (canWrite) {
+      <p-button
+        label="Crear primera agenda"
+        severity="secondary"
+        size="small"
+        (onClick)="agregar.emit()"
+      />
     }
   </div>
 } @else {
-  <p-table [value]="filtered">
+  <p-table [value]="agendas">
     <ng-template pTemplate="header">
       <tr>
         <th>Horario</th>

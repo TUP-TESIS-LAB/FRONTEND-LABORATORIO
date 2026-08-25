@@ -3,7 +3,6 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnChanges,
   Output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -19,31 +18,14 @@ import { AgendaConfig } from '../models/agenda-config.model';
   templateUrl: './agenda-branch-section.component.html',
   styleUrl: './agenda-branch-section.component.scss',
 })
-export class AgendaBranchSectionComponent implements OnChanges {
+export class AgendaBranchSectionComponent {
   @Input({ required: true }) branch!: { id: number; name: string };
   @Input() agendas: AgendaConfig[] = [];
-  @Input() searchTerm = '';
   @Input() canWrite = false;
 
   @Output() agregar = new EventEmitter<void>();
   @Output() editar = new EventEmitter<number>();
   @Output() eliminar = new EventEmitter<{ id: number }>();
-
-  // Recalculado en ngOnChanges porque @Input no es signal — computed() no detecta cambios.
-  protected filtered: AgendaConfig[] = [];
-
-  ngOnChanges(): void {
-    const q = (this.searchTerm ?? '').trim().toLowerCase();
-    if (!q) {
-      this.filtered = this.agendas;
-    } else {
-      this.filtered = this.agendas.filter(
-        a =>
-          `${a.startTime}-${a.endTime}`.includes(q) ||
-          (a.recurringDaysOfWeek?.toLowerCase().includes(q) ?? false),
-      );
-    }
-  }
 
   protected formatDays(daysCSV: string | null): string {
     if (!daysCSV) return '—';

@@ -13,7 +13,6 @@ import { DataTableComponent } from '@shared/ui/components/data-table/data-table.
 import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
 import { FilterBarComponent, FilterBarConfig, FilterBarValue } from '@shared/ui/components/filter-bar/filter-bar.component';
 import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
-import { StatCardComponent } from '@shared/ui/components/stat-card/stat-card.component';
 import { DoctorService } from '@features/medicos/services/doctor.service';
 import { Doctor } from '@features/medicos/models/doctor.model';
 import { AttentionResponse, AttentionState, isSecretaryResumable } from '../../../models/atencion.model';
@@ -26,7 +25,6 @@ import {
 import { downloadProtocolLabels, loadAtenciones, setAtencionFilters } from '../../../store/atencion/atencion.actions';
 import { AtencionFilters } from '../../../store/atencion/atencion.state';
 import {
-  selectAtencionKpis,
   selectListLoading,
   selectTodayAtenciones,
 } from '../../../store/atencion/atencion.selectors';
@@ -41,7 +39,6 @@ import {
     TagModule, TooltipModule, ConfirmDialogModule,
     DataTableComponent, UiCellDirective,
     FilterBarComponent,
-    StatCardComponent,
   ],
   template: `
     <!-- Listado de atenciones SIN pantalla propia: se renderiza embebido en la tab
@@ -56,74 +53,66 @@ import {
           (valueChange)="onFilterChange($event)" />
       </div>
 
-      <ui-table
-        [value]="rows()"
-        [loading]="loading()"
-        [columns]="columns"
-        [paginator]="true"
-        [rows]="20"
-        [rowsPerPageOptions]="[10, 20, 50, 100]"
-        [entityLabel]="'atenciones'"
-        [actions]="rowActions"
-        emptyHeading="Sin atenciones para los filtros aplicados"
-        emptyIcon="pi-inbox"
-        (action)="onAction($event)">
+      <!-- KAN-303: la tabla ocupa el alto del contenedor (min-height) aunque haya pocas
+           filas, en vez de achicarse al contenido y dejar espacio muerto abajo. scrollHeight
+           "flex" hace que ui-table estire dentro de este wrapper; con muchas filas, el
+           propio contenedor tapa a 60vh y el scroll queda adentro (header sticky). -->
+      <div class="atencion-table-wrap">
+        <ui-table
+          [value]="rows()"
+          [loading]="loading()"
+          [columns]="columns"
+          [paginator]="true"
+          [rows]="20"
+          [rowsPerPageOptions]="[10, 20, 50, 100]"
+          [entityLabel]="'atenciones'"
+          [actions]="rowActions"
+          [scrollHeight]="'flex'"
+          emptyHeading="Sin atenciones para los filtros aplicados"
+          emptyIcon="pi-inbox"
+          (action)="onAction($event)">
 
-        <ng-template uiCell="fecha" let-row>
-          {{ $any(row).createdAt ? ($any(row).createdAt | date: 'dd/MM/yy HH:mm') : '—' }}
-        </ng-template>
+          <ng-template uiCell="fecha" let-row>
+            {{ $any(row).createdAt ? ($any(row).createdAt | date: 'dd/MM/yy HH:mm') : '—' }}
+          </ng-template>
 
-        <ng-template uiCell="paciente" let-row>
-          <div class="font-medium">{{ $any(row).patientFullName ?? '—' }}</div>
-          <div class="text-xs text-[var(--ds-text-muted)]">{{ $any(row).patientDni ?? '—' }}</div>
-        </ng-template>
+          <ng-template uiCell="paciente" let-row>
+            <div class="font-medium">{{ $any(row).patientFullName ?? '—' }}</div>
+            <div class="text-xs text-[var(--ds-text-muted)]">{{ $any(row).patientDni ?? '—' }}</div>
+          </ng-template>
 
-        <ng-template uiCell="doctorId" let-row>
-          {{ doctorName($any(row).doctorId) }}
-        </ng-template>
+          <ng-template uiCell="doctorId" let-row>
+            {{ doctorName($any(row).doctorId) }}
+          </ng-template>
 
-        <ng-template uiCell="estado" let-row>
-          @if (cancellationTooltip($any(row)); as motivo) {
-            <!-- El motivo se muestra en el hover del tag; la pista visual (ícono info)
-                 vive en el header de la columna "Estado", no en la fila. -->
-            <span class="inline-flex items-center"
-                  [pTooltip]="motivo" tooltipPosition="top"
-                  tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
+          <ng-template uiCell="estado" let-row>
+            @if (cancellationTooltip($any(row)); as motivo) {
+              <!-- El motivo se muestra en el hover del tag; la pista visual (ícono info)
+                   vive en el header de la columna "Estado", no en la fila. -->
+              <span class="inline-flex items-center"
+                    [pTooltip]="motivo" tooltipPosition="top"
+                    tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
+                <p-tag
+                  [value]="listLabel($any(row).attentionState, $any(row).cancelledAtState)"
+                  [severity]="groupSeverity($any(row).attentionState)" />
+              </span>
+            } @else {
               <p-tag
-                [value]="listLabel($any(row).attentionState, $any(row).cancelledAtState)"
+                [value]="groupLabel($any(row).attentionState)"
                 [severity]="groupSeverity($any(row).attentionState)" />
-            </span>
-          } @else {
-            <p-tag
-              [value]="groupLabel($any(row).attentionState)"
-              [severity]="groupSeverity($any(row).attentionState)" />
-          }
-        </ng-template>
+            }
+          </ng-template>
 
-        <ng-template uiCell="urgente" let-row>
-          @if ($any(row).isUrgent) {
-            <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i>
-          }
-        </ng-template>
+          <ng-template uiCell="urgente" let-row>
+            @if ($any(row).isUrgent) {
+              <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i>
+            } @else {
+              <span class="text-[var(--ds-text-muted)]">—</span>
+            }
+          </ng-template>
 
-      </ui-table>
-
-      <!-- Resumen del día: bloque colapsable con las métricas rápidas del listado. -->
-      <section class="bg-white rounded-lg shadow-sm mt-5">
-        <button type="button"
-                class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[var(--ds-text)]"
-                (click)="toggleKpis()"
-                [attr.aria-expanded]="kpisExpanded()">
-          <span>Resumen del día</span>
-          <i class="pi" [class.pi-chevron-down]="!kpisExpanded()" [class.pi-chevron-up]="kpisExpanded()"></i>
-        </button>
-        @if (kpisExpanded()) {
-          <div class="grid grid-cols-2 gap-3 px-4 pb-4">
-            <ui-stat-card label="Canceladas hoy" [value]="kpis().canceladasHoy" accentColor="#ef4444" />
-            <ui-stat-card label="Finalizadas" [value]="kpis().finalizadas" accentColor="#10b981" />
-          </div>
-        }
-      </section>
+        </ui-table>
+      </div>
 
       <p-confirmDialog [draggable]="false" />
     </div>
@@ -134,6 +123,36 @@ import {
       max-width: 320px;
       white-space: normal;
       line-height: 1.35;
+    }
+
+    /* KAN-303: min-height fijo para que la tabla ocupe el alto del contenedor aunque
+       tenga pocas filas — scrollHeight="flex" de ui-table estira dentro de este box.
+       ui-table necesita flex:1 como hijo (su :host solo define height:100% puertas
+       adentro, no cómo comportarse como flex item del padre). */
+    .atencion-table-wrap {
+      display: flex;
+      flex-direction: column;
+      min-height: 60vh;
+    }
+    .atencion-table-wrap > ui-table {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* KAN-303: la zebra (tbody > tr:nth-child(even), #fafbfd cada 49.5px — alto de fila
+       fijo del ui-table compacto) se corta donde termina la última fila real, dejando un
+       bloque liso debajo cuando hay pocos registros. Se continúa el mismo patrón como
+       fondo del scroll container, offseteado por el alto del header sticky (34.5px), así
+       las filas fantasma siguen alternando el mismo color aunque no haya datos. */
+    .atencion-table-wrap ::ng-deep .p-datatable-table-container {
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 49.5px,
+        #fafbfd 49.5px,
+        #fafbfd 99px
+      );
+      background-position: 0 34.5px;
     }
   `],
 })
@@ -146,10 +165,6 @@ export class AtencionDashboardComponent implements OnInit {
 
   protected readonly rows    = this.store.selectSignal(selectTodayAtenciones);
   protected readonly loading = this.store.selectSignal(selectListLoading);
-  protected readonly kpis    = this.store.selectSignal(selectAtencionKpis);
-
-  /** Bloque "Resumen del día": arranca colapsado para no robar foco a la lista. */
-  protected readonly kpisExpanded = signal(false);
 
   protected readonly groupLabel    = attentionGroupLabel;
   protected readonly listLabel     = attentionListLabel;
@@ -192,12 +207,13 @@ export class AtencionDashboardComponent implements OnInit {
     ],
   }));
 
+  // KAN-303: anchos fijos para que la tabla no se reacomode según el contenido de cada fila.
   readonly columns: readonly TableColumn[] = [
-    { field: 'fecha',    header: 'Fecha' },
-    { field: 'paciente', header: 'Paciente' },
-    { field: 'doctorId', header: 'Médico' },
-    { field: 'estado',   header: 'Estado', headerInfo: 'Pasá el cursor sobre un estado cancelado para ver el motivo.' },
-    { field: 'urgente',  header: 'Urg.', align: 'center' },
+    { field: 'fecha',    header: 'Fecha',    width: '130px' },
+    { field: 'paciente', header: 'Paciente', width: '260px' },
+    { field: 'doctorId', header: 'Médico',   width: '200px' },
+    { field: 'estado',   header: 'Estado',   headerInfo: 'Pasá el cursor sobre un estado cancelado para ver el motivo.', width: '160px' },
+    { field: 'urgente',  header: 'Urg.',     align: 'center', width: '70px' },
   ];
 
   readonly rowActions: readonly TableAction[] = [
@@ -243,11 +259,6 @@ export class AtencionDashboardComponent implements OnInit {
    */
   private canOpen(state: AttentionState): boolean {
     return state !== AttentionState.CANCELED && state !== AttentionState.FAILED;
-  }
-
-  /** Expande/colapsa el bloque "Resumen del día". */
-  toggleKpis(): void {
-    this.kpisExpanded.update(v => !v);
   }
 
   /**

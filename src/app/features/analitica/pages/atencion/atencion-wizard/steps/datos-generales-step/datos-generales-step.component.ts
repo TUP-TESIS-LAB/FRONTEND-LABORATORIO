@@ -108,11 +108,15 @@ const URGENT_CONFIRM_MESSAGE = `
               <input pInputText [ngModel]="dniInput" (ngModelChange)="onDniChange($event)"
                      (blur)="buscar()" (keyup.enter)="buscar()" class="w-full"
                      placeholder="Sin puntos ni guiones" [readonly]="readOnly()" />
-              @if (resolving()) {
-                <small class="text-surface-500 block mt-1"><i class="pi pi-spin pi-spinner mr-1"></i>Verificando paciente…</small>
-              } @else if (resolutionError()) {
-                <small class="text-red-600 block mt-1"><i class="pi pi-exclamation-triangle mr-1"></i>No pudimos verificar el paciente. Reintentá.</small>
-              }
+              <!-- KAN-297: alto reservado para el mensaje, así el campo vecino de la misma
+                   fila del grid no se desacomoda cuando este muestra/oculta su texto. -->
+              <div class="min-h-[1.25rem] mt-1">
+                @if (resolving()) {
+                  <small class="text-surface-500 block"><i class="pi pi-spin pi-spinner mr-1"></i>Verificando paciente…</small>
+                } @else if (resolutionError()) {
+                  <small class="text-red-600 block"><i class="pi pi-exclamation-triangle mr-1"></i>No pudimos verificar el paciente. Reintentá.</small>
+                }
+              </div>
             </div>
             @if (!resolved()) {
             <div>
@@ -126,9 +130,12 @@ const URGENT_CONFIRM_MESSAGE = `
             <div>
               <label class="block text-sm mb-1">Fecha de nacimiento <span class="text-red-500">*</span></label>
               <input pInputText type="date" [(ngModel)]="form.birthDate" [max]="todayStr" class="w-full" />
-              @if (birthDateInvalid()) {
-                <small class="text-red-500">Ingresá una fecha válida (año de 4 dígitos, no futura).</small>
-              }
+              <!-- KAN-297: alto reservado, mismo criterio que el mensaje de DNI. -->
+              <div class="min-h-[1.25rem] mt-1">
+                @if (birthDateInvalid()) {
+                  <small class="text-red-500">Ingresá una fecha válida (año de 4 dígitos, no futura).</small>
+                }
+              </div>
             </div>
             <div>
               <label class="block text-sm mb-1">Género <span class="text-red-500">*</span></label>
@@ -153,7 +160,9 @@ const URGENT_CONFIRM_MESSAGE = `
                 class="w-full" />
             </div>
             <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
+              <!-- KAN-297: sin Plan (Particular), Obra social ocupa las 2 columnas en vez
+                   de dejar la fila a mitad de ancho. -->
+              <div [ngClass]="{ 'sm:col-span-2': isParticularSelected() }">
                 <label class="block text-sm mb-1">Obra social</label>
                 <p-select
                   [ngModel]="formInsurerId()"

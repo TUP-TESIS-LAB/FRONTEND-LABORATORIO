@@ -109,3 +109,16 @@
     border-top: 1px solid var(--saas-border, rgba(255,255,255,.08));
   }
 }
+
+// ── ConfirmDialog "Eliminar agenda" (Turnos/Configuración): el botón destructivo
+// usa el rojo propio de PrimeNG (--p-red-*) en vez del token de danger del sistema
+// (KAN-312). Se alinea acá sin tocar el resto de los confirmDialog de la app.
+.p-confirmdialog-ds-danger .p-button-danger {
+  background: var(--ds-danger);
+  border-color: var(--ds-danger);
+
+  &:hover {
+    background: color-mix(in srgb, var(--ds-danger) 85%, black);
+    border-color: color-mix(in srgb, var(--ds-danger) 85%, black);
+  }
+}
