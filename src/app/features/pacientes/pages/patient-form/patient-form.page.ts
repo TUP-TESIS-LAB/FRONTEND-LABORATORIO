@@ -54,8 +54,6 @@ function isAddressFilled(a: Partial<Address>): boolean {
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
       <ui-wizard-shell
         [customFooter]="true"
-        [heading]="pageHeading()"
-        [breadcrumb]="'Pacientes › ' + (isEdit() ? 'Editar' : 'Nuevo')"
         [steps]="steps"
         [currentIndex]="currentStep()"
         [visited]="visited()"
@@ -162,13 +160,6 @@ export class PatientFormPage implements OnDestroy {
     return v != null && v !== '';
   });
   readonly invalid = computed(() => this.status() === 'INVALID');
-
-  /** Título de la página (lo consume `ui-wizard-shell`); en edición sufija el nombre. */
-  readonly pageHeading = computed(() => {
-    if (!this.isEdit()) return 'Nuevo paciente';
-    const p = this.patient();
-    return p ? `Editar paciente · ${p.lastName}, ${p.firstName}` : 'Editar paciente';
-  });
 
   readonly dniDuplicate = computed(() => {
     if (this.isEdit()) return false;

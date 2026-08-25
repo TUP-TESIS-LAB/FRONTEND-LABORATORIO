@@ -49,8 +49,6 @@ interface DireccionValue { street: string; streetNumber: string; neighborhood: s
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
       <ui-wizard-shell
         [customFooter]="true"
-        [heading]="pageHeading()"
-        [breadcrumb]="'Sucursales › Empleados › ' + (isEdit() ? 'Editar' : 'Nuevo')"
         [steps]="steps()"
         [currentIndex]="currentStep()"
         [visited]="visited()"
@@ -149,13 +147,6 @@ export class EmpleadoFormPage implements OnDestroy {
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
 
   readonly isEdit = computed(() => { const v = this.id(); return v != null && v !== ''; });
-
-  /** Título de la página (lo consume `ui-wizard-shell`); en edición sufija el nombre. */
-  readonly pageHeading = computed(() => {
-    if (!this.isEdit()) return 'Nuevo empleado';
-    const e = this.employee();
-    return e ? `Editar empleado · ${e.lastName}, ${e.firstName}` : 'Editar empleado';
-  });
 
   readonly datosValid = computed(() => { void this.value(); void this.status(); return this.datosGroup.valid; });
   readonly usuarioMode = computed<string>(() => { void this.value(); return this.usuarioGroup.get('mode')!.value as string; });

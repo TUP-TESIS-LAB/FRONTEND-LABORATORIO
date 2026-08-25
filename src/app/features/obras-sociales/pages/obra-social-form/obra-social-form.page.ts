@@ -37,8 +37,6 @@ function isoFromDate(d: unknown): string {
   template: `
     <form [formGroup]="form" class="flex flex-col h-full">
       <ui-wizard-shell
-        heading="Nueva obra social"
-        breadcrumb="Obras Sociales › Nueva"
         [steps]="steps"
         [currentIndex]="currentStep()"
         [visited]="visited()"
