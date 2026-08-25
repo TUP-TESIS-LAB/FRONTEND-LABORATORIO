@@ -7,10 +7,13 @@ import { FormStep } from '@shared/ui/models/form-step';
  * Shell estándar de wizards full-page del portal administrativo.
  *
  * Centraliza el "chrome" que antes estaba copiado a mano en cada wizard
- * (top bar + ui-form-stepper-header + body scrollable a 720px + footer de
- * navegación). Así todos los wizards comparten exactamente el mismo padding,
- * jerarquía tipográfica, estilo de botones y separadores — y nunca más se
- * desincronizan entre sí, igual que el propio `ui-form-stepper-header`.
+ * (ui-form-stepper-header + body scrollable + footer de navegación de 3 zonas).
+ * Así todos los wizards comparten exactamente el mismo padding, jerarquía
+ * tipográfica, estilo de botones y separadores — y nunca más se desincronizan
+ * entre sí, igual que el propio `ui-form-stepper-header`.
+ *
+ * Sin barra de título: el título de cada wizard vive en el breadcrumb automático
+ * del topbar (KAN-180), no acá — mostrarlo dos veces era redundante.
  *
  * El cuerpo de cada paso se proyecta con `<ng-content>`; la lógica de
  * navegación y validación sigue viviendo en la page (que cablea los outputs).
@@ -22,21 +25,6 @@ import { FormStep } from '@shared/ui/models/form-step';
   imports: [ButtonModule, FormStepperHeaderComponent],
   template: `
     <div class="flex flex-col h-full">
-      <header class="wz-bar wz-bar--top flex items-center gap-3 px-8 py-4 bg-surface-0 sticky top-0 z-10">
-        <div class="flex items-center gap-2 min-w-0">
-          <h1 class="text-xl font-bold m-0 leading-tight truncate">{{ heading() }}</h1>
-          <!-- Slot inline al lado del título (p.ej. badge URGENTE). -->
-          <ng-content select="[headingBadge]" />
-        </div>
-        <div class="ml-auto flex items-center gap-2">
-          @if (breadcrumb()) {
-            <nav class="text-xs text-surface-500">{{ breadcrumb() }}</nav>
-          }
-          <!-- Slot de acciones de header alineadas a la derecha (p.ej. Volver / Cancelar). -->
-          <ng-content select="[headerActions]" />
-        </div>
-      </header>
-
       <ui-form-stepper-header
         [steps]="steps()"
         [currentIndex]="currentIndex()"
@@ -67,16 +55,24 @@ import { FormStep } from '@shared/ui/models/form-step';
       </div>
 
       <footer class="wz-bar wz-bar--bottom flex items-center gap-3 px-8 py-4 bg-surface-0 sticky bottom-0">
-        <span class="text-xs font-medium text-surface-500">
-          Paso {{ currentIndex() + 1 }} de {{ steps().length }}
-        </span>
+        <!-- Zona izquierda: secundario/destructivo (p.ej. Volver al listado, Cancelar).
+             Vacía y sin ocupar espacio visible en los wizards que no la usan. -->
+        <div class="flex items-center gap-2">
+          <ng-content select="[wizardFooterLeft]" />
+        </div>
+
+        <!-- Zona centro: badges (p.ej. URGENTE). flex-1 empuja la zona derecha al borde. -->
+        <div class="flex-1 flex items-center justify-center gap-2">
+          <ng-content select="[wizardFooterCenter]" />
+        </div>
+
         @if (customFooter()) {
           <!--
             Footer proyectado: el wizard inyecta sus propios botones (p.ej. forms
             con <form>/submit/Ctrl+S o lógica alta-vs-edición). El shell solo
-            aporta el layout + el contador de pasos; el contenido va a la derecha.
+            aporta el layout; el contenido va a la derecha.
           -->
-          <div class="ml-auto flex items-center gap-3">
+          <div class="flex items-center gap-3">
             <ng-content select="[wizardFooter]" />
           </div>
         } @else {
@@ -85,7 +81,7 @@ import { FormStep } from '@shared/ui/models/form-step';
             tab navigation desde el último campo del step), pero visualmente
             termina a la derecha: Cancelar | Atrás | Continuar/Finalizar.
           -->
-          <div class="ml-auto flex flex-row-reverse gap-2">
+          <div class="flex flex-row-reverse gap-2">
             @if (isLast()) {
               <p-button
                 [label]="finishLabel()"
@@ -140,11 +136,6 @@ import { FormStep } from '@shared/ui/models/form-step';
   `],
 })
 export class WizardShellComponent {
-  /** Título de la página (h1). */
-  readonly heading = input.required<string>();
-  /** Migas opcionales a la derecha del header (texto plano). */
-  readonly breadcrumb = input<string>('');
-
   readonly steps = input.required<readonly FormStep[]>();
   readonly currentIndex = input.required<number>();
   readonly visited = input.required<ReadonlySet<number>>();
