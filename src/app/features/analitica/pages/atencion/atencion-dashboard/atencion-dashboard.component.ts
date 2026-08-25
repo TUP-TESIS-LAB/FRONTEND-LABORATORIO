@@ -53,59 +53,66 @@ import {
           (valueChange)="onFilterChange($event)" />
       </div>
 
-      <ui-table
-        [value]="rows()"
-        [loading]="loading()"
-        [columns]="columns"
-        [paginator]="true"
-        [rows]="20"
-        [rowsPerPageOptions]="[10, 20, 50, 100]"
-        [entityLabel]="'atenciones'"
-        [actions]="rowActions"
-        emptyHeading="Sin atenciones para los filtros aplicados"
-        emptyIcon="pi-inbox"
-        (action)="onAction($event)">
+      <!-- KAN-303: la tabla ocupa el alto del contenedor (min-height) aunque haya pocas
+           filas, en vez de achicarse al contenido y dejar espacio muerto abajo. scrollHeight
+           "flex" hace que ui-table estire dentro de este wrapper; con muchas filas, el
+           propio contenedor tapa a 60vh y el scroll queda adentro (header sticky). -->
+      <div class="atencion-table-wrap">
+        <ui-table
+          [value]="rows()"
+          [loading]="loading()"
+          [columns]="columns"
+          [paginator]="true"
+          [rows]="20"
+          [rowsPerPageOptions]="[10, 20, 50, 100]"
+          [entityLabel]="'atenciones'"
+          [actions]="rowActions"
+          [scrollHeight]="'flex'"
+          emptyHeading="Sin atenciones para los filtros aplicados"
+          emptyIcon="pi-inbox"
+          (action)="onAction($event)">
 
-        <ng-template uiCell="fecha" let-row>
-          {{ $any(row).createdAt ? ($any(row).createdAt | date: 'dd/MM/yy HH:mm') : '—' }}
-        </ng-template>
+          <ng-template uiCell="fecha" let-row>
+            {{ $any(row).createdAt ? ($any(row).createdAt | date: 'dd/MM/yy HH:mm') : '—' }}
+          </ng-template>
 
-        <ng-template uiCell="paciente" let-row>
-          <div class="font-medium">{{ $any(row).patientFullName ?? '—' }}</div>
-          <div class="text-xs text-[var(--ds-text-muted)]">{{ $any(row).patientDni ?? '—' }}</div>
-        </ng-template>
+          <ng-template uiCell="paciente" let-row>
+            <div class="font-medium">{{ $any(row).patientFullName ?? '—' }}</div>
+            <div class="text-xs text-[var(--ds-text-muted)]">{{ $any(row).patientDni ?? '—' }}</div>
+          </ng-template>
 
-        <ng-template uiCell="doctorId" let-row>
-          {{ doctorName($any(row).doctorId) }}
-        </ng-template>
+          <ng-template uiCell="doctorId" let-row>
+            {{ doctorName($any(row).doctorId) }}
+          </ng-template>
 
-        <ng-template uiCell="estado" let-row>
-          @if (cancellationTooltip($any(row)); as motivo) {
-            <!-- El motivo se muestra en el hover del tag; la pista visual (ícono info)
-                 vive en el header de la columna "Estado", no en la fila. -->
-            <span class="inline-flex items-center"
-                  [pTooltip]="motivo" tooltipPosition="top"
-                  tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
+          <ng-template uiCell="estado" let-row>
+            @if (cancellationTooltip($any(row)); as motivo) {
+              <!-- El motivo se muestra en el hover del tag; la pista visual (ícono info)
+                   vive en el header de la columna "Estado", no en la fila. -->
+              <span class="inline-flex items-center"
+                    [pTooltip]="motivo" tooltipPosition="top"
+                    tooltipStyleClass="atencion-cancel-tooltip" tabindex="0">
+                <p-tag
+                  [value]="listLabel($any(row).attentionState, $any(row).cancelledAtState)"
+                  [severity]="groupSeverity($any(row).attentionState)" />
+              </span>
+            } @else {
               <p-tag
-                [value]="listLabel($any(row).attentionState, $any(row).cancelledAtState)"
+                [value]="groupLabel($any(row).attentionState)"
                 [severity]="groupSeverity($any(row).attentionState)" />
-            </span>
-          } @else {
-            <p-tag
-              [value]="groupLabel($any(row).attentionState)"
-              [severity]="groupSeverity($any(row).attentionState)" />
-          }
-        </ng-template>
+            }
+          </ng-template>
 
-        <ng-template uiCell="urgente" let-row>
-          @if ($any(row).isUrgent) {
-            <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i>
-          } @else {
-            <span class="text-[var(--ds-text-muted)]">—</span>
-          }
-        </ng-template>
+          <ng-template uiCell="urgente" let-row>
+            @if ($any(row).isUrgent) {
+              <i class="pi pi-exclamation-triangle text-[var(--color-danger,#ef4444)]"></i>
+            } @else {
+              <span class="text-[var(--ds-text-muted)]">—</span>
+            }
+          </ng-template>
 
-      </ui-table>
+        </ui-table>
+      </div>
 
       <p-confirmDialog [draggable]="false" />
     </div>
@@ -116,6 +123,20 @@ import {
       max-width: 320px;
       white-space: normal;
       line-height: 1.35;
+    }
+
+    /* KAN-303: min-height fijo para que la tabla ocupe el alto del contenedor aunque
+       tenga pocas filas — scrollHeight="flex" de ui-table estira dentro de este box.
+       ui-table necesita flex:1 como hijo (su :host solo define height:100% puertas
+       adentro, no cómo comportarse como flex item del padre). */
+    .atencion-table-wrap {
+      display: flex;
+      flex-direction: column;
+      min-height: 60vh;
+    }
+    .atencion-table-wrap > ui-table {
+      flex: 1;
+      min-height: 0;
     }
   `],
 })
