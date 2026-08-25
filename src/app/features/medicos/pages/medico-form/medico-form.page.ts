@@ -41,8 +41,6 @@ function emptyToNull(v: string | null | undefined): string | null {
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col h-full">
       <ui-wizard-shell
         [customFooter]="true"
-        [heading]="pageHeading()"
-        [breadcrumb]="'Médicos › ' + (isEdit() ? 'Editar' : 'Nuevo')"
         [steps]="steps"
         [currentIndex]="currentStep()"
         [visited]="visited()"
@@ -119,13 +117,6 @@ export class MedicoFormPage implements OnDestroy {
   readonly status = toSignal(this.form.statusChanges, { initialValue: this.form.status });
 
   readonly isEdit = computed(() => { const v = this.id(); return v != null && v !== ''; });
-
-  /** Título de la página (lo consume `ui-wizard-shell`); en edición sufija el nombre. */
-  readonly pageHeading = computed(() => {
-    if (!this.isEdit()) return 'Nuevo médico derivante';
-    const d = this.doctor();
-    return d ? `Editar médico · ${d.lastName}, ${d.firstName}` : 'Editar médico';
-  });
 
   readonly datosValid = computed(() => { void this.value(); void this.status(); return this.datosGroup.valid; });
   readonly contactoValid = computed(() => { void this.value(); void this.status(); return this.contactoGroup.valid; });

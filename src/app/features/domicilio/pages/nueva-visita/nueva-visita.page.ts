@@ -138,7 +138,6 @@ const STEPS: readonly FormStep[] = [
   `],
   template: `
     <ui-wizard-shell
-      heading="Nueva visita domiciliaria"
       [steps]="STEPS"
       [currentIndex]="currentIndex()"
       [visited]="visited()"

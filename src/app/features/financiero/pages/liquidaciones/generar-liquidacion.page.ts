@@ -82,7 +82,6 @@ export function analysisLabel(a: PreviewAnalysis): string {
   ],
   template: `
     <ui-wizard-shell
-      heading="Generar liquidación"
       [steps]="steps()"
       [currentIndex]="step()"
       [visited]="visited()"
