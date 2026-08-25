@@ -138,6 +138,22 @@ import {
       flex: 1;
       min-height: 0;
     }
+
+    /* KAN-303: la zebra (tbody > tr:nth-child(even), #fafbfd cada 49.5px — alto de fila
+       fijo del ui-table compacto) se corta donde termina la última fila real, dejando un
+       bloque liso debajo cuando hay pocos registros. Se continúa el mismo patrón como
+       fondo del scroll container, offseteado por el alto del header sticky (34.5px), así
+       las filas fantasma siguen alternando el mismo color aunque no haya datos. */
+    .atencion-table-wrap ::ng-deep .p-datatable-table-container {
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 49.5px,
+        #fafbfd 49.5px,
+        #fafbfd 99px
+      );
+      background-position: 0 34.5px;
+    }
   `],
 })
 export class AtencionDashboardComponent implements OnInit {
