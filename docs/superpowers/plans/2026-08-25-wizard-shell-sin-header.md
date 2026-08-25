@@ -41,7 +41,7 @@ No hay test que correr al final de esta tarea — el build del proyecto completo
 hasta la Task 5 (los 9 consumidores todavía pasan `heading`, que ya no existe como input).
 Verificar solo que el archivo en sí no tiene errores de sintaxis con un vistazo.
 
-- [ ] **Step 1: Reemplazar el template completo**
+- [x] **Step 1: Reemplazar el template completo**
 
 Abrir `src/app/shared/ui/components/wizard-shell/wizard-shell.component.ts` y reemplazar el
 `template:` completo (desde el backtick de apertura hasta el de cierre, líneas ~23-118 del
@@ -139,7 +139,7 @@ archivo actual) por:
   `,
 ```
 
-- [ ] **Step 2: Sacar los inputs `heading` y `breadcrumb`**
+- [x] **Step 2: Sacar los inputs `heading` y `breadcrumb`**
 
 En la clase `WizardShellComponent`, borrar estas dos líneas (y su comentario):
 
@@ -151,7 +151,7 @@ En la clase `WizardShellComponent`, borrar estas dos líneas (y su comentario):
 
 ```
 
-- [ ] **Step 3: Actualizar el comentario de clase**
+- [x] **Step 3: Actualizar el comentario de clase**
 
 El comentario de la clase (líneas ~6-17) menciona "top bar" como parte del chrome
 centralizado. Reemplazar el párrafo completo por:
@@ -174,7 +174,7 @@ centralizado. Reemplazar el párrafo completo por:
  */
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/shared/ui/components/wizard-shell/wizard-shell.component.ts
@@ -206,7 +206,7 @@ Este es el único de los 9 wizards con contenido real en `headerActions`/`headin
 2 bloques `<ui-wizard-shell>` en el archivo: modo "creando" (línea ~100) y modo completo
 (línea ~139).
 
-- [ ] **Step 1: Modo "creando" — sacar `heading`, mover "Volver al listado" al footer**
+- [x] **Step 1: Modo "creando" — sacar `heading`, mover "Volver al listado" al footer**
 
 Reemplazar (línea ~100-120):
 
@@ -267,7 +267,7 @@ por:
 > izquierda — queda renderizado dentro de la zona derecha, y el refactor no hace nada
 > visible.
 
-- [ ] **Step 2: Modo completo — sacar `heading`, mover badge y acciones al footer**
+- [x] **Step 2: Modo completo — sacar `heading`, mover badge y acciones al footer**
 
 Reemplazar (línea ~139-160, hasta el cierre del `<div headerActions>`):
 
@@ -312,7 +312,7 @@ por:
 
 (el badge y las acciones se reubican en el footer en el Step 3 — no van más acá).
 
-- [ ] **Step 3: Modo completo — agregar badge y acciones al footer existente**
+- [x] **Step 3: Modo completo — agregar badge y acciones al footer existente**
 
 El footer de este modo ya arma un `<div wizardFooter class="flex items-center gap-2">` con
 un `@switch` (línea ~229 del archivo original). Reemplazar la apertura de ese bloque:
@@ -362,7 +362,7 @@ modo solo-lectura, igual que antes del refactor (cuando vivía en el header). So
 acciones de la zona izquierda se ocultan en solo-lectura, que es el comportamiento correcto:
 no se puede cancelar una atención terminal.
 
-- [ ] **Step 4: Sacar el computed `headerTitle()`, que queda sin consumidor**
+- [x] **Step 4: Sacar el computed `headerTitle()`, que queda sin consumidor**
 
 Buscar y borrar (línea ~407 del archivo original):
 
@@ -380,7 +380,7 @@ grep -n "headerTitle" src/app/features/analitica/pages/atencion/atencion-wizard/
 Debe devolver únicamente la línea de la declaración (ya no la del binding, sacado en el
 Step 2). Si aparece en algún otro lado, no borrar sin revisar antes.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/analitica/pages/atencion/atencion-wizard/atencion-wizard.component.ts
@@ -425,7 +425,7 @@ Cambio puramente mecánico: sacar el binding del template, y si el valor venía 
 caso, ver Design doc sección 3.3), sacar también el computed. Ninguno de estos 8 tiene
 `headerActions`/`headingBadge` hoy — no hay nada que mover al footer.
 
-- [ ] **Step 1: `nueva-visita.page.ts`**
+- [x] **Step 1: `nueva-visita.page.ts`**
 
 Buscar (línea ~140-141):
 
@@ -442,7 +442,7 @@ Reemplazar por:
       [steps]="STEPS"
 ```
 
-- [ ] **Step 2: `generar-liquidacion.page.ts`**
+- [x] **Step 2: `generar-liquidacion.page.ts`**
 
 Buscar (línea ~84-86):
 
@@ -459,7 +459,7 @@ Reemplazar por:
       [steps]="steps()"
 ```
 
-- [ ] **Step 3: `medico-form.page.ts`**
+- [x] **Step 3: `medico-form.page.ts`**
 
 Buscar (línea ~42-46):
 
@@ -491,7 +491,7 @@ Y borrar el computed que queda sin consumidor (línea ~123-128):
 
 ```
 
-- [ ] **Step 4: `obra-social-form.page.ts`**
+- [x] **Step 4: `obra-social-form.page.ts`**
 
 Buscar (línea ~39-41):
 
@@ -509,7 +509,7 @@ Reemplazar por:
         [steps]="steps"
 ```
 
-- [ ] **Step 5: `patient-form.page.ts`**
+- [x] **Step 5: `patient-form.page.ts`**
 
 Buscar (línea ~55-59):
 
@@ -541,7 +541,7 @@ Y borrar el computed que queda sin consumidor (línea ~166-171):
 
 ```
 
-- [ ] **Step 6: `sucursal-alta-stepper.page.html` + `.page.ts`**
+- [x] **Step 6: `sucursal-alta-stepper.page.html` + `.page.ts`**
 
 En `sucursal-alta-stepper.page.html`, buscar (línea 1-3):
 
@@ -572,7 +572,7 @@ En `sucursal-alta-stepper.page.ts`, buscar (línea ~66-71):
 
 Borrar esas 6 líneas enteras.
 
-- [ ] **Step 7: `empleado-form.page.ts`**
+- [x] **Step 7: `empleado-form.page.ts`**
 
 Buscar (línea ~50-53):
 
@@ -604,7 +604,7 @@ Y borrar el computed que queda sin consumidor (línea ~153-158):
 
 ```
 
-- [ ] **Step 8: `agenda-wizard.page.html`**
+- [x] **Step 8: `agenda-wizard.page.html`**
 
 Buscar (línea 1-3):
 
@@ -622,7 +622,7 @@ Reemplazar por:
   [steps]="steps"
 ```
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/app/features/domicilio/pages/nueva-visita/nueva-visita.page.ts \
@@ -654,7 +654,7 @@ empleado-form y sucursal-alta-stepper."
   `[wizardFooterCenter]`, sin `heading`/`breadcrumb`/`headingBadge`/`headerActions`.
 - Produces: nada.
 
-- [ ] **Step 1: Reemplazar el archivo completo**
+- [x] **Step 1: Reemplazar el archivo completo**
 
 ```typescript
 import { TestBed } from '@angular/core/testing';
@@ -744,7 +744,7 @@ describe('WizardShellComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/app/shared/ui/components/wizard-shell/wizard-shell.component.spec.ts
@@ -768,7 +768,7 @@ y que quedan vacios sin uso (no rompen wizards que no los usan)."
   `[wizardFooterCenter]`, sin `<h1>` ni `<header>`).
 - Produces: nada.
 
-- [ ] **Step 1: Borrar el bloque C6 completo (3 tests)**
+- [x] **Step 1: Borrar el bloque C6 completo (3 tests)**
 
 Buscar y borrar, desde el comentario hasta el cierre del tercer `it()` (línea ~193-220 del
 archivo original):
@@ -805,7 +805,7 @@ archivo original):
 
 ```
 
-- [ ] **Step 2: Borrar el test C3 (subtítulo del header)**
+- [x] **Step 2: Borrar el test C3 (subtítulo del header)**
 
 Buscar y borrar (línea ~222-227 del archivo original):
 
@@ -819,7 +819,7 @@ Buscar y borrar (línea ~222-227 del archivo original):
 
 ```
 
-- [ ] **Step 3: Reescribir los 2 tests C2 (badge URGENTE) sin `querySelector('header')`**
+- [x] **Step 3: Reescribir los 2 tests C2 (badge URGENTE) sin `querySelector('header')`**
 
 Buscar (línea ~229-244 del archivo original):
 
@@ -866,7 +866,7 @@ Reemplazar por:
 Nota: el `<footer>` sigue existiendo (es del shell, no se sacó — solo se sacó el
 `<header>`), así que `querySelector('footer')` sigue siendo válido acá.
 
-- [ ] **Step 4: Renombrar el test NEW-D (sin tocar su cuerpo)**
+- [x] **Step 4: Renombrar el test NEW-D (sin tocar su cuerpo)**
 
 Buscar (línea ~255):
 
@@ -882,7 +882,7 @@ Reemplazar solo el string del nombre por:
 
 El cuerpo del test (`querySelectorAll('button')` sobre todo el fixture) no cambia.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/analitica/pages/atencion/atencion-wizard/atencion-wizard.component.spec.ts
@@ -908,7 +908,7 @@ git commit -m "test(atencion-wizard): podar specs del titulo/header que ya no ex
 - Produces: confirmación de que el refactor no rompió nada, y evidencia visual de las 9
   pantallas.
 
-- [ ] **Step 1: Correr el build completo**
+- [x] **Step 1: Correr el build completo**
 
 ```bash
 cd FRONTEND-LABORATORIO
@@ -923,7 +923,7 @@ warning, no error). Si aparece cualquier archivo de los tocados en este plan (wi
 atencion-wizard, o cualquiera de los 8 wizards simples), **no está listo** — volver a la
 tarea correspondiente y corregir antes de seguir.
 
-- [ ] **Step 2: Levantar el entorno local**
+- [x] **Step 2: Levantar el entorno local**
 
 ```bash
 docker start laboratorio_mysql laboratorio_adminer
@@ -945,7 +945,7 @@ curl http://localhost:8080/actuator/health
 Frontend: levantar el server `frontend-laboratorio` definido en `.claude/launch.json` (puerto
 4200). Login `admin@test.com` / `password`.
 
-- [ ] **Step 3: Verificar visualmente las 9 pantallas**
+- [x] **Step 3: Verificar visualmente las 9 pantallas**
 
 Para cada una, confirmar que: (a) no hay `<header>` con título arriba de la tira de pasos,
 (b) la tira de pasos es lo primero que se ve, (c) no queda el texto "Paso X de Y" en el
@@ -981,7 +981,25 @@ Para la pantalla de Atención (#2), verificar específicamente:
   a la derecha junto al botón principal, los slots quedaron anidados en vez de hermanos y la
   proyección no se aplicó — ver la regla de proyección en la Task 2.
 
-- [ ] **Step 4: Reportar y esperar OK antes de mergear**
+- [x] **Step 4: Reportar y esperar OK antes de mergear**
 
 No mergear a `development` sin la confirmación explícita del usuario — mismo criterio que
 el resto de las PRs de esta sesión.
+
+## Resultado de la verificación (2026-08-25)
+
+- `npm test`: mismo set de errores preexistentes que el baseline documentado en Global
+  Constraints — ningún archivo tocado por este plan aparece en la lista. Confirmado dos
+  veces (antes y después de reparar un `node_modules` dañado por un manejo incorrecto de
+  worktree/junction durante la ejecución — sin relación con el código de este plan).
+- Las 10 pantallas (9 componentes) verificadas en el navegador contra el entorno local real:
+  ninguna tiene `<header>`, `<h1>` ni el contador "Paso X de Y".
+- Atención: confirmado el footer de 3 zonas hijas directas del `<footer>`:
+  `[Volver al listado, Cancelar atención]` (izquierda) — `[URGENTE]` (centro, `flex-1
+  justify-center`, solo si `isUrgent`) — `[Volver fase, acción principal]` (derecha).
+  Probado con una atención normal y con una urgente creada a propósito (DNI 40555666,
+  toggle "Atención urgente" activado antes de confirmar el paso 1) — el tag "URGENTE"
+  apareció centrado en el footer como se esperaba.
+- **Caso abierto sin confirmar**: no se probó el caso urgente + solo-lectura (estado
+  terminal) señalado en la Task 2 — sigue pendiente de decisión del usuario si el badge
+  URGENTE debería seguir visible ahí.
