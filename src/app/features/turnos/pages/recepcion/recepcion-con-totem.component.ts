@@ -8,9 +8,11 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
 import { Store } from '@ngrx/store';
-import { TableModule } from 'primeng/table';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DataTableComponent } from '@shared/ui/components/data-table/data-table.component';
+import { UiCellDirective } from '@shared/ui/components/data-table/ui-cell.directive';
+import { TableColumn } from '@shared/ui/models/table-column.model';
 import {
   attendWalkinEntry,
   callAppointmentForAttention,
@@ -30,7 +32,10 @@ import { WaitingTimePipe } from '../../pipes/waiting-time.pipe';
 @Component({
   selector: 'app-recepcion-con-totem',
   standalone: true,
-  imports: [TableModule, ConfirmDialogModule, QueueRowActionsComponent, WaitingTimePipe],
+  imports: [
+    DataTableComponent, UiCellDirective, ConfirmDialogModule,
+    QueueRowActionsComponent, WaitingTimePipe,
+  ],
   providers: [ConfirmationService, MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recepcion-con-totem.component.html',
@@ -46,8 +51,16 @@ export class RecepcionConTotemComponent implements OnInit {
   protected loading = this.store.selectSignal(selectQueueLoading);
   protected hasBranch = this.branchContext.branchId;
 
+  protected readonly columns: readonly TableColumn[] = [
+    { field: 'publicCode', header: 'Código',     width: '110px' },
+    { field: 'dni',        header: 'DNI',        width: '140px' },
+    { field: 'esperando',  header: 'Esperando',  width: '140px' },
+    { field: 'llamadas',   header: 'Llamadas',   width: '110px', align: 'center' },
+    { field: 'acciones',   header: '' },
+  ];
+
   ngOnInit(): void {
-    // Primera carga: visible (muestra el spinner del p-table mientras carga).
+    // Primera carga: visible (muestra el spinner de ui-table mientras carga).
     this.refreshIfBranch({ silent: false });
     // Polling cada 5s: silent para no parpadear la tabla.
     interval(5000)
@@ -94,13 +107,14 @@ export class RecepcionConTotemComponent implements OnInit {
     });
   }
 
-  protected rowClass(entry: QueueEntry): string {
+  protected rowClass = (row: unknown): string => {
+    const entry = row as QueueEntry;
     // CT (con turno) → fondo amarillo suave para diferenciarlos a primera
     // vista del walk-in. ST sigue con el naranja claro existente.
     if (entry.publicCode.startsWith('ST')) return 'row-st';
     if (entry.appointmentId != null) return 'row-ct';
     return '';
-  }
+  };
 
   protected trackById = (_: number, e: QueueEntry) => e.id;
 }

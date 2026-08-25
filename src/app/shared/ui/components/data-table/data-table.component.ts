@@ -106,7 +106,8 @@ import { TableAction, TableColumn } from '@shared/ui/models/table-column.model';
 
           <ng-template pTemplate="body" let-row let-expanded="expanded">
             <tr [pRowToggler]="row" [pRowTogglerDisabled]="!expandable()"
-                [class.ut-row-clickable]="expandable()">
+                [class.ut-row-clickable]="expandable()"
+                [class]="rowClass()?.(row) ?? ''">
               @if (selectable()) {
                 <td class="ut-select-td" (click)="$event.stopPropagation()">
                   <p-tableCheckbox [value]="row" />
@@ -412,6 +413,12 @@ export class DataTableComponent {
     const shown = Math.max(0, Math.min(this.rows(), total - this.first()));
     return `Mostrando ${shown} de ${total} ${this.entityLabel()}`;
   });
+
+  /**
+   * Clase CSS extra por fila (ej. resaltar según un estado del dato), aplicada junto a
+   * las que ya pone el componente. Opcional — sin esto el comportamiento no cambia.
+   */
+  readonly rowClass = input<((row: unknown) => string) | null>(null);
 
   // ── Scroll ──
   readonly scrollHeight = input<string | null>(null);
