@@ -24,9 +24,16 @@ los propios pasos no digan ya.
   izquierda**, separado del grupo de acciones primarias que ya existe a la derecha
   (Volver fase / Continuar / Finalizar / etc.) — patrón estándar: secundario/destructivo a
   la izquierda, acción primaria a la derecha.
-- El badge "URGENTE" (también solo en Atención) se muestra al lado de la tira de pasos, en
-  un slot nuevo — así sigue visible todo el tiempo sin afectar a los otros 8 wizards, que no
-  lo usan.
+- El footer pasa a tener **3 zonas**: izquierda (nueva, secundario/destructivo), **centro**
+  (nueva, para el badge "URGENTE" — solo Atención lo usa), derecha (la que ya existe).
+- El texto "Paso X de Y" que hoy vive a la izquierda del footer **se saca** — es redundante
+  con la tira de pasos, que ya marca visualmente en qué paso está el usuario.
+- El badge "URGENTE" (solo Atención) se muestra **centrado en el footer**, no al lado de la
+  tira de pasos.
+- El código del paciente (`"Atención ST-001"` / `"Atención A-001"`, hoy parte del título
+  dinámico de Atención) **se pierde por completo** — no se reubica en ningún lado. El
+  computed `headerTitle()` que lo arma queda sin ningún consumidor y se saca junto con el
+  binding, junto con los 3 tests que lo cubren directamente (ver sección 4).
 
 ## 2. Estado actual (punto de partida)
 
@@ -61,40 +68,42 @@ hoy) — no hay contenido que reubicar en ellos, solo bindings que sacar.
 - Se saca el `<header class="wz-bar wz-bar--top ...">` completo del template.
 - Se sacan los inputs `heading` (`input.required<string>()`) y `breadcrumb` (`input<string>()`).
 - La tira `ui-form-stepper-header` pasa a ser el primer elemento dentro de
-  `<div class="flex flex-col h-full">`. Se le agrega un slot nuevo al lado, proyectado con
-  `<ng-content select="[stepperBadge]" />`, envuelto en un contenedor flex
-  (`display:flex; align-items:center; gap` entre la tira de pasos y el badge) para que no
-  rompa el layout de `ui-form-stepper-header` en los 8 wizards que no lo usan.
-- El slot `[headingBadge]` desaparece (se reemplaza por `[stepperBadge]`); `[headerActions]`
-  desaparece (se reemplaza por el nuevo `[wizardFooterLeft]` del footer, ver 3.2).
+  `<div class="flex flex-col h-full">`, sin nada al lado.
+- Los slots `[headingBadge]` y `[headerActions]` desaparecen del header (que ya no existe).
+  Se reemplazan por los slots nuevos del footer (ver 3.2): `[wizardFooterLeft]` y
+  `[wizardFooterCenter]`.
 - `[wizardBanner]` y el body proyectado **no cambian**.
 
-### 3.2 Footer con grupo izquierdo
+### 3.2 Footer de 3 zonas, sin el contador de paso
 
-Tanto la rama `customFooter` como la rama por defecto pasan de un solo `<div class="ml-auto
-flex ...">` a dos grupos:
+Tanto la rama `customFooter` como la rama por defecto pasan del layout actual (contador +
+un solo `<div class="ml-auto ...">`) a 3 zonas — izquierda, centro, derecha — sin contador:
 
 ```html
 <footer class="wz-bar wz-bar--bottom flex items-center gap-3 px-8 py-4 bg-surface-0 sticky bottom-0">
-  <span class="text-xs font-medium text-surface-500">Paso {{ currentIndex() + 1 }} de {{ steps().length }}</span>
-
-  <!-- Grupo izquierdo nuevo: secundario/destructivo. Vacío en 8 de los 9 wizards. -->
+  <!-- Zona izquierda: secundario/destructivo. Vacía en 8 de los 9 wizards. -->
   <div class="flex items-center gap-2">
     <ng-content select="[wizardFooterLeft]" />
   </div>
 
+  <!-- Zona centro: badges (URGENTE). Vacía en 8 de los 9 wizards. -->
+  <div class="flex-1 flex items-center justify-center gap-2">
+    <ng-content select="[wizardFooterCenter]" />
+  </div>
+
   @if (customFooter()) {
-    <div class="ml-auto flex items-center gap-3">
+    <div class="flex items-center gap-3">
       <ng-content select="[wizardFooter]" />
     </div>
   } @else {
-    <div class="ml-auto flex flex-row-reverse gap-2"> <!-- igual que hoy --> </div>
+    <div class="flex flex-row-reverse gap-2"> <!-- igual que hoy --> </div>
   }
 </footer>
 ```
 
-El grupo izquierdo va vacío (sin contenido proyectado) en los 8 wizards que no usan
-`[wizardFooterLeft]` — no ocupa espacio visible si `<ng-content>` no proyecta nada.
+El `flex-1` de la zona centro empuja la zona derecha al borde (reemplaza al `ml-auto` que
+tenía antes esa zona). Las zonas izquierda y centro van vacías (sin ocupar espacio visible)
+en los 8 wizards que no proyectan nada en esos slots.
 
 ### 3.3 Consumidores
 
@@ -104,27 +113,39 @@ El grupo izquierdo va vacío (sin contenido proyectado) en los 8 wizards que no 
   - Modo "creando" (línea ~100-120): se saca `heading="Nueva atención"`; el bloque
     `<div headerActions><p-button label="Volver al listado" .../></div>` pasa a
     `<div wizardFooterLeft>` dentro del `[wizardFooter]` existente.
-  - Modo completo (línea ~139-160): se saca `[heading]="'Atención ' + headerTitle()"`; el
-    `<p-tag headingBadge value="URGENTE" .../>` pasa a `[stepperBadge]`; el bloque
-    `<div headerActions>` (Volver al listado + Cancelar atención condicional) pasa a
-    `<div wizardFooterLeft>` dentro del `[wizardFooter]` existente, junto con el resto de
+  - Modo completo (línea ~139-160): se saca `[heading]="'Atención ' + headerTitle()"` (y el
+    computed `headerTitle()` en sí, que queda sin consumidor); el
+    `<p-tag headingBadge value="URGENTE" .../>` pasa a `<p-tag wizardFooterCenter value="URGENTE" .../>`;
+    el bloque `<div headerActions>` (Volver al listado + Cancelar atención condicional) pasa
+    a `<div wizardFooterLeft>` dentro del `[wizardFooter]` existente, junto con el resto de
     los botones de footer que ya arma ese `@switch (uiStep()?.key)`.
 
 ## 4. Testing
 
-- `wizard-shell.component.spec.ts`: los tests que cubren `headingBadge`/`headerActions` (y
-  cualquiera que asuma la existencia del `<header>`) se reescriben para los slots nuevos
-  (`stepperBadge`, `wizardFooterLeft`) y para confirmar que el `<header>` ya no se renderiza.
-- `atencion-wizard.component.spec.ts`: el test que busca el botón "Cancelar atención" por
-  texto (`find(b => b.textContent?.includes('Cancelar atención'))`) no debería necesitar
-  cambios — no depende de dónde vive el botón en el DOM, solo de su texto.
+- `wizard-shell.component.spec.ts`: los 3 tests existentes asumen `<header>`/`h1` y los
+  slots viejos — se reescriben para los slots nuevos (`wizardFooterLeft`,
+  `wizardFooterCenter`) y para confirmar que `<header>` y `h1` ya no existen en el DOM.
+- `atencion-wizard.component.spec.ts`, cambios puntuales:
+  - **C6** (3 tests: título con publicCode, fallback a attentionNumber, publicCode en
+    blanco) — se **borran**: testean `headerTitle()` y el `<h1>`, ninguno de los dos existe
+    más.
+  - **C2** (2 tests: "con isUrgent el header muestra URGENTE" / "sin isUrgent no lo
+    muestra") — se reescriben para no depender de `querySelector('header')` (ya no existe);
+    en su lugar buscan el tag por `data-testid` o por texto en todo `fixture.nativeElement`.
+  - **C3** ("el header NO muestra el subtítulo...") — se **borra**: ya no hay `<header>`
+    que revisar, y el subtítulo que negaba tampoco existe en ningún lado nuevo.
+  - **NEW-D** ("el botón 'Volver al listado' se renderiza en el header") — el nombre del
+    `it()` queda desactualizado (ya no vive "en el header") pero el assert en sí
+    (`querySelectorAll('button')` sobre todo el fixture) sigue siendo válido tal cual —
+    se renombra el `it()` a "...se renderiza en el footer" sin tocar el cuerpo.
+  - El test de "Cancelar atención" (línea ~268) no necesita cambios — mismo criterio.
 - Los specs de los otros 8 wizards (`empleado-form.page.spec.ts`,
   `generar-liquidacion.page.spec.ts`, `nueva-visita.page.spec.ts`) no deberían verse
   afectados — ninguno testea el `heading`/`breadcrumb` que se saca.
-- Verificación visual con Playwright (como el resto de este PR): las 9 pantallas, antes/después
-  — confirmar que el stepper queda arriba de todo, que el footer izquierdo de Atención se ve
-  bien con y sin "Cancelar atención" visible, y que el badge URGENTE se ve al lado de la tira
-  de pasos.
+- Verificación visual con Playwright (como el resto de este PR): las 9 pantallas,
+  antes/después — confirmar que el stepper queda arriba de todo, que el footer de Atención
+  se ve bien con sus 3 zonas (con y sin "Cancelar atención" / "URGENTE" visibles), y que no
+  quedó ningún resto del `<header>` ni del contador "Paso X de Y" en ninguna pantalla.
 
 ## 5. Fuera de alcance
 
