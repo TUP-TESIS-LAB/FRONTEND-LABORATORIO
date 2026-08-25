@@ -3,7 +3,7 @@
 > **Fecha:** 2026-08-24
 > **Repo:** FRONTEND-LABORATORIO
 > **Base:** `development` (rama a crear aparte de `fix/mantenimiento-tier2-cosmeticos`)
-> **Jira:** _(pendiente — crear en jira-workflow antes de implementar)_
+> **Jira:** [KAN-320](https://exequielsantoro.atlassian.net/browse/KAN-320)
 
 ## 1. Objetivo
 

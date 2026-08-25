@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Jira:** [KAN-320](https://exequielsantoro.atlassian.net/browse/KAN-320)
+
 **Goal:** Sacar la barra de header (título + breadcrumb + acciones) de `ui-wizard-shell`, el shell compartido de los 9 wizards full-page del portal administrativo, dejando la tira de pasos como lo primero que ve el usuario.
 
 **Architecture:** Un solo componente compartido (`WizardShellComponent`) cambia de template + API pública (se sacan 2 inputs, se sacan 2 slots, se agregan 2 slots nuevos en el footer). Los 9 consumidores se actualizan en el mismo PR — Angular compila todos los templates del proyecto de punta a punta (AOT), así que el build queda roto hasta que el shell y los 9 consumidores estén todos migrados a la vez. Por eso la primera corrida de tests real (Task 6) es al final, no tarea por tarea.
