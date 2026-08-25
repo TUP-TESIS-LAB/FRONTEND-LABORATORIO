@@ -247,16 +247,25 @@ por:
 
         <lab-datos-generales-step [atencionId]="null" [initialDni]="dni() ?? null" />
 
+        <div wizardFooterLeft>
+          <p-button label="Volver al listado" severity="secondary" [text]="true"
+                    (onClick)="backToList()" />
+        </div>
+
         <div wizardFooter>
-          <div wizardFooterLeft>
-            <p-button label="Volver al listado" severity="secondary" [text]="true"
-                      (onClick)="backToList()" />
-          </div>
           <p-button label="Confirmar y seguir" [disabled]="!datosCanConfirm()"
                     (onClick)="advanceCurrent()" />
         </div>
       </ui-wizard-shell>
 ```
+
+> ⚠️ **Regla de proyección de contenido (aplica a todo este plan):** `<ng-content
+> select="[x]">` de Angular matchea **únicamente hijos directos** del componente. Los
+> elementos marcados `wizardFooterLeft` / `wizardFooterCenter` / `wizardFooter` tienen que
+> ser **hermanos entre sí**, hijos directos de `<ui-wizard-shell>`. Anidar
+> `<div wizardFooterLeft>` adentro de `<div wizardFooter>` NO lo proyecta a la zona
+> izquierda — queda renderizado dentro de la zona derecha, y el refactor no hace nada
+> visible.
 
 - [ ] **Step 2: Modo completo — sacar `heading`, mover badge y acciones al footer**
 
@@ -318,32 +327,40 @@ por:
 
 ```typescript
           @if (!readOnly()) {
-            <div wizardFooter class="flex items-center gap-2">
-              <div wizardFooterLeft class="flex items-center gap-2">
-                <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
-                          (onClick)="backToList()" />
-                @if (canCancel()) {
-                  <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
-                }
-              </div>
-              @if (detail()!.isUrgent) {
-                <p-tag wizardFooterCenter value="URGENTE" severity="danger" />
+            <div wizardFooterLeft class="flex items-center gap-2">
+              <p-button label="Volver al listado" severity="secondary" [text]="true" size="small"
+                        (onClick)="backToList()" />
+              @if (canCancel()) {
+                <p-button label="Cancelar atención" severity="danger" [text]="true" size="small" (onClick)="onCancel()" />
               }
+            </div>
+          }
+          @if (detail()!.isUrgent) {
+            <p-tag wizardFooterCenter value="URGENTE" severity="danger" />
+          }
+
+          @if (!readOnly()) {
+            <div wizardFooter class="flex items-center gap-2">
               @if (canReturn()) {
 ```
 
-No hay que tocar el resto del `@switch` ni el cierre de los `@if`/`</div>` — el `@if
-(canReturn())` que sigue queda exactamente igual, solo ahora anidado un nivel más adentro
-del nuevo `<div wizardFooterLeft>` recién agregado (que se cierra antes, no envuelve el
-switch).
+**Ojo con la estructura** (ver la regla de proyección más arriba): los 3 bloques
+(`wizardFooterLeft`, `wizardFooterCenter`, `wizardFooter`) son **hermanos**, hijos directos
+de `<ui-wizard-shell>` — ninguno anida dentro de otro. Por eso el `@if (!readOnly())`
+aparece dos veces: una envolviendo la zona izquierda, otra envolviendo la derecha.
 
-**Importante — caso "readOnly":** cuando `readOnly()` es `true`, el `@if (!readOnly())` de
-arriba hace que TODO el `wizardFooter` (incluido el badge URGENTE) desaparezca. Antes el
-badge vivía en el header y se veía siempre, incluso en modo solo-lectura. Con este cambio,
-**una atención urgente en modo solo-lectura ya no muestra el badge URGENTE en ningún lado.**
-Si esto importa, avisar antes de mergear — no está cubierto por las decisiones del brainstorming
-(no se preguntó explícitamente por el caso solo-lectura). Para esta implementación, dejarlo
-así (el badge deja de verse en readOnly) y señalarlo en el PR.
+**Efecto secundario deliberado:** el badge URGENTE queda FUERA del `@if (!readOnly())`, así
+que a diferencia de las acciones, **sí se sigue mostrando en modo solo-lectura** — igual que
+antes del refactor, cuando vivía en el header. Esto resuelve el caso abierto que el design
+doc dejaba marcado para confirmar con el usuario.
+
+El resto del `@switch` no cambia.
+
+**Caso "readOnly" — resuelto por la estructura de hermanos:** al quedar el
+`wizardFooterCenter` fuera del `@if (!readOnly())`, el badge URGENTE se sigue mostrando en
+modo solo-lectura, igual que antes del refactor (cuando vivía en el header). Solo las
+acciones de la zona izquierda se ocultan en solo-lectura, que es el comportamiento correcto:
+no se puede cancelar una atención terminal.
 
 - [ ] **Step 4: Sacar el computed `headerTitle()`, que queda sin consumidor**
 
@@ -371,15 +388,16 @@ git commit -m "refactor(atencion-wizard): migrar al footer de 3 zonas de wizard-
 
 - Se saca [heading] de los 2 bloques (creando + completo).
 - 'Volver al listado' (+ 'Cancelar atención' condicional) pasan de
-  headerActions a wizardFooterLeft, dentro del wizardFooter existente.
+  headerActions a wizardFooterLeft.
 - El tag URGENTE pasa de headingBadge a wizardFooterCenter.
 - Se saca el computed headerTitle(), sin consumidor tras sacar el binding
   del titulo dinamico 'Atencion {code}' — esa info se pierde, decision
   explicita del usuario (no se reubica en ningun lado).
 
-Nota: en modo solo-lectura (readOnly), el badge URGENTE ya no se muestra
-(antes vivia en el header, visible siempre; ahora vive dentro del
-wizardFooter, que se oculta completo en solo-lectura). Senalar en el PR."
+Los 3 slots son hermanos (hijos directos de ui-wizard-shell): ng-content
+select solo matchea hijos directos, anidarlos no proyecta. El badge
+URGENTE queda fuera del @if(!readOnly()), asi que se sigue viendo en
+solo-lectura igual que antes."
 ```
 
 ---
@@ -954,9 +972,14 @@ Para la pantalla de Atención (#2), verificar específicamente:
 - El footer tiene 3 zonas: "Volver al listado" (+ "Cancelar atención" si no es terminal) a
   la izquierda, nada o URGENTE al centro, el botón de acción principal a la derecha.
 - Si la atención es urgente, el tag "URGENTE" se ve centrado en el footer.
-- **Confirmar el caso señalado en la Task 2**: si la atención está en modo solo-lectura
-  (estado terminal) y es urgente, el tag URGENTE no aparece en ningún lado — decidir con el
-  usuario si esto es aceptable antes de mergear.
+- **Caso solo-lectura**: abrir una atención urgente en estado terminal (FINISHED) y
+  confirmar que el badge URGENTE **sí** se sigue viendo centrado en el footer (queda fuera
+  del `@if (!readOnly())`), mientras que "Volver al listado" / "Cancelar atención"
+  correctamente no aparecen.
+- **Verificar que la proyección realmente funciona**: las 3 zonas tienen que verse en
+  posiciones distintas (izquierda / centro / derecha). Si "Volver al listado" aparece pegado
+  a la derecha junto al botón principal, los slots quedaron anidados en vez de hermanos y la
+  proyección no se aplicó — ver la regla de proyección en la Task 2.
 
 - [ ] **Step 4: Reportar y esperar OK antes de mergear**
 
