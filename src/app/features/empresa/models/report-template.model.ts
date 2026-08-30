@@ -5,6 +5,9 @@ export interface ReportTemplate {
   accreditationLegend: string | null;
   /** Empleado elegido como firmante autorizante del informe. Null = sin firmante. */
   authorizedSignerEmployeeId: number | null;
+  /** Director técnico por defecto del tenant. Una sucursal puede sobreescribirlo. */
+  technicalDirectorName: string | null;
+  technicalDirectorRegistration: string | null;
 }
 
 export interface GuardarReportTemplateTextPayload {
@@ -12,6 +15,8 @@ export interface GuardarReportTemplateTextPayload {
   accreditationLegend: string | null;
   /** Empleado (id) elegido como firmante autorizante. Null limpia el firmante. */
   authorizedSignerEmployeeId: number | null;
+  technicalDirectorName: string | null;
+  technicalDirectorRegistration: string | null;
 }
 
 /**

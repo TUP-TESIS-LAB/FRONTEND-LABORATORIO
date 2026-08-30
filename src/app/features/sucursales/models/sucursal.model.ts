@@ -12,6 +12,9 @@ export interface Sucursal {
   active: boolean;
   atencionBoxesCount: number;
   extraccionBoxesCount: number;
+  /** Override opcional del director técnico configurado en Empresa → Informe PDF. */
+  technicalDirectorName: string | null;
+  technicalDirectorRegistration: string | null;
 }
 
 export interface SucursalCreateInput {
@@ -22,6 +25,8 @@ export interface SucursalCreateInput {
   responsibleUserId?: number | null;
   atencionBoxesCount: number;
   extraccionBoxesCount: number;
+  technicalDirectorName?: string | null;
+  technicalDirectorRegistration?: string | null;
 }
 
 export type SucursalUpdateInput = SucursalCreateInput;

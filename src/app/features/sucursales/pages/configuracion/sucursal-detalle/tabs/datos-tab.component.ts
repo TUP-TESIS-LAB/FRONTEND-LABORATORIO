@@ -56,6 +56,9 @@ export class DatosTabComponent {
     code: ['', [Validators.required, Validators.maxLength(30)]],
     description: ['', [Validators.required, Validators.maxLength(120)]],
     status: ['ACTIVE' as SucursalStatus, Validators.required],
+    // Override opcional del director técnico del tenant (Empresa → Informe PDF).
+    technicalDirectorName: ['', [Validators.maxLength(150)]],
+    technicalDirectorRegistration: ['', [Validators.maxLength(60)]],
     provinceId: this.fb.control<number | null>(null),
     address: this.fb.group({
       street: [''],
@@ -94,6 +97,8 @@ export class DatosTabComponent {
           code: c.code,
           description: c.description,
           status: c.status,
+          technicalDirectorName: c.technicalDirectorName ?? '',
+          technicalDirectorRegistration: c.technicalDirectorRegistration ?? '',
           // provinceId: we cannot derive it reliably without a cities lookup;
           // leave it null — the user can select it manually if needed.
           provinceId: null,
@@ -122,6 +127,8 @@ export class DatosTabComponent {
       code: raw.code.trim(),
       description: raw.description.trim(),
       status: raw.status,
+      technicalDirectorName: raw.technicalDirectorName.trim() || null,
+      technicalDirectorRegistration: raw.technicalDirectorRegistration.trim() || null,
       // Preserve existing boxes counts from store — not managed in this tab.
       atencionBoxesCount: current?.atencionBoxesCount ?? 1,
       extraccionBoxesCount: current?.extraccionBoxesCount ?? 1,
